@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, ChevronLeft, ChevronRight, X, Bell, User, Settings } from 'lucide-react';
 
+
+
 // Top Navigation Bar as a component
 function TopNavBar() {
   return (
@@ -52,6 +54,7 @@ const Timesheets = () => {
       ]
     }
   ]);
+  
 
   // Handle project change
   const handleProjectChange = (idx: number, value: string) => {
@@ -88,23 +91,73 @@ const Timesheets = () => {
     updated[pIdx].tasks.push({ taskName: '', description: '' });
     setProjectForms(updated);
   };
+  const [projectId, setProjectId] = useState('');
+  const [taskId, setTaskId] = useState('');
+  const [description, setDescription] = useState('');
+  const [workType, setWorkType] = useState('WFO');
+  const [fromTime, setFromTime] = useState('');
+  const [toTime, setToTime] = useState('');
+  const [hoursWorked, setHoursWorked] = useState('');
+  const [otherDescription, setOtherDescription] = useState('');
+
+  const [showModal, setShowModal] = useState(false);
+
 
   // Add another project section
-  const handleAddProject = () => {
-    setProjectForms([
-      ...projectForms,
-      {
-        projectId: '',
-        workType: '',
-        tasks: [{ taskName: '', description: '' }]
-      }
-    ]);
+  const handleAddEntry = async () => {
+  const token = localStorage.getItem('authToken');
+
+  if (!token) {
+    alert('User is not authenticated.');
+    return;
+  }
+
+  // Prepare request body
+  const requestBody = {
+    projectId,
+    taskId,
+    description,
+    workType,
+    fromTime,
+    toTime,
+    hoursWorked,
+    otherDescription,
   };
+
+  try {
+    const response = await fetch('https://your-api.com/api/timesheet', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Entry submitted:', result);
+      setShowModal(false);
+      // Optional: update UI or entries list
+    } else {
+      const errorData = await response.json();
+      alert('Submission failed: ' + (errorData.message || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Submission error:', error);
+    alert('Something went wrong. Please try again.');
+  }
+};
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Submit logic here (send projectForms to backend)
+    // Store data in localStorage with Authorization Bearer
+    const token = localStorage.getItem('token'); // Assumes token is already set in localStorage
+    localStorage.setItem('log-entry', JSON.stringify({
+      data: projectForms,
+      authorization: token ? `Bearer ${token}` : ''
+    }));
     setShowForm(false);
     setProjectForms([
       {
@@ -113,7 +166,7 @@ const Timesheets = () => {
         tasks: [{ taskName: '', description: '' }]
       }
     ]);
-    alert('Timesheet submitted!');
+   
   };
 
   // Get today's date in yyyy-mm-dd format
@@ -148,15 +201,14 @@ const Timesheets = () => {
             {/* Modal Title and Date */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1 flex justify-center">
-                <span className="text-2xl font-bold text-blue-700">DayTrack Hub</span>
+                <span className="text-2xl font-bold text-blue-700">Daily Time Sheet⌛</span>
               </div>
               <input
                 type="date"
                 value={todayStr}
-                min={todayStr}
                 max={todayStr}
                 className="border rounded px-2 py-1"
-                readOnly
+                // User can select any date up to today, future dates are disabled
               />
             </div>
             <div className="absolute top-2 right-2">
@@ -288,7 +340,7 @@ const Timesheets = () => {
                         <button
                           type="button"
                           className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mb-2"
-                          onClick={handleAddProject}
+                          onClick={() => setProjectForms([...projectForms, { projectId: '', workType: '', tasks: [{ taskName: '', description: '' }] }])}
                         >
                           + Project
                         </button>

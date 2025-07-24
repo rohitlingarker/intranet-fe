@@ -1,158 +1,191 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Users, FolderKanban, PlaneTakeoff, Clock, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Plus, ChevronLeft, ChevronRight, X, Bell, User, Settings,
+  Users, FolderKanban, PlaneTakeoff, Clock, Calendar,
+  TrendingUp, AlertCircle, CheckCircle
+} from 'lucide-react';
 
-const Dashboard: React.FC = () => {
-  const moduleCards = [
-    {
-      title: 'User Management',
-      description: 'Manage employees, roles, and permissions',
-      icon: Users,
-      href: '/users',
-      color: 'bg-[#263383]',
-      stats: '245 active users'
-    },
-    {
-      title: 'Project Management',
-      description: 'Track projects, deadlines, and team progress',
-      icon: FolderKanban,
-      href: '/projects',
-      color: 'bg-[#3548b6]',
-      stats: '12 active projects'
-    },
-    {
-      title: 'Leave Management',
-      description: 'Handle leave requests and approvals',
-      icon: PlaneTakeoff,
-      href: '/leave',
-      color: 'bg-[#b22a4f]',
-      stats: '8 pending requests'
-    },
-    {
-      title: 'Timesheets',
-      description: 'Track time and generate reports',
-      icon: Clock,
-      href: '/timesheets',
-      color: 'bg-[#ff3d72]',
-      stats: 'Today: 6.5 hours'
-    },
-    {
-      title: 'Calendar',
-      description: 'View events, meetings, and deadlines',
-      icon: Calendar,
-      href: '/calendar',
-      color: 'bg-[#d23369]',
-      stats: '5 events today'
+const defaultEmployee = { id: 'EMP001', name: 'John Doe' }; // Replace with backend data
+
+const previousTimesheets = [
+  { id: 1, date: '2025-07-20', project: 'Project Alpha', hours: 8, status: 'Submitted' },
+  { id: 2, date: '2025-07-19', project: 'Project Beta', hours: 7, status: 'Approved' },
+  { id: 3, date: '2025-07-18', project: 'Project Gamma', hours: 6, status: 'Rejected' },
+];
+
+const projects = [
+  { id: 1, name: 'Project Alpha', tasks: ['Design', 'Development', 'Testing'] },
+  { id: 2, name: 'Project Beta', tasks: ['Planning', 'Implementation'] },
+];
+
+const Timesheets = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [projectId, setProjectId] = useState('');
+  const [taskId, setTaskId] = useState('');
+  const [description, setDescription] = useState('');
+  const [workType, setWorkType] = useState('WFO');
+  const [fromTime, setFromTime] = useState('');
+  const [toTime, setToTime] = useState('');
+  const [hoursWorked, setHoursWorked] = useState('');
+  const [otherDescription, setOtherDescription] = useState('');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('authToken');
+    if (!token) return alert('User not authenticated');
+
+    const requestBody = {
+      projectId: Number(projectId),
+      taskId: Number(taskId),
+      description,
+      workType,
+      fromTime,
+      toTime,
+      hoursWorked: Number(hoursWorked),
+      otherDescription
+    };
+
+    try {
+      const res = await fetch('https://your-api.com/api/timesheet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) throw new Error('Submission failed');
+      const data = await res.json();
+      console.log('Submitted:', data);
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+      alert('Submission error');
     }
-  ];
-
-  const quickStats = [
-    { label: 'Total Employees', value: '245', change: '+12', icon: Users, positive: true },
-    { label: 'Active Projects', value: '12', change: '+2', icon: FolderKanban, positive: true },
-    { label: 'Pending Approvals', value: '8', change: '-3', icon: AlertCircle, positive: false },
-    { label: 'Completed Tasks', value: '89%', change: '+5%', icon: CheckCircle, positive: true }
-  ];
-
-  const recentActivity = [
-    { action: 'New user registration', user: 'Sarah Johnson', time: '2 hours ago', type: 'user' },
-    { action: 'Project deadline updated', user: 'Mike Chen', time: '4 hours ago', type: 'project' },
-    { action: 'Leave request approved', user: 'Emily Davis', time: '6 hours ago', type: 'leave' },
-    { action: 'Timesheet submitted', user: 'David Wilson', time: '1 day ago', type: 'timesheet' }
-  ];
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className={`h-4 w-4 ${stat.positive ? 'text-green-500' : 'text-red-500'}`} />
-                  <span className={`text-sm ml-1 ${stat.positive ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change}
-                  </span>
-                </div>
-              </div>
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <stat.icon className="h-6 w-6 text-gray-600" />
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
+      <div className="flex justify-between items-center bg-white rounded shadow px-6 py-4 mb-6 w-full max-w-3xl">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">Welcome back, John</h1>
+          <p className="text-gray-500 text-sm">Here's what happened in our org today</p>
+        </div>
+        <div className="flex space-x-4 text-gray-600 items-center">
+          <Bell />
+          <User />
+          <Settings />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Module Cards */}
-        <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {moduleCards.map((card, index) => (
-              <Link
-                key={index}
-                to={card.href}
-                className="group bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-[#263383]"
-              >
-                <div className="flex items-start space-x-4">
-                  <div className={`p-3 rounded-lg ${card.color} group-hover:scale-105 transition-transform`}>
-                    <card.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-gray-900 group-hover:text-[#263383] transition-colors">
-                      {card.title}
-                    </h4>
-                    <p className="text-gray-600 text-sm mt-1">{card.description}</p>
-                    <p className="text-xs text-gray-500 mt-2 font-medium">{card.stats}</p>
-                  </div>
-                </div>
-              </Link>
+      <div className="mb-6 w-full flex justify-end max-w-3xl">
+        <button
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          onClick={() => setShowModal(true)}
+        >
+          <Plus className="mr-2" /> Add Entry
+        </button>
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded shadow-lg p-6 w-full max-w-xl relative">
+            <button className="absolute top-3 right-3" onClick={() => setShowModal(false)}>
+              <X />
+            </button>
+            <h2 className="text-lg font-bold text-center text-blue-700 mb-4">Daily Time Sheet</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex gap-4">
+                <input type="text" disabled value={defaultEmployee.id} className="w-1/2 px-3 py-2 bg-gray-100 border rounded" />
+                <input type="text" disabled value={defaultEmployee.name} className="w-1/2 px-3 py-2 bg-gray-100 border rounded" />
+              </div>
+              <select value={projectId} onChange={e => setProjectId(e.target.value)} required className="w-full px-3 py-2 border rounded">
+                <option value="">Select Project</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <select value={taskId} onChange={e => setTaskId(e.target.value)} required className="w-full px-3 py-2 border rounded">
+                <option value="">Select Task</option>
+                {projectId && projects.find(p => p.id.toString() === projectId)?.tasks.map((t, i) => (
+                  <option key={i} value={i + 1}>{t}</option>
+                ))}
+              </select>
+              <textarea
+                placeholder="Description"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+              <select value={workType} onChange={e => setWorkType(e.target.value)} className="w-full px-3 py-2 border rounded">
+                <option value="WFO">Work from Office</option>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+              <div className="flex gap-4">
+                <input type="time" value={fromTime} onChange={e => setFromTime(e.target.value)} required className="w-1/2 px-3 py-2 border rounded" />
+                <input type="time" value={toTime} onChange={e => setToTime(e.target.value)} required className="w-1/2 px-3 py-2 border rounded" />
+              </div>
+              <input
+                type="number"
+                placeholder="Hours Worked"
+                value={hoursWorked}
+                onChange={e => setHoursWorked(e.target.value)}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+              <textarea
+                placeholder="Other Description"
+                value={otherDescription}
+                onChange={e => setOtherDescription(e.target.value)}
+                className="w-full px-3 py-2 border rounded"
+              />
+              <div className="flex justify-end gap-2">
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded shadow p-4 w-full max-w-3xl">
+        <h2 className="text-lg font-semibold mb-4">Previous Timesheet Entries</h2>
+        <table className="w-full text-left border">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="py-2 px-4 border">Date</th>
+              <th className="py-2 px-4 border">Project</th>
+              <th className="py-2 px-4 border">Hours</th>
+              <th className="py-2 px-4 border">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {previousTimesheets.map(entry => (
+              <tr key={entry.id} className="text-center">
+                <td className="py-2 px-4 border">{entry.date}</td>
+                <td className="py-2 px-4 border">{entry.project}</td>
+                <td className="py-2 px-4 border">{entry.hours}</td>
+                <td className="py-2 px-4 border">{entry.status}</td>
+              </tr>
             ))}
-          </div>
-        </div>
+          </tbody>
+        </table>
+      </div>
 
-        {/* Recent Activity */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-4 space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
-                  <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <div className="h-2 w-2 bg-[#ff3d72] rounded-full"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.action}</p>
-                    <p className="text-xs text-gray-600">by {activity.user}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Announcements */}
-          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h4 className="font-semibold text-gray-900 mb-3">System Announcements</h4>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-800">
-                  System maintenance scheduled for this weekend.
-                </p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">
-                  New employee onboarding process updated.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex justify-center items-center mt-6 space-x-6">
+        <button className="p-2 rounded-full hover:bg-gray-200">
+          <ChevronLeft size={28} />
+        </button>
+        <span className="font-medium">Page 1 of 1</span>
+        <button className="p-2 rounded-full hover:bg-gray-200">
+          <ChevronRight size={28} />
+        </button>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default Timesheets;
