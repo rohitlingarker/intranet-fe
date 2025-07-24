@@ -1,260 +1,358 @@
 import React, { useState } from 'react';
-import { Save, Clock, Calendar, BarChart3 } from 'lucide-react';
-import { useNotification } from '../contexts/NotificationContext';
+import { Plus, ChevronLeft, ChevronRight, X, Bell, User, Settings } from 'lucide-react';
 
-interface TimesheetEntry {
-  id: string;
-  task: string;
-  hours: number;
-  status: 'In Progress' | 'Completed' | 'Blocked';
-  date: string;
+// Top Navigation Bar as a component
+function TopNavBar() {
+  return (
+    <div className="flex justify-between items-center bg-white rounded shadow px-6 py-4 mb-6 w-full max-w-3xl">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-800">Welcome back, John</h1>
+        <p className="text-gray-500 text-sm">Here's what happened in our org today</p>
+      </div>
+      <div className="flex space-x-4 text-gray-600 items-center">
+        <button className="hover:text-blue-600" title="Notifications">
+          <Bell />
+        </button>
+        <button className="hover:text-blue-600" title="Profile">
+          <User />
+        </button>
+        <button className="hover:text-blue-600" title="Settings">
+          <Settings />
+        </button>
+      </div>
+    </div>
+  );
 }
 
-const Timesheets: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [entries, setEntries] = useState<TimesheetEntry[]>([
-    { id: '1', task: 'Employee Portal Development', hours: 4, status: 'In Progress', date: currentDate },
-    { id: '2', task: 'Code Review', hours: 2, status: 'Completed', date: currentDate },
-    { id: '3', task: 'Team Meeting', hours: 1, status: 'Completed', date: currentDate }
+// Sample previous timesheet entries
+const previousTimesheets = [
+  { id: 1, date: '2025-07-20', project: 'Project Alpha', hours: 8, status: 'Submitted' },
+  { id: 2, date: '2025-07-19', project: 'Project Beta', hours: 7, status: 'Approved' },
+  { id: 3, date: '2025-07-18', project: 'Project Gamma', hours: 6, status: 'Rejected' },
+  { id: 4, date: '2025-07-17', project: 'Project Delta', hours: 8, status: 'Submitted' },
+  { id: 5, date: '2025-07-16', project: 'Project Epsilon', hours: 7, status: 'Approved' },
+];
+
+// Sample data for projects and tasks (replace with backend data)
+const projects = [
+  { id: 1, name: 'Project Alpha', tasks: ['Design', 'Development', 'Testing'] },
+  { id: 2, name: 'Project Beta', tasks: ['Planning', 'Implementation'] },
+];
+
+const defaultEmployee = { id: 'EMP001', name: 'John Doe' }; // Replace with backend data
+
+const Timesheets = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [projectForms, setProjectForms] = useState([
+    {
+      projectId: '',
+      workType: '',
+      tasks: [
+        { taskName: '', description: '' }
+      ]
+    }
   ]);
-  const [newTask, setNewTask] = useState('');
-  const [newHours, setNewHours] = useState('');
-  const [newStatus, setNewStatus] = useState<'In Progress' | 'Completed' | 'Blocked'>('In Progress');
-  
-  const { showNotification } = useNotification();
 
-  const weeklyData = [
-    { day: 'Monday', hours: 8 },
-    { day: 'Tuesday', hours: 7.5 },
-    { day: 'Wednesday', hours: 8 },
-    { day: 'Thursday', hours: 6.5 },
-    { day: 'Friday', hours: 7 },
-  ];
-
-  const addEntry = () => {
-    if (newTask.trim() && newHours) {
-      const entry: TimesheetEntry = {
-        id: Date.now().toString(),
-        task: newTask.trim(),
-        hours: parseFloat(newHours),
-        status: newStatus,
-        date: currentDate
-      };
-      setEntries([...entries, entry]);
-      setNewTask('');
-      setNewHours('');
-      setNewStatus('In Progress');
-    }
+  // Handle project change
+  const handleProjectChange = (idx: number, value: string) => {
+    const updated = [...projectForms];
+    updated[idx].projectId = value;
+    updated[idx].tasks = [{ taskName: '', description: '' }]; // Reset tasks on project change
+    setProjectForms(updated);
   };
 
-  const removeEntry = (id: string) => {
-    setEntries(entries.filter(entry => entry.id !== id));
+  // Handle work type change
+  const handleWorkTypeChange = (idx: number, value: string) => {
+    const updated = [...projectForms];
+    updated[idx].workType = value;
+    setProjectForms(updated);
   };
 
-  const updateEntry = (id: string, field: keyof TimesheetEntry, value: any) => {
-    setEntries(entries.map(entry => 
-      entry.id === id ? { ...entry, [field]: value } : entry
-    ));
+  // Handle task change
+  const handleTaskChange = (pIdx: number, tIdx: number, value: string) => {
+    const updated = [...projectForms];
+    updated[pIdx].tasks[tIdx].taskName = value;
+    setProjectForms(updated);
   };
 
-  const getTotalHours = () => {
-    return entries.reduce((total, entry) => total + entry.hours, 0);
+  // Handle description change
+  const handleDescriptionChange = (pIdx: number, tIdx: number, value: string) => {
+    const updated = [...projectForms];
+    updated[pIdx].tasks[tIdx].description = value;
+    setProjectForms(updated);
   };
 
-  const handleSubmit = () => {
-    showNotification('Timesheet submitted successfully (mock)');
+  // Add another task to a project
+  const handleAddTask = (pIdx: number) => {
+    const updated = [...projectForms];
+    updated[pIdx].tasks.push({ taskName: '', description: '' });
+    setProjectForms(updated);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'Blocked':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  // Add another project section
+  const handleAddProject = () => {
+    setProjectForms([
+      ...projectForms,
+      {
+        projectId: '',
+        workType: '',
+        tasks: [{ taskName: '', description: '' }]
+      }
+    ]);
   };
+
+  // Handle form submit
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Submit logic here (send projectForms to backend)
+    setShowForm(false);
+    setProjectForms([
+      {
+        projectId: '',
+        workType: '',
+        tasks: [{ taskName: '', description: '' }]
+      }
+    ]);
+    alert('Timesheet submitted!');
+  };
+
+  // Get today's date in yyyy-mm-dd format
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
-          <p className="text-gray-600">Track time and generate reports</p>
-        </div>
+    <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
+      {/* Top Navigation Bar */}
+      <TopNavBar />
+
+      {/* Add Entity Button */}
+      <div className="mb-6 w-full flex justify-end max-w-3xl">
         <button
-          onClick={handleSubmit}
-          className="bg-[#263383] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#3548b6] transition-colors flex items-center space-x-2"
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          onClick={() => setShowForm(true)}
         >
-          <Save className="h-5 w-5" />
-          <span>Submit Timesheet</span>
+          <Plus className="mr-2" /> Add Entity
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Timesheet Entry */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Modal for Add Timesheet Form */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div
+            className="bg-white rounded shadow-lg p-6 w-full max-w-3xl relative"
+            style={{ maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            {/* Modal Title and Date */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Daily Timesheet</h3>
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <input
-                  type="date"
-                  value={currentDate}
-                  onChange={(e) => setCurrentDate(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                />
+              <div className="flex-1 flex justify-center">
+                <span className="text-2xl font-bold text-blue-700">DayTrack Hub</span>
               </div>
+              <input
+                type="date"
+                value={todayStr}
+                min={todayStr}
+                max={todayStr}
+                className="border rounded px-2 py-1"
+                readOnly
+              />
             </div>
-
-            {/* Add New Entry */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <input
-                  type="text"
-                  placeholder="Task description"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  className="md:col-span-2 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                />
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  placeholder="Hours"
-                  value={newHours}
-                  onChange={(e) => setNewHours(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                />
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as any)}
-                  className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                >
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Blocked">Blocked</option>
-                </select>
-              </div>
+            <div className="absolute top-2 right-2">
               <button
-                onClick={addEntry}
-                className="mt-3 bg-[#263383] text-white px-4 py-2 rounded font-medium hover:bg-[#3548b6] transition-colors"
+                type="button"
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowForm(false)}
+                aria-label="Close"
               >
-                Add Entry
+                <X size={24} />
               </button>
             </div>
-
-            {/* Entries List */}
-            <div className="space-y-3">
-              {entries.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={entry.task}
-                      onChange={(e) => updateEntry(entry.id, 'task', e.target.value)}
-                      className="w-full text-sm font-medium text-gray-900 bg-transparent border-none focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="24"
-                      value={entry.hours}
-                      onChange={(e) => updateEntry(entry.id, 'hours', parseFloat(e.target.value) || 0)}
-                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                    />
-                    <select
-                      value={entry.status}
-                      onChange={(e) => updateEntry(entry.id, 'status', e.target.value)}
-                      className="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-[#263383] focus:border-transparent"
-                    >
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Blocked">Blocked</option>
-                    </select>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(entry.status)}`}>
-                      {entry.status}
-                    </span>
-                    <button
-                      onClick={() => removeEntry(entry.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4 flex gap-4">
+                <div className="flex-1">
+                  <label className="block font-medium mb-1">Employee ID</label>
+                  <input
+                    type="text"
+                    value={defaultEmployee.id}
+                    disabled
+                    className="w-full border rounded px-3 py-2 bg-gray-100"
+                  />
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-900">Total Hours:</span>
-                <span className="text-lg font-bold text-[#263383]">{getTotalHours()} hours</span>
+                <div className="flex-1">
+                  <label className="block font-medium mb-1">Employee Name</label>
+                  <input
+                    type="text"
+                    value={defaultEmployee.name}
+                    disabled
+                    className="w-full border rounded px-3 py-2 bg-gray-100"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Weekly Summary */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
-              Weekly Summary
-            </h3>
-            <div className="space-y-3">
-              {weeklyData.map((day, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{day.day}</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-[#263383] h-2 rounded-full"
-                        style={{ width: `${(day.hours / 8) * 100}%` }}
-                      ></div>
+              {projectForms.map((project, pIdx) => (
+                <div key={pIdx} className="mb-6 border-b pb-4">
+                  <div className="mb-2 flex gap-2">
+                    <div className="flex-1">
+                      <label className="block font-medium mb-1">Project Name</label>
+                      <select
+                        className="w-full border rounded px-3 py-2"
+                        value={project.projectId}
+                        onChange={e => handleProjectChange(pIdx, e.target.value)}
+                        required
+                      >
+                        <option value="">Select Project</option>
+                        {projects.map(proj => (
+                          <option key={proj.id} value={proj.id}>{proj.name}</option>
+                        ))}
+                      </select>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">{day.hours}h</span>
                   </div>
+                  {project.projectId && (
+                    <>
+                      {project.tasks.map((task, tIdx) => (
+                        <div key={tIdx} className="mb-2">
+                          <div className="flex gap-2">
+                            <select
+                              className="border rounded px-3 py-2 flex-1"
+                              value={task.taskName}
+                              onChange={e => handleTaskChange(pIdx, tIdx, e.target.value)}
+                              required
+                            >
+                              <option value="">Select Task</option>
+                              {projects
+                                .find(proj => proj.id.toString() === project.projectId)
+                                ?.tasks.map((taskName, idx) => (
+                                  <option key={idx} value={taskName}>{taskName}</option>
+                                ))}
+                            </select>
+                            {tIdx === project.tasks.length - 1 && (
+                              <button
+                                type="button"
+                                className={`px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 ${!task.taskName ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={() => handleAddTask(pIdx)}
+                                disabled={!task.taskName}
+                              >
+                                + Task
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            placeholder="Description"
+                            className="border rounded px-3 py-2 mt-2 w-full"
+                            value={task.description}
+                            onChange={e => handleDescriptionChange(pIdx, tIdx, e.target.value)}
+                            required
+                            rows={2}
+                          />
+                          {/* Start and End Time Inputs */}
+                          <div className="flex gap-4 mt-2">
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium mb-1">Start Time</label>
+                              <input
+                                type="time"
+                                className="w-full border rounded px-3 py-2"
+                                // value={task.startTime || ''}
+                                // onChange={e => handleStartTimeChange(pIdx, tIdx, e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium mb-1">End Time</label>
+                              <input
+                                type="time"
+                                className="w-full border rounded px-3 py-2"
+                                // value={task.endTime || ''}
+                                // onChange={e => handleEndTimeChange(pIdx, tIdx, e.target.value)}
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="mb-2">
+                        <label className="block font-medium mb-1">Work Type</label>
+                        <select
+                          className="w-full border rounded px-3 py-2"
+                          value={project.workType}
+                          onChange={e => handleWorkTypeChange(pIdx, e.target.value)}
+                          required
+                        >
+                          <option value="">Select Work Type</option>
+                          <option value="work from office">Work from Office</option>
+                          <option value="remote">Remote</option>
+                          <option value="hybrid">Hybrid</option>
+                        </select>
+                      </div>
+                      {pIdx === projectForms.length - 1 && (
+                        <button
+                          type="button"
+                          className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mb-2"
+                          onClick={handleAddProject}
+                        >
+                          + Project
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-900">Total Week:</span>
-                <span className="text-lg font-bold text-[#263383]">37 hours</span>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Submit
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  onClick={() => setShowForm(false)}
+                >
+                  Cancel
+                </button>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Clock className="h-5 w-5 mr-2" />
-              Quick Stats
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Average Daily:</span>
-                <span className="font-medium">7.4 hours</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">This Month:</span>
-                <span className="font-medium">148 hours</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Overtime:</span>
-                <span className="font-medium text-orange-600">2.5 hours</span>
-              </div>
-            </div>
+            </form>
           </div>
         </div>
+      )}
+
+      {/* Previous Timesheet Entries Table */}
+      <div className="bg-white rounded shadow p-4 w-full max-w-3xl">
+        <h2 className="text-lg font-semibold mb-4">Previous Timesheet Entries</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="py-2 px-4 border">Date</th>
+                <th className="py-2 px-4 border">Project</th>
+                <th className="py-2 px-4 border">Hours</th>
+                <th className="py-2 px-4 border">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {previousTimesheets.map((entry) => (
+                <tr key={entry.id} className="text-center">
+                  <td className="py-2 px-4 border">{entry.date}</td>
+                  <td className="py-2 px-4 border">{entry.project}</td>
+                  <td className="py-2 px-4 border">{entry.hours}</td>
+                  <td className="py-2 px-4 border">{entry.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center mt-6 space-x-6">
+        <button className="p-2 rounded-full hover:bg-gray-200">
+          <ChevronLeft size={28} />
+        </button>
+        <span className="font-medium">Page 1 of 1</span>
+        <button className="p-2 rounded-full hover:bg-gray-200">
+          <ChevronRight size={28} />
+        </button>
       </div>
     </div>
   );
