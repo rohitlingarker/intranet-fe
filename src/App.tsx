@@ -8,8 +8,10 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Projects from './pages/Projects';
 import Leave from './pages/Leave';
-import Timesheets from './pages/Timesheets';
+import Timesheethistorypage from './pages/Timesheets/Timesheethistorypage';
 import Calendar from './pages/Calendar';
+import DaytrackModal from './pages/Timesheets/DayTrackModal';
+
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -31,7 +33,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/users" element={<Users />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/leave" element={<Leave />} />
-        <Route path="/timesheets" element={<Timesheets />} />
+        <Route path="/timesheets" element={<Timesheethistorypage />} />
         <Route path="/calendar" element={<Calendar />} />
       </Routes>
     </Layout>
@@ -51,5 +53,7 @@ function App() {
     </Router>
   );
 }
+
+
 
 export default App;
