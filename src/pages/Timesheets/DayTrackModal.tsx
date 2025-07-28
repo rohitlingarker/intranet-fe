@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 // Types
 interface TaskEntry {
@@ -36,10 +37,18 @@ const DayTrackModal: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    setProjects([
-      { name: 'Project Alpha', tasks: ['Design', 'Development'] },
-      { name: 'Project Beta', tasks: ['Testing', 'Documentation'] },
-    ]);
+    const fetchProjects = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/projects-with-tasks');
+        if (response.status === 200) {
+          setProjects(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching projects with tasks:', error);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
   const handleAddEntry = () => {
@@ -71,6 +80,28 @@ const DayTrackModal: React.FC = () => {
   const getTasksForProject = (projectName: string): string[] => {
     const project = projects.find((p) => p.name === projectName);
     return project ? project.tasks : [];
+  };
+
+  const handleSubmit = async () => {
+    const payload = {
+      date: selectedDate,
+      employeeId: 'EMP001',
+      employeeName: 'John Doe',
+      entries: entries,
+    };
+
+    try {
+      const response = await axios.post('http://localhost:8080/api/timesheet/{userId}', payload);
+      if (response.status === 200) {
+        alert('Timesheet submitted successfully!');
+        setShowModal(false);
+      } else {
+        alert('Submission failed');
+      }
+    } catch (error) {
+      console.error('Error submitting timesheet:', error);
+      alert('Error submitting timesheet');
+    }
   };
 
   return (
@@ -195,7 +226,7 @@ const DayTrackModal: React.FC = () => {
                           <label className="text-sm">Description</label>
                           <textarea
                             className="w-full border px-2 py-1 rounded text-sm"
-                            rows={2}
+                            rows={1}
                             value={taskEntry.description}
                             onChange={(e) => {
                               const updated = [...entries];
@@ -209,7 +240,7 @@ const DayTrackModal: React.FC = () => {
                   })}
 
                   <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div className="w-1/2 flex-col flex">
+                    <div>
                       <label className="text-sm">Start Time</label>
                       <input
                         type="time"
@@ -218,7 +249,7 @@ const DayTrackModal: React.FC = () => {
                         onChange={(e) => handleChange(index, 'startTime', e.target.value)}
                       />
                     </div>
-                    <div className="w-1/2 flex-col flex">
+                    <div>
                       <label className="text-sm">End Time</label>
                       <input
                         type="time"
@@ -249,10 +280,7 @@ const DayTrackModal: React.FC = () => {
             <div className="flex justify-end space-x-4 mt-4">
               <button
                 className="bg-[#263383] text-white px-4 py-2 rounded"
-                onClick={() => {
-                  console.log(entries);
-                  setShowModal(false);
-                }}
+                onClick={handleSubmit}
               >
                 Submit
               </button>

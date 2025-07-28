@@ -1,6 +1,7 @@
 import React, { useState, ChangeEvent } from "react";
 import TimesheetTable from "./TimesheetTable";
-import DayTrackModal from "./DayTrackModal";
+import DayTrackModal from "./daytrackModal";
+
 
 // Entry type enhanced with more fields
 export type TimesheetEntry = {
@@ -81,7 +82,7 @@ const [filterStatus, setFilterStatus] = useState('All Status');
       <main style={{ flex: 1, padding: 36 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Previos History Track</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Previous History Track</h1>
             <p className="text-gray-600">Track and manage timesheets, projects, and productivity</p>
           </div>
           <DayTrackModal/>
