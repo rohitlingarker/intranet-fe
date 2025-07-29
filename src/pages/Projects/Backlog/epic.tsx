@@ -52,7 +52,7 @@ const CreateEpic: React.FC = () => {
 
     axios.post("http://localhost:8080/api/epics", formData)
       .then(() => {
-        alert("Epic created successfully!");
+        alert("✅ Epic created successfully!");
         setFormData({
           name: "",
           description: "",
@@ -64,94 +64,120 @@ const CreateEpic: React.FC = () => {
         });
       })
       .catch(err => {
-        console.error("Error creating epic:", err);
+        console.error("❌ Error creating epic:", err);
         alert("Failed to create epic.");
       });
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-xl shadow space-y-4">
-      <h2 className="text-xl font-bold mb-4">Create Epic</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-md space-y-6">
+      <h1 className="text-3xl font-bold text-gray-800 mb-4"> Create a New Epic</h1>
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Epic Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Info */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Basic Details</h2>
+          <input
+            type="text"
+            name="name"
+            placeholder="Epic Name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={formData.description}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+          <textarea
+            name="description"
+            placeholder="Epic Description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={3}
+            className="w-full border mt-3 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        >
-          <option value="TO_DO">To Do</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="DONE">Done</option>
-        </select>
+        {/* Status and Priority */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Status & Priority</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            >
+              <option value="TO_DO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
 
-        <select
-          name="priority"
-          value={formData.priority}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        >
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-        </select>
+            <select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
+        </div>
 
-        <input
-          type="number"
-          name="progressPercentage"
-          placeholder="Progress %"
-          value={formData.progressPercentage}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+        {/* Progress and Due Date */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Progress & Deadline</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="number"
+              name="progressPercentage"
+              placeholder="Progress %"
+              min={0}
+              max={100}
+              value={formData.progressPercentage}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            />
 
-        <input
-          type="datetime-local"
-          name="dueDate"
-          value={formData.dueDate}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+            <input
+              type="datetime-local"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            />
+          </div>
+        </div>
 
-        <select
-          name="projectId"
-          value={formData.projectId}
-          onChange={handleChange}
-          required
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        >
-          <option value="">Select Project</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
+        {/* Project Selection */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Select Project</h2>
+          <select
+            name="projectId"
+            value={formData.projectId}
+            onChange={handleChange}
+            required
+            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+          >
+            <option value="">-- Select Project --</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Create Epic
-        </button>
+        {/* Submit Button */}
+        <div className="text-center">
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow"
+          >
+             Create Epic
+          </button>
+        </div>
       </form>
     </div>
   );

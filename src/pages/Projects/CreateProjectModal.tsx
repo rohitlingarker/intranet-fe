@@ -8,11 +8,13 @@ interface User {
   role: string;
 }
 
+type ProjectStatus = "ACTIVE" | "ARCHIVED" | "PLANNING";
+
 interface ProjectFormData {
   name: string;
   projectKey: string;
   description: string;
-  status: string;
+  status: ProjectStatus;
   ownerId: number | null;
   memberIds: number[];
 }
@@ -29,6 +31,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   onProjectCreated,
 }) => {
   const [users, setUsers] = useState<User[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState<ProjectFormData>({
     name: "",
     projectKey: "",
@@ -38,22 +42,24 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     memberIds: [],
   });
 
-  // Fetch users when modal is open
   useEffect(() => {
     if (!isOpen) return;
 
     axios
       .get("http://localhost:8080/api/users?page=0&size=100")
       .then((res) => {
-        if (Array.isArray(res.data.content)) {
-          setUsers(res.data.content);
+        const content = res.data.content;
+        if (Array.isArray(content)) {
+          setUsers(content);
         } else {
-          console.error("Unexpected response format:", res.data);
+          console.error("Invalid users response format:", res.data);
         }
       })
       .catch((err) => {
         console.error("Error fetching users:", err);
       });
+
+    setSuccessMessage(""); // Clear message when modal is opened
   }, [isOpen]);
 
   const handleInputChange = (
@@ -63,35 +69,68 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const handleOwnerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData({ ...formData, ownerId: parseInt(e.target.value, 10) });
+    const value = e.target.value;
+    setFormData({ ...formData, ownerId: value ? parseInt(value) : null });
   };
 
   const handleMemberCheckboxChange = (userId: number) => {
     setFormData((prev) => {
-      const isSelected = prev.memberIds.includes(userId);
-      const updatedMembers = isSelected
+      const updated = prev.memberIds.includes(userId)
         ? prev.memberIds.filter((id) => id !== userId)
         : [...prev.memberIds, userId];
-
-      return { ...prev, memberIds: updatedMembers };
+      return { ...prev, memberIds: updated };
     });
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData({ ...formData, status: e.target.value as ProjectStatus });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.ownerId) {
+      alert("Please select a project owner.");
+      return;
+    }
+
     const payload = {
-      ...formData,
-      memberIds: formData.memberIds, // Just to be explicit
+      name: formData.name.trim(),
+      projectKey: formData.projectKey.trim(),
+      description: formData.description.trim(),
+      status: formData.status,
+      ownerId: formData.ownerId,
+      memberIds: formData.memberIds,
     };
 
     try {
-      console.log("Submitting payload:", payload);
+      setIsSubmitting(true);
       await axios.post("http://localhost:8080/api/projects", payload);
+
+      setSuccessMessage("✅ Project created successfully!");
+
       if (onProjectCreated) onProjectCreated();
-      onClose();
-    } catch (error) {
-      console.error("Failed to create project:", error);
+
+      // Reset form
+      setFormData({
+        name: "",
+        projectKey: "",
+        description: "",
+        status: "ACTIVE",
+        ownerId: null,
+        memberIds: [],
+      });
+
+      // Close modal after short delay
+      setTimeout(() => {
+        onClose();
+        setSuccessMessage("");
+      }, 1500);
+    } catch (error: any) {
+      console.error("Failed to create project:", error.response?.data || error);
+      alert("Failed to create project. Check required fields or console for more info.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -101,9 +140,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
+
+        {successMessage && (
+          <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 border border-green-300">
+            {successMessage}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="text"
             name="name"
             placeholder="Project Name"
             className="w-full border px-4 py-2 rounded"
@@ -112,7 +157,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             required
           />
           <input
-            type="text"
             name="projectKey"
             placeholder="Project Key"
             className="w-full border px-4 py-2 rounded"
@@ -127,6 +171,19 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             value={formData.description}
             onChange={handleInputChange}
           />
+
+          <select
+            name="status"
+            className="w-full border px-4 py-2 rounded"
+            value={formData.status}
+            onChange={handleStatusChange}
+            required
+          >
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="PLANNING">PLANNING</option>
+            <option value="ARCHIVED">ARCHIVED</option>
+          </select>
+
           <select
             name="ownerId"
             className="w-full border px-4 py-2 rounded"
@@ -142,7 +199,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             ))}
           </select>
 
-          {/* Members as checkboxes */}
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members:</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
@@ -169,9 +225,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              Create Project
+              {isSubmitting ? "Creating..." : "Create Project"}
             </button>
           </div>
         </form>

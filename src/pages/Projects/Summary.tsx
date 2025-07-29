@@ -1,167 +1,97 @@
-import React from 'react';
-import { Task, Project } from '../types';
-import { CheckCircle, Clock, AlertCircle, Star } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 interface SummaryProps {
-  project: Project;
-  tasks: Task[];
+  projectId: number;
+  projectName: string;
 }
 
-export const Summary: React.FC<SummaryProps> = ({ project, tasks }) => {
-  const epics = tasks.filter(task => task.type === 'epic');
-  const stories = tasks.filter(task => task.type === 'story');
-  const taskItems = tasks.filter(task => task.type === 'task');
-  
-  const completedTasks = tasks.filter(task => task.status === 'done');
-  const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
-  const todoTasks = tasks.filter(task => task.status === 'todo');
+interface StatusCounts {
+  total: number;
+  done: number;
+  inProgress: number;
+}
 
-  const progressPercentage = tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0;
+const Summary: React.FC<SummaryProps> = ({ projectId, projectName }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [epicCounts, setEpicCounts] = useState<StatusCounts>({ total: 0, done: 0, inProgress: 0 });
+  const [storyCounts, setStoryCounts] = useState<StatusCounts>({ total: 0, done: 0, inProgress: 0 });
+  const [taskCounts, setTaskCounts] = useState<StatusCounts>({ total: 0, done: 0, inProgress: 0 });
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    const fetchData = async () => {
+      try {
+        const [epicsRes, storiesRes, tasksRes] = await Promise.all([
+          axios.get(`http://localhost:8080/api/projects/${projectId}/epics`),
+          axios.get(`http://localhost:8080/api/projects/${projectId}/sprints`),
+          axios.get(`http://localhost:8080/api/projects/${projectId}/tasks`),
+        ]);
+
+        const countStatuses = (items: any[]): StatusCounts => {
+          const total = items.length;
+          const done = items.filter((item) => item.status === 'DONE').length;
+          const inProgress = items.filter((item) => item.status === 'IN_PROGRESS').length;
+          return { total, done, inProgress };
+        };
+
+        setEpicCounts(countStatuses(epicsRes.data));
+        setStoryCounts(countStatuses(storiesRes.data));
+        setTaskCounts(countStatuses(tasksRes.data));
+      } catch (err) {
+        console.error('Failed to load summary data:', err);
+        setError('Failed to load project summary data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [projectId]);
+
+  if (loading) return <div className="p-6">Loading summary...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+
+  const StatusCard: React.FC<{ title: string; counts: StatusCounts }> = ({ title, counts }) => {
+    const donePercent = counts.total ? (counts.done / counts.total) * 100 : 0;
+    const inProgressPercent = counts.total ? (counts.inProgress / counts.total) * 100 : 0;
+    return (
+      <div className="bg-white p-4 rounded shadow-md w-full max-w-sm">
+        <h4 className="text-lg font-semibold mb-2">{title}</h4>
+        <p>Total: <strong>{counts.total}</strong></p>
+        <p>Done: <strong>{counts.done}</strong></p>
+        <p>In Progress: <strong>{counts.inProgress}</strong></p>
+
+        <div className="mt-3 h-4 bg-gray-200 rounded overflow-hidden flex">
+          <div
+            className="h-4 bg-green-500"
+            style={{ width: `${donePercent}%` }}
+            title={`Done: ${counts.done}`}
+          />
+          <div
+            className="h-4 bg-yellow-400"
+            style={{ width: `${inProgressPercent}%` }}
+            title={`In Progress: ${counts.inProgress}`}
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        {/* Project Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-              <p className="text-gray-600">{project.description}</p>
-              <p className="text-sm text-gray-500 mt-1">Key: {project.key}</p>
-            </div>
-            <div className="flex -space-x-2">
-              {project.assignedEmployees.map((employee) => (
-                <img
-                  key={employee.id}
-                  src={employee.avatar}
-                  alt={employee.name}
-                  className="w-10 h-10 rounded-full border-2 border-white"
-                  title={employee.name}
-                />
-              ))}
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">
-            {Math.round(progressPercentage)}% Complete ({completedTasks.length} of {tasks.length} tasks)
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Epics</p>
-                <p className="text-3xl font-bold text-purple-600">{epics.length}</p>
-              </div>
-              <div className="p-3 rounded-full bg-purple-100">
-                <Star size={24} className="text-purple-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Stories</p>
-                <p className="text-3xl font-bold text-blue-600">{stories.length}</p>
-              </div>
-              <div className="p-3 rounded-full bg-blue-100">
-                <CheckCircle size={24} className="text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tasks</p>
-                <p className="text-3xl font-bold text-green-600">{taskItems.length}</p>
-              </div>
-              <div className="p-3 rounded-full bg-green-100">
-                <AlertCircle size={24} className="text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-3xl font-bold text-amber-600">{inProgressTasks.length}</p>
-              </div>
-              <div className="p-3 rounded-full bg-amber-100">
-                <Clock size={24} className="text-amber-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Task Status Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">To Do</h3>
-            <div className="space-y-3">
-              {todoTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${
-                    task.type === 'epic' ? 'bg-purple-500' :
-                    task.type === 'story' ? 'bg-blue-500' : 'bg-green-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{task.title}</p>
-                    <p className="text-xs text-gray-600">{task.type.toUpperCase()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">In Progress</h3>
-            <div className="space-y-3">
-              {inProgressTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${
-                    task.type === 'epic' ? 'bg-purple-500' :
-                    task.type === 'story' ? 'bg-blue-500' : 'bg-green-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{task.title}</p>
-                    <p className="text-xs text-gray-600">{task.type.toUpperCase()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Done</h3>
-            <div className="space-y-3">
-              {completedTasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${
-                    task.type === 'epic' ? 'bg-purple-500' :
-                    task.type === 'story' ? 'bg-blue-500' : 'bg-green-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{task.title}</p>
-                    <p className="text-xs text-gray-600">{task.type.toUpperCase()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+    <div className="p-6 space-y-6">
+      <h3 className="text-2xl font-bold mb-6">Summary for {projectName}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <StatusCard title="Epics" counts={epicCounts} />
+        <StatusCard title="Stories" counts={storyCounts} />
+        <StatusCard title="Tasks" counts={taskCounts} />
       </div>
     </div>
   );
 };
+
+export default Summary;

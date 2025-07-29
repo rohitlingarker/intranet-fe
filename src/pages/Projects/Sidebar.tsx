@@ -1,72 +1,82 @@
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Star, 
-  FolderOpen, 
-  Plus, 
-  ChevronDown, 
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Star,
+  FolderOpen,
+  Plus,
+  ChevronDown,
   ChevronRight,
-  Settings
+  Settings,
 } from 'lucide-react';
-import { Project } from './types';
+
+interface Project {
+  id: number;
+  name: string;
+}
 
 interface SidebarProps {
-  projects: Project[];
-  selectedProjectId: string | null;
   collapsed: boolean;
-  onSelectProject: (projectId: string | null) => void;
   onCreateProject: () => void;
   onToggleSidebar: () => void;
   starredTasksCount: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  projects,
-  selectedProjectId,
+const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
-  onSelectProject,
   onCreateProject,
   onToggleSidebar,
-  starredTasksCount
+  starredTasksCount,
 }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentProjectId = parseInt(location.pathname.split('/')[2] || '', 10);
+
+  useEffect(() => {
+    axios.get('http://localhost:8080/api/projects')
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setProjects(res.data);
+        } else {
+          setProjects([]); // fallback
+          console.warn("Unexpected project response:", res.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching projects:', err);
+        setProjects([]);
+      });
+  }, []);
+
+  const handleSelectProject = (projectId: number) => {
+    navigate(`/projects/${projectId}`);
+  };
 
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64'} bg-slate-900 text-white h-screen flex flex-col transition-all duration-300`}>
-      {/* Header */}
-      <div className="p-4 border-b border-slate-700">
-        <div className="flex items-center justify-between">
-          {!collapsed && (
-            <h1 className="text-xl font-bold text-blue-400">ProjectHub</h1>
-          )}
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <Settings size={16} />
-          </button>
-        </div>
+    <div className={`${collapsed ? 'w-16' : 'w-64'} bg-slate-900 text-white h-screen flex flex-col transition-all`}>
+      <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+        {!collapsed && <h1 className="text-xl font-bold text-blue-400">ProjectHub</h1>}
+        <button onClick={onToggleSidebar} className="p-2 hover:bg-slate-800 rounded">
+          <Settings size={16} />
+        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {/* Dashboard */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <button
-          onClick={() => onSelectProject(null)}
-          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-            selectedProjectId === null 
-              ? 'bg-blue-600 text-white' 
-              : 'hover:bg-slate-800 text-slate-300'
+          onClick={() => navigate('/dashboard')}
+          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg ${
+            location.pathname === '/dashboard' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-300'
           }`}
         >
           <LayoutDashboard size={18} />
           {!collapsed && <span>Dashboard</span>}
         </button>
 
-        {/* Starred Tasks */}
-        <button
-          className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
-        >
+        <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-300">
           <Star size={18} />
           {!collapsed && (
             <>
@@ -80,43 +90,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </button>
 
-        {/* Projects Section */}
         <div className="pt-4">
           <button
             onClick={() => setProjectsExpanded(!projectsExpanded)}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-300"
           >
             {projectsExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             <FolderOpen size={18} />
             {!collapsed && <span>Projects</span>}
           </button>
 
-          {projectsExpanded && !collapsed && (
-            <div className="ml-6 mt-2 space-y-1">
-              {projects.map((project) => (
+          {projectsExpanded && (
+            <div className={`mt-2 ${collapsed ? '' : 'ml-6'} space-y-1`}>
+              {projects.length === 0 ? (
+                !collapsed && <div className="text-sm text-slate-500">No projects found.</div>
+              ) : (
+                projects.map((project) => (
+                  <button
+                    key={project.id}
+                    onClick={() => handleSelectProject(project.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg ${
+                      currentProjectId === project.id
+                        ? 'bg-blue-600 text-white'
+                        : 'hover:bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      {!collapsed && <span className="truncate text-sm">{project.name}</span>}
+                    </div>
+                  </button>
+                ))
+              )}
+
+              {!collapsed && (
                 <button
-                  key={project.id}
-                  onClick={() => onSelectProject(project.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedProjectId === project.id
-                      ? 'bg-blue-600 text-white'
-                      : 'hover:bg-slate-800 text-slate-400'
-                  }`}
+                  onClick={onCreateProject}
+                  className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400"
                 >
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
-                    <span className="truncate text-sm">{project.name}</span>
-                  </div>
+                  <Plus size={16} />
+                  <span className="text-sm">New Project</span>
                 </button>
-              ))}
-              
-              <button
-                onClick={onCreateProject}
-                className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
-              >
-                <Plus size={16} />
-                <span className="text-sm">New Project</span>
-              </button>
+              )}
             </div>
           )}
         </div>
@@ -124,3 +139,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 };
+
+export default Sidebar;
