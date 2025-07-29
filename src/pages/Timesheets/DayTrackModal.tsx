@@ -5,6 +5,8 @@ import axios from 'axios';
 interface TaskEntry {
   taskName: string;
   description: string;
+  showOtherDescription?: boolean;
+  otherDescription?: string;
 }
 
 interface ProjectTaskEntry {
@@ -91,7 +93,7 @@ const DayTrackModal: React.FC = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:8080/api/timesheet/{userId}', payload);
+      const response = await axios.post('http://localhost:8080/api/timesheet/1', payload);
       if (response.status === 200) {
         alert('Timesheet submitted successfully!');
         setShowModal(false);
@@ -221,20 +223,48 @@ const DayTrackModal: React.FC = () => {
                             </button>
                           )}
                         </div>
-
                         <div className="mt-2">
-                          <label className="text-sm">Description</label>
-                          <textarea
-                            className="w-full border px-2 py-1 rounded text-sm"
-                            rows={1}
-                            value={taskEntry.description}
-                            onChange={(e) => {
-                              const updated = [...entries];
-                              updated[index].tasks[taskIdx].description = e.target.value;
-                              setEntries(updated);
-                            }}
-                          />
-                        </div>
+                        <label className="text-sm">Description</label>
+                        <textarea
+                        className="w-full border px-2 py-1 rounded text-sm"
+                        rows={2}
+                        value={taskEntry.description}
+                        onChange={(e) => {
+                        const updated = [...entries];
+                        updated[index].tasks[taskIdx].description = e.target.value;
+                        setEntries(updated);
+                        }}
+                        />
+                       </div>
+                      <div className="mt-1 flex items-center gap-2">
+                      <input
+                      type="checkbox"
+                      id={`others-${index}-${taskIdx}`}
+                      checked={taskEntry.showOtherDescription || false}
+                      onChange={(e) => {
+                      const updated = [...entries];
+                      updated[index].tasks[taskIdx].showOtherDescription = e.target.checked;
+                      setEntries(updated);
+                  }}
+                    />
+                    <label htmlFor={`others-${index}-${taskIdx}`} className="text-sm">Others</label>
+          </div>
+
+              {taskEntry.showOtherDescription && (
+              <div className="mt-2">
+              <label className="text-sm">Other Description</label>
+              <textarea
+              className="w-full border px-2 py-1 rounded text-sm"
+              rows={2}
+              value={taskEntry.otherDescription || ''}
+              onChange={(e) => {
+              const updated = [...entries];
+              updated[index].tasks[taskIdx].otherDescription = e.target.value;
+              setEntries(updated);
+               }}
+               />
+              </div>
+         )}            
                       </div>
                     );
                   })}
