@@ -1,20 +1,46 @@
 import React, { useState, useEffect } from "react";
-import TimeManagementTable, { TimesheetEntry } from "./TimesheetTable";
+import TimeManagementTable, { TimesheetEntry } from "./TimesheetTableWithExpandableRows";
 import DayTrackModal from "./DayTrackModal";
+import TimesheetTableWithExpandableRows, { Timesheet } from "./TimesheetTableWithExpandableRows";
 
 const TimesheethistoryPage: React.FC = () => {
-  const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [entries, setEntries] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchText, setSearchText] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Status');
 
+// 1. Declare user state
+const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+// 2. Fetch user info on mount
+useEffect(() => {
+  fetch("http://localhost:8080/me")
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
+    })
+    .then((userData) => {
+      const { name, email } = userData;
+      setUser({ name, email });
+    })
+    .catch((err) => {
+      console.error("Error fetching user:", err);
+    });
+}, []);
+
+
+
   useEffect(() => {
     const token = localStorage.getItem("token");
   fetch("http://localhost:8080/api/timesheet/history")
     .then((res) => res.json())
     .then((data) => {
+      console.log("Fetched timesheet data:", data);
+      setEntries(data);
+
+      
       const flattened: TimesheetEntry[] = data.flatMap((timesheet: any) =>
         timesheet.entries.map((entry: any) => ({
           date: timesheet.workDate,
@@ -22,23 +48,23 @@ const TimesheethistoryPage: React.FC = () => {
           task: taskIdToName[entry.taskId] || `Task-${entry.taskId}`,               // map if needed
           description: entry.description,
           workType: mapWorkType(entry.workType),
-          hours: entry.hoursWorked,
+          hours: timesheet.timesheetId , //entry.hoursWorked,
           status: timesheet.approvalStatus, // or dynamically from backend if available
-          employee: "John Doe", // from session / props if known
-          email: "john@gmail.com", // from session / props if known
+          employee:user?.name, // from session / props if known
+          email: user?.email, // from session / props if known
           start: entry.fromTime,
           end: entry.toTime,
         }))
       );
 
-      setEntries(flattened);
+      // setEntries(flattened);
       setLoading(false);
     })
     .catch((err) => {
       console.error("Failed to fetch timesheets:", err);
       setLoading(false);
     });
-}, []);
+}, [user]);
 
 
 
@@ -75,12 +101,19 @@ const mapWorkType = (type: string): string => {
     }
   };
 
-  const filteredEntries = entries.filter((entry) => {
-    const matchesSearch = entry.project.toLowerCase().includes(searchText.toLowerCase());
-    const matchesDate = filterDate ? entry.date === filterDate : true;
-    const matchesStatus = filterStatus === 'All Status' || entry.status === filterStatus;
-    return matchesSearch && matchesDate && matchesStatus;
+  const filteredEntries = entries.filter((timesheet) => {
+  // Check if any entry in the timesheet matches the search text for project name
+  const matchesSearch = timesheet.entries.some(entry => {
+    const projectName = projectIdToName[entry.projectId] || '';
+    return projectName.toLowerCase().includes(searchText.toLowerCase());
   });
+
+  const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
+  const matchesStatus = filterStatus === 'All Status' || timesheet.approvalStatus === filterStatus;
+
+  return matchesSearch && matchesDate && matchesStatus;
+});
+
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f9fb" }}>
@@ -166,11 +199,11 @@ const mapWorkType = (type: string): string => {
             <div className="text-center text-gray-500">No timesheet entries found.</div>
           ) : (
             <div className="text-gray-700 mb-4 text-sm text-center">
-              Showing {filteredEntries.length} of {entries.length} entries
+              Showing {entries.length} of {entries.length} entries
             </div>
           )}
 
-          <TimeManagementTable entries={filteredEntries} />
+          <TimesheetTableWithExpandableRows timesheets={filteredEntries} projectIdToName={projectIdToName} taskIdToName={taskIdToName} />
         </div>
       </main>
     </div>
