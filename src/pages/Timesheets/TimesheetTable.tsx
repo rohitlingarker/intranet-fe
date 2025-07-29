@@ -11,7 +11,7 @@ export interface TimesheetEntry {
   end?: string;
   description: string;
   workType: 'Office' | 'Home' | 'Hybrid' | string;
-  status: 'Approved' | 'Submitted' | 'Rejected';
+  status: 'APPROVED' | 'PENDING' | 'RREJECTED';
   hours: number;
 }
 
@@ -60,9 +60,9 @@ const TimeManagementTable: React.FC<TimeManagementTableProps> = ({ entries }) =>
               <td className="px-6 py-4">
                 <span
                   className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                    entry.status === 'Approved'
+                    entry.status === 'APPROVED'
                       ? 'bg-green-100 text-green-800'
-                      : entry.status === 'Submitted'
+                      : entry.status === 'PENDING'
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-red-100 text-red-800'
                   }`}

@@ -1,40 +1,79 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
 import TimeManagementTable, { TimesheetEntry } from "./TimesheetTable";
 import DayTrackModal from "./DayTrackModal";
 
 const TimesheethistoryPage: React.FC = () => {
-  const [entries, setEntries] = useState<TimesheetEntry[]>([
-    {
-      employee: "John Doe",
-      email: "john@gmail.com",
-      date: "2025-07-21",
-      project: "Internal Portal",
-      task: "UI Development",
-      start: "09:00",
-      end: "17:00",
-      workType: "Office",
-      hours: 8,
-      description: "Worked on feature X",
-      status: "Submitted",
-    },
-    {
-      employee: "Jane Smith",
-      email: "janu@gmal.com",
-      date: "2025-07-22",
-      project: "Website Revamp",
-      task: "Bug fixes",
-      start: "10:00",
-      end: "16:00",
-      workType: "Home",
-      hours: 6,
-      description: "Fixed reported bugs",
-      status: "Approved",
-    },
-  ]);
+  const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchText, setSearchText] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Status');
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+  fetch("http://localhost:8080/api/timesheet/history")
+    .then((res) => res.json())
+    .then((data) => {
+      const flattened: TimesheetEntry[] = data.flatMap((timesheet: any) =>
+        timesheet.entries.map((entry: any) => ({
+          date: timesheet.workDate,
+          project: projectIdToName[entry.projectId] || `Project-${entry.projectId}`, // map if needed
+          task: taskIdToName[entry.taskId] || `Task-${entry.taskId}`,               // map if needed
+          description: entry.description,
+          workType: mapWorkType(entry.workType),
+          hours: entry.hoursWorked,
+          status: timesheet.approvalStatus, // or dynamically from backend if available
+          employee: "John Doe", // from session / props if known
+          email: "john@gmail.com", // from session / props if known
+          start: entry.fromTime,
+          end: entry.toTime,
+        }))
+      );
+
+      setEntries(flattened);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("Failed to fetch timesheets:", err);
+      setLoading(false);
+    });
+}, []);
+
+
+
+
+const projectIdToName: { [key: number]: string } = {
+  1: "Intranet Portal",
+  2: "HR Dashboard",
+  3: "Ecommerce App",
+  4: "CMS Refactor"
+};
+
+const project = Object.entries(projectIdToName).map(([id, name]) => ({
+  id: parseInt(id),
+  name
+}));
+
+const taskIdToName: { [key: number]: string } = {
+  1: "UI Design",
+  2: "API Integration",
+  3: "Bug Fixing",
+  4: "Testing"
+};
+
+const mapWorkType = (type: string): string => {
+    switch (type) {
+      case "WFO":
+        return "Office";
+      case "WFH":
+        return "Home";
+      case "HYBRID":
+        return "Hybrid";
+      default:
+        return type;
+    }
+  };
 
   const filteredEntries = entries.filter((entry) => {
     const matchesSearch = entry.project.toLowerCase().includes(searchText.toLowerCase());
@@ -46,6 +85,7 @@ const TimesheethistoryPage: React.FC = () => {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f9fb" }}>
       <main style={{ flex: 1, padding: 36 }}>
+        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Previous History Track</h1>
@@ -106,12 +146,13 @@ const TimesheethistoryPage: React.FC = () => {
             }}
           >
             <option>All Status</option>
-            <option>Submitted</option>
-            <option>Approved</option>
-            <option>Rejected</option>
+            <option>PENDING</option>
+            <option>APPROVED</option>
+            <option>REJECTED</option>
           </select>
         </div>
 
+        {/* Table */}
         <div style={{
           background: "#fff",
           padding: "24px",
@@ -119,6 +160,16 @@ const TimesheethistoryPage: React.FC = () => {
           borderRadius: 10,
           boxShadow: "0 1px 6px #e4e7ee"
         }}>
+          {loading ? (
+            <div className="text-center text-gray-500">Loading timesheet entries...</div>
+          ) : entries.length === 0 ? (
+            <div className="text-center text-gray-500">No timesheet entries found.</div>
+          ) : (
+            <div className="text-gray-700 mb-4 text-sm text-center">
+              Showing {filteredEntries.length} of {entries.length} entries
+            </div>
+          )}
+
           <TimeManagementTable entries={filteredEntries} />
         </div>
       </main>
@@ -130,4 +181,26 @@ export default TimesheethistoryPage;
 
 
 
-      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

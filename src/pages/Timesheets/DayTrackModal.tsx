@@ -10,7 +10,7 @@ interface TaskEntry {
 }
 
 interface ProjectTaskEntry {
-  projectName: string;
+  projectId: number;
   tasks: TaskEntry[];
   startTime: string;
   endTime: string;
@@ -18,18 +18,17 @@ interface ProjectTaskEntry {
 }
 
 interface Project {
+  id: number;
   name: string;
   tasks: string[];
 }
 
 const DayTrackModal: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const [entries, setEntries] = useState<ProjectTaskEntry[]>([{
-    projectName: '',
+    projectId: 0,
     tasks: [{ taskName: '', description: '' }],
     startTime: '',
     endTime: '',
@@ -54,33 +53,26 @@ const DayTrackModal: React.FC = () => {
   }, []);
 
   const handleAddEntry = () => {
-    setEntries([
-      ...entries,
-      {
-        projectName: '',
-        tasks: [{ taskName: '', description: '' }],
-        startTime: '',
-        endTime: '',
-        workType: '',
-      },
-    ]);
+    setEntries([...entries, {
+      projectId: 0,
+      tasks: [{ taskName: '', description: '' }],
+      startTime: '',
+      endTime: '',
+      workType: '',
+    }]);
   };
 
-  const handleChange = (
-    index: number,
-    field: keyof ProjectTaskEntry,
-    value: string
-  ) => {
+  const handleChange = (index: number, field: keyof ProjectTaskEntry, value: any) => {
     const updated = [...entries];
-    updated[index][field] = value as any;
-    if (field === 'projectName') {
+    updated[index][field] = value;
+    if (field === 'projectId') {
       updated[index].tasks = [{ taskName: '', description: '' }];
     }
     setEntries(updated);
   };
 
-  const getTasksForProject = (projectName: string): string[] => {
-    const project = projects.find((p) => p.name === projectName);
+  const getTasksForProject = (projectId: number): string[] => {
+    const project = projects.find(p => p.id === projectId);
     return project ? project.tasks : [];
   };
 
@@ -89,7 +81,7 @@ const DayTrackModal: React.FC = () => {
       date: selectedDate,
       employeeId: 'EMP001',
       employeeName: 'John Doe',
-      entries: entries,
+      entries,
     };
 
     try {
@@ -108,10 +100,7 @@ const DayTrackModal: React.FC = () => {
 
   return (
     <div>
-      <button
-        onClick={() => setShowModal(true)}
-        className="bg-[#263383] text-white px-4 py-2 rounded"
-      >
+      <button onClick={() => setShowModal(true)} className="bg-[#263383] text-white px-4 py-2 rounded">
         + Add Entry
       </button>
 
@@ -135,26 +124,16 @@ const DayTrackModal: React.FC = () => {
             <div className="flex mb-4">
               <div className="w-1/2 flex-col flex">
                 <label className="text-sm font-medium">Employee ID</label>
-                <input
-                  type="text"
-                  value="EMP001"
-                  readOnly
-                  className="w-2/3 border px-1 py-1 rounded bg-gray-100"
-                />
+                <input type="text" value="EMP001" readOnly className="w-2/3 border px-1 py-1 rounded bg-gray-100" />
               </div>
               <div className="w-1/2 flex-col flex">
                 <label className="text-sm font-medium">Employee Name</label>
-                <input
-                  type="text"
-                  value="John Doe"
-                  readOnly
-                  className="w-2/3 border px-1 py-1 rounded bg-gray-100"
-                />
+                <input type="text" value="John Doe" readOnly className="w-2/3 border px-1 py-1 rounded bg-gray-100" />
               </div>
             </div>
 
             {entries.map((entry, index) => {
-              const availableTasks = getTasksForProject(entry.projectName);
+              const availableTasks = getTasksForProject(entry.projectId);
               return (
                 <div key={index} className="border border-gray-200 rounded p-4 mb-4">
                   <div className="flex items-end gap-2 mb-3">
@@ -162,19 +141,21 @@ const DayTrackModal: React.FC = () => {
                       <label className="text-sm">Project</label>
                       <select
                         className="w-full border px-2 py-1 rounded text-sm"
-                        value={entry.projectName}
-                        onChange={(e) => handleChange(index, 'projectName', e.target.value)}
+                        value={entry.projectId || ''}
+                        onChange={(e) => handleChange(index, 'projectId', parseInt(e.target.value))}
                       >
                         <option value="">-- Select Project --</option>
                         {projects.map((p) => (
-                          <option key={p.name} value={p.name}>{p.name}</option>
+                          <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                       </select>
                     </div>
                     <button
                       onClick={handleAddEntry}
-                      className={`${entry.projectName ? 'bg-[#263383] text-white' : 'bg-[#263383] text-white cursor-not-allowed'} px-3 py-1 rounded text-sm`}
-                      disabled={!entry.projectName}
+                      className={`${
+                        entry.projectId ? 'bg-[#263383] text-white' : 'bg-[#263383] text-white cursor-not-allowed'
+                      } px-3 py-1 rounded text-sm`}
+                      disabled={!entry.projectId}
                     >
                       + Project
                     </button>
@@ -204,7 +185,6 @@ const DayTrackModal: React.FC = () => {
                               ))}
                             </select>
                           </div>
-
                           {taskIdx === entry.tasks.length - 1 && (
                             <button
                               disabled={!taskEntry.taskName || entry.tasks.length >= availableTasks.length}
@@ -223,48 +203,50 @@ const DayTrackModal: React.FC = () => {
                             </button>
                           )}
                         </div>
-                        <div className="mt-2">
-                        <label className="text-sm">Description</label>
-                        <textarea
-                        className="w-full border px-2 py-1 rounded text-sm"
-                        rows={2}
-                        value={taskEntry.description}
-                        onChange={(e) => {
-                        const updated = [...entries];
-                        updated[index].tasks[taskIdx].description = e.target.value;
-                        setEntries(updated);
-                        }}
-                        />
-                       </div>
-                      <div className="mt-1 flex items-center gap-2">
-                      <input
-                      type="checkbox"
-                      id={`others-${index}-${taskIdx}`}
-                      checked={taskEntry.showOtherDescription || false}
-                      onChange={(e) => {
-                      const updated = [...entries];
-                      updated[index].tasks[taskIdx].showOtherDescription = e.target.checked;
-                      setEntries(updated);
-                  }}
-                    />
-                    <label htmlFor={`others-${index}-${taskIdx}`} className="text-sm">Others</label>
-          </div>
 
-              {taskEntry.showOtherDescription && (
-              <div className="mt-2">
-              <label className="text-sm">Other Description</label>
-              <textarea
-              className="w-full border px-2 py-1 rounded text-sm"
-              rows={2}
-              value={taskEntry.otherDescription || ''}
-              onChange={(e) => {
-              const updated = [...entries];
-              updated[index].tasks[taskIdx].otherDescription = e.target.value;
-              setEntries(updated);
-               }}
-               />
-              </div>
-         )}            
+                        <div className="mt-2">
+                          <label className="text-sm">Description</label>
+                          <textarea
+                            className="w-full border px-2 py-1 rounded text-sm"
+                            rows={2}
+                            value={taskEntry.description}
+                            onChange={(e) => {
+                              const updated = [...entries];
+                              updated[index].tasks[taskIdx].description = e.target.value;
+                              setEntries(updated);
+                            }}
+                          />
+                        </div>
+
+                        <div className="mt-1 flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`others-${index}-${taskIdx}`}
+                            checked={taskEntry.showOtherDescription || false}
+                            onChange={(e) => {
+                              const updated = [...entries];
+                              updated[index].tasks[taskIdx].showOtherDescription = e.target.checked;
+                              setEntries(updated);
+                            }}
+                          />
+                          <label htmlFor={`others-${index}-${taskIdx}`} className="text-sm">Others</label>
+                        </div>
+
+                        {taskEntry.showOtherDescription && (
+                          <div className="mt-2">
+                            <label className="text-sm">Other Description</label>
+                            <textarea
+                              className="w-full border px-2 py-1 rounded text-sm"
+                              rows={2}
+                              value={taskEntry.otherDescription || ''}
+                              onChange={(e) => {
+                                const updated = [...entries];
+                                updated[index].tasks[taskIdx].otherDescription = e.target.value;
+                                setEntries(updated);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -308,16 +290,10 @@ const DayTrackModal: React.FC = () => {
             })}
 
             <div className="flex justify-end space-x-4 mt-4">
-              <button
-                className="bg-[#263383] text-white px-4 py-2 rounded"
-                onClick={handleSubmit}
-              >
+              <button className="bg-[#263383] text-white px-4 py-2 rounded" onClick={handleSubmit}>
                 Submit
               </button>
-              <button
-                className="bg-gray-300 px-4 py-2 rounded"
-                onClick={() => setShowModal(false)}
-              >
+              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowModal(false)}>
                 Cancel
               </button>
             </div>
@@ -329,3 +305,9 @@ const DayTrackModal: React.FC = () => {
 };
 
 export default DayTrackModal;
+
+
+
+
+
+
