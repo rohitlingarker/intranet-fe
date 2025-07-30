@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from "react";
-import TimeManagementTable, { TimesheetEntry } from "./TimesheetTableWithExpandableRows";
+//import TimeManagementTable, { TimesheetEntry } from "./TimesheetTableWithExpandableRows";
 import DayTrackModal from "./DayTrackModal";
 import TimesheetTableWithExpandableRows, { Timesheet } from "./TimesheetTableWithExpandableRows";
+
+
+interface TimesheetEntry {
+  date: Date;
+  project: string;
+  task: string;
+  description: string;
+  workType: string;
+  status: string;
+  employee: string;
+  email: string;
+  start: string;
+  end: string;
+}
+
+
 
 const TimesheethistoryPage: React.FC = () => {
   const [entries, setEntries] = useState<Timesheet[]>([]);
@@ -57,7 +73,7 @@ useEffect(() => {
         }))
       );
 
-      // setEntries(flattened);
+      //setEntries(flattened);
       setLoading(false);
     })
     .catch((err) => {
