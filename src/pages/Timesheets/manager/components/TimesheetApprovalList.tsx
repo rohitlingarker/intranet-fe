@@ -12,7 +12,7 @@ const TimesheetApprovalList: React.FC<Props> = ({ timesheets }) => {
   return (
     <div>
       {timesheets.map((sheet) => (
-        <TimesheetCard key={sheet.id} timesheet={sheet} />
+        <TimesheetCard key={sheet.timesheetId} timesheet={sheet} />
       ))}
     </div>
   );
