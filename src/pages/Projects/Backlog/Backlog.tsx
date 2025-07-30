@@ -24,21 +24,21 @@ export default function Backlog() {
         </button>
 
         <button
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           onClick={() => setShowSprint(!showSprint)}
         >
           {showSprint ? "Hide Sprint" : "Create Sprint"}
         </button>
 
         <button
-          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           onClick={() => setShowUserStory(!showUserStory)}
         >
           {showUserStory ? "Hide Story" : "Create Story"}
         </button>
 
         <button
-          className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           onClick={() => setShowTask(!showTask)}
         >
           {showTask ? "Hide Task" : "Create Task"}

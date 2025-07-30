@@ -73,7 +73,7 @@ const Summary: React.FC<SummaryProps> = ({ projectId, projectName }) => {
             title={`Done: ${counts.done}`}
           />
           <div
-            className="h-4 bg-yellow-400"
+            className="h-4 bg-pink-400"
             style={{ width: `${inProgressPercent}%` }}
             title={`In Progress: ${counts.inProgress}`}
           />

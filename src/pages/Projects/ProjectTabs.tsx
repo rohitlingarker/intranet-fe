@@ -56,7 +56,7 @@ const ProjectTabs: React.FC = () => {
           <button
             onClick={() => setSelectedTab('summary')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded ${
-              selectedTab === 'summary' ? 'bg-blue-600 text-white' : 'hover:bg-slate-100 text-slate-600'
+              selectedTab === 'summary' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
             }`}
           >
             <BarChart3 size={16} />
@@ -65,7 +65,7 @@ const ProjectTabs: React.FC = () => {
           <button
             onClick={() => setSelectedTab('backlog')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded ${
-              selectedTab === 'backlog' ? 'bg-blue-600 text-white' : 'hover:bg-slate-100 text-slate-600'
+              selectedTab === 'backlog' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
             }`}
           >
             <List size={16} />
@@ -74,7 +74,7 @@ const ProjectTabs: React.FC = () => {
           <button
             onClick={() => setSelectedTab('board')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded ${
-              selectedTab === 'board' ? 'bg-blue-600 text-white' : 'hover:bg-slate-100 text-slate-600'
+              selectedTab === 'board' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
             }`}
           >
             <KanbanSquare size={16} />

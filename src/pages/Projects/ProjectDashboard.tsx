@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "./CreateProjectModal"; // Adjust path if needed
 
 type ProjectStatus = "ACTIVE" | "ARCHIVED" | "PLANNING";
@@ -50,12 +51,18 @@ const ProjectDashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch projects
+  const navigate = useNavigate();
+
   const fetchProjects = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects");
+      const res = await axios.get("http://localhost:8080/api/projects", {
+        params: {
+          page: 0,
+          size: 1000, // Fetch all projects
+        },
+      });
       const data = res.data.content || res.data;
       setProjects(data);
     } catch (err) {
@@ -66,7 +73,6 @@ const ProjectDashboard: React.FC = () => {
     }
   };
 
-  // Fetch users for owner/member selection
   const fetchUsers = async () => {
     try {
       const res = await axios.get("http://localhost:8080/api/users?page=0&size=100");
@@ -83,7 +89,6 @@ const ProjectDashboard: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // When starting edit, populate formData with project info + ownerId and memberIds
   const startEdit = (project: Project) => {
     setEditingProject(project);
     setFormData({
@@ -127,7 +132,6 @@ const ProjectDashboard: React.FC = () => {
     }
   };
 
-  // For toggling members in memberIds array
   const handleMemberCheckboxChange = (userId: number) => {
     setFormData((prev) => {
       const updated = prev.memberIds.includes(userId)
@@ -181,13 +185,17 @@ const ProjectDashboard: React.FC = () => {
     }
   };
 
+  const goToProjectTab = (projectId: number) => {
+    navigate(`/projects/${projectId}`);
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-900"
         >
           + Create Project
         </button>
@@ -199,7 +207,15 @@ const ProjectDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <div key={project.id} className="bg-white rounded-lg shadow p-6 flex flex-col">
+          <div
+            key={project.id}
+            className={`bg-white rounded-lg shadow p-6 flex flex-col transition ${
+              editingProject?.id !== project.id ? "cursor-pointer hover:shadow-lg" : ""
+            }`}
+            onClick={() =>
+              editingProject?.id !== project.id ? goToProjectTab(project.id) : undefined
+            }
+          >
             {editingProject?.id === project.id ? (
               <>
                 <input
@@ -326,14 +342,20 @@ const ProjectDashboard: React.FC = () => {
 
                 <div className="mt-auto flex space-x-2 pt-4">
                   <button
-                    onClick={() => startEdit(project)}
-                    className="bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEdit(project);
+                    }}
+                    className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(project.id)}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(project.id);
+                    }}
+                    className="bg-pink-700 text-white px-4 py-2 rounded hover:bg-red-700"
                   >
                     Delete
                   </button>
