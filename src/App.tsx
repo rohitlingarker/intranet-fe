@@ -10,7 +10,7 @@ import Projects from './pages/Projects';
 import Leave from './pages/Leave';
 import Timesheethistorypage from './pages/Timesheets/Timesheethistorypage';
 import Calendar from './pages/Calendar';
-import DaytrackModal from './pages/Timesheets/DayTrackModal';
+import TimesheetApprovalPage from './pages/Timesheets/manager/pages/TimesheetApprovalPage';
 
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,6 +35,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/leave" element={<Leave />} />
         <Route path="/timesheets" element={<Timesheethistorypage />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/timesheets/manager" element={<TimesheetApprovalPage />} />
+        
       </Routes>
     </Layout>
   );
