@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 type ProjectStatus = "ACTIVE" | "ARCHIVED" | "PLANNING";
 
@@ -26,6 +27,8 @@ const ReadOnlyDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const navigate = useNavigate();
+
   const fetchProjects = async () => {
     setLoading(true);
     setError(null);
@@ -33,7 +36,7 @@ const ReadOnlyDashboard: React.FC = () => {
       const res = await axios.get("http://localhost:8080/api/projects", {
         headers: {
           "Content-Type": "application/json",
-          // "Authorization": `Bearer ${localStorage.getItem("token")}` (future integration)
+          // "Authorization": `Bearer ${localStorage.getItem("token")}` (future)
         },
       });
       const data = res.data.content || res.data;
@@ -50,6 +53,11 @@ const ReadOnlyDashboard: React.FC = () => {
     fetchProjects();
   }, []);
 
+  // 🔁 Navigate to /projects/:id
+  const handleProjectClick = (projectId: number) => {
+    navigate(`/projects/${projectId}`);
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold mb-8">Project Dashboard</h1>
@@ -60,7 +68,11 @@ const ReadOnlyDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <div key={project.id} className="bg-white rounded-lg shadow p-6 flex flex-col">
+          <div
+            key={project.id}
+            onClick={() => handleProjectClick(project.id)}
+            className="bg-white rounded-lg shadow p-6 flex flex-col cursor-pointer hover:shadow-lg transition"
+          >
             <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
             <p>
               <strong>Key:</strong> {project.projectKey}
