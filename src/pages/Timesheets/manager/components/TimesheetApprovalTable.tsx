@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { TimeSheetHistoryDTO, GroupedTimesheets } from "../types/TimesheetTypes";
 import ApproveRejectButtons from "./ApproveRejectButtons";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+
 import Papa from "papaparse";
 import "./../styles/TimesheetManager.css";
 
@@ -273,3 +273,7 @@ const TimesheetApprovalTable: React.FC = () => {
 };
 
 export default TimesheetApprovalTable;
+function autoTable(doc: any, arg1: { startY: number; head: string[][]; body: (string | number)[][]; theme: string; margin: { top: number; }; didDrawPage: (data: any) => void; }) {
+  throw new Error("Function not implemented.");
+}
+
