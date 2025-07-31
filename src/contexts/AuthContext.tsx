@@ -34,24 +34,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Mock authentication
+    let mockUser: User | null = null;
+
     if (username === 'admin' && password === 'admin123') {
-      const mockUser: User = {
+      mockUser = {
         id: '1',
         name: 'John Administrator',
         email: 'admin@company.com',
-        role: 'System Administrator'
+        role: 'System Administrator',
       };
+    } else if (username === 'developer' && password === 'dev123') {
+      mockUser = {
+        id: '2',
+        name: 'Dev User',
+        email: 'developer@company.com',
+        role: 'Developer',
+      };
+    } else if (username === 'manager' && password === 'manager123') {
+      mockUser = {
+        id: '3',
+        name: 'Manager User',
+        email: 'manager@company.com',
+        role: 'Manager',
+      };
+    }
+
+    if (mockUser) {
       setUser(mockUser);
       setIsAuthenticated(true);
+      localStorage.setItem("userRole", mockUser.role); // Store for redirect
       return true;
     }
+
     return false;
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem("userRole");
   };
 
   const value = {

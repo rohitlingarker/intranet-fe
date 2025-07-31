@@ -12,13 +12,6 @@ interface Epic {
   description: string;
 }
 
-interface UserStory {
-  id: number;
-  title: string;
-  description: string;
-  epicId?: number;
-}
-
 interface Task {
   id: number;
   title: string;
@@ -28,8 +21,6 @@ interface Task {
 
 export default function Backlog() {
   const { projectId: projectIdStr } = useParams<{ projectId: string }>();
-
-  // Convert projectId string to number
   const projectId = projectIdStr ? Number(projectIdStr) : undefined;
 
   const [showEpic, setShowEpic] = useState(false);
@@ -38,7 +29,6 @@ export default function Backlog() {
   const [showUserStory, setShowUserStory] = useState(false);
 
   const [epics, setEpics] = useState<Epic[]>([]);
-  const [stories, setStories] = useState<UserStory[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
@@ -46,14 +36,12 @@ export default function Backlog() {
 
     const fetchData = async () => {
       try {
-        const [epicRes, storyRes, taskRes] = await Promise.all([
+        const [epicRes, taskRes] = await Promise.all([
           axios.get(`http://localhost:8080/api/projects/${projectId}/epics`),
-          axios.get(`http://localhost:8080/api/projects/${projectId}/stories`),
           axios.get(`http://localhost:8080/api/projects/${projectId}/tasks`),
         ]);
 
         setEpics(Array.isArray(epicRes.data) ? epicRes.data : []);
-        setStories(Array.isArray(storyRes.data) ? storyRes.data : []);
         setTasks(Array.isArray(taskRes.data) ? taskRes.data : []);
       } catch (error) {
         console.error("Error fetching backlog data:", error);
@@ -85,16 +73,16 @@ export default function Backlog() {
 
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => setShowUserStory(!showUserStory)}
+          onClick={() => setShowTask(!showTask)}
         >
-          {showUserStory ? "Hide Story" : "Create Story"}
+          {showTask ? "Hide Task" : "Create Task"}
         </button>
 
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => setShowTask(!showTask)}
+          onClick={() => setShowUserStory(!showUserStory)}
         >
-          {showTask ? "Hide Task" : "Create Task"}
+          {showUserStory ? "Hide User Story" : "Create User Story"}
         </button>
       </div>
 
@@ -128,37 +116,17 @@ export default function Backlog() {
           </div>
         )}
 
-        {showUserStory && (
-          <div className="p-4 border rounded shadow">
-            <h2 className="text-xl font-semibold mb-2">Create User Story</h2>
-            <CreateUserStory />
-          </div>
-        )}
-
-        <div className="border rounded p-4 shadow">
-          <h2 className="text-xl font-semibold mb-2">User Stories</h2>
-          {stories.length === 0 ? (
-            <p>No user stories available.</p>
-          ) : (
-            <ul className="list-disc list-inside">
-              {stories.map((story) => (
-                <li key={story.id}>
-                  <strong>{story.title}</strong>: {story.description}
-                  {story.epicId && (
-                    <span className="ml-2 text-sm text-gray-500">
-                      (Epic ID: {story.epicId})
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
         {showTask && (
           <div className="p-4 border rounded shadow">
             <h2 className="text-xl font-semibold mb-2">Create Task</h2>
             <CreateTaskModal />
+          </div>
+        )}
+
+        {showUserStory && (
+          <div className="p-4 border rounded shadow">
+            <h2 className="text-xl font-semibold mb-2">Create User Story</h2>
+            <CreateUserStory />
           </div>
         )}
 

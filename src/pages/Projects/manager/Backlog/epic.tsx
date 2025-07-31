@@ -29,28 +29,46 @@ const CreateEpic: React.FC = () => {
   });
 
   useEffect(() => {
-    axios.get("http://localhost:8080/api/projects")
-      .then(res => {
+    axios
+      .get("http://localhost:8080/api/projects")
+      .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.content;
         setProjects(data || []);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to fetch projects", err);
       });
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === "progressPercentage" ? Number(value) : value
+      [name]: name === "progressPercentage" || name === "projectId" ? Number(value) : value,
     }));
+  };
+
+  // Format date to 'YYYY-MM-DDTHH:MM:SS'
+  const formatDate = (dateTime: string) => {
+    return dateTime ? new Date(dateTime).toISOString().slice(0, 19) : "";
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    axios.post("http://localhost:8080/api/epics", formData)
+    const payload = {
+      ...formData,
+      dueDate: formatDate(formData.dueDate),
+    };
+
+    axios
+      .post("http://localhost:8080/api/epics", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
       .then(() => {
         alert("✅ Epic created successfully!");
         setFormData({
@@ -63,20 +81,20 @@ const CreateEpic: React.FC = () => {
           projectId: 0,
         });
       })
-      .catch(err => {
-        console.error("❌ Error creating epic:", err);
-        alert("Failed to create epic.");
+      .catch((err) => {
+        console.error("❌ Error creating epic:", err.response?.data || err.message);
+        alert(`Failed to create epic: ${JSON.stringify(err.response?.data || err.message)}`);
       });
   };
 
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-md space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-4"> Create a New Epic</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-4">Create a New Epic</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
+        {/* Name and Description */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Basic Details</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Basic Details</h2>
           <input
             type="text"
             name="name"
@@ -84,7 +102,7 @@ const CreateEpic: React.FC = () => {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2"
           />
 
           <textarea
@@ -93,13 +111,13 @@ const CreateEpic: React.FC = () => {
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            className="w-full border mt-3 border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border mt-3 border-gray-300 rounded-lg px-4 py-2"
           />
         </div>
 
-        {/* Status and Priority */}
+        {/* Status & Priority */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Status & Priority</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Status & Priority</h2>
           <div className="grid grid-cols-2 gap-4">
             <select
               name="status"
@@ -125,9 +143,9 @@ const CreateEpic: React.FC = () => {
           </div>
         </div>
 
-        {/* Progress and Due Date */}
+        {/* Progress & Due Date */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Progress & Deadline</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Progress & Deadline</h2>
           <div className="grid grid-cols-2 gap-4">
             <input
               type="number"
@@ -150,9 +168,9 @@ const CreateEpic: React.FC = () => {
           </div>
         </div>
 
-        {/* Project Selection */}
+        {/* Project */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2"> Select Project</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Select Project</h2>
           <select
             name="projectId"
             value={formData.projectId}
@@ -160,7 +178,7 @@ const CreateEpic: React.FC = () => {
             required
             className="w-full border border-gray-300 rounded-lg px-4 py-2"
           >
-            <option value="">-- Select Project --</option>
+            <option value={0}>-- Select Project --</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -169,13 +187,13 @@ const CreateEpic: React.FC = () => {
           </select>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <div className="text-center">
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg"
           >
-             Create Epic
+            Create Epic
           </button>
         </div>
       </form>

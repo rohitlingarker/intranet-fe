@@ -11,15 +11,16 @@ import Leave from './pages/Leave';
 import Timesheets from './pages/Timesheets';
 import Calendar from './pages/Calendar';
 
-import Sidebar from './pages/Projects/Sidebar';
+import Sidebar from './pages/Projects/manager/Sidebar';
 
-import  ProjectDashboard from './pages/Projects/ProjectDashboard';
-import Summary from './pages/Projects/Summary';
-import Backlog from './pages/Projects/Backlog/Backlog';
-import { Board } from './pages/Projects/Board';
-import CreateProjectModal from './pages/Projects/CreateProjectModal';
-import ProjectTabs from './pages/Projects/ProjectTabs'; 
-
+import ProjectDashboard from './pages/Projects/manager/ProjectDashboard';
+import Summary from './pages/Projects/manager/Summary';
+import Backlog from './pages/Projects/manager/Backlog/Backlog';
+import { Board } from './pages/Projects/manager/Board';
+import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
+import ProjectTabs from './pages/Projects/manager/ProjectTabs';
+import UserDashboard from './pages/Projects/User/userdashboard';
+import AdminDashboard from './pages/Projects/Admin/admindashboard';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -61,6 +62,15 @@ const ProjectManager: React.FC = () => {
   );
 };
 
+// Temporary role-based pages (you can replace them later with real components)
+const DeveloperProjectView = () => (
+  <div className="p-6 text-xl font-semibold text-gray-800">Developer Project Page</div>
+);
+
+const ManagerProjectView = () => (
+  <div className="p-6 text-xl font-semibold text-gray-800">Manager Project Page</div>
+);
+
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
@@ -73,7 +83,9 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects/dashboard" element={<ProjectDashboard />} />
+        <Route path="/projects/dashboard" element={<AdminDashboard />} />
+        <Route path="/projects/developer" element={<UserDashboard />} />
+        <Route path="/projects/manager" element={<ProjectDashboard />} />
         <Route path="/users" element={<Users />} />
         <Route path="/leave" element={<Leave />} />
         <Route path="/timesheets" element={<Timesheets />} />
