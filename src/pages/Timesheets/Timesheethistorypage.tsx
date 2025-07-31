@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 //import TimeManagementTable, { TimesheetEntry } from "./TimesheetTableWithExpandableRows";
 import DayTrackModal from "./DayTrackModal";
 import TimesheetTableWithExpandableRows, { Timesheet } from "./TimesheetTableWithExpandableRows";
-
-
+ 
+ 
 interface TimesheetEntry {
   date: Date;
   project: string;
@@ -16,20 +17,20 @@ interface TimesheetEntry {
   start: string;
   end: string;
 }
-
-
-
+ 
+ 
+ 
 const TimesheethistoryPage: React.FC = () => {
   const [entries, setEntries] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
-
+ 
   const [searchText, setSearchText] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Status');
-
+ 
 // 1. Declare user state
 const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-
+ 
 // 2. Fetch user info on mount
 useEffect(() => {
   fetch("http://localhost:8080/me")
@@ -45,9 +46,9 @@ useEffect(() => {
       console.error("Error fetching user:", err);
     });
 }, []);
-
-
-
+ 
+ 
+ 
   useEffect(() => {
     const token = localStorage.getItem("token");
   fetch("http://localhost:8080/api/timesheet/history")
@@ -55,8 +56,8 @@ useEffect(() => {
     .then((data) => {
       console.log("Fetched timesheet data:", data);
       setEntries(data);
-
-      
+ 
+     
       const flattened: TimesheetEntry[] = data.flatMap((timesheet: any) =>
         timesheet.entries.map((entry: any) => ({
           date: timesheet.workDate,
@@ -72,7 +73,7 @@ useEffect(() => {
           end: entry.toTime,
         }))
       );
-
+ 
       //setEntries(flattened);
       setLoading(false);
     })
@@ -81,29 +82,29 @@ useEffect(() => {
       setLoading(false);
     });
 }, [user]);
-
-
-
-
+ 
+ 
+ 
+ 
 const projectIdToName: { [key: number]: string } = {
   1: "Intranet Portal",
   2: "HR Dashboard",
   3: "Ecommerce App",
   4: "CMS Refactor"
 };
-
+ 
 const project = Object.entries(projectIdToName).map(([id, name]) => ({
   id: parseInt(id),
   name
 }));
-
+ 
 const taskIdToName: { [key: number]: string } = {
   1: "UI Design",
   2: "API Integration",
   3: "Bug Fixing",
   4: "Testing"
 };
-
+ 
 const mapWorkType = (type: string): string => {
     switch (type) {
       case "WFO":
@@ -116,21 +117,21 @@ const mapWorkType = (type: string): string => {
         return type;
     }
   };
-
+ 
   const filteredEntries = entries.filter((timesheet) => {
   // Check if any entry in the timesheet matches the search text for project name
   const matchesSearch = timesheet.entries.some(entry => {
     const projectName = projectIdToName[entry.projectId] || '';
     return projectName.toLowerCase().includes(searchText.toLowerCase());
   });
-
+ 
   const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
   const matchesStatus = filterStatus === 'All Status' || timesheet.approvalStatus === filterStatus;
-
+ 
   return matchesSearch && matchesDate && matchesStatus;
 });
-
-
+ 
+ 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f9fb" }}>
       <main style={{ flex: 1, padding: 36 }}>
@@ -142,7 +143,7 @@ const mapWorkType = (type: string): string => {
           </div>
           <DayTrackModal />
         </div>
-
+ 
         {/* Filters */}
         <div
           style={{
@@ -200,7 +201,7 @@ const mapWorkType = (type: string): string => {
             <option>REJECTED</option>
           </select>
         </div>
-
+ 
         {/* Table */}
         <div style={{
           background: "#fff",
@@ -215,18 +216,19 @@ const mapWorkType = (type: string): string => {
             <div className="text-center text-gray-500">No timesheet entries found.</div>
           ) : (
             <div className="text-gray-700 mb-4 text-sm text-center">
-              Showing {entries.length} of {entries.length} entries
+              Total {entries.length}  Timesheet entries
             </div>
           )}
-
+ 
           <TimesheetTableWithExpandableRows timesheets={filteredEntries} projectIdToName={projectIdToName} taskIdToName={taskIdToName} />
         </div>
       </main>
     </div>
   );
 };
-
+ 
 export default TimesheethistoryPage;
+
 
 
 

@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-
+ 
 export interface Timesheet {
   timesheetId: number;
   workDate: string;
   approvalStatus: "APPROVED" | "REJECTED" | "PENDING";
   entries: TimesheetEntry[];
 }
-
+ 
 export interface TimesheetEntry {
   projectId: number;
   project: string;
@@ -18,13 +18,13 @@ export interface TimesheetEntry {
   hoursWorked: number;
   otherDescription?: string;
 }
-
+ 
 interface Props {
   timesheets: Timesheet[];
   projectIdToName: Record<number, string>;
   taskIdToName: Record<number, string>;
 }
-
+ 
 const formatTimeHHMM = (isoString: string) => {
   const date = new Date(isoString);
   return date.toLocaleTimeString("en-GB", {
@@ -33,32 +33,26 @@ const formatTimeHHMM = (isoString: string) => {
     hour12: false,
   });
 };
-
-
-const mapWorkType = (type: string) => {
-  switch (type) {
-    case "WFO":
-      return "Office";
-    case "WFH":
-      return "Home";
-    case "HYBRID":
-      return "Hybrid";
-    default:
-      return type;
-  }
-};
-
+ 
 const TimesheetTableWithExpandableRows: React.FC<Props> = ({
   timesheets,
   projectIdToName,
   taskIdToName,
 }) => {
   const [expanded, setExpanded] = useState<number | null>(null);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+ 
+  const totalPages = Math.ceil(timesheets.length / itemsPerPage);
+  const paginatedTimesheets = timesheets.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+ 
   const toggleExpand = (id: number) => {
     setExpanded((prev) => (prev === id ? null : id));
   };
-
+ 
   return (
     <table className="min-w-full divide-y divide-gray-200 bg-white shadow rounded-lg overflow-hidden">
       <thead className="bg-[#b22a4f] text-white">
@@ -70,7 +64,7 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
             Work Date
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium uppercase">
-            Total Hours
+            Total Duration
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium uppercase">
             Status
@@ -78,7 +72,7 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-200">
-        {timesheets.map((sheet) => (
+        {paginatedTimesheets.map((sheet) => (
           <React.Fragment key={sheet.timesheetId}>
             <tr
               onClick={() => toggleExpand(sheet.timesheetId)}
@@ -86,9 +80,22 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
             >
               <td className="px-6 py-3">{sheet.timesheetId}</td>
               <td className="px-6 py-3">{sheet.workDate}</td>
-              <td className="px-6 py-3">
-                  {sheet.entries.reduce((sum, e) => sum + e.hoursWorked, 0)}
-                </td>
+              <td className="px-12 py-3 ">
+                {(() => {
+                  const totalMinutes = Math.round(
+                    sheet.entries.reduce(
+                      (sum, e) => sum + e.hoursWorked * 60,
+                      0
+                    )
+                  );
+                  const hours = String(Math.floor(totalMinutes / 60)).padStart(
+                    2,
+                    "0"
+                  );
+                  const minutes = String(totalMinutes % 60).padStart(2, "0");
+                  return `${hours}:${minutes}`;
+                })()}
+              </td>
               <td className="px-6 py-3 flex justify-between items-center">
                 <span
                   className={`px-3 py-1 text-xs font-semibold rounded-full ${
@@ -102,9 +109,8 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
                   {sheet.approvalStatus}
                 </span>
               </td>
-                
             </tr>
-
+ 
             {expanded === sheet.timesheetId && (
               <tr>
                 <td colSpan={4} className="px-6 pb-4 bg-gray-100">
@@ -155,16 +161,19 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
                               {entry.description}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-800">
-                              {mapWorkType(entry.workType)}
+                              {entry.workType}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-800">
                               {entry.hoursWorked}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-800">
-                              {(entry.fromTime && formatTimeHHMM(entry.fromTime)) || "N/A"}
+                              {(entry.fromTime &&
+                                formatTimeHHMM(entry.fromTime)) ||
+                                "N/A"}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-800">
-                              {(entry.toTime && formatTimeHHMM(entry.toTime)) || "N/A"}
+                              {(entry.toTime && formatTimeHHMM(entry.toTime)) ||
+                                "N/A"}
                             </td>
                           </tr>
                         ))}
@@ -177,8 +186,45 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
           </React.Fragment>
         ))}
       </tbody>
+      <tfoot>
+        <tr>
+          <td colSpan={4} className="px-6 py-3 bg-white">
+            <div className="flex justify-center items-center gap-2 mt-4">
+              <button
+                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1 text-sm rounded border ${
+                    currentPage === i + 1
+                      ? "bg-[#b22a4f] text-white"
+                      : "bg-white text-gray-800"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   );
 };
-
+ 
 export default TimesheetTableWithExpandableRows;
