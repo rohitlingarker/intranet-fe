@@ -215,7 +215,7 @@ const mapWorkType = (type: string): string => {
             <div className="text-center text-gray-500">No timesheet entries found.</div>
           ) : (
             <div className="text-gray-700 mb-4 text-sm text-center">
-              Showing {entries.length} of {entries.length} entries
+              Total {entries.length}  Timesheet entries
             </div>
           )}
 
