@@ -75,6 +75,10 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
           <th className="px-6 py-3 text-left text-xs font-medium uppercase">
             Status
           </th>
+          <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+           Edit
+          </th>
+          
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-200">
@@ -101,7 +105,23 @@ const TimesheetTableWithExpandableRows: React.FC<Props> = ({
                 >
                   {sheet.approvalStatus}
                 </span>
-              </td>
+              </td> 
+              {/* ✅ NEW: EDIT BUTTON COLUMN */}
+  <td className="px-6 py-3">
+    {sheet.approvalStatus === "PENDING" && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // prevents row expand
+          console.log("Edit timesheet", sheet.timesheetId);
+          // You can replace this with navigation or modal
+        }}
+        className="text-blue-600 hover:underline text-sm"
+      >
+        Edit
+      </button>
+    )}
+  </td>
+
                 
             </tr>
 
