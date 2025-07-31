@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -8,6 +9,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +19,18 @@ const LoginPage: React.FC = () => {
     try {
       const success = await login(username, password);
       if (!success) {
-        setError('Invalid credentials. Use admin/admin123');
+        setError('Invalid credentials. Use one of the following: admin/admin123, developer/dev123, manager/manager123');
+      } else {
+        const role = localStorage.getItem("userRole");
+        if (role === 'System Administrator') {
+          navigate('/projects/dashboard');
+        } else if (role === 'Developer') {
+          navigate('/projects/developer');
+        } else if (role === 'Manager') {
+          navigate('/projects/manager');
+        } else {
+          navigate('/dashboard'); // fallback
+        }
       }
     } catch (err) {
       setError('Login failed. Please try again.');
@@ -86,12 +99,13 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              <strong>Demo Credentials:</strong><br />
-              Username: admin<br />
-              Password: admin123
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
+            <p>
+              <strong>Demo Credentials:</strong>
             </p>
+            <p>Username: admin | Password: admin123</p>
+            <p>Username: developer | Password: dev123</p>
+            <p>Username: manager | Password: manager123</p>
           </div>
         </div>
       </div>
