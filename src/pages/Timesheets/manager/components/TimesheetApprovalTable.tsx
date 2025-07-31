@@ -1,113 +1,145 @@
-import React, { useState } from "react";
-import { TimeSheetHistoryDTO, GroupedTimesheets } from "../types/TimesheetTypes";
+import React, { useEffect, useState } from "react";
+import {
+  GroupedTimesheets,
+  TimeSheetHistoryDTO,
+  TaskEntry,
+  TimesheetStatus,
+} from "../types/TimesheetTypes";
+import {
+  fetchGroupedTimesheets,
+  approveTimesheet,
+  rejectTimesheet,
+} from "../api/timesheetApi";
 import ApproveRejectButtons from "./ApproveRejectButtons";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Papa from "papaparse";
 import "./../styles/TimesheetManager.css";
 
-// Sample mock data
-const mockData: GroupedTimesheets[] = [
-  {
-    employeeId: 1,
-    employeeName: "John Doe",
-    timesheets: [
-      {
-        timesheetId: 1,
-        employeeId: 1,
-        employeeName: "John Doe",
-        workDate: "2025-07-26",
-        createdAt: "2025-07-26T09:30:00",
-        entries: [
-          {
-            projectId: 1,
-            taskId: 1,
-            description: "TESTING",
-            workType: "Office",
-            hoursWorked: 3,
-            otherDescription: "",
-            projectName: "Intranet Portal",
-            taskName: "UI Design",
-            from: "16:45",
-            to: "19:45",
-          },
-          {
-            projectId: 2,
-            taskId: 2,
-            description: "TESTING",
-            workType: "Office",
-            hoursWorked: 3,
-            otherDescription: "",
-            projectName: "HR Dashboard",
-            taskName: "API Integration",
-            from: "16:45",
-            to: "19:45",
-          },
-        ],
-        approvals: [],
-        status: "Pending",
-        id: undefined
-      },
-    ],
-  },
-  {
-    employeeId: 2,
-    employeeName: "Jane Smith",
-    timesheets: [
-      {
-        timesheetId: 2,
-        employeeId: 2,
-        employeeName: "Jane Smith",
-        workDate: "2025-07-27",
-        createdAt: "2025-07-27T11:00:00",
-        entries: [],
-        approvals: [],
-        status: "Pending",
-        id: undefined
-      },
-    ],
-  },
-];
-
 const TimesheetApprovalTable: React.FC = () => {
+  const [data, setData] = useState<GroupedTimesheets[]>([]);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [employeeFilter, setEmployeeFilter] = useState<number | "all">("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const flatList = await fetchGroupedTimesheets(); // returns flat structure
+
+        const groupedMap: Record<number, GroupedTimesheets> = {};
+
+        flatList.forEach((entry: any) => {
+          const empId = entry.userId;
+
+          if (!groupedMap[empId]) {
+            groupedMap[empId] = {
+              employeeId: empId,
+              employeeName: `Employee ${empId}`,
+              timesheets: [],
+            };
+          }
+
+          const timesheet: TimeSheetHistoryDTO = {
+            timesheetId: entry.timesheetId,
+            userId: entry.userId,
+            projectId: entry.projectId,
+            taskId: entry.taskId,
+            hoursWorked: entry.hoursWorked,
+            approvalStatus: entry.approvalStatus,
+            description: entry.description,
+            workDate: entry.workDate,
+            status: entry.approvalStatus,
+            entries: [
+              {
+                projectName: `Project ${entry.projectId ?? "N/A"}`,
+                taskName: `Task ${entry.taskId ?? "N/A"}`,
+                description: entry.description,
+                workType: "General",
+                hoursWorked: entry.hoursWorked,
+                from: "09:00",
+                to: "17:00",
+              },
+            ],
+          };
+
+          groupedMap[empId].timesheets.push(timesheet);
+        });
+
+        setData(Object.values(groupedMap));
+      } catch (error) {
+        console.error("Failed to load timesheets:", error);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const toggleExpand = (id: number) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleApprove = (employeeId: number, timesheetId: number) => {
-    const emp = mockData.find((g) => g.employeeId === employeeId);
-    const ts = emp?.timesheets.find((t) => t.timesheetId === timesheetId);
-    if (ts) ts.status = "Approved";
+  const updateStatus = (
+    employeeId: number,
+    timesheetId: number,
+    newStatus: TimesheetStatus
+  ) => {
+    const updated = data.map((emp) =>
+      emp.employeeId === employeeId
+        ? {
+            ...emp,
+            timesheets: (emp.timesheets || []).map((ts) =>
+              ts.timesheetId === timesheetId ? { ...ts, status: newStatus } : ts
+            ),
+          }
+        : emp
+    );
+    setData(updated);
   };
 
-  const handleReject = (employeeId: number, timesheetId: number) => {
-    const emp = mockData.find((g) => g.employeeId === employeeId);
-    const ts = emp?.timesheets.find((t) => t.timesheetId === timesheetId);
-    if (ts) ts.status = "Rejected";
+  const handleApprove = async (employeeId: number, timesheetId: number) => {
+    try {
+      await approveTimesheet(timesheetId, employeeId.toString());
+      updateStatus(employeeId, timesheetId, "APPROVED");
+    } catch (error) {
+      console.error("Approval failed", error);
+    }
   };
 
-  const filteredData = mockData
-    .filter((emp) => employeeFilter === "all" || emp.employeeId === employeeFilter)
+  const handleReject = async (employeeId: number, timesheetId: number) => {
+    try {
+      await rejectTimesheet(timesheetId,employeeId.toString());
+      updateStatus(employeeId, timesheetId, "REJECTED");
+    } catch (error) {
+      console.error("Rejection failed", error);
+    }
+  };
+
+  // Filter logic
+  const filteredData = data
+    .filter(
+      (emp) => employeeFilter === "all" || emp.employeeId === employeeFilter
+    )
     .map((emp) => ({
       ...emp,
-      timesheets: emp.timesheets.filter((ts) =>
+      timesheets: (emp.timesheets || []).filter((ts) =>
         projectFilter === "all"
           ? true
-          : ts.entries.some((e) =>
-              e.projectName.toLowerCase().includes(projectFilter.toLowerCase())
+          : ts.entries.some((entry) =>
+              (entry.projectName ?? "")
+                .toLowerCase()
+                .includes(projectFilter.toLowerCase())
             )
       ),
     }))
-    .filter((emp) => emp.timesheets.length > 0);
+    .filter((emp) => (emp.timesheets || []).length > 0);
 
   const uniqueProjects = Array.from(
     new Set(
-      mockData.flatMap((g) =>
-        g.timesheets.flatMap((t) => t.entries.map((e) => e.projectName))
+      data.flatMap((group) =>
+        (group.timesheets || []).flatMap((ts) =>
+          ts.entries.map((e) => e.projectName).filter(Boolean)
+        )
       )
     )
   );
@@ -115,11 +147,12 @@ const TimesheetApprovalTable: React.FC = () => {
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Timesheet Report", 14, 16);
+    let startY = 25;
 
-    filteredData.forEach((group, index) => {
-      group.timesheets.forEach((ts, tsIndex) => {
+    filteredData.forEach((group) => {
+      (group.timesheets || []).forEach((ts) => {
         autoTable(doc, {
-          startY: 25 + index * 60 + tsIndex * 50,
+          startY,
           head: [["Project", "Task", "Description", "Work Type", "Hours", "From", "To"]],
           body: ts.entries.map((e) => [
             e.projectName,
@@ -130,17 +163,17 @@ const TimesheetApprovalTable: React.FC = () => {
             e.from,
             e.to,
           ]),
-          theme: "striped",
           margin: { top: 20 },
           didDrawPage: (data) => {
             doc.setFontSize(12);
             doc.text(
-              `Employee: ${group.employeeName}, Timesheet #${ts.timesheetId}, Date: ${ts.workDate}`,
+              `Employee: ${group.employeeName} | Timesheet #${ts.timesheetId} | Date: ${ts.workDate}`,
               14,
               data.settings.startY - 10
             );
           },
         });
+        startY += 60;
       });
     });
 
@@ -150,11 +183,11 @@ const TimesheetApprovalTable: React.FC = () => {
   const exportToCSV = () => {
     const rows: any[] = [];
 
-    filteredData.forEach((emp) => {
-      emp.timesheets.forEach((ts) => {
+    filteredData.forEach((group) => {
+      (group.timesheets || []).forEach((ts) => {
         ts.entries.forEach((e) => {
           rows.push({
-            Employee: emp.employeeName,
+            Employee: group.employeeName,
             TimesheetID: ts.timesheetId,
             WorkDate: ts.workDate,
             Project: e.projectName,
@@ -182,61 +215,61 @@ const TimesheetApprovalTable: React.FC = () => {
 
   return (
     <div className="approval-table">
-      <div className="filter-section" style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between" }}>
-        <div>
-          <label>Project: </label>
-          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
-            <option value="all">All</option>
-            {uniqueProjects.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+      <h2>Pending Timesheet Approvals</h2>
 
-          <label style={{ marginLeft: "1rem" }}>Employee: </label>
-          <select
-            value={employeeFilter}
-            onChange={(e) =>
-              setEmployeeFilter(e.target.value === "all" ? "all" : parseInt(e.target.value))
-            }
-          >
-            <option value="all">All</option>
-            {mockData.map((emp) => (
-              <option key={emp.employeeId} value={emp.employeeId}>
-                {emp.employeeName}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <button className="btn btn-success" onClick={exportToPDF}>
-            Export PDF
-          </button>
-          <button className="btn btn-secondary" onClick={exportToCSV} style={{ marginLeft: "1rem" }}>
-            Export CSV
-          </button>
-        </div>
+      <div className="filter-section">
+        <label>Project: </label>
+        <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
+          <option value="all">All</option>
+          {uniqueProjects.map((p, index) => (
+            <option key={index} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+
+        <label style={{ marginLeft: "1rem" }}>Employee: </label>
+        <select
+          value={employeeFilter}
+          onChange={(e) =>
+            setEmployeeFilter(e.target.value === "all" ? "all" : parseInt(e.target.value))
+          }
+        >
+          <option value="all">All</option>
+          {data.map((emp) => (
+            <option key={emp.employeeId} value={emp.employeeId}>
+              {emp.employeeName}
+            </option>
+          ))}
+        </select>
+
+        <button className="btn btn-success" onClick={exportToPDF} style={{ marginLeft: "auto" }}>
+          Export PDF
+        </button>
+        <button className="btn btn-secondary" onClick={exportToCSV} style={{ marginLeft: "1rem" }}>
+          Export CSV
+        </button>
       </div>
 
+      {filteredData.length === 0 && <p>No timesheets found for the selected filters.</p>}
+
       {filteredData.map((group) =>
-        group.timesheets.map((ts) => (
+        (group.timesheets || []).map((ts) => (
           <div key={ts.timesheetId} className="employee-group">
-            <div className="employee-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="employee-header">
               <button className="toggle-btn" onClick={() => toggleExpand(ts.timesheetId)}>
-                {expanded[ts.timesheetId] ? "▼" : "▶"} {group.employeeName} - Timesheet #{ts.timesheetId} | Date: {ts.workDate}
+                {expanded[ts.timesheetId] ? "▼" : "▶"} {group.employeeName} - Timesheet #
+                {ts.timesheetId} | Date: {ts.workDate}
               </button>
-              {ts.status === "Pending" ? (
-                <ApproveRejectButtons
-                  employeeId={group.employeeId}
-                  timesheetId={ts.timesheetId}
-                  onApprove={() => handleApprove(group.employeeId, ts.timesheetId)}
-                  onReject={() => handleReject(group.employeeId, ts.timesheetId)}
-                />
-              ) : (
-                <button className="btn btn-secondary" onClick={() => alert(`Reviewing Timesheet #${ts.timesheetId}`)}>
-                  Review
-                </button>
-              )}
+              <ApproveRejectButtons
+                employeeId={group.employeeId}
+                timesheetId={ts.timesheetId}
+                currentStatus={ts.status}
+                onApprove={() => handleApprove(group.employeeId, ts.timesheetId)}
+                onReject={() => handleReject(group.employeeId, ts.timesheetId)}
+              />
             </div>
+
             {expanded[ts.timesheetId] && (
               <table className="task-table">
                 <thead>

@@ -1,219 +1,46 @@
-import { Key } from "react";
-export interface TimeSheetEntryDTO {
-  projectId: number;
-  taskId: number;
-  description: string;
-  workType: string;
-  hoursWorked: number;
-  otherDescription?: string;
-}
+// Enum-like union type to represent status
+export type TimesheetStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-export interface TimeSheetApprovalDTO {
-  approvalStatus: string;
-  approverId: number;
-  approvalTime: string; // ISO datetime format
-  description: string;
-}
-
-export interface TimeSheetHistoryDTO {
-  id: Key | null | undefined;
-  timesheetId: number;
-  employeeId: number;
-  employeeName: string;
-  workDate: string; // Format: YYYY-MM-DD
-  entries: TimeSheetEntryDTO[];
-  approvals: TimeSheetApprovalDTO[];
-}
-
-export interface GroupedTimesheets {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimeSheetHistoryDTO[];
-}
-export interface TimesheetEntry {
-  taskId: number;
-  projectName: string;
-  taskDescription: string;
-  hours: number;
-  status: string;
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-export interface TimesheetEntry {
-  taskId: number;
-  projectId: number;
-  projectName: string;
-  taskDescription: string;
-  hours: number;
-  status: string;
-  logDate: string;
-  logTime: string;
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-export interface TimesheetEntry {
-  taskId: number;
-  projectId: number;
-  projectName: string;
-  taskDescription: string;
-  hours: number;
-  status: string;
-  logDateTime: string;
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-export interface TimesheetEntry {
-  taskId: number;
-  projectName: string;
-  taskDescription: string;
-  hours: number;
-  status: string;
-  logTime: string;
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-
-export interface ReviewableTimesheet extends TimesheetEntry {
-  reviewed?: boolean;
-}
-export interface TimesheetEntry {
-  taskId: number;
-  projectName: string;
-  taskDescription: string;
-  hours: number;
-  status: string;
-  logTime: string;
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-
-export interface ReviewableTimesheet extends TimesheetEntry {
-  reviewed?: boolean;
-}
+// Entry under a timesheet (task details for display)
 export interface TaskEntry {
   projectName: string;
   taskName: string;
   description: string;
   workType: string;
-  hours: number;
-  from: string;
-  to: string;
-}
-
-export interface Timesheet {
-  timesheetId: number;
-  workDate: string;      // e.g., "2025-07-26"
-  totalHours: number;
-  status: "Pending" | "Approved" | "Rejected";
-  tasks: TaskEntry[];
-}
-// src/pages/Timesheets/manager/types/timesheettypes.ts
-
-export interface TimesheetTask {
-  projectName: string;
-  taskName: string;
-  description: string;
-  workType: string;
-  hours: number;
-  from: string;
-  to: string;
-}
-
-export interface TimesheetEntry {
-  timesheetId: number;
-  workDate: string; // e.g., "2025-07-26"
-  totalHours: number;
-  //status: "Pending" | "Approved" | "Rejected";
-  tasks: TimesheetTask[];
-}
-
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-// Represents a single task entry in a timesheet
-export interface TaskEntry {
-  projectName: string;
-  taskName: string;
-  description: string;
-  workType: string;
-  hours: number;
-  from: string;
-  to: string;
-}
-
-// Represents a timesheet entry (collection of tasks for one day)
-export interface TimesheetEntry {
-  timesheetId: number;
-  workDate: string; // Format: YYYY-MM-DD
-  totalHours: number;
-  //status: "Pending" | "Approved" | "Rejected";
-  reviewed?: boolean;
-  tasks: TaskEntry[];
-}
-
-// Represents a group of timesheets submitted by an employee
-export interface TimesheetGroup {
-  employeeId: number;
-  employeeName: string;
-  timesheets: TimesheetEntry[];
-}
-export interface TimeSheetEntryDTO {
-  projectId: number;
-  taskId: number;
-  description: string;
-  workType: string;
   hoursWorked: number;
-  otherDescription?: string;
-  projectName: string;
-  taskName: string;
   from: string;
   to: string;
 }
 
-export interface TimeSheetApprovalDTO {
-  approvalStatus: string;
-  approverId: number;
-  approvalTime: string; // ISO format
+// Entry fetched from backend (flat structure)
+export interface TimesheetEntry {
+  timesheetId: number;
+  userId: number;
+  projectId: number | null;
+  taskId: number | null;
+  hoursWorked: number;
+  approvalStatus: TimesheetStatus;
   description: string;
+  workDate: string;
 }
 
+// DTO format for displaying grouped timesheets in frontend UI
 export interface TimeSheetHistoryDTO {
   timesheetId: number;
-  employeeId: number;
-  employeeName: string;
-  workDate: string; // YYYY-MM-DD
-  createdAt: string; // ISO date-time of upload
-  entries: TimeSheetEntryDTO[];
-  approvals: TimeSheetApprovalDTO[];
-  status: "Pending" | "Approved" | "Rejected";
+  userId: number;
+  projectId: number | null;
+  taskId: number | null;
+  hoursWorked: number;
+  approvalStatus: TimesheetStatus;
+  description: string;
+  status: TimesheetStatus;
+  workDate: string;
+  entries: TaskEntry[]; // detailed breakdown
 }
 
+// Grouped timesheets under one employee
 export interface GroupedTimesheets {
   employeeId: number;
   employeeName: string;
-  timesheets: TimeSheetHistoryDTO[];
+  timesheets: TimeSheetHistoryDTO[]; // list of timesheets for the employee
 }
-
-

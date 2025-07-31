@@ -1,86 +1,49 @@
-import React, { useState } from "react";
+import React from "react";
 
-interface Props {
-  timesheetId: number;
+interface ApproveRejectButtonsProps {
   employeeId: number;
-  onApprove?: (id: number) => void;
-  onReject?: (id: number) => void;
+  timesheetId: number;
+  currentStatus: "PENDING" | "APPROVED" | "REJECTED";
+  onApprove: () => void;
+  onReject: () => void;
 }
 
-const ApproveRejectButtons: React.FC<Props> = ({
-  timesheetId,
-  employeeId,
+const ApproveRejectButtons: React.FC<ApproveRejectButtonsProps> = ({
+  currentStatus,
   onApprove,
   onReject,
 }) => {
-  const [actionTaken, setActionTaken] = useState<"approved" | "rejected" | null>(null);
-
-  const handleApprove = () => {
-    if (onApprove) {
-      onApprove(timesheetId);
-      setActionTaken("approved");
-    }
-  };
-
-  const handleReject = () => {
-    if (onReject) {
-      onReject(timesheetId);
-      setActionTaken("rejected");
-    }
-  };
-
-  const handleReview = () => {
-    alert(`Reviewing Timesheet ID: ${timesheetId}`);
-  };
+  const isDisabled = currentStatus !== "PENDING";
 
   return (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      {!actionTaken ? (
+    <div className="action-buttons">
+      {currentStatus === "PENDING" ? (
         <>
           <button
-            className="btn btn-success"
-            style={{
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              padding: "6px 12px",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-            onClick={handleApprove}
+            className="btn btn-success btn-sm"
+            onClick={onApprove}
+            disabled={isDisabled}
           >
             Approve
           </button>
           <button
-            className="btn btn-danger"
-            style={{
-              backgroundColor: "#dc3545",
-              color: "white",
-              border: "none",
-              padding: "6px 12px",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-            onClick={handleReject}
+            className="btn btn-danger btn-sm"
+            onClick={onReject}
+            disabled={isDisabled}
+            style={{ marginLeft: "0.5rem" }}
           >
             Reject
           </button>
         </>
       ) : (
-        <button
-          className="btn btn-secondary"
-          style={{
-            backgroundColor: "#6c757d",
-            color: "white",
-            border: "none",
-            padding: "6px 12px",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-          onClick={handleReview}
+        <span
+          className={`badge ${
+            currentStatus === "APPROVED" ? "bg-success" : "bg-danger"
+          }`}
+          style={{ marginLeft: "1rem" }}
         >
-          Review
-        </button>
+          {currentStatus}
+        </span>
       )}
     </div>
   );

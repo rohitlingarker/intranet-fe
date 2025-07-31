@@ -1,17 +1,27 @@
+// src/pages/Timesheets/manager/api/timesheetApi.ts
+
 import axios from "axios";
-import { TimeSheetHistoryDTO } from "../types/TimesheetTypes";
+import { GroupedTimesheets } from "../types/TimesheetTypes";
 
-const BASE_URL = "http://localhost:8080/api/timesheet";
+const BASE_URL = "http://localhost:8080/api/manager";
 
-export const fetchPendingTimesheets = async (): Promise<TimeSheetHistoryDTO[]> => {
-  const res = await axios.get<TimeSheetHistoryDTO[]>(`${BASE_URL}/pending`);
-  return res.data;
+export const fetchGroupedTimesheets = async (): Promise<GroupedTimesheets[]> => {
+  const response = await axios.get<GroupedTimesheets[]>(`${BASE_URL}/filter`);
+  return response.data;
 };
 
-export const approveTimesheet = (id: number) => {
-  return axios.post(`${BASE_URL}/${id}/approve`);
+export const approveTimesheet = async (timesheetId: number,userId:string) => {
+  return axios.put(`${BASE_URL}/approve`, {
+    timesheetId,
+    userId,
+    status: "APPROVED",
+  });
 };
 
-export const rejectTimesheet = (id: number) => {
-  return axios.post(`${BASE_URL}/${id}/reject`);
+export const rejectTimesheet = async (timesheetId: number,userId:string) => {
+  return axios.put(`${BASE_URL}/approve`, {
+    timesheetId,
+    userId,
+    status: "REJECTED",
+  });
 };
