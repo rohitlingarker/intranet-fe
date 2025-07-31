@@ -19,7 +19,7 @@ import Backlog from './pages/Projects/manager/Backlog/Backlog';
 import { Board } from './pages/Projects/manager/Board';
 import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
 import ProjectTabs from './pages/Projects/manager/ProjectTabs';
-import UserDashboard from './pages/Projects/User/userdashboard';
+import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
 import AdminDashboard from './pages/Projects/Admin/admindashboard';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,7 +84,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects/dashboard" element={<AdminDashboard />} />
-        <Route path="/projects/developer" element={<UserDashboard />} />
+        <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
         <Route path="/projects/manager" element={<ProjectDashboard />} />
         <Route path="/users" element={<Users />} />
         <Route path="/leave" element={<Leave />} />
