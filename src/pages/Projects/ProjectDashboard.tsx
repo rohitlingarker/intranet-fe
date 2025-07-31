@@ -58,10 +58,10 @@ const ProjectDashboard: React.FC = () => {
     setError(null);
     try {
       const res = await axios.get("http://localhost:8080/api/projects", {
-        params: {
-          page: 0,
-          size: 1000, // Fetch all projects
-        },
+                headers:{
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}` 
+        }
       });
       const data = res.data.content || res.data;
       setProjects(data);
