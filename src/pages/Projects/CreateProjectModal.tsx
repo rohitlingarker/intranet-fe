@@ -17,6 +17,8 @@ interface ProjectFormData {
   status: ProjectStatus;
   ownerId: number | null;
   memberIds: number[];
+  startDate: string;
+  endDate: string;
 }
 
 interface CreateProjectModalProps {
@@ -40,6 +42,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     status: "ACTIVE",
     ownerId: null,
     memberIds: [],
+    startDate: "",
+    endDate: "",
   });
 
   useEffect(() => {
@@ -59,13 +63,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         console.error("Error fetching users:", err);
       });
 
-    setSuccessMessage(""); // Clear message when modal is opened
+    setSuccessMessage("");
   }, [isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleOwnerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -101,6 +106,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       status: formData.status,
       ownerId: formData.ownerId,
       memberIds: formData.memberIds,
+      startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
+      endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
     };
 
     try {
@@ -108,10 +115,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       await axios.post("http://localhost:8080/api/projects", payload);
 
       setSuccessMessage("✅ Project created successfully!");
-
       if (onProjectCreated) onProjectCreated();
 
-      // Reset form
       setFormData({
         name: "",
         projectKey: "",
@@ -119,9 +124,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         status: "ACTIVE",
         ownerId: null,
         memberIds: [],
+        startDate: "",
+        endDate: "",
       });
 
-      // Close modal after short delay
       setTimeout(() => {
         onClose();
         setSuccessMessage("");
@@ -198,6 +204,31 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               </option>
             ))}
           </select>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <input
+                type="date"
+                name="startDate"
+                className="w-full border px-4 py-2 rounded"
+                value={formData.startDate}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">End Date</label>
+              <input
+                type="date"
+                name="endDate"
+                className="w-full border px-4 py-2 rounded"
+                value={formData.endDate}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          </div>
 
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members:</p>

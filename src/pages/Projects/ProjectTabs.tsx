@@ -37,7 +37,7 @@ const ProjectTabs: React.FC = () => {
       case 'summary':
         return <Summary projectId={pid} projectName={projectName} />;
       case 'backlog':
-        return <Backlog />; // no props sent here
+        return <Backlog projectId={pid} />; // ✅ updated here
       case 'board':
         return <Board projectId={pid} projectName={projectName} />;
       default:
