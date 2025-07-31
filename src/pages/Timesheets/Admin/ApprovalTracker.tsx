@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-
+import  { useEffect, useState } from "react";
+ 
 // Approver structure
 interface Approver {
   id: number;
   name: string;
 }
-
+ 
 // Structure for each user-approver row
 interface ApprovalRow {
   userId: number;
@@ -17,17 +17,17 @@ interface ApprovalRow {
   showSuccess?: boolean;
   showDuplicateError?: boolean;
 }
-
+ 
 // Pagination limit
 const ITEMS_PER_PAGE = 8;
-
+ 
 const ApprovalTrackerPage = () => {
   const [data, setData] = useState<ApprovalRow[]>([]);
   const [allUsers, setAllUsers] = useState<Approver[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-
+ 
   const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-
+ 
   useEffect(() => {
     // Fetch user-approver summary
     fetch("http://localhost:8080/api/user-approver-map/api/user-approver-summary")
@@ -45,7 +45,7 @@ const ApprovalTrackerPage = () => {
         );
       })
       .catch((err) => console.error("Failed to fetch summary:", err));
-
+ 
     // Fetch list of all available approvers
     fetch("http://localhost:8080/approversList/mock")
       .then((res) => res.json())
@@ -54,13 +54,13 @@ const ApprovalTrackerPage = () => {
       })
       .catch((err) => console.error("Failed to fetch approvers list:", err));
   }, []);
-
+ 
   // Get current page data
   const paginatedData = data.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
-
+ 
   // Toggle visibility of dropdown
   const handleToggleInput = (userId: number) => {
     setData((prev) =>
@@ -78,11 +78,11 @@ const ApprovalTrackerPage = () => {
       )
     );
   };
-
+ 
   // Handle selection change
   const handleInputChange = (userId: number, approverId: string) => {
     const approver = allUsers.find((u) => u.id === parseInt(approverId));
-
+ 
     setData((prev) =>
       prev.map((row) => {
         if (row.userId === userId) {
@@ -99,15 +99,15 @@ const ApprovalTrackerPage = () => {
       })
     );
   };
-
+ 
   // Assign the selected approver
   const handleAssign = async (userId: number) => {
     const user = data.find((u) => u.userId === userId);
     if (!user || !user.newApproverId || user.showDuplicateError) return;
-
+ 
     try {
       const approverId = parseInt(user.newApproverId);
-
+ 
       const response = await fetch("http://localhost:8080/api/user-approver-map/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,11 +117,11 @@ const ApprovalTrackerPage = () => {
           rolePriority: "PRIMARY",
         }),
       });
-
+ 
       if (!response.ok) throw new Error("Assign failed");
-
+ 
       const approverName = user.newApproverName || `ID ${approverId}`;
-
+ 
       setData((prev) =>
         prev.map((row) =>
           row.userId === userId
@@ -136,7 +136,7 @@ const ApprovalTrackerPage = () => {
             : row
         )
       );
-
+ 
       // Auto-hide success after 3 seconds
       setTimeout(() => {
         setData((prev) =>
@@ -150,13 +150,13 @@ const ApprovalTrackerPage = () => {
       alert("Failed to assign approver");
     }
   };
-
+ 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md w-full max-w-4xl mx-auto mt-10">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         Approver Assignment Dashboard
       </h1>
-
+ 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 bg-white shadow rounded-lg overflow-hidden">
           <thead className="bg-[#b22a4f] text-white">
@@ -285,5 +285,5 @@ const ApprovalTrackerPage = () => {
     </div>
   );
 };
-
+ 
 export default ApprovalTrackerPage;
