@@ -20,8 +20,10 @@ import { Board } from './pages/Projects/manager/Board';
 import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
 import ProjectTabs from './pages/Projects/manager/ProjectTabs';
 import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
-import UserBoard from './pages/Projects/User/UserBoard';
 import AdminDashboard from './pages/Projects/Admin/admindashboard';
+import UserDashboard from './pages/Projects/User/userdashboard';
+import UserBacklog from './pages/Projects/User/Backlog/userbacklog';
+import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -92,8 +94,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/timesheets" element={<Timesheets />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/projects/*" element={<ProjectManager />} />
-       <Route path="/projects/:projectId" element={<ProjectTabs />} />
-        <Route path="/projects/:projectId/board" element={<UserBoard />} /> 
+        <Route path="/projects/:projectId" element={<ProjectTabs />} />
+        <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
       </Routes>
     </Layout>
   );

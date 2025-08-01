@@ -4,12 +4,12 @@ import { BarChart3, List, KanbanSquare } from 'lucide-react';
 import axios from 'axios';
 
 import UserSummary from './UserSummary'; // ✅ renamed to match your component
-import Backlog from './Backlog/Backlog';
+import UserBacklog from './Backlog/userbacklog';
 import UserBoard from './UserBoard';
 
 type TabType = 'summary' | 'backlog' | 'board';
 
-const ProjectTabs: React.FC = () => {
+const UserProjectTabs: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [projectName, setProjectName] = useState<string>('');
   const [selectedTab, setSelectedTab] = useState<TabType>('summary');
@@ -37,7 +37,7 @@ const ProjectTabs: React.FC = () => {
       case 'summary':
         return <UserSummary projectId={pid} projectName={projectName} />; // ✅ Correct usage
       case 'backlog':
-        return <Backlog projectId={pid} />;
+        return <UserBacklog  />;
       case 'board':
         return <UserBoard projectId={pid} projectName={projectName} />;
       default:
@@ -88,4 +88,4 @@ const ProjectTabs: React.FC = () => {
   );
 };
 
-export default ProjectTabs;
+export default UserProjectTabs;
