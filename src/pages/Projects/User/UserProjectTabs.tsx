@@ -9,7 +9,7 @@ import UserBoard from './UserBoard';
 
 type TabType = 'summary' | 'backlog' | 'board';
 
-const ProjectTabs: React.FC = () => {
+const UserProjectTabs: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [projectName, setProjectName] = useState<string>('');
   const [selectedTab, setSelectedTab] = useState<TabType>('summary');
@@ -88,4 +88,4 @@ const ProjectTabs: React.FC = () => {
   );
 };
 
-export default ProjectTabs;
+export default UserProjectTabs;

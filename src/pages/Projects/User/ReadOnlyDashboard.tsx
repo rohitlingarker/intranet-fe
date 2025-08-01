@@ -55,7 +55,7 @@ const ReadOnlyDashboard: React.FC = () => {
 
   // 🔁 Navigate to /projects/:id
   const handleProjectClick = (projectId: number) => {
-    navigate(`/projects/${projectId}`);
+    navigate(`/projects/user/${projectId}`);
   };
 
   return (

@@ -24,7 +24,7 @@ interface Task {
   status: string;
 }
  
-const UserSummary: React.FC<SummaryProps> = ({ projectId, projectName }) => {
+const Summary: React.FC<SummaryProps> = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState<Epic[]>([]);
   const [expandedEpicId, setExpandedEpicId] = useState<number | null>(null);
   const [stories, setStories] = useState<Record<number, Story[]>>({});
@@ -109,4 +109,4 @@ const UserSummary: React.FC<SummaryProps> = ({ projectId, projectName }) => {
   );
 };
  
-export default UserSummary;
+export default Summary;
