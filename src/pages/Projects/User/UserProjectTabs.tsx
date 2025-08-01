@@ -4,7 +4,7 @@ import { BarChart3, List, KanbanSquare } from 'lucide-react';
 import axios from 'axios';
 
 import UserSummary from './UserSummary'; // ✅ renamed to match your component
-import Backlog from './Backlog/Backlog';
+import UserBacklog from './Backlog/userbacklog';
 import UserBoard from './UserBoard';
 
 type TabType = 'summary' | 'backlog' | 'board';
@@ -37,7 +37,7 @@ const UserProjectTabs: React.FC = () => {
       case 'summary':
         return <UserSummary projectId={pid} projectName={projectName} />; // ✅ Correct usage
       case 'backlog':
-        return <Backlog projectId={pid} />;
+        return <UserBacklog  />;
       case 'board':
         return <UserBoard projectId={pid} projectName={projectName} />;
       default:
