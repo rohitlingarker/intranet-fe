@@ -6,8 +6,9 @@ import axios from 'axios';
 import Summary from './Summary';
 import Backlog from './Backlog/Backlog';
 import { Board } from './Board';
+import SprintBoard from './Sprint/SprintBoard';
 
-type TabType = 'summary' | 'backlog' | 'board';
+type TabType = 'summary' | 'backlog' | 'board' | 'sprint';
 
 const ProjectTabs: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -40,6 +41,8 @@ const ProjectTabs: React.FC = () => {
         return <Backlog projectId={pid} />; // ✅ updated here
       case 'board':
         return <Board projectId={pid} projectName={projectName} />;
+      case 'sprint':
+        return <SprintBoard projectId={pid} projectName={projectName} />;
       default:
         return null;
     }
@@ -80,6 +83,15 @@ const ProjectTabs: React.FC = () => {
             <KanbanSquare size={16} />
             <span>Board</span>
           </button>
+          <button
+            onClick={() => setSelectedTab('sprint')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded ${
+              selectedTab === 'sprint' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <span>Sprints</span>
+          </button>
+
         </div>
       </div>
 

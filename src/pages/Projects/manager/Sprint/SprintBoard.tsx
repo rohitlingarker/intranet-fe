@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { DndProvider, useDrop } from 'react-dnd';
+import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import StoryCard from './StoryCard'; // Reusable card component
 import CreateSprintModal from './CreateSprintModal';
 import SprintColumn from './SprintColumn'; // Column component for each sprint
-
 
 interface Story {
   id: number;
@@ -17,7 +16,7 @@ interface Story {
 interface Sprint {
   id: number;
   goal: string;
-  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED';
+  status: 'PLANNING' | 'ACTIVE' | 'COMPLETED';
   startDate: string;
   endDate: string;
 }
@@ -25,27 +24,79 @@ interface Sprint {
 const SprintBoard: React.FC<{ projectId: number }> = ({ projectId }) => {
   const [stories, setStories] = useState<Story[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [activeSprintId, setActiveSprintId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'PLANNED' | 'ACTIVE' | 'COMPLETED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'PLANNING' | 'ACTIVE' | 'COMPLETED'>('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    axios.get(`/api/projects/${projectId}/stories`).then(res => setStories(res.data));
-    axios.get(`/api/projects/${projectId}/sprints`).then(res => setSprints(res.data));
-  }, [projectId]);
-
-  const handleDropStory = (storyId: number, sprintId: number) => {
-    axios
-      .put(`/api/stories/${storyId}/assign-sprint`, { sprintId })
-      .then(() => {
-        setStories(prev =>
-          prev.map(s => (s.id === storyId ? { ...s, sprintId } : s))
-        );
-      })
-      .catch(console.error);
+  // ✅ Extracted reusable function to fetch stories
+  const fetchStories = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/api/projects/${projectId}/stories`);
+      if (Array.isArray(res.data)) {
+        setStories(res.data);
+      } else {
+        console.error('Expected stories to be an array:', res.data);
+        setStories([]);
+      }
+    } catch (err) {
+      console.error('Failed to load stories:', err);
+      setStories([]);
+    }
   };
 
-  const filteredSprints = filter === 'ALL' ? sprints : sprints.filter(s => s.status === filter);
+  const fetchSprints = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/api/projects/${projectId}/sprints`);
+      if (Array.isArray(res.data)) {
+        setSprints(res.data);
+      } else {
+        console.error('Expected sprints to be an array:', res.data);
+        setSprints([]);
+      }
+    } catch (err) {
+      console.error('Failed to load sprints:', err);
+      setSprints([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchStories();
+    fetchSprints();
+  }, [projectId]);
+
+  const handleDropStory = async (storyId: number, sprintId: number) => {
+    try {
+      await axios.put(`http://localhost:8080/api/stories/${storyId}/assign-sprint`, { sprintId });
+      await fetchStories(); // ✅ Refresh after assigning to sprint
+    } catch (err) {
+      console.error('Error assigning story to sprint:', err);
+    }
+  };
+
+  const handleStatusChange = async (sprintId: number, action: 'start' | 'complete') => {
+    try {
+      const response = await axios.put(
+        `http://localhost:8080/api/sprints/${sprintId}/${action}`
+      );
+      const updatedSprint = response.data;
+
+      // ✅ Update sprint state
+      setSprints(prev =>
+        prev.map(s => (s.id === sprintId ? updatedSprint : s))
+      );
+
+      // ✅ Refresh stories in case assignments/sprint visibility change
+      await fetchStories();
+    } catch (error) {
+      console.error(`Failed to ${action} sprint:`, error);
+    }
+  };
+
+  const filteredSprints = filter === 'ALL'
+    ? sprints
+    : sprints.filter(s => {
+        if (filter === 'PLANNING') return s.status === 'PLANNING';
+        return s.status === filter;
+      });
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -61,7 +112,7 @@ const SprintBoard: React.FC<{ projectId: number }> = ({ projectId }) => {
         </div>
 
         <div className="flex gap-4">
-          {['ALL', 'PLANNED', 'ACTIVE', 'COMPLETED'].map(type => (
+          {['ALL', 'PLANNING', 'ACTIVE', 'COMPLETED'].map(type => (
             <button
               key={type}
               className={`px-4 py-1 rounded ${
@@ -81,6 +132,7 @@ const SprintBoard: React.FC<{ projectId: number }> = ({ projectId }) => {
               sprint={sprint}
               stories={stories.filter(story => story.sprintId === sprint.id)}
               onDropStory={handleDropStory}
+              onChangeStatus={handleStatusChange}
             />
           ))}
         </div>

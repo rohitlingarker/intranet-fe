@@ -37,9 +37,17 @@ const CreateUserStory: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      title, description, status, priority,
-      storyPoints, acceptanceCriteria,
-      epicId, assigneeId, reporterId, projectId, sprintId,
+      title,
+      description,
+      status,
+      priority,
+      storyPoints,
+      acceptanceCriteria,
+      epicId: epicId || null,
+      assigneeId: assigneeId || null,
+      reporterId,
+      projectId,
+      sprintId: sprintId || null,
     };
 
     try {
@@ -62,7 +70,7 @@ const CreateUserStory: React.FC = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter user story title"
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+            className="w-full border px-3 py-2 rounded-md"
             required
           />
         </div>
@@ -74,7 +82,7 @@ const CreateUserStory: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Enter description"
-            className="w-full border px-3 py-2 rounded-md h-24 resize-none focus:outline-none focus:ring focus:ring-blue-300"
+            className="w-full border px-3 py-2 rounded-md h-24 resize-none"
             required
           />
         </div>
@@ -131,10 +139,12 @@ const CreateUserStory: React.FC = () => {
         {/* Epic, Project, Sprint */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block font-semibold mb-1">Epic</label>
+            <label className="block font-semibold mb-1">Epic (optional)</label>
             <select
               value={epicId ?? ''}
-              onChange={(e) => setEpicId(Number(e.target.value))}
+              onChange={(e) =>
+                setEpicId(e.target.value === '' ? null : Number(e.target.value))
+              }
               className="w-full border px-3 py-2 rounded-md"
             >
               <option value="">Select Epic</option>
@@ -147,8 +157,11 @@ const CreateUserStory: React.FC = () => {
             <label className="block font-semibold mb-1">Project</label>
             <select
               value={projectId ?? ''}
-              onChange={(e) => setProjectId(Number(e.target.value))}
+              onChange={(e) =>
+                setProjectId(e.target.value === '' ? null : Number(e.target.value))
+              }
               className="w-full border px-3 py-2 rounded-md"
+              required
             >
               <option value="">Select Project</option>
               {projects.map((project) => (
@@ -157,10 +170,12 @@ const CreateUserStory: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block font-semibold mb-1">Sprint</label>
+            <label className="block font-semibold mb-1">Sprint (optional)</label>
             <select
               value={sprintId ?? ''}
-              onChange={(e) => setSprintId(Number(e.target.value))}
+              onChange={(e) =>
+                setSprintId(e.target.value === '' ? null : Number(e.target.value))
+              }
               className="w-full border px-3 py-2 rounded-md"
             >
               <option value="">Select Sprint</option>
@@ -177,7 +192,9 @@ const CreateUserStory: React.FC = () => {
             <label className="block font-semibold mb-1">Assignee</label>
             <select
               value={assigneeId ?? ''}
-              onChange={(e) => setAssigneeId(Number(e.target.value))}
+              onChange={(e) =>
+                setAssigneeId(e.target.value === '' ? null : Number(e.target.value))
+              }
               className="w-full border px-3 py-2 rounded-md"
             >
               <option value="">Select Assignee</option>
@@ -190,8 +207,11 @@ const CreateUserStory: React.FC = () => {
             <label className="block font-semibold mb-1">Reporter</label>
             <select
               value={reporterId ?? ''}
-              onChange={(e) => setReporterId(Number(e.target.value))}
+              onChange={(e) =>
+                setReporterId(e.target.value === '' ? null : Number(e.target.value))
+              }
               className="w-full border px-3 py-2 rounded-md"
+              required
             >
               <option value="">Select Reporter</option>
               {users.map((user) => (
