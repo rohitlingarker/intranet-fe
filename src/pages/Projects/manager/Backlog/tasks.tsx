@@ -29,6 +29,8 @@ interface CreateTaskFormProps {
 }
 
 const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
+  const [showForm, setShowForm] = useState(true);
+
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
@@ -94,6 +96,7 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
         storyId: "",
         sprintId: "",
       });
+      setShowForm(false); // Hide form after success
     } catch (err) {
       console.error("Failed to create task", err);
       alert("❌ Error creating task.");
@@ -102,11 +105,23 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
     }
   };
 
+  if (!showForm) return null;
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 max-w-3xl mx-auto mt-10 p-6 border border-gray-200 rounded-xl shadow-lg bg-white"
+      className="relative space-y-6 max-w-3xl mx-auto mt-10 p-6 border border-gray-200 rounded-xl shadow-lg bg-white"
     >
+      {/* Close Button */}
+      <button
+        type="button"
+        onClick={() => setShowForm(false)}
+        className="absolute top-4 right-4 text-gray-500 hover:text-red-600 text-xl font-bold"
+        title="Close form"
+      >
+        ×
+      </button>
+
       <h2 className="text-2xl font-bold text-center text-gray-800">Create New Task</h2>
 
       {/* Task Info */}
@@ -138,7 +153,9 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
             className="w-full border rounded px-4 py-2"
           >
             {["BACKLOG", "TODO", "IN_PROGRESS", "DONE"].map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
 
@@ -149,7 +166,9 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
             className="w-full border rounded px-4 py-2"
           >
             {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>
+                {p}
+              </option>
             ))}
           </select>
         </div>
@@ -178,24 +197,47 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-700">👤 Assignment</h3>
 
-        <select name="projectId" value={formData.projectId} onChange={handleChange} required className="w-full border rounded px-4 py-2">
+        <select
+          name="projectId"
+          value={formData.projectId}
+          onChange={handleChange}
+          required
+          className="w-full border rounded px-4 py-2"
+        >
           <option value="">Select Project *</option>
           {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
           ))}
         </select>
 
-        <select name="reporterId" value={formData.reporterId} onChange={handleChange} required className="w-full border rounded px-4 py-2">
+        <select
+          name="reporterId"
+          value={formData.reporterId}
+          onChange={handleChange}
+          required
+          className="w-full border rounded px-4 py-2"
+        >
           <option value="">Select Reporter *</option>
           {users.map((u) => (
-            <option key={u.id} value={u.id}>{u.name}</option>
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
           ))}
         </select>
 
-        <select name="assigneeId" value={formData.assigneeId} onChange={handleChange} className="w-full border rounded px-4 py-2">
+        <select
+          name="assigneeId"
+          value={formData.assigneeId}
+          onChange={handleChange}
+          className="w-full border rounded px-4 py-2"
+        >
           <option value="">Select Assignee (Optional)</option>
           {users.map((u) => (
-            <option key={u.id} value={u.id}>{u.name}</option>
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
           ))}
         </select>
       </div>
@@ -204,17 +246,31 @@ const CreateTaskModal: React.FC<CreateTaskFormProps> = ({ onTaskCreated }) => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-700">📅 Planning (Optional)</h3>
 
-        <select name="storyId" value={formData.storyId} onChange={handleChange} className="w-full border rounded px-4 py-2">
+        <select
+          name="storyId"
+          value={formData.storyId}
+          onChange={handleChange}
+          className="w-full border rounded px-4 py-2"
+        >
           <option value="">Select Story</option>
           {stories.map((s) => (
-            <option key={s.id} value={s.id}>{s.title}</option>
+            <option key={s.id} value={s.id}>
+              {s.title}
+            </option>
           ))}
         </select>
 
-        <select name="sprintId" value={formData.sprintId} onChange={handleChange} className="w-full border rounded px-4 py-2">
+        <select
+          name="sprintId"
+          value={formData.sprintId}
+          onChange={handleChange}
+          className="w-full border rounded px-4 py-2"
+        >
           <option value="">Select Sprint</option>
           {sprints.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
       </div>

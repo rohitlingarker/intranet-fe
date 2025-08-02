@@ -16,7 +16,11 @@ interface Epic {
   projectId: number;
 }
 
-const CreateEpic: React.FC = () => {
+interface CreateEpicProps {
+  onClose: () => void;
+}
+
+const CreateEpic: React.FC<CreateEpicProps> = ({ onClose }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [formData, setFormData] = useState<Epic>({
     name: "",
@@ -50,7 +54,6 @@ const CreateEpic: React.FC = () => {
     }));
   };
 
-  // Format date to 'YYYY-MM-DDTHH:MM:SS'
   const formatDate = (dateTime: string) => {
     return dateTime ? new Date(dateTime).toISOString().slice(0, 19) : "";
   };
@@ -58,10 +61,12 @@ const CreateEpic: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
+    const formattedEpic = {
       ...formData,
       dueDate: formatDate(formData.dueDate),
     };
+
+    const payload = [formattedEpic]; // Wrap inside array
 
     axios
       .post("http://localhost:8080/api/epics", payload, {
@@ -70,7 +75,7 @@ const CreateEpic: React.FC = () => {
         },
       })
       .then(() => {
-        alert("✅ Epic created successfully!");
+        alert("✅ Epic(s) created successfully!");
         setFormData({
           name: "",
           description: "",
@@ -80,6 +85,7 @@ const CreateEpic: React.FC = () => {
           dueDate: "",
           projectId: 0,
         });
+        onClose();
       })
       .catch((err) => {
         console.error("❌ Error creating epic:", err.response?.data || err.message);
@@ -88,7 +94,26 @@ const CreateEpic: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-md space-y-6">
+    <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-md space-y-6 relative">
+      <button
+        onClick={onClose}
+        type="button"
+        className="absolute top-4 right-4 p-1 rounded-full hover:bg-red-100 transition-colors"
+        title="Close"
+        aria-label="Close form"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-red-600 hover:text-red-800"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       <h1 className="text-3xl font-bold text-gray-800 mb-4">Create a New Epic</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -128,6 +153,7 @@ const CreateEpic: React.FC = () => {
               <option value="TO_DO">To Do</option>
               <option value="IN_PROGRESS">In Progress</option>
               <option value="DONE">Done</option>
+              <option value="OPEN">Open</option>
             </select>
 
             <select

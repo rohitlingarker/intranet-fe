@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { X } from 'lucide-react'; // Add this line if using lucide icons
 
 interface Project {
   id: number;
   name: string;
 }
 
-const CreateSprint: React.FC = () => {
+interface CreateSprintProps {
+  onClose?: () => void;
+}
+
+const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     goal: '',
@@ -62,13 +67,24 @@ const CreateSprint: React.FC = () => {
         status: 'PLANNING',
         projectId: '',
       });
+      if (onClose) onClose(); // Optional: close on successful submit
     } catch (error) {
       console.error('Error creating sprint:', error);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
+    <div className="relative max-w-xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
+      {/* Close Button */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+        >
+          <X size={20} /> {/* Or use simple ×: <span className="text-xl">×</span> */}
+        </button>
+      )}
+
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Create a New Sprint</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>

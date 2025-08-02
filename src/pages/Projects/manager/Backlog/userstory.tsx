@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const CreateUserStory: React.FC = () => {
+  const [showForm, setShowForm] = useState(true);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('TODO');
@@ -37,172 +39,163 @@ const CreateUserStory: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      title, description, status, priority,
-      storyPoints, acceptanceCriteria,
-      epicId, assigneeId, reporterId, projectId, sprintId,
+      title,
+      description,
+      status,
+      priority,
+      storyPoints,
+      acceptanceCriteria,
+      epicId,
+      assigneeId,
+      reporterId,
+      projectId,
+      sprintId,
     };
 
     try {
       await axios.post('http://localhost:8080/api/stories', payload);
       alert('✅ User story created successfully!');
+      setShowForm(false); // optionally hide form on success
     } catch (error) {
       console.error('Error creating story:', error);
       alert('❌ Failed to create story.');
     }
   };
 
+  if (!showForm) return null;
+
   return (
-    <div className="max-w-2xl mx-auto my-8 p-6 bg-white rounded-2xl shadow-lg">
+    <div className="relative max-w-2xl mx-auto my-8 p-6 bg-white rounded-2xl shadow-lg">
+      {/* Close Button */}
+      <button
+        type="button"
+        onClick={() => setShowForm(false)}
+        className="absolute top-4 right-4 text-gray-500 hover:text-red-600 text-xl font-bold"
+        title="Close form"
+      >
+        ×
+      </button>
+
       <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Create New User Story</h1>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Title */}
-        <div>
-          <label className="block font-semibold mb-1">Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter user story title"
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-            required
-          />
-        </div>
 
-        {/* Description */}
-        <div>
-          <label className="block font-semibold mb-1">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter description"
-            className="w-full border px-3 py-2 rounded-md h-24 resize-none focus:outline-none focus:ring focus:ring-blue-300"
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+          required
+        />
 
-        {/* Status & Priority */}
-        <div className="flex gap-4">
-          <div className="w-1/2">
-            <label className="block font-semibold mb-1">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="TODO">TODO</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="DONE">DONE</option>
-            </select>
-          </div>
-          <div className="w-1/2">
-            <label className="block font-semibold mb-1">Priority</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
-            </select>
-          </div>
-        </div>
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
 
-        {/* Story Points & Criteria */}
-        <div className="flex gap-4">
-          <div className="w-1/2">
-            <label className="block font-semibold mb-1">Story Points</label>
-            <input
-              type="number"
-              value={storyPoints}
-              onChange={(e) => setStoryPoints(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
-          <div className="w-1/2">
-            <label className="block font-semibold mb-1">Acceptance Criteria</label>
-            <input
-              value={acceptanceCriteria}
-              onChange={(e) => setAcceptanceCriteria(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
-        </div>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="TODO">TODO</option>
+          <option value="IN_PROGRESS">IN PROGRESS</option>
+          <option value="DONE">DONE</option>
+        </select>
 
-        {/* Epic, Project, Sprint */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block font-semibold mb-1">Epic</label>
-            <select
-              value={epicId ?? ''}
-              onChange={(e) => setEpicId(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Epic</option>
-              {epics.map((epic) => (
-                <option key={epic.id} value={epic.id}>{epic.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">Project</label>
-            <select
-              value={projectId ?? ''}
-              onChange={(e) => setProjectId(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">Sprint</label>
-            <select
-              value={sprintId ?? ''}
-              onChange={(e) => setSprintId(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Sprint</option>
-              {sprints.map((sprint) => (
-                <option key={sprint.id} value={sprint.id}>{sprint.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="LOW">LOW</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="HIGH">HIGH</option>
+        </select>
 
-        {/* Assignee & Reporter */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-semibold mb-1">Assignee</label>
-            <select
-              value={assigneeId ?? ''}
-              onChange={(e) => setAssigneeId(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Assignee</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">Reporter</label>
-            <select
-              value={reporterId ?? ''}
-              onChange={(e) => setReporterId(Number(e.target.value))}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Reporter</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <input
+          type="number"
+          placeholder="Story Points"
+          value={storyPoints}
+          onChange={(e) => setStoryPoints(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        />
 
-        {/* Submit */}
-        <div className="text-center pt-4">
+        <textarea
+          placeholder="Acceptance Criteria"
+          value={acceptanceCriteria}
+          onChange={(e) => setAcceptanceCriteria(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
+
+        <select
+          value={epicId ?? ''}
+          onChange={(e) => setEpicId(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select Epic</option>
+          {epics.map((epic) => (
+            <option key={epic.id} value={epic.id}>
+              {epic.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={assigneeId ?? ''}
+          onChange={(e) => setAssigneeId(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Assign To</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={reporterId ?? ''}
+          onChange={(e) => setReporterId(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Reporter</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={projectId ?? ''}
+          onChange={(e) => setProjectId(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select Project</option>
+          {projects.map((proj) => (
+            <option key={proj.id} value={proj.id}>
+              {proj.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sprintId ?? ''}
+          onChange={(e) => setSprintId(Number(e.target.value))}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Assign to Sprint</option>
+          {sprints.map((sprint) => (
+            <option key={sprint.id} value={sprint.id}>
+              {sprint.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="text-center">
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md shadow"
