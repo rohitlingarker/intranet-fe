@@ -36,7 +36,6 @@ const ProjectDashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>({
     name: "",
@@ -58,10 +57,10 @@ const ProjectDashboard: React.FC = () => {
     setError(null);
     try {
       const res = await axios.get("http://localhost:8080/api/projects", {
-                headers:{
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}` 
-        }
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
       const data = res.data.content || res.data;
       setProjects(data);
@@ -142,16 +141,13 @@ const ProjectDashboard: React.FC = () => {
   };
 
   const submitEdit = async () => {
-    if (!editingProject) return;
-
-    if (!formData.ownerId) {
-      alert("Please select a project owner.");
+    if (!editingProject || !formData.ownerId) {
+      alert("Please complete all required fields.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-
       await axios.put(`http://localhost:8080/api/projects/${editingProject.id}`, {
         name: formData.name.trim(),
         projectKey: formData.projectKey.trim(),
@@ -160,7 +156,6 @@ const ProjectDashboard: React.FC = () => {
         ownerId: formData.ownerId,
         memberIds: formData.memberIds,
       });
-
       alert("Project updated successfully!");
       cancelEdit();
       fetchProjects();
@@ -195,7 +190,7 @@ const ProjectDashboard: React.FC = () => {
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-900"
+          className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800"
         >
           + Create Project
         </button>
@@ -314,30 +309,37 @@ const ProjectDashboard: React.FC = () => {
                   <strong>Status:</strong> {project.status}
                 </p>
 
-                <div className="mt-2">
-                  <strong>Owner:</strong>{" "}
+                <div className="mt-3">
+                  <strong>Owner:</strong>
                   {project.owner ? (
-                    <span>
-                      {project.owner.name} ({project.owner.role})
-                    </span>
+                    <div className="flex flex-col mt-1 text-sm text-gray-700">
+                      <span className="font-medium">{project.owner.name}</span>
+                      <span>{project.owner.role}</span>
+                      <span className="text-xs text-gray-500">{project.owner.email}</span>
+                    </div>
                   ) : (
-                    <span>—</span>
+                    <p className="text-gray-500">—</p>
                   )}
                 </div>
 
-                <div className="mt-2">
+                <div className="mt-3">
                   <strong>Members:</strong>
-                  <ul className="list-disc list-inside">
+                  <div className="flex flex-wrap gap-2 mt-1 text-sm">
                     {project.members.length > 0 ? (
                       project.members.map((member) => (
-                        <li key={member.id}>
-                          {member.name} ({member.role})
-                        </li>
+                        <div
+                          key={member.id}
+                          className="border rounded px-2 py-1 bg-gray-100 text-gray-800"
+                        >
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs">{member.role}</div>
+                          <div className="text-xs text-gray-500">{member.email}</div>
+                        </div>
                       ))
                     ) : (
-                      <li>—</li>
+                      <p className="text-gray-500">—</p>
                     )}
-                  </ul>
+                  </div>
                 </div>
 
                 <div className="mt-auto flex space-x-2 pt-4">

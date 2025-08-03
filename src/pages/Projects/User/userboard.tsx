@@ -20,21 +20,21 @@ const getColumnStyles = (status: Task['status']) => {
   switch (status) {
     case 'TO_DO':
       return {
-        header: 'bg-blue-800 text-white',
-        body: 'bg-blue-50',
-        border: 'border-blue-300',
+        header: 'bg-blue-900 text-white',
+        body: 'bg-white-50',
+        border: 'border-black-300',
       };
     case 'IN_PROGRESS':
       return {
-        header: 'bg-yellow-600 text-white',
-        body: 'bg-yellow-50',
-        border: 'border-yellow-300',
+        header: 'bg-blue-900 text-white',
+        body: 'bg-white-50',
+        border: 'border-black-300',
       };
     case 'DONE':
       return {
-        header: 'bg-green-700 text-white',
-        body: 'bg-green-50',
-        border: 'border-green-300',
+        header: 'bg-blue-900 text-white',
+        body: 'bg-white-50',
+        border: 'border-black-300',
       };
     default:
       return {

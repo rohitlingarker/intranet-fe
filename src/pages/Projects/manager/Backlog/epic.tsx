@@ -1,210 +1,210 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// -------------------- Interfaces --------------------
 interface Project {
   id: number;
   name: string;
-}
-
-interface Epic {
-  name: string;
-  description: string;
-  status: string;
-  priority: string;
-  progressPercentage: number;
-  dueDate: string;
-  projectId: number;
 }
 
 interface CreateEpicProps {
   onClose: () => void;
 }
 
+// -------------------- Component --------------------
 const CreateEpic: React.FC<CreateEpicProps> = ({ onClose }) => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [formData, setFormData] = useState<Epic>({
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
-    status: "TO_DO",
+    status: "OPEN",
     priority: "LOW",
     progressPercentage: 0,
     dueDate: "",
     projectId: 0,
   });
+  const [showSuccess, setShowSuccess] = useState(false);
 
+  // -------------------- Fetch Projects --------------------
   useEffect(() => {
     axios
       .get("http://localhost:8080/api/projects")
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : res.data.content;
-        setProjects(data || []);
+      .then((response) => {
+        const content = response.data.content || response.data;
+        if (Array.isArray(content)) {
+          setProjects(content);
+        } else {
+          console.error("Unexpected projects format", response.data);
+        }
       })
-      .catch((err) => {
-        console.error("Failed to fetch projects", err);
+      .catch((error) => {
+        console.error("Failed to fetch projects:", error);
       });
   }, []);
 
+  // -------------------- Handlers --------------------
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "progressPercentage" || name === "projectId" ? Number(value) : value,
+      [name]:
+        name === "progressPercentage" || name === "projectId"
+          ? Number(value)
+          : value,
     }));
-  };
-
-  const formatDate = (dateTime: string) => {
-    return dateTime ? new Date(dateTime).toISOString().slice(0, 19) : "";
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formattedEpic = {
+    const payload = {
       ...formData,
-      dueDate: formatDate(formData.dueDate),
+      dueDate: formData.dueDate + "T00:00:00",
     };
 
-    const payload = [formattedEpic]; // Wrap inside array
-
     axios
-      .post("http://localhost:8080/api/epics", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      .then(() => {
-        alert("✅ Epic(s) created successfully!");
-        setFormData({
-          name: "",
-          description: "",
-          status: "TO_DO",
-          priority: "LOW",
-          progressPercentage: 0,
-          dueDate: "",
-          projectId: 0,
-        });
-        onClose();
+      .post("http://localhost:8080/api/epics", payload)
+      .then((res) => {
+        console.log("Epic created:", res.data);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onClose();
+        }, 2000);
       })
       .catch((err) => {
-        console.error("❌ Error creating epic:", err.response?.data || err.message);
-        alert(`Failed to create epic: ${JSON.stringify(err.response?.data || err.message)}`);
+        console.error("Failed to create epic:", err);
       });
   };
 
+  // -------------------- UI --------------------
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-md space-y-6 relative">
+    <div className="relative p-4 max-w-lg mx-auto bg-white shadow-md rounded">
+      {/* Close Button */}
       <button
         onClick={onClose}
-        type="button"
-        className="absolute top-4 right-4 p-1 rounded-full hover:bg-red-100 transition-colors"
-        title="Close"
+        className="absolute top-2 right-2 text-gray-600 hover:text-red-600 text-xl font-bold"
         aria-label="Close form"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-red-600 hover:text-red-800"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        &times;
       </button>
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">Create a New Epic</h1>
+      <h2 className="text-xl font-bold mb-4 text-center">Create Epic</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Name and Description */}
+      {showSuccess && (
+        <div className="mb-4 p-2 bg-green-100 text-green-800 border border-green-300 rounded">
+          ✅ Epic created successfully!
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Epic Name */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Basic Details</h2>
+          <label htmlFor="name" className="block font-semibold mb-1">Epic Name</label>
           <input
             type="text"
             name="name"
-            placeholder="Epic Name"
+            id="name"
+            placeholder="Enter epic name"
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border p-2 rounded"
           />
+        </div>
 
+        {/* Description */}
+        <div>
+          <label htmlFor="description" className="block font-semibold mb-1">Description</label>
           <textarea
             name="description"
-            placeholder="Epic Description"
+            id="description"
+            placeholder="Enter description"
             value={formData.description}
             onChange={handleChange}
-            rows={3}
-            className="w-full border mt-3 border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border p-2 rounded"
           />
         </div>
 
-        {/* Status & Priority */}
+        {/* Status */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Status & Priority</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            >
-              <option value="TO_DO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="DONE">Done</option>
-              <option value="OPEN">Open</option>
-            </select>
-
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-            </select>
-          </div>
+          <label htmlFor="status" className="block font-semibold mb-1">Status</label>
+          <select
+            name="status"
+            id="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          >
+            <option value="OPEN">OPEN</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="DONE">DONE</option>
+          </select>
         </div>
 
-        {/* Progress & Due Date */}
+        {/* Priority */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Progress & Deadline</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="number"
-              name="progressPercentage"
-              placeholder="Progress %"
-              min={0}
-              max={100}
-              value={formData.progressPercentage}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            />
-
-            <input
-              type="datetime-local"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            />
-          </div>
+          <label htmlFor="priority" className="block font-semibold mb-1">Priority</label>
+          <select
+            name="priority"
+            id="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          >
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
         </div>
 
-        {/* Project */}
+        {/* Progress Percentage */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Select Project</h2>
+          <label htmlFor="progressPercentage" className="block font-semibold mb-1">Progress (%)</label>
+          <input
+            type="number"
+            name="progressPercentage"
+            id="progressPercentage"
+            placeholder="Progress"
+            value={formData.progressPercentage}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+            min={0}
+            max={100}
+          />
+        </div>
+
+        {/* Due Date */}
+        <div>
+          <label htmlFor="dueDate" className="block font-semibold mb-1">Due Date</label>
+          <input
+            type="date"
+            name="dueDate"
+            id="dueDate"
+            value={formData.dueDate}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        {/* Project Selector */}
+        <div>
+          <label htmlFor="projectId" className="block font-semibold mb-1">Project</label>
           <select
             name="projectId"
+            id="projectId"
             value={formData.projectId}
             onChange={handleChange}
-            required
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            className="w-full border p-2 rounded"
           >
-            <option value={0}>-- Select Project --</option>
+            <option value={0} disabled>
+              Select Project
+            </option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -213,11 +213,11 @@ const CreateEpic: React.FC<CreateEpicProps> = ({ onClose }) => {
           </select>
         </div>
 
-        {/* Submit */}
-        <div className="text-center">
+        {/* Submit Button */}
+        <div className="text-right">
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Create Epic
           </button>

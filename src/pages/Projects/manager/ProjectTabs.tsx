@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BarChart3, List, KanbanSquare } from 'lucide-react';
+import { BarChart3, List, KanbanSquare, Rows3, Flag } from 'lucide-react';
 import axios from 'axios';
 
 import Summary from './Summary';
 import Backlog from './Backlog/Backlog';
 import { Board } from './Board';
+import SprintBoard from './Sprint/SprintBoard';
+import Lists from './lists'; // ✅ Make sure this path is correct
 
-type TabType = 'summary' | 'backlog' | 'board';
+type TabType = 'summary' | 'backlog' | 'board' | 'sprint' | 'lists';
 
 const ProjectTabs: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -37,9 +39,13 @@ const ProjectTabs: React.FC = () => {
       case 'summary':
         return <Summary projectId={pid} projectName={projectName} />;
       case 'backlog':
-        return <Backlog projectId={pid} />; // ✅ updated here
+        return <Backlog projectId={pid} />;
       case 'board':
         return <Board projectId={pid} projectName={projectName} />;
+      case 'sprint':
+        return <SprintBoard projectId={pid} projectName={projectName} />;
+      case 'lists':
+        return <Lists projectId={pid}  />; // ✅ new tab
       default:
         return null;
     }
@@ -79,6 +85,24 @@ const ProjectTabs: React.FC = () => {
           >
             <KanbanSquare size={16} />
             <span>Board</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('sprint')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded ${
+              selectedTab === 'sprint' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <Flag size={16} />
+            <span>Sprints</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('lists')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded ${
+              selectedTab === 'lists' ? 'bg-blue-900 text-white' : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <Rows3 size={16} />
+            <span>Lists</span>
           </button>
         </div>
       </div>

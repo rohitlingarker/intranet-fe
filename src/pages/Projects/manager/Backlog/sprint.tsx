@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X } from 'lucide-react'; // Add this line if using lucide icons
+import { X } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -47,14 +47,36 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const parsedProjectId = parseInt(formData.projectId);
+
+    if (isNaN(parsedProjectId)) {
+      alert("❌ Please select a valid project.");
+      return;
+    }
+
+    // ✅ Payload Option 1: If backend expects `projectId`
     const payload = {
       name: formData.name,
       goal: formData.goal,
       startDate: formData.startDate,
       endDate: formData.endDate,
       status: formData.status,
-      projectId: parseInt(formData.projectId),
+      projectId: parsedProjectId,
     };
+
+    // ❗ Uncomment this if backend expects `project: { id }` instead of `projectId`
+    /*
+    const payload = {
+      name: formData.name,
+      goal: formData.goal,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      status: formData.status,
+      project: { id: parsedProjectId },
+    };
+    */
+
+    console.log("📦 Submitting payload:", payload);
 
     try {
       await axios.post('http://localhost:8080/api/sprints', payload);
@@ -67,21 +89,21 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
         status: 'PLANNING',
         projectId: '',
       });
-      if (onClose) onClose(); // Optional: close on successful submit
-    } catch (error) {
-      console.error('Error creating sprint:', error);
+      if (onClose) onClose();
+    } catch (error: any) {
+      console.error('❌ Error creating sprint:', error.response?.data || error.message);
+      alert('Failed to create sprint. Check console for details.');
     }
   };
 
   return (
     <div className="relative max-w-xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
-      {/* Close Button */}
       {onClose && (
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
         >
-          <X size={20} /> {/* Or use simple ×: <span className="text-xl">×</span> */}
+          <X size={20} />
         </button>
       )}
 
@@ -95,7 +117,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md"
           />
         </div>
 
@@ -106,7 +128,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             value={formData.goal}
             onChange={handleChange}
             rows={3}
-            className="w-full border border-gray-300 p-2 rounded-md resize-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md resize-none"
           />
         </div>
 
@@ -118,7 +140,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             value={formData.startDate}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md"
           />
         </div>
 
@@ -130,7 +152,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             value={formData.endDate}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md"
           />
         </div>
 
@@ -140,7 +162,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md"
           >
             <option value="PLANNING">Planning</option>
             <option value="ACTIVE">Active</option>
@@ -155,7 +177,7 @@ const CreateSprint: React.FC<CreateSprintProps> = ({ onClose }) => {
             value={formData.projectId}
             onChange={handleChange}
             required
-            className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 p-2 rounded-md"
           >
             <option value="">-- Select a Project --</option>
             {projects.map((project) => (
