@@ -1,21 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-}
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -25,18 +11,15 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username, password) => {
     // Mock authentication
     if (username === 'admin' && password === 'admin123') {
-      const mockUser: User = {
+      const mockUser = {
         id: '1',
         name: 'John Administrator',
         email: 'admin@company.com',

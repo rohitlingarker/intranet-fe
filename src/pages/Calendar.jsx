@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: 'meeting' | 'deadline' | 'leave' | 'holiday';
-  description?: string;
-}
 
-const Calendar: React.FC = () => {
+
+const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+  const [view, setView] = useState('month');
 
-  const mockEvents: CalendarEvent[] = [
+  const mockEvents = [
     {
       id: '1',
       title: 'Team Standup',
@@ -57,7 +50,7 @@ const Calendar: React.FC = () => {
     }
   ];
 
-  const getEventColor = (type: string) => {
+  const getEventColor = (type) => {
     switch (type) {
       case 'meeting':
         return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -72,30 +65,30 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const getDaysInMonth = (date: Date) => {
+  const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
-  const getFirstDayOfMonth = (date: Date) => {
+  const getFirstDayOfMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateMonth = (direction) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + (direction === 'next' ? 1 : -1), 1));
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
-  const isToday = (day: number) => {
+  const isToday = (day) => {
     const today = new Date();
     return today.getDate() === day && 
            today.getMonth() === currentDate.getMonth() && 
            today.getFullYear() === currentDate.getFullYear();
   };
 
-  const getEventsForDate = (day: number) => {
+  const getEventsForDate = (day) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return mockEvents.filter(event => event.date === dateStr);
   };
@@ -177,7 +170,7 @@ const Calendar: React.FC = () => {
             {['month', 'week', 'day'].map((viewType) => (
               <button
                 key={viewType}
-                onClick={() => setView(viewType as any)}
+                onClick={() => setView(viewType)}
                 className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
                   view === viewType
                     ? 'bg-[#263383] text-white'

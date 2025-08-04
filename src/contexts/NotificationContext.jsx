@@ -1,16 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface Notification {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-}
 
-interface NotificationContextType {
-  showNotification: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
-}
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext(undefined);
 
 export const useNotification = () => {
   const context = useContext(NotificationContext);
@@ -20,14 +12,12 @@ export const useNotification = () => {
   return context;
 };
 
-interface NotificationProviderProps {
-  children: ReactNode;
-}
 
-export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+export const NotificationProvider = ({ children }) => {
+  const [notifications, setNotifications] = useState([]);
+
+  const showNotification = (message, type = 'success') => {
     const id = Math.random().toString(36).substr(2, 9);
     const notification = { id, message, type };
     

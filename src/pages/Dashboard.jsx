@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Users, FolderKanban, PlaneTakeoff, Clock, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
   const moduleCards = [
     {
       title: 'User Management',

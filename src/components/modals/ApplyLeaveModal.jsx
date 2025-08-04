@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 
-interface ApplyLeaveModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (leaveData: any) => void;
-}
 
-const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClose, onSubmit }) => {
+
+const ApplyLeaveModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     leaveType: '',
     startDate: '',
@@ -15,13 +11,13 @@ const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClose, onSu
     reason: ''
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     // Basic validation
-    const newErrors: Record<string, string> = {};
+    const newErrors = {};
     if (!formData.leaveType) newErrors.leaveType = 'Leave type is required';
     if (!formData.startDate) newErrors.startDate = 'Start date is required';
     if (!formData.endDate) newErrors.endDate = 'End date is required';
@@ -40,7 +36,7 @@ const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClose, onSu
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value

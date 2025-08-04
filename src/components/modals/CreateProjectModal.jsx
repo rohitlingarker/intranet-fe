@@ -1,28 +1,24 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 
-interface CreateProjectModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (projectData: any) => void;
-}
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSubmit }) => {
+
+const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     deadline: '',
     priority: 'Medium',
-    team: [] as string[]
+    team: [] 
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
     setFormData({ title: '', description: '', deadline: '', priority: 'Medium', team: [] });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value

@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
 
-interface CreateUserModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (userData: any) => void;
-}
 
-const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,13 +11,13 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
     status: 'Active'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
     setFormData({ name: '', email: '', role: '', department: '', status: 'Active' });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value

@@ -2,8 +2,14 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Bell, LogOut, User } from 'lucide-react';
 
-const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+const Header = () => {
+  // const { user, logout } = useAuth();
+
+  // Mock user data for demonstration
+  const user = {
+    name: 'John Doe',
+    role: 'Administrator'
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -31,7 +37,7 @@ const Header: React.FC = () => {
             </div>
 
             <button
-              onClick={logout}
+              // onClick={logout}
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               title="Logout"
             >

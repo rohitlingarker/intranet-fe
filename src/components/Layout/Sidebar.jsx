@@ -19,7 +19,7 @@ const navigation = [
   { name: 'Calendar', href: '/calendar', icon: Calendar },
 ];
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
   const location = useLocation();
 
   return (
