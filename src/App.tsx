@@ -12,6 +12,7 @@ import Timesheethistorypage from './pages/Timesheets/Timesheethistorypage';
 import Calendar from './pages/Calendar';
 import TimesheetApprovalPage from './pages/Timesheets/manager/pages/TimesheetApprovalPage';
 import ApprovalTracker from './pages/Timesheets/Admin/ApprovalTracker'; 
+import DashboardHeader from './pages/Timesheets/DashboardHeader';
 
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -160,7 +160,7 @@ const mapWorkType = (type: string): string => {
         >
           <input
             type="text"
-            placeholder="Search Projects..."
+            placeholder="Search..."
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             style={{

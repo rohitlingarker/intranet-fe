@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 
 interface Approver {
@@ -14,6 +15,9 @@ interface ApprovalRow {
   showInput?: boolean;
   showSuccess?: boolean;
   showDuplicateError?: boolean;
+  showDeleteInput?: boolean;
+  showDeleteSuccess?: boolean;
+  deleteApproverId?: string;
 }
 
 const ITEMS_PER_PAGE = 8;
@@ -22,15 +26,12 @@ const ApprovalTrackerPage = () => {
   const [data, setData] = useState<ApprovalRow[]>([]);
   const [allUsers, setAllUsers] = useState<Approver[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showApproverInput, setShowApproverInput] = useState(null);
 
   const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
 
   const fetchSummaryData = async () => {
     try {
-      const res = await fetch(
-        "http://localhost:8080/api/user-approver-map/api/user-approver-summary"
-      );
+      const res = await fetch("http://localhost:8080/api/user-approver-map/api/user-approver-summary");
       const resData = await res.json();
       const transformed = resData.map((item: any) => ({
         ...item,
@@ -39,6 +40,8 @@ const ApprovalTrackerPage = () => {
         showInput: false,
         showSuccess: false,
         showDuplicateError: false,
+        showDeleteInput: false,
+        deleteApproverId: "",
       }));
       setData(transformed);
     } catch (err) {
@@ -61,10 +64,7 @@ const ApprovalTrackerPage = () => {
     fetchAllUsers();
   }, []);
 
-  const paginatedData = data.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleToggleInput = (userId: number) => {
     setData((prev) =>
@@ -73,6 +73,7 @@ const ApprovalTrackerPage = () => {
           ? {
               ...row,
               showInput: !row.showInput,
+              showDeleteInput: false,
               showSuccess: false,
               showDuplicateError: false,
               newApproverId: "",
@@ -88,9 +89,7 @@ const ApprovalTrackerPage = () => {
     setData((prev) =>
       prev.map((row) => {
         if (row.userId === userId) {
-          const isDuplicate = row.approvers.some(
-            (a) => a.id === parseInt(approverId)
-          );
+          const isDuplicate = row.approvers.some((a) => a.id === parseInt(approverId));
           return {
             ...row,
             newApproverId: approverId,
@@ -109,18 +108,15 @@ const ApprovalTrackerPage = () => {
     if (!user || !user.newApproverId || user.showDuplicateError) return;
 
     try {
-      const res = await fetch(
-        "http://localhost:8080/api/user-approver-map/create",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: userId,
-            approverId: parseInt(user.newApproverId),
-            rolePriority: "PRIMARY",
-          }),
-        }
-      );
+      const res = await fetch("http://localhost:8080/api/user-approver-map/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          approverId: parseInt(user.newApproverId),
+          rolePriority: "PRIMARY",
+        }),
+      });
 
       if (!res.ok) throw new Error("Assign failed");
 
@@ -153,28 +149,66 @@ const ApprovalTrackerPage = () => {
     }
   };
 
-  const handleDeleteAll = async (userId: number) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete all approvers for this user?"
+  const toggleDeleteInput = (userId: number) => {
+    setData((prevData) =>
+      prevData.map((row) =>
+        row.userId === userId
+          ? {
+              ...row,
+              showDeleteInput: !row.showDeleteInput,
+              showInput: false,
+              deleteApproverId: "",
+            }
+          : row
+      )
     );
-    if (!confirmed) return;
+  };
+
+  const handleDeleteInputChange = (userId: number, value: string) => {
+    setData((prevData) =>
+      prevData.map((row) =>
+        row.userId === userId ? { ...row, deleteApproverId: value } : row
+      )
+    );
+  };
+
+  const confirmDeleteApprover = async (userId: number, approverId: string) => {
+    if (!approverId) return alert("Please enter an approver ID.");
+    if (!window.confirm("Are you sure you want to delete this approver?")) return;
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/user-approver-map/delete/${userId}`,
-        {
-          method: "DELETE",
-        }
+        `http://localhost:8080/api/user-approver-map/delete/${userId}/${approverId}`,
+        { method: "DELETE" }
       );
+      if (!res.ok) throw new Error("Failed to delete approver");
 
-      if (!res.ok) throw new Error("Delete failed");
-
+      alert(`Approver with ID ${approverId} deleted for User ${userId}.`);
       await fetchSummaryData();
     } catch (err) {
+      alert("Error deleting approver.");
       console.error(err);
-      alert("Failed to delete approvers");
     }
+    toggleDeleteInput(userId);
   };
+
+  const toggleAssignInput = (userId: number) => {
+    setData((prev) =>
+      prev.map((row) =>
+        row.userId === userId
+          ? {
+              ...row,
+              showInput: !row.showInput,
+              showDeleteInput: false,
+              newApproverId: "",
+              showSuccess: false,
+              showDuplicateError: false,
+            }
+          : { ...row, showInput: false, showDeleteInput: false }
+      )
+    );
+  };
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md w-full max-w-4xl mx-auto mt-10">
@@ -186,18 +220,10 @@ const ApprovalTrackerPage = () => {
         <table className="min-w-full divide-y divide-gray-200 bg-white shadow rounded-lg overflow-hidden">
           <thead className="bg-[#b22a4f] text-white">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
-                Approvers
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase text-center">
-                Action
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">Approvers</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -219,63 +245,85 @@ const ApprovalTrackerPage = () => {
                   )}
                 </td>
                 <td className="px-6 py-3 w-80">
-                  <div className="flex flex-col gap-2 ">
+                  <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition "
-                          onClick={() => handleToggleInput(row.userId)}
-                        >
-                          Assign Approver
-                        </button>
-                      </div>
                       <button
-                        className={` w-20 h-8  px-3 py-1 rounded transition text-white ${
-                          row.approvers.length === 0
-                            ? "bg-red-300 cursor-not-allowed"
-                            : "bg-red-600 hover:bg-red-700"
-                        }`}
-                        onClick={() => handleDeleteAll(row.userId)}
+                        className="bg-[#263383] text-white px-2 py-1 rounded hover:bg-green-700 transition"
+                        onClick={() => handleToggleInput(row.userId)}
+                      >
+                        Assign Approver
+                      </button>
+                      <button
+                        className={`w-20 h-8 px-3 py-1 rounded transition text-white ${row.approvers.length === 0 ? "bg-red-300 cursor-not-allowed" : "bg-[#ff3d72] hover:bg-[#ff3d72]"}`}
+                        onClick={() => toggleDeleteInput(row.userId)}
                         disabled={row.approvers.length === 0}
                       >
-                        Delete All
+                        Delete
                       </button>
                     </div>
 
+                    {row.showDeleteInput && (
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="number"
+                          placeholder="Enter Approver ID"
+                          value={row.deleteApproverId || ""}
+                          onChange={(e) => handleDeleteInputChange(row.userId, e.target.value)}
+                          className="border border-gray-300 px-2 py-1 rounded"
+                        />
+                        <div className="flex  justify-evenly">
+                        <button
+                          className="bg-[#ff3d72] text-white px-3 py-1 rounded hover:bg-[#ff3d72] "
+                          onClick={() => confirmDeleteApprover(row.userId, row.deleteApproverId || "")}
+                        >
+                          Confirm Delete
+                        </button>
+                        <button
+                        onClick={() => toggleDeleteInput(row.userId)}
+                        className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-600 "
+                       >
+                        Cancel
+                      </button>
+                      </div>
+                      </div>
+                    )}
+
                     {row.showInput && (
-                      <div className="">
+                      <div className="flex flex-col gap-2">
                         <select
-                          className="border border-gray-300 px-2 py-1 rounded :focus-within:display-block"
+                          className="border border-gray-300 px-2 py-1 rounded"
                           value={row.newApproverId || ""}
-                          onChange={(e) =>
-                            handleInputChange(row.userId, e.target.value)
-                          }
+                          onChange={(e) => handleInputChange(row.userId, e.target.value)}
                         >
                           <option value="">Select Approver</option>
                           {allUsers.map((approver) => {
-                            const isAlreadyAssigned = row.approvers.some(
-                              (a) => a.id === approver.id
-                            );
+                            const isAlreadyAssigned = row.approvers.some((a) => a.id === approver.id);
                             return (
                               <option
                                 key={approver.id}
                                 value={approver.id}
                                 disabled={isAlreadyAssigned}
                               >
-                                {approver.name} (ID {approver.id}){" "}
-                                {isAlreadyAssigned ? " - Already Assigned" : ""}
+                                {approver.name} (ID {approver.id}) {isAlreadyAssigned ? " - Already Assigned" : ""}
                               </option>
                             );
                           })}
                         </select>
-
+                          <div className="flex justify-evenly">
                         <button
-                          className="  bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
+                          className="bg-[#ff3d72] text-white px-3 py-1 rounded hover:bg-[#ff3d72]"
                           onClick={() => handleAssign(row.userId)}
                           disabled={row.showDuplicateError}
                         >
                           Save
                         </button>
+                        <button
+                        onClick={() => toggleAssignInput(row.userId)}
+                        className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-600"
+                        >
+                         Cancel
+                        </button>
+                        </div>
                       </div>
                     )}
 
@@ -299,9 +347,7 @@ const ApprovalTrackerPage = () => {
               <td colSpan={4} className="px-6 py-4 bg-white">
                 <div className="flex justify-center items-center gap-2">
                   <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                     className="px-3 py-1 text-sm border rounded disabled:opacity-50"
                   >
@@ -311,19 +357,13 @@ const ApprovalTrackerPage = () => {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 text-sm border rounded ${
-                        currentPage === i + 1
-                          ? "bg-[#b22a4f] text-white"
-                          : "bg-white text-gray-800"
-                      }`}
+                      className={`px-3 py-1 text-sm border rounded ${currentPage === i + 1 ? "bg-[#b22a4f] text-white" : "bg-white text-gray-800"}`}
                     >
                       {i + 1}
                     </button>
                   ))}
                   <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="px-3 py-1 text-sm border rounded disabled:opacity-50"
                   >
@@ -340,3 +380,14 @@ const ApprovalTrackerPage = () => {
 };
 
 export default ApprovalTrackerPage;
+
+
+
+
+
+
+
+
+
+
+      
