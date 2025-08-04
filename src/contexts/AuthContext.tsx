@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -30,20 +30,45 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    // Check localStorage on initial load
+    return !!localStorage.getItem('user');
+  });
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [isAuthenticated, user]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Mock authentication
     if (username === 'admin' && password === 'admin123') {
       const mockUser: User = {
-        id: '1',
-        name: 'John Administrator',
-        email: 'admin@company.com',
-        role: 'System Administrator'
+        id: 'PAVEMPC7093',
+        name: 'Bob Smith',
+        email: 'Bob.smith@example.com',
+        role: 'Manager',
       };
       setUser(mockUser);
       setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      return true;
+    } else if (username === 'employee' && password === 'emp123') {
+      const mockUser: User = {
+        id: 'PAVEMPCBFFA',
+        name: 'Ajay Kumar Korada',  
+        email: 'ajay@korada.com',
+        role: 'Employee'
+      };
+      setUser(mockUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(mockUser));
       return true;
     }
     return false;
@@ -52,6 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('user');
   };
 
   const value = {

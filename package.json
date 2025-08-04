@@ -10,10 +10,26 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chakra-ui/react": "^3.22.0",
+    "@chakra-ui/theme-tools": "^2.2.6",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@headlessui/react": "^2.2.6",
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.11.0",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.9",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
+    "react-datepicker": "^8.4.0",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.7.0"
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "react-paginate": "^8.3.0",
+    "react-router-dom": "^7.7.0",
+    "react-toastify": "^11.0.5",
+    "recharts": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
