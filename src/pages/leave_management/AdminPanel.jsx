@@ -174,7 +174,7 @@ const AdminPanel = ({ employeeId }) => {
       <AddLeaveTypeModal
         isOpen={isAddLeaveTypeModalOpen}
         onClose={() => setIsAddLeaveTypeModalOpen(false)}
-      />
+      /> 
     </div>
   );
 };
