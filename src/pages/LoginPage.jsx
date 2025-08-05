@@ -23,11 +23,11 @@ const LoginPage = () => {
       } else {
         const role = localStorage.getItem("userRole");
         if (role === 'System Administrator') {
-          navigate('/projects/dashboard');
+          navigate('/dashboard');
         } else if (role === 'Developer') {
-          navigate('/projects/developer');
+          navigate('/dashboard');
         } else if (role === 'Manager') {
-          navigate('/projects/manager');
+          navigate('/dashboard');
         } else {
           navigate('/dashboard'); // fallback
         }
