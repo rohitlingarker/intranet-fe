@@ -18,7 +18,7 @@ const Pagination = ({ currentPage, totalPages, onPrevious, onNext }) => {
 
       {/* Page Info */}
       <span className="text-gray-700 font-semibold text-sm">
-        Page <span className="text-blue-500">{currentPage}</span> / {totalPages}
+        Page <span className="text-blue-600">{currentPage}</span> / {totalPages}
       </span>
 
       {/* Next Button */}

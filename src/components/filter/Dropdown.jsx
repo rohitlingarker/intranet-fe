@@ -1,20 +1,56 @@
 import React from "react";
+import SearchInput from "../../components/filter/SearchInput";
+import DateFilter from "../../components/filter/DateFilter";
+import Dropdown from "../../components/filter/Dropdown";
 
-const Dropdown = ({ options, selectedOption, setSelectedOption }) => {
+const TimesheetFilters = ({
+  searchText,
+  setSearchText,
+  filterDate,
+  setFilterDate,
+  filterStatus,
+  setFilterStatus,
+}) => {
   return (
-    <select
-      className="border p-2 rounded w-full"
-      value={selectedOption}
-      onChange={(e) => setSelectedOption(e.target.value)}
+    <div
+      style={{
+        display: "flex",
+        gap: 16,
+        alignItems: "center",
+        background: "#fff",
+        borderRadius: 8,
+        padding: "16px 20px",
+        boxShadow: "0 1px 6px #e4e7ee",
+        marginTop: 28,
+        marginBottom: 22,
+      }}
     >
-      <option value="">Select an option</option>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
+      {/* ✅ Reuse Search Component */}
+      <SearchInput
+        placeholder="Search..."
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+      />
+
+      {/* ✅ Reuse Date Component */}
+      <DateFilter
+        value={filterDate}
+        onChange={(e) => setFilterDate(e.target.value)}
+      />
+
+      {/* ✅ Reuse Dropdown Component */}
+      <Dropdown
+        value={filterStatus}
+        onChange={(e) => setFilterStatus(e.target.value)}
+        options={[
+          { label: "All Status", value: "" },
+          { label: "Pending", value: "PENDING" },
+          { label: "Approved", value: "APPROVED" },
+          { label: "Rejected", value: "REJECT" },
+        ]}
+      />
+    </div>
   );
 };
 
-export default Dropdown;
+export default TimesheetFilters;

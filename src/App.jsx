@@ -7,6 +7,8 @@ import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import TimesheetHistoryPage from './pages/Timesheet/TimesheetHistoryPage';
+import ManagerApprovalPage from './pages/Timesheet/ManagerApproval/ManagerApprovalPage';
+
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -34,7 +36,8 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/timesheethistory" element={<TimesheetHistoryPage />} />
+        <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+        <Route path="/managerapproval" element={<ManagerApprovalPage />} />
         {/* Add more routes as needed */}
         {/* <Route path="*" element={<NotFound />} /> */}
         <Route path="/intranet-form" element={<IntranetForm />} />

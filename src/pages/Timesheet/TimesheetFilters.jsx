@@ -1,5 +1,14 @@
-import React from "react";
 
+ import React from "react";
+
+  const statusMapping = {
+  "Pending": "PENDING",
+  "Approved": "APPROVED",
+  "Rejected": "REJECTED",
+  "All Status": "" // For showing all
+};
+
+ 
 const TimesheetFilters = ({
   searchText,
   setSearchText,
