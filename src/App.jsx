@@ -12,6 +12,12 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
+import IntranetForm from './components/forms/IntranetForm'; 
+// const ProtectedRoute = ({ children }) => {
+//   const { isAuthenticated } = useAuth();
+//   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+// };
+
 const AppRoutes = () => {
   // const { isAuthenticated } = useAuth();
 
@@ -31,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/timesheethistory" element={<TimesheetHistoryPage />} />
         {/* Add more routes as needed */}
         {/* <Route path="*" element={<NotFound />} /> */}
+        <Route path="/intranet-form" element={<IntranetForm />} />
       </Routes>
     </Layout>
   );
