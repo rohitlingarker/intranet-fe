@@ -29,6 +29,21 @@ export interface Task {
   storyPoints?: number;
 }
 
+export interface Sprint {
+  id: number;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED';
+}
+
+export interface Story {
+  id: number;
+  title: string;
+  status: 'todo' | 'inprogress' | 'done';
+  sprintId: number | null;
+}
+
 export interface AppState {
   projects: Project[];
   tasks: Task[];
