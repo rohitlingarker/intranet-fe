@@ -103,7 +103,7 @@ const TimesheetTable = ({
                           : "text-yellow-600"
                       }`}
                     >
-                    {mapStatus(row.approvalStatus)}
+                    {mapStatus(row.status)}
                     </td>
                   </tr>
                   {expandedRow === row.timesheetId && (

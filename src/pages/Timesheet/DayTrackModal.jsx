@@ -121,7 +121,7 @@ const DayTrackModal = ({ isOpen, onClose }) => {
           fromTime: `${workDate}T${task.startTime}:00`,
           toTime: `${workDate}T${task.endTime}:00`,
           hoursWorked: calculateHoursWorked(task.startTime, task.endTime),
-          otherDescription: otherChecked ? otherText : "",
+          otherDescription: otherChecked ? otherText : "Nothing",
         });
       });
     });

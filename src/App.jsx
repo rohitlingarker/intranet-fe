@@ -102,11 +102,8 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<Calendar />} />
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-        <Route path="/managerapproval" element={<ManagerApprovalPage />} />
-        {/* Add more routes as needed */}
-        {/* <Route path="*" element={<NotFound />} /> */}
+        {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
         <Route path="/intranet-form" element={<IntranetForm />} />
 
         {/* Projects */}
