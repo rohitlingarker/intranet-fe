@@ -1,11 +1,12 @@
-
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const DayTrackModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
 
+  const [workDate, setWorkDate] = useState(
+    () => new Date().toISOString().split("T")[0]
+  );
   const [workType, setWorkType] = useState("");
   const [otherChecked, setOtherChecked] = useState(false);
   const [otherText, setOtherText] = useState("");
@@ -29,7 +30,8 @@ const DayTrackModal = ({ isOpen, onClose }) => {
     name: "Ajay Kumar",
   };
 
-  const getSelectedProjects = () => projectEntries.map((entry) => entry.project);
+  const getSelectedProjects = () =>
+    projectEntries.map((entry) => entry.project);
 
   const handleProjectChange = (index, value) => {
     const updatedEntries = [...projectEntries];
@@ -69,7 +71,9 @@ const DayTrackModal = ({ isOpen, onClose }) => {
         },
       ]);
     } else {
-      alert("Please fill out all fields of the last project before adding a new one.");
+      alert(
+        "Please fill out all fields of the last project before adding a new one."
+      );
     }
   };
 
@@ -95,25 +99,66 @@ const DayTrackModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = {
-      employeeId: employee.id,
-      employeeName: employee.name,
-      workType,
-      otherChecked,
-      otherText,
-      projectEntries,
-    };
+  const calculateHoursWorked = (start, end) => {
+    const startTime = new Date(`1970-01-01T${start}:00`);
+    const endTime = new Date(`1970-01-01T${end}:00`);
+    const diffInMs = endTime - startTime;
+    return diffInMs > 0 ? diffInMs / (1000 * 60 * 60) : 0;
+  };
 
-    console.log("Submitted data:", formData);
-    navigate("/timesheets");
-    onClose();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = [];
+
+    projectEntries.forEach((entry) => {
+      entry.tasks.forEach((task) => {
+        payload.push({
+          projectId: parseInt(entry.project),
+          taskId: parseInt(task.task),
+          description: task.description,
+          workType,
+          fromTime: `${workDate}T${task.startTime}:00`,
+          toTime: `${workDate}T${task.endTime}:00`,
+          hoursWorked: calculateHoursWorked(task.startTime, task.endTime),
+          otherDescription: otherChecked ? otherText : "",
+        });
+      });
+    });
+
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/timesheet/create?workDate=" + workDate,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to submit timesheet");
+      }
+
+      console.log("Submitted:", payload);
+      navigate("/timesheets");
+      onClose();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit timesheet.");
+    }
   };
 
   if (!isOpen) return null;
 
-  const allProjects = ["Project A", "Project B", "Project C"];
+  const allProjects = [
+    { id: 1, name: "Project A" },
+    { id: 2, name: "Project B" },
+    { id: 3, name: "Project C" },
+  ];
+
   const selectedProjects = getSelectedProjects();
 
   return (
@@ -152,6 +197,16 @@ const DayTrackModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          <div>
+            <label className="font-medium">Work Date</label>
+            <input
+              type="date"
+              value={workDate}
+              onChange={(e) => setWorkDate(e.target.value)}
+              className="w-full border px-2 py-1 rounded"
+            />
+          </div>
+
           {projectEntries.map((entry, index) => (
             <div key={index} className="border p-3 rounded mb-3 bg-gray-50">
               <div className="grid grid-cols-12 gap-2 items-end">
@@ -163,9 +218,17 @@ const DayTrackModal = ({ isOpen, onClose }) => {
                     className="w-full border px-2 py-1 rounded"
                   >
                     <option value="">-- Select Project --</option>
-                    {allProjects.filter(p => !selectedProjects.includes(p) || p === entry.project).map((project) => (
-                      <option key={project} value={project}>{project}</option>
-                    ))}
+                    {allProjects
+                      .filter(
+                        (p) =>
+                          !selectedProjects.includes(p.id.toString()) ||
+                          p.id.toString() === entry.project
+                      )
+                      .map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div className="col-span-3">
@@ -187,14 +250,19 @@ const DayTrackModal = ({ isOpen, onClose }) => {
                       <select
                         value={taskEntry.task}
                         onChange={(e) =>
-                          handleTaskChange(index, taskIndex, "task", e.target.value)
+                          handleTaskChange(
+                            index,
+                            taskIndex,
+                            "task",
+                            e.target.value
+                          )
                         }
                         className="w-full border px-2 py-1 rounded"
                         disabled={!entry.project}
                       >
                         <option value="">-- Select Task --</option>
-                        <option value="Design">Design</option>
-                        <option value="Development">Development</option>
+                        <option value="1">Design</option>
+                        <option value="2">Development</option>
                       </select>
                     </div>
                     <div className="col-span-3">
@@ -213,7 +281,12 @@ const DayTrackModal = ({ isOpen, onClose }) => {
                     <textarea
                       value={taskEntry.description}
                       onChange={(e) =>
-                        handleTaskChange(index, taskIndex, "description", e.target.value)
+                        handleTaskChange(
+                          index,
+                          taskIndex,
+                          "description",
+                          e.target.value
+                        )
                       }
                       className="w-full border px-2 py-1 rounded"
                       rows={2}
@@ -227,7 +300,12 @@ const DayTrackModal = ({ isOpen, onClose }) => {
                         type="time"
                         value={taskEntry.startTime}
                         onChange={(e) =>
-                          handleTaskChange(index, taskIndex, "startTime", e.target.value)
+                          handleTaskChange(
+                            index,
+                            taskIndex,
+                            "startTime",
+                            e.target.value
+                          )
                         }
                         className="w-full border px-2 py-1 rounded"
                       />
@@ -238,7 +316,12 @@ const DayTrackModal = ({ isOpen, onClose }) => {
                         type="time"
                         value={taskEntry.endTime}
                         onChange={(e) =>
-                          handleTaskChange(index, taskIndex, "endTime", e.target.value)
+                          handleTaskChange(
+                            index,
+                            taskIndex,
+                            "endTime",
+                            e.target.value
+                          )
                         }
                         className="w-full border px-2 py-1 rounded"
                       />
