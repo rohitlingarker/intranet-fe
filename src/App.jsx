@@ -16,7 +16,7 @@ import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
-//import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
+import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
 import IntranetForm from "./components/forms/IntranetForm";
 
 import Sidebar from "./pages/Projects/manager/Sidebar";
@@ -121,7 +121,7 @@ const AppRoutes = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  if (!isAuthenticated) return <LoginPage />;
+  // if (!isAuthenticated) return <LoginPage />;
 
   return (
     <Layout>
@@ -129,7 +129,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-        {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
+        <Route path="/managerapproval" element={<ManagerApprovalPage />} /> 
         <Route path="/intranet-form" element={<IntranetForm />} />
 
         {/* Projects */}
