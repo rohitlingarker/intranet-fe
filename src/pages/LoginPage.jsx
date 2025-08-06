@@ -109,7 +109,7 @@ export default function LoginPage() {
  
     try {
       login(user.token); // Save token to context
-      navigate("/home");
+      navigate("/dashboard");
     } catch (err) {
       alert("Login failed: " + err.message);
     } finally {

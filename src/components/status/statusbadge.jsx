@@ -29,7 +29,7 @@ const StatusBadge = ({ label, size = "md" }) => {
   } else if (
     normalized.includes("reject") ||
     normalized.includes("cancel") ||
-    normalized.includes("fail")
+    normalized.includes("fail") 
   ) {
     bgColor = "bg-red-100";
     textColor = "text-red-600";

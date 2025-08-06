@@ -2,20 +2,19 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import Table from "../../../../components/Table/table";
+import GenericTable from "../../../../components/Table/table"; // ✅ Use GenericTable
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
-import { Ban, Pencil, Trash2, UserX } from "lucide-react";
-import StatusBadge from "../../../../components/Status/statusbadge";
- 
+import { Pencil, UserX } from "lucide-react";
+
 const SORT_DIRECTIONS = {
   ASC: "asc",
   DESC: "desc",
 };
- 
+
 const ITEMS_PER_PAGE = 10;
- 
+
 export default function UsersTable() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,17 +22,17 @@ export default function UsersTable() {
   const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
- 
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
- 
+
   useEffect(() => {
     if (!token) {
       toast.warn("Session expired. Please login again.");
       navigate("/");
     }
   }, [token, navigate]);
- 
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -54,10 +53,10 @@ export default function UsersTable() {
         setLoading(false);
       }
     };
- 
+
     fetchUsers();
   }, [token, navigate]);
- 
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) =>
       `${user.first_name} ${user.last_name} ${user.email} ${user.contact}`
@@ -65,7 +64,7 @@ export default function UsersTable() {
         .includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
- 
+
   const sortedUsers = useMemo(() => {
     const copy = [...filteredUsers];
     copy.sort((a, b) => {
@@ -75,7 +74,7 @@ export default function UsersTable() {
           aVal = `${a.first_name} ${a.last_name}`.toLowerCase();
           bVal = `${b.first_name} ${b.last_name}`.toLowerCase();
           break;
-        case "mail":
+        case "email":
           aVal = (a.mail ?? "").toLowerCase();
           bVal = (b.mail ?? "").toLowerCase();
           break;
@@ -96,14 +95,14 @@ export default function UsersTable() {
     });
     return copy;
   }, [filteredUsers, sortBy, sortDirection]);
- 
+
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return sortedUsers.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedUsers, currentPage]);
- 
+
   const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
- 
+
   const toggleSort = (key) => {
     if (sortBy === key) {
       setSortDirection((prev) =>
@@ -114,7 +113,7 @@ export default function UsersTable() {
       setSortDirection(SORT_DIRECTIONS.ASC);
     }
   };
- 
+
   const handleDelete = async (userId) => {
     if (!window.confirm("Are you sure you want to deactivate this user?")) return;
     try {
@@ -130,40 +129,26 @@ export default function UsersTable() {
       toast.error("Failed to deactivate user.");
     }
   };
- 
-  const renderSortHeader = (label, key) => (
-    <span onClick={() => toggleSort(key)} className="cursor-pointer select-none">
-      {label}
-      {sortBy === key && (sortDirection === SORT_DIRECTIONS.ASC ? " ▲" : " ▼")}
-    </span>
-  );
- 
+
   const headers = [
     "ID",
-    renderSortHeader("Name", "name"),
-    renderSortHeader("Email", "mail"),
-    renderSortHeader("Contact", "contact"),
-    renderSortHeader("Status", "status"),
+    "Name",
+    "Email",
+    "Contact",
+    "Status",
     "Actions",
   ];
- 
-  const renderRow = (user) => [
-    <td className="border p-2" key="id">
-      {user.user_id}
-    </td>,
-    <td className="border p-2" key="name">
-      {user.first_name} {user.last_name}
-    </td>,
-    <td className="border p-2" key="mail">
-      {user.mail}
-    </td>,
-    <td className="border p-2" key="contact">
-      {user.contact}
-    </td>,
-    <td className="border p-2" key="status">
-      <StatusBadge label={user.is_active ? "Active" : "Inactive"} size="sm" />
-    </td>,
-    <td className="border p-2" key="actions">
+
+  const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
+
+  // ✅ Transform data for GenericTable
+  const tableData = paginatedUsers.map((user) => ({
+    user_id: user.user_id,
+    name: `${user.first_name} ${user.last_name}`,
+    mail: user.mail,
+    contact: user.contact,
+    status: user.is_active ? "Active" : "Inactive",
+    actions: (
       <div className="flex gap-4 items-center">
         <span
           className="cursor-pointer text-blue-600 hover:text-blue-800"
@@ -182,9 +167,9 @@ export default function UsersTable() {
           <UserX size={18} />
         </span>
       </div>
-    </td>
-  ];
- 
+    ),
+  }));
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -206,7 +191,7 @@ export default function UsersTable() {
           </Button>
         </div>
       </div>
- 
+
       <SearchInput
         onSearch={(value) => {
           setSearchTerm(value);
@@ -215,19 +200,14 @@ export default function UsersTable() {
         placeholder="Search users by name, email, or contact..."
         className="mb-4 max-w-md"
       />
- 
-      <div className="relative overflow-x-auto rounded shadow border border-gray-200 p-2">
-        {loading ? (
-          <div className="p-6 text-center">Loading users...</div>
-        ) : (
-          <Table
-            headers={headers}
-            rows={paginatedUsers}
-            renderRow={(user) => renderRow(user)}
-          />
-        )}
-      </div>
- 
+
+      <GenericTable
+        headers={headers}
+        rows={tableData}
+        columns={columns}
+        loading={loading}
+      />
+
       {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -239,5 +219,3 @@ export default function UsersTable() {
     </div>
   );
 }
- 
- 

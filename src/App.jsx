@@ -129,13 +129,6 @@ const AppRoutes = () => {
   return (
     <>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calendar" element={<Calendar />} />
-
-        <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-        <Route path="/managerapproval" element={<ManagerApprovalPage />} /> 
-        
-        <Route path="/intranet-form" element={<IntranetForm />} />
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
 
