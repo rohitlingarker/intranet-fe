@@ -1,15 +1,33 @@
-import React from "react";
+import { useState, useEffect } from "react";
 
-const Search = ({ searchTerm, setSearchTerm }) => {
+export default function SearchInput({
+  onSearch,
+  delay = 300,
+  placeholder = "Search...",
+  className = "",
+}) {
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [query, delay]);
+
+  useEffect(() => {
+    onSearch(debouncedQuery.trim());
+  }, [debouncedQuery]);
+
   return (
     <input
       type="text"
-      placeholder="Search..."
-      className="border p-2 rounded w-full"
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder={placeholder}
+      className={`border border-gray-300 rounded px-3 py-2 w-full ${className}`}
     />
   );
-};
-
-export default Search;
+}
