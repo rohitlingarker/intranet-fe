@@ -24,6 +24,8 @@ import AdminDashboard from './pages/Projects/Admin/admindashboard';
 import UserDashboard from './pages/Projects/User/userdashboard';
 import UserBacklog from './pages/Projects/User/Backlog/userbacklog';
 import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
+import ProjectList from './pages/Projects/manager/ProjectList';
+
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -91,6 +93,8 @@ const AppRoutes = () => {
         <Route path="/projects/*" element={<ProjectManager />} />
         <Route path="/projects/:projectId" element={<ProjectTabs />} />
         <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+        <Route path="/projects/list" element={<ProjectList />} />
+
       </Routes>
     </Layout>
   );
