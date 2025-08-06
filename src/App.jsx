@@ -31,13 +31,32 @@ import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
 import AdminDashboard from "./pages/Projects/Admin/admindashboard";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 
+// ✅ User Management
+import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
+import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
+import UpdateUserRoles from "./pages/UserManagement/admin/userManagement/UpdateUserRoles";
+import EditUserRoleForm from "./pages/UserManagement/admin/userManagement/EditUserRoleForm";
+import UsersTable from "./pages/UserManagement/admin/userManagement/UsersTable";
+
+// ✅ Roles & Permissions
+import RoleManagement from "./pages/UserManagement/admin/roleManagement/RoleManagement";
+import PermissionManagement from "./pages/UserManagement/admin/permissionManagement/PermissionManagement";
+import PermissionGroupManagement from "./pages/UserManagement/admin/permissionGroupManagement/PermissionGroupManagement";
+import GroupDetails from "./pages/UserManagement/admin/permissionGroupManagement/GroupDetails";
+
+import AccessPointForm from "./pages/UserManagement/admin/accessPointManagement/AccessPointForm";
+import AccessPointDetails from "./pages/UserManagement/admin/accessPointManagement/AccessPointDetails";
+import AccessPointEdit from "./pages/UserManagement/admin/accessPointManagement/AccessPointEdit";
+import AccessPointMapping from "./pages/UserManagement/admin/accessPointManagement/AccessPointMapping";
+import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
+
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
 };
 
-// 📌 Save last path on route change
+// ✅ Save last path on every navigation
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
@@ -46,10 +65,9 @@ const SaveLastPath = () => {
   return null;
 };
 
-// 📁 Projects Manager Page Layout
+// ✅ Project Manager Demo Layout
 const ProjectManager = () => {
-  const [showCreateProjectModal, setShowCreateProjectModal] =
-    React.useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -79,7 +97,7 @@ const ProjectManager = () => {
   );
 };
 
-// 🌐 App Routes
+// ✅ Application Routes
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -95,28 +113,54 @@ const AppRoutes = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // if (!isAuthenticated) return <LoginPage />;
-
   return (
-    <Layout>
+    <>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-        <Route path="/managerapproval" element={<ManagerApprovalPage />} /> 
-        <Route path="/intranet-form" element={<IntranetForm />} />
+        {/* Public Route */}
+        <Route path="/" element={<LoginPage />} />
 
-        {/* Projects */}
-        <Route path="/projects/dashboard" element={<AdminDashboard />} />
-        <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
-        <Route path="/projects/manager" element={<ProjectDashboard />} />
-        <Route path="/projects/*" element={<ProjectManager />} />
-        <Route path="/projects/:projectId" element={<ProjectTabs />} />
-        <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+        {/* Protected Routes */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Main */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+          <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          <Route path="/intranet-form" element={<IntranetForm />} />
+
+          {/* Projects */}
+          <Route path="/projects/dashboard" element={<AdminDashboard />} />
+          <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
+          <Route path="/projects/manager" element={<ProjectDashboard />} />
+          <Route path="/projects/*" element={<ProjectManager />} />
+          <Route path="/projects/:projectId" element={<ProjectTabs />} />
+          <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+
+          {/* User Management */}
+          <Route path="/user-management/users" element={<UsersTable />} />
+          <Route path="/user-management/users/create" element={<CreateUser />} />
+          <Route path="/user-management/users/edit/:id" element={<EditUser />} />
+          <Route path="/user-management/users/roles" element={<UpdateUserRoles />} />
+          <Route path="/user-management/roles/edit-role/:userId" element={<EditUserRoleForm />} />
+          <Route path="/user-management/roles" element={<RoleManagement />} />
+          <Route path="/user-management/permissions" element={<PermissionManagement />} />
+          <Route path="/user-management/groups" element={<PermissionGroupManagement />} />
+          <Route path="/user-management/groups/:groupId" element={<GroupDetails />} />
+          <Route path="/user-management/access-points" element={<AccessPointManagement />} />
+          <Route path="/user-management/access-points/create" element={<AccessPointForm />} />
+          <Route path="/user-management/access-points/:access_id" element={<AccessPointDetails />} />
+          <Route path="/user-management/access-points/edit/:access_id" element={<AccessPointEdit />} />
+          <Route path="/user-management/access-points/admin/access-point-mapping" element={<AccessPointMapping />} />
+        </Route>
       </Routes>
-
       <SaveLastPath />
-    </Layout>
+    </>
   );
 };
 
