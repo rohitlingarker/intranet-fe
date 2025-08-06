@@ -18,8 +18,12 @@ import LoginPage from "./pages/LoginPage";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
+
+
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
+
+
 import IntranetForm from "./components/forms/IntranetForm";
 
 import Sidebar from "./pages/Projects/manager/Sidebar";
@@ -103,6 +107,9 @@ const ProjectManager = () => {
   );
 };
 
+
+
+
 // ✅ Application Routes
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -122,6 +129,13 @@ const AppRoutes = () => {
   return (
     <>
       <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<Calendar />} />
+
+        <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+        <Route path="/managerapproval" element={<ManagerApprovalPage />} /> 
+        
+        <Route path="/intranet-form" element={<IntranetForm />} />
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
 
