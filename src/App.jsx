@@ -31,6 +31,32 @@ import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
 import AdminDashboard from "./pages/Projects/Admin/admindashboard";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 
+// User Management
+import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
+import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
+import UpdateUserRoles from "./pages/UserManagement/admin/userManagement/UpdateUserRoles";
+import EditUserRoleForm from "./pages/UserManagement/admin/userManagement/EditUserRoleForm";
+import UsersTable from "./pages/UserManagement/admin/userManagement/UsersTable"; 
+
+
+// /* User Management Roles */
+import RoleManagement from "./pages/UserManagement/admin/roleManagement/RoleManagement";
+
+import PermissionManagement from "./pages/UserManagement/admin/permissionManagement/PermissionManagement";
+
+import PermissionGroupManagement from "./pages/UserManagement/admin/permissionGroupManagement/PermissionGroupManagement";
+import GroupDetails from "./pages/UserManagement/admin/permissionGroupManagement/GroupDetails";
+
+import AccessPointForm from './pages/UserManagement/admin/accessPointManagement/AccessPointForm';
+import AccessPointDetails from './pages/UserManagement/admin/accessPointManagement/AccessPointDetails';
+import AccessPointEdit from './pages/UserManagement/admin/accessPointManagement/AccessPointEdit';
+import AccessPointMapping from './pages/UserManagement/admin/accessPointManagement/AccessPointMapping';
+import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
+
+// import AccessPointList from './pages/UserManagement/admin/accessPointManagement/AccessPointList';
+
+
+
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -113,6 +139,35 @@ const AppRoutes = () => {
         <Route path="/projects/*" element={<ProjectManager />} />
         <Route path="/projects/:projectId" element={<ProjectTabs />} />
         <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+
+
+        {/* User */}
+        {/* <Route path="user-management" element={<UserManagementLayout />}> */}
+          {/* About User */}
+          <Route path="/user-management/users" element={<UsersTable />} />
+          <Route path="/user-management/users/create" element={<CreateUser />} />
+          <Route path="/user-management/users/edit/:id" element={<EditUser />} />
+          <Route path="/user-management/users/roles" element={<UpdateUserRoles />} />
+          <Route path="/user-management/roles/edit-role/:userId" element={<EditUserRoleForm />} />
+
+          {/* About Roles */}
+          <Route path="/user-management/roles" element={<RoleManagement />} />
+
+          {/* About permissions */}
+          <Route path="/user-management/permissions" element={<PermissionManagement />} />
+
+          {/* About Groups */}
+          <Route path="/user-management/groups" element={<PermissionGroupManagement />} />
+          <Route path="/user-management/groups/:groupId" element={<GroupDetails />} />
+
+          {/* About accesspoints */}
+          <Route path="/user-management/access-points" element={<AccessPointManagement />} />
+          <Route path="/user-management/access-points/create" element={<AccessPointForm />} />
+          <Route path="/user-management/access-points/:access_id" element={<AccessPointDetails />} />
+          <Route path="/user-management/access-points/edit/:access_id" element={<AccessPointEdit />} />
+          <Route path="/user-management/access-points/admin/access-point-mapping" element={<AccessPointMapping />} />
+          
+        {/* </Route> */}
       </Routes>
 
       <SaveLastPath />
