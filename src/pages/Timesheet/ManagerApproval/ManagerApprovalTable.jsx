@@ -1,60 +1,29 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight, Check, X, Eye } from "lucide-react";
-
-const mapStatus = (status) => {
-  switch (status) {
-    case "APPROVED":
-      return "Approved";
-    case "REJECTED":
-      return "Rejected";
-    case "PENDING":
-      return "Pending";
-    default:
-      return status;
-  }
-};
+import StatusBadge from "../../../components/status/StatusBadge";
+import ExpandedRow from "./Expandedrow";
 
 const ManagerApprovalTable = ({
   loading,
   data,
   onApprove,
-  onReject,
-  fetchTimesheetDetails, // <-- function to call API for details
-  projectIdToName,
-  taskIdToName,
-  mapWorkType,
+  onReject
 }) => {
   const [expandedRow, setExpandedRow] = useState(null);
-  const [detailsData, setDetailsData] = useState([]);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const headers = [
     "",
+    "User ID",
+    "User Name",
     "Timesheet ID",
-    "Employee",
     "Date",
     "Hours Worked",
     "Status",
     "Actions",
   ];
 
-  const toggleRow = async (id) => {
-    if (expandedRow === id) {
-      setExpandedRow(null);
-      return;
-    }
-    setExpandedRow(id);
-    setLoadingDetails(true);
-
-    try {
-      const response = await fetchTimesheetDetails(id); // API call
-      setDetailsData(response.entries || []); // assuming response has entries
-    } catch (error) {
-      console.error("Error fetching details:", error);
-      setDetailsData([]);
-    } finally {
-      setLoadingDetails(false);
-    }
+  const toggleRow = (id) => {
+    setExpandedRow(expandedRow === id ? null : id);
   };
 
   return (
@@ -90,7 +59,6 @@ const ManagerApprovalTable = ({
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
                   }`}
                 >
-                  {/* Expand Icon */}
                   <td
                     className="p-3 text-center cursor-pointer"
                     onClick={() => toggleRow(row.timesheetId)}
@@ -102,24 +70,19 @@ const ManagerApprovalTable = ({
                     )}
                   </td>
                   <td className="p-3 font-medium text-gray-700">
+                    {row.userId}
+                  </td>
+                  <td className="p-3 text-gray-600">{row.userName}</td>
+                  <td className="p-3 font-medium text-gray-700">
                     {row.timesheetId}
                   </td>
-                  <td className="p-3 text-gray-600">{row.employeeName}</td>
                   <td className="p-3 text-gray-600">{row.workDate}</td>
                   <td className="p-3 text-gray-600">{row.hoursWorked}</td>
-                  <td
-                    className={`p-3 font-semibold ${
-                      row.approvalStatus === "APPROVED"
-                        ? "text-green-600"
-                        : row.approvalStatus === "REJECTED"
-                        ? "text-red-600"
-                        : "text-yellow-600"
-                    }`}
-                  >
-                    {mapStatus(row.approvalStatus)}
+                  <td className="p-3">
+                    <StatusBadge label={row.approvalStatus} />
                   </td>
                   <td className="p-3 flex gap-2">
-                    {row.approvalStatus === "PENDING" && (
+                    {row.approvalStatus === "Pending" && (
                       <>
                         <button
                           onClick={() => onApprove(row.timesheetId)}
@@ -137,79 +100,18 @@ const ManagerApprovalTable = ({
                         </button>
                       </>
                     )}
-                    <button
-                      onClick={() => {}}
-                      className="flex items-center justify-center p-2 text-blue-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-                      title="View Details"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
+                    
                   </td>
                 </tr>
-
-                {/* Expanded Row with Cards */}
                 {expandedRow === row.timesheetId && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="p-4 bg-gray-100 border-t border-gray-300"
-                    >
-                      <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-                        <h4 className="font-semibold mb-4 text-gray-800 text-md">
-                          Timesheet Details
-                        </h4>
-                        {loadingDetails ? (
-                          <div className="text-gray-500">Loading details...</div>
-                        ) : detailsData.length === 0 ? (
-                          <div className="text-gray-500">No details found.</div>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {detailsData.map((entry, idx) => (
-                              <div
-                                key={idx}
-                                className="p-4 border rounded-lg shadow-sm bg-gray-50"
-                              >
-                                <p className="text-sm mb-2">
-                                  <strong>Project:</strong>{" "}
-                                  {projectIdToName[entry.projectId] ||
-                                    `Project-${entry.projectId}`}
-                                </p>
-                                <p className="text-sm mb-2">
-                                  <strong>Task:</strong>{" "}
-                                  {taskIdToName[entry.taskId] ||
-                                    `Task-${entry.taskId}`}
-                                </p>
-                                <p className="text-sm mb-2">
-                                  <strong>Start:</strong>{" "}
-                                  {new Date(entry.fromTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                                <p className="text-sm mb-2">
-                                  <strong>End:</strong>{" "}
-                                  {new Date(entry.toTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                                <p className="text-sm mb-2">
-                                  <strong>Work Type:</strong>{" "}
-                                  {mapWorkType(entry.workType)}
-                                </p>
-                                <p className="text-sm">
-                                  <strong>Description:</strong> {entry.description}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  
+                  <ExpandedRow
+                    entries={row.entries}
+                    onClose={() => setExpandedRow(null)}
+                  />
                 )}
               </React.Fragment>
-            ))}
+            ))} 
           </tbody>
         </table>
       )}
@@ -218,7 +120,3 @@ const ManagerApprovalTable = ({
 };
 
 export default ManagerApprovalTable;
-
-
-
-
