@@ -95,21 +95,66 @@ const ManagerApprovalPage = () => {
     }, 1500);
   }, []);
 
-  const handleApprove = (id) => {
-    setData((prev) =>
-      prev.map((row) =>
-        row.timesheetId === id ? { ...row, status: "APPROVED" } : row
-      )
-    );
-  };
+  const handleApprove = async (id) => {
+  // const managerId = getManagerIdFromToken();
+  const managerId = "3"; // Mock manager ID for testing
 
-  const handleReject = (id) => {
-    setData((prev) =>
-      prev.map((row) =>
-        row.timesheetId === id ? { ...row, approvalStatus: "REJECTED" } : row
-      )
-    );
-  };
+  try {
+    const response = await fetch(`http://localhost:8080/api/timesheets/review/${managerId}?status=APPROVED`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        timesheetId: id,
+        comment: 'Approved by manager',
+      }),
+    });
+
+    if (response.ok) {
+      setData((prev) =>
+        prev.map((row) =>
+          row.timesheetId === id ? { ...row, approvalStatus: 'APPROVED' } : row
+        )
+      );
+    } else {
+      console.error('Failed to approve timesheet');
+    }
+  } catch (error) {
+    console.error('Error approving timesheet:', error);
+  }
+};
+
+const handleReject = async (id) => {
+  // const managerId = getUserIdFromToken(localStorage.getItem("token"));
+  const managerId = 3; // Mock manager ID for testing
+
+  try {
+    const response = await fetch(`http://localhost:8080/api/timesheets/api/timesheets/review/${managerId}?status=REJECTED`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        timesheetId: id,
+        comment: 'Rejected by manager',
+      }),
+    });
+
+    if (response.ok) {
+      setData((prev) =>
+        prev.map((row) =>
+          row.timesheetId === id ? { ...row, approvalStatus: 'REJECTED' } : row
+        )
+      );
+    } else {
+      console.error('Failed to reject timesheet');
+    }
+  } catch (error) {
+    console.error('Error rejecting timesheet:', error);
+  }
+};
+
 
   const handleView = (row) => {
     alert(`Viewing details of ${row.employeeName} (Timesheet ID: ${row.timesheetId})`);

@@ -28,6 +28,13 @@ const ManagerApprovalTable = ({
   const [detailsData, setDetailsData] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
+  const [rejectingRow, setRejectingRow] = useState(null); // timesheetId being rejected
+  const [commentInputs, setCommentInputs] = useState({});
+
+  const handleCommentChange = (id, value) => {
+    setCommentInputs((prev) => ({ ...prev, [id]: value }));
+  };
+
   const headers = [
     "",
     "Timesheet ID",
@@ -129,12 +136,64 @@ const ManagerApprovalTable = ({
                           <Check className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => onReject(row.timesheetId)}
+                          onClick={() => setRejectingRow(row.timesheetId)}
                           className="flex items-center justify-center p-2 text-red-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
                           title="Reject"
                         >
                           <X className="w-5 h-5" />
                         </button>
+                        {rejectingRow === row.timesheetId && (
+                          <tr>
+                            <td colSpan={7} className="bg-red-50 px-4 py-3">
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Enter rejection comment"
+                                  value={commentInputs[row.timesheetId] || ""}
+                                  onChange={(e) =>
+                                    handleCommentChange(
+                                      row.timesheetId,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
+                                />
+                                <div className="flex gap-2 mt-2 md:mt-0">
+                                  <button
+                                    onClick={() => {
+                                      onReject(
+                                        row.timesheetId,
+                                        commentInputs[row.timesheetId] || ""
+                                      );
+                                      setRejectingRow(null);
+                                      setCommentInputs((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[row.timesheetId];
+                                        return updated;
+                                      });
+                                    }}
+                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+                                  >
+                                    Confirm Reject
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setRejectingRow(null);
+                                      setCommentInputs((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[row.timesheetId];
+                                        return updated;
+                                      });
+                                    }}
+                                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
                       </>
                     )}
                     <button
@@ -159,7 +218,9 @@ const ManagerApprovalTable = ({
                           Timesheet Details
                         </h4>
                         {loadingDetails ? (
-                          <div className="text-gray-500">Loading details...</div>
+                          <div className="text-gray-500">
+                            Loading details...
+                          </div>
                         ) : detailsData.length === 0 ? (
                           <div className="text-gray-500">No details found.</div>
                         ) : (
@@ -181,24 +242,31 @@ const ManagerApprovalTable = ({
                                 </p>
                                 <p className="text-sm mb-2">
                                   <strong>Start:</strong>{" "}
-                                  {new Date(entry.fromTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                                  {new Date(entry.fromTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
                                 </p>
                                 <p className="text-sm mb-2">
                                   <strong>End:</strong>{" "}
-                                  {new Date(entry.toTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                                  {new Date(entry.toTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
                                 </p>
                                 <p className="text-sm mb-2">
                                   <strong>Work Type:</strong>{" "}
                                   {mapWorkType(entry.workType)}
                                 </p>
                                 <p className="text-sm">
-                                  <strong>Description:</strong> {entry.description}
+                                  <strong>Description:</strong>{" "}
+                                  {entry.description}
                                 </p>
                               </div>
                             ))}
@@ -218,7 +286,3 @@ const ManagerApprovalTable = ({
 };
 
 export default ManagerApprovalTable;
-
-
-
-
