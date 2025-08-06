@@ -55,11 +55,6 @@
 
 
 
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import ManagerApprovalTable from "./ManagerApprovalTable";
 
@@ -103,7 +98,7 @@ const ManagerApprovalPage = () => {
   const handleApprove = (id) => {
     setData((prev) =>
       prev.map((row) =>
-        row.timesheetId === id ? { ...row, approvalStatus: "APPROVED" } : row
+        row.timesheetId === id ? { ...row, status: "APPROVED" } : row
       )
     );
   };
