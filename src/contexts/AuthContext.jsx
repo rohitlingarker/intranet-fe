@@ -1,70 +1,56 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const login = async (username, password) => {
-    let mockUser = null;
-
-    if (username === 'admin' && password === 'admin123') {
-      mockUser = {
-        id: '1',
-        name: 'John Administrator',
-        email: 'admin@company.com',
-        role: 'System Administrator',
-      };
-    } else if (username === 'developer' && password === 'dev123') {
-      mockUser = {
-        id: '2',
-        name: 'Dev User',
-        email: 'developer@company.com',
-        role: 'Developer',
-      };
-    } else if (username === 'manager' && password === 'manager123') {
-      mockUser = {
-        id: '3',
-        name: 'Manager User',
-        email: 'manager@company.com',
-        role: 'Manager',
-      };
-    }
-
-    if (mockUser) {
-      setUser(mockUser);
+  const loadUser = (token) => {
+    try {
+      const decoded = jwtDecode(token);
+      setUser(decoded);
       setIsAuthenticated(true);
-      localStorage.setItem('userRole', mockUser.role);
-      return true;
+    } catch {
+      setUser(null);
+      setIsAuthenticated(false);
     }
+  };
 
-    return false;
+  const login = (token) => {
+    localStorage.setItem("token", token);
+    loadUser(token);
   };
 
   const logout = () => {
+    localStorage.removeItem("token");
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('userRole');
   };
 
-  const value = {
-    isAuthenticated,
-    user,
-    login,
-    logout,
-  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      loadUser(token);
+    }
+  }, []);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

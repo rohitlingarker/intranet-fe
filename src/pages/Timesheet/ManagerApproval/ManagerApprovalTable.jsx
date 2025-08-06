@@ -6,8 +6,12 @@ import ExpandedRowInline from "./ExpandedRowInline";
 
 const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
   const [expandedRow, setExpandedRow] = useState(null);
+  const [detailsData, setDetailsData] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
   const [rejectingRow, setRejectingRow] = useState(null); // timesheetId being rejected
   const [commentInputs, setCommentInputs] = useState({});
+
   const handleCommentChange = (id, value) => {
     setCommentInputs((prev) => ({ ...prev, [id]: value }));
   };
@@ -99,6 +103,58 @@ const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
                         >
                           <X className="w-5 h-5" />
                         </button>
+                        {rejectingRow === row.timesheetId && (
+                          <tr>
+                            <td colSpan={7} className="bg-red-50 px-4 py-3">
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Enter rejection comment"
+                                  value={commentInputs[row.timesheetId] || ""}
+                                  onChange={(e) =>
+                                    handleCommentChange(
+                                      row.timesheetId,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
+                                />
+                                <div className="flex gap-2 mt-2 md:mt-0">
+                                  <button
+                                    onClick={() => {
+                                      onReject(
+                                        row.timesheetId,
+                                        commentInputs[row.timesheetId] || ""
+                                      );
+                                      setRejectingRow(null);
+                                      setCommentInputs((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[row.timesheetId];
+                                        return updated;
+                                      });
+                                    }}
+                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+                                  >
+                                    Confirm Reject
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setRejectingRow(null);
+                                      setCommentInputs((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[row.timesheetId];
+                                        return updated;
+                                      });
+                                    }}
+                                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
                       </>
                     )}
                   </td>

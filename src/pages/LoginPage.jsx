@@ -1,114 +1,180 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Building2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+import { FaBuilding, FaMicrosoft } from "react-icons/fa";
+import { useRef } from "react";
+ 
+ 
+let intranetLogo;
+try {
+  intranetLogo = require("../../assets/intranet-logo.png");
+} catch (e) {
+  intranetLogo = null;
+}
+ 
+const useQuery = () => new URLSearchParams(useLocation().search);
+ 
+export default function LoginPage() {
+  const [email, setMail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const success = await login(username, password);
-      if (!success) {
-        setError('Invalid credentials. Use one of the following: admin/admin123, developer/dev123, manager/manager123');
-      } else {
-        const role = localStorage.getItem("userRole");
-        if (role === 'System Administrator') {
-          navigate('/dashboard');
-        } else if (role === 'Developer') {
-          navigate('/dashboard');
-        } else if (role === 'Manager') {
-          navigate('/dashboard');
-        } else {
-          navigate('/dashboard'); // fallback
-        }
+  const location = useLocation();
+  const query = useQuery();
+ 
+  const calledOnce = useRef(false);
+ 
+  useEffect(() => {
+    if (calledOnce.current) return;
+ 
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+    const error = params.get("error");
+ 
+    if (error) {
+      alert(`Login error: ${error}`);
+      navigate("/login", { replace: true });
+      return;
+    }
+    if (!code) return;
+ 
+    calledOnce.current = true;
+ 
+    const doLogin = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/auth/callback?code=${encodeURIComponent(code)}`
+        );
+        const { access_token, redirect: redirectPath } = response.data;
+ 
+        console.log("Access Token:", access_token);
+        login(access_token);
+ 
+        window.history.replaceState({}, document.title, window.location.pathname);
+        navigate(redirectPath || "/home", { replace: true });
+      } catch (err) {
+        const errDetail =
+          err.response?.data?.error_description ||
+          err.response?.data?.detail ||
+          err.message;
+        console.error("OAuth login failed:", err);
+        alert("OAuth login failed: " + errDetail);
+ 
+        window.history.replaceState({}, document.title, window.location.pathname);
+        navigate("/", { replace: true });
+      } finally {
+        setLoading(false);
       }
+    };
+ 
+    doLogin();
+  }, [location.search, login, navigate]);
+ 
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      alert("Please enter both email and password.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await axios.post("http://localhost:8000/auth/login", {
+        email,
+        password,
+      });
+      console.log(res);
+      const token = res.data.access_token;
+      const user = res.data.user;
+ 
+      login(token);
+      navigate(res.data.redirect);
     } catch (err) {
-      setError('Login failed. Please try again.');
+      alert("Login failed: " + (err.response?.data?.detail || err.message));
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
+ 
+  const handleMicrosoftLogin = () => {
+    window.location.href = "http://localhost:8000/auth/ms-login";
+  };
+ 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#081534] to-[#0f1536] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-[#263383] p-3 rounded-lg">
-                <Building2 className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Enterprise Intranet</h1>
-            <p className="text-gray-600">Sign in to your account</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#263383] focus:border-transparent transition-colors"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#263383] focus:border-transparent transition-colors"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
+    <div className="min-h-screen flex items-center justify-center bg-[#101a36]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 flex flex-col items-center">
+        <div className="bg-[#27348b] rounded-xl p-4 mb-6 flex items-center justify-center">
+          {intranetLogo ? (
+            <img src={intranetLogo} alt="Intranet Logo" className="w-16 h-16" />
+          ) : (
+            <FaBuilding className="text-white text-4xl" />
+          )}
+        </div>
+        <h2 className="text-3xl font-bold text-blue-900 text-center mb-6">
+          Enterprise Intranet
+        </h2>
+        <div className="w-full space-y-4">
+          <div className="flex flex-col gap-3">
             <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#263383] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#3548b6] focus:outline-none focus:ring-2 focus:ring-[#263383] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleMicrosoftLogin}
+              type="button"
+              className="flex items-center justify-center gap-3 w-full px-4 py-2 border border-gray-300 rounded-lg bg-white hover:shadow-md transition text-sm font-medium"
+              disabled={loading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              <div className="p-1 rounded bg-[#f3f3f3]">
+                <FaMicrosoft className="text-2xl text-[#5c5c5c]" />
+              </div>
+              <span className="flex-1 text-gray-800">
+                Continue with Microsoft
+              </span>
             </button>
-          </form>
-
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-            <p><strong>Demo Credentials:</strong></p>
-            <p>Username: admin | Password: admin123</p>
-            <p>Username: developer | Password: dev123</p>
-            <p>Username: manager | Password: manager123</p>
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-300" />
+              <span className="mx-3 text-xs text-gray-400 font-medium">or</span>
+              <div className="flex-grow border-t border-gray-300" />
+            </div>
           </div>
+ 
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setMail(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+          />
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full bg-[#276ef1] text-white py-2 rounded-lg hover:bg-[#1d265c] transition disabled:opacity-50 text-lg font-semibold"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </div>
+        <div className="flex justify-between mt-6 text-sm text-gray-600 w-full">
+          <button
+            onClick={() => navigate("/register")}
+            className="hover:underline hover:text-blue-600"
+            type="button"
+          >
+            Create Account
+          </button>
+          <button
+            onClick={() => navigate("/forgot")}
+            className="hover:underline hover:text-blue-600"
+            type="button"
+          >
+            Forgot Password?
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}
