@@ -8,6 +8,9 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
@@ -53,6 +56,9 @@ import AccessPointDetails from "./pages/UserManagement/admin/accessPointManageme
 import AccessPointEdit from "./pages/UserManagement/admin/accessPointManagement/AccessPointEdit";
 import AccessPointMapping from "./pages/UserManagement/admin/accessPointManagement/AccessPointMapping";
 import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
+
+import Profile from "./pages/UserManagement/user/Profile";
+import EditProfile from "./pages/UserManagement/user/EditProfile";
 
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -123,13 +129,6 @@ const AppRoutes = () => {
   return (
     <>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calendar" element={<Calendar />} />
-
-        <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-        <Route path="/managerapproval" element={<ManagerApprovalPage />} /> 
-        
-        <Route path="/intranet-form" element={<IntranetForm />} />
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
 
@@ -147,6 +146,9 @@ const AppRoutes = () => {
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
+
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
 
           {/* Projects */}
           <Route path="/projects/dashboard" element={<AdminDashboard />} />
@@ -181,6 +183,8 @@ const AppRoutes = () => {
 // 🚀 App Entry Point
 function App() {
   return (
+    <>
+    <ToastContainer position="top-center" autoClose={3000} />
     <Router>
       <AuthProvider>
         <NotificationProvider>
@@ -190,6 +194,7 @@ function App() {
         </NotificationProvider>
       </AuthProvider>
     </Router>
+    </>
   );
 }
 

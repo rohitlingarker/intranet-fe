@@ -4,6 +4,7 @@ import RoleForm from "./RoleForm";
 import PermissionManagement from "./PermissionManagement";
 import PermissionGroupManagement from "./PermissionGroupManagement";
 import { getAllAccessPoints } from "../../../../services/roleManagementService";
+import Navbar from "../../../../components/Navbar/Navbar";
 
 export default function RoleManagement() {
   const [roles, setRoles] = useState([]);
@@ -53,38 +54,28 @@ export default function RoleManagement() {
     { id: "groups", label: "Permission Groups", icon: "📋" }
   ];
 
+  // Prepare nav items for Navbar component
+  const navItems = tabs.map(tab => ({
+    name: tab.label,
+    onClick: () => setActiveTab(tab.id),
+    isActive: activeTab === tab.id,
+  }));
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-3xl font-bold text-blue-800 mb-6">Role Management</h2>
+    <div>
+      {/* Navbar with sticky behavior */}
+      <Navbar logo="Role Management" navItems={navItems} />
 
-      {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="flex border-b border-gray-200">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition-colors duration-200 ${
-                activeTab === tab.id
-                  ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
+      <div className="p-6 max-w-6xl mx-auto">
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200 mt-4">
           {activeTab === "roles" && (
             <div>
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Role Management</h3>
                 <p className="text-sm text-gray-600 mt-1">Create, edit, and delete user roles</p>
               </div>
-              <RoleForm 
+              <RoleForm
                 roles={roles}
                 setRoles={setRoles}
                 onRoleUpdate={handleRoleUpdate}
@@ -112,45 +103,6 @@ export default function RoleManagement() {
             </div>
           )}
         </div>
-      {/* </div>
-
-      Quick Stats/Summary
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> */}
-        {/* <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Roles</p>
-              <p className="text-2xl font-bold text-blue-600">{roles.length}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <span className="text-2xl">👥</span>
-            </div>
-          </div>
-        </div> */}
-
-        {/* <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Access Points</p>
-              <p className="text-2xl font-bold text-green-600">{accessPoints.length}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <span className="text-2xl">🔐</span>
-            </div>
-          </div>
-        </div> */}
-
-        {/* <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Tab</p>
-              <p className="text-lg font-semibold text-gray-800 capitalize">{activeTab}</p>
-            </div>
-            <div className="p-3 bg-gray-100 rounded-full">
-              <span className="text-2xl">📊</span>
-            </div>
-          </div>
-        </div> */}
       </div>
     </div>
   );

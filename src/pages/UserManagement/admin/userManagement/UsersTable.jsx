@@ -2,17 +2,26 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import GenericTable from "../../../../components/Table/table"; // ✅ Use GenericTable
+import Pagination from "../../../../components/Pagination/pagination";
+import Button from "../../../../components/Button/Button";
+import SearchInput from "../../../../components/filter/Searchbar";
+import { Pencil, UserX } from "lucide-react";
 
 const SORT_DIRECTIONS = {
   ASC: "asc",
   DESC: "desc",
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function UsersTable() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("name"); // default sort
+  const [sortBy, setSortBy] = useState("name");
   const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -29,9 +38,7 @@ export default function UsersTable() {
       try {
         setLoading(true);
         const res = await axios.get("http://localhost:8000/admin/users", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(res.data || []);
       } catch (err) {
@@ -50,41 +57,51 @@ export default function UsersTable() {
     fetchUsers();
   }, [token, navigate]);
 
-  const sortedUsers = useMemo(() => {
-    if (!users) return [];
-    const copy = [...users];
-    copy.sort((a, b) => {
-      let aVal;
-      let bVal;
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) =>
+      `${user.first_name} ${user.last_name} ${user.email} ${user.contact}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm]);
 
+  const sortedUsers = useMemo(() => {
+    const copy = [...filteredUsers];
+    copy.sort((a, b) => {
+      let aVal, bVal;
       switch (sortBy) {
         case "name":
           aVal = `${a.first_name} ${a.last_name}`.toLowerCase();
           bVal = `${b.first_name} ${b.last_name}`.toLowerCase();
           break;
-        case "mail":
-          aVal = (a.mail ?? "").toString().toLowerCase();
-          bVal = (b.mail ?? "").toString().toLowerCase();
+        case "email":
+          aVal = (a.mail ?? "").toLowerCase();
+          bVal = (b.mail ?? "").toLowerCase();
           break;
         case "contact":
-          aVal = (a.contact ?? "").toString().toLowerCase();
-          bVal = (b.contact ?? "").toString().toLowerCase();
+          aVal = (a.contact ?? "").toString();
+          bVal = (b.contact ?? "").toString();
           break;
         case "status":
           aVal = a.is_active ? 1 : 0;
           bVal = b.is_active ? 1 : 0;
           break;
         default:
-          aVal = "";
-          bVal = "";
+          aVal = bVal = "";
       }
-
-      if (aVal < bVal) return sortDirection === SORT_DIRECTIONS.ASC ? -1 : 1;
-      if (aVal > bVal) return sortDirection === SORT_DIRECTIONS.ASC ? 1 : -1;
-      return 0;
+      return sortDirection === SORT_DIRECTIONS.ASC
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
     });
     return copy;
-  }, [users, sortBy, sortDirection]);
+  }, [filteredUsers, sortBy, sortDirection]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedUsers.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedUsers, currentPage]);
+
+  const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
 
   const toggleSort = (key) => {
     if (sortBy === key) {
@@ -101,14 +118,10 @@ export default function UsersTable() {
     if (!window.confirm("Are you sure you want to deactivate this user?")) return;
     try {
       await axios.delete(`http://localhost:8000/admin/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setUsers((prev) =>
-        prev.map((u) =>
-          u.user_id === userId ? { ...u, is_active: false } : u
-        )
+        prev.map((u) => (u.user_id === userId ? { ...u, is_active: false } : u))
       );
       toast.success("User deactivated.");
     } catch (err) {
@@ -117,130 +130,92 @@ export default function UsersTable() {
     }
   };
 
-  const renderSortIndicator = (column) => {
-    if (sortBy === column) {
-      return sortDirection === SORT_DIRECTIONS.ASC ? " ▲" : " ▼";
-    }
-    return "";
-  };
+  const headers = [
+    "ID",
+    "Name",
+    "Email",
+    "Contact",
+    "Status",
+    "Actions",
+  ];
+
+  const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
+
+  // ✅ Transform data for GenericTable
+  const tableData = paginatedUsers.map((user) => ({
+    user_id: user.user_id,
+    name: `${user.first_name} ${user.last_name}`,
+    mail: user.mail,
+    contact: user.contact,
+    status: user.is_active ? "Active" : "Inactive",
+    actions: (
+      <div className="flex gap-4 items-center">
+        <span
+          className="cursor-pointer text-blue-600 hover:text-blue-800"
+          onClick={() => navigate(`/user-management/users/edit/${user.user_id}`)}
+          title="Edit"
+        >
+          <Pencil size={18} />
+        </span>
+        <span
+          className={`cursor-pointer ${
+            user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
+          }`}
+          onClick={() => user.is_active && handleDelete(user.user_id)}
+          title="Deactivate"
+        >
+          <UserX size={18} />
+        </span>
+      </div>
+    ),
+  }));
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-2xl font-semibold text-gray-800">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
-          <button
+          <Button
             onClick={() => navigate("/user-management/users/create")}
-            className="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-950"
+            variant="primary"
+            size="medium"
           >
             + Add User
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => navigate("/user-management/users/roles")}
-            className="bg-pink-900 text-white px-4 py-2 rounded shadow hover:bg-pink-950"
+            variant="secondary"
+            size="medium"
           >
             User Roles
-          </button>
+          </Button>
         </div>
       </div>
 
-      <p className="text-gray-600 mb-4">
-        View and manage all registered users in the system.
-      </p>
+      <SearchInput
+        onSearch={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
+        placeholder="Search users by name, email, or contact..."
+        className="mb-4 max-w-md"
+      />
 
-      <div className="relative overflow-x-auto rounded shadow border border-gray-200">
-        {loading ? (
-          <div className="p-6 text-center">Loading users...</div>
-        ) : (
-          <table className="min-w-full table-fixed divide-y divide-gray-200 bg-white">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 w-[8%]">
-                  ID
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer w-[18%]"
-                  onClick={() => toggleSort("name")}
-                >
-                  Name{renderSortIndicator("name")}
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer w-[22%]"
-                  onClick={() => toggleSort("mail")}
-                >
-                  Email{renderSortIndicator("mail")}
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer w-[15%]"
-                  onClick={() => toggleSort("contact")}
-                >
-                  Contact{renderSortIndicator("contact")}
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-medium text-gray-500 cursor-pointer w-[12%]"
-                  onClick={() => toggleSort("status")}
-                >
-                  Status{renderSortIndicator("status")}
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 w-[25%]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {sortedUsers.length > 0 ? (
-                sortedUsers.map((user) => (
-                  <tr key={user.user_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 text-sm">{user.user_id}</td>
-                    <td className="px-4 py-4 text-sm">
-                      {user.first_name} {user.last_name}
-                    </td>
-                    <td className="px-4 py-4 text-sm">{user.mail}</td>
-                    <td className="px-4 py-4 text-sm">{user.contact}</td>
-                    <td className="px-4 py-4 text-sm">
-                      <span
-                        className={
-                          user.is_active ? "text-green-600" : "text-red-500"
-                        }
-                      >
-                        {user.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm flex gap-4">
-                      <button
-                        onClick={() =>
-                          navigate(
-                            `/user-management/users/edit/${user.user_id}`
-                          )
-                        }
-                        className="text-blue-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.user_id)}
-                        className="text-red-500 hover:underline"
-                        disabled={!user.is_active}
-                      >
-                        Deactivate
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-gray-500"
-                  >
-                    No users found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <GenericTable
+        headers={headers}
+        rows={tableData}
+        columns={columns}
+        loading={loading}
+      />
+
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        />
+      )}
     </div>
   );
 }
