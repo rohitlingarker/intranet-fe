@@ -1,30 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-interface Comment {
-  id: number;
-  content: string;
-  createdAt: string;
-  createdBy: string;
-  replies: Comment[];
-}
-
-interface User {
-  id: number;
-  name: string;
-}
-
-interface CommentBoxProps {
-  epicId?: number;
-  storyId?: number;
-  taskId?: number;
-}
-
-const CommentBox: React.FC<CommentBoxProps> = ({ epicId, storyId, taskId }) => {
-  const [comments, setComments] = useState<Comment[]>([]);
+const CommentBox = ({ epicId, storyId, taskId }) => {
+  const [comments, setComments] = useState([]);
   const [content, setContent] = useState('');
-  const [userId, setUserId] = useState<number>(1); // default user
-  const [users, setUsers] = useState<User[]>([]);
+  const [userId, setUserId] = useState(1); // default user
+  const [users, setUsers] = useState([]);
 
   const baseUrl = 'http://localhost:8080/api/comments';
 
@@ -45,7 +26,7 @@ const CommentBox: React.FC<CommentBoxProps> = ({ epicId, storyId, taskId }) => {
       .catch((err) => console.error('Failed to load users', err));
   }, [epicId, storyId, taskId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!content || !userId) return;
 
@@ -63,7 +44,7 @@ const CommentBox: React.FC<CommentBoxProps> = ({ epicId, storyId, taskId }) => {
     .catch((err) => console.error('Failed to post comment', err));
   };
 
-  const renderComments = (comments: Comment[], level: number = 0) => (
+  const renderComments = (comments, level = 0) => (
     comments.map((comment) => (
       <div key={comment.id} className={`ml-${level * 4} mt-2 border-l-2 pl-2`}>
         <p className="text-sm">
