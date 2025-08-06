@@ -9,13 +9,15 @@ const getColumnStyles = (status) => {
     case 'IN_PROGRESS':
     case 'DONE':
       return {
-        header: 'bg-gradient-to-r from-blue-900 to-blue-800 text-white',
-        body: 'bg-white',
+        header: 'bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center',
+        body: 'bg-white rounded-b-2xl p-4 min-h-[300px]',
+        container: 'rounded-2xl shadow-lg border border-gray-300 flex flex-col',
       };
     default:
       return {
-        header: 'bg-gray-300 text-black',
-        body: 'bg-gray-100',
+        header: 'bg-gray-300 text-black rounded-t-2xl font-bold text-lg py-3 text-center',
+        body: 'bg-gray-100 rounded-b-2xl p-4 min-h-[300px]',
+        container: 'rounded-2xl shadow-lg border border-gray-300 flex flex-col',
       };
   }
 };
@@ -29,7 +31,7 @@ const KanbanCard = ({ task }) => {
   return (
     <div
       ref={dragRef}
-      className="bg-white p-4 rounded-lg shadow-md mb-3 cursor-move border border-gray-200 hover:shadow-lg transition-shadow flex justify-between items-start"
+      className="bg-white rounded-2xl shadow p-6 mb-3 cursor-move border border-gray-200 hover:shadow-lg transition-shadow flex justify-between items-start"
       title={task.title}
     >
       <div>
@@ -49,17 +51,12 @@ const KanbanColumn = ({ status, tasks, onDrop }) => {
     drop: (item) => onDrop(item.id, status),
   });
 
-  const { header, body } = getColumnStyles(status);
+  const { header, body, container } = getColumnStyles(status);
 
   return (
-    <div
-      ref={dropRef}
-      className="flex flex-col rounded-2xl shadow-lg border border-gray-300 overflow-hidden"
-    >
-      <div className={`py-3 text-center font-bold text-lg ${header}`}>
-        {status.replace('_', ' ')}
-      </div>
-      <div className={`${body} flex-1 p-4 min-h-[300px]`}>
+    <div ref={dropRef} className={container}>
+      <div className={header}>{status.replace('_', ' ')}</div>
+      <div className={body}>
         {tasks.length === 0 ? (
           <p className="text-gray-400 italic">No tasks</p>
         ) : (
@@ -130,9 +127,9 @@ const Board = ({ projectId, projectName }) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6">
-        <h3 className="text-2xl font-bold mb-6">Scrum Board: {projectName}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-6 bg-gray-100 min-h-screen">
+        <h3 className="text-2xl font-bold mb-6 text-gray-900">Scrum Board: {projectName}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {['TO_DO', 'IN_PROGRESS', 'DONE'].map((status) => (
             <KanbanColumn
               key={status}

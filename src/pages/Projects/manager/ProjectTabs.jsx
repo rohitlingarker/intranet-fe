@@ -1,19 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { BarChart3, List, KanbanSquare, Rows3, Flag } from 'lucide-react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { useParams, useLocation } from "react-router-dom";
+import axios from "axios";
 
-import Summary from './Summary';
-import Backlog from './Backlog/Backlog';
-import  Board  from './Board';
-import SprintBoard from './Sprint/SprintBoard';
-import Lists from './lists';
+import Summary from "./Summary";
+import Backlog from "./Backlog/Backlog";
+import Board from "./Board";
+import SprintBoard from "./Sprint/SprintBoard";
+import Lists from "./lists";
+
+import Navbar from "../../../components/Navbar/Navbar"; // Adjust if needed
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
-  const [projectName, setProjectName] = useState('');
-  const [selectedTab, setSelectedTab] = useState('summary');
+  const location = useLocation();
+
+  const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
+
+  const getSelectedTabFromLocation = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") || "summary";
+  };
+
+  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
   useEffect(() => {
     if (projectId) {
@@ -29,20 +38,24 @@ const ProjectTabs = () => {
     }
   }, [projectId]);
 
+  useEffect(() => {
+    setSelectedTab(getSelectedTabFromLocation());
+  }, [location.search]);
+
   const renderTabContent = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
 
     switch (selectedTab) {
-      case 'summary':
+      case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
-      case 'backlog':
+      case "backlog":
         return <Backlog projectId={pid} />;
-      case 'board':
+      case "board":
         return <Board projectId={pid} projectName={projectName} />;
-      case 'sprint':
+      case "sprint":
         return <SprintBoard projectId={pid} projectName={projectName} />;
-      case 'lists':
+      case "lists":
         return <Lists projectId={pid} />;
       default:
         return null;
@@ -57,66 +70,37 @@ const ProjectTabs = () => {
     return <div className="p-6 text-red-500">Project not found.</div>;
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header and Tabs */}
-      <div className="border-b border-slate-200 p-4 bg-white">
-        <h2 className="text-xl font-semibold text-slate-800">{projectName}</h2>
+  const navItems = [
+    { name: "Summary", path: `/projects/${projectId}?tab=summary` },
+    { name: "Backlog", path: `/projects/${projectId}?tab=backlog` },
+    { name: "Board", path: `/projects/${projectId}?tab=board` },
+    { name: "Sprints", path: `/projects/${projectId}?tab=sprint` },
+    { name: "Lists", path: `/projects/${projectId}?tab=lists` },
+  ];
 
-        <div className="mt-4 flex flex-wrap gap-4">
-          <TabButton
-            label="Summary"
-            icon={<BarChart3 size={16} />}
-            active={selectedTab === 'summary'}
-            onClick={() => setSelectedTab('summary')}
-          />
-          <TabButton
-            label="Backlog"
-            icon={<List size={16} />}
-            active={selectedTab === 'backlog'}
-            onClick={() => setSelectedTab('backlog')}
-          />
-          <TabButton
-            label="Board"
-            icon={<KanbanSquare size={16} />}
-            active={selectedTab === 'board'}
-            onClick={() => setSelectedTab('board')}
-          />
-          <TabButton
-            label="Sprints"
-            icon={<Flag size={16} />}
-            active={selectedTab === 'sprint'}
-            onClick={() => setSelectedTab('sprint')}
-          />
-          <TabButton
-            label="Lists"
-            icon={<Rows3 size={16} />}
-            active={selectedTab === 'lists'}
-            onClick={() => setSelectedTab('lists')}
-          />
+  const navItemsWithActive = navItems.map((item) => ({
+    ...item,
+    active: item.path === location.pathname + location.search,
+  }));
+
+  return (
+    <div className="flex flex-col h-screen">
+      {/* Sticky Navbar Header */}
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          {/* Project name and Navbar in same line */}
+          <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
+            {projectName}
+          </h2>
+          <Navbar logo={null} navItems={navItemsWithActive} />
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="flex-1 bg-slate-50 overflow-auto">
-        {renderTabContent()}
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto bg-slate-50">
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">{renderTabContent()}</div>
+      </main>
     </div>
-  );
-};
-
-// Reusable Tab Button component
-const TabButton = ({ label, icon, active, onClick }) => {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded transition-colors duration-200
-        ${active ? 'bg-indigo-900 text-white' : 'text-slate-600 hover:bg-slate-100'}
-      `}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   );
 };
 

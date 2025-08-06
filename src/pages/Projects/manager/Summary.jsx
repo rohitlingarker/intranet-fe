@@ -17,8 +17,6 @@ const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#ec4899', '#10b981', '#f59e0b'
 
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
-  const [expandedEpicId, setExpandedEpicId] = useState(null);
-  const [expandedStoryId, setExpandedStoryId] = useState(null);
   const [chartType, setChartType] = useState('pie');
   const [filterStatus, setFilterStatus] = useState('ALL');
 
@@ -54,6 +52,7 @@ const Summary = ({ projectId, projectName }) => {
     fetchAll();
   }, [projectId]);
 
+  // Prepare data for charts with filter
   const prepareStatusData = (items) => {
     const flatItems = items ?? [];
 
@@ -75,7 +74,7 @@ const Summary = ({ projectId, projectName }) => {
 
   const renderChart = (data, title) => (
     <div className="bg-white rounded-xl shadow p-4 w-full md:w-[30%]">
-      <h4 className="text-lg font-semibold text-indigo-900 mb-3">{title}</h4>
+      <h4 className="text-base font-semibold text-black mb-3">{title}</h4>
       <ResponsiveContainer width="100%" height={250}>
         {chartType === 'bar' ? (
           <BarChart data={data}>
@@ -109,12 +108,45 @@ const Summary = ({ projectId, projectName }) => {
     </div>
   );
 
+  // Flatten all stories and tasks for totals and timeline
+  const allStories = epics.flatMap((e) => e.stories || []);
+  const allTasks = allStories.flatMap((s) => s.tasks || []);
+
+  // Sort function fallback if no dates present:
+  const sortByDateOrId = (a, b) => {
+    if (a.startDate && b.startDate) {
+      return new Date(a.startDate) - new Date(b.startDate);
+    }
+    return a.id - b.id;
+  };
+
+  const sortedEpics = [...epics].sort(sortByDateOrId);
+  const sortedStories = [...allStories].sort(sortByDateOrId);
+  const sortedTasks = [...allTasks].sort(sortByDateOrId);
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h3 className="text-3xl font-bold mb-6 text-black-800">
-        Summary for <span className="text-black-900">{projectName}</span>
+      <h3 className="text-xl font-semibold mb-4 text-black">
+        Summary for <span className="font-bold">{projectName}</span>
       </h3>
 
+      {/* Totals */}
+      <div className="flex gap-8 mb-6">
+        <div className="bg-white text-black px-4 py-2 rounded shadow w-1/3 text-center">
+          <div className="text-sm font-medium">Total Epics</div>
+          <div className="text-2xl font-bold">{epics.length}</div>
+        </div>
+        <div className="bg-white text-black px-4 py-2 rounded shadow w-1/3 text-center">
+          <div className="text-sm font-medium">Total Stories</div>
+          <div className="text-2xl font-bold">{allStories.length}</div>
+        </div>
+        <div className="bg-white text-black px-4 py-2 rounded shadow w-1/3 text-center">
+          <div className="text-sm font-medium">Total Tasks</div>
+          <div className="text-2xl font-bold">{allTasks.length}</div>
+        </div>
+      </div>
+
+      {/* Filters and Chart Type */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <select
           value={chartType}
@@ -138,78 +170,91 @@ const Summary = ({ projectId, projectName }) => {
         </select>
       </div>
 
+      {/* Status Charts */}
       <div className="flex flex-wrap gap-6 mb-8">
         {renderChart(prepareStatusData(epics), 'Epics Status')}
-        {renderChart(
-          prepareStatusData(epics.flatMap((e) => e.stories || [])),
-          'Stories Status'
-        )}
-        {renderChart(
-          prepareStatusData(
-            epics.flatMap((e) => (e.stories || []).flatMap((s) => s.tasks || []))
-          ),
-          'Tasks Status'
-        )}
+        {renderChart(prepareStatusData(allStories), 'Stories Status')}
+        {renderChart(prepareStatusData(allTasks), 'Tasks Status')}
       </div>
 
-      <div className="space-y-6">
-        {epics.map((epic) => (
-          <div
-            key={epic.id}
-            className="border border-gray-200 rounded-xl bg-gradient-to-br from-white to-gray-100 shadow-md p-6"
-          >
-            <div
-              className="cursor-pointer flex items-center justify-between hover:bg-gray-100 p-2 rounded-md transition"
-              onClick={() =>
-                setExpandedEpicId(expandedEpicId === epic.id ? null : epic.id)
-              }
-            >
-              <span className="text-xl font-semibold text-indigo-900">
-                Epic: {epic.name}
-              </span>
-              <span className="text-sm text-white bg-indigo-900 px-3 py-1 rounded-full">
-                {epic.status}
-              </span>
-            </div>
+      {/* Cards View replacing timeline */}
+      <div>
+        <h4 className="text-base font-semibold mb-4 text-black">Summary Details</h4>
 
-            {expandedEpicId === epic.id &&
-              (epic.stories || []).map((story) => (
-                <div
-                  key={story.id}
-                  className="ml-6 mt-4 border-l-2 border-indigo-900 pl-4 py-2"
-                >
-                  <div
-                    className="cursor-pointer flex items-center justify-between hover:bg-gray-50 p-2 rounded-md transition"
-                    onClick={() =>
-                      setExpandedStoryId(
-                        expandedStoryId === story.id ? null : story.id
-                      )
-                    }
-                  >
-                    <span className="text-gray-700">
-                      Story: <span className="font-medium">{story.title}</span>
-                    </span>
-                    <span className="text-sm text-white bg-pink-800 px-3 py-1 rounded-full">
-                      {story.status}
-                    </span>
-                  </div>
-
-                  {expandedStoryId === story.id &&
-                    (story.tasks || []).map((task) => (
-                      <div
-                        key={task.id}
-                        className="ml-6 mt-2 flex items-center justify-between text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-md shadow-sm"
-                      >
-                        <span>Task: {task.title}</span>
-                        <span className="text-xs bg-indigo-100 text-indigo-900 px-2 py-1 rounded-full">
-                          {task.status}
-                        </span>
-                      </div>
-                    ))}
+        {/* Epics Cards */}
+        <section className="mb-8">
+          <h5 className="text-indigo-900 font-semibold mb-3">Epics</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {sortedEpics.map((epic) => (
+              <div
+                key={epic.id}
+                className="bg-indigo-50 rounded-lg p-4 shadow hover:shadow-md transition"
+                title={`Status: ${epic.status}`}
+              >
+                <div className="text-indigo-900 font-semibold mb-1">{epic.name}</div>
+                <div className="text-sm text-indigo-700">
+                  Status: <span className="font-medium">{epic.status}</span>
                 </div>
-              ))}
+                {epic.startDate && epic.endDate && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    {new Date(epic.startDate).toLocaleDateString()} -{' '}
+                    {new Date(epic.endDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        </section>
+
+        {/* Stories Cards */}
+        <section className="mb-8">
+          <h5 className="text-pink-800 font-semibold mb-3">Stories</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {sortedStories.map((story) => (
+              <div
+                key={story.id}
+                className="bg-pink-50 rounded-lg p-4 shadow hover:shadow-md transition"
+                title={`Status: ${story.status}`}
+              >
+                <div className="text-pink-800 font-semibold mb-1">{story.title}</div>
+                <div className="text-sm text-pink-700">
+                  Status: <span className="font-medium">{story.status}</span>
+                </div>
+                {story.startDate && story.endDate && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    {new Date(story.startDate).toLocaleDateString()} -{' '}
+                    {new Date(story.endDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Tasks Cards */}
+        <section>
+          <h5 className="text-indigo-700 font-semibold mb-3">Tasks</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {sortedTasks.map((task) => (
+              <div
+                key={task.id}
+                className="bg-indigo-100 rounded-lg p-4 shadow hover:shadow-md transition"
+                title={`Status: ${task.status}`}
+              >
+                <div className="text-indigo-700 font-semibold mb-1">{task.title}</div>
+                <div className="text-sm text-indigo-600">
+                  Status: <span className="font-medium">{task.status}</span>
+                </div>
+                {task.startDate && task.endDate && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    {new Date(task.startDate).toLocaleDateString()} -{' '}
+                    {new Date(task.endDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
