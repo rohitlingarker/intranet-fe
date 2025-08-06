@@ -1,74 +1,156 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import { toast } from "react-toastify";
+ 
+import SearchInput from "../../../../components/filter/Searchbar";
+import Table from "../../../../components/Table/table";
+import Pagination from "../../../../components/Pagination/pagination";
+import Button from "../../../../components/Button/Button";
+ 
+const ITEMS_PER_PAGE = 10;
+const SORT_DIRECTIONS = {
+  ASC: "asc",
+  DESC: "desc",
+};
+ 
 export default function UpdateUserRole() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
+ 
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
-  const authHeader = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
-
+ 
+  useEffect(() => {
+    if (!token) {
+      toast.warn("Session expired. Please login again.");
+      navigate("/");
+    }
+  }, [token, navigate]);
+ 
   useEffect(() => {
     const fetchUsersWithRoles = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/admin/users/roles", authHeader);
-        setUsers(res.data);
+        const res = await axios.get("http://localhost:8000/admin/users/roles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUsers(res.data || []);
       } catch (err) {
         console.error("Failed to fetch users with roles:", err);
-        alert("Error loading user roles.");
+        toast.error("Failed to load user roles.");
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          navigate("/home");
+        }
       } finally {
         setLoading(false);
       }
     };
-
+ 
     fetchUsersWithRoles();
-  }, []);
-
+  }, [token, navigate]);
+ 
+  // Filter by name, email, or role
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return users.filter((user) =>
+      `${user.name} ${user.mail} ${user.roles?.join(" ") || ""}`
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [users, searchTerm]);
+ 
+  // Sort by name
+  const sortedUsers = useMemo(() => {
+    const copy = [...filteredUsers];
+    copy.sort((a, b) => {
+      const aName = a.name?.toLowerCase() || "";
+      const bName = b.name?.toLowerCase() || "";
+      return sortDirection === SORT_DIRECTIONS.ASC
+        ? aName.localeCompare(bName)
+        : bName.localeCompare(aName);
+    });
+    return copy;
+  }, [filteredUsers, sortDirection]);
+ 
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedUsers.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedUsers, currentPage]);
+ 
+  const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
+ 
+  const toggleSort = () => {
+    setSortDirection((prev) =>
+      prev === SORT_DIRECTIONS.ASC ? SORT_DIRECTIONS.DESC : SORT_DIRECTIONS.ASC
+    );
+  };
+ 
+  const headers = [
+    "User ID",
+    <span className="cursor-pointer" onClick={toggleSort}>
+      Name {sortDirection === SORT_DIRECTIONS.ASC ? "▲" : "▼"}
+    </span>,
+    "Email",
+    "Assigned Roles",
+    "Actions",
+  ];
+ 
+  const renderRow = (user) => [
+    <td className="border p-2" key="id">{user.user_id}</td>,
+    <td className="border p-2" key="name">{user.name}</td>,
+    <td className="border p-2" key="email">
+      {user.mail || <span className="text-gray-400 italic">N/A</span>}
+    </td>,
+    <td className="border p-2" key="roles">
+      {user.roles?.length > 0 ? user.roles.join(", ") : <span className="text-gray-400">No roles assigned</span>}
+    </td>,
+    <td className="border p-2" key="actions">
+      <div className="flex justify-end">
+        <Button
+          onClick={() => navigate(`/user-management/roles/edit-role/${user.user_id}`)}
+          variant="primary"
+          size="small"
+        >
+          Edit Roles
+        </Button>
+      </div>
+    </td>,
+  ];
+ 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-3xl font-semibold text-blue-700 mb-4">Update User Roles</h2>
-      <p className="mb-6 text-gray-600">Click on <span className="font-medium">Edit Roles</span> to update the roles assigned to each user.</p>
-
-      {loading ? (
-        <div className="text-center py-10 text-gray-500">Loading users...</div>
-      ) : users.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">No users available.</div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg shadow-md">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-100 text-gray-700 text-sm">
-              <tr>
-                <th className="px-6 py-3 border-b">User ID</th>
-                <th className="px-6 py-3 border-b">Name</th>
-                <th className="px-6 py-3 border-b">Assigned Roles</th>
-                <th className="px-6 py-3 border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.user_id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-3 border-b text-sm">{user.user_id}</td>
-                  <td className="px-6 py-3 border-b text-sm">{user.name}</td>
-                  <td className="px-6 py-3 border-b text-sm">
-                    {user.roles?.length > 0 ? user.roles.join(", ") : <span className="text-gray-400">No roles assigned</span>}
-                  </td>
-                  <td className="px-6 py-3 border-b text-sm">
-                    <button
-                      onClick={() => navigate(`/user-management/roles/edit-role/${user.user_id}`)}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      Edit Roles
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+        <h2 className="text-3xl font-semibold text-blue-700">Update User Roles</h2>
+      </div>
+ 
+      <SearchInput
+        onSearch={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
+        placeholder="Search by name, email or role..."
+        delay={300}
+        className="mb-4 max-w-md"
+      />
+ 
+      <div className="relative overflow-x-auto rounded shadow border border-gray-200 p-2">
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">Loading users...</div>
+        ) : (
+          <Table headers={headers} rows={paginatedUsers} renderRow={renderRow} />
+        )}
+      </div>
+ 
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        />
       )}
     </div>
   );

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import FormInput from "../../../../components/forms/FormInput"; // Adjust path as needed
+import Button from "../../../../components/Button/Button";        // Adjust path as needed
  
 export default function EditUser() {
   const { id } = useParams();
@@ -12,16 +14,16 @@ export default function EditUser() {
     last_name: "",
     mail: "",
     contact: "",
-    password: "",         // 🔑 Add password field
-    is_active: true
+    password: "",
+    is_active: true,
   });
  
   useEffect(() => {
     axios
       .get(`http://localhost:8000/admin/users/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
       .then((res) => setUser((prev) => ({ ...prev, ...res.data })))
       .catch((err) => {
@@ -35,7 +37,7 @@ export default function EditUser() {
     const { name, value, type, checked } = e.target;
     setUser((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
  
@@ -43,17 +45,14 @@ export default function EditUser() {
     e.preventDefault();
     try {
       const payload = { ...user };
-      if (!payload.password) delete payload.password; // Don't send password if empty
+      if (!payload.password) delete payload.password;
  
-      await axios.put(
-        `http://localhost:8000/admin/users/${id}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await axios.put(`http://localhost:8000/admin/users/${id}`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+ 
       alert("User updated successfully!");
       navigate("/user-management/users");
     } catch (err) {
@@ -65,50 +64,46 @@ export default function EditUser() {
   return (
     <div className="p-6 max-w-xl mx-auto">
       <h2 className="text-2xl font-bold text-blue-700 mb-4">Edit User</h2>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 shadow rounded-lg">
-        <input
-          type="text"
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-white p-6 shadow rounded-lg"
+      >
+        <FormInput
+          label="First Name"
           name="first_name"
-          placeholder="First Name"
           value={user.first_name}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Enter first name"
         />
-        <input
-          type="text"
+        <FormInput
+          label="Last Name"
           name="last_name"
-          placeholder="Last Name"
           value={user.last_name}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Enter last name"
         />
-        <input
-          type="email"
+        <FormInput
+          label="Email"
           name="mail"
-          placeholder="Email"
+          type="email"
           value={user.mail}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Enter email"
         />
-        <input
-          type="text"
+        <FormInput
+          label="Contact"
           name="contact"
-          placeholder="Contact"
           value={user.contact}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Enter contact number"
         />
-        <input
-          type="password"
+        <FormInput
+          label="New Password (leave blank to keep current)"
           name="password"
-          placeholder="New Password (leave blank to keep current)"
+          type="password"
           value={user.password}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
+          placeholder="Enter new password"
         />
         <div className="flex items-center gap-2">
           <input
@@ -116,25 +111,25 @@ export default function EditUser() {
             name="is_active"
             checked={user.is_active}
             onChange={handleChange}
+            id="is_active"
           />
-          <label htmlFor="is_active">Is Active</label>
+          <label htmlFor="is_active" className="text-sm text-gray-700">
+            Is Active
+          </label>
         </div>
+ 
         <div className="flex gap-4">
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Save Changes
-          </button>
-          <button
+          <Button type="submit">Save Changes</Button>
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => navigate("/user-management/users")}
-            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>
   );
 }
+ 

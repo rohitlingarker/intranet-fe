@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
+import Button from "../../../../components/Button/Button"; // ✅ Import custom Button component
 
-const RoleForm = ({ 
-  roles, 
-  setRoles, 
-  onRoleUpdate 
-}) => {
+const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const [newRole, setNewRole] = useState("");
   const [editingRole, setEditingRole] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -95,15 +92,18 @@ const RoleForm = ({
             onChange={(e) => setNewRole(e.target.value)}
             className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
-          <button
+
+          {/* ✅ Custom Button Component */}
+          <Button
+            size="medium"
+            variant="primary"
             onClick={handleCreateOrUpdate}
             disabled={saving}
-            className={`px-6 py-2 rounded text-white font-medium ${
-              saving ? "bg-blue-300 cursor-not-allowed" : "bg-blue-900 hover:bg-blue-950"
-            }`}
+            className={`${saving ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             {saving ? "Saving..." : editingRole ? "Update Role" : "Create Role"}
-          </button>
+          </Button>
+
           {editingRole && (
             <button
               onClick={() => {
