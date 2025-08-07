@@ -151,7 +151,7 @@ const ManagerApprovalPage = () => {
 
       setData((prev) =>
         prev.map((row) =>
-          row.timesheetId === id ? { ...row, approvalStatus: "APPROVED" } : row
+          row.timesheetId === id ? { ...row, approvalStatus: "Approved" } : row
         )
       );
     } catch (error) {

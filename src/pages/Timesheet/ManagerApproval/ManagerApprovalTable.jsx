@@ -1,34 +1,55 @@
+
 // import React, { useState } from "react";
-// import { ChevronDown, ChevronRight, Check, X, Eye } from "lucide-react";
+// import { ChevronDown, ChevronRight, Check, X, Info } from "lucide-react";
 // import StatusBadge from "../../../components/status/StatusBadge";
-// import ExpandedRow from "./Expandedrow";
+// import Pagination from "../../../components/Pagination/pagination";
 // import ExpandedRowInline from "./ExpandedRowInline";
 
 // const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
 //   const [expandedRow, setExpandedRow] = useState(null);
-//   const [detailsData, setDetailsData] = useState([]);
-//   const [loadingDetails, setLoadingDetails] = useState(false);
-
-//   const [rejectingRow, setRejectingRow] = useState(null); // timesheetId being rejected
+//   const [rejectingRow, setRejectingRow] = useState(null);
 //   const [commentInputs, setCommentInputs] = useState({});
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [actionMessages, setActionMessages] = useState({}); // { timesheetId: "Already approved" }
+
+//   const rowsPerPage = 5;
 
 //   const handleCommentChange = (id, value) => {
 //     setCommentInputs((prev) => ({ ...prev, [id]: value }));
 //   };
 
-//   const headers = [
-//     "",
-//     "User ID",
-//     "User Name",
-//     "Timesheet ID",
-//     "Date",
-//     "Hours Worked",
-//     "Status",
-//     "Actions",
-//   ];
-
 //   const toggleRow = (id) => {
 //     setExpandedRow(expandedRow === id ? null : id);
+//   };
+
+//   const totalPages = Math.ceil(data.length / rowsPerPage);
+//   const paginatedData = data.slice(
+//     (currentPage - 1) * rowsPerPage,
+//     currentPage * rowsPerPage
+//   );
+
+//   const handleApprove = (id, status) => {
+//     if (status !== "Pending") {
+//       setActionMessages((prev) => ({ ...prev, [id]: "Already approved" }));
+//       return;
+//     }
+//     onApprove(id);
+//     setActionMessages((prev) => ({ ...prev, [id]: "Approved successfully" }));
+//   };
+
+//   const handleReject = (id, comment, status) => {
+//     if (status !== "Pending") {
+//       setActionMessages((prev) => ({ ...prev, [id]: "Already rejected" }));
+//       return;
+//     }
+//     onReject(id, comment);
+//     setRejectingRow(null);
+//     setCommentInputs((prev) => {
+//       const updated = { ...prev };
+//       delete updated[id];
+//       return updated;
+//     });
+//     setActionMessages((prev) => ({ ...prev, [id]: "Rejected successfully" }));
 //   };
 
 //   return (
@@ -46,210 +67,270 @@
 //       ) : !data || data.length === 0 ? (
 //         <div className="text-center text-gray-500">No pending approvals.</div>
 //       ) : (
-//         <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-//           <thead>
-//             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-//               {headers.map((h, i) => (
-//                 <th key={i} className="text-left px-4 py-3">
-//                   {h}
-//                 </th>
-//               ))}
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {data.map((row, index) => (
-//               <React.Fragment key={row.timesheetId}>
-//                 <tr
-//                   className={`hover:bg-blue-50 transition ${
-//                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
-//                   }`}
-//                 >
-//                   <td
-//                     className="p-3 text-center cursor-pointer"
-//                     onClick={() => toggleRow(row.timesheetId)}
+//         <>
+//           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+//             <thead>
+//               <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
+//                 {[
+//                   "",
+//                   "User ID",
+//                   "User Name",
+//                   "Timesheet ID",
+//                   "Date",
+//                   "Hours Worked",
+//                   "Status",
+//                   "Actions",
+//                 ].map((h, i) => (
+//                   <th key={i} className="text-left px-4 py-3">
+//                     {h}
+//                   </th>
+//                 ))}
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {paginatedData.map((row, index) => (
+//                 <React.Fragment key={row.timesheetId}>
+//                   <tr
+//                     className={`hover:bg-blue-50 transition ${
+//                       index % 2 === 0 ? "bg-white" : "bg-gray-50"
+//                     }`}
 //                   >
-//                     {expandedRow === row.timesheetId ? (
-//                       <ChevronDown className="w-5 h-5 text-blue-500" />
-//                     ) : (
-//                       <ChevronRight className="w-5 h-5 text-blue-500" />
-//                     )}
-//                   </td>
-//                   <td className="p-3 font-medium text-gray-700">
-//                     {row.userId}
-//                   </td>
-//                   <td className="p-3 text-gray-600">{row.userName}</td>
-//                   <td className="p-3 font-medium text-gray-700">
-//                     {row.timesheetId}
-//                   </td>
-//                   <td className="p-3 text-gray-600">{row.workDate}</td>
-//                   <td className="p-3 text-gray-600">{row.hoursWorked}</td>
-//                   <td className="p-3">
-//                     <StatusBadge label={row.approvalStatus} />
-//                   </td>
-//                   <td className="p-3 flex gap-2">
-//                     {row.approvalStatus === "Pending" && (
-//                       <>
+//                     <td
+//                       className="p-3 text-center cursor-pointer"
+//                       onClick={() => toggleRow(row.timesheetId)}
+//                     >
+//                       {expandedRow === row.timesheetId ? (
+//                         <ChevronDown className="w-5 h-5 text-blue-500" />
+//                       ) : (
+//                         <ChevronRight className="w-5 h-5 text-blue-500" />
+//                       )}
+//                     </td>
+//                     <td className="p-3 font-medium text-gray-700">
+//                       {row.userId}
+//                     </td>
+//                     <td className="p-3 text-gray-600">{row.userName}</td>
+//                     <td className="p-3 font-medium text-gray-700">
+//                       {row.timesheetId}
+//                     </td>
+//                     <td className="p-3 text-gray-600">{row.workDate}</td>
+//                     <td className="p-3 text-gray-600">{row.hoursWorked}</td>
+//                     <td className="p-3">
+//                       <StatusBadge label={row.approvalStatus} />
+//                     </td>
+//                     <td className="p-3 flex flex-col items-start gap-2">
+//                       <div className="flex gap-2">
 //                         <button
-//                           onClick={() => onApprove(row.timesheetId)}
+//                           onClick={() =>
+//                             handleApprove(row.timesheetId, row.approvalStatus)
+//                           }
 //                           className="flex items-center justify-center p-2 text-green-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-//                           title="Approve"
+//                           title={
+//                             row.approvalStatus === "Pending"
+//                               ? "Approve"
+//                               : "Already approved"
+//                           }
 //                         >
 //                           <Check className="w-5 h-5" />
 //                         </button>
 //                         <button
-//                           onClick={() => setRejectingRow(row.timesheetId)}
+//                           onClick={() => {
+//                             if (row.approvalStatus !== "Pending") {
+//                               setActionMessages((prev) => ({
+//                                 ...prev,
+//                                 [row.timesheetId]: "Already rejected",
+//                               }));
+//                             } else {
+//                               setRejectingRow(row.timesheetId);
+//                             }
+//                           }}
 //                           className="flex items-center justify-center p-2 text-red-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-//                           title="Reject"
+//                           title={
+//                             row.approvalStatus === "Pending"
+//                               ? "Reject"
+//                               : "Already rejected"
+//                           }
 //                         >
 //                           <X className="w-5 h-5" />
 //                         </button>
-//                         {rejectingRow === row.timesheetId && (
-//                           <tr>
-//                             <td colSpan={7} className="bg-red-50 px-4 py-3">
-//                               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-//                                 <input
-//                                   type="text"
-//                                   placeholder="Enter rejection comment"
-//                                   value={commentInputs[row.timesheetId] || ""}
-//                                   onChange={(e) =>
-//                                     handleCommentChange(
-//                                       row.timesheetId,
-//                                       e.target.value
-//                                     )
-//                                   }
-//                                   className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
-//                                 />
-//                                 <div className="flex gap-2 mt-2 md:mt-0">
-//                                   <button
-//                                     onClick={() => {
-//                                       onReject(
-//                                         row.timesheetId,
-//                                         commentInputs[row.timesheetId] || ""
-//                                       );
-//                                       setRejectingRow(null);
-//                                       setCommentInputs((prev) => {
-//                                         const updated = { ...prev };
-//                                         delete updated[row.timesheetId];
-//                                         return updated;
-//                                       });
-//                                     }}
-//                                     className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-//                                   >
-//                                     Confirm Reject
-//                                   </button>
-//                                   <button
-//                                     onClick={() => {
-//                                       setRejectingRow(null);
-//                                       setCommentInputs((prev) => {
-//                                         const updated = { ...prev };
-//                                         delete updated[row.timesheetId];
-//                                         return updated;
-//                                       });
-//                                     }}
-//                                     className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
-//                                   >
-//                                     Cancel
-//                                   </button>
-//                                 </div>
-//                               </div>
-//                             </td>
-//                           </tr>
-//                         )}
-//                       </>
-//                     )}
-//                   </td>
-//                 </tr>
-//                 {rejectingRow === row.timesheetId && (
-//                   <tr>
-//                     <td colSpan={7} className="bg-red-50 px-4 py-3">
-//                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-//                         <input
-//                           type="text"
-//                           placeholder="Enter rejection comment"
-//                           value={commentInputs[row.timesheetId] || ""}
-//                           onChange={(e) =>
-//                             handleCommentChange(row.timesheetId, e.target.value)
-//                           }
-//                           className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
-//                         />
-//                         <div className="flex gap-2 mt-2 md:mt-0">
-//                           <button
-//                             onClick={() => {
-//                               onReject(
-//                                 row.timesheetId,
-//                                 commentInputs[row.timesheetId] || ""
-//                               );
-//                               setRejectingRow(null);
-//                               setCommentInputs((prev) => {
-//                                 const updated = { ...prev };
-//                                 delete updated[row.timesheetId];
-//                                 return updated;
-//                               });
-//                             }}
-//                             className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-//                           >
-//                             Confirm Reject
-//                           </button>
-//                           <button
-//                             onClick={() => {
-//                               setRejectingRow(null);
-//                               setCommentInputs((prev) => {
-//                                 const updated = { ...prev };
-//                                 delete updated[row.timesheetId];
-//                                 return updated;
-//                               });
-//                             }}
-//                             className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
-//                           >
-//                             Cancel
-//                           </button>
-//                         </div>
 //                       </div>
+//                       {actionMessages[row.timesheetId] && (
+//                         <div className="text-xs text-gray-500 flex items-center gap-1">
+//                           <Info className="w-3 h-3" />
+//                           {actionMessages[row.timesheetId]}
+//                         </div>
+//                       )}
 //                     </td>
 //                   </tr>
-//                 )}
-//                 {expandedRow === row.timesheetId && (
-//                   <ExpandedRowInline entries={row.entries} />
-//                 )}
-//               </React.Fragment>
-//             ))}
-//           </tbody>
-//         </table>
+
+//                   {rejectingRow === row.timesheetId && (
+//                     <tr>
+//                       <td colSpan={8} className="bg-red-50 px-4 py-3">
+//                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+//                           <input
+//                             type="text"
+//                             placeholder="Enter rejection comment"
+//                             value={commentInputs[row.timesheetId] || ""}
+//                             onChange={(e) =>
+//                               handleCommentChange(
+//                                 row.timesheetId,
+//                                 e.target.value
+//                               )
+//                             }
+//                             className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
+//                           />
+//                           <div className="flex gap-2 mt-2 md:mt-0">
+//                             <button
+//                               onClick={() =>
+//                                 handleReject(
+//                                   row.timesheetId,
+//                                   commentInputs[row.timesheetId] || "",
+//                                   row.approvalStatus
+//                                 )
+//                               }
+//                               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+//                             >
+//                               Confirm Reject
+//                             </button>
+//                             <button
+//                               onClick={() => {
+//                                 setRejectingRow(null);
+//                                 setCommentInputs((prev) => {
+//                                   const updated = { ...prev };
+//                                   delete updated[row.timesheetId];
+//                                   return updated;
+//                                 });
+//                               }}
+//                               className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+//                             >
+//                               Cancel
+//                             </button>
+//                           </div>
+//                         </div>
+//                       </td>
+//                     </tr>
+//                   )}
+
+//                   {expandedRow === row.timesheetId && (
+//                     <ExpandedRowInline entries={row.entries} />
+//                   )}
+//                 </React.Fragment>
+//               ))}
+//             </tbody>
+//           </table>
+
+//           <Pagination
+//             currentPage={currentPage}
+//             totalPages={totalPages}
+//             onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+//             onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+//           />
+//         </>
 //       )}
 //     </div>
-//   );
-// };
+//    );
+//  };
 
-// export default ManagerApprovalTable;
+//  export default ManagerApprovalTable;
 
 
-import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Check, X } from "lucide-react";
+
+import React, { useState, useMemo } from "react";
+import { ChevronDown, ChevronRight, Check, X, Info, Download } from "lucide-react";
 import StatusBadge from "../../../components/status/StatusBadge";
+import Pagination from "../../../components/Pagination/pagination";
 import ExpandedRowInline from "./ExpandedRowInline";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { showStatusToast } from "../../../components/toastfy/toast";
 
 const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [rejectingRow, setRejectingRow] = useState(null);
   const [commentInputs, setCommentInputs] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [userFilter, setUserFilter] = useState("");
+
+  const rowsPerPage = 5;
 
   const handleCommentChange = (id, value) => {
     setCommentInputs((prev) => ({ ...prev, [id]: value }));
   };
 
-  const headers = [
-    "",
-    "User ID",
-    "User Name",
-    "Timesheet ID",
-    "Date",
-    "Hours Worked",
-    "Status",
-    "Actions",
-  ];
-
   const toggleRow = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
+  };
+
+  const handleApprove = (id, status) => {
+    if (status !== "Pending") {
+      showStatusToast(`Already ${status}`, "error");
+      return;
+    }
+    onApprove(id);
+    showStatusToast("Approved successfully", "success");
+  };
+
+  const handleReject = (id, comment, status) => {
+    if (status !== "Pending") {
+      showStatusToast(`Already ${status}`, "error");
+      return;
+    }
+    onReject(id, comment);
+    setRejectingRow(null);
+    setCommentInputs((prev) => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+    showStatusToast("Rejected successfully", "success");
+  };
+
+  const filteredData = useMemo(() => {
+    return userFilter
+      ? data.filter((row) => row.userName === userFilter)
+      : data;
+  }, [data, userFilter]);
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  const uniqueUserNames = [...new Set(data.map((row) => row.userName))];
+
+  const downloadCSV = () => {
+    const csvData = Papa.unparse(filteredData);
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "timesheet_approvals.csv");
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Timesheet Approvals", 14, 14);
+    const tableColumn = [
+      "User ID",
+      "User Name",
+      "Timesheet ID",
+      "Date",
+      "Hours Worked",
+      "Status",
+    ];
+    const tableRows = filteredData.map((row) => [
+      row.userId,
+      row.userName,
+      row.timesheetId,
+      row.workDate,
+      row.hoursWorked,
+      row.approvalStatus,
+    ]);
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+    doc.save("timesheet_approvals.pdf");
   };
 
   return (
@@ -262,130 +343,206 @@ const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
       }}
     >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div className="flex gap-2 items-center">
+          <label className="text-sm font-medium">Filter by User:</label>
+          <select
+            value={userFilter}
+            onChange={(e) => {
+              setUserFilter(e.target.value);
+              setCurrentPage(1); // reset pagination
+            }}
+            className="border border-gray-300 rounded px-2 py-1 text-sm"
+          >
+            <option value="">All</option>
+            {uniqueUserNames.map((name, i) => (
+              <option key={i} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={downloadCSV}
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            CSV
+          </button>
+          <button
+            onClick={downloadPDF}
+            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            PDF
+          </button>
+        </div>
+      </div>
+
       {loading ? (
         <div className="text-center text-gray-500">Loading approvals...</div>
-      ) : !data || data.length === 0 ? (
+      ) : !filteredData || filteredData.length === 0 ? (
         <div className="text-center text-gray-500">No pending approvals.</div>
       ) : (
-        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-          <thead>
-            <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              {headers.map((h, i) => (
-                <th key={i} className="text-left px-4 py-3">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, index) => (
-              <React.Fragment key={row.timesheetId}>
-                <tr
-                  className={`hover:bg-blue-50 transition ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  }`}
-                >
-                  <td
-                    className="p-3 text-center cursor-pointer"
-                    onClick={() => toggleRow(row.timesheetId)}
+        <>
+          <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
+                {[
+                  "",
+                  "User ID",
+                  "User Name",
+                  "Timesheet ID",
+                  "Date",
+                  "Hours Worked",
+                  "Status",
+                  "Actions",
+                ].map((h, i) => (
+                  <th key={i} className="text-left px-4 py-3">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.map((row, index) => (
+                <React.Fragment key={row.timesheetId}>
+                  <tr
+                    className={`hover:bg-blue-50 transition ${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
                   >
-                    {expandedRow === row.timesheetId ? (
-                      <ChevronDown className="w-5 h-5 text-blue-500" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-blue-500" />
-                    )}
-                  </td>
-                  <td className="p-3 font-medium text-gray-700">
-                    {row.userId}
-                  </td>
-                  <td className="p-3 text-gray-600">{row.userName}</td>
-                  <td className="p-3 font-medium text-gray-700">
-                    {row.timesheetId}
-                  </td>
-                  <td className="p-3 text-gray-600">{row.workDate}</td>
-                  <td className="p-3 text-gray-600">{row.hoursWorked}</td>
-                  <td className="p-3">
-                    <StatusBadge label={row.approvalStatus} />
-                  </td>
-                  <td className="p-3 flex gap-2">
-                    {row.approvalStatus === "Pending" && (
-                      <>
+                    <td
+                      className="p-3 text-center cursor-pointer"
+                      onClick={() => toggleRow(row.timesheetId)}
+                    >
+                      {expandedRow === row.timesheetId ? (
+                        <ChevronDown className="w-5 h-5 text-blue-500" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-blue-500" />
+                      )}
+                    </td>
+                    <td className="p-3 font-medium text-gray-700">
+                      {row.userId}
+                    </td>
+                    <td className="p-3 text-gray-600">{row.userName}</td>
+                    <td className="p-3 font-medium text-gray-700">
+                      {row.timesheetId}
+                    </td>
+                    <td className="p-3 text-gray-600">{row.workDate}</td>
+                    <td className="p-3 text-gray-600">{row.hoursWorked}</td>
+                    <td className="p-3">
+                      <StatusBadge label={row.approvalStatus} />
+                    </td>
+                    <td className="p-3 flex flex-col items-start gap-2">
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => onApprove(row.timesheetId)}
+                          onClick={() =>
+                            handleApprove(row.timesheetId, row.approvalStatus)
+                          }
                           className="flex items-center justify-center p-2 text-green-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-                          title="Approve"
+                          title={
+                            row.approvalStatus === "Pending"
+                              ? "Approve"
+                              : "Already approved"
+                          }
                         >
                           <Check className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => setRejectingRow(row.timesheetId)}
+                          onClick={() => {
+                              if (row.approvalStatus !== "Pending") {
+                                showStatusToast(`Already ${row.approvalStatus}`, "error");
+                                return;
+                              }
+                              setRejectingRow(row.timesheetId);
+
+                            
+                          }}
                           className="flex items-center justify-center p-2 text-red-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-                          title="Reject"
+                          title={
+                            row.approvalStatus === "Pending"
+                              ? "Reject"
+                              : "Already rejected"
+                          }
                         >
                           <X className="w-5 h-5" />
                         </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-
-                {rejectingRow === row.timesheetId && (
-                  <tr>
-                    <td colSpan={8} className="bg-red-50 px-4 py-3">
-                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                        <input
-                          type="text"
-                          placeholder="Enter rejection comment"
-                          value={commentInputs[row.timesheetId] || ""}
-                          onChange={(e) =>
-                            handleCommentChange(row.timesheetId, e.target.value)
-                          }
-                          className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
-                        />
-                        <div className="flex gap-2 mt-2 md:mt-0">
-                          <button
-                            onClick={() => {
-                              onReject(
-                                row.timesheetId,
-                                commentInputs[row.timesheetId] || ""
-                              );
-                              setRejectingRow(null);
-                              setCommentInputs((prev) => {
-                                const updated = { ...prev };
-                                delete updated[row.timesheetId];
-                                return updated;
-                              });
-                            }}
-                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-                          >
-                            Confirm Reject
-                          </button>
-                          <button
-                            onClick={() => {
-                              setRejectingRow(null);
-                              setCommentInputs((prev) => {
-                                const updated = { ...prev };
-                                delete updated[row.timesheetId];
-                                return updated;
-                              });
-                            }}
-                            className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
                       </div>
+                      {/* {actionMessages[row.timesheetId] && (
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          {actionMessages[row.timesheetId]}
+                        </div>
+                      )} */}
                     </td>
                   </tr>
-                )}
 
-                {expandedRow === row.timesheetId && (
-                  <ExpandedRowInline entries={row.entries} />
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                  {rejectingRow === row.timesheetId && (
+                    <tr>
+                      <td colSpan={8} className="bg-red-50 px-4 py-3">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter rejection comment"
+                            value={commentInputs[row.timesheetId] || ""}
+                            onChange={(e) =>
+                              handleCommentChange(
+                                row.timesheetId,
+                                e.target.value
+                              )
+                            }
+                            className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
+                          />
+                          <div className="flex gap-2 mt-2 md:mt-0">
+                            <button
+                              onClick={() =>
+                                handleReject(
+                                  row.timesheetId,
+                                  commentInputs[row.timesheetId] || "",
+                                  row.approvalStatus
+                                )
+                              }
+                              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
+                            >
+                              Confirm Reject
+                            </button>
+                            <button
+                              onClick={() => {
+                                setRejectingRow(null);
+                                setCommentInputs((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[row.timesheetId];
+                                  return updated;
+                                });
+                              }}
+                              className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {expandedRow === row.timesheetId && (
+                    <ExpandedRowInline entries={row.entries} />
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          />
+        </>
       )}
     </div>
   );
