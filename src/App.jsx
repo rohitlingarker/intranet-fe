@@ -64,6 +64,10 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
+import EmployeePanel from "./pages/leave_management/EmployeePanel";
+import AdminPanel from "./pages/leave_management/AdminPanel";
+// import HRPanel from "./pages/leave_management/HRPanel";
+
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -179,6 +183,12 @@ const AppRoutes = () => {
           <Route path="/user-management/access-points/:access_id" element={<AccessPointDetails />} />
           <Route path="/user-management/access-points/edit/:access_id" element={<AccessPointEdit />} />
           <Route path="/user-management/access-points/admin/access-point-mapping" element={<AccessPointMapping />} />
+
+          {/* Leave Management */}
+          <Route path="/leave-management" element={<EmployeePanel />} />
+          <Route path="/leave-management/manager" element={<AdminPanel />} />
+          {/* <Route path="/leave-management/hr" element={<HRPanel />} /> */}
+
         </Route>
       </Routes>
       <SaveLastPath />
