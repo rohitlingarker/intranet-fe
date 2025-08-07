@@ -16,7 +16,7 @@ import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 
-
+// Timesheets
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
 
@@ -44,16 +44,7 @@ import UsersTable from "./pages/UserManagement/admin/userManagement/UsersTable";
 
 // ✅ Roles & Permissions
 import RoleManagement from "./pages/UserManagement/admin/roleManagement/RoleManagement";
-import PermissionManagement from "./pages/UserManagement/admin/permissionManagement/PermissionManagement";
-import PermissionGroupManagement from "./pages/UserManagement/admin/permissionGroupManagement/PermissionGroupManagement";
-import GroupDetails from "./pages/UserManagement/admin/permissionGroupManagement/GroupDetails";
-
-import AccessPointForm from "./pages/UserManagement/admin/accessPointManagement/AccessPointForm";
-import AccessPointDetails from "./pages/UserManagement/admin/accessPointManagement/AccessPointDetails";
-import AccessPointEdit from "./pages/UserManagement/admin/accessPointManagement/AccessPointEdit";
-import AccessPointMapping from "./pages/UserManagement/admin/accessPointManagement/AccessPointMapping";
-import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
-
+o
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -100,8 +91,6 @@ const ProjectManager = () => {
     </div>
   );
 };
-
-
 
 
 // ✅ Application Routes
