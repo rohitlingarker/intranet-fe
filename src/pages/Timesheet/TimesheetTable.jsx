@@ -34,6 +34,7 @@ const TimesheetTable = ({
         <>
           {data.map((row) => (
             <TimesheetGroup
+              timesheetId={row.timesheetId}
               key={row.timesheetId}
               workDate={row.workDate}
               entries={row.entries}

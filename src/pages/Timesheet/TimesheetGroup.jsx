@@ -23,17 +23,19 @@ const calculateTotalHours = (entries) => {
 };
 
 const TimesheetGroup = ({
+  timesheetId, 
   workDate,
   entries,
   status,
   projectIdToName,
   taskIdToName,
   mapWorkType,
+  onSaveSuccess, // ✅ Optional: Refresh parent state after save
 }) => {
   const totalHours = calculateTotalHours(entries);
 
   return (
-    <div className="mb-6 bg-gray-200 pt-1  rounded-lg shadow-sm border border-gray-200">
+    <div className="mb-6 bg-gray-200 pt-1 rounded-lg shadow-sm border border-gray-200">
       <div className="flex justify-between items-center mb-1 mx-4">
         <div className="text-sm text-gray-700 font-semibold">
           {formatDate(workDate)}
@@ -45,6 +47,10 @@ const TimesheetGroup = ({
       </div>
       <EntriesTable
         entries={entries}
+        timesheetId={timesheetId} 
+        workDate={workDate}
+        currentStatus={status}
+        onSaveSuccess={onSaveSuccess}
         projectIdToName={projectIdToName}
         taskIdToName={taskIdToName}
         mapWorkType={mapWorkType}
