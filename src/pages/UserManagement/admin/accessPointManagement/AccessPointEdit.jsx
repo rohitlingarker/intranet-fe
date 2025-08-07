@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAccessPoint, updateAccessPoint, listModules } from '../../../../services/accessPointService';
 import { useParams, useNavigate } from 'react-router-dom';
+import Button from "../../../../components/Button/Button";
 
 const AccessPointEdit = () => {
   const { access_id } = useParams();
@@ -135,24 +136,24 @@ const AccessPointEdit = () => {
               <span className="font-medium text-gray-800">
                 Permission: {accessPointData.permission_code}
               </span>
-              <button
+              <Button
                 type="button"
                 onClick={handleDeletePermission}
                 disabled={isDeleting}
                 className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
         >
           Update
-        </button>
+        </Button>
       </form>
     </div>
   );
