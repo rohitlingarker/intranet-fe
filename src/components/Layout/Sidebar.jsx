@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -29,11 +29,21 @@ const userManagementSubmenu = [
 
 const Sidebar = () => {
   const location = useLocation();
-  const [hovered, setHovered] = useState(false);
+  const isUserManagementActive = location.pathname.startsWith("/user-management");
 
-  const isUserManagementActive = location.pathname.startsWith(
-    "/user-management"
-  );
+  const [hovered, setHovered] = useState(false);
+  const hoverTimeout = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => {
+      setHovered(false);
+    }, 200); // ⏱️ 200ms delay
+  };
 
   return (
     <aside className="fixed top-0 left-0 w-64 h-screen bg-[#081534] text-white flex flex-col shadow-lg z-50">
@@ -69,8 +79,8 @@ const Sidebar = () => {
           {/* User Management with hover submenu */}
           <li
             className="relative"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             <div
               className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 ${
@@ -88,7 +98,6 @@ const Sidebar = () => {
               />
             </div>
 
-            {/* Submenu */}
             {hovered && (
               <ul
                 className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"

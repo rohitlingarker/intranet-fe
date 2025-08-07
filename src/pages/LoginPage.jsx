@@ -92,31 +92,47 @@ export default function LoginPage() {
  
   // ✅ MOCK LOGIN HANDLER
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      alert("Please enter both email and password.");
-      return;
+  if (!email.trim() || !password.trim()) {
+    alert("Please enter both email and password.");
+    return;
+  }
+ 
+  setLoading(true);
+ 
+  try {
+    // 1. 🔍 Check mock users
+    if (mockUsers[email]) {
+      if (mockUsers[email].password === password) {
+        const token = mockUsers[email].token;
+        login(token);
+        // Optional: redirect based on role or fixed path
+        const role = mockUsers[email].role;
+        const redirectPath = role === "HR" ? "/hr-dashboard" :
+                             role === "Super Admin" ? "/admin-dashboard" : "/home";
+        navigate(redirectPath);
+        return;
+      } else {
+        alert("Invalid password for mock user.");
+        return;
+      }
     }
  
-    setLoading(true);
+    // 2. 🌐 Else, use real login API
+    const res = await axios.post("http://localhost:8000/auth/login", {
+      email,
+      password,
+    });
+    const token = res.data.access_token;
+    login(token);
+    navigate(res.data.redirect || "/home");
  
-    const user = mockUsers[email];
- 
-    if (!user || user.password !== password) {
-      alert("Invalid email or password. Use one of the test accounts below.");
-      setLoading(false);
-      return;
-    }
- 
-    try {
-      login(user.token); // Save token to context
-      navigate("/dashboard");
-    } catch (err) {
-      alert("Login failed: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
- 
+  } catch (err) {
+    alert("Login failed: " + (err.response?.data?.detail || err.message));
+  } finally {
+    setLoading(false);
+  }
+};
+
   const handleMicrosoftLogin = () => {
     window.location.href = "http://localhost:8000/auth/ms-login";
   };
