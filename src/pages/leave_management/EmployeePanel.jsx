@@ -10,13 +10,25 @@ import CompOffPage from "../leave_management/models/CompOffPage";
 import AdminPanel from "./AdminPanel"; // Adjust path if needed
 import ActionButtons from "../leave_management/models/ActionButtons";
 import CompOffRequestModal from "../leave_management/models/CompOffRequestModal";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
 
-const EmployeePanel = ({ employeeId, role }) => {
+const EmployeePanel = ({ employeeId }) => {
   const [isRequestLeaveModalOpen, setIsRequestLeaveModalOpen] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false); // toggle admin/employee view
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
   const compOffPageRef = React.useRef();
   const toggleView = () => setIsAdminView((prev) => !prev);
+
+  const useNavigate = Navigate;
+  console.log("useAuth", useAuth());
+  // const a = useAuth();
+  const employee = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user"))
+    : null;
+
+
+  // const role = "manager"; // This should be dynamically set based on user role
 
   const handleCompOffSubmit = (modalData) => {
     // Call submit method on CompOffPage
@@ -28,7 +40,7 @@ const EmployeePanel = ({ employeeId, role }) => {
 
   return (
     <>
-      {role === "manager" && (
+      {employee.role.includes("Manager") && (
         <div className="mb-6 flex justify-end">
           <div className="inline-flex bg-gray-200 rounded-lg p-1 shadow-inner">
             <button

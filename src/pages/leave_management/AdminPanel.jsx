@@ -4,8 +4,8 @@ import { Plus, Clock, Check, Calendar, User, Search, X, Hand } from "lucide-reac
 import AddEmployeeModal from "../leave_management/models/AddEmployeeModal";
 import AddLeaveTypeModal from "../leave_management/models/AddLeaveTypeModal";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
-// import useAuth from "../../contexts/AuthContext";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
+import { useAuth } from "../../contexts/AuthContext";
 
 const AdminPanel = ({ employeeId }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,10 +18,9 @@ const AdminPanel = ({ employeeId }) => {
   const pendingCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'pending').length;
   const approvedCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'approved').length;
 
-  const user = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user"))
-    : null;
-
+  const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
+  const employee = useAuth();
+  console.log("useAuth", employee);
   // leave history and admin requests
   useEffect(() => {
     axios
