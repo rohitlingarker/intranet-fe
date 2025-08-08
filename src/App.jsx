@@ -66,7 +66,8 @@ import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
-// import HRPanel from "./pages/leave_management/HRPanel";
+import HRManageTools from "./pages/leave_management/HRManageTools";
+import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -187,7 +188,8 @@ const AppRoutes = () => {
           {/* Leave Management */}
           <Route path="/leave-management" element={<EmployeePanel />} />
           <Route path="/leave-management/manager" element={<AdminPanel />} />
-          {/* <Route path="/leave-management/hr" element={<HRPanel />} /> */}
+          <Route path="/leave-management/hr" element={<HRManageTools />} />
+          <Route path="/employee-leave-balance" element={<EmployeeLeaveBalances />} />
 
         </Route>
       </Routes>

@@ -22,46 +22,55 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
     setConfirmModalOpen(false);
     setSelectedRequestId(null);
   };
-  console.log("Comp Off Requests in table:", requests);
+
+  // Filter only pending requests once
+  const pendingRequests = requests?.filter((req) => req.status === "PENDING") || [];
+
   return (
-    <div className="max-w-screen-xl mt-4 overflow-x-auto px-4">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Pending Comp Off Requests</h2>
-      <table className="min-w-full bg-white border border-gray-200 rounded border-radius-lg shadow-sm">
-        <thead className="bg-gray-100 text-gray-700">
-          <tr>
-            <th className="px-4 py-2 text-left">Start Date</th>
-            <th className="px-4 py-2 text-left">End Date</th>
-            <th className="px-4 py-2 text-left">Days</th>
-            <th className="px-4 py-2 text-left">Status</th>
-            <th className="px-4 py-2 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests
-            .filter((req) => req.status === "PENDING")
-            .map((req) => {
-              console.log("Comp Off Request:", req);
-              return (
-                <tr key={req.idleaveCompoff} className="border-t border-gray-200">
-                  <td className="px-4 py-2">{req.startDate}</td>
-                  <td className="px-4 py-2">{req.endDate}</td>
-                  <td className="px-4 py-2">{req.duration}</td>
-                  <td className="px-4 py-2">{req.status}</td>
-                  <td className="px-4 py-2">
-                    {["PENDING", "ACCEPTED"].includes(req.status) && (
-                      <button
-                        onClick={() => handleCancelClick(req.idleaveCompoff)}
-                        className="text-red-600 hover:underline text-sm font-medium"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+    <div className="w-full overflow-x-auto">
+      {pendingRequests.length > 0 ? (
+        <table className="w-full bg-white border border-gray-200 rounded shadow-sm">
+          <thead className="bg-gray-100 text-gray-700">
+            <tr>
+              <th className="p-3 text-left">Start Date</th>
+              <th className="p-3 text-left">End Date</th>
+              <th className="p-3 text-left">Days</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingRequests.map((req) => (
+              <tr key={req.idleaveCompoff} className="border-t border-gray-200">
+                <td className="p-3 text-left">{req.startDate}</td>
+                <td className="p-3 text-left">{req.endDate}</td>
+                <td className="p-3 text-left">{req.duration}</td>
+                <td className="p-3 text-left">{req.status}</td>
+                <td className="p-3 text-left">
+                  <button
+                    onClick={() => handleCancelClick(req.idleaveCompoff)}
+                    className="text-red-600 hover:underline text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="flex items-center">
+          <div className="text-black-600 text-3xl">
+            📭
+          </div>
+          <div className="text-black-600 pl-4">
+            <h2 className="text-black-600 text-xl font-bold">
+              Hurray! No Pending Comp-Off Requests
+            </h2>
+            <p className="text-gray-600 text-sm">Request Comp-Off on the above!</p>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal

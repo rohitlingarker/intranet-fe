@@ -4,6 +4,7 @@ import ActionButtons from "./ActionButtons";
 import PendingLeaveRequestsTable from "./PendingLeaveRequestsTable";
 import SkeletonTable from "./SkeletonTable";
 import ReactPaginate from "react-paginate";
+import { PartyPopper } from "lucide-react";
 
 const ITEMS_PER_PAGE = 5;
 const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
@@ -64,22 +65,22 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h3 className="text-xl font-bold text-gray-800 flex-1">
-          Pending Leave Requests
-        </h3>
-      </div>
-
+    <>
       {loading ? (
-        <SkeletonTable rows={5} columns={6} />
+        <SkeletonTable rows={4} columns={6} />
       ) : error ? (
         <p className="text-red-500">{error}</p>
       ) : pendingLeaves.length === 0 ? (
-        <div className=" py-12">
-          <h1 className="text-black-600 text-3xl font-bold">
-            🎉 Cheers! No pending leave requests.
-          </h1>
+        <div className="flex items-center">
+          <div className="text-black-600 text-3xl">
+            🎉
+          </div>
+          <div className="text-black-600 pl-4">
+            <h2 className="text-black-600 text-xl font-bold">
+              Cheers! No pending leave requests.
+            </h2>
+            <p className="text-gray-600 text-sm">Request leave on the above!</p>
+          </div>
         </div>
       ) : (
         <>
@@ -109,7 +110,7 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
       )}
 
       
-    </div>
+    </>
   );
 };
 

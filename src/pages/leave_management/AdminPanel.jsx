@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Plus, Clock, Check, Calendar, User, Search, X, Hand } from "lucide-react";
-import AddEmployeeModal from "../leave_management/models/AddEmployeeModal";
-import AddLeaveTypeModal from "../leave_management/models/AddLeaveTypeModal";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
-import { useAuth } from "../../contexts/AuthContext";
 
 const AdminPanel = ({ employeeId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Status");
-  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
-  const [isAddLeaveTypeModalOpen, setIsAddLeaveTypeModalOpen] = useState(false);
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [resultMsg, setResultMsg] = useState(null);
@@ -19,9 +14,19 @@ const AdminPanel = ({ employeeId }) => {
   const approvedCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'approved').length;
 
   const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
-  const employee = useAuth();
-  console.log("useAuth", employee);
+  const isManager = user?.role?.toLowerCase() === "manager";
+  
+  // const employee = useAuth();
+  // console.log("useAuth", employee);
   // leave history and admin requests
+  if (!isManager) {
+    return (
+      <div className="text-red-600 font-semibold p-4">
+        Access Denied: Manager Only
+      </div>
+    );
+  }
+
   useEffect(() => {
     axios
       .post("http://localhost:8080/api/leave-requests/manager/history", {
@@ -153,14 +158,14 @@ const AdminPanel = ({ employeeId }) => {
       <HandleLeaveRequestAndApprovals user={user} employeeId={employeeId} />
 
       {/* Modals */}
-      <AddEmployeeModal
+      {/* <AddEmployeeModal
         isOpen={isAddEmployeeModalOpen}
         onClose={() => setIsAddEmployeeModalOpen(false)}
       />
       <AddLeaveTypeModal
         isOpen={isAddLeaveTypeModalOpen}
         onClose={() => setIsAddLeaveTypeModalOpen(false)}
-      />
+      /> */}
     </div>
   );
 };

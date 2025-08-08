@@ -24,7 +24,7 @@ const mockUsers = {
   "employee@example.com": {
     id: "PAVEMP3FD75",
     password: "Paves@123",
-    role: "General",
+    role: "Employee",
     token: "eyJhbGciOiJSUzI1NiIsImtpZCI6ImF1dGgta2V5LTAwMSIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1MCwiZW1haWwiOiJlbXBsb3llZUBleGFtcGxlLmNvbSIsIm5hbWUiOiJFIE1QIiwicm9sZXMiOlsiR2VuZXJhbCJdLCJwZXJtaXNzaW9ucyI6WyJWSUVXX1VTRVJfUFVCTElDIiwiRURJVF9PV05fUFJPRklMRSIsIkRFQUNUSVZBVEVfT1dOX1BST0ZJTEUiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwIiwiZXhwIjoyMTE0NDgxNTU3fQ.CxBHGLEYxq6FA84OTiVmkFcTM2_Ciz0LEyg-YFJzRGVFQ0A1s6SpLm36CbLwWeZF1tZTYVvoTMioMi03ShPDg0bfIbx4exPz2P9mkBpNHQsl3xU-xpVK3fGIk7L85VlpRykOS9d4dX8NnW_rvbvfZjJ8IM0YtLc2IGLQYhgRaQaghUI6Hvt7ctcLLqINTMNUAHOMSUnp8vUIY5Sjqa-oWBMTofMcxiPTBRZpmGV85cTezLSsgxMcTQthv-W4rwIxRx8kNiRHCU2gM1RtM8zb3dtMHJL3cRDT9L99P6rpHR6EGWgPHeiVQcWMLyWZL5oDU1LaXbKRl7L_-g5YlsQnCA"
   },
   "admin@example.com": {
@@ -128,8 +128,8 @@ export default function LoginPage() {
           localStorage.setItem("user", JSON.stringify({ id, email, role }));
 
           login(token);
-          const redirectPath = role === "HR" ? "/hr-dashboard" :
-            role === "Super Admin" ? "/admin-dashboard" : "/home";
+          const redirectPath = role === "HR" ? "/leave-management/hr" :
+            role === "Super Admin" ? "/leave-management/manager" : "/home";
           navigate(redirectPath);
           return;
         } else {

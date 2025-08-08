@@ -5,7 +5,7 @@ import Header from "./Header";
 
 const Layout = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col" style={{ paddingLeft: "16rem" }}>
         <Header />
