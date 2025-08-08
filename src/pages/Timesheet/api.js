@@ -5,17 +5,20 @@ const apiEndpoint = "http://localhost:8080";
 
 export const fetchProjectTaskInfo = async ( userId) => {
   try {
-    const response = await fetch(`${apiEndpoint}/api/timesheet/project-info/${userId}`,{
+    const response = await fetch(
+      `${apiEndpoint}/api/timesheet/project-info/projects/${userId}`,
+      {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }
-    });
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
 
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
+http: if (!response.ok) {
+  throw new Error(`Error ${response.status}: ${response.statusText}`);
+}
 
     const data = await response.json();
     return data;
