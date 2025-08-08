@@ -1,17 +1,17 @@
-// utils/timesheetApi.js
+// api.js
 import { showStatusToast } from "../../components/toastfy/toast";
 
 const apiEndpoint = "http://localhost:8080";
 
-export const fetchProjectTaskInfo = async ( userId) => {
+export const fetchProjectTaskInfo = async ( ) => {
   try {
     const response = await fetch(
-      `${apiEndpoint}/api/timesheet/project-info/projects/${userId}`,
+      `${apiEndpoint}/api/timesheet/project-info/projects`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,cd 
         },
       }
     );
