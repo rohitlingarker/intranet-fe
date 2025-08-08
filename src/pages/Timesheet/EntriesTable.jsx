@@ -112,10 +112,10 @@ const EntriesTable = ({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-      <h4 className="font-semibold mb-4 text-gray-800 text-md">
-        Detailed Entries
-      </h4>
+    // <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+    //   <h4 className="font-semibold mb-4 text-gray-800 text-md">
+    //     Detailed Entries
+    //   </h4>
       <table className="w-full border-collapse rounded ">
         <thead>
           <tr className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
@@ -239,7 +239,7 @@ const EntriesTable = ({
           ))}
         </tbody>
       </table>
-    </div>
+    // </div>
   );
 };
 
