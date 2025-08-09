@@ -33,7 +33,7 @@ http: if (!response.ok) {
 };
 
 // ✅ Update Timesheet Review Status
-export const reviewTimesheet = async (managerId, timesheetId, comment="Approved", status) => {
+export const reviewTimesheet = async (managerId, timesheetId, comment, status) => {
   try {
     const res = await fetch(
       `${apiEndpoint}/api/timesheets/review/${managerId}?status=${encodeURIComponent(status)}`,
@@ -55,7 +55,7 @@ export const reviewTimesheet = async (managerId, timesheetId, comment="Approved"
       throw new Error(errorData.message || "Failed to review timesheet");
     }
 
-    showStatusToast("Timesheet updated successfully", "success");
+    showStatusToast(`Timesheet ${status} successfully`, "success");
     return ;
   } catch (err) {
     showStatusToast("Update failed", "error");
