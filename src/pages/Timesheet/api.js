@@ -32,7 +32,36 @@ http: if (!response.ok) {
   }
 };
 
+// ✅ Update Timesheet Review Status
+export const reviewTimesheet = async (managerId, timesheetId, comment="Approved", status) => {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheets/review/${managerId}?status=${encodeURIComponent(status)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          timesheetId,
+          comment: comment,
+        }),
+      }
+    );
 
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to review timesheet");
+    }
+
+    showStatusToast("Timesheet updated successfully", "success");
+    return ;
+  } catch (err) {
+    showStatusToast("Update failed", "error");
+    throw err;
+  }
+};
 
 export async function updateTimesheet(timesheetId, payload) {
   try {
@@ -58,4 +87,5 @@ export async function updateTimesheet(timesheetId, payload) {
     showStatusToast(err.message || "Update failed", "error");
     throw err;
   }
+  
 }
