@@ -149,7 +149,7 @@ const AppRoutes = () => {
           {/* Main */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calendar" element={<Calendar />} />
-          <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+          <Route path="/timesheets" element={<TimesheetHistoryPage />} /> 
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
@@ -162,23 +162,62 @@ const AppRoutes = () => {
           <Route path="/projects/manager" element={<ProjectDashboard />} />
           <Route path="/projects/*" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
-          <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+          <Route
+            path="/projects/user/:projectId"
+            element={<UserProjectTabs />}
+          />
 
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
-          <Route path="/user-management/users/create" element={<CreateUser />} />
-          <Route path="/user-management/users/edit/:id" element={<EditUser />} />
-          <Route path="/user-management/users/roles" element={<UpdateUserRoles />} />
-          <Route path="/user-management/roles/edit-role/:userId" element={<EditUserRoleForm />} />
+          <Route
+            path="/user-management/users/create"
+            element={<CreateUser />}
+          />
+          <Route
+            path="/user-management/users/edit/:id"
+            element={<EditUser />}
+          />
+          <Route
+            path="/user-management/users/roles"
+            element={<UpdateUserRoles />}
+          />
+          <Route
+            path="/user-management/roles/edit-role/:userId"
+            element={<EditUserRoleForm />}
+          />
           <Route path="/user-management/roles" element={<RoleManagement />} />
-          <Route path="/user-management/permissions" element={<PermissionManagement />} />
-          <Route path="/user-management/groups" element={<PermissionGroupManagement />} />
-          <Route path="/user-management/groups/:groupId" element={<GroupDetails />} />
-          <Route path="/user-management/access-points" element={<AccessPointManagement />} />
-          <Route path="/user-management/access-points/create" element={<AccessPointForm />} />
-          <Route path="/user-management/access-points/:access_id" element={<AccessPointDetails />} />
-          <Route path="/user-management/access-points/edit/:access_id" element={<AccessPointEdit />} />
-          <Route path="/user-management/access-points/admin/access-point-mapping" element={<AccessPointMapping />} />
+          <Route
+            path="/user-management/permissions"
+            element={<PermissionManagement />}
+          />
+          <Route
+            path="/user-management/groups"
+            element={<PermissionGroupManagement />}
+          />
+          <Route
+            path="/user-management/groups/:groupId"
+            element={<GroupDetails />}
+          />
+          <Route
+            path="/user-management/access-points"
+            element={<AccessPointManagement />}
+          />
+          <Route
+            path="/user-management/access-points/create"
+            element={<AccessPointForm />}
+          />
+          <Route
+            path="/user-management/access-points/:access_id"
+            element={<AccessPointDetails />}
+          />
+          <Route
+            path="/user-management/access-points/edit/:access_id"
+            element={<AccessPointEdit />}
+          />
+          <Route
+            path="/user-management/access-points/admin/access-point-mapping"
+            element={<AccessPointMapping />}
+          />
         </Route>
       </Routes>
       <SaveLastPath />
