@@ -2,6 +2,11 @@ import React, { useEffect, useState, useMemo } from "react";
 import { reviewTimesheet } from "../api";
 import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
+import { Check, X, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import autoTable from "jspdf-autotable"; 
+
 
 const ManagerApprovalTable = ({ managerId = 3 }) => {
   const [timesheets, setTimesheets] = useState([]);
@@ -34,7 +39,6 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
       const data = await res.json();
       setTimesheets(data);
 
-      // Preload project/task info
       const uniqueUserIds = [...new Set(data.map((ts) => ts.userId))];
       uniqueUserIds.forEach((uid) => fetchProjectTaskInfo(uid));
     } catch (err) {
@@ -159,6 +163,97 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
 
   const uniqueUsers = [...new Set(timesheets.map((ts) => ts.userId))];
 
+  // CSV Export
+  const exportCSV = () => {
+    const rows = [
+      [
+        "User ID",
+        "User Name",
+        "Project",
+        "Task",
+        "Start",
+        "End",
+        "Work Type",
+        "Description",
+        "Hours",
+        "Date",
+        "Status",
+      ],
+    ];
+    filteredTimesheets.forEach((sheet) => {
+      sheet.entries.forEach((entry) => {
+        rows.push([
+          sheet.userId,
+          `user_${sheet.userId}`,
+          projectMap[entry.projectId] || `Project-${entry.projectId}`,
+          taskMap[entry.taskId] || `Task-${entry.taskId}`,
+          new Date(entry.fromTime).toLocaleTimeString(),
+          new Date(entry.toTime).toLocaleTimeString(),
+          entry.workType,
+          entry.description,
+          (entry.hoursWorked ?? 0).toFixed(2),
+          new Date(sheet.workDate).toLocaleDateString(),
+          sheet.status,
+        ]);
+      });
+    });
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((e) => e.map((v) => `"${v}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", "timesheets.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // PDF Export
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Timesheet Report", 14, 10);
+    const tableData = [];
+    filteredTimesheets.forEach((sheet) => {
+      sheet.entries.forEach((entry) => {
+        tableData.push([
+          sheet.userId,
+          `user_${sheet.userId}`,
+          projectMap[entry.projectId] || `Project-${entry.projectId}`,
+          taskMap[entry.taskId] || `Task-${entry.taskId}`,
+          new Date(entry.fromTime).toLocaleTimeString(),
+          new Date(entry.toTime).toLocaleTimeString(),
+          entry.workType,
+          entry.description,
+          (entry.hoursWorked ?? 0).toFixed(2),
+          new Date(sheet.workDate).toLocaleDateString(),
+          sheet.status,
+        ]);
+      });
+    });
+
+    autoTable(doc, {
+      head: [
+        [
+          "User ID",
+          "User Name",
+          "Project",
+          "Task",
+          "Start",
+          "End",
+          "Work Type",
+          "Description",
+          "Hours",
+          "Date",
+          "Status",
+        ],
+      ],
+      body: tableData,
+      startY: 20,
+    });
+
+    doc.save("timesheets.pdf");
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -210,8 +305,30 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
             </option>
           ))}
         </select>
-        <Button variant="secondary" size="small" onClick={handleResetFilters}>
+        <Button variant="danger" size="small" onClick={handleResetFilters}>
           Reset Filters
+        </Button>
+      </div>
+
+      {/* Download Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="success"
+          size="small"
+          onClick={exportCSV}
+          className="flex items-center gap-1"
+        >
+          <Download size={16} />
+          CSV
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={exportPDF}
+          className="flex items-center gap-1"
+        >
+          <Download size={16} />
+          PDF
         </Button>
       </div>
 
@@ -262,13 +379,13 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
                       }
                       className="text-green-600 hover:text-green-800 font-bold"
                     >
-                      ✔
+                      <Check size={18} />
                     </button>
                     <button
                       onClick={() => handleRejectClick(sheet.timesheetId)}
                       className="text-red-600 hover:text-red-800 font-bold"
                     >
-                      ✖
+                      <X size={18} />
                     </button>
                   </div>
                 )}
