@@ -84,6 +84,7 @@ const TimesheetGroup = ({
         mapWorkType={mapWorkType}
         addingNewEntry={addingNewEntry}
         setAddingNewEntry={setAddingNewEntry}
+        setAddingNewTimesheet={setAddingNewTimesheet}
         refreshData={refreshData} // ✅ Pass the callback to refresh data
       />
     </div>

@@ -16,30 +16,49 @@
 // export default TimesheetHeader;
 import React, { useState } from "react";
 import DayTrackModal from "./DayTrackModal"; 
+import Button from "../../components/Button/Button";
+import { useNavigate } from "react-router-dom";
 
 const TimesheetHeader = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Previous History Track</h1>
-        <p className="text-gray-600">Track and manage timesheets, projects, and productivity</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Previous History Track
+        </h1>
+        <p className="text-gray-600">
+          Track and manage timesheets, projects, and productivity
+        </p>
       </div>
 
-      {/* Add Entry Button */}
-      <button
-        onClick={openModal}
-        className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800"
-      >
-        + Add Entry
-      </button>
-
-      {/* Modal Component */}
-      <DayTrackModal isOpen={isModalOpen} onClose={closeModal} />
+      <div className="flex gap-4">
+        <Button
+          variant="primary"
+          size="medium"
+          onClick={() => navigate("/timesheets")}
+        >
+          My Timesheets
+        </Button>
+        <Button
+          variant="secondary"
+          size="medium"
+          onClick={() => navigate("/managerapproval")}
+        >
+          My Approvals
+        </Button>
+      </div>
     </div>
   );
 };

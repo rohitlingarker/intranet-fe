@@ -67,7 +67,7 @@ useEffect(() => {
 
     const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
     const matchesStatus =
-      filterStatus === "All Status" || timesheet.approvalStatus === filterStatus;
+      filterStatus === "All Status" || timesheet.status === filterStatus;
 
     return matchesSearch && matchesDate && matchesStatus;
   });

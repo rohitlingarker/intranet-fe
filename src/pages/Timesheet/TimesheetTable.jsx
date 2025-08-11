@@ -47,7 +47,7 @@ const TimesheetTable = ({
           {addingNewTimesheet && (
             <TimesheetGroup
             emptyTimesheet={true}
-              workDate={new Date("02-12-2025").toISOString().split("T")[0]}
+              workDate={new Date().toISOString().split("T")[0]}
               entries={[]}
               status="Pending"
               mapWorkType={mapWorkType}

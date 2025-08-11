@@ -15,19 +15,20 @@ const EntriesTable = ({
   status,
   addingNewEntry,
   setAddingNewEntry,
+  setAddingNewTimesheet,
   refreshData, // callback to reload entries after update
 }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
   const [projectInfo, setProjectInfo] = useState([]);
-  
+
   const [addData, setAddData] = useState({});
 
   userId = userId || 1; // Default to 1 if not provided
 
-  useEffect(()=>{
-    if(!addingNewEntry) setEditIndex(null);
-  },[addingNewEntry])
+  useEffect(() => {
+    if (!addingNewEntry) setEditIndex(null);
+  }, [addingNewEntry]);
 
   useEffect(() => {
     fetchProjectTaskInfo(userId).then(setProjectInfo);
@@ -61,7 +62,7 @@ const EntriesTable = ({
     if (addingNewEntry) return;
     if (status === "Approved") return;
     console.log(status);
-    
+
     const entry = entries[idx];
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -85,9 +86,8 @@ const EntriesTable = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (addingNewEntry) setAddData((prev) => ({ ...prev, [name]: value }))
-    else setEditData((prev) => ({ ...prev, [name]: value }))
-
+    if (addingNewEntry) setAddData((prev) => ({ ...prev, [name]: value }));
+    else setEditData((prev) => ({ ...prev, [name]: value }));
   };
 
   const isValid = (data) => {
@@ -122,34 +122,34 @@ const EntriesTable = ({
       setEditData({});
       refreshData(); // Reload entries after update
     } catch (err) {
-        showStatusToast("Failed to update entry", "error");
+      showStatusToast("Failed to update entry", "error");
     }
   };
 
   const handleAddEntry = async () => {
     const payload = [
-        {
-          projectId: parseInt(addData.projectId),
-          taskId: parseInt(addData.taskId),
-          description: addData.description,
-          workType: addData.workType,
-          hoursWorked: 0, // server may recalculate
-          fromTime: new Date(`${workDate}T${addData.fromTime}`).toISOString(),
-          toTime: new Date(`${workDate}T${addData.toTime}`).toISOString(),
-          otherDescription: "",
-        }
-      ];
+      {
+        projectId: parseInt(addData.projectId),
+        taskId: parseInt(addData.taskId),
+        description: addData.description,
+        workType: addData.workType,
+        hoursWorked: 0, // server may recalculate
+        fromTime: new Date(`${workDate}T${addData.fromTime}`).toISOString(),
+        toTime: new Date(`${workDate}T${addData.toTime}`).toISOString(),
+        otherDescription: "",
+      },
+    ];
 
     try {
       await addEntryToTimesheet(timesheetId, workDate, payload);
       setAddingNewEntry(false);
+      setAddingNewTimesheet(false);
       setAddData({});
       refreshData(); // Reload entries after update
     } catch (err) {
-        showStatusToast("Failed to update entry", "error");
+      showStatusToast("Failed to update entry", "error");
     }
-    
-  }
+  };
 
   return (
     // <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
@@ -169,11 +169,7 @@ const EntriesTable = ({
         </tr>
       </thead>
       <tbody>
-        {entries.length === 0 && (
-          <tr>
-            
-          </tr>
-        )}
+        {entries.length === 0 && <tr></tr>}
         {entries.map((entry, idx) => (
           <tr
             key={entry.timesheetEntryId}
@@ -181,8 +177,8 @@ const EntriesTable = ({
               idx % 2 === 0 ? "bg-white" : "bg-gray-50"
             } hover:bg-blue-50 transition`}
           >
-            {(editIndex === idx) ? (
-              <>             
+            {editIndex === idx ? (
+              <>
                 <td className="px-4 py-2 text-xs">
                   <FormSelect
                     name="projectId"
