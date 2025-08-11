@@ -25,7 +25,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     } catch (err) {
       console.error("Failed to fetch roles:", err);
       if (err.response?.status === 401) {
-        alert("Session expired. Please log in again.");
+        toast.success("Session expired. Please log in again.");
       }
     } finally {
       setLoading(false);
@@ -33,7 +33,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   };
 
   const handleCreateOrUpdate = async () => {
-    if (!newRole.trim()) return alert("Role name cannot be empty.");
+    if (!newRole.trim()) return toast.success("Role name cannot be empty.");
     setSaving(true);
     try {
       if (editingRole) {
@@ -50,7 +50,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
       fetchRoles();
     } catch (err) {
       console.error("Error saving role:", err);
-      alert("Failed to save role");
+      toast.error("Failed to save role");
     } finally {
       setSaving(false);
     }

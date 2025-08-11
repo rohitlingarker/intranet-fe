@@ -6,6 +6,7 @@ import GenericTable from "../../../../components/Table/table"; // ✅ Use Generi
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
+import StatusBadge from "../../../../components/status/StatusBadge";
 import { Pencil, UserX } from "lucide-react";
 
 const SORT_DIRECTIONS = {
@@ -106,7 +107,9 @@ export default function UsersTable() {
   const toggleSort = (key) => {
     if (sortBy === key) {
       setSortDirection((prev) =>
-        prev === SORT_DIRECTIONS.ASC ? SORT_DIRECTIONS.DESC : SORT_DIRECTIONS.ASC
+        prev === SORT_DIRECTIONS.ASC
+          ? SORT_DIRECTIONS.DESC
+          : SORT_DIRECTIONS.ASC
       );
     } else {
       setSortBy(key);
@@ -115,7 +118,8 @@ export default function UsersTable() {
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm("Are you sure you want to deactivate this user?")) return;
+    if (!window.confirm("Are you sure you want to deactivate this user?"))
+      return;
     try {
       await axios.delete(`http://localhost:8000/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -130,45 +134,41 @@ export default function UsersTable() {
     }
   };
 
-  const headers = [
-    "ID",
-    "Name",
-    "Email",
-    "Contact",
-    "Status",
-    "Actions",
-  ];
+  const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
 
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
 
   // ✅ Transform data for GenericTable
   const tableData = paginatedUsers.map((user) => ({
-    user_id: user.user_id,
-    name: `${user.first_name} ${user.last_name}`,
-    mail: user.mail,
-    contact: user.contact,
-    status: user.is_active ? "Active" : "Inactive",
-    actions: (
-      <div className="flex gap-4 items-center">
-        <span
-          className="cursor-pointer text-blue-600 hover:text-blue-800"
-          onClick={() => navigate(`/user-management/users/edit/${user.user_id}`)}
-          title="Edit"
-        >
-          <Pencil size={18} />
-        </span>
-        <span
-          className={`cursor-pointer ${
-            user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
-          }`}
-          onClick={() => user.is_active && handleDelete(user.user_id)}
-          title="Deactivate"
-        >
-          <UserX size={18} />
-        </span>
-      </div>
-    ),
-  }));
+  user_id: user.user_id,
+  name: `${user.first_name} ${user.last_name}`,
+  mail: user.mail,
+  contact: user.contact,
+  status: user.is_active ? "Active" : "Inactive", // ✅ string instead of JSX
+  actions: (
+    <div className="flex gap-4 items-center">
+      <span
+        className="cursor-pointer text-blue-600 hover:text-blue-800"
+        onClick={() =>
+          navigate(`/user-management/users/edit/${user.user_id}`)
+        }
+        title="Edit"
+      >
+        <Pencil size={18} />
+      </span>
+      <span
+        className={`cursor-pointer ${
+          user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
+        }`}
+        onClick={() => user.is_active && handleDelete(user.user_id)}
+        title="Deactivate"
+      >
+        <UserX size={18} />
+      </span>
+    </div>
+  ),
+}));
+
 
   return (
     <div>
@@ -213,7 +213,9 @@ export default function UsersTable() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onNext={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
         />
       )}
     </div>
