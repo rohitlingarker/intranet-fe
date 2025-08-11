@@ -83,18 +83,28 @@ export async function fetchTimesheetHistory(userId) {
   }
 }
 
-export async function addEntryToTimesheet(timesheetId, payload) {
+export async function addEntryToTimesheet(timesheetId,workdate, payload) {
   try {
-    const res = await fetch(
-      `${apiEndpoint}/api/timesheet/add-entry/${timesheetId}`,
-      {
-        method: "PUT",
+    if (timesheetId === undefined) {
+      const res = await fetch(`${apiEndpoint}/api/timesheet/create?workDate=${workdate}`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      }
-    );
+      });
+    } else {
+      const res = await fetch(
+        `${apiEndpoint}/api/timesheet/add-entry/${timesheetId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+    }
     showStatusToast("Timesheet entry added successfully", "success");
   } catch (err) {
     showStatusToast(err.message || "Update failed", "error");

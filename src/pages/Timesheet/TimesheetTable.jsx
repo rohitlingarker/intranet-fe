@@ -1,6 +1,8 @@
 import React from "react";
 import Pagination from "../../components/Pagination/pagination";
 import TimesheetGroup from "./TimesheetGroup";
+import Button from "../../components/Button/Button";
+import { useState } from "react";
 
 const TimesheetTable = ({
   loading,
@@ -11,6 +13,8 @@ const TimesheetTable = ({
   mapWorkType,
   refreshData, // Callback to refresh data after save
 }) => {
+  const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
+
   return (
     <div
       style={{
@@ -31,6 +35,27 @@ const TimesheetTable = ({
         </div>
       ) : (
         <>
+          <Button
+            size="small"
+            variant="primary"
+            className="mb-4"
+            onClick={() => setAddingNewTimesheet(!addingNewTimesheet)}
+          >
+            + New Timesheet
+          </Button>
+
+          {addingNewTimesheet && (
+            <TimesheetGroup
+            emptyTimesheet={true}
+              workDate={new Date("02-12-2025").toISOString().split("T")[0]}
+              entries={[]}
+              status="Pending"
+              mapWorkType={mapWorkType}
+              refreshData={refreshData}
+              addingNewTimesheet={addingNewTimesheet}
+              setAddingNewTimesheet={setAddingNewTimesheet}
+            />
+          )}
           {data.map((row) => (
             <TimesheetGroup
               timesheetId={row.timesheetId}
@@ -40,6 +65,8 @@ const TimesheetTable = ({
               status={row.status}
               mapWorkType={mapWorkType}
               refreshData={refreshData}
+              addingNewTimesheet={addingNewTimesheet}
+              setAddingNewTimesheet={setAddingNewTimesheet}
             />
           ))}
 

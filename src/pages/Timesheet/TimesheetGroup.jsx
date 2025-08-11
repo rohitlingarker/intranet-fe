@@ -31,18 +31,38 @@ const TimesheetGroup = ({
   entries,
   status,
   mapWorkType,
+  emptyTimesheet,
+  addingNewTimesheet,
+  setAddingNewTimesheet,
   refreshData, // ✅ Optional: Refresh parent state after save
 }) => {
   const totalHours = calculateTotalHours(entries);
 
   const [addingNewEntry, setAddingNewEntry] = useState(false);
+  const [date, setDate] = useState(workDate);
+  const [editDateIndex, setEditDateIndex] = useState(null);
 
+  
   return (
     <div className="mb-6 bg-gray-200 pt-1 rounded-lg shadow-sm border border-gray-200 text-xs">
       <div className="flex justify-between items-center mb-1 mx-4">
-        <div className="text-gray-500 font-semibold ">
-          {formatDate(workDate)}
-        </div>
+        {(editDateIndex === timesheetId) && emptyTimesheet ? (
+          <input
+            type="date"
+            className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            value={date}
+            onChange={(e) => {
+              setEditDateIndex(null);
+              setDate(e.target.value)}}
+          />
+        ) : (
+          <div 
+          onClick={() => setEditDateIndex(timesheetId)}
+          className="text-gray-500 font-semibold cursor-pointer">
+            {formatDate(date)}
+          </div>
+        )}
+        
         <div className="flex items-center gap-3">
           <span className="font-medium text-gray-700">Total hours : {totalHours} hrs</span>
           <StatusBadge label={status} size="sm" />
@@ -50,7 +70,7 @@ const TimesheetGroup = ({
         <Button
           size="small"
           variant="primary"
-          onClick={() => setAddingNewEntry(true)}
+          onClick={() => setAddingNewEntry(!addingNewEntry)}
           type="button"
         >
           Add Entry
@@ -59,7 +79,7 @@ const TimesheetGroup = ({
       <EntriesTable
         entries={entries}
         timesheetId={timesheetId} 
-        workDate={workDate}
+        workDate={date}
         currentStatus={status}
         mapWorkType={mapWorkType}
         addingNewEntry={addingNewEntry}

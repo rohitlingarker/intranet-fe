@@ -118,7 +118,7 @@ const EntriesTable = ({
       setEditData({});
       refreshData(); // Reload entries after update
     } catch (err) {
-      //   showStatusToast("Failed to update entry", "error");
+        showStatusToast("Failed to update entry", "error");
     }
   };
 
@@ -137,7 +137,7 @@ const EntriesTable = ({
       ];
 
     try {
-      await addEntryToTimesheet(timesheetId, payload);
+      await addEntryToTimesheet(timesheetId, workDate, payload);
       setAddingNewEntry(false);
       setAddData({});
       refreshData(); // Reload entries after update
@@ -165,6 +165,11 @@ const EntriesTable = ({
         </tr>
       </thead>
       <tbody>
+        {entries.length === 0 && (
+          <tr>
+            
+          </tr>
+        )}
         {entries.map((entry, idx) => (
           <tr
             key={entry.timesheetEntryId}
@@ -172,8 +177,8 @@ const EntriesTable = ({
               idx % 2 === 0 ? "bg-white" : "bg-gray-50"
             } hover:bg-blue-50 transition`}
           >
-            {editIndex === idx ? (
-              <>
+            {(editIndex === idx) ? (
+              <>             
                 <td className="px-4 py-2 text-xs">
                   <FormSelect
                     name="projectId"
