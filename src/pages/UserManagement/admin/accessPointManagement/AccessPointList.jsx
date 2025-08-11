@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { listAccessPoints, deleteAccessPoint } from '../../../../services/accessPointService';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Edit, Trash2 } from 'lucide-react';
-
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import Button from "../../../../components/Button/Button";
 const AccessPointList = () => {
   const [aps, setAps] = useState([]);
   const navigate = useNavigate();
@@ -40,24 +40,24 @@ const AccessPointList = () => {
               <p className="text-sm text-gray-600 mb-4"><strong>Permission:</strong> {ap.permission_code || 'N/A'}</p>
 
               <div className="space-y-2">
-                <button
+                <Button
                   onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
                   className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
                 >
                   <Eye className="w-4 h-4" /> View
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => navigate(`/user-management/access-points/edit/${ap.access_id}`)}
                   className="flex items-center w-full justify-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all shadow"
                 >
-                  <Edit className="w-4 h-4" /> Edit
-                </button>
-                <button
+                  <Pencil className="w-4 h-4" /> Edit
+                </Button>
+                <Button
                   onClick={() => handleDelete(ap.access_id)}
                   className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
                 >
                   <Trash2 className="w-4 h-4" /> Delete
-                </button>
+                </Button>
               </div>
             </div>
           ))}

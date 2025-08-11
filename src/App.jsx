@@ -60,6 +60,10 @@ import AccessPointManagement from "./pages/UserManagement/admin/accessPointManag
 import Profile from "./pages/UserManagement/user/Profile";
 import EditProfile from "./pages/UserManagement/user/EditProfile";
 
+
+import Register from "./pages/UserManagement/auth/Register";
+import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
+
 // 🔒 Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -129,6 +133,8 @@ const AppRoutes = () => {
       <Routes>
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
 
         {/* Protected Routes */}
         <Route

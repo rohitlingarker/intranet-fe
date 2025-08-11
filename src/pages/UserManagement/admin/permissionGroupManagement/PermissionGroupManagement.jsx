@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Button from "../../../../components/Button/Button"; // Adjust if different
+import SearchInput from "../../../../components/filter/Searchbar"; // Adjust if different
+
 
 // PermissionList component that supports optional Add/Delete buttons
 function PermissionList({
@@ -27,22 +30,24 @@ function PermissionList({
           {(showAdd || showDelete) && (
             <div className="flex gap-2">
               {showAdd && (
-                <button
+                <Button
+                  size="small"
+                  variant="primary"
                   onClick={() => onAdd && onAdd(perm.permission_id)}
-                  className="bg-blue-900 hover:bg-blue-700 text-white px-4 py-1 rounded"
                   type="button"
                 >
                   Add
-                </button>
+                </Button>
               )}
               {showDelete && (
-                <button
+                <Button
+                  size="small"
+                  variant="danger"
                   onClick={() => onDelete && onDelete(perm.permission_id)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded"
                   type="button"
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -80,6 +85,7 @@ export default function PermissionGroupManagement() {
   useEffect(() => {
     fetchGroups();
     fetchAllPermissions();
+    // eslint-disable-next-line
   }, []);
 
   const fetchGroups = async () => {
@@ -278,21 +284,24 @@ export default function PermissionGroupManagement() {
           onChange={(e) => setNewGroupName(e.target.value)}
           className="w-full p-2 border rounded mb-3"
         />
-        <button
+        <Button
+          size="medium"
+          variant="primary"
           onClick={handleCreateOrUpdate}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           type="button"
         >
           {editingGroup ? "Update Group" : "Create Group"}
-        </button>
+        </Button>
         {editingGroup && (
-          <button
+          <Button
+            size="small"
+            variant="secondary"
+            className="ml-3 underline"
             onClick={resetForm}
-            className="ml-3 text-sm text-gray-600 underline"
             type="button"
           >
             Cancel
-          </button>
+          </Button>
         )}
       </div>
 
@@ -310,20 +319,24 @@ export default function PermissionGroupManagement() {
               >
                 <span>{group?.group_name}</span>
                 <div className="flex gap-3">
-                  <button
+                  <Button
+                    size="small"
+                    variant="primary"
+                    className="text-sm"
                     onClick={() => handleEdit(group)}
-                    className="text-blue-600 text-sm"
                     type="button"
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="danger"
+                    className="text-sm"
                     onClick={() => handleDelete(group?.group_id)}
-                    className="text-red-600 text-sm"
                     type="button"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}
@@ -350,13 +363,14 @@ export default function PermissionGroupManagement() {
               </option>
             ))}
           </select>
-          <button
+          <Button
+            size="medium"
+            variant="primary"
             onClick={handleGroupSelect}
-            className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-700"
             type="button"
           >
             Select
-          </button>
+          </Button>
         </div>
 
         {/* Parent-level Add, Delete, and View Buttons */}
@@ -365,46 +379,43 @@ export default function PermissionGroupManagement() {
             <hr className="my-4" />
             <h4 className="text-md font-semibold mb-3">Actions:</h4>
             <div className="flex justify-center gap-6 mb-6">
-              <button
+              <Button
+                size="medium"
+                variant="primary"
                 onClick={handleAddClick}
-                className="bg-blue-900 hover:bg-green-700 text-white px-9 py-2 rounded"
                 type="button"
               >
                 Add
-              </button>
-              <button
+              </Button>
+              <Button
+                size="medium"
+                variant="danger"
                 onClick={handleDeleteClick}
-                className="bg-blue-900 hover:bg-red-700 text-white px-9 py-2 rounded"
                 type="button"
               >
                 Delete
-              </button>
-              <button
+              </Button>
+              <Button
+                size="medium"
+                variant="secondary"
                 onClick={handleViewClick}
-                className="bg-blue-900 hover:bg-blue-700 text-white px-9 py-2 rounded"
                 type="button"
               >
                 View
-              </button>
+              </Button>
             </div>
 
-            {/* Search Input */}
+            {/* Search Input with debounce */}
             <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                placeholder="Search permissions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 p-2 border rounded"
-                aria-label="Search permissions"
-              />
-              <button
-                onClick={() => setSearchTrigger(true)}
-                className="bg-blue-700 text-white px-4 py-2 rounded"
-                type="button"
-              >
-                Search
-              </button>
+              <div className="flex-1">
+                <SearchInput
+                  placeholder="Search permissions..."
+                  onSearch={(q) => {
+                    setSearchTerm(q);
+                    setSearchTrigger(q.length > 0);
+                  }}
+                />
+              </div>
             </div>
 
             {/* Add Permissions List */}

@@ -5,17 +5,42 @@ import {
   getUnmappedPermissions,
   assignPermissionToAccessPoint,
 } from '../../../../services/accessPointService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, Plus, Trash2, X } from 'lucide-react';
+import Button from "../../../../components/Button/Button";
+import Navbar from "../../../../components/Navbar/Navbar"; // ✅ Add Navbar
 
 const AccessPointMapping = () => {
   const [aps, setAps] = useState([]);
   const [unmappedPermissions, setUnmappedPermissions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedAccessPoint, setSelectedAccessPoint] = useState(null);
-  const [selectedPermission, setSelectedPermission] = useState(null); // object
+  const [selectedPermission, setSelectedPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Navbar navItems reused
+  const navItems = [
+    {
+      name: "Access Points",
+      onClick: () => navigate("/user-management/access-points"),
+      isActive: location.pathname === "/user-management/access-points",
+    },
+    {
+      name: "Add New",
+      onClick: () => navigate("/user-management/access-points/create"),
+      isActive: location.pathname === "/user-management/access-points/create",
+    },
+    {
+      name: "Permission Mapping",
+      onClick: () =>
+        navigate("/user-management/access-points/admin/access-point-mapping"),
+      isActive:
+        location.pathname ===
+        "/user-management/access-points/admin/access-point-mapping",
+    },
+  ];
 
   useEffect(() => {
     listAccessPointsumapped().then(res => setAps(res.data));
@@ -68,79 +93,85 @@ const AccessPointMapping = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-700">Access Point Mapping</h2>
-      </div>
+    <div>
+      {/* ✅ Navbar */}
+      <Navbar logo="Access Points" navItems={navItems} />
 
-      {aps.length === 0 ? (
-        <div className="text-center text-gray-500 mt-20">No access points found.</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {aps.map((ap) => (
-            <div
-              key={ap.access_id}
-              className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                {ap.endpoint_path}
-              </h3>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Method:</strong> {ap.method}
-              </p>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Module:</strong> {ap.module}
-              </p>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Public:</strong> {ap.is_public ? 'Yes' : 'No'}
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                <strong>Permission:</strong> {ap.permission_code || 'N/A'}
-              </p>
-
-              <div className="space-y-2">
-                <button
-                  onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
-                  className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
-                >
-                  <Eye className="w-4 h-4" /> View
-                </button>
-                <button
-                  onClick={() => handleAddPermission(ap)}
-                  disabled={loading}
-                  className="flex items-center w-full justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all shadow disabled:opacity-50"
-                >
-                  <Plus className="w-4 h-4" /> Add
-                </button>
-                <button
-                  onClick={() => handleDelete(ap.access_id)}
-                  className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* ✅ Main content */}
+      <div className="p-6 bg-gray-100 min-h-screen">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-700">Access Point Mapping</h2>
         </div>
-      )}
 
-      {/* Permission Assignment Modal */}
-      {showModal && (
-        <PermissionModal
-          unmappedPermissions={unmappedPermissions}
-          selectedAccessPoint={selectedAccessPoint}
-          selectedPermission={selectedPermission}
-          setSelectedPermission={setSelectedPermission}
-          onClose={() => setShowModal(false)}
-          onAssign={handleAssignPermission}
-          loading={loading}
-        />
-      )}
+        {aps.length === 0 ? (
+          <div className="text-center text-gray-500 mt-20">No access points found.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {aps.map((ap) => (
+              <div
+                key={ap.access_id}
+                className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border"
+              >
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  {ap.endpoint_path}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  <strong>Method:</strong> {ap.method}
+                </p>
+                <p className="text-sm text-gray-600 mb-1">
+                  <strong>Module:</strong> {ap.module}
+                </p>
+                <p className="text-sm text-gray-600 mb-1">
+                  <strong>Public:</strong> {ap.is_public ? 'Yes' : 'No'}
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>Permission:</strong> {ap.permission_code || 'N/A'}
+                </p>
+
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
+                    className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
+                  >
+                    <Eye className="w-4 h-4" /> View
+                  </Button>
+                  <Button
+                    onClick={() => handleAddPermission(ap)}
+                    disabled={loading}
+                    className="flex items-center w-full justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all shadow disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4" /> Add
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(ap.access_id)}
+                    className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ✅ Permission Assignment Modal */}
+        {showModal && (
+          <PermissionModal
+            unmappedPermissions={unmappedPermissions}
+            selectedAccessPoint={selectedAccessPoint}
+            selectedPermission={selectedPermission}
+            setSelectedPermission={setSelectedPermission}
+            onClose={() => setShowModal(false)}
+            onAssign={handleAssignPermission}
+            loading={loading}
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-// helpers to normalize fields
+// ✅ Modal + Helpers
 const formatCode = (p) => p?.code ?? p?.permission_code ?? '(no code)';
 const formatDesc = (p) => p?.description ?? p?.permission_description ?? '';
 
@@ -169,7 +200,7 @@ const PermissionModal = ({
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        // no special close logic needed for modal dropdown
+        // no close logic
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -215,7 +246,7 @@ const PermissionModal = ({
                 placeholder="Search permissions..."
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button
+              <Button
                 onClick={() => {
                   setQuery('');
                   setSelectedPermission(null);
@@ -224,7 +255,7 @@ const PermissionModal = ({
                 className="text-gray-500 hover:text-gray-700"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="border border-gray-200 rounded-lg max-h-60 overflow-auto bg-white shadow-sm">
@@ -259,27 +290,21 @@ const PermissionModal = ({
           </div>
         </div>
 
-        {unmappedPermissions.length === 0 && (
-          <div className="text-center text-gray-500 mb-4">
-            No unmapped permissions available
-          </div>
-        )}
-
         <div className="flex justify-end gap-2">
-          <button
+          <Button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
             disabled={loading}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onAssign}
             disabled={!selectedPermission || loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Assigning...' : 'Assign Permission'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
