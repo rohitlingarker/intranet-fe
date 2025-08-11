@@ -357,8 +357,8 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
                 {formattedDate}
               </span>
               <div className="flex items-center gap-4">
-                <span className="text-gray-600 text-sm">
-                  {totalHours.toFixed(2)} hrs
+                <span  className="text-gray-600 text-sm">
+                 Total Hours: {totalHours.toFixed(2)} hrs
                 </span>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
