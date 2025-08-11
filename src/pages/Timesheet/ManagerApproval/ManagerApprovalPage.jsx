@@ -139,7 +139,7 @@ const ManagerApprovalPage = () => {
   const handleApprove = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/timesheets/review/${managerId}?status=APPROVED`,
+        `http://localhost:8080/api/timesheets/review/${managerId}?status=Approved`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -160,14 +160,14 @@ const ManagerApprovalPage = () => {
   };
 
   // Reject Timesheet
-  const handleReject = async (id) => {
+  const handleReject = async (id, comment) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/timesheets/review/${managerId}?status=REJECTED`,
+        `http://localhost:8080/api/timesheets/review/${managerId}?status=Rejected`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ timesheetId: id, comment: "Rejected by Manager" })
+          body: JSON.stringify({ timesheetId: id, comment })
         }
       );
 
@@ -175,7 +175,7 @@ const ManagerApprovalPage = () => {
 
       setData((prev) =>
         prev.map((row) =>
-          row.timesheetId === id ? { ...row, approvalStatus: "REJECTED" } : row
+          row.timesheetId === id ? { ...row, approvalStatus: "Rejected" } : row
         )
       );
     } catch (error) {
