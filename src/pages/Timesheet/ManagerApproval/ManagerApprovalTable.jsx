@@ -358,7 +358,7 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
               </span>
               <div className="flex items-center gap-4">
                 <span  className="text-gray-600 text-sm">
-                 Total Hours: {totalHours.toFixed(2)} hrs
+                 Total Hours: {totalHours.toFixed(2)}
                 </span>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
