@@ -58,6 +58,10 @@ const EntriesTable = ({
   };
 
   const handleEditClick = (idx) => {
+    if (addingNewEntry) return;
+    if (status === "Approved") return;
+    console.log(status);
+    
     const entry = entries[idx];
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -269,6 +273,7 @@ const EntriesTable = ({
                 <td className="px-4 py-2">
                   <button
                     className="text-blue-600 hover:underline text-sm"
+                    disabled={entry.approvalStatus === "Approved"}
                     onClick={() => handleEditClick(idx)}
                   >
                     <Pencil className="inline w-4 h-4" />
