@@ -1,548 +1,482 @@
-
-// import React, { useState } from "react";
-// import { ChevronDown, ChevronRight, Check, X, Info } from "lucide-react";
-// import StatusBadge from "../../../components/status/StatusBadge";
-// import Pagination from "../../../components/Pagination/pagination";
-// import ExpandedRowInline from "./ExpandedRowInline";
-
-// const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
-//   const [expandedRow, setExpandedRow] = useState(null);
-//   const [rejectingRow, setRejectingRow] = useState(null);
-//   const [commentInputs, setCommentInputs] = useState({});
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [actionMessages, setActionMessages] = useState({}); // { timesheetId: "Already approved" }
-
-//   const rowsPerPage = 5;
-
-//   const handleCommentChange = (id, value) => {
-//     setCommentInputs((prev) => ({ ...prev, [id]: value }));
-//   };
-
-//   const toggleRow = (id) => {
-//     setExpandedRow(expandedRow === id ? null : id);
-//   };
-
-//   const totalPages = Math.ceil(data.length / rowsPerPage);
-//   const paginatedData = data.slice(
-//     (currentPage - 1) * rowsPerPage,
-//     currentPage * rowsPerPage
-//   );
-
-//   const handleApprove = (id, status) => {
-//     if (status !== "Pending") {
-//       setActionMessages((prev) => ({ ...prev, [id]: "Already approved" }));
-//       return;
-//     }
-//     onApprove(id);
-//     setActionMessages((prev) => ({ ...prev, [id]: "Approved successfully" }));
-//   };
-
-//   const handleReject = (id, comment, status) => {
-//     if (status !== "Pending") {
-//       setActionMessages((prev) => ({ ...prev, [id]: "Already rejected" }));
-//       return;
-//     }
-//     onReject(id, comment);
-//     setRejectingRow(null);
-//     setCommentInputs((prev) => {
-//       const updated = { ...prev };
-//       delete updated[id];
-//       return updated;
-//     });
-//     setActionMessages((prev) => ({ ...prev, [id]: "Rejected successfully" }));
-//   };
-
-//   return (
-//     <div
-//       style={{
-//         background: "#fff",
-//         padding: "24px",
-//         margin: "32px 0",
-//         borderRadius: 10,
-//         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-//       }}
-//     >
-//       {loading ? (
-//         <div className="text-center text-gray-500">Loading approvals...</div>
-//       ) : !data || data.length === 0 ? (
-//         <div className="text-center text-gray-500">No pending approvals.</div>
-//       ) : (
-//         <>
-//           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-//             <thead>
-//               <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-//                 {[
-//                   "",
-//                   "User ID",
-//                   "User Name",
-//                   "Timesheet ID",
-//                   "Date",
-//                   "Hours Worked",
-//                   "Status",
-//                   "Actions",
-//                 ].map((h, i) => (
-//                   <th key={i} className="text-left px-4 py-3">
-//                     {h}
-//                   </th>
-//                 ))}
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {paginatedData.map((row, index) => (
-//                 <React.Fragment key={row.timesheetId}>
-//                   <tr
-//                     className={`hover:bg-blue-50 transition ${
-//                       index % 2 === 0 ? "bg-white" : "bg-gray-50"
-//                     }`}
-//                   >
-//                     <td
-//                       className="p-3 text-center cursor-pointer"
-//                       onClick={() => toggleRow(row.timesheetId)}
-//                     >
-//                       {expandedRow === row.timesheetId ? (
-//                         <ChevronDown className="w-5 h-5 text-blue-500" />
-//                       ) : (
-//                         <ChevronRight className="w-5 h-5 text-blue-500" />
-//                       )}
-//                     </td>
-//                     <td className="p-3 font-medium text-gray-700">
-//                       {row.userId}
-//                     </td>
-//                     <td className="p-3 text-gray-600">{row.userName}</td>
-//                     <td className="p-3 font-medium text-gray-700">
-//                       {row.timesheetId}
-//                     </td>
-//                     <td className="p-3 text-gray-600">{row.workDate}</td>
-//                     <td className="p-3 text-gray-600">{row.hoursWorked}</td>
-//                     <td className="p-3">
-//                       <StatusBadge label={row.approvalStatus} />
-//                     </td>
-//                     <td className="p-3 flex flex-col items-start gap-2">
-//                       <div className="flex gap-2">
-//                         <button
-//                           onClick={() =>
-//                             handleApprove(row.timesheetId, row.approvalStatus)
-//                           }
-//                           className="flex items-center justify-center p-2 text-green-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-//                           title={
-//                             row.approvalStatus === "Pending"
-//                               ? "Approve"
-//                               : "Already approved"
-//                           }
-//                         >
-//                           <Check className="w-5 h-5" />
-//                         </button>
-//                         <button
-//                           onClick={() => {
-//                             if (row.approvalStatus !== "Pending") {
-//                               setActionMessages((prev) => ({
-//                                 ...prev,
-//                                 [row.timesheetId]: "Already rejected",
-//                               }));
-//                             } else {
-//                               setRejectingRow(row.timesheetId);
-//                             }
-//                           }}
-//                           className="flex items-center justify-center p-2 text-red-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-//                           title={
-//                             row.approvalStatus === "Pending"
-//                               ? "Reject"
-//                               : "Already rejected"
-//                           }
-//                         >
-//                           <X className="w-5 h-5" />
-//                         </button>
-//                       </div>
-//                       {actionMessages[row.timesheetId] && (
-//                         <div className="text-xs text-gray-500 flex items-center gap-1">
-//                           <Info className="w-3 h-3" />
-//                           {actionMessages[row.timesheetId]}
-//                         </div>
-//                       )}
-//                     </td>
-//                   </tr>
-
-//                   {rejectingRow === row.timesheetId && (
-//                     <tr>
-//                       <td colSpan={8} className="bg-red-50 px-4 py-3">
-//                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-//                           <input
-//                             type="text"
-//                             placeholder="Enter rejection comment"
-//                             value={commentInputs[row.timesheetId] || ""}
-//                             onChange={(e) =>
-//                               handleCommentChange(
-//                                 row.timesheetId,
-//                                 e.target.value
-//                               )
-//                             }
-//                             className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
-//                           />
-//                           <div className="flex gap-2 mt-2 md:mt-0">
-//                             <button
-//                               onClick={() =>
-//                                 handleReject(
-//                                   row.timesheetId,
-//                                   commentInputs[row.timesheetId] || "",
-//                                   row.approvalStatus
-//                                 )
-//                               }
-//                               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-//                             >
-//                               Confirm Reject
-//                             </button>
-//                             <button
-//                               onClick={() => {
-//                                 setRejectingRow(null);
-//                                 setCommentInputs((prev) => {
-//                                   const updated = { ...prev };
-//                                   delete updated[row.timesheetId];
-//                                   return updated;
-//                                 });
-//                               }}
-//                               className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
-//                             >
-//                               Cancel
-//                             </button>
-//                           </div>
-//                         </div>
-//                       </td>
-//                     </tr>
-//                   )}
-
-//                   {expandedRow === row.timesheetId && (
-//                     <ExpandedRowInline entries={row.entries} />
-//                   )}
-//                 </React.Fragment>
-//               ))}
-//             </tbody>
-//           </table>
-
-//           <Pagination
-//             currentPage={currentPage}
-//             totalPages={totalPages}
-//             onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//             onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-//           />
-//         </>
-//       )}
-//     </div>
-//    );
-//  };
-
-//  export default ManagerApprovalTable;
-
-
-
-import React, { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Check, X, Info, Download } from "lucide-react";
-import StatusBadge from "../../../components/status/StatusBadge";
+//MAT
+import React, { useEffect, useState, useMemo } from "react";
+import { reviewTimesheet } from "../api";
 import Pagination from "../../../components/Pagination/pagination";
-import ExpandedRowInline from "./ExpandedRowInline";
-import { saveAs } from "file-saver";
-import Papa from "papaparse";
+import Button from "../../../components/Button/Button";
+import { Check, X, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { showStatusToast } from "../../../components/toastfy/toast";
+import autoTable from "jspdf-autotable";
 
-const ManagerApprovalTable = ({ loading, data, onApprove, onReject }) => {
-  const [expandedRow, setExpandedRow] = useState(null);
-  const [rejectingRow, setRejectingRow] = useState(null);
-  const [commentInputs, setCommentInputs] = useState({});
+const ManagerApprovalTable = ({ managerId = 3 }) => {
+  const [timesheets, setTimesheets] = useState([]);
+  const [projectMap, setProjectMap] = useState({});
+  const [taskMap, setTaskMap] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [userFilter, setUserFilter] = useState("");
+  const [rejectionComments, setRejectionComments] = useState({});
+  const [showCommentBox, setShowCommentBox] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedUser, setSelectedUser] = useState("All");
 
-  const rowsPerPage = 5;
+  const pageSize = 5;
 
-  const handleCommentChange = (id, value) => {
-    setCommentInputs((prev) => ({ ...prev, [id]: value }));
-  };
+  useEffect(() => {
+    fetchTimesheets();
+  }, []);
 
-  const toggleRow = (id) => {
-    setExpandedRow(expandedRow === id ? null : id);
-  };
+  const fetchTimesheets = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/timesheets/manager/${managerId}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch timesheets");
 
-  const handleApprove = (id, status) => {
-    if (status !== "Pending") {
-      showStatusToast(`Already ${status}`, "error");
-      return;
+      const data = await res.json();
+      setTimesheets(data);
+
+      const uniqueUserIds = [...new Set(data.map((ts) => ts.userId))];
+      uniqueUserIds.forEach((uid) => fetchProjectTaskInfo(uid));
+    } catch (err) {
+      console.error(err);
     }
-    onApprove(id);
-    showStatusToast("Approved successfully", "success");
   };
 
-  const handleReject = (id, comment, status) => {
-    if (status !== "Pending") {
-      showStatusToast(`Already ${status}`, "error");
-      return;
+  const fetchProjectTaskInfo = async (userId) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/timesheet/project-info/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      if (!res.ok)
+        throw new Error(`Failed to fetch project info for user ${userId}`);
+
+      const data = await res.json();
+      const newProjects = {};
+      const newTasks = {};
+
+      data.forEach((proj) => {
+        newProjects[proj.projectId] = proj.project;
+        proj.tasks.forEach((task) => {
+          newTasks[task.taskId] = task.task;
+        });
+      });
+
+      setProjectMap((prev) => ({ ...prev, ...newProjects }));
+      setTaskMap((prev) => ({ ...prev, ...newTasks }));
+    } catch (err) {
+      console.error(err);
     }
-    onReject(id, comment);
-    setRejectingRow(null);
-    setCommentInputs((prev) => {
-      const updated = { ...prev };
-      delete updated[id];
-      return updated;
-    });
-    showStatusToast("Rejected successfully", "success");
   };
 
-  const filteredData = useMemo(() => {
-    return userFilter
-      ? data.filter((row) => row.userName === userFilter)
-      : data;
-  }, [data, userFilter]);
+  const filteredTimesheets = useMemo(() => {
+    return [...timesheets]
+      .sort((a, b) => new Date(b.workDate) - new Date(a.workDate))
+      .filter((sheet) => {
+        const projectNames = sheet.entries
+          .map((e) => projectMap[e.projectId] || "")
+          .join(" ")
+          .toLowerCase();
+        const taskNames = sheet.entries
+          .map((e) => taskMap[e.taskId] || "")
+          .join(" ")
+          .toLowerCase();
 
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+        const matchesSearch =
+          !searchTerm ||
+          sheet.userId.toString().includes(searchTerm.toLowerCase()) ||
+          `user_${sheet.userId}`.includes(searchTerm.toLowerCase()) ||
+          projectNames.includes(searchTerm.toLowerCase()) ||
+          taskNames.includes(searchTerm.toLowerCase());
+
+        const matchesDate =
+          !selectedDate ||
+          new Date(sheet.workDate).toISOString().split("T")[0] === selectedDate;
+
+        const matchesStatus =
+          statusFilter === "All" || sheet.status === statusFilter;
+
+        const matchesUser =
+          selectedUser === "All" || sheet.userId.toString() === selectedUser;
+
+        return matchesSearch && matchesDate && matchesStatus && matchesUser;
+      });
+  }, [
+    timesheets,
+    projectMap,
+    taskMap,
+    searchTerm,
+    selectedDate,
+    statusFilter,
+    selectedUser,
+  ]);
+
+  const totalPages = Math.ceil(filteredTimesheets.length / pageSize);
+  const paginatedTimesheets = filteredTimesheets.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
-  const uniqueUserNames = [...new Set(data.map((row) => row.userName))];
-
-  const downloadCSV = () => {
-    const csvData = Papa.unparse(filteredData);
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "timesheet_approvals.csv");
+  const handleStatusChange = async (
+    timesheetId,
+    status,
+    comment = "Approved"
+  ) => {
+    try {
+      await reviewTimesheet(managerId, timesheetId, comment, status);
+      fetchTimesheets();
+    } catch (err) {
+      console.error(`Error updating timesheet status: ${err.message}`);
+    }
   };
 
-  const downloadPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Timesheet Approvals", 14, 14);
-    const tableColumn = [
-      "User ID",
-      "User Name",
-      "Timesheet ID",
-      "Date",
-      "Hours Worked",
-      "Status",
+  const handleRejectClick = (timesheetId) =>
+    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: true }));
+
+  const handleCancelReject = (timesheetId) => {
+    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
+    setRejectionComments((prev) => ({ ...prev, [timesheetId]: "" }));
+  };
+
+  const handleConfirmReject = (timesheetId) => {
+    handleStatusChange(
+      timesheetId,
+      "Rejected",
+      rejectionComments[timesheetId] || ""
+    );
+    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedDate("");
+    setStatusFilter("All");
+    setSelectedUser("All");
+    setCurrentPage(1);
+  };
+
+  const uniqueUsers = [...new Set(timesheets.map((ts) => ts.userId))];
+
+  // CSV Export
+  const exportCSV = () => {
+    const rows = [
+      [
+        "User ID",
+        "User Name",
+        "Project",
+        "Task",
+        "Start",
+        "End",
+        "Work Type",
+        "Description",
+        "Hours",
+        "Date",
+        "Status",
+      ],
     ];
-    const tableRows = filteredData.map((row) => [
-      row.userId,
-      row.userName,
-      row.timesheetId,
-      row.workDate,
-      row.hoursWorked,
-      row.approvalStatus,
-    ]);
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
+    filteredTimesheets.forEach((sheet) => {
+      sheet.entries.forEach((entry) => {
+        rows.push([
+          sheet.userId,
+          `user_${sheet.userId}`,
+          projectMap[entry.projectId] || `Project-${entry.projectId}`,
+          taskMap[entry.taskId] || `Task-${entry.taskId}`,
+          new Date(entry.fromTime).toLocaleTimeString(),
+          new Date(entry.toTime).toLocaleTimeString(),
+          entry.workType,
+          entry.description,
+          (entry.hoursWorked ?? 0).toFixed(2),
+          new Date(sheet.workDate).toLocaleDateString(),
+          sheet.status,
+        ]);
+      });
+    });
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((e) => e.map((v) => `"${v}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", "timesheets.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // PDF Export
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Timesheet Report", 14, 10);
+    const tableData = [];
+    filteredTimesheets.forEach((sheet) => {
+      sheet.entries.forEach((entry) => {
+        tableData.push([
+          sheet.userId,
+          `user_${sheet.userId}`,
+          projectMap[entry.projectId] || `Project-${entry.projectId}`,
+          taskMap[entry.taskId] || `Task-${entry.taskId}`,
+          new Date(entry.fromTime).toLocaleTimeString(),
+          new Date(entry.toTime).toLocaleTimeString(),
+          entry.workType,
+          entry.description,
+          (entry.hoursWorked ?? 0).toFixed(2),
+          new Date(sheet.workDate).toLocaleDateString(),
+          sheet.status,
+        ]);
+      });
+    });
+
+    autoTable(doc, {
+      head: [
+        [
+          "User ID",
+          "User Name",
+          "Project",
+          "Task",
+          "Start",
+          "End",
+          "Work Type",
+          "Description",
+          "Hours",
+          "Date",
+          "Status",
+        ],
+      ],
+      body: tableData,
       startY: 20,
     });
-    doc.save("timesheet_approvals.pdf");
+
+    doc.save("timesheets.pdf");
   };
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "24px",
-        margin: "32px 0",
-        borderRadius: 10,
-        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-      }}
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-        <div className="flex gap-2 items-center">
-          <label className="text-sm font-medium">Filter by User:</label>
-          <select
-            value={userFilter}
-            onChange={(e) => {
-              setUserFilter(e.target.value);
-              setCurrentPage(1); // reset pagination
-            }}
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
-          >
-            <option value="">All</option>
-            {uniqueUserNames.map((name, i) => (
-              <option key={i} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={downloadCSV}
-            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-          >
-            <Download className="w-4 h-4" />
-            CSV
-          </button>
-          <button
-            onClick={downloadPDF}
-            className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
-          >
-            <Download className="w-4 h-4" />
-            PDF
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center bg-white p-4 rounded-lg shadow">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="border rounded p-2 flex-1 bg-gray-50"
+        />
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => {
+            setSelectedDate(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="border rounded p-2 bg-gray-50"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="border rounded p-2 bg-gray-50"
+        >
+          <option value="All">All Status</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Pending">Pending</option>
+        </select>
+        <select
+          value={selectedUser}
+          onChange={(e) => {
+            setSelectedUser(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="border rounded p-2 bg-gray-50"
+        >
+          <option value="All">All Users</option>
+          {uniqueUsers.map((uid) => (
+            <option key={uid} value={uid}>
+              {`${uid} - User_${uid}`}
+            </option>
+          ))}
+        </select>
+        <Button variant="danger" size="small" onClick={handleResetFilters}>
+          Reset Filters
+        </Button>
       </div>
 
-      {loading ? (
-        <div className="text-center text-gray-500">Loading approvals...</div>
-      ) : !filteredData || filteredData.length === 0 ? (
-        <div className="text-center text-gray-500">No pending approvals.</div>
-      ) : (
-        <>
-          <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-            <thead>
-              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                {[
-                  "",
-                  "User ID",
-                  "User Name",
-                  "Timesheet ID",
-                  "Date",
-                  "Hours Worked",
-                  "Status",
-                  "Actions",
-                ].map((h, i) => (
-                  <th key={i} className="text-left px-4 py-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((row, index) => (
-                <React.Fragment key={row.timesheetId}>
-                  <tr
-                    className={`hover:bg-blue-50 transition ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
-                  >
-                    <td
-                      className="p-3 text-center cursor-pointer"
-                      onClick={() => toggleRow(row.timesheetId)}
-                    >
-                      {expandedRow === row.timesheetId ? (
-                        <ChevronDown className="w-5 h-5 text-blue-500" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-blue-500" />
-                      )}
-                    </td>
-                    <td className="p-3 font-medium text-gray-700">
-                      {row.userId}
-                    </td>
-                    <td className="p-3 text-gray-600">{row.userName}</td>
-                    <td className="p-3 font-medium text-gray-700">
-                      {row.timesheetId}
-                    </td>
-                    <td className="p-3 text-gray-600">{row.workDate}</td>
-                    <td className="p-3 text-gray-600">{row.hoursWorked}</td>
-                    <td className="p-3">
-                      <StatusBadge label={row.approvalStatus} />
-                    </td>
-                    <td className="p-3 flex flex-col items-start gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleApprove(row.timesheetId, row.approvalStatus)
-                          }
-                          className="flex items-center justify-center p-2 text-green-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-                          title={
-                            row.approvalStatus === "Pending"
-                              ? "Approve"
-                              : "Already approved"
-                          }
-                        >
-                          <Check className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                              if (row.approvalStatus !== "Pending") {
-                                showStatusToast(`Already ${row.approvalStatus}`, "error");
-                                return;
-                              }
-                              setRejectingRow(row.timesheetId);
+      {/* Download Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="success"
+          size="small"
+          onClick={exportCSV}
+          className="flex items-center gap-1"
+        >
+          <Download size={16} />
+          CSV
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={exportPDF}
+          className="flex items-center gap-1"
+        >
+          <Download size={16} />
+          PDF
+        </Button>
+      </div>
 
-                            
-                          }}
-                          className="flex items-center justify-center p-2 text-red-500 rounded-lg hover:bg-white hover:scale-110 transition-all duration-200"
-                          title={
-                            row.approvalStatus === "Pending"
-                              ? "Reject"
-                              : "Already rejected"
-                          }
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      {/* {actionMessages[row.timesheetId] && (
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <Info className="w-3 h-3" />
-                          {actionMessages[row.timesheetId]}
-                        </div>
-                      )} */}
+      {/* Timesheet List */}
+      {paginatedTimesheets.map((sheet) => {
+        const totalHours = sheet.entries.reduce(
+          (sum, e) => sum + (e.hoursWorked || 0),
+          0
+        );
+        const formattedDate = new Date(sheet.workDate).toLocaleDateString(
+          "en-US",
+          {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          }
+        );
+
+        return (
+          <div
+            key={sheet.timesheetId}
+            className="rounded-lg border bg-white shadow-md overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-100">
+              <span className="font-semibold text-gray-800">
+                {formattedDate}
+              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-600 text-sm">
+                  {totalHours.toFixed(2)} hrs
+                </span>
+                <span
+                  className={`px-3 py-1 text-sm rounded-full ${
+                    sheet.status === "Approved"
+                      ? "bg-green-100 text-green-800"
+                      : sheet.status === "Rejected"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {sheet.status}
+                </span>
+                {sheet.status === "Pending" && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        handleStatusChange(sheet.timesheetId, "Approved")
+                      }
+                      className="text-green-600 hover:text-green-800 font-bold"
+                    >
+                      <Check size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleRejectClick(sheet.timesheetId)}
+                      className="text-red-600 hover:text-red-800 font-bold"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <table className="min-w-full text-sm">
+              <thead className="bg-blue-600 text-white">
+                <tr>
+                  <th className="px-4 py-2 text-left">User ID</th>
+                  <th className="px-4 py-2 text-left">User Name</th>
+                  <th className="px-4 py-2 text-left">Project</th>
+                  <th className="px-4 py-2 text-left">Task</th>
+                  <th className="px-4 py-2 text-left">Start</th>
+                  <th className="px-4 py-2 text-left">End</th>
+                  <th className="px-4 py-2 text-left">Work Type</th>
+                  <th className="px-4 py-2 text-left">Description</th>
+                  <th className="px-4 py-2 text-left">Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sheet.entries.map((entry) => (
+                  <tr key={entry.timesheetEntryId} className="border-t">
+                    <td className="px-4 py-2">{sheet.userId}</td>
+                    <td className="px-4 py-2">{`user_${sheet.userId}`}</td>
+                    <td className="px-4 py-2">
+                      {projectMap[entry.projectId] ||
+                        `Project-${entry.projectId}`}
+                    </td>
+                    <td className="px-4 py-2">
+                      {taskMap[entry.taskId] || `Task-${entry.taskId}`}
+                    </td>
+                    <td className="px-4 py-2">
+                      {new Date(entry.fromTime).toLocaleTimeString()}
+                    </td>
+                    <td className="px-4 py-2">
+                      {new Date(entry.toTime).toLocaleTimeString()}
+                    </td>
+                    <td className="px-4 py-2">{entry.workType}</td>
+                    <td className="px-4 py-2">{entry.description}</td>
+                    <td className="px-4 py-2">
+                      {(entry.hoursWorked ?? 0).toFixed(2)}
                     </td>
                   </tr>
+                ))}
 
-                  {rejectingRow === row.timesheetId && (
-                    <tr>
-                      <td colSpan={8} className="bg-red-50 px-4 py-3">
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                          <input
-                            type="text"
-                            placeholder="Enter rejection comment"
-                            value={commentInputs[row.timesheetId] || ""}
-                            onChange={(e) =>
-                              handleCommentChange(
-                                row.timesheetId,
-                                e.target.value
-                              )
-                            }
-                            className="w-full md:w-2/3 px-3 py-2 border border-gray-300 rounded text-sm"
-                          />
-                          <div className="flex gap-2 mt-2 md:mt-0">
-                            <button
-                              onClick={() =>
-                                handleReject(
-                                  row.timesheetId,
-                                  commentInputs[row.timesheetId] || "",
-                                  row.approvalStatus
-                                )
-                              }
-                              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-                            >
-                              Confirm Reject
-                            </button>
-                            <button
-                              onClick={() => {
-                                setRejectingRow(null);
-                                setCommentInputs((prev) => {
-                                  const updated = { ...prev };
-                                  delete updated[row.timesheetId];
-                                  return updated;
-                                });
-                              }}
-                              className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 text-sm"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                {showCommentBox[sheet.timesheetId] && (
+                  <tr>
+                    <td colSpan="9" className="p-4 bg-red-50">
+                      <textarea
+                        value={rejectionComments[sheet.timesheetId] || ""}
+                        onChange={(e) =>
+                          setRejectionComments((prev) => ({
+                            ...prev,
+                            [sheet.timesheetId]: e.target.value,
+                          }))
+                        }
+                        placeholder="Enter rejection comment..."
+                        className="w-full border rounded p-2 mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConfirmReject(sheet.timesheetId)}
+                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                        >
+                          Confirm Rejection
+                        </button>
+                        <button
+                          onClick={() => handleCancelReject(sheet.timesheetId)}
+                          className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
 
-                  {expandedRow === row.timesheetId && (
-                    <ExpandedRowInline entries={row.entries} />
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          />
-        </>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+        />
       )}
     </div>
   );

@@ -32,6 +32,43 @@ export const fetchProjectTaskInfo = async (userId) => {
   }
 };
 
+export const reviewTimesheet = async (
+  managerId,
+  timesheetId,
+  comment,
+  status
+) => {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheets/review/${managerId}?status=${encodeURIComponent(
+        status
+      )}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          timesheetId,
+          comment: comment,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to review timesheet");
+    }
+
+    showStatusToast(`Timesheet ${status} successfully`, "success");
+    return;
+  } catch (err) {
+    showStatusToast("Update failed", "error");
+    throw err;
+  }
+};
+
 export async function updateTimesheet(timesheetId, payload) {
   try {
     const res = await fetch(
