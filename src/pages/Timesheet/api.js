@@ -6,7 +6,7 @@ const apiEndpoint = "http://localhost:8080";
 export const fetchProjectTaskInfo = async (userId) => {
   try {
     const response = await fetch(
-      `${apiEndpoint}/api/timesheet/project-info/projects/${userId}`,
+      `${apiEndpoint}/api/timesheet/project-info/${userId}`,
       {
         method: "GET",
         headers: {
@@ -92,6 +92,47 @@ export async function updateTimesheet(timesheetId, payload) {
     console.log("Update successful:", data);
 
     return data;
+  } catch (err) {
+    showStatusToast(err.message || "Update failed", "error");
+    throw err;
+  }
+}
+
+export async function fetchTimesheetHistory(userId) {
+  try {
+    const res = await fetch(`${apiEndpoint}/api/timesheet/history`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to fetch timesheet history");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    showStatusToast(err.message || "Fetch failed", "error");
+    throw err;
+  }
+}
+
+export async function addEntryToTimesheet(timesheetId, payload) {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheet/add-entry/${timesheetId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    showStatusToast("Timesheet entry added successfully", "success");
   } catch (err) {
     showStatusToast(err.message || "Update failed", "error");
     throw err;

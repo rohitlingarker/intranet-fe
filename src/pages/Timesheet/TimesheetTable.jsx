@@ -8,9 +8,8 @@ const TimesheetTable = ({
   totalPages,
   currentPage,
   setCurrentPage,
-  projectIdToName,
-  taskIdToName,
   mapWorkType,
+  refreshData, // Callback to refresh data after save
 }) => {
   return (
     <div
@@ -39,9 +38,8 @@ const TimesheetTable = ({
               workDate={row.workDate}
               entries={row.entries}
               status={row.status}
-              projectIdToName={projectIdToName}
-              taskIdToName={taskIdToName}
               mapWorkType={mapWorkType}
+              refreshData={refreshData}
             />
           ))}
 
