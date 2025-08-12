@@ -5,7 +5,7 @@ import axios from 'axios';
 
 import UserSummary from './UserSummary'; // ✅ renamed to match your component
 import UserBacklog from './Backlog/userbacklog';
-import UserBoard from './UserBoard';
+import UserBoard from './userboard';
 
 type TabType = 'summary' | 'backlog' | 'board';
 
