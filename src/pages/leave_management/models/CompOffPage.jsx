@@ -22,18 +22,24 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
   };
 
   const handleCompOffSubmit = async (modalData) => {
-    const { dates, note } = modalData;
+    const { dates, note, numberOfDays } = modalData;
     try {
-      await axios.post("http://localhost:8080/api/compoff/request", {
-        employeeId,
-        startDate: dates.start,
-        endDate: dates.end,
-        isHalf: dates.isHalf,
-        note,
-      });
+      await axios.post(
+        "http://localhost:8080/api/compoff/request",
+        {
+          employeeId,
+          startDate: dates.start,
+          endDate: dates.end,
+          isHalf: dates.isHalf,
+          note,
+          duration: numberOfDays, // NEW FIELD TO BACKEND
+        },
+        { withCredentials: true }
+      );
       toast.success("Request submitted!");
       fetchRequests();
     } catch (e) {
+      console.error(e);
       toast.error("Submission failed!");
     }
   };
@@ -51,7 +57,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
   const cancelRequest = async (requestId) => {
     try {
       await axios.put(
-        `http://localhost:8080/api/compoff/employee/cancel/${requestId}`,
+        `http://localhost:8080/api/compoff/cancel/${requestId}`,
         {},
         {
           withCredentials: true,
@@ -66,8 +72,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
   };
 
   return (
-    <div className="p-6">
-      {/* Remove modal rendering here */}
+    <div>
       <CompOffRequestsTable requests={requests} onCancel={cancelRequest} />
     </div>
   );

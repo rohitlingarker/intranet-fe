@@ -46,9 +46,6 @@ const AdminPanel = ({ employeeId }) => {
     }
   }, [resultMsg]);
 
-  console.log("Admin Leave Requests:", adminLeaveRequests);
-
-
   const filteredAdminRequests = adminLeaveRequests.filter((request) => {
     const matchesSearch =
       request.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||

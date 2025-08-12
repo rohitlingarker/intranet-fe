@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "../../../components/Button/Button";
+import { Fonts } from "../../../components/Fonts/Fonts";
 
 const ActionButtons = ({ onRequestLeave, onRequestCompOff }) => {
   return (
@@ -20,12 +21,14 @@ const ActionButtons = ({ onRequestLeave, onRequestCompOff }) => {
         Request Credit for Compensatory Off
       </Button>
 
-      <Button
+      <a href="#" className={Fonts.link}>Leave Policy Explanation</a>
+
+      {/* <Button
         variant="link"
         size="small"
       >
         Leave Policy Explanation
-      </Button>
+      </Button> */}
     </div>
   );
 };

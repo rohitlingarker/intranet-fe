@@ -22,7 +22,7 @@ export function CommentModal({
         </h3>
         {forceMandatory && (
           <div className="text-red-500 mb-2">
-            Manager comment is required to reject a leave request.
+            Comment is required.
           </div>
         )}
         <textarea

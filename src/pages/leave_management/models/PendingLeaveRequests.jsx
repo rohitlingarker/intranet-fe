@@ -4,7 +4,9 @@ import ActionButtons from "./ActionButtons";
 import PendingLeaveRequestsTable from "./PendingLeaveRequestsTable";
 import SkeletonTable from "./SkeletonTable";
 import ReactPaginate from "react-paginate";
+import Pagination  from '../../../components/Pagination/pagination'
 import { PartyPopper } from "lucide-react";
+import { Fonts } from "../../../components/Fonts/Fonts";
 
 const ITEMS_PER_PAGE = 5;
 const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
@@ -13,7 +15,7 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   const [leaveBalances, setLeaveBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const employeeId = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user")).id
     : null;
@@ -57,12 +59,18 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
     fetchData();
   }, []);
 
-  const handlePageChange = ({ selected }) => setCurrentPage(selected);
-
-  const paginatedLeaves = pendingLeaves.slice(
-    currentPage * ITEMS_PER_PAGE,
-    (currentPage + 1) * ITEMS_PER_PAGE
+  const totalPages = Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE);
+  const paginatedRequests = pendingLeaves.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
+
+  // const handlePageChange = ({ selected }) => setCurrentPage(selected);
+
+  // const paginatedLeaves = pendingLeaves.slice(
+  //   currentPage * ITEMS_PER_PAGE,
+  //   (currentPage + 1) * ITEMS_PER_PAGE
+  // );
 
   return (
     <>
@@ -76,16 +84,16 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
             🎉
           </div>
           <div className="text-black-600 pl-4">
-            <h2 className="text-black-600 text-xl font-bold">
+            <h2 className={Fonts.heading4}>
               Cheers! No pending leave requests.
             </h2>
-            <p className="text-gray-600 text-sm">Request leave on the above!</p>
+            <p className={Fonts.caption}>Request leave on the above!</p>
           </div>
         </div>
       ) : (
         <>
           <PendingLeaveRequestsTable
-            pendingLeaves={paginatedLeaves}
+            pendingLeaves={paginatedRequests}
             leaveTypes={leaveTypes}
             leaveBalances={leaveBalances}
             setPendingLeaves={setPendingLeaves}
@@ -93,18 +101,26 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
           />
 
           {pendingLeaves.length > ITEMS_PER_PAGE && (
-            <ReactPaginate
-              previousLabel={"←"}
-              nextLabel={"→"}
-              pageCount={Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE)}
-              onPageChange={handlePageChange}
-              containerClassName={"flex space-x-2 mt-4 justify-center"}
-              activeClassName={"font-bold underline"}
-              pageLinkClassName={"px-3 py-1 bg-gray-200 rounded"}
-              previousLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
-              nextLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
-              breakLabel={"..."}
-            />
+            // <ReactPaginate
+            //   previousLabel={"←"}
+            //   nextLabel={"→"}
+            //   pageCount={Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE)}
+            //   onPageChange={handlePageChange}
+            //   containerClassName={"flex space-x-2 mt-4 justify-center"}
+            //   activeClassName={"font-bold underline"}
+            //   pageLinkClassName={"px-3 py-1 bg-gray-200 rounded"}
+            //   previousLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
+            //   nextLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
+            //   breakLabel={"..."}
+            // />
+            <div className="mb-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                onNext={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+              />
+            </div>
           )}
         </>
       )}

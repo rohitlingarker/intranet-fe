@@ -14,6 +14,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
 import HRManageTools from "./HRManageTools";
 
+
 const EmployeePanel = () => {
   const [isRequestLeaveModalOpen, setIsRequestLeaveModalOpen] = useState(false);
   // const [isAdminView, setIsAdminView] = useState(false); // toggle admin/employee view
@@ -146,7 +147,8 @@ const EmployeePanel = () => {
 
           <h2 className="text-xl font-semibold m-4">Leave Balances</h2>
           <LeaveDashboard employeeId={employeeId} />
-
+          
+          <h2 className="text-xl font-semibold m-4">Leave History</h2>
           <LeaveHistory employeeId={employeeId} />
 
           <RequestLeaveModal

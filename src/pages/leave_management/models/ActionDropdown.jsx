@@ -3,6 +3,7 @@ import { MoreHorizontal, MessageSquare, Calendar, FileText } from 'lucide-react'
 import ChangeLeaveDatesModal from './ChangeLeaveDatesModal';
 import ChangeLeaveTypeModal from './ChangeLeaveTypeModal';
 import CommentModal from './CommentModal';
+import { Fonts } from '../../../components/Fonts/Fonts';
 
 const ActionDropdown = ({
   requestId,

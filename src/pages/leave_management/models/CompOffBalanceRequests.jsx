@@ -77,31 +77,31 @@ const CompOffBalanceRequests = ({ managerId }) => {
         <p className="text-gray-600">No pending Comp-Off requests for your team.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead className="bg-blue-50 border-b border-blue-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+          <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
+                <th className="p-3 text-left uppercase">Employee</th>
+                <th className="p-3 text-left uppercase">Dates</th>
+                <th className="p-3 text-left uppercase">Duration</th>
+                <th className="p-3 text-left uppercase">Note</th>
+                <th className="p-3 text-left uppercase">Status</th>
+                <th className="p-3 text-left uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-blue-100">
               {pendingCompOffs.map((req) => (
                 <tr key={req.idleaveCompoff} className="hover:bg-blue-50 transition-colors">
-                  <td className="px-4 py-3">{req.employeeName}</td>
-                  <td className="px-4 py-3">
+                  <td className="p-3">{req.employeeName}</td>
+                  <td className="p-3">
                     {req.startDate}
                     {req.endDate && req.endDate !== req.startDate ? ` to ${req.endDate}` : ""}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="p-3">
                     {req.halfDay ? "Half Day" : `${req.duration} ${req.duration === 1 ? "Day" : "Days"}`}
                   </td>
-                  <td className="px-4 py-3">{req.note}</td>
-                  <td className="px-4 py-3 capitalize">{req.status}</td>
-                  <td className="px-4 py-3 flex gap-2">
+                  <td className="p-3">{req.note}</td>
+                  <td className="p-3 capitalize">{req.status}</td>
+                  <td className="p-3 flex gap-2">
                     <button
                       onClick={() => handleApprove(req.idleaveCompoff)}
                       className="p-1 pr-2 text-green-600 hover:text-green-800 transition-colors"
