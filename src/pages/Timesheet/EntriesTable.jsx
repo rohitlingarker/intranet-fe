@@ -22,7 +22,7 @@ const EntriesTable = ({
   const [editData, setEditData] = useState({});
   const [projectInfo, setProjectInfo] = useState([]);
 
-  const [addData, setAddData] = useState({});
+  const [addData, setAddData] = useState({workType:"Office"});
 
   userId = userId || 1; // Default to 1 if not provided
 
@@ -81,7 +81,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({});
+    setAddData({workType:"Office"});
   };
 
   const handleChange = (e) => {
@@ -144,7 +144,7 @@ const EntriesTable = ({
       await addEntryToTimesheet(timesheetId, workDate, payload);
       setAddingNewEntry(false);
       setAddingNewTimesheet(false);
-      setAddData({});
+      setAddData({workType:"Office"});
       refreshData(); // Reload entries after update
     } catch (err) {
       showStatusToast("Failed to update entry", "error");
