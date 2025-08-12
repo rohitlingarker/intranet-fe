@@ -25,17 +25,7 @@ const TimesheetTable = ({
         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
       }}
     >
-      {loading ? (
-        <div className="text-center text-gray-500">
-          Loading timesheet entries...
-        </div>
-      ) : data.length === 0 ? (
-        <div className="text-center text-gray-500">
-          No timesheet entries found.
-        </div>
-      ) : (
-        <>
-          <Button
+      <Button
             size="small"
             variant="primary"
             className="mb-4"
@@ -43,7 +33,6 @@ const TimesheetTable = ({
           >
             + New Timesheet
           </Button>
-
           {addingNewTimesheet && (
             <TimesheetGroup
             emptyTimesheet={true}
@@ -56,6 +45,16 @@ const TimesheetTable = ({
               setAddingNewTimesheet={setAddingNewTimesheet}
             />
           )}
+      {loading ? (
+        <div className="text-center text-gray-500">
+          Loading timesheet entries...
+        </div>
+      ) : data.length === 0 ? (
+        <div className="text-center text-gray-500">
+          No timesheet entries found.
+        </div>
+      ) : (
+        <>
           {data.map((row) => (
             <TimesheetGroup
               timesheetId={row.timesheetId}
