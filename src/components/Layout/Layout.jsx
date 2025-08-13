@@ -9,7 +9,7 @@ const Layout = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col" style={{ paddingLeft: "16rem" }}>
         <Header />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-0 overflow-y-auto">
           <Outlet /> {/* ✅ Nested routes render here */}
         </main>
       </div>

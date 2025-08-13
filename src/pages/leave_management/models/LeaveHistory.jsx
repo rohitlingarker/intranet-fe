@@ -3,6 +3,8 @@ import axios from "axios";
 import Pagination from "../../../components/Pagination/pagination";
 import { Fonts } from "../../../components/Fonts/Fonts";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const LeaveHistory = () => {
   const [leaves, setLeaves] = useState([]);
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
@@ -25,11 +27,11 @@ const LeaveHistory = () => {
     setLoading(true);
     setError(null);
     Promise.all([
-      axios.get(`http://localhost:8080/api/leave-requests/employee/${employeeId}`, {
+      axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
         headers: { "Cache-Control": "no-store" },
       }),
-      axios.get("http://localhost:8080/api/leave/get-all-leave-types", {
+      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
         headers: { "Cache-Control": "no-store" },
       }),
@@ -108,7 +110,7 @@ const LeaveHistory = () => {
   }
 
   return (
-    <div className="w-6xl mx-auto h-auto px-6 py-8 bg-white rounded-2xl shadow-md">
+    <div className="w-6xl mx-auto h-auto px-6 py-8 bg-white rounded-lg shadow-md">
       {filteredLeaves.length > 0 ? (
         <>
           {/* Search and Filters */}

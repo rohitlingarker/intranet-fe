@@ -2,37 +2,30 @@ import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const CompOffRequestModal = ({ onSubmit, onClose }) => {
+const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [note, setNote] = useState("");
 
-  // Helper to calculate number of days
+  // Calculate duration
   const calculateDays = () => {
     if (!startDate) return 0;
     if (isHalfDay) return 0.5;
-
-    // Clone dates to avoid mutation
     const start = new Date(startDate);
     const end = endDate ? new Date(endDate) : new Date(startDate);
-
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
-
-    const diffTime = end.getTime() - start.getTime();
-    if (diffTime < 0) return 1; // If somehow end < start, treat as 1 day
-
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
+    // start.setHours(0, 0, 0, 0);
+    // end.setHours(0, 0, 0, 0);
+    const diffTime = end - start;
+    if (diffTime < 0) return 1;
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!startDate) {
       alert("Please select a start date");
       return;
     }
-
-    const duration = calculateDays();
 
     const payload = {
       dates: {
@@ -41,15 +34,15 @@ const CompOffRequestModal = ({ onSubmit, onClose }) => {
         isHalf: isHalfDay,
       },
       note,
-      numberOfDays: duration,
+      numberOfDays: calculateDays(),
     };
 
-    onSubmit(payload);
-    onClose();
+    // This will trigger parent's async function
+    await onSubmit(payload);
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-xl p-6 shadow-xl w-[90%] max-w-md space-y-4">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Request Comp Off</h2>
 
@@ -77,7 +70,7 @@ const CompOffRequestModal = ({ onSubmit, onClose }) => {
           </>
         )}
 
-        {/* Half-day toggle */}
+        {/* Half day toggle */}
         <div className="flex items-center space-x-3 mt-2">
           <span className="text-sm font-medium text-gray-700">Request Half Day</span>
           <button
@@ -85,7 +78,7 @@ const CompOffRequestModal = ({ onSubmit, onClose }) => {
             role="switch"
             aria-checked={isHalfDay}
             onClick={() => setIsHalfDay(!isHalfDay)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
               isHalfDay ? "bg-indigo-600" : "bg-gray-300"
             }`}
           >
@@ -107,10 +100,10 @@ const CompOffRequestModal = ({ onSubmit, onClose }) => {
           placeholder="Comment or note..."
         />
 
-        {/* Days preview */}
+        {/* Days */}
         {startDate && (
           <div className="text-sm text-gray-600">
-            <strong>Calculated Days:</strong> {calculateDays()}
+            <strong>Days:</strong> {calculateDays()}
           </div>
         )}
 
@@ -118,15 +111,19 @@ const CompOffRequestModal = ({ onSubmit, onClose }) => {
         <div className="flex justify-end gap-3 pt-3">
           <button
             onClick={onClose}
+            disabled={loading}
             className="text-gray-600 hover:text-gray-800 text-sm"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+            disabled={loading}
+            className={`px-4 py-2 rounded-lg text-sm text-white ${
+              loading ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
-            Submit Request
+            {loading ? "Submitting..." : "Submit Request"}
           </button>
         </div>
       </div>

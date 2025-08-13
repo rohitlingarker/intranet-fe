@@ -5,7 +5,8 @@ import RequestLeaveModal from "../leave_management/models/RequestLeaveModal";
 import LeaveDashboard from "../leave_management/charts/LeaveDashboard";
 import LeaveHistory from "../leave_management/models/LeaveHistory";
 import CustomActiveShapePieChart from "../leave_management/charts/CustomActiveShapePieChart";
-import PendingLeaveRequests from "../leave_management/models/PendingLeaveRequests";
+// import PendingLeaveRequests from "../leave_management/models/PendingLeaveRequests";
+import { PendingLeaveRequests } from "./models/PendingLeaveRequests";
 import CompOffPage from "../leave_management/models/CompOffPage";
 import AdminPanel from "./AdminPanel"; // Adjust path if needed
 import ActionButtons from "../leave_management/models/ActionButtons";
@@ -66,7 +67,7 @@ const EmployeePanel = () => {
   };
 
   return (
-    <>
+    <div className="p-6 bg-gray-100 min-h-screen">
       {showToggle && (
         <div className="mb-6 flex justify-end">
           <div className="inline-flex bg-gray-200 rounded-lg p-1 shadow-inner">
@@ -121,11 +122,11 @@ const EmployeePanel = () => {
           </div> 
           {/* Employee View content */}
           <h2 className="text-xl font-semibold m-4">Pending Leave Requests</h2>
-          <div className="bg-white rounded-2xl shadow p-6 mb-6 w-full">
+          <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
             <PendingLeaveRequests employeeId={employeeId} />
           </div>
           <h2 className="text-xl font-semibold m-4">Pending Comp-Off Requests</h2>
-          <div className="bg-white rounded-2xl shadow p-6 mb-6 w-full">
+          <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
             <CompOffPage
               ref={compOffPageRef}
               employeeId={employeeId}
@@ -139,7 +140,7 @@ const EmployeePanel = () => {
           </div>
 
           <h2 className="text-xl font-semibold m-4">My Leave Stats</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <WeeklyPattern employeeId={employeeId} />
             <CustomActiveShapePieChart employeeId={employeeId} />
             <MonthlyStats employeeId={employeeId} />
@@ -169,7 +170,7 @@ const EmployeePanel = () => {
         <HRManageTools user={employee} />
       )}
 
-    </>
+    </div>
   );
 };
 

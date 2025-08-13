@@ -1,77 +1,98 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import ActionButtons from "./ActionButtons";
 import PendingLeaveRequestsTable from "./PendingLeaveRequestsTable";
 import SkeletonTable from "./SkeletonTable";
 import ReactPaginate from "react-paginate";
-import Pagination  from '../../../components/Pagination/pagination'
-import { PartyPopper } from "lucide-react";
+import RequestLeaveModal from "./RequestLeaveModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
-
+ 
 const ITEMS_PER_PAGE = 5;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+ 
+/**
+ * Reusable function to fetch pending leave requests, leave types, and balances.
+ */
+const fetchData = async (
+  employeeId,
+  setPendingLeaves,
+  setLeaveTypes,
+  setLeaveBalances,
+  setError,
+  setLoading
+) => {
+  try {
+    setLoading(true);
+ 
+    const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
+      axios.get(
+        `${BASE_URL}/api/leave-requests/employee/${employeeId}`,
+        {
+          withCredentials: true,
+          headers: { "Cache-Control": "no-store" },
+        }
+      ),
+      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`),
+      axios.get(
+        `${BASE_URL}/api/leave-balance/employee/${employeeId}`
+      ),
+    ]);
+ 
+    const allLeaves = Array.isArray(leaveReqRes.data?.data)
+      ? leaveReqRes.data.data
+      : [];
+    const onlyPending = allLeaves.filter(
+      (leave) => String(leave.status).toUpperCase() === "PENDING"
+    );
+ 
+    setPendingLeaves(onlyPending);
+    setLeaveTypes(leaveTypeRes.data || []);
+    setLeaveBalances(balanceRes.data || {});
+  } catch (err) {
+    console.error(err);
+    setError("Failed to fetch pending leave requests.");
+  } finally {
+    setLoading(false);
+  }
+};
+ 
 const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
+ 
+  const [refreshKey, setRefreshKey] = useState(0);
+ 
   const employeeId = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user")).id
     : null;
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
-        axios.get(
-          `http://localhost:8080/api/leave-requests/employee/${employeeId}`,
-          {
-            withCredentials: true,
-            headers: { "Cache-Control": "no-store" },
-          }
-        ),
-        axios.get("http://localhost:8080/api/leave/get-all-leave-types"),
-        axios.get(
-          `http://localhost:8080/api/leave-balance/employee/${employeeId}`
-        ),
-      ]);
-
-      const allLeaves = Array.isArray(leaveReqRes.data?.data)
-        ? leaveReqRes.data.data
-        : [];
-      const onlyPending = allLeaves.filter(
-        (leave) => String(leave.status).toUpperCase() === "PENDING"
-      );
-
-      setPendingLeaves(onlyPending);
-      setLeaveTypes(leaveTypeRes.data || []);
-      setLeaveBalances(balanceRes.data || {});
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch pending leave requests.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+ 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const totalPages = Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE);
-  const paginatedRequests = pendingLeaves.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    if (employeeId) {
+      fetchData(
+        employeeId,
+        setPendingLeaves,
+        setLeaveTypes,
+        setLeaveBalances,
+        setError,
+        setLoading
+      );
+    }
+  }, [employeeId, refreshKey]);
+ 
+  const handleLeaveRequestSuccess = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
+ 
+  const handlePageChange = ({ selected }) => setCurrentPage(selected);
+ 
+  const paginatedLeaves = pendingLeaves.slice(
+    currentPage * ITEMS_PER_PAGE,
+    (currentPage + 1) * ITEMS_PER_PAGE
   );
-
-  // const handlePageChange = ({ selected }) => setCurrentPage(selected);
-
-  // const paginatedLeaves = pendingLeaves.slice(
-  //   currentPage * ITEMS_PER_PAGE,
-  //   (currentPage + 1) * ITEMS_PER_PAGE
-  // );
-
+ 
   return (
     <>
       {loading ? (
@@ -93,41 +114,31 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
       ) : (
         <>
           <PendingLeaveRequestsTable
-            pendingLeaves={paginatedRequests}
+            pendingLeaves={paginatedLeaves}
             leaveTypes={leaveTypes}
             leaveBalances={leaveBalances}
             setPendingLeaves={setPendingLeaves}
             employeeId={employeeId}
           />
-
+ 
           {pendingLeaves.length > ITEMS_PER_PAGE && (
-            // <ReactPaginate
-            //   previousLabel={"←"}
-            //   nextLabel={"→"}
-            //   pageCount={Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE)}
-            //   onPageChange={handlePageChange}
-            //   containerClassName={"flex space-x-2 mt-4 justify-center"}
-            //   activeClassName={"font-bold underline"}
-            //   pageLinkClassName={"px-3 py-1 bg-gray-200 rounded"}
-            //   previousLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
-            //   nextLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
-            //   breakLabel={"..."}
-            // />
-            <div className="mb-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-                onNext={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
-              />
-            </div>
+            <ReactPaginate
+              previousLabel={"←"}
+              nextLabel={"→"}
+              pageCount={Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE)}
+              onPageChange={handlePageChange}
+              containerClassName={"flex space-x-2 mt-4 justify-center"}
+              activeClassName={"font-bold underline"}
+              pageLinkClassName={"px-3 py-1 bg-gray-200 rounded"}
+              previousLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
+              nextLinkClassName={"px-3 py-1 bg-gray-300 rounded"}
+              breakLabel={"..."}
+            />
           )}
         </>
       )}
-
-      
     </>
   );
 };
-
-export default PendingLeaveRequests;
+ 
+export { PendingLeaveRequests, fetchData };

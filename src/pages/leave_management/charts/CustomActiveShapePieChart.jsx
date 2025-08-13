@@ -111,7 +111,7 @@ const CustomActiveShapePieChart = ({ employeeId }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm h-42 w-full">
+    <div className="bg-white rounded-lg p-6 shadow h-42 w-full">
       <h3 className="font-semibold text-gray-800 mb-4">Leave Usage by Type</h3>
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="90%">
@@ -168,7 +168,7 @@ const CustomActiveShapePieChart = ({ employeeId }) => {
           </PieChart>
         </ResponsiveContainer>
       ) : (
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-sm text-gray-400">
           No approved leave data to show.
         </p>
       )}

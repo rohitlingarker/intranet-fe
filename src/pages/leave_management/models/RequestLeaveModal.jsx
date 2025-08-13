@@ -4,17 +4,35 @@ import { X } from "lucide-react";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 // -- Helper: Massage leaves to dropdown options --
 function mapLeaveBalancesToDropdown(balances) {
-  return balances.map(balance => {
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const fetchLeaveTypes = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/leave/types`);
+      setLeaveTypes(res.data);
+    } catch (err) {
+      toast.error(err);
+    }
+  };
+  useEffect(() => {
+    fetchLeaveTypes();
+  }, []);
+ 
+  return balances.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
-    const leaveName = balance.leaveType.leaveName.replace(/^L-/, "");
+    const originalName = balance.leaveType.leaveName.replace(/^L-/, "");
+ 
+    const matchingType = leaveTypes.find(
+      (type) => type.name === balance.leaveType.leaveName
+    );
+    const leaveName = matchingType ? matchingType.label : originalName;
+ 
     let availableText;
     let isInfinite = false;
-    if (
-      leaveTypeId === "L-UPL" ||
-      leaveName.toLowerCase().includes("unpaid")
-    ) {
+    if (leaveTypeId === "L-UPL" || leaveName.toLowerCase().includes("unpaid")) {
       availableText = "infinite balance";
       isInfinite = true;
     } else if (balance.remainingLeaves > 0) {
@@ -176,7 +194,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     if (!isOpen) return;
     setLoadingBalances(true);
     axios
-      .get(`http://localhost:8080/api/leave-balance/employee/${employeeId}`, { withCredentials: true })
+      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, { withCredentials: true })
       .then(response => {
         setBalances(response.data);
         setLoadingBalances(false);
@@ -236,7 +254,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     
     try {
       await axios.post(
-        "http://localhost:8080/api/leave-requests/apply",
+        `${BASE_URL}/api/leave-requests/apply`,
         payload,
         { withCredentials: true }
       );
@@ -244,7 +262,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       // Refresh balances
       try {
         const { data } = await axios.get(
-          `http://localhost:8080/api/leave-balance/employee/${employeeId}`,
+          `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
           { withCredentials: true }
         );
         setBalances(data);
@@ -281,9 +299,9 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto border border-gray-100 relative">
-        <div className="sticky top-0 bg-white z-10 p-6 pb-4 border-b border-gray-200">
+        <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Request Leave</h2>
+            <h2 className="text-xl font-bold text-gray-900">Request Leave</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -366,7 +384,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               {weekdays}
               {isHalfDay && weekdays === 0.5 ? "" : " day"}
               {weekdays > 1 ? "s" : ""}
-              <span className="ml-2 text-xs opacity-70">selected ({totalDays} calendar days total)</span>
+              {/* <span className="ml-2 text-xs opacity-70">selected ({totalDays} calendar days total)</span> */}
             </span>
             <p className="text-sm text-gray-500">
               Weekends (Saturday/Sunday) are excluded from count.
@@ -400,7 +418,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Add a reason (optional)"
+              placeholder="Add a reason"
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
             />

@@ -67,7 +67,7 @@ const WeeklyPattern = ({ employeeId }) => {
   }, [leaveData, loading]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm w-full h-42">
+    <div className="bg-white p-6 rounded-lg shadow w-full h-42">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Weekly Leave Pattern</h3>
       </div>

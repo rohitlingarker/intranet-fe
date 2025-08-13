@@ -63,28 +63,30 @@ const renderActiveShape = (props) => {
 export default function LeaveUsageChart({ leave }) {
   const { accruedLeaves, usedLeaves, leaveType } = leave;
   const [activeIndex, setActiveIndex] = useState(null);
+  console.log("leave in leave car", leave)
 
-  const isUnpaid = leaveType?.leaveName?.toLowerCase() === "unpaid leave";
+  const isUnpaid = leaveType?.leaveName === "UNPAID_LEAVE";
 
   const remaining = Math.max(accruedLeaves - usedLeaves, 0);
 
   const chartData = isUnpaid
-    ? [{ name: "Used", value: usedLeaves }]
-    : [
-        { name: "Used", value: usedLeaves },
-        { name: "Remaining", value: remaining },
-      ];
+  ? [{ name: "Used", value: usedLeaves }]
+  : [
+      { name: "Used", value: usedLeaves },
+      { name: "Remaining", value: remaining },
+    ];
+
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);
   };
-
+ 
   const onPieLeave = () => {
     setActiveIndex(null);
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm w-full h-[250px] sm:h-[220px]">
+    <div className="w-full h-[250px] sm:h-[220px]">
       <div className="relative w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -120,7 +122,7 @@ export default function LeaveUsageChart({ leave }) {
         {/* Center Label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-base font-bold text-gray-800">
-            {isUnpaid ? "∞" : `${remaining} Days`}
+            {isUnpaid ? "∞ Days" : `${remaining} Days`}
           </span>
           <span className="text-xs text-gray-500">Available</span>
         </div>

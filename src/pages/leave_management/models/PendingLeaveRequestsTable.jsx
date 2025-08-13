@@ -4,6 +4,8 @@ import ActionDropdownPendingLeaveRequests from "./ActionDropDownPendingLeaveRequ
 import axios from "axios";
 import EditLeaveModal from "./EditLeaveModal";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const PendingLeaveRequestsTable = ({
   leaveBalances,
   pendingLeaves,
@@ -33,7 +35,7 @@ const PendingLeaveRequestsTable = ({
       const empId = leaveToCancel.employee?.employeeId || "UNKNOWN_EMPLOYEE";
 
       await axios.put(
-        `http://localhost:8080/api/leave-requests/${cancelId}/cancel`,
+        `${BASE_URL}/api/leave-requests/${cancelId}/cancel`,
         null,
         {
           params: { employeeId: empId },

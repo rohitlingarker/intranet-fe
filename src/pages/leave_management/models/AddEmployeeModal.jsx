@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, User } from 'lucide-react';
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const AddEmployeeModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -41,7 +43,7 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
       payload.managerId = { employeeId: formData.managerId }; // assuming manager expects an employee object.
     }
     try {
-      await axios.post('http://localhost:8080/api/employee/register', payload, {
+      await axios.post(`${BASE_URL}/api/employee/register`, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
       setSuccess('Employee added successfully!');

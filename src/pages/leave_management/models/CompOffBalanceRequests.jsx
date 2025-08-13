@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const CompOffBalanceRequests = ({ managerId }) => {
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
     try {
       setLoading(true);
       const res = await axios.post(
-        "http://localhost:8080/api/compoff/pending",
+        `${BASE_URL}/api/compoff/pending`,
         { managerId }
       );
       setPendingCompOffs(
@@ -36,7 +38,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
   const handleApprove = async (compoffId) => {
     try {
       setLoading(true);
-      await axios.put("http://localhost:8080/api/compoff/approve", {
+      await axios.put(`${BASE_URL}/api/compoff/approve`, {
         managerId,
         compoffId,
       });
@@ -53,7 +55,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
   const handleReject = async (compoffId) => {
     try {
       setLoading(true);
-      await axios.put("http://localhost:8080/api/compoff/reject",
+      await axios.put(`${BASE_URL}/api/compoff/reject`,
         { managerId, compoffId },
       );
       showToast("Comp-Off rejected.", "success");

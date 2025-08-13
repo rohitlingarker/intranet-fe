@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
  
 const EmployeeLeaveBalances = () => {
   const [data, setData] = useState([]);
@@ -15,7 +17,7 @@ const EmployeeLeaveBalances = () => {
   const fetchLeaveData = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:8080/api/leave-balance/all-leave-balances"
+        `${BASE_URL}/api/leave-balance/all-leave-balances`
       );
       const raw = response.data;
  
@@ -107,7 +109,7 @@ const EmployeeLeaveBalances = () => {
       };
  
       await axios.put(
-        "http://localhost:8080/api/leave-balance/update",
+        `${BASE_URL}/api/leave-balance/update`,
         payload
       );
  

@@ -4,6 +4,8 @@ import axios from "axios";
 import ActionDropdown from "./ActionDropdown";
 import Pagination from "../../../components/Pagination/pagination";
 import LeaveDashboard from "../charts/LeaveDashboard";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
  
 function countWeekdays(startDateStr, endDateStr) {
   const start = new Date(startDateStr.split("T")[0] + "T00:00:00");
@@ -88,12 +90,12 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
       };
  
       const res = await axios.post(
-        "http://localhost:8080/api/leave-requests/manager/history",
+        `${BASE_URL}/api/leave-requests/manager/history`,
         payload
       );
  
       const types = await axios.get(
-        "http://localhost:8080/api/leave/get-all-leave-types"
+        `${BASE_URL}/api/leave/get-all-leave-types`
       );
  
       const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
@@ -159,7 +161,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
     try {
       // Single batch API call with all selected IDs
       await axios.post(
-        "http://localhost:8080/api/leave-requests/approve-batch",
+        `${BASE_URL}/api/leave-requests/approve-batch`,
         {
           managerId,
           leaveIds: selectedRequests,
@@ -181,7 +183,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
     setLoading(true);
     try {
       await axios.post(
-        "http://localhost:8080/api/leave-requests/reject-batch",
+        `${BASE_URL}/api/leave-requests/reject-batch`,
         {
           managerId,
           leaveIds: selectedRequests,
@@ -207,7 +209,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
     }
     setLoading(true);
     try {
-      await axios.put(`http://localhost:8080/api/leave-requests/${action}`, {
+      await axios.put(`${BASE_URL}/api/leave-requests/${action}`, {
         managerId,
         leaveId,
         comment,
@@ -240,7 +242,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
         ...(data.requestDate && {requestDate: data.requestDate})
       };
       await axios.put(
-        "http://localhost:8080/api/leave-requests/update",
+        `${BASE_URL}/api/leave-requests/update`,
         payload
       );
       showToast("Leave request updated.", "success");
@@ -695,43 +697,6 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
             </button>
           </div>
         )}
- 
-        {/* {selectedRequestDetails && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-lg">
-              <h2 className="text-lg font-bold mb-4">Leave Request Details</h2>
-              <p>
-                <strong>Employee:</strong>{" "}
-                {selectedRequestDetails.employee.fullName}
-              </p>
-              <p>
-                <strong>Job Title:</strong>{" "}
-                {selectedRequestDetails.employee.jobTitle}
-              </p>
-              <p>
-                <strong>Status:</strong> {selectedRequestDetails.status}
-              </p>
-              <p>
-                <strong>Start Date:</strong> {selectedRequestDetails.startDate}
-              </p>
-              <p>
-                <strong>End Date:</strong> {selectedRequestDetails.endDate}
-              </p>
-              <p>
-                <strong>Reason:</strong> {selectedRequestDetails.reason}
-              </p>
- 
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setSelectedRequestDetails(null)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )} */}
       </div>
     </div>
   );

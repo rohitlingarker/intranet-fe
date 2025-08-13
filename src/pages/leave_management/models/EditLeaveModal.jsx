@@ -5,6 +5,8 @@ import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { toast } from "react-toastify";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 // --- Helper functions remain the same ---
 function mapLeaveBalancesToDropdown(balances) {
   return balances.map((balance) => {
@@ -198,7 +200,7 @@ export default function EditLeaveModal({
 
     try {
       const { data } = await axios.put(
-        "http://localhost:8080/api/leave-requests/employee/update",
+        `${BASE_URL}/api/leave-requests/employee/update`,
         payload
       );
       toast.success("Leave request updated successfully");
