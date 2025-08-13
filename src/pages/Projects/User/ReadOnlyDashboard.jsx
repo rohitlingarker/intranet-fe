@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Button from "../../../components/Button/Button";
+import ThreeCard from "../../../components/Cards/ThreeCards";
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [reminders, setReminders] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
   const navigate = useNavigate();
 
   const fetchProjects = async () => {
@@ -28,77 +34,127 @@ const ProjectDashboard = () => {
     }
   };
 
+  const fetchDashboard = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/dashboard/summary", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setDashboardData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch dashboard data:", err);
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
+
+  const fetchReminders = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/dashboard/reminders", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      setReminders(res.data);
+    } catch (err) {
+      console.error("Failed to fetch reminders:", err);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
+    fetchDashboard();
+    fetchReminders();
   }, []);
 
-  const goToProjectTab = (projectId) => {
-    navigate(`/projects/${projectId}`);
-  };
+  const goToProjectTab = (projectId) => navigate(`/projects/${projectId}`);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
+        <div className="flex gap-3">
+          <Button onClick={() => navigate("/projects/userprojectlist")} variant="secondary">
+            View Project List
+          </Button>
+          {/* Removed Create Project Button */}
+        </div>
       </div>
 
-      {loading && <p>Loading projects...</p>}
-      {error && <p className="text-red-600">{error}</p>}
-      {!loading && !error && projects.length === 0 && <p>No projects found.</p>}
+      {dashboardLoading ? (
+        <p className="text-gray-600">Loading summary...</p>
+      ) : dashboardData ? (
+        <>
+          {/* 🔹 Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
+            <ThreeCard title="Projects" value={dashboardData.totalProjects} textColor="text-indigo-900" />
+            <ThreeCard title="Tasks" value={dashboardData.totalTasks} textColor="text-green-700" />
+            <ThreeCard title="Epics" value={dashboardData.totalEpics} textColor="text-purple-700" />
+            <ThreeCard title="Users" value={dashboardData.totalUsers} textColor="text-pink-700" />
+            <ThreeCard title="Stories" value={dashboardData.totalStories} textColor="text-orange-600" />
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-white rounded-lg shadow p-6 flex flex-col cursor-pointer hover:shadow-lg transition"
-            onClick={() => goToProjectTab(project.id)}
-          >
-            <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-            <p>
-              <strong>Key:</strong> {project.projectKey}
-            </p>
-            <p className="mb-2">
-              <strong>Description:</strong> {project.description || "—"}
-            </p>
-            <p>
-              <strong>Status:</strong> {project.status}
-            </p>
+          {/* 🔸 Status Count Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map((key) => (
+              <div key={key} className="bg-white rounded-2xl shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
+                  {key.replace("StatusCount", " Status").replace(/([a-z])([A-Z])/g, "$1 $2")}
+                </h3>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  {Object.entries(dashboardData[key] || {}).map(([status, count]) => (
+                    <li key={status} className="flex justify-between">
+                      <span>{status.replace("_", " ")}</span>
+                      <span className="font-semibold">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
 
-            <div className="mt-3">
-              <strong>Owner:</strong>
-              {project.owner ? (
-                <div className="flex flex-col mt-1 text-sm text-gray-700">
-                  <span className="font-medium">{project.owner.name}</span>
-                  <span>{project.owner.role}</span>
-                  <span className="text-xs text-gray-500">{project.owner.email}</span>
-                </div>
+          {/* 🔔 Reminders / Deadlines */}
+          <div className="mb-6">
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Reminders</h3>
+              {reminders ? (
+                <ul className="space-y-1 text-sm text-gray-700">
+                  <li>🔔 {reminders?.taskDueSoonCount ?? 0} tasks are due in the next 2 days</li>
+                  <li>📌 {reminders?.todoTaskCount ?? 0} tasks are in TODO</li>
+                  <li>📝 {reminders?.todoStoryCount ?? 0} stories are in TODO</li>
+                  <li>🚩 {reminders?.unassignedProjectCount ?? 0} projects have no assigned owner</li>
+                  <li>🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon</li>
+                </ul>
               ) : (
-                <p className="text-gray-500">—</p>
+                <p className="text-sm text-gray-500">Loading reminders...</p>
               )}
             </div>
+          </div>
 
-            <div className="mt-3">
-              <strong>Members:</strong>
-              <div className="flex flex-wrap gap-2 mt-1 text-sm">
-                {project.members && project.members.length > 0 ? (
-                  project.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="border rounded px-2 py-1 bg-gray-100 text-gray-800"
-                    >
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-xs">{member.role}</div>
-                      <div className="text-xs text-gray-500">{member.email}</div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">—</p>
-                )}
+          {/* 📌 Quick Access Projects */}
+          <div className="mb-6">
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Quick Access</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.slice(0, 3).map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => goToProjectTab(project.id)}
+                    className="cursor-pointer hover:shadow-md transition-all border p-4 rounded-xl"
+                  >
+                    <h4 className="font-semibold text-indigo-700 text-lg">{project.name}</h4>
+                    <p className="text-sm text-gray-600">Key: {project.projectKey}</p>
+                    <p className="text-xs text-gray-400">{project.status}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <p className="text-red-600">Dashboard data not available</p>
+      )}
     </div>
   );
 };
