@@ -19,7 +19,10 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const fetchRoles = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8000/admin/roles", authHeader);
+      const res = await axios.get(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles`,
+        authHeader
+      );
       setRoles(res.data);
       onRoleUpdate(res.data);
     } catch (err) {
@@ -38,12 +41,18 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     try {
       if (editingRole) {
         await axios.put(
-          `http://localhost:8000/admin/roles/${editingRole.role_id}`,
+          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${
+            editingRole.role_id
+          }`,
           { role_name: newRole },
           authHeader
         );
       } else {
-        await axios.post("http://localhost:8000/admin/roles", { role_name: newRole }, authHeader);
+        await axios.post(
+          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles`,
+          { role_name: newRole },
+          authHeader
+        );
       }
       setNewRole("");
       setEditingRole(null);
@@ -58,7 +67,10 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
 
   const handleEdit = async (role) => {
     try {
-      const res = await axios.get(`http://localhost:8000/admin/roles/${role.role_id}`, authHeader);
+      const res = await axios.get(
+        `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${role.role_id}`,
+        authHeader
+      );
       setNewRole(res.data.role_name);
       setEditingRole(res.data);
     } catch (err) {
@@ -69,7 +81,10 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const handleDelete = async (role_id) => {
     if (window.confirm("Are you sure you want to delete this role?")) {
       try {
-        await axios.delete(`http://localhost:8000/admin/roles/${role_id}`, authHeader);
+        await axios.delete(
+          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${role_id}`,
+          authHeader
+        );
         fetchRoles();
       } catch (err) {
         console.error("Failed to delete role:", err);
@@ -120,7 +135,9 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
 
       {/* Role List */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Existing Roles</h3>
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Existing Roles
+        </h3>
         {loading ? (
           <p className="text-gray-500">Loading roles...</p>
         ) : roles.length === 0 ? (
@@ -132,7 +149,9 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
                 key={role.role_id}
                 className="flex justify-between items-center p-3 border rounded-md hover:shadow-sm bg-gray-50"
               >
-                <span className="text-gray-800 font-medium">{role.role_name}</span>
+                <span className="text-gray-800 font-medium">
+                  {role.role_name}
+                </span>
                 <div className="space-x-2">
                   <button
                     onClick={() => handleEdit(role)}

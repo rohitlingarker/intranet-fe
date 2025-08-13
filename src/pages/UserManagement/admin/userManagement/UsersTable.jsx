@@ -6,7 +6,7 @@ import GenericTable from "../../../../components/Table/table"; // ✅ Use Generi
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
-import StatusBadge from "../../../../components/status/StatusBadge";
+import StatusBadge from "../../../../components/status/statusbadge";
 import { Pencil, UserX } from "lucide-react";
 
 const SORT_DIRECTIONS = {
@@ -38,9 +38,12 @@ export default function UsersTable() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:8000/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `${import.meta.env.USER_MANAGEMENT_URL}/admin/users`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setUsers(res.data || []);
       } catch (err) {
         console.error("Failed to fetch users:", err);
@@ -121,9 +124,12 @@ export default function UsersTable() {
     if (!window.confirm("Are you sure you want to deactivate this user?"))
       return;
     try {
-      await axios.delete(`http://localhost:8000/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setUsers((prev) =>
         prev.map((u) => (u.user_id === userId ? { ...u, is_active: false } : u))
       );
@@ -140,35 +146,34 @@ export default function UsersTable() {
 
   // ✅ Transform data for GenericTable
   const tableData = paginatedUsers.map((user) => ({
-  user_id: user.user_id,
-  name: `${user.first_name} ${user.last_name}`,
-  mail: user.mail,
-  contact: user.contact,
-  status: user.is_active ? "Active" : "Inactive", // ✅ string instead of JSX
-  actions: (
-    <div className="flex gap-4 items-center">
-      <span
-        className="cursor-pointer text-blue-600 hover:text-blue-800"
-        onClick={() =>
-          navigate(`/user-management/users/edit/${user.user_id}`)
-        }
-        title="Edit"
-      >
-        <Pencil size={18} />
-      </span>
-      <span
-        className={`cursor-pointer ${
-          user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
-        }`}
-        onClick={() => user.is_active && handleDelete(user.user_id)}
-        title="Deactivate"
-      >
-        <UserX size={18} />
-      </span>
-    </div>
-  ),
-}));
-
+    user_id: user.user_id,
+    name: `${user.first_name} ${user.last_name}`,
+    mail: user.mail,
+    contact: user.contact,
+    status: user.is_active ? "Active" : "Inactive", // ✅ string instead of JSX
+    actions: (
+      <div className="flex gap-4 items-center">
+        <span
+          className="cursor-pointer text-blue-600 hover:text-blue-800"
+          onClick={() =>
+            navigate(`/user-management/users/edit/${user.user_id}`)
+          }
+          title="Edit"
+        >
+          <Pencil size={18} />
+        </span>
+        <span
+          className={`cursor-pointer ${
+            user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
+          }`}
+          onClick={() => user.is_active && handleDelete(user.user_id)}
+          title="Deactivate"
+        >
+          <UserX size={18} />
+        </span>
+      </div>
+    ),
+  }));
 
   return (
     <div>

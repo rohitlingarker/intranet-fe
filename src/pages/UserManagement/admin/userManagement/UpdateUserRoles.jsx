@@ -34,9 +34,12 @@ export default function UpdateUserRole() {
   useEffect(() => {
     const fetchUsersWithRoles = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/admin/users/roles", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/roles`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setUsers(res.data || []);
       } catch (err) {
         console.error("Failed to fetch users with roles:", err);
@@ -91,11 +94,7 @@ export default function UpdateUserRole() {
   // ✅ Table Headers and Columns for GenericTable
   const headers = [
     "User ID",
-    <span
-      key="name"
-      className="cursor-pointer"
-      onClick={toggleSort}
-    >
+    <span key="name" className="cursor-pointer" onClick={toggleSort}>
       Name {sortDirection === SORT_DIRECTIONS.ASC ? "▲" : "▼"}
     </span>,
     "Email",
@@ -159,7 +158,9 @@ export default function UpdateUserRole() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onNext={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
         />
       )}
     </div>

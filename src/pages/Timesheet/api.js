@@ -3,10 +3,10 @@ import { showStatusToast } from "../../components/toastfy/toast";
 
 const apiEndpoint = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
-export const fetchProjectTaskInfo = async (userId) => {
+export const fetchProjectTaskInfo = async () => {
   try {
     const response = await fetch(
-      `${apiEndpoint}/api/timesheet/project-info/${userId}`,
+      `${apiEndpoint}/api/timesheet/project-info`,
       {
         method: "GET",
         headers: {
@@ -33,14 +33,13 @@ export const fetchProjectTaskInfo = async (userId) => {
 };
 
 export const reviewTimesheet = async (
-  managerId,
   timesheetId,
   comment,
   status
 ) => {
   try {
     const res = await fetch(
-      `${apiEndpoint}/api/timesheets/review/${managerId}?status=${encodeURIComponent(
+      `${apiEndpoint}/api/timesheets/review?status=${encodeURIComponent(
         status
       )}`,
       {
@@ -77,6 +76,7 @@ export async function updateTimesheet(timesheetId, payload) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(payload),
       }
@@ -98,12 +98,13 @@ export async function updateTimesheet(timesheetId, payload) {
   }
 }
 
-export async function fetchTimesheetHistory(userId) {
+export async function fetchTimesheetHistory() {
   try {
     const res = await fetch(`${apiEndpoint}/api/timesheet/history`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
     });
 
@@ -127,6 +128,7 @@ export async function addEntryToTimesheet(timesheetId,workdate, payload) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(payload),
       });
@@ -137,6 +139,7 @@ export async function addEntryToTimesheet(timesheetId,workdate, payload) {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(payload),
         }

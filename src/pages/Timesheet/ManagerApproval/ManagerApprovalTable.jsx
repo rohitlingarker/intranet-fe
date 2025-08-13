@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 
-const ManagerApprovalTable = ({ managerId = 3 }) => {
+const ManagerApprovalTable = () => {
   const [timesheets, setTimesheets] = useState([]);
   const [projectMap, setProjectMap] = useState({});
   const [taskMap, setTaskMap] = useState({});
@@ -29,7 +29,7 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
   const fetchTimesheets = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/timesheets/manager/${managerId}`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -46,16 +46,16 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
     }
   };
 
-  const fetchProjectTaskInfo = async (userId) => {
+  const fetchProjectTaskInfo = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/timesheet/project-info/${userId}`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/project-info`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
       if (!res.ok)
-        throw new Error(`Failed to fetch project info for user ${userId}`);
+        throw new Error(`Failed to fetch project info for user`);
 
       const data = await res.json();
       const newProjects = {};
@@ -129,7 +129,7 @@ const ManagerApprovalTable = ({ managerId = 3 }) => {
     comment = "Approved"
   ) => {
     try {
-      await reviewTimesheet(managerId, timesheetId, comment, status);
+      await reviewTimesheet( timesheetId, comment, status);
       fetchTimesheets();
     } catch (err) {
       console.error(`Error updating timesheet status: ${err.message}`);
