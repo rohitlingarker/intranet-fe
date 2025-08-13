@@ -12,7 +12,7 @@ const ProjectDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -30,7 +30,7 @@ const ProjectTabs = () => {
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`http://localhost:8080/api/projects/${projectId}`)
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`)
         .then((res) => {
           setProjectName(res.data.name);
           setNotFound(false);

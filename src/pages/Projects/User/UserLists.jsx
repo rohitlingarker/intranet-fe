@@ -24,10 +24,10 @@ const Lists = ({ projectId }) => {
   const fetchData = async () => {
     try {
       const [epicRes, storyRes, taskRes, noEpicRes] = await Promise.all([
-        axios.get(`http://localhost:8080/api/projects/${projectId}/epics`),
-        axios.get(`http://localhost:8080/api/projects/${projectId}/stories`),
-        axios.get(`http://localhost:8080/api/projects/${projectId}/tasks`),
-        axios.get(`http://localhost:8080/api/stories/no-epic`),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`),
       ]);
 
       const enrichedStories = storyRes.data.map((story) => ({

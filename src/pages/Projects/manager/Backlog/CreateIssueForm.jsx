@@ -31,20 +31,20 @@ const CreateIssueForm = ({
   }, [mode, initialData]);
 
   useEffect(() => {
-    axios.get("http://localhost:8080/api/projects")
+    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`)
       .then((res) => setProjects(res.data.content || res.data || []));
-    axios.get("http://localhost:8080/api/users")
+    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`)
       .then((res) => setUsers(res.data.content || res.data || []));
-    axios.get(`http://localhost:8080/api/sprints`)
+    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`)
       .then((res) => setSprints(res.data.content || res.data || []));
   }, []);
 
   useEffect(() => {
     const projectId = formData.projectId;
     if (projectId) {
-      axios.get(`http://localhost:8080/api/projects/${projectId}/epics`)
+      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`)
         .then((res) => setEpics(res.data));
-      axios.get(`http://localhost:8080/api/projects/${projectId}/stories`)
+      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`)
         .then((res) => setStories(res.data));
     } else {
       setEpics([]);
@@ -116,10 +116,10 @@ const CreateIssueForm = ({
 
     try {
       if (mode === "edit") {
-        await axios.put(`http://localhost:8080${endpoint}/${formData.id}`, payload);
+        await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload);
         toast.success(`${issueType} updated successfully`);
       } else {
-        await axios.post(`http://localhost:8080${endpoint}`, payload);
+        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload);
         toast.success(`${issueType} created successfully`);
       }
       setTimeout(() => {

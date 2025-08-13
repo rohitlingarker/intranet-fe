@@ -15,7 +15,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/projects/${projectId}/stories`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`);
       setStories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load stories:', err);
@@ -25,7 +25,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/projects/${projectId}/sprints`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`);
       setSprints(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load sprints:', err);
@@ -40,7 +40,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(`http://localhost:8080/api/stories/${storyId}/assign-sprint`, { sprintId });
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId });
       await fetchStories();
     } catch (err) {
       console.error('Error assigning story to sprint:', err);
@@ -50,7 +50,7 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `http://localhost:8080/api/sprints/${sprintId}/${action}`
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`
       );
       const updatedSprint = response.data;
 
