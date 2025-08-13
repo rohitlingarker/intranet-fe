@@ -13,6 +13,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "User Management", href: "/user-management", icon: Users },
   { name: "Projects", href: "/projects/manager", icon: FolderKanban },
   { name: "Leave Management", href: "/leave", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
