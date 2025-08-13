@@ -31,7 +31,7 @@ export default function CreateUser() {
     e.preventDefault();
     try {
       await axios.post(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/users`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
         form,
         {
           headers: {

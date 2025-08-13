@@ -20,7 +20,7 @@ export default function EditUser() {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${id}`, {
+      .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -48,7 +48,7 @@ export default function EditUser() {
       if (!payload.password) delete payload.password;
 
       await axios.put(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${id}`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`,
         payload,
         {
           headers: {

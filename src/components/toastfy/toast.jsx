@@ -17,6 +17,7 @@ const STATUS_CONFIG = {
   },
 };
 
+
 export const showStatusToast = (message = "", messageType = "info") => {
   const config = STATUS_CONFIG[messageType];
 

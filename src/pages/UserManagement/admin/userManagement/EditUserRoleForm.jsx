@@ -35,7 +35,7 @@ export default function EditUserRoleForm() {
 
   const fetchUser = async () => {
     const res = await axios.get(
-      `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${userId}`,
+      `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}`,
       authHeader
     );
     setUser(res.data);
@@ -43,7 +43,7 @@ export default function EditUserRoleForm() {
 
   const fetchAllRoles = async () => {
     const res = await axios.get(
-      `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles`,
+      `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles`,
       authHeader
     );
     setRoles(res.data);
@@ -51,7 +51,7 @@ export default function EditUserRoleForm() {
 
   const fetchAssignedRoles = async () => {
     const res = await axios.get(
-      `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${userId}/roles`,
+      `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}/roles`,
       authHeader
     );
     setSelectedRoleIds(res.data.map((r) => r.role_id));
@@ -68,7 +68,9 @@ export default function EditUserRoleForm() {
   const handleSave = async () => {
     try {
       await axios.put(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${userId}/role`,
+        `${
+          import.meta.env.VITE_USER_MANAGEMENT_URL
+        }/admin/users/${userId}/role`,
         { role_ids: selectedRoleIds },
         authHeader
       );

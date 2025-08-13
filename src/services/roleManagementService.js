@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.USER_MANAGEMENT_URL}`,
+  baseURL: `${import.meta.env.VITE_USER_MANAGEMENT_URL}`,
   timeout: 10000,
 });
 

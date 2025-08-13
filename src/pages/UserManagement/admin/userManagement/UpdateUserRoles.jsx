@@ -35,7 +35,7 @@ export default function UpdateUserRole() {
     const fetchUsersWithRoles = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/roles`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/roles`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

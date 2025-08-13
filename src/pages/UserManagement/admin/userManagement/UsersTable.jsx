@@ -39,7 +39,7 @@ export default function UsersTable() {
       try {
         setLoading(true);
         const res = await axios.get(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/users`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -125,7 +125,7 @@ export default function UsersTable() {
       return;
     try {
       await axios.delete(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/users/${userId}`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
