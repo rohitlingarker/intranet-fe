@@ -283,7 +283,7 @@ const CreateIssueForm = ({
               required
             />
             <FormSelect
-              label="Sprint *"
+              label="Sprint (optional)"
               name="sprintId"
               value={formData.sprintId || ""}
               onChange={handleChange}
