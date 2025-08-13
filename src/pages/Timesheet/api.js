@@ -1,7 +1,7 @@
 // utils/timesheetApi.js
 import { showStatusToast } from "../../components/toastfy/toast";
 
-const apiEndpoint = "http://localhost:8080";
+const apiEndpoint = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
 export const fetchProjectTaskInfo = async (userId) => {
   try {
