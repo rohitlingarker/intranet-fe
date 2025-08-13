@@ -88,7 +88,7 @@ const ProjectTabs = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Sticky Navbar Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+      <header className=" top-0 z-50 border-b  bg-white">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
             {projectName}
