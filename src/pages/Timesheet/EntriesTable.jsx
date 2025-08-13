@@ -31,7 +31,7 @@ const EntriesTable = ({
   }, [addingNewEntry]);
 
   useEffect(() => {
-    fetchProjectTaskInfo(userId).then(setProjectInfo);
+    fetchProjectTaskInfo().then(setProjectInfo);
   }, [userId]);
 
   const workTypeOptions = [

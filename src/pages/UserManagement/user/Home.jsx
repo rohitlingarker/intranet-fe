@@ -18,7 +18,7 @@ export default function Home() {
           const token = localStorage.getItem("token");
 
           const res = await axios.get(
-            `http://localhost:8000/general_user/search`,
+            `${import.meta.env.USER_MANAGEMENT_URL}/general_user/search`,
             {
               params: { query: q },
               headers: {
@@ -67,9 +67,13 @@ export default function Home() {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-semibold text-blue-700 text-lg">{u.name}</p>
+                  <p className="font-semibold text-blue-700 text-lg">
+                    {u.name}
+                  </p>
                   <p className="text-sm text-gray-600">{u.email}</p>
-                  {u.contact && <p className="text-sm text-gray-500">📞 {u.contact}</p>}
+                  {u.contact && (
+                    <p className="text-sm text-gray-500">📞 {u.contact}</p>
+                  )}
                   {!u.is_active && (
                     <p className="text-xs text-red-500 mt-1">Inactive User</p>
                   )}

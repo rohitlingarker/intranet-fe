@@ -32,7 +32,7 @@ const ProjectDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -50,7 +50,7 @@ const ProjectDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/users?page=0&size=100");
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`);
       const content = res.data.content;
       if (Array.isArray(content)) setUsers(content);
       else console.error("Invalid users response format:", res.data);
@@ -61,7 +61,7 @@ const ProjectDashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/dashboard/summary", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -76,7 +76,7 @@ const ProjectDashboard = () => {
 
   const fetchReminders = async () => {
   try {
-    const res = await axios.get("http://localhost:8080/api/dashboard/reminders", {
+    const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`
       }

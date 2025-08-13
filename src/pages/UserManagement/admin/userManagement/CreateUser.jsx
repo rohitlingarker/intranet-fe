@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
- 
+
 import FormInput from "../../../../components/forms/FormInput";
 import Button from "../../../../components/Button/Button";
- 
+
 export default function CreateUser() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
- 
+
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -18,7 +18,7 @@ export default function CreateUser() {
     password: "",
     is_active: true,
   });
- 
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
@@ -26,15 +26,19 @@ export default function CreateUser() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8000/admin/users", form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       toast.success("User created successfully!");
       navigate("/user-management/users");
     } catch (err) {
@@ -42,16 +46,18 @@ export default function CreateUser() {
       toast.error("Failed to create user.");
     }
   };
- 
+
   return (
     <div className="px-6 py-8 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Create New User</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Create New User
+        </h1>
         <p className="text-gray-500">
           Fill out the form to add a new user to the system.
         </p>
       </div>
- 
+
       <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-xl shadow space-y-6"
@@ -74,7 +80,7 @@ export default function CreateUser() {
             required
           />
         </div>
- 
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormInput
             label="Email"
@@ -95,7 +101,7 @@ export default function CreateUser() {
             required
           />
         </div>
- 
+
         <FormInput
           label="Password"
           type="password"
@@ -106,7 +112,7 @@ export default function CreateUser() {
           required
           minLength={6}
         />
- 
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -119,7 +125,7 @@ export default function CreateUser() {
             Active
           </label>
         </div>
- 
+
         <div className="flex gap-4">
           <Button type="submit" variant="primary" size="medium">
             Create User
@@ -137,4 +143,3 @@ export default function CreateUser() {
     </div>
   );
 }
- 

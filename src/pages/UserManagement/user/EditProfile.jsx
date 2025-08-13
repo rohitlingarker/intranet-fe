@@ -13,7 +13,7 @@ export default function EditProfile() {
   useEffect(() => {
     if (user?.email) {
       axios
-        .get("http://localhost:8000/general_user/profile", {
+        .get(`${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -34,7 +34,7 @@ export default function EditProfile() {
     try {
       setSaving(true);
       const response = await axios.put(
-        "http://localhost:8000/general_user/profile",
+        `${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`,
         form,
         {
           headers: {
@@ -47,7 +47,9 @@ export default function EditProfile() {
       navigate("/profile");
     } catch (err) {
       console.error("Update failed:", err);
-      toast.error("Update failed: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Update failed: " + (err.response?.data?.detail || err.message)
+      );
     } finally {
       setSaving(false);
     }
@@ -65,7 +67,14 @@ export default function EditProfile() {
             fontFamily: "sans-serif",
           }}
         >
-          <div style={{ fontWeight: "600", fontSize: "16px", marginBottom: "8px", color: "#333" }}>
+          <div
+            style={{
+              fontWeight: "600",
+              fontSize: "16px",
+              marginBottom: "8px",
+              color: "#333",
+            }}
+          >
             Confirm Profile Edit
           </div>
           <p style={{ fontSize: "14px", marginBottom: "16px", color: "#555" }}>

@@ -94,7 +94,7 @@ const Board = ({ projectId, projectName }) => {
     const fetchTasks = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/projects/${projectId}/tasks`
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`
         );
 
         const normalizedTasks = res.data.map((task) => ({
@@ -127,7 +127,7 @@ const Board = ({ projectId, projectName }) => {
     const updatedTask = { ...task, status: newStatus };
 
     try {
-      await axios.put(`http://localhost:8080/api/tasks/${taskId}`, {
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`, {
         ...updatedTask,
         status: backendStatusMap[newStatus], // map to backend enum
       });

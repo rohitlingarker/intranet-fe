@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState({
-    name: "",
-    projectKey: "",
-    description: "",
-    status: "ACTIVE",
-    ownerId: "",
-    memberIds: [],
-    startDate: "",
-    endDate: "",
+    name: "",          // Required
+    projectKey: "",    // Required
+    description: "",   // Optional
+    status: "ACTIVE",  // Required
+    ownerId: "",       // Required
+    memberIds: [],     // Optional
+    startDate: "",     // Optional
+    endDate: "",       // Optional
   });
 
   useEffect(() => {
     if (!isOpen) return;
 
     axios
-      .get("http://localhost:8080/api/users?page=0&size=100")
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`)
       .then((res) => {
         const content = res.data.content;
         if (Array.isArray(content)) {
@@ -29,11 +30,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
           console.error("Invalid users response format:", res.data);
         }
       })
-      .catch((err) => {
-        console.error("Error fetching users:", err);
-      });
-
-    setSuccessMessage("");
+      .catch((err) => console.error("Error fetching users:", err));
   }, [isOpen]);
 
   const handleInputChange = (e) => {
@@ -75,11 +72,13 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 
     try {
       setIsSubmitting(true);
-      await axios.post("http://localhost:8080/api/projects", payload);
+      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload);
 
-      setSuccessMessage("✅ Project created successfully!");
+      toast.success(" Project created successfully!");
+
       if (onProjectCreated) onProjectCreated();
 
+      // Reset form
       setFormData({
         name: "",
         projectKey: "",
@@ -91,13 +90,10 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         endDate: "",
       });
 
-      setTimeout(() => {
-        onClose();
-        setSuccessMessage("");
-      }, 1500);
+      onClose();
     } catch (error) {
       console.error("Failed to create project:", error.response?.data || error);
-      alert("Failed to create project. Check required fields or console for more info.");
+      toast.error("❌ Failed to create project. Check required fields or console for more info.");
     } finally {
       setIsSubmitting(false);
     }
@@ -110,16 +106,11 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
 
-        {successMessage && (
-          <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 border border-green-300">
-            {successMessage}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Required Fields */}
           <input
             name="name"
-            placeholder="Project Name"
+            placeholder="Project Name *"
             className="w-full border px-4 py-2 rounded"
             value={formData.name}
             onChange={handleInputChange}
@@ -127,20 +118,12 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
           />
           <input
             name="projectKey"
-            placeholder="Project Key"
+            placeholder="Project Key *"
             className="w-full border px-4 py-2 rounded"
             value={formData.projectKey}
             onChange={handleInputChange}
             required
           />
-          <textarea
-            name="description"
-            placeholder="Project Description"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.description}
-            onChange={handleInputChange}
-          />
-
           <select
             name="status"
             className="w-full border px-4 py-2 rounded"
@@ -152,7 +135,6 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             <option value="PLANNING">PLANNING</option>
             <option value="ARCHIVED">ARCHIVED</option>
           </select>
-
           <select
             name="ownerId"
             className="w-full border px-4 py-2 rounded"
@@ -160,7 +142,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             onChange={handleOwnerChange}
             required
           >
-            <option value="">Select Owner</option>
+            <option value="">Select Owner *</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name} ({user.role})
@@ -168,33 +150,40 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             ))}
           </select>
 
+          {/* Optional Fields */}
+          <textarea
+            name="description"
+            placeholder="Project Description (Optional)"
+            className="w-full border px-4 py-2 rounded"
+            value={formData.description}
+            onChange={handleInputChange}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <label className="block text-sm font-medium mb-1">Start Date </label>
               <input
                 type="date"
                 name="startDate"
                 className="w-full border px-4 py-2 rounded"
                 value={formData.startDate}
                 onChange={handleInputChange}
-                required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">End Date</label>
+              <label className="block text-sm font-medium mb-1">End Date </label>
               <input
                 type="date"
                 name="endDate"
                 className="w-full border px-4 py-2 rounded"
                 value={formData.endDate}
                 onChange={handleInputChange}
-                required
               />
             </div>
           </div>
 
           <div className="border rounded p-4">
-            <p className="font-medium mb-2">Select Members:</p>
+            <p className="font-medium mb-2">Select Members (Optional):</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
               {users.map((user) => (
                 <label key={user.id} className="flex items-center gap-2">

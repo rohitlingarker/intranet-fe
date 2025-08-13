@@ -19,7 +19,7 @@ const TimesheetHistoryPage = () => {
 
   // Fetch user info
   useEffect(() => {
-    fetch("http://localhost:8080/me")
+    fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/me`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch user");
         return res.json();
@@ -101,7 +101,7 @@ useEffect(() => {
           refreshData={()=>{
             // Callback to refresh data after save
             setLoading(true);
-            fetch("http://localhost:8080/api/timesheet/history")
+            fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/history`)
               .then((res) => res.json())
               .then((data) => {
                 setEntries(data);

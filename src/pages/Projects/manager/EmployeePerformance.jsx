@@ -23,7 +23,7 @@ const EmployeePerformance = () => {
 
   const fetchPerformanceData = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/performance/employees');
+      const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/performance/employees`);
       setData(response.data);
       setFiltered(response.data);
     } catch (error) {

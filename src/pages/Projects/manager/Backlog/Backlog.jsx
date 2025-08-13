@@ -23,14 +23,14 @@ const Backlog = ({ projectId, projectName }) => {
 
   const fetchStories = () => {
     axios
-      .get(`http://localhost:8080/api/projects/${projectId}/stories`)
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`)
       .then((res) => setStories(res.data))
       .catch((err) => console.error("Failed to fetch stories", err));
   };
 
   const fetchSprints = () => {
     axios
-      .get(`http://localhost:8080/api/projects/${projectId}/sprints`)
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`)
       .then((res) =>
         setSprints(res.data.filter((s) => s.status === "PLANNING"))
       )
@@ -44,7 +44,7 @@ const Backlog = ({ projectId, projectName }) => {
 
   const handleDropStory = (storyId, sprintId) => {
     axios
-      .put(`http://localhost:8080/api/stories/${storyId}/assign-sprint`, {
+      .put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, {
         sprintId,
       })
       .then(() => {

@@ -28,7 +28,7 @@ const ProjectTabs = () => {
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`http://localhost:8080/api/projects/${projectId}`)
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`)
         .then((res) => {
           setProjectName(res.data.name);
           setNotFound(false);
@@ -88,7 +88,7 @@ const ProjectTabs = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Sticky Navbar Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+      <header className=" top-0 z-50 border-b  bg-white">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
             {projectName}

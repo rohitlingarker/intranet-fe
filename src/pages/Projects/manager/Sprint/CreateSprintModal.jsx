@@ -21,7 +21,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/projects');
+        const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`);
         const content = Array.isArray(response.data.content)
           ? response.data.content
           : response.data;
@@ -55,7 +55,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
     };
 
     try {
-      const response = await axios.post('http://localhost:8080/api/sprints', payload);
+      const response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, payload);
 
       toast.success('✅ Sprint created successfully!', {
         position: 'top-right',

@@ -31,7 +31,7 @@ const ProjectList = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(res.data)
@@ -48,7 +48,7 @@ const ProjectList = () => {
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8080/api/users?page=0&size=100",
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -97,10 +97,30 @@ const ProjectList = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Restrict edits if archived and not changing status
+    if (formData.status === "ARCHIVED" && name !== "status") {
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleStatusChange = (e) => {
+    const newStatus = e.target.value;
+    setFormData((prev) => ({ ...prev, status: newStatus }));
+  };
+
   const handleMemberToggle = (userId) => {
+    if (formData.status === "ARCHIVED") {
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
+      return;
+    }
     setFormData((prev) => {
       const updated = prev.memberIds?.includes(userId)
         ? prev.memberIds.filter((id) => id !== userId)
@@ -113,12 +133,10 @@ const ProjectList = () => {
     try {
       setIsSubmitting(true);
       await axios.put(
-        `http://localhost:8080/api/projects/${projectId}`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         {
           ...formData,
-          ownerId: formData.ownerId
-            ? parseInt(formData.ownerId)
-            : null,
+          ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
           memberIds: formData.memberIds || [],
         },
         {
@@ -136,11 +154,10 @@ const ProjectList = () => {
   };
 
   const handleDelete = async (projectId) => {
-    if (!window.confirm("Are you sure you want to delete this project?"))
-      return;
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await axios.delete(
-        `http://localhost:8080/api/projects/${projectId}`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -160,19 +177,16 @@ const ProjectList = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Heading */}
       <h1 className="text-2xl font-bold text-black mb-6">Projects</h1>
 
       <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Search by name or key"
-            className="border px-3 py-2 rounded-xl"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Search by name or key"
+          className="border px-3 py-2 rounded-xl"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <Button
           variant="primary"
           size="medium"
@@ -189,10 +203,7 @@ const ProjectList = () => {
       ) : (
         <div className="space-y-4">
           {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="bg-white rounded-xl shadow p-4"
-            >
+            <div key={project.id} className="bg-white rounded-xl shadow p-4">
               <div
                 className="flex justify-between items-center cursor-pointer"
                 onClick={() => toggleExpand(project.id)}
@@ -204,7 +215,6 @@ const ProjectList = () => {
                     ({project.projectKey})
                   </span>
                 </div>
-
                 <div className="flex gap-2">
                   <Button
                     className="bg-transparent hover:bg-transparent"
@@ -240,6 +250,7 @@ const ProjectList = () => {
                         onChange={handleInputChange}
                         className="w-full border px-3 py-2 rounded-xl"
                         placeholder="Project Name"
+                        disabled={formData.status === "ARCHIVED"}
                       />
                       <input
                         type="text"
@@ -248,6 +259,7 @@ const ProjectList = () => {
                         onChange={handleInputChange}
                         className="w-full border px-3 py-2 rounded-xl"
                         placeholder="Project Key"
+                        disabled={formData.status === "ARCHIVED"}
                       />
                       <textarea
                         name="description"
@@ -255,11 +267,12 @@ const ProjectList = () => {
                         onChange={handleInputChange}
                         className="w-full border px-3 py-2 rounded-xl resize-none"
                         placeholder="Project Description"
+                        disabled={formData.status === "ARCHIVED"}
                       />
                       <select
                         name="status"
                         value={formData.status || ""}
-                        onChange={handleInputChange}
+                        onChange={handleStatusChange}
                         className="w-full border px-3 py-2 rounded-xl"
                       >
                         <option value="ACTIVE">ACTIVE</option>
@@ -271,6 +284,7 @@ const ProjectList = () => {
                         value={formData.ownerId || ""}
                         onChange={handleInputChange}
                         className="w-full border px-3 py-2 rounded-xl"
+                        disabled={formData.status === "ARCHIVED"}
                       >
                         <option value="">Select Owner</option>
                         {users.map((u) => (
@@ -289,6 +303,7 @@ const ProjectList = () => {
                               type="checkbox"
                               checked={formData.memberIds?.includes(user.id)}
                               onChange={() => handleMemberToggle(user.id)}
+                              disabled={formData.status === "ARCHIVED"}
                             />
                             {user.name} ({user.role})
                           </label>
@@ -323,8 +338,7 @@ const ProjectList = () => {
                         <strong>Status:</strong> {project.status}
                       </p>
                       <p>
-                        <strong>Owner:</strong>{" "}
-                        {project.owner?.name || "—"}
+                        <strong>Owner:</strong> {project.owner?.name || "—"}
                       </p>
                       <div>
                         <strong>Members:</strong>

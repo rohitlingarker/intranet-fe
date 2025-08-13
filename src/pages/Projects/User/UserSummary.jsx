@@ -24,9 +24,9 @@ const Summary = ({ projectId, projectName }) => {
     const fetchAll = async () => {
       try {
         const [epicRes, storyRes, taskRes] = await Promise.all([
-          axios.get(`http://localhost:8080/api/projects/${projectId}/epics`),
-          axios.get(`http://localhost:8080/api/projects/${projectId}/stories`),
-          axios.get(`http://localhost:8080/api/projects/${projectId}/tasks`),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`),
         ]);
  
         const epicsData = epicRes.data;

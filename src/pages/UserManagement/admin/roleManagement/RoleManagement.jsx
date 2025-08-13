@@ -20,7 +20,10 @@ export default function RoleManagement() {
 
   const fetchRoles = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/admin/roles", authHeader);
+      const res = await axios.get(
+        `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles`,
+        authHeader
+      );
       setRoles(res.data);
     } catch (err) {
       console.error("Failed to fetch roles:", err);
@@ -51,11 +54,11 @@ export default function RoleManagement() {
   const tabs = [
     { id: "roles", label: "Manage Roles", icon: "👥" },
     { id: "permissions", label: "View Permissions", icon: "🔐" },
-    { id: "groups", label: "Permission Groups", icon: "📋" }
+    { id: "groups", label: "Permission Groups", icon: "📋" },
   ];
 
   // Prepare nav items for Navbar component
-  const navItems = tabs.map(tab => ({
+  const navItems = tabs.map((tab) => ({
     name: tab.label,
     onClick: () => setActiveTab(tab.id),
     isActive: activeTab === tab.id,
@@ -72,8 +75,12 @@ export default function RoleManagement() {
           {activeTab === "roles" && (
             <div>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Role Management</h3>
-                <p className="text-sm text-gray-600 mt-1">Create, edit, and delete user roles</p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Role Management
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Create, edit, and delete user roles
+                </p>
               </div>
               <RoleForm
                 roles={roles}
@@ -86,8 +93,12 @@ export default function RoleManagement() {
           {activeTab === "permissions" && (
             <div>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Permission Management</h3>
-                <p className="text-sm text-gray-600 mt-1">View permissions assigned to each role</p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Permission Management
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  View permissions assigned to each role
+                </p>
               </div>
               <PermissionManagement roles={roles} />
             </div>
@@ -96,8 +107,12 @@ export default function RoleManagement() {
           {activeTab === "groups" && (
             <div>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Permission Group Management</h3>
-                <p className="text-sm text-gray-600 mt-1">Manage permission groups for roles</p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Permission Group Management
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Manage permission groups for roles
+                </p>
               </div>
               <PermissionGroupManagement roles={roles} />
             </div>
