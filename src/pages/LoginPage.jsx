@@ -31,7 +31,7 @@ const mockUsers = {
     id: "PAVEMPC5AE8",
     password: "Paves@123",
     role: "Manager",
-    token: "eyJhbGciOiJSUzI1NiIsImtpZCI6ImF1dGgta2V5LTAwMSIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1MSwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsIm5hbWUiOiJhZCBtaW4iLCJyb2xlcyI6WyJTdXBlciBBZG1pbiJdLCJwZXJtaXNzaW9ucyI6WyJBRERfR1JPVVAiLCJBRERfUEVSTUlTU0lPTiIsIkFERF9ST0xFIiwiQUREX1VTRVIiLCJERUFDVElWQVRFX09XTl9QUk9GSUxFIiwiREVMRVRFX0dST1VQIiwiREVMRVRFX1BFUk1JU1NJT04iLCJERUxFVEVfUk9MRSIsIkRFTEVURV9VU0VSIiwiRURJVF9BTllfVVNFUiIsIkVESVRfR1JPVVAiLCJFRElUX09XTl9QUk9GSUxFIiwiRURJVF9QRVJNSVNTSU9OIiwiRURJVF9ST0xFIiwiTUFOQUdFX0VORFBPSU5UUyIsIlZJRVdfR1JPVVAiLCJWSUVXX1BFUk1JU1NJT04iLCJWSUVXX1JPTEUiLCJWSUVXX1VTRVJfQUxMIiwiVklFV19VU0VSX1BVQkxJQyJdLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDAiLCJleHAiOjIxMTQ0ODE3MjF9.x2dMfFAbal7YiGK88KcEdZNrsZwV5ub49YER-zVTZBjr1gfxM922qUSd8qADy3Y1aqD0l3tPkxVtReNUnhA3XbMv1KpNUHfERpNW7VoXJ6_YIrrDIvMQEm45pzimF5q19n0aObX_axs-GKFIAp0Y-bJ3fVB_NX-TZGQG5X1Z0w7R0tX9_DI-zG9lIXgHYFx1Z7dLFr6JAeRVuBQjO5gYxmdG4EOdZPOeRZOY387EYwiH1-UIzGzibZ7D0JTQjqOvSUqCD4t1QF1xAbNo6ZpCq8Xj2-BBvOglZqVfaQYvVT9aylIQrR0aY36PwQHhYEYDNjYotbBf370CrSRM5gHvYg"
+    token: "eyJhbGciOiJSUzI1NiIsImtpZCI6ImF1dGgta2V5LTAwMSIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1MiwiZW1haWwiOiJNYW5hZ2VyQGV4YW1wbGUuY29tIiwibmFtZSI6Ik1hbmFnZXIgTWFuYWdlciIsInJvbGVzIjpbIk1hbmFnZXIiXSwicGVybWlzc2lvbnMiOlsiVklFV19VU0VSX1BVQkxJQyIsIlZJRVdfVVNFUl9BTEwiLCJFRElUX09XTl9QUk9GSUxFIiwiRURJVF9BTllfVVNFUiIsIkFERF9VU0VSIiwiREVMRVRFX1VTRVIiLCJERUFDVElWQVRFX09XTl9QUk9GSUxFIl0sImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMCIsImV4cCI6MjExNDY0NTg4Nn0.XmwX2dToOxIfL4bFWVs2oEOZYPqN8A027oeiVO-bZdBIQq2GV85fxOvaV1caJ1YNvQcHYKWJpzuo0ya601Kq41HAbe6MdhJhNCR4_i7h2xzMzUQF2qBv4YJrfUSGhCYR0K1NtEOS30eLC245FHPL2cogLZ-SbCrj97jvDCiZu8lUZNHE36bkNp1em0hKSzk96RjRYMBukqUCmdWuHiMOLUyi3ev9mIZz3g9eoaHIb066qTwMWVEnzEd3L-H_RYXpYF2jIRyF0lyT4IRTUTluIx4QL-YP4CqMqDQFE6OPDJj_2DVU5-1ux3Uk_YCxQ7gSs9lljnsNgIpkIXXZHdozRQ"
   }
 };
 
@@ -125,7 +125,7 @@ export default function LoginPage() {
           const { token, role, id } = mockUsers[email];
 
           // ✅ Store in localStorage
-          localStorage.setItem("user", JSON.stringify({ id, email, role }));
+          // localStorage.setItem("user", JSON.stringify({ id, email, role }));
 
           login(token);
           const redirectPath = role === "HR" ? "/leave-management/hr" :
@@ -149,7 +149,7 @@ export default function LoginPage() {
 
     login(token);
     navigate(res.data.redirect || "/home");
-    localStorage.setItem("user", JSON.stringify({ email, role: res.data.role }));
+    // localStorage.setItem("user", JSON.stringify({ email, role: res.data.role }));
 
   } catch (err) {
     alert("Login failed: " + (err.response?.data?.detail || err.message));

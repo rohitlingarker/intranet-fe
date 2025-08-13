@@ -21,6 +21,7 @@ const LeaveHistory = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const token = localStorage.getItem('token');
 
   // Fetch leave data and leave types
   useEffect(() => {
@@ -29,11 +30,17 @@ const LeaveHistory = () => {
     Promise.all([
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
-        headers: { "Cache-Control": "no-store" },
+        headers: { 
+          "Cache-Control": "no-store",
+          Authorization:`Bearer ${token}`
+        },
       }),
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
-        headers: { "Cache-Control": "no-store" },
+        headers: { "Cache-Control": "no-store",
+          Authorization:`Bearer ${token}`
+        },
+
       }),
     ])
       .then(([leavesResp, typesResp]) => {

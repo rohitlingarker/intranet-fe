@@ -26,7 +26,7 @@ function countWeekdays(startDateStr, endDateStr) {
   return count;
 }
  
-const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
+const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [allLeaveTypes, setAllLeaveTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +41,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
+  const token = localStorage.getItem('token');
  
   const itemsPerPage = 8;
   const currentYear = new Date().getFullYear();
@@ -51,7 +52,7 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
     setTimeout(() => setToast(null), 3000);
   };
  
-  const managerId = user?.id || employeeId;
+  const managerId = employeeId;
  
   // const toLeaveRequest = (raw) => ({
   //   leaveId: raw.leaveId,
@@ -91,11 +92,19 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
  
       const res = await axios.post(
         `${BASE_URL}/api/leave-requests/manager/history`,
-        payload
+        payload,{
+          headers:{
+            Authorization:`Bearer ${token}`
+          }
+        }
       );
  
       const types = await axios.get(
-        `${BASE_URL}/api/leave/get-all-leave-types`
+        `${BASE_URL}/api/leave/get-all-leave-types`,{
+          headers:{
+            Authorization:`Bearer ${token}`
+          }
+        }
       );
  
       const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
@@ -165,7 +174,11 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
         {
           managerId,
           leaveIds: selectedRequests,
+        },{
+          headers:{
+            Authorization:`Bearer ${token}`
         }
+      }
       );
       showToast(`${selectedRequests.length} requests approved.`, "success");
       setSelectedRequests([]);
@@ -188,6 +201,10 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
           managerId,
           leaveIds: selectedRequests,
           // comments: selectedRequests.reduce((res, id) => ({ ...res, [id]: comments[id] || "" }), {})
+        },{
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       showToast(`${selectedRequests.length} requests rejected.`, "success");
@@ -213,6 +230,10 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
         managerId,
         leaveId,
         comment,
+      },{
+        headers:{
+          Authorization: `Bearer ${token}`
+        }
       });
       showToast(`Leave ${action}ed successfully.`, "success");
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
@@ -243,7 +264,11 @@ const HandleLeaveRequestAndApprovals = ({ user, employeeId }) => {
       };
       await axios.put(
         `${BASE_URL}/api/leave-requests/update`,
-        payload
+        payload,{
+          header:{
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
       showToast("Leave request updated.", "success");
       await fetchData();

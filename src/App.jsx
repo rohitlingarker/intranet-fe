@@ -19,10 +19,8 @@ import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 
-
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-
 
 import IntranetForm from "./components/forms/IntranetForm";
 
@@ -60,7 +58,6 @@ import AccessPointManagement from "./pages/UserManagement/admin/accessPointManag
 import Profile from "./pages/UserManagement/user/Profile";
 import EditProfile from "./pages/UserManagement/user/EditProfile";
 
-
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
@@ -68,11 +65,29 @@ import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
+// import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 // 🔒 Protected Route Wrapper
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, user } = useAuth();
+  console.log(user);
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
+    console.log("ProtectedRoute check:", {
+      isAuthenticated,
+      user,
+      allowedRoles,
+      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+    });
+    if (!hasRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
+  return <>{children}</>;
 };
 
 // ✅ Save last path on every navigation
@@ -86,7 +101,8 @@ const SaveLastPath = () => {
 
 // ✅ Project Manager Demo Layout
 const ProjectManager = () => {
-  const [showCreateProjectModal, setShowCreateProjectModal] = React.useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] =
+    React.useState(false);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -115,9 +131,6 @@ const ProjectManager = () => {
     </div>
   );
 };
-
-
-
 
 // ✅ Application Routes
 const AppRoutes = () => {
@@ -167,30 +180,97 @@ const AppRoutes = () => {
           <Route path="/projects/manager" element={<ProjectDashboard />} />
           <Route path="/projects/*" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
-          <Route path="/projects/user/:projectId" element={<UserProjectTabs />} />
+          <Route
+            path="/projects/user/:projectId"
+            element={<UserProjectTabs />}
+          />
 
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
-          <Route path="/user-management/users/create" element={<CreateUser />} />
-          <Route path="/user-management/users/edit/:id" element={<EditUser />} />
-          <Route path="/user-management/users/roles" element={<UpdateUserRoles />} />
-          <Route path="/user-management/roles/edit-role/:userId" element={<EditUserRoleForm />} />
+          <Route
+            path="/user-management/users/create"
+            element={<CreateUser />}
+          />
+          <Route
+            path="/user-management/users/edit/:id"
+            element={<EditUser />}
+          />
+          <Route
+            path="/user-management/users/roles"
+            element={<UpdateUserRoles />}
+          />
+          <Route
+            path="/user-management/roles/edit-role/:userId"
+            element={<EditUserRoleForm />}
+          />
           <Route path="/user-management/roles" element={<RoleManagement />} />
-          <Route path="/user-management/permissions" element={<PermissionManagement />} />
-          <Route path="/user-management/groups" element={<PermissionGroupManagement />} />
-          <Route path="/user-management/groups/:groupId" element={<GroupDetails />} />
-          <Route path="/user-management/access-points" element={<AccessPointManagement />} />
-          <Route path="/user-management/access-points/create" element={<AccessPointForm />} />
-          <Route path="/user-management/access-points/:access_id" element={<AccessPointDetails />} />
-          <Route path="/user-management/access-points/edit/:access_id" element={<AccessPointEdit />} />
-          <Route path="/user-management/access-points/admin/access-point-mapping" element={<AccessPointMapping />} />
+          <Route
+            path="/user-management/permissions"
+            element={<PermissionManagement />}
+          />
+          <Route
+            path="/user-management/groups"
+            element={<PermissionGroupManagement />}
+          />
+          <Route
+            path="/user-management/groups/:groupId"
+            element={<GroupDetails />}
+          />
+          <Route
+            path="/user-management/access-points"
+            element={<AccessPointManagement />}
+          />
+          <Route
+            path="/user-management/access-points/create"
+            element={<AccessPointForm />}
+          />
+          <Route
+            path="/user-management/access-points/:access_id"
+            element={<AccessPointDetails />}
+          />
+          <Route
+            path="/user-management/access-points/edit/:access_id"
+            element={<AccessPointEdit />}
+          />
+          <Route
+            path="/user-management/access-points/admin/access-point-mapping"
+            element={<AccessPointMapping />}
+          />
 
           {/* Leave Management */}
-          <Route path="/leave-management" element={<EmployeePanel />} />
-          <Route path="/leave-management/manager" element={<AdminPanel />} />
-          <Route path="/leave-management/hr" element={<HRManageTools />} />
-          <Route path="/employee-leave-balance" element={<EmployeeLeaveBalances />} />
+          <Route
+            path="/leave-management"
+            element={
+              <ProtectedRoute allowedRoles={["General", "HR", "Manager"]}>
+                <EmployeePanel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leave-management/manager"
+            element={
+              <ProtectedRoute allowedRoles={["Manager"]}>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route
+            path="/leave-management/hr"
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <HRManageTools />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee-leave-balance"
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <EmployeeLeaveBalances />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
       <SaveLastPath />
@@ -202,16 +282,16 @@ const AppRoutes = () => {
 function App() {
   return (
     <>
-    <ToastContainer position="top-center" autoClose={3000} />
-    <Router>
-      <AuthProvider>
-        <NotificationProvider>
-          <div className="min-h-screen bg-gray-50">
-            <AppRoutes />
-          </div>
-        </NotificationProvider>
-      </AuthProvider>
-    </Router>
+      <ToastContainer position="top-center" autoClose={3000} />
+      <Router>
+        <AuthProvider>
+          <NotificationProvider>
+            <div className="min-h-screen bg-gray-50">
+              <AppRoutes />
+            </div>
+          </NotificationProvider>
+        </AuthProvider>
+      </Router>
     </>
   );
 }

@@ -54,6 +54,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const token = localStorage.getItem('token');
  
   // Use the custom hook to get leave types data
   const {
@@ -162,7 +163,10 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       if (editData) {
         // Backend expects PATCH (no ID in path)
         await axios.patch(url, payload, {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}` 
+          },
         });
         setSuccess("Leave type updated successfully!");
       } else {

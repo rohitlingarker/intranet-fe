@@ -39,7 +39,7 @@ const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
 
     // This will trigger parent's async function
     await onSubmit(payload);
-  };
+  }; 
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">

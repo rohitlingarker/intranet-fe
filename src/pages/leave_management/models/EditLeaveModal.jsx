@@ -143,6 +143,7 @@ export default function EditLeaveModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -201,7 +202,10 @@ export default function EditLeaveModal({
     try {
       const { data } = await axios.put(
         `${BASE_URL}/api/leave-requests/employee/update`,
-        payload
+        payload,
+        {headers:{
+          Authorization: `Bearer ${token}`
+        }}
       );
       toast.success("Leave request updated successfully");
       if (onSuccess) onSuccess(data);

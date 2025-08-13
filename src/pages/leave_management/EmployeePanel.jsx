@@ -12,49 +12,62 @@ import AdminPanel from "./AdminPanel"; // Adjust path if needed
 import ActionButtons from "../leave_management/models/ActionButtons";
 import CompOffRequestModal from "../leave_management/models/CompOffRequestModal";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
+// import { useAuth } from "../../contexts/AuthContext"; // Adjust path if needed
+import { useAuth } from "../../contexts/AuthContext";
 import HRManageTools from "./HRManageTools";
-
 
 const EmployeePanel = () => {
   const [isRequestLeaveModalOpen, setIsRequestLeaveModalOpen] = useState(false);
   // const [isAdminView, setIsAdminView] = useState(false); // toggle admin/employee view
+  const employee = useAuth();
   const [activeView, setActiveView] = useState("employee"); // 'employee', 'admin', or 'hr'
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
   const compOffPageRef = React.useRef();
+
+  let roles = employee.user?.roles || "";
+  if (!Array.isArray(roles)) {
+    roles = roles.split(",").map((r) => r.trim());
+  }
   //const toggleView = () => setIsAdminView((prev) => !prev);
   // const handleViewChange = (view) => setActiveView(view);
+  roles = roles.map((r) => r.toLowerCase());
   const useNavigate = Navigate;
-  // const a = useAuth();
-  const employee = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user"))
-    : null;
 
-  const employeeId = employee?.id
+  // const employee = localStorage.getItem("user")
+  //   ? JSON.parse(localStorage.getItem("user"))
+  //   : null;
+
+  console.log("employee", employee);
+
+  const employeeId = employee.user?.user_id;
   console.log("EmployeeId", employeeId);
 
-  const isManager = employee?.role?.toLowerCase().includes("manager") || employee?.role?.toLowerCase().includes("super admin");
-  const isHR = employee?.role?.toLowerCase() === "hr";
-  const isEmployee = employee?.role?.toLowerCase() === "employee";
+  const isManager =
+    roles.includes("manager") ||
+    (employee?.roles || "").toLowerCase() === "super admin";
+  const isHR = roles.includes("hr");
+  const isGeneral = roles.includes("general");
 
-  useEffect(() => {
-    if (isManager) setActiveView("employee"); // or "admin" if you want default admin view
-    else if (isHR) setActiveView("employee"); // or "hr" if you want default hr view
-    else setActiveView("employee");
-  }, [isManager, isHR]);
+// set default view based on role
+useEffect(() => {
+  if (isManager) {
+    setActiveView("admin");
+  } else if (isHR) {
+    setActiveView("hr");
+  } else {
+    setActiveView("employee"); // general users
+  }
+}, [isManager, isHR]);
 
-  const showToggle = isManager || isHR;
+// toggle visibility of view switching UI
+const showToggle = isManager || isHR;
 
-  // Guard on switching views: only allowed views per role
-  const handleViewChange = (view) => {
-    if (view === "admin" && !isManager) return;
-    if (view === "hr" && !isHR) return;
-    if (view === "employee") {
-      setActiveView("employee");
-      return;
-    }
-    setActiveView(view);
-  };
+// ensure only allowed roles can switch to certain views
+const handleViewChange = (view) => {
+  if (view === "admin" && !isManager) return;
+  if (view === "hr" && !isHR) return;
+  setActiveView(view);
+};
 
   // const role = "manager"; // This should be dynamically set based on user role
 
@@ -119,18 +132,17 @@ const EmployeePanel = () => {
               onRequestLeave={() => setIsRequestLeaveModalOpen(true)}
               onRequestCompOff={() => setIsCompOffModalOpen(true)}
             />
-          </div> 
+          </div>
           {/* Employee View content */}
           <h2 className="text-xl font-semibold m-4">Pending Leave Requests</h2>
           <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
             <PendingLeaveRequests employeeId={employeeId} />
           </div>
-          <h2 className="text-xl font-semibold m-4">Pending Comp-Off Requests</h2>
+          <h2 className="text-xl font-semibold m-4">
+            Pending Comp-Off Requests
+          </h2>
           <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
-            <CompOffPage
-              ref={compOffPageRef}
-              employeeId={employeeId}
-            />
+            <CompOffPage ref={compOffPageRef} employeeId={employeeId} />
             {isCompOffModalOpen && (
               <CompOffRequestModal
                 onSubmit={handleCompOffSubmit}
@@ -148,7 +160,7 @@ const EmployeePanel = () => {
 
           <h2 className="text-xl font-semibold m-4">Leave Balances</h2>
           <LeaveDashboard employeeId={employeeId} />
-          
+
           <h2 className="text-xl font-semibold m-4">Leave History</h2>
           <LeaveHistory employeeId={employeeId} />
 
@@ -166,10 +178,7 @@ const EmployeePanel = () => {
       )}
 
       {/* === HR View === */}
-      {activeView === "hr" && isHR &&(
-        <HRManageTools user={employee} />
-      )}
-
+      {activeView === "hr" && isHR && <HRManageTools employeeId={employeeId} />}
     </div>
   );
 };

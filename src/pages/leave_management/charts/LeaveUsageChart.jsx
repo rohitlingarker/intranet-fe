@@ -61,13 +61,14 @@ const renderActiveShape = (props) => {
 };
 
 export default function LeaveUsageChart({ leave }) {
-  const { accruedLeaves, usedLeaves, leaveType } = leave;
+  console.log("leave", leave)
+  const { accruedLeaves, usedLeaves, leaveType, remainingLeaves } = leave;
   const [activeIndex, setActiveIndex] = useState(null);
   console.log("leave in leave car", leave)
 
   const isUnpaid = leaveType?.leaveName === "UNPAID_LEAVE";
 
-  const remaining = Math.max(accruedLeaves - usedLeaves, 0);
+  const remaining = Math.max(remainingLeaves - usedLeaves, 0);
 
   const chartData = isUnpaid
   ? [{ name: "Used", value: usedLeaves }]

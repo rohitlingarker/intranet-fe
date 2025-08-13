@@ -8,12 +8,17 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 const CompOffPage = forwardRef(({ employeeId }, ref) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem('token');
 
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
         `${BASE_URL}/api/compoff/employee/${employeeId}`,
-        { withCredentials: true, headers: { "Cache-Control": "no-store" } }
+        { withCredentials: true,
+          headers:
+          { "Cache-Control": "no-store" },
+          Authorization: `Bearer ${token}`
+        }
       );
       if (res.data.success) {
         setRequests(res.data.data);
@@ -37,7 +42,10 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
           note,
           duration: numberOfDays,
         },
-        { withCredentials: true }
+        { withCredentials: true ,
+        headers:{
+          Authorization: `Bearer ${token}`
+        }}
       );
       toast.success("Request submitted!");
       fetchRequests();
@@ -63,7 +71,10 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
       await axios.put(
         `${BASE_URL}/api/compoff/cancel/${requestId}`,
         {},
-        { withCredentials: true, headers: { "Cache-Control": "no-store" } }
+        { withCredentials: true, headers: { 
+          "Cache-Control": "no-store",
+          Authorization: `Bearer ${token}`
+         } }
       );
       fetchRequests();
     } catch {

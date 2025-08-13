@@ -4,7 +4,10 @@ import { Plus, Clock, Check, Calendar, User, Search, X, Hand } from "lucide-reac
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 const AdminPanel = ({ employeeId }) => {
+  console.log("manaerig: ",employeeId)
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Status");
   const [selectedRequests, setSelectedRequests] = useState([]);
@@ -12,26 +15,28 @@ const AdminPanel = ({ employeeId }) => {
   const [resultMsg, setResultMsg] = useState(null);
   const pendingCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'pending').length;
   const approvedCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'approved').length;
+  const token = localStorage.getItem('token');
 
-  const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
-  const isManager = user?.role?.toLowerCase() === "manager";
+  // const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
+  // const isManager = user?.role?.toLowerCase() === "manager";
   
   // const employee = useAuth();
   // console.log("useAuth", employee);
   // leave history and admin requests
-  if (!isManager) {
-    return (
-      <div className="text-red-600 font-semibold p-4">
-        Access Denied: Manager Only
-      </div>
-    );
-  }
+  // if (!isManager) {
+  //   return (
+  //     <div className="text-red-600 font-semibold p-4">
+  //       Access Denied: Manager Only
+  //     </div>
+  //   );
+  // }
 
   useEffect(() => {
     axios
-      .post("http://localhost:8080/api/leave-requests/manager/history", {
-        managerId: employeeId,
-      })
+      .post(`${BASE_URL}/api/leave-requests/manager/history`, {
+        managerId: employeeId},{headers:{
+          Authorization: `Bearer ${token}`
+        }})
       .then((res) => {
         const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setAdminLeaveRequests(arr.map(toLeaveRequest));
@@ -97,7 +102,7 @@ const AdminPanel = ({ employeeId }) => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -146,13 +151,13 @@ const AdminPanel = ({ employeeId }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Comp-Off Balance Requests Section */}
-      <CompOffBalanceRequests managerId={user.id} />
+      <CompOffBalanceRequests managerId={employeeId} />
 
       {/* Search and Filter Section */}
-      <HandleLeaveRequestAndApprovals user={user} employeeId={employeeId} />
+      <HandleLeaveRequestAndApprovals employeeId={employeeId} />
 
       {/* Modals */}
       {/* <AddEmployeeModal

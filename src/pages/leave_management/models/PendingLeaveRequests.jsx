@@ -8,6 +8,7 @@ import { Fonts } from "../../../components/Fonts/Fonts";
  
 const ITEMS_PER_PAGE = 5;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const token = localStorage.getItem('token');
  
 /**
  * Reusable function to fetch pending leave requests, leave types, and balances.
@@ -28,13 +29,24 @@ const fetchData = async (
         `${BASE_URL}/api/leave-requests/employee/${employeeId}`,
         {
           withCredentials: true,
-          headers: { "Cache-Control": "no-store" },
+          headers: { "Cache-Control": "no-store",
+            Authorization: `Bearer ${token}`
+           },
         }
       ),
-      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`),
+      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`,{
+        headers: {
+          Authorization : `Bearer ${token}`
+        }
+      }),
       axios.get(
         `${BASE_URL}/api/leave-balance/employee/${employeeId}`
-      ),
+        ,{
+        headers: {
+          Authorization : `Bearer ${token}`
+        }
+      }
+      )
     ]);
  
     const allLeaves = Array.isArray(leaveReqRes.data?.data)

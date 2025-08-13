@@ -8,14 +8,17 @@ import ActionDropdown from "./models/ActionDropdownHrTools";
 import toast from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
  
-const HRManageTools = ({ user }) => {
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+const HRManageTools = ({ employeeId }) => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [isAddLeaveTypeModalOpen, setIsAddLeaveTypeModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
   const navigate = useNavigate();
  
-  const isHR = user?.role?.toLowerCase() === "hr";
+  const token = localStorage.getItem('token');
+  // const isHR = user?.role?.toLowerCase() === "hr";
  
   useEffect(() => {
     fetchLeaveTypes();
@@ -23,23 +26,31 @@ const HRManageTools = ({ user }) => {
  
   const fetchLeaveTypes = () => {
     axios
-      .get("http://localhost:8080/api/leave/get-all-leave-types")
+      .get(`${BASE_URL}/api/leave/get-all-leave-types`,{
+        headers:{
+          Authorization: `Bearer ${token}`
+        }
+      })
       .then((res) => setLeaveTypes(res.data))
       .catch((err) => console.error("Failed to fetch leave types", err));
   };
  
-  if (!isHR) {
-    return (
-      <div className="text-red-600 font-semibold p-4">
-        Access Denied: HR Only
-      </div>
-    );
-  }
+  // if (!isHR) {
+  //   return (
+  //     <div className="text-red-600 font-semibold p-4">
+  //       Access Denied: HR Only
+  //     </div>
+  //   );
+  // }
  
  const handleDeleteLeaveType = async (leaveTypeId) => {
   try {
     await axios.delete(
-      `http://localhost:8080/api/leave/delete-leave-type/${leaveTypeId}`
+      `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,{
+        headers:{
+          Authorization: `Bearer ${token}`
+        }
+      }
     );
     toast.success("Leave type deleted successfully");
  

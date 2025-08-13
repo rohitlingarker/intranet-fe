@@ -8,7 +8,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
-
+  const token = localStorage.getItem('token');
   // Toast helper
   const showToast = (msg, type) => {
     setToast({ msg, type });
@@ -21,7 +21,10 @@ const CompOffBalanceRequests = ({ managerId }) => {
       setLoading(true);
       const res = await axios.post(
         `${BASE_URL}/api/compoff/pending`,
-        { managerId }
+        { managerId},
+        {headers:{
+          Authorization: `Bearer ${token}`
+        }}
       );
       setPendingCompOffs(
         Array.isArray(res.data) ? res.data : (res.data?.data || [])

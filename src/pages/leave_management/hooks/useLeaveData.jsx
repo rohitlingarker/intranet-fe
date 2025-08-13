@@ -5,13 +5,18 @@ const useLeaveData = (employeeId) => {
   const [leaveData, setLeaveData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const token = localStorage.getItem('token')
   useEffect(() => {
     const fetchLeaveData = async () => {
       try {
         setLoading(true);
         const response = await axios.get(
-          `http://localhost:8080/api/leave-requests/employee/${employeeId}`
+          `${BASE_URL}/api/leave-requests/employee/${employeeId}`,{
+            headers:{
+              Authorization: `Bearer ${token}`
+          }
+        }
         );
 
         const allLeaves = response.data?.data || [];

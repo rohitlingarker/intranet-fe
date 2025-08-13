@@ -9,6 +9,7 @@ const EmployeeLeaveBalances = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const token = localStorage.getItem('token');
  
   useEffect(() => {
     fetchLeaveData();
@@ -17,7 +18,11 @@ const EmployeeLeaveBalances = () => {
   const fetchLeaveData = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/leave-balance/all-leave-balances`
+        `${BASE_URL}/api/leave-balance/all-leave-balances`,{
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
       const raw = response.data;
  
@@ -110,7 +115,11 @@ const EmployeeLeaveBalances = () => {
  
       await axios.put(
         `${BASE_URL}/api/leave-balance/update`,
-        payload
+        payload,{
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
  
       toast.success("Leave balances updated successfully");

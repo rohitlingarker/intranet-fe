@@ -5,13 +5,18 @@ import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const token = localStorage.getItem('token');
 
 // -- Helper: Massage leaves to dropdown options --
 function mapLeaveBalancesToDropdown(balances) {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const fetchLeaveTypes = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/leave/types`);
+      const res = await axios.get(`${BASE_URL}/api/leave/types`,{
+        headers: {
+          Authorization : `Bearer ${token}`
+        }
+      });
       setLeaveTypes(res.data);
     } catch (err) {
       toast.error(err);
@@ -94,7 +99,7 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
   return (
     <Listbox value={sel} onChange={opt => setSelectedId(opt.leaveTypeId)}>
       <div className="relative mt-1">
-        <Listbox.Button className="cursor-default w-full rounded-lg border border-gray-300 py-3 pl-4 pr-12 text-left shadow-sm focus:ring-2 focus:ring-indigo-500 bg-white transition font-medium">
+        <Listbox.Button className="cursor-default w-full rounded-lg border border-gray-300 py-2 pl-4 pr-12 text-left shadow-sm focus:ring-2 focus:ring-indigo-500 bg-white transition font-medium">
           <span className="flex items-center justify-between">
             <span>
               {sel ? sel.leaveName : <span className="text-gray-400">Select leave type</span>}
@@ -194,7 +199,11 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     if (!isOpen) return;
     setLoadingBalances(true);
     axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, { withCredentials: true })
+      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, { withCredentials: true,
+        headers: {
+          Authorization : `Bearer ${token}`
+        }
+      } )
       .then(response => {
         setBalances(response.data);
         setLoadingBalances(false);
@@ -256,14 +265,20 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       await axios.post(
         `${BASE_URL}/api/leave-requests/apply`,
         payload,
-        { withCredentials: true }
+        { withCredentials: true,
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
+         }
       );
       setSuccess("Leave request submitted!");
       // Refresh balances
       try {
         const { data } = await axios.get(
           `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
-          { withCredentials: true }
+          { withCredentials: true, headers:{
+            Authorization: `Bearer ${token}`
+          } }
         );
         setBalances(data);
       } catch {}
@@ -331,7 +346,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               <input
                 type="date"
                 value={startDate}
-                min={todayStr}
                 onChange={handleStartDateChange}
                 required
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
@@ -348,7 +362,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               <input
                 type="date"
                 value={isHalfDay ? startDate : endDate}
-                min={startDate || todayStr}
                 onChange={handleEndDateChange}
                 disabled={isHalfDay}
                 required={!isHalfDay}

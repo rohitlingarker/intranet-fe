@@ -21,7 +21,7 @@ const ActionButtons = ({ onRequestLeave, onRequestCompOff }) => {
         Request Credit for Compensatory Off
       </Button>
 
-      <a href="#" className={Fonts.link}>Leave Policy Explanation</a>
+      {/* <a href="#" className={Fonts.link}>Leave Policy Explanation</a> */}
 
       {/* <Button
         variant="link"
