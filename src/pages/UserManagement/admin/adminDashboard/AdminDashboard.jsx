@@ -16,12 +16,15 @@ export default function AdminDashboard() {
     if (q.length > 1) {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8000/general_user/search", {
-          params: { query: q },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await axios.get(
+          `${import.meta.env.USER_MANAGEMENT_URL}/general_user/search`,
+          {
+            params: { query: q },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         setResults(res.data);
       } catch (err) {
         console.error("Search failed:", err);

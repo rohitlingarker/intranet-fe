@@ -12,11 +12,16 @@ export default function EditUserHr() {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`http://localhost:8000/general_user/edit-user/${user_id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get(
+        `${
+          import.meta.env.USER_MANAGEMENT_URL
+        }/general_user/edit-user/${user_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
       .then((res) => setForm(res.data))
       .catch(() => {
         alert("Unauthorized or user not found");
@@ -34,7 +39,9 @@ export default function EditUserHr() {
 
     try {
       await axios.put(
-        `http://localhost:8000/general_user/edit-user/${user_id}`,
+        `${
+          import.meta.env.USER_MANAGEMENT_URL
+        }/general_user/edit-user/${user_id}`,
         form,
         {
           headers: {
@@ -52,7 +59,9 @@ export default function EditUserHr() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">Edit User</h2>
+        <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
+          Edit User
+        </h2>
 
         <div className="space-y-4">
           <input

@@ -7,14 +7,14 @@ import { useNavigate } from "react-router-dom"; // For navigation
 const ManagerApprovalPage = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
-  const managerId = 3; // Replace with dynamic manager ID if needed
+  // const managerId = 3; // Replace with dynamic manager ID if needed
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTimesheets = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/timesheets/manager/${managerId}`
+          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch timesheets");
@@ -43,12 +43,12 @@ const ManagerApprovalPage = () => {
     };
 
     fetchTimesheets();
-  }, [managerId]);
+  }, []);
 
   const handleApprove = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/timesheets/review/${managerId}?status=Approved`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/review?status=Approved`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -74,7 +74,7 @@ const ManagerApprovalPage = () => {
   const handleReject = async (id, comment) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/timesheets/review/${managerId}?status=Rejected`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/review?status=Rejected`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

@@ -2,12 +2,12 @@ import Navbar from "../../../../components/Navbar/Navbar";
 import SearchInput from "../../../../components/filter/Searchbar";
 import Button from "../../../../components/Button/Button";
 import Pagination from "../../../../components/Pagination/pagination";
-import FormInput from "../../../../components/forms/FormInput"
+import FormInput from "../../../../components/forms/FormInput";
 import { Pencil, Trash } from "lucide-react";
- 
+
 import { useEffect, useState } from "react";
 import axios from "axios";
- 
+
 export default function PermissionManagement() {
   const [permissions, setPermissions] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -16,31 +16,30 @@ export default function PermissionManagement() {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [editingPermission, setEditingPermission] = useState(null);
   const [mode, setMode] = useState("basic"); // "basic" or "withGroup"
- 
+
   const token = localStorage.getItem("token");
- 
+
   const axiosInstance = axios.create({
-    baseURL: "http://localhost:8000",
+    baseURL: `${import.meta.env.USER_MANAGEMENT_URL}`,
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
- 
+
   useEffect(() => {
     fetchPermissions();
     fetchGroups();
   }, []);
- 
+
   const fetchPermissions = async () => {
     try {
       const res = await axiosInstance.get("/admin/permissions/");
       setPermissions(res.data);
- 
     } catch (err) {
       console.error("Failed to fetch permissions", err);
     }
   };
- 
+
   const fetchGroups = async () => {
     try {
       const res = await axiosInstance.get("/admin/groups");
@@ -49,33 +48,39 @@ export default function PermissionManagement() {
       console.error("Failed to fetch groups", err);
     }
   };
- 
+
   const handleCreateOrUpdate = async () => {
     try {
       if (editingPermission) {
-        await axiosInstance.put(`/admin/permissions/${editingPermission.permission_id}`, {
-          permission_code: newPermission,
-          description,
-        });
- 
+        await axiosInstance.put(
+          `/admin/permissions/${editingPermission.permission_id}`,
+          {
+            permission_code: newPermission,
+            description,
+          }
+        );
+
         if (mode === "withGroup") {
-          await axiosInstance.put(`/admin/permissions/${editingPermission.permission_id}/group`, {
-            group_id: selectedGroup,
-          });
+          await axiosInstance.put(
+            `/admin/permissions/${editingPermission.permission_id}/group`,
+            {
+              group_id: selectedGroup,
+            }
+          );
         }
       } else {
         const payload = {
           permission_code: newPermission,
           description,
         };
- 
+
         if (mode === "withGroup") {
           payload.group_id = selectedGroup;
         }
- 
+
         await axiosInstance.post("/admin/permissions/", payload);
       }
- 
+
       resetForm();
       fetchPermissions();
     } catch (err) {
@@ -83,14 +88,14 @@ export default function PermissionManagement() {
       alert("Failed to save permission");
     }
   };
- 
+
   const handleEdit = (permission) => {
     setNewPermission(permission.permission_code);
     setNewDescription(permission.description || "");
     setSelectedGroup(permission.group_id || "");
     setEditingPermission(permission);
   };
- 
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this permission?")) {
       try {
@@ -101,42 +106,38 @@ export default function PermissionManagement() {
       }
     }
   };
- 
+
   const resetForm = () => {
     setNewPermission("");
     setNewDescription("");
     setSelectedGroup("");
     setEditingPermission(null);
   };
- 
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
- 
+
   const totalPages = Math.ceil(permissions.length / itemsPerPage);
- 
+
   const paginatedPermissions = permissions.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
- 
- 
+
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
     }
   };
- 
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
     }
   };
- 
- 
+
   return (
- 
     <div className="p-6 max-w-4xl mx-auto">
- 
       {/* Header Navigation */}
       <div className="mb-6">
         <Navbar
@@ -155,8 +156,7 @@ export default function PermissionManagement() {
           ]}
         />
       </div>
- 
- 
+
       {/* Form */}
       <div className="bg-white p-4 rounded shadow mb-6">
         <FormInput
@@ -167,8 +167,7 @@ export default function PermissionManagement() {
           placeholder="e.g., READ_USER"
           className="mb-3" // This will be ignored unless you explicitly forward `className` inside FormInput
         />
- 
- 
+
         <FormInput
           type="text"
           placeholder="Description"
@@ -176,9 +175,9 @@ export default function PermissionManagement() {
           onChange={(e) => setNewDescription(e.target.value)}
           className="w-full p-2 border rounded mb-3"
         />
- 
+
         <br />
- 
+
         {mode === "withGroup" && (
           <select
             value={selectedGroup}
@@ -193,15 +192,11 @@ export default function PermissionManagement() {
             ))}
           </select>
         )}
- 
-        <Button
-          onClick={handleCreateOrUpdate}
-          variant="primary"
-          size="medium"
-        >
+
+        <Button onClick={handleCreateOrUpdate} variant="primary" size="medium">
           {editingPermission ? "Update" : "Create"}
         </Button>
- 
+
         {editingPermission && (
           <Button
             onClick={resetForm}
@@ -212,9 +207,8 @@ export default function PermissionManagement() {
             Cancel
           </Button>
         )}
- 
       </div>
- 
+
       {/* Permissions Table */}
       <div className="bg-white p-4 rounded shadow">
         <h3 className="text-lg font-semibold mb-3">Existing Permissions</h3>
@@ -259,4 +253,3 @@ export default function PermissionManagement() {
     </div>
   );
 }
- 
