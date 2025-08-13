@@ -19,7 +19,7 @@ export default function Register() {
   const handleRegister = async () => {
     try {
       await axios.post(
-        `${import.meta.env.USER_MANAGEMENT_URL}/auth/register`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/register`,
         form
       );
       alert("Registered successfully!");

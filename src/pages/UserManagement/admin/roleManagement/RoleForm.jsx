@@ -41,7 +41,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     try {
       if (editingRole) {
         await axios.put(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${
             editingRole.role_id
           }`,
           { role_name: newRole },
@@ -49,7 +49,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
         );
       } else {
         await axios.post(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles`,
           { role_name: newRole },
           authHeader
         );
@@ -68,7 +68,9 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const handleEdit = async (role) => {
     try {
       const res = await axios.get(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${role.role_id}`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${
+          role.role_id
+        }`,
         authHeader
       );
       setNewRole(res.data.role_name);
@@ -82,7 +84,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     if (window.confirm("Are you sure you want to delete this role?")) {
       try {
         await axios.delete(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles/${role_id}`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${role_id}`,
           authHeader
         );
         fetchRoles();

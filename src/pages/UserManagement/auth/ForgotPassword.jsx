@@ -24,9 +24,12 @@ export default function ForgotPassword() {
     }
     setSendingOtp(true);
     try {
-      await axios.post(`${import.meta.env.USER_MANAGEMENT_URL}/auth/send-otp`, {
-        email: email.trim(),
-      });
+      await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/send-otp`,
+        {
+          email: email.trim(),
+        }
+      );
       setOtpSent(true);
       alert("OTP sent to your email. Check inbox/spam.");
     } catch (err) {
@@ -57,7 +60,7 @@ export default function ForgotPassword() {
       });
 
       await axios.post(
-        `${import.meta.env.USER_MANAGEMENT_URL}/auth/forgot-password`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/forgot-password`,
         {
           email: email.trim(), // or "email" if your backend expects that
           otp: otp.trim(),

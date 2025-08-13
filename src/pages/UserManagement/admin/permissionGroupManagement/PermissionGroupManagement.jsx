@@ -75,7 +75,7 @@ export default function PermissionGroupManagement() {
   const navigate = useNavigate();
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.USER_MANAGEMENT_URL}`,
+    baseURL: `${import.meta.env.VITE_USER_MANAGEMENT_URL}`,
     headers: {
       Authorization: `Bearer ${token}`,
     },

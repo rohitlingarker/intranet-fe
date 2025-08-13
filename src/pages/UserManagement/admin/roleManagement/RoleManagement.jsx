@@ -21,7 +21,7 @@ export default function RoleManagement() {
   const fetchRoles = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.USER_MANAGEMENT_URL}/admin/roles`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles`,
         authHeader
       );
       setRoles(res.data);

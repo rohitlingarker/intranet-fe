@@ -13,11 +13,14 @@ export default function EditProfile() {
   useEffect(() => {
     if (user?.email) {
       axios
-        .get(`${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
+        .get(
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        )
         .then((res) => setForm(res.data))
         .catch((err) => {
           console.error("Failed to fetch profile", err);
@@ -34,7 +37,7 @@ export default function EditProfile() {
     try {
       setSaving(true);
       const response = await axios.put(
-        `${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
         form,
         {
           headers: {
