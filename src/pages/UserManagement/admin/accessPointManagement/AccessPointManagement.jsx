@@ -2,11 +2,10 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AccessPointList from "./AccessPointList";
 import Navbar from "../../../../components/Navbar/Navbar";
-
 export default function AccessPointManagement() {
   const navigate = useNavigate();
   const location = useLocation();
-
+ 
   const navItems = [
     {
       name: "Access Points",
@@ -27,12 +26,12 @@ export default function AccessPointManagement() {
         "/user-management/access-points/admin/access-point-mapping",
     },
   ];
-
+ 
   return (
     <div>
       {/* ✅ Reusable Navbar */}
       <Navbar logo="Access Points" navItems={navItems} />
-
+ 
       {/* ✅ Main content */}
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
@@ -41,7 +40,6 @@ export default function AccessPointManagement() {
             <p className="mt-2 text-gray-600">Manage access points here.</p>
           </div>
         </div>
-
         <AccessPointList />
       </div>
     </div>

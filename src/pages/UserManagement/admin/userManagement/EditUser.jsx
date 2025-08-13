@@ -91,14 +91,32 @@ export default function EditUser() {
           placeholder="Enter email"
         />
         <FormInput
-          label="Contact"
-          name="contact"
-          value={user.contact}
-          onChange={handleChange}
-          placeholder="Enter contact number"
-        />
+  label="Contact"
+  name="contact"
+  value={user.contact}
+  onChange={(e) => {
+    // Allow only numbers
+    const value = e.target.value;
+    if (/^\d{0,10}$/.test(value)) {
+      handleChange(e); // update only if valid
+    }
+  }}
+  onKeyDown={(e) => {
+    // Block non-numeric keys except Backspace, Delete, Tab, Arrow keys
+    if (
+      !/[0-9]/.test(e.key) &&
+      !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  }}
+  placeholder="Enter contact number"
+  maxLength={10}
+/>
+
+
         <FormInput
-          label="New Password (leave blank to keep current)"
+          label="New Password ()"
           name="password"
           type="password"
           value={user.password}
