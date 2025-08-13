@@ -40,6 +40,7 @@ const ProjectDashboard = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
+  
       </div>
 
       {loading && <p>Loading projects...</p>}
@@ -100,6 +101,7 @@ const ProjectDashboard = () => {
         ))}
       </div>
     </div>
+    
   );
 };
 

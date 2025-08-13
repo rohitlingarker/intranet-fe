@@ -14,7 +14,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Projects", href: "/projects", icon: FolderKanban },
+  { name: "Projects", href: "/projects/manager", icon: FolderKanban },
   { name: "Leave Management", href: "/leave", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },

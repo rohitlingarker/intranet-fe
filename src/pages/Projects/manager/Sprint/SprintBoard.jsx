@@ -5,8 +5,9 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import StoryCard from './StoryCard';
 import CreateSprintModal from './CreateSprintModal';
 import SprintColumn from './SprintColumn';
+import Button from '../../../../components/Button/Button';
 
-const SprintBoard = ({ projectId }) => {
+const SprintBoard = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [filter, setFilter] = useState('ALL');
@@ -70,24 +71,28 @@ const SprintBoard = ({ projectId }) => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 space-y-6">
+        {/* Page Header */}
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Sprint Planning</h2>
-          <button
-            className="px-4 py-2 bg-indigo-900 text-white rounded hover:bg-indigo-800"
+          <h2 className="text-xl font-semibold text-indigo-900">
+            Sprint Planning of {projectName}
+          </h2>
+          <Button
+            className="bg-indigo-900 text-white rounded hover:bg-indigo-800 px-4 py-2"
             onClick={() => setShowModal(true)}
           >
             + Create Sprint
-          </button>
+          </Button>
         </div>
 
-        <div className="flex gap-4">
+        {/* Filter Buttons */}
+        <div className="flex gap-3">
           {['ALL', 'PLANNING', 'ACTIVE', 'COMPLETED'].map(type => (
             <button
               key={type}
-              className={`px-4 py-1 rounded ${
+              className={`px-4 py-1 rounded transition ${
                 filter === type
                   ? 'bg-pink-800 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                  : 'bg-white text-gray-800 border'
               }`}
               onClick={() => setFilter(type)}
             >
@@ -96,18 +101,24 @@ const SprintBoard = ({ projectId }) => {
           ))}
         </div>
 
+        {/* Sprint Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredSprints.map(sprint => (
-            <SprintColumn
+            <div
               key={sprint.id}
-              sprint={sprint}
-              stories={stories.filter(story => story.sprintId === sprint.id)}
-              onDropStory={handleDropStory}
-              onChangeStatus={handleStatusChange}
-            />
+              className="bg-white rounded-2xl shadow p-6"
+            >
+              <SprintColumn
+                sprint={sprint}
+                stories={stories.filter(story => story.sprintId === sprint.id)}
+                onDropStory={handleDropStory}
+                onChangeStatus={handleStatusChange}
+              />
+            </div>
           ))}
         </div>
 
+        {/* Modal */}
         <CreateSprintModal
           projectId={projectId}
           isOpen={showModal}
