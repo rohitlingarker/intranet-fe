@@ -20,7 +20,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     if (!isOpen) return;
 
     axios
-      .get("http://localhost:8080/api/users?page=0&size=100")
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`)
       .then((res) => {
         const content = res.data.content;
         if (Array.isArray(content)) {
@@ -75,7 +75,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 
     try {
       setIsSubmitting(true);
-      await axios.post("http://localhost:8080/api/projects", payload);
+      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload);
 
       setSuccessMessage("✅ Project created successfully!");
       if (onProjectCreated) onProjectCreated();

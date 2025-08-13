@@ -31,7 +31,7 @@ const ProjectList = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(res.data)
@@ -48,7 +48,7 @@ const ProjectList = () => {
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8080/api/users?page=0&size=100",
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -133,7 +133,7 @@ const ProjectList = () => {
     try {
       setIsSubmitting(true);
       await axios.put(
-        `http://localhost:8080/api/projects/${projectId}`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         {
           ...formData,
           ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
@@ -156,9 +156,12 @@ const ProjectList = () => {
   const handleDelete = async (projectId) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
-      await axios.delete(`http://localhost:8080/api/projects/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       toast.success("Project deleted successfully!", { position: "top-right" });
       fetchProjects();
     } catch (err) {

@@ -11,7 +11,7 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8080/api/comments/${entityType}/${entityId}`);
+      const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`);
       const data = response.data;
  
       if (Array.isArray(data)) {
@@ -42,7 +42,7 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
     };
  
     try {
-      await axios.post(`http://localhost:8080/api/comments/${entityType}/${entityId}`, payload);
+      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`, payload);
       setNewComment('');
       setReplyingTo(null);
       fetchComments();

@@ -26,7 +26,7 @@ const Sidebar = ({
 
   useEffect(() => {
     axios
-      .get('http://localhost:8080/api/projects')
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`)
       .then((res) => {
         if (Array.isArray(res.data)) {
           setProjects(res.data);
