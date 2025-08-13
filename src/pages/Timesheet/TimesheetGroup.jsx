@@ -1,5 +1,5 @@
 import React from "react";
-import StatusBadge from "../../components/status/StatusBadge";
+import StatusBadge from "../../components/status/statusbadge";
 import Button from "../../components/Button/Button";
 
 import EntriesTable from "./EntriesTable";
