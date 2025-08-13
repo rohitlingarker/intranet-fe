@@ -10,10 +10,12 @@ import {
   Building2,
   ChevronDown,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Projects", href: "/projects", icon: FolderKanban },
+  { name: "User Management", href: "/user-management", icon: Users },
+  { name: "Projects", href: "/projects/manager", icon: FolderKanban },
   { name: "Leave Management", href: "/leave", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
@@ -30,6 +32,9 @@ const userManagementSubmenu = [
 const Sidebar = () => {
   const location = useLocation();
   const isUserManagementActive = location.pathname.startsWith("/user-management");
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+
 
   const [hovered, setHovered] = useState(false);
   const hoverTimeout = useRef(null);
@@ -81,6 +86,7 @@ const Sidebar = () => {
           </li>
 
           {/* User Management with hover submenu */}
+          {isAdmin && 
           <li
             className="relative"
             onMouseEnter={handleMouseEnter}
@@ -125,7 +131,7 @@ const Sidebar = () => {
                 ))}
               </ul>
             )}
-          </li>
+          </li>}
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {

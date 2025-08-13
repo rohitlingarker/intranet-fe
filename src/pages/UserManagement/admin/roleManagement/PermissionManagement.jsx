@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getPermissionsByRole } from "../../../../services/roleManagementService";
 import Button from "../../../../components/Button/Button";
-import Pagination from "../../../../components/Pagination/Pagination"; // ✅ Import Pagination
+import Pagination from "../../../../components/Pagination/pagination"; // ✅ Import Pagination
 
 const PermissionManagement = ({ roles }) => {
   const [selectedRole, setSelectedRole] = useState(null);
