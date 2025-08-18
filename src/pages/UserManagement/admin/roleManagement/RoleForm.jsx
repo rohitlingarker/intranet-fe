@@ -3,7 +3,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../../../components/Button/Button"; 
-import Modal from "../../../../components/Modal/Modal"; // ✅ Global Modal component
+import Modal from "../../../../components/Modal/modal"; // ✅ Global Modal component
 
 const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const [newRole, setNewRole] = useState("");
