@@ -13,7 +13,11 @@ export default function LeaveDashboard({ employeeId }) {
  
   const fetchLeaveTypes = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/leave/types`);
+      const res = await axios.get(`${BASE_URL}/api/leave/types`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
       setLeaveTypes(res.data);
     } catch (err) {
       toast.error(err);

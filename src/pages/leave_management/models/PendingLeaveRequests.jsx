@@ -5,6 +5,7 @@ import SkeletonTable from "./SkeletonTable";
 import ReactPaginate from "react-paginate";
 import RequestLeaveModal from "./RequestLeaveModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
+import { useAuth } from "../../../contexts/AuthContext";
  
 const ITEMS_PER_PAGE = 5;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -23,7 +24,8 @@ const fetchData = async (
 ) => {
   try {
     setLoading(true);
- 
+    console.log("EmployeeID in ", employeeId);
+
     const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
       axios.get(
         `${BASE_URL}/api/leave-requests/employee/${employeeId}`,
@@ -39,14 +41,17 @@ const fetchData = async (
           Authorization : `Bearer ${token}`
         }
       }),
+      
       axios.get(
-        `${BASE_URL}/api/leave-balance/employee/${employeeId}`
-        ,{
-        headers: {
-          Authorization : `Bearer ${token}`
+        `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      }
-      )
+      ),
+      console.log("Fetching leave balances for employee:", employeeId)
     ]);
  
     const allLeaves = Array.isArray(leaveReqRes.data?.data)
@@ -77,9 +82,7 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
  
   const [refreshKey, setRefreshKey] = useState(0);
  
-  const employeeId = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user")).id
-    : null;
+  const employeeId = useAuth()?.user?.user_id;
  
   useEffect(() => {
     if (employeeId) {
@@ -153,4 +156,4 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   );
 };
  
-export { PendingLeaveRequests, fetchData };
+export default PendingLeaveRequests;

@@ -15,9 +15,9 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
       const res = await axios.get(
         `${BASE_URL}/api/compoff/employee/${employeeId}`,
         { withCredentials: true,
-          headers:
-          { "Cache-Control": "no-store" },
-          Authorization: `Bearer ${token}`
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       if (res.data.success) {

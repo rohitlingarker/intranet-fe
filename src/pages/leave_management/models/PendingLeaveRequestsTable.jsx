@@ -4,6 +4,7 @@ import axios from "axios";
 import ActionDropdownPendingLeaveRequests from "./ActionDropDownPendingLeaveRequests";
 import DateRangePicker from "./DateRangePicker";
 const token = localStorage.getItem('token')
+const BASE_URL = import.meta.env.VITE_BASE_URL;
  
 const PendingLeaveRequestsTable = ({
   leaveBalances,
@@ -29,10 +30,10 @@ const PendingLeaveRequestsTable = ({
  
   const fetchLeaveType = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/leave/types",{
+      const res = await axios.get(`${BASE_URL}/api/leave/types`, {
         headers: {
-          Authorization : `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       setLeaveTypeNames(res.data); // Backend returns [{name, label}]
     } catch (err) {
@@ -85,12 +86,13 @@ const PendingLeaveRequestsTable = ({
       };
  
       await axios.put(
-        "http://localhost:8080/api/leave-requests/employee/update",
-        payload,{
-        headers: {
-          Authorization : `Bearer ${token}`
+        `${BASE_URL}/leave-requests/employee/update`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      }
       );
       toast.success("Leave request submitted successfully");
  
@@ -133,7 +135,7 @@ const PendingLeaveRequestsTable = ({
       const empId = leaveToCancel.employee?.employeeId || "UNKNOWN_EMPLOYEE";
  
       await axios.put(
-        `http://localhost:8080/api/leave-requests/${cancelId}/cancel`,
+        `${BASE_URL}/leave-requests/${cancelId}/cancel`,
         null,
         {
           params: { employeeId: empId },

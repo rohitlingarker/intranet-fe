@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Pagination from "../../../components/Pagination/pagination";
 import { Fonts } from "../../../components/Fonts/Fonts";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -11,10 +12,7 @@ const LeaveHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const employeeId = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user")).id.trim()
-    : null;
-
+  const employeeId = useAuth()?.user?.user_id;
   // Filter/search state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");

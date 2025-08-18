@@ -6,7 +6,7 @@ import LeaveDashboard from "../leave_management/charts/LeaveDashboard";
 import LeaveHistory from "../leave_management/models/LeaveHistory";
 import CustomActiveShapePieChart from "../leave_management/charts/CustomActiveShapePieChart";
 // import PendingLeaveRequests from "../leave_management/models/PendingLeaveRequests";
-import { PendingLeaveRequests } from "./models/PendingLeaveRequests";
+import PendingLeaveRequests from "./models/PendingLeaveRequests";
 import CompOffPage from "../leave_management/models/CompOffPage";
 import AdminPanel from "./AdminPanel"; // Adjust path if needed
 import ActionButtons from "../leave_management/models/ActionButtons";

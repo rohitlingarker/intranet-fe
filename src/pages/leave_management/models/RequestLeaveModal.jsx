@@ -3,6 +3,7 @@ import axios from "axios";
 import { X } from "lucide-react";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem('token');
@@ -165,7 +166,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
   const leaveTypeOptions = mapLeaveBalancesToDropdown(balances);
   const selectedLeaveType = leaveTypeOptions.find(o => o.leaveTypeId === leaveTypeId);
 
-  const employeeId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).id.trim() : null;
+  const employeeId = useAuth()?.user?.user_id;
 
   // Helper: Should we show the Google Drive link field?
   const shouldShowDriveLink = () => {

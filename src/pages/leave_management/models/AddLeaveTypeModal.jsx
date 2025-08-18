@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, FileText } from "lucide-react";
 import axios from "axios";
-import { fetchData } from "./PendingLeaveRequests";
+// import { fetchData } from "./PendingLeaveRequests";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 // A custom hook to fetch leave types from the API
@@ -14,7 +14,11 @@ const useLeaveTypes = () => {
     const fetchLeaveTypes = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/api/leave/types`
+          `${BASE_URL}/api/leave/types`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
         );
         setLeaveTypes(response.data || []);
       } catch (err) {

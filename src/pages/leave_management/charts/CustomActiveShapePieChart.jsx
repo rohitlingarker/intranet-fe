@@ -43,6 +43,8 @@ const renderActiveShape = (props) => {
   const ex = mx + (cos >= 0 ? 1 : -1) * 20;
   const ey = my;
 
+  
+
   return (
     <g>
       <Sector
@@ -76,12 +78,16 @@ const renderActiveShape = (props) => {
 const CustomActiveShapePieChart = ({ employeeId }) => {
   const [data, setData] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
-
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/leave-requests/employee/${employeeId}`
+          `${BASE_URL}/api/leave-requests/employee/${employeeId}`,{
+            headers:{
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
         );
         const leaveRequests = res.data.data;
 
