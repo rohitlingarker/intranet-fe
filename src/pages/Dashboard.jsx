@@ -24,7 +24,7 @@ const Dashboard = () => {
       title: 'Leave Management',
       description: 'Handle leave requests and approvals',
       icon: PlaneTakeoff,
-      href: '/leave',
+      href: '/leave-management',
       color: 'bg-[#b22a4f]',
       stats: '8 pending requests'
     },
