@@ -9,7 +9,7 @@ import {
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
 import FormInput from "../../../../components/forms/FormInput";
-import { toast } from "react-toastify";
+import { showStatusToast } from "../../../../components/toastfy/toast"; 
 
 const PermissionGroupManagement = ({ roles }) => {
   const [selectedGroupRole, setSelectedGroupRole] = useState(null);
@@ -35,7 +35,7 @@ const PermissionGroupManagement = ({ roles }) => {
       setPermissionGroupsForRole(res.data);
     } catch {
       setPermissionGroupsForRole([]);
-      toast.error("Failed to fetch permission groups for this role");
+      showStatusToast("Failed to fetch permission groups for this role", "error");
     }
   };
 
@@ -48,7 +48,7 @@ const PermissionGroupManagement = ({ roles }) => {
       setPermissionGroupsForRole(res.data);
     } catch {
       setPermissionGroupsForRole([]);
-      toast.error("Failed to fetch permission groups for this role");
+      showStatusToast("Failed to fetch permission groups for this role", "error");
     }
   };
 
@@ -64,19 +64,19 @@ const PermissionGroupManagement = ({ roles }) => {
       setAvailablePermissionGroups(res.data);
     } catch {
       setAvailablePermissionGroups([]);
-      toast.error("Failed to fetch available permission groups");
+      showStatusToast("Failed to fetch available permission groups", "error");
     }
   };
 
   const submitAddGroupsForRole = async () => {
     if (!groupIdsInput.trim())
-      return toast.success("Enter group IDs (comma separated)");
+      return showStatusToast("Enter group IDs (comma separated)", "error");
     try {
       const groupIds = groupIdsInput
         .split(",")
         .map((id) => parseInt(id.trim(), 10));
       await addPermissionGroupsToRole(selectedGroupRole.role_id, groupIds);
-      toast.success("Groups added successfully");
+      showStatusToast("Groups added successfully", "success");
       setGroupIdsInput("");
       setShowGroupSection(false);
       const res = await getAvailablePermissionGroupsForRole(
@@ -84,24 +84,24 @@ const PermissionGroupManagement = ({ roles }) => {
       );
       setAvailablePermissionGroups(res.data);
     } catch {
-      toast.error("Failed to add groups");
+      showStatusToast("Failed to add groups", "error");
     }
   };
 
   const submitDeleteGroupForRole = async () => {
-    if (!groupToDelete.trim()) return toast.success("Enter group ID to delete");
+    if (!groupToDelete.trim()) return showStatusToast("Enter group ID to delete", "error");
     try {
       await removePermissionGroupFromRole(
         selectedGroupRole.role_id,
         groupToDelete
       );
-      toast.success("Group removed successfully");
+      showStatusToast("Group removed successfully", "success");
       setGroupToDelete("");
       setShowGroupSection(false);
       const res = await getPermissionGroupsByRole(selectedGroupRole.role_id);
       setPermissionGroupsForRole(res.data);
     } catch {
-      toast.error("Failed to remove group");
+      showStatusToast("Failed to remove group", "error");
     }
   };
 
