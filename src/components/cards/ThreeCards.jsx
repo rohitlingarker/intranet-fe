@@ -1,5 +1,6 @@
 import React from "react";
- 
+
+
 export default function ThreeCards() {
 return (
     <div className="p-6 bg-gray-100 min-h-screen">
