@@ -24,14 +24,19 @@ export default function ForgotPassword() {
     }
     setSendingOtp(true);
     try {
-      await axios.post("http://localhost:8000/auth/send-otp", {
-        email: email.trim(),
-      });
+      await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/send-otp`,
+        {
+          email: email.trim(),
+        }
+      );
       setOtpSent(true);
       alert("OTP sent to your email. Check inbox/spam.");
     } catch (err) {
       console.error("sendOtp error:", err);
-      alert("Failed to send OTP: " + (err.response?.data?.detail || err.message));
+      alert(
+        "Failed to send OTP: " + (err.response?.data?.detail || err.message)
+      );
     } finally {
       setSendingOtp(false);
     }
@@ -49,21 +54,27 @@ export default function ForgotPassword() {
     setResetting(true);
     try {
       console.log("Sending payload:", {
-      email: email.trim(),
-      otp: otp.trim(),
-      new_password: newPassword
-    });
-
-      await axios.post("http://localhost:8000/auth/forgot-password", {
-        email: email.trim(), // or "email" if your backend expects that
+        email: email.trim(),
         otp: otp.trim(),
         new_password: newPassword,
       });
+
+      await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/forgot-password`,
+        {
+          email: email.trim(), // or "email" if your backend expects that
+          otp: otp.trim(),
+          new_password: newPassword,
+        }
+      );
       alert("Password reset successfully!");
       navigate("/");
     } catch (err) {
       console.error("handleReset error:", err);
-      alert("Error resetting password: " + (err.response?.data?.detail || err.message));
+      alert(
+        "Error resetting password: " +
+          (err.response?.data?.detail || err.message)
+      );
     } finally {
       setResetting(false);
     }

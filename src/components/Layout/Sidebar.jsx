@@ -50,7 +50,11 @@ const Sidebar = () => {
       {/* Branding */}
       <div className="p-6 border-b border-[#0f1a3a]">
         <div className="flex items-center gap-3">
-          <Building2 className="h-8 w-8 text-[#ff3d72]" />
+          <img
+            src="logo.png"
+            alt="Logo"
+            className="h-10 w-10"
+          />
           <div>
             <h1 className="text-lg font-bold leading-none">Paves Tech</h1>
             <p className="text-xs text-gray-400 mt-1">intranet</p>

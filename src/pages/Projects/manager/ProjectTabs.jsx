@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import Summary from "./Summary";
@@ -8,18 +8,27 @@ import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import Lists from "./lists";
 
-import Navbar from "../../../components/Navbar/Navbar"; // Custom Navbar
+import Navbar from "../../../components/Navbar/Navbar";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [projectName, setProjectName] = useState("");
-  const [selectedTab, setSelectedTab] = useState("summary");
   const [notFound, setNotFound] = useState(false);
+
+  const getSelectedTabFromLocation = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") || "summary";
+  };
+
+  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`http://localhost:8080/api/projects/${projectId}`)
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`)
         .then((res) => {
           setProjectName(res.data.name);
           setNotFound(false);
@@ -30,13 +39,9 @@ const ProjectTabs = () => {
     }
   }, [projectId]);
 
-  const navItems = [
-    { name: "Summary", path: "summary" },
-    { name: "Backlog", path: "backlog" },
-    { name: "Board", path: "board" },
-    { name: "Sprints", path: "sprint" },
-    { name: "Lists", path: "lists" },
-  ];
+  useEffect(() => {
+    setSelectedTab(getSelectedTabFromLocation());
+  }, [location.search]);
 
   const renderTabContent = () => {
     if (!projectId) return null;
@@ -46,7 +51,7 @@ const ProjectTabs = () => {
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
-        return <Backlog projectId={pid} />;
+        return <Backlog projectId={pid} projectName={projectName} />;
       case "board":
         return <Board projectId={pid} projectName={projectName} />;
       case "sprint":
@@ -66,21 +71,36 @@ const ProjectTabs = () => {
     return <div className="p-6 text-red-500">Project not found.</div>;
   }
 
+  const navItems = [
+    { name: "Summary", tab: "summary" },
+    { name: "Backlog", tab: "backlog" },
+    { name: "Board", tab: "board" },
+    { name: "Sprints", tab: "sprint" },
+    { name: "Lists", tab: "lists" },
+  ];
+
+  const navItemsWithActive = navItems.map((item) => ({
+    name: item.name,
+    onClick: () => navigate(`/projects/${projectId}?tab=${item.tab}`),
+    isActive: selectedTab === item.tab,
+  }));
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Navbar with tabs, no icons */}
-      <Navbar
-        logo={projectName || "Project"}
-        navItems={navItems.map((item) => ({
-          ...item,
-          onClick: () => setSelectedTab(item.path),
-          isActive: selectedTab === item.path,
-          icon: null, // explicitly no icon
-        }))}
-      />
+    <div className="flex flex-col h-screen">
+      {/* Sticky Navbar Header */}
+      <header className=" top-0 z-50 border-b  bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
+            {projectName}
+          </h2>
+          <Navbar logo={null} navItems={navItemsWithActive} />
+        </div>
+      </header>
 
       {/* Main Content */}
-      <div className="flex-1 bg-slate-50 overflow-auto">{renderTabContent()}</div>
+      <main className="flex-1 overflow-auto bg-slate-50">
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">{renderTabContent()}</div>
+      </main>
     </div>
   );
 };

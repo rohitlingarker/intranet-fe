@@ -14,11 +14,14 @@ export default function Profile() {
 
     if (token) {
       axios
-        .get("http://localhost:8000/general_user/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
+        .get(
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
         .then((res) => {
           setProfile(res.data);
         })
@@ -37,8 +40,8 @@ export default function Profile() {
 
         <div className="space-y-3 text-gray-700">
           <p>
-            <span className="font-semibold">Name:</span>{" "}
-            {profile.first_name} {profile.last_name}
+            <span className="font-semibold">Name:</span> {profile.first_name}{" "}
+            {profile.last_name}
           </p>
           <p>
             <span className="font-semibold">Email:</span> {profile.email}

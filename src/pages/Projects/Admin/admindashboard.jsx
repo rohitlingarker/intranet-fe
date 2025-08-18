@@ -12,7 +12,7 @@ const ProjectDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:8080/api/projects", {
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -40,6 +40,7 @@ const ProjectDashboard = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
+  
       </div>
 
       {loading && <p>Loading projects...</p>}
@@ -100,6 +101,7 @@ const ProjectDashboard = () => {
         ))}
       </div>
     </div>
+    
   );
 };
 

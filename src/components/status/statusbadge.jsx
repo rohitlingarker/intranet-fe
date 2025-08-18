@@ -15,7 +15,8 @@ const StatusBadge = ({ label, size = "md" }) => {
   if (
     normalized.includes("approve") ||
     normalized.includes("complete") ||
-    normalized.includes("release")
+    normalized.includes("release") ||
+    normalized.includes("active")
   ) {
     bgColor = "bg-green-100";
     textColor = "text-green-700";
@@ -29,7 +30,8 @@ const StatusBadge = ({ label, size = "md" }) => {
   } else if (
     normalized.includes("reject") ||
     normalized.includes("cancel") ||
-    normalized.includes("fail")
+    normalized.includes("fail") ||
+    normalized.includes("inactive") 
   ) {
     bgColor = "bg-red-100";
     textColor = "text-red-600";

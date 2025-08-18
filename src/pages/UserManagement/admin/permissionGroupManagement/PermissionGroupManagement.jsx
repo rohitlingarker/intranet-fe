@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button"; // Adjust if different
 import SearchInput from "../../../../components/filter/Searchbar"; // Adjust if different
 
-
 // PermissionList component that supports optional Add/Delete buttons
 function PermissionList({
   permissions,
@@ -76,7 +75,7 @@ export default function PermissionGroupManagement() {
   const navigate = useNavigate();
 
   const axiosInstance = axios.create({
-    baseURL: "http://localhost:8000",
+    baseURL: `${import.meta.env.VITE_USER_MANAGEMENT_URL}`,
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -212,10 +211,9 @@ export default function PermissionGroupManagement() {
       return;
     }
     try {
-      await axiosInstance.post(
-        `/admin/groups/${selectedGroupId}/permissions`,
-        [permission_id]
-      );
+      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [
+        permission_id,
+      ]);
       alert("Permission added successfully.");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
@@ -254,8 +252,12 @@ export default function PermissionGroupManagement() {
     if (!searchTrigger) return list;
     return list.filter(
       (perm) =>
-        (perm.permission_code?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (perm.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+        (perm.permission_code?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        ) ||
+        (perm.description?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        )
     );
   };
 
@@ -263,7 +265,9 @@ export default function PermissionGroupManagement() {
   function enrichWithCode(permissionList) {
     return permissionList.map((perm) => {
       if (perm.permission_code) return perm;
-      const found = allPermissions.find((p) => p.permission_id === perm.permission_id);
+      const found = allPermissions.find(
+        (p) => p.permission_id === perm.permission_id
+      );
       return {
         ...perm,
         permission_code: found ? found.permission_code : "Unknown code",
@@ -431,7 +435,9 @@ export default function PermissionGroupManagement() {
             {/* Delete Permissions List */}
             {showDeleteList && (
               <PermissionList
-                permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                permissions={filterPermissions(
+                  enrichWithCode(groupPermissions)
+                )}
                 showAdd={false}
                 showDelete={true}
                 onDelete={handleRemovePermissionFromGroup}
@@ -441,7 +447,9 @@ export default function PermissionGroupManagement() {
             {/* View Permissions List (read-only, no buttons) */}
             {showViewList && (
               <PermissionList
-                permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                permissions={filterPermissions(
+                  enrichWithCode(groupPermissions)
+                )}
                 showAdd={false}
                 showDelete={false}
               />

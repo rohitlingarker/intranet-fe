@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import TimesheetHeader from "./TimesheetHeader";
 import TimesheetFilters from "./TimesheetFilters";
 import TimesheetTable from "./TimesheetTable";
+import { fetchTimesheetHistory } from "./api";
 
 const TimesheetHistoryPage = () => {
   const [entries, setEntries] = useState([]);
@@ -18,7 +19,7 @@ const TimesheetHistoryPage = () => {
 
   // Fetch user info
   useEffect(() => {
-    fetch("http://localhost:8080/me")
+    fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/me`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch user");
         return res.json();
@@ -28,32 +29,24 @@ const TimesheetHistoryPage = () => {
   }, []);
 
   // Fetch timesheet history
-  useEffect(() => {
-    fetch("http://localhost:8080/api/timesheet/history")
-      .then((res) => res.json())
-      .then((data) => {
-        setEntries(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch timesheets:", err);
-        setLoading(false);
-      });
-  }, [user]);
+useEffect(() => {
+  const loadTimesheetHistory = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchTimesheetHistory(user?.user_id || 1);
+      console.log("Fetched timesheet history:", data);
 
-  const projectIdToName = {
-    1: "Intranet Portal",
-    2: "HR Dashboard",
-    3: "Ecommerce App",
-    4: "CMS Refactor",
+      setEntries(data);
+    } catch (err) {
+      console.error("Failed to fetch timesheet history:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const taskIdToName = {
-    1: "UI Design",
-    2: "API Integration",
-    3: "Bug Fixing",
-    4: "Testing",
-  };
+  loadTimesheetHistory();
+}, [user]);
+
 
   const mapWorkType = (type) => {
     switch (type) {
@@ -66,14 +59,15 @@ const TimesheetHistoryPage = () => {
 
   // Filter entries
   const filteredEntries = entries.filter((timesheet) => {
-    const matchesSearch = timesheet.entries.some((entry) => {
-      const projectName = projectIdToName[entry.projectId] || "";
-      return projectName.toLowerCase().includes(searchText.toLowerCase());
-    });
+    // const matchesSearch = timesheet.entries.some((entry) => {
+    //   const projectName = projectIdToName[entry.projectId] || "";
+    //   return projectName.toLowerCase().includes(searchText.toLowerCase());
+    // });
+    const matchesSearch = []
 
     const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
     const matchesStatus =
-      filterStatus === "All Status" || timesheet.approvalStatus === filterStatus;
+      filterStatus === "All Status" || timesheet.status === filterStatus;
 
     return matchesSearch && matchesDate && matchesStatus;
   });
@@ -103,9 +97,21 @@ const TimesheetHistoryPage = () => {
           totalPages={totalPages}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          projectIdToName={projectIdToName}
-          taskIdToName={taskIdToName}
           mapWorkType={mapWorkType}
+          refreshData={()=>{
+            // Callback to refresh data after save
+            setLoading(true);
+            fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/history`)
+              .then((res) => res.json())
+              .then((data) => {
+                setEntries(data);
+                setLoading(false);
+              })
+              .catch((err) => {
+                console.error("Failed to fetch timesheets:", err);
+                setLoading(false);
+              });
+          }}
         />
       </main>
     </div>
@@ -113,3 +119,4 @@ const TimesheetHistoryPage = () => {
 };
 
 export default TimesheetHistoryPage;
+

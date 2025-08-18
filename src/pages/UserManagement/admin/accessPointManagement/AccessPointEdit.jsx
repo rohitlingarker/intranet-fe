@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { getAccessPoint, updateAccessPoint, listModules } from '../../../../services/accessPointService';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import {
+  getAccessPoint,
+  updateAccessPoint,
+  listModules,
+} from "../../../../services/accessPointService";
+import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
 
 const AccessPointEdit = () => {
@@ -13,12 +17,12 @@ const AccessPointEdit = () => {
 
   useEffect(() => {
     // Fetch modules list
-    listModules().then(res => {
+    listModules().then((res) => {
       setModules(res.data);
     });
 
     // Fetch existing access point data
-    getAccessPoint(access_id).then(res => {
+    getAccessPoint(access_id).then((res) => {
       setAccessPointData(res.data);
       setForm({
         endpoint_path: res.data.endpoint_path,
@@ -31,51 +35,65 @@ const AccessPointEdit = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await updateAccessPoint(access_id, form);
-    navigate('/user-management/access-points');
+    navigate("/user-management/access-points");
   };
 
   const handleDeletePermission = async () => {
     if (!accessPointData?.permission_id) return;
-    
+
     setIsDeleting(true);
     try {
       // Call the unmap permission API
-      const response = await fetch(`http://localhost:8000/admin/access-points/${access_id}/unmap-permission/${accessPointData.permission_id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_USER_MANAGEMENT_URL
+        }/admin/access-points/${access_id}/unmap-permission/${
+          accessPointData.permission_id
+        }`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         // Refresh the access point data to reflect the change
         const updatedData = await getAccessPoint(access_id);
         setAccessPointData(updatedData.data);
       } else {
-        console.error('Failed to delete permission');
+        console.error("Failed to delete permission");
       }
     } catch (error) {
-      console.error('Error deleting permission:', error);
+      console.error("Error deleting permission:", error);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!form) return <div className="text-center mt-10 text-gray-600 text-lg">Loading...</div>;
+  if (!form)
+    return (
+      <div className="text-center mt-10 text-gray-600 text-lg">Loading...</div>
+    );
 
   return (
     <div className="max-w-xl mx-auto bg-white shadow-md rounded-lg p-8 mt-10">
-      <h2 className="text-2xl font-semibold mb-6 text-blue-600 text-center">Edit Access Point</h2>
+      <h2 className="text-2xl font-semibold mb-6 text-blue-600 text-center">
+        Edit Access Point
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block mb-1 text-gray-700 font-medium">Endpoint Path</label>
+          <label className="block mb-1 text-gray-700 font-medium">
+            Endpoint Path
+          </label>
           <input
             name="endpoint_path"
             value={form.endpoint_path}
@@ -142,7 +160,7 @@ const AccessPointEdit = () => {
                 disabled={isDeleting}
                 className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </div>

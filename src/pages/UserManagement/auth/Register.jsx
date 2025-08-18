@@ -18,18 +18,25 @@ export default function Register() {
 
   const handleRegister = async () => {
     try {
-      await axios.post("http://localhost:8000/auth/register", form);
+      await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/register`,
+        form
+      );
       alert("Registered successfully!");
       navigate("/");
     } catch (err) {
-      alert("Registration failed: " + (err.response?.data?.detail || err.message));
+      alert(
+        "Registration failed: " + (err.response?.data?.detail || err.message)
+      );
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100">
       <div className="bg-white p-8 shadow-lg rounded-2xl w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">Create Account</h2>
+        <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
+          Create Account
+        </h2>
         <div className="space-y-4">
           <input
             name="first_name"

@@ -66,7 +66,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const response = await axios.get(
-          `http://localhost:8000/auth/callback?code=${encodeURIComponent(code)}`
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
         );
         const { access_token, redirect: redirectPath } = response.data;
 
@@ -141,7 +141,7 @@ export default function LoginPage() {
     }
 
     // 2. 🌐 Else, use real login API
-    const res = await axios.post("http://localhost:8000/auth/login", {
+    const res = await axios.post(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/login`, {
       email,
       password,
     });

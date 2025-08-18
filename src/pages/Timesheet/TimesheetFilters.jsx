@@ -1,12 +1,6 @@
 
  import React from "react";
 
-  const statusMapping = {
-  "Pending": "PENDING",
-  "Approved": "APPROVED",
-  "Rejected": "REJECTED",
-  "All Status": "" // For showing all
-};
 
  
 const TimesheetFilters = ({
@@ -69,9 +63,9 @@ const TimesheetFilters = ({
         }}
       >
         <option>All Status</option>
-        <option>PENDING</option>
-        <option>APPROVED</option>
-        <option>REJECTED</option>
+        <option value={"Pending"}>Pending</option>
+        <option value={"Approved"}>Approved</option>
+        <option value={"Rejected"}>Rejected</option>
       </select>
     </div>
   );

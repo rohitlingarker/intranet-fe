@@ -20,7 +20,7 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
     >
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-lg font-semibold text-indigo-900">{sprint.goal}</h3>
+          <h3 className="text-lg font-semibold text-indigo-900">{sprint.name}</h3>
           <p className="text-sm text-gray-500">
             {sprint.startDate} → {sprint.endDate}
           </p>

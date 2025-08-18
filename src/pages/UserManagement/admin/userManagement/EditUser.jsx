@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import FormInput from "../../../../components/forms/FormInput"; // Adjust path as needed
-import Button from "../../../../components/Button/Button";        // Adjust path as needed
- 
+import Button from "../../../../components/Button/Button"; // Adjust path as needed
+
 export default function EditUser() {
   const { id } = useParams();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
- 
+
   const [user, setUser] = useState({
     first_name: "",
     last_name: "",
@@ -17,10 +17,10 @@ export default function EditUser() {
     password: "",
     is_active: true,
   });
- 
+
   useEffect(() => {
     axios
-      .get(`http://localhost:8000/admin/users/${id}`, {
+      .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -32,7 +32,7 @@ export default function EditUser() {
         navigate("/user-management/users");
       });
   }, [id]);
- 
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setUser((prev) => ({
@@ -40,19 +40,23 @@ export default function EditUser() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
- 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const payload = { ...user };
       if (!payload.password) delete payload.password;
- 
-      await axios.put(`http://localhost:8000/admin/users/${id}`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
- 
+
+      await axios.put(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       alert("User updated successfully!");
       navigate("/user-management/users");
     } catch (err) {
@@ -60,7 +64,7 @@ export default function EditUser() {
       alert("Failed to update user.");
     }
   };
- 
+
   return (
     <div className="p-6 max-w-xl mx-auto">
       <h2 className="text-2xl font-bold text-blue-700 mb-4">Edit User</h2>
@@ -94,11 +98,34 @@ export default function EditUser() {
           label="Contact"
           name="contact"
           value={user.contact}
-          onChange={handleChange}
+          onChange={(e) => {
+            // Allow only numbers
+            const value = e.target.value;
+            if (/^\d{0,10}$/.test(value)) {
+              handleChange(e); // update only if valid
+            }
+          }}
+          onKeyDown={(e) => {
+            // Block non-numeric keys except Backspace, Delete, Tab, Arrow keys
+            if (
+              !/[0-9]/.test(e.key) &&
+              ![
+                "Backspace",
+                "Delete",
+                "Tab",
+                "ArrowLeft",
+                "ArrowRight",
+              ].includes(e.key)
+            ) {
+              e.preventDefault();
+            }
+          }}
           placeholder="Enter contact number"
+          maxLength={10}
         />
+
         <FormInput
-          label="New Password (leave blank to keep current)"
+          label="New Password ()"
           name="password"
           type="password"
           value={user.password}
@@ -117,7 +144,7 @@ export default function EditUser() {
             Is Active
           </label>
         </div>
- 
+
         <div className="flex gap-4">
           <Button type="submit">Save Changes</Button>
           <Button
@@ -132,4 +159,3 @@ export default function EditUser() {
     </div>
   );
 }
- 
