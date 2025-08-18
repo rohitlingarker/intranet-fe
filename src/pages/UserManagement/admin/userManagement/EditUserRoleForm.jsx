@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/AuthContext";
-
+import { showStatusToast } from "../../../../components/toastfy/toast";
 export default function EditUserRoleForm() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -74,11 +74,11 @@ export default function EditUserRoleForm() {
         { role_ids: selectedRoleIds },
         authHeader
       );
-      alert("Roles updated successfully!");
+      showStatusToast("Roles updated successfully!", "success");
       navigate(`/user-management/users/roles`);
     } catch (err) {
       console.error("Failed to update roles", err);
-      alert("Update failed.");
+      showStatusToast("Update failed.", "error");
     }
   };
 
