@@ -12,6 +12,7 @@ const VARIANT_CLASSES = {
   secondary: "bg-pink-800 text-white hover:bg-pink-800",
   success: "bg-green-600 text-white hover:bg-green-500",
   danger: "bg-red-600 text-white hover:bg-red-500",
+  link: "bg-transparent shadow-none text-indigo-600 hover:text-indigo-800 border-none",
 };
 
 const Button = ({
