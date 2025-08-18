@@ -42,8 +42,8 @@ export default function CreateUser() {
       toast.success("User created successfully!");
       navigate("/user-management/users");
     } catch (err) {
+      toast.error(err?.response?.data?.detail);
       console.error("User creation failed:", err);
-      toast.error("Failed to create user.");
     }
   };
 
