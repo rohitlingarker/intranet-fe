@@ -101,7 +101,13 @@ useEffect(() => {
           refreshData={()=>{
             // Callback to refresh data after save
             setLoading(true);
-            fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/history`)
+            fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/history`,{
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            })
               .then((res) => res.json())
               .then((data) => {
                 setEntries(data);
