@@ -72,6 +72,7 @@ const TimesheetGroup = ({
           variant="primary"
           onClick={() => setAddingNewEntry(!addingNewEntry)}
           type="button"
+          disabled={status === "Approved"}
         >
           Add Entry
         </Button>
