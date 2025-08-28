@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "./CreateProjectModal";
 import Button from "../../../components/Button/Button";
-import ThreeCard from "../../../components/Cards/ThreeCards";
+// import ThreeCard from "../../../components/Cards/ThreeCards";
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);

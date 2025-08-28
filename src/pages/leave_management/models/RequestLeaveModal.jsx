@@ -6,17 +6,17 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem('token');
+const token = localStorage.getItem("token");
 
 // -- Helper: Massage leaves to dropdown options --
 function mapLeaveBalancesToDropdown(balances) {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const fetchLeaveTypes = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/leave/types`,{
+      const res = await axios.get(`${BASE_URL}/api/leave/types`, {
         headers: {
-          Authorization : `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       setLeaveTypes(res.data);
     } catch (err) {
@@ -26,16 +26,16 @@ function mapLeaveBalancesToDropdown(balances) {
   useEffect(() => {
     fetchLeaveTypes();
   }, []);
- 
+
   return balances.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
     const originalName = balance.leaveType.leaveName.replace(/^L-/, "");
- 
+
     const matchingType = leaveTypes.find(
       (type) => type.name === balance.leaveType.leaveName
     );
     const leaveName = matchingType ? matchingType.label : originalName;
- 
+
     let availableText;
     let isInfinite = false;
     if (leaveTypeId === "L-UPL" || leaveName.toLowerCase().includes("unpaid")) {
@@ -77,7 +77,7 @@ function isWeekend(dateStr) {
 function countWeekdaysBetween(fromDate, toDate, isHalfDay) {
   if (!fromDate || !toDate) return 0;
   if (isHalfDay) return isWeekend(fromDate) ? 0 : 0.5;
-  
+
   let count = 0;
   let current = new Date(fromDate);
   const end = new Date(toDate);
@@ -96,22 +96,37 @@ function countAllDaysBetween(fromDate, toDate) {
 
 // -- The HeadlessUI Leave Type Dropdown --
 function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
-  const sel = options.find(o => o.leaveTypeId === selectedId) ?? null;
+  const sel = options.find((o) => o.leaveTypeId === selectedId) ?? null;
   return (
-    <Listbox value={sel} onChange={opt => setSelectedId(opt.leaveTypeId)}>
+    <Listbox value={sel} onChange={(opt) => setSelectedId(opt.leaveTypeId)}>
       <div className="relative mt-1">
         <Listbox.Button className="cursor-default w-full rounded-lg border border-gray-300 py-2 pl-4 pr-12 text-left shadow-sm focus:ring-2 focus:ring-indigo-500 bg-white transition font-medium">
           <span className="flex items-center justify-between">
             <span>
-              {sel ? sel.leaveName : <span className="text-gray-400">Select leave type</span>}
+              {sel ? (
+                sel.leaveName
+              ) : (
+                <span className="text-gray-400">Select leave type</span>
+              )}
             </span>
-            <span className={`text-xs ml-4 ${sel?.disabled ? "text-gray-400" : "text-gray-500"}`}>{sel?.availableText}</span>
+            <span
+              className={`text-xs ml-4 ${
+                sel?.disabled ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              {sel?.availableText}
+            </span>
           </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
           </span>
         </Listbox.Button>
-        <Transition as={Fragment} leave="transition opacity-100 duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+        <Transition
+          as={Fragment}
+          leave="transition opacity-100 duration-100"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
           <Listbox.Options className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-xl ring-1 ring-black ring-opacity-5">
             {options.map((option) => (
               <Listbox.Option
@@ -127,8 +142,18 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
               >
                 {({ selected }) => (
                   <>
-                    <span className={`${selected ? "font-medium" : ""} ${option.disabled ? "text-gray-400" : ""}`}>{option.leaveName}</span>
-                    <span className={`ml-4 text-xs ${option.disabled ? "text-gray-400" : "text-gray-500"}`}>
+                    <span
+                      className={`${selected ? "font-medium" : ""} ${
+                        option.disabled ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {option.leaveName}
+                    </span>
+                    <span
+                      className={`ml-4 text-xs ${
+                        option.disabled ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {option.availableText}
                     </span>
                     {selected && (
@@ -164,13 +189,22 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
   const todayStr = getTodayDateString();
 
   const leaveTypeOptions = mapLeaveBalancesToDropdown(balances);
-  const selectedLeaveType = leaveTypeOptions.find(o => o.leaveTypeId === leaveTypeId);
+  const selectedLeaveType = leaveTypeOptions.find(
+    (o) => o.leaveTypeId === leaveTypeId
+  );
 
   const employeeId = useAuth()?.user?.user_id;
 
   // Helper: Should we show the Google Drive link field?
   const shouldShowDriveLink = () => {
+    
     if (!selectedLeaveType) return false;
+    // Add check for unpaid leave
+    if (
+      selectedLeaveType.leaveTypeId === "L-UP" ||
+      selectedLeaveType.leaveName.toLowerCase().includes("unpaid")
+    )
+      return false;
     const requiresDocs = selectedLeaveType.requiresDocumentation;
     const isSickLeave = selectedLeaveType.leaveTypeId === "L-SL";
     const enoughDays = weekdays > 3;
@@ -178,11 +212,19 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
   };
 
   // Calculate days for display in the UI
-  const weekdays = countWeekdaysBetween(startDate, isHalfDay ? startDate : endDate, isHalfDay);
-  const totalDays = countAllDaysBetween(startDate, isHalfDay ? startDate : endDate);
+  const weekdays = countWeekdaysBetween(
+    startDate,
+    isHalfDay ? startDate : endDate,
+    isHalfDay
+  );
+  const totalDays = countAllDaysBetween(
+    startDate,
+    isHalfDay ? startDate : endDate
+  );
 
   // Reset drive link when leave type changes (so old value isn't submitted for wrong type)
   useEffect(() => {
+    console.log("Checking if Drive link should be shown...", selectedLeaveType)
     if (!shouldShowDriveLink()) {
       setDriveLink("");
     }
@@ -200,12 +242,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     if (!isOpen) return;
     setLoadingBalances(true);
     axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, { withCredentials: true,
+      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, {
+        withCredentials: true,
         headers: {
-          Authorization : `Bearer ${token}`
-        }
-      } )
-      .then(response => {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
         setBalances(response.data);
         setLoadingBalances(false);
       })
@@ -247,7 +290,11 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     setSubmitting(true);
 
     // Calculate actual days requested (weekdays, or 0.5 for half-day)
-    const daysRequested = countWeekdaysBetween(startDate, isHalfDay ? startDate : endDate, isHalfDay);
+    const daysRequested = countWeekdaysBetween(
+      startDate,
+      isHalfDay ? startDate : endDate,
+      isHalfDay
+    );
 
     // Build payload that matches backend DTO
     const payload = {
@@ -258,28 +305,27 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       daysRequested,
       reason,
       isHalfDay,
-      ...(shouldShowDriveLink() && { driveLink: driveLink })
+      ...(shouldShowDriveLink() && { driveLink: driveLink }),
     };
 
-    
     try {
-      await axios.post(
-        `${BASE_URL}/api/leave-requests/apply`,
-        payload,
-        { withCredentials: true,
-          headers:{
-            Authorization: `Bearer ${token}`
-          }
-         }
-      );
+      await axios.post(`${BASE_URL}/api/leave-requests/apply`, payload, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setSuccess("Leave request submitted!");
       // Refresh balances
       try {
         const { data } = await axios.get(
           `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
-          { withCredentials: true, headers:{
-            Authorization: `Bearer ${token}`
-          } }
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setBalances(data);
       } catch {}
@@ -295,7 +341,10 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
         onClose();
       }, 1000);
     } catch (err) {
-      setError("Failed to submit leave request: " + (err.response?.data?.message || err.message));
+      setError(
+        "Failed to submit leave request: " +
+          (err.response?.data?.message || err.message)
+      );
       console.error("Submission error:", err);
     } finally {
       setSubmitting(false);
@@ -310,7 +359,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       backdrop-blur-sm flex items-center justify-center
       p-4 animate-fadeIn"
       aria-modal="true"
-      onClick={e => {
+      onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
@@ -355,9 +404,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
                 {isHalfDay ? (
-                  <span className="text-gray-400">End Date (disabled for half-day)</span>
+                  <span className="text-gray-400">
+                    End Date (disabled for half-day)
+                  </span>
                 ) : (
-                  <>End Date <span className="text-red-500">*</span></>
+                  <>
+                    End Date <span className="text-red-500">*</span>
+                  </>
                 )}
               </label>
               <input
@@ -374,13 +427,19 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <label className={`relative flex items-center cursor-pointer ${selectedLeaveType?.allowHalfDay ? "" : "opacity-60 pointer-events-none"}`}>
+            <label
+              className={`relative flex items-center cursor-pointer ${
+                selectedLeaveType?.allowHalfDay
+                  ? ""
+                  : "opacity-60 pointer-events-none"
+              }`}
+            >
               <input
                 id="half-day"
                 type="checkbox"
                 checked={isHalfDay}
                 disabled={!selectedLeaveType?.allowHalfDay}
-                onChange={e => {
+                onChange={(e) => {
                   setIsHalfDay(e.target.checked);
                   if (e.target.checked) setEndDate(startDate);
                 }}
@@ -428,7 +487,9 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Reason</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Reason
+            </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -441,7 +502,8 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
           {shouldShowDriveLink() && (
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
-                Supporting Document (Google Drive Link) <span className="text-red-500">*</span>
+                Supporting Document (Google Drive Link){" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="url"
@@ -453,7 +515,8 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               />
               {selectedLeaveType?.leaveTypeId === "L-SL" && weekdays > 3 && (
                 <p className="text-xs text-gray-500 mt-1">
-                  For sick leave exceeding 3 days, please attach supporting document.
+                  For sick leave exceeding 3 days, please attach supporting
+                  document.
                 </p>
               )}
             </div>
