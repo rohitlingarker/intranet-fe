@@ -159,7 +159,7 @@ export default function LoginPage() {
 };
 
 const handleMicrosoftLogin = () => {
-  window.location.href = "http://localhost:8000/auth/ms-login";
+  window.location.href = `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/ms-login`;
 };
 
 return (
