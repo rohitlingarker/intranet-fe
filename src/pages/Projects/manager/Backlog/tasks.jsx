@@ -24,19 +24,34 @@ const CreateTaskModal = ({ onTaskCreated }) => {
     sprintId: "",
   });
 
+  // Get token from localStorage
+  const token = localStorage.getItem("token");
+
+  // Fetch data with token
   useEffect(() => {
-    axios.get("http://localhost:8080/api/users").then((res) => setUsers(res.data.content || []));
-    axios.get("http://localhost:8080/api/projects").then((res) => setProjects(res.data.content || []));
-    axios.get("http://localhost:8080/api/stories").then((res) => setStories(res.data.content || []));
-    axios.get("http://localhost:8080/api/sprints").then((res) => setSprints(res.data.content || []));
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [usersRes, projectsRes, storiesRes, sprintsRes] = await Promise.all([
+          axios.get("http://localhost:8080/api/users", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:8080/api/projects", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:8080/api/stories", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:8080/api/sprints", { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        setUsers(usersRes.data.content || []);
+        setProjects(projectsRes.data.content || []);
+        setStories(storiesRes.data.content || []);
+        setSprints(sprintsRes.data.content || []);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      }
+    };
+    fetchData();
+  }, [token]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -51,9 +66,14 @@ const CreateTaskModal = ({ onTaskCreated }) => {
         sprintId: formData.sprintId || null,
         storyId: formData.storyId || null,
       };
-      await axios.post("http://localhost:8080/api/tasks", payload);
+
+      await axios.post("http://localhost:8080/api/tasks", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       alert("✅ Task created successfully");
       onTaskCreated && onTaskCreated();
+
       setFormData({
         title: "",
         description: "",
@@ -67,10 +87,11 @@ const CreateTaskModal = ({ onTaskCreated }) => {
         storyId: "",
         sprintId: "",
       });
+
       setShowForm(false);
     } catch (err) {
-      console.error("Failed to create task", err);
-      alert("❌ Error creating task.");
+      console.error("Failed to create task", err.response?.data || err.message);
+      alert("❌ Error creating task. Check console for details.");
     } finally {
       setIsSubmitting(false);
     }

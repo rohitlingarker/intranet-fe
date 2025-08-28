@@ -1,27 +1,31 @@
 import React, { useEffect, useState } from "react";
-
 import axios from "axios";
 import StoryCard from "../UserSprint/StoryCard";
 import SprintColumn from "../UserSprint/SprintColumn";
-import Button from "../../../../components/Button/Button";
 
 const Backlog = ({ projectId, projectName }) => {
-  const [showSprintForm, setShowSprintForm] = useState(false);
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
 
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
   const fetchStories = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`)
-      .then((res) => setStories(res.data))
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers })
+      .then((res) => setStories(Array.isArray(res.data) ? res.data : []))
       .catch((err) => console.error("Failed to fetch stories", err));
   };
 
   const fetchSprints = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`)
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers })
       .then((res) =>
-        setSprints(res.data.filter((s) => s.status === "PLANNING"))
+        setSprints(Array.isArray(res.data) ? res.data.filter((s) => s.status === "PLANNING") : [])
       )
       .catch((err) => console.error("Failed to fetch sprints", err));
   };
@@ -38,22 +42,7 @@ const Backlog = ({ projectId, projectName }) => {
         <h1 className="text-xl font-medium text-indigo-900">
           Backlog of {projectName}
         </h1>
-        <div className="flex gap-3">
-          {/* Optional Create Sprint Button */}
-          {/* Uncomment this button if you want to allow sprint creation */}
-          {/* <Button
-            size="medium"
-            variant="secondary"
-            className="flex items-center gap-2"
-            onClick={() => setShowSprintForm(true)}
-          >
-            <Plus size={18} /> Create Sprint
-          </Button> */}
-        </div>
       </div>
-
-      {/* Create Sprint Modal */}
-      {showSprintForm && <CreateSprint onClose={() => setShowSprintForm(false)} />}
 
       {/* Backlog Stories */}
       <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
@@ -73,7 +62,7 @@ const Backlog = ({ projectId, projectName }) => {
         )}
       </div>
 
-      {/* Sprint Assignment View (Read-only) */}
+      {/* Sprint Assignment (Read-only) */}
       <div>
         <h2 className="text-base font-medium text-indigo-900 mb-3">
           Assigned to Sprints
@@ -84,8 +73,8 @@ const Backlog = ({ projectId, projectName }) => {
               key={sprint.id}
               sprint={sprint}
               stories={stories.filter((s) => s.sprintId === sprint.id)}
-              onDropStory={() => {}}
-              onChangeStatus={() => {}}
+              onDropStory={null} // drag removed
+              onChangeStatus={null} // read-only
             />
           ))}
         </div>

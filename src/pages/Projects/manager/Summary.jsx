@@ -14,15 +14,19 @@ const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedItems, setExpandedItems] = useState({}); // Track expanded items
+  const [expandedItems, setExpandedItems] = useState({});
+
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
+        const headers = { Authorization: `Bearer ${token}` };
+
         const [epicRes, storyRes, taskRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, { headers }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, { headers }),
         ]);
 
         const epicsData = epicRes.data;
@@ -48,7 +52,7 @@ const Summary = ({ projectId, projectName }) => {
     };
 
     fetchAll();
-  }, [projectId]);
+  }, [projectId, token]);
 
   const prepareStatusData = (items) => {
     const filteredItems =
@@ -81,16 +85,62 @@ const Summary = ({ projectId, projectName }) => {
     }));
   };
 
+  // ✅ Render details without JSON dumps
   const renderDetails = (item) => (
     <div className="mb-1 text-sm text-gray-700">
       {Object.entries(item).map(([key, value]) => {
-        if (typeof value === 'object') return null;
         if (key === 'id') return null;
-        if (key === 'epicId') return <div key={key}><strong>Epic:</strong> {epics.find(e => e.id === value)?.name || 'N/A'}</div>;
-        if (key === 'storyId') return <div key={key}><strong>Story:</strong> {allStories.find(s => s.id === value)?.title || 'N/A'}</div>;
+
+        if (key === 'epicId') {
+          return (
+            <div key={key}>
+              <strong>Epic:</strong>{' '}
+              {epics.find((e) => e.id === value)?.name || 'N/A'}
+            </div>
+          );
+        }
+
+        if (key === 'storyId') {
+          return (
+            <div key={key}>
+              <strong>Story:</strong>{' '}
+              {allStories.find((s) => s.id === value)?.title || 'N/A'}
+            </div>
+          );
+        }
+
+        if (key === 'projectId') {
+          return (
+            <div key={key}>
+              <strong>Project:</strong> {projectName || 'N/A'}
+            </div>
+          );
+        }
+
+        if (key === 'sprintId') {
+          return (
+            <div key={key}>
+              <strong>Sprint:</strong> Sprint {value}
+            </div>
+          );
+        }
+
+        // ✅ Show only useful fields from nested objects
+        if (typeof value === 'object' && value !== null) {
+          const displayValue = value.name || value.username || value.title;
+          if (!displayValue) return null; // skip unknown objects
+          return (
+            <div key={key}>
+              <strong>{key.replace(/([A-Z])/g, ' $1')}:</strong>{' '}
+              {displayValue}
+            </div>
+          );
+        }
+
         return (
           <div key={key}>
-            <strong>{key.replace(/([A-Z])/g, ' $1')}:</strong> {value ?? 'N/A'}
+            <strong>{key.replace(/([A-Z])/g, ' $1')}:</strong>{' '}
+            {value ?? 'N/A'}
           </div>
         );
       })}
@@ -105,19 +155,19 @@ const Summary = ({ projectId, projectName }) => {
 
       {/* Totals */}
       <div className="flex gap-5 mb-6">
-  <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
-    <div className="text-sm font-medium">Total Epics</div>
-    <div className="text-2xl font-bold">{epics.length}</div>
-  </div>
-  <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
-    <div className="text-sm font-medium">Total Stories</div>
-    <div className="text-2xl font-bold">{allStories.length}</div>
-  </div>
-  <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
-    <div className="text-sm font-medium">Total Tasks</div>
-    <div className="text-2xl font-bold">{allTasks.length}</div>
-  </div>
-</div>
+        <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
+          <div className="text-sm font-medium">Total Epics</div>
+          <div className="text-2xl font-bold">{epics.length}</div>
+        </div>
+        <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
+          <div className="text-sm font-medium">Total Stories</div>
+          <div className="text-2xl font-bold">{allStories.length}</div>
+        </div>
+        <div className="bg-white text-black px-3 py-3 rounded shadow flex-1 text-center">
+          <div className="text-sm font-medium">Total Tasks</div>
+          <div className="text-2xl font-bold">{allTasks.length}</div>
+        </div>
+      </div>
 
       {/* Donut Charts */}
       <div className="flex flex-wrap gap-6 mb-8">
@@ -126,8 +176,13 @@ const Summary = ({ projectId, projectName }) => {
           { title: 'Stories Status', data: allStories },
           { title: 'Tasks Status', data: allTasks },
         ].map((chart, index) => (
-          <div key={index} className="bg-white rounded-xl shadow p-4 w-full md:w-[30%]">
-            <h4 className="text-base font-semibold text-indigo-900 mb-3">{chart.title}</h4>
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow p-4 w-full md:w-[30%]"
+          >
+            <h4 className="text-base font-semibold text-indigo-900 mb-3">
+              {chart.title}
+            </h4>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
@@ -170,7 +225,10 @@ const Summary = ({ projectId, projectName }) => {
               className="text-lg font-bold text-indigo-900 cursor-pointer"
               onClick={() => toggleExpand('epic', epic.id)}
             >
-              Epic: {epic.name} <span className="text-sm text-gray-500">({epic.stories.length} stories)</span>
+              Epic: {epic.name}{' '}
+              <span className="text-sm text-gray-500">
+                ({epic.stories.length} stories)
+              </span>
             </h4>
             {expandedItems[`epic-${epic.id}`] && (
               <div className="ml-4 mt-2 border-l-2 border-indigo-200 pl-4">
@@ -181,16 +239,27 @@ const Summary = ({ projectId, projectName }) => {
                       className="text-pink-800 font-semibold cursor-pointer"
                       onClick={() => toggleExpand('story', story.id)}
                     >
-                      Story: {story.title} <span className="text-sm text-gray-500">({story.tasks.length} tasks)</span>
+                      Story: {story.title}{' '}
+                      <span className="text-sm text-gray-500">
+                        ({story.tasks.length} tasks)
+                      </span>
                     </h5>
                     {expandedItems[`story-${story.id}`] && (
                       <div className="ml-4 mt-1 border-l border-pink-200 pl-4 list-disc text-emerald-700">
                         {renderDetails(story)}
                         <ul className="list-disc ml-4">
                           {story.tasks.map((task) => (
-                            <li key={task.id} className="text-sm cursor-pointer mb-2">
-                              <div onClick={() => toggleExpand('task', task.id)}>
-                                Task: {task.title} <span className="text-gray-500">[{task.status}]</span>
+                            <li
+                              key={task.id}
+                              className="text-sm cursor-pointer mb-2"
+                            >
+                              <div
+                                onClick={() => toggleExpand('task', task.id)}
+                              >
+                                Task: {task.title}{' '}
+                                <span className="text-gray-500">
+                                  [{task.status}]
+                                </span>
                               </div>
                               {expandedItems[`task-${task.id}`] && (
                                 <div className="ml-4 text-xs text-gray-700">

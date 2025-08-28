@@ -18,6 +18,8 @@ const ProjectTabs = () => {
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
 
+  const token = localStorage.getItem("token"); // JWT token
+
   // Get tab from URL (default to "summary")
   const getSelectedTabFromLocation = () => {
     const params = new URLSearchParams(location.search);
@@ -26,18 +28,20 @@ const ProjectTabs = () => {
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
-  // Fetch project name
+  // Fetch project name with token
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`)
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         .then((res) => {
           setProjectName(res.data.name);
           setNotFound(false);
         })
         .catch(() => setNotFound(true));
     }
-  }, [projectId]);
+  }, [projectId, token]);
 
   // Update tab when location changes
   useEffect(() => {

@@ -7,7 +7,6 @@ import {
 } from 'recharts';
 
 const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#10b981', '#f59e0b'];
-
 const ITEMS_PER_PAGE = 5;
 
 const EmployeePerformance = () => {
@@ -17,13 +16,24 @@ const EmployeePerformance = () => {
   const [page, setPage] = useState(1);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
 
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+
+  // Create Axios instance with Authorization header
+  const axiosInstance = axios.create({
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   useEffect(() => {
     fetchPerformanceData();
   }, []);
 
   const fetchPerformanceData = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/performance/employees`);
+      const response = await axiosInstance.get('/api/performance/employees');
       setData(response.data);
       setFiltered(response.data);
     } catch (error) {
@@ -56,7 +66,6 @@ const EmployeePerformance = () => {
 
   // Pagination logic
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-
   const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   // Chart data mapping

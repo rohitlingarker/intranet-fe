@@ -11,7 +11,7 @@ const getColumnStyles = (status) => {
       return {
         header:
           "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
-        body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]", // increased height here
+        body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
         container:
           "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
       };
@@ -57,7 +57,7 @@ const KanbanColumn = ({ status, tasks, onDrop }) => {
     drop: (item) => {
       if (item.status !== status) {
         onDrop(item.id, status);
-        item.status = status; // update drag item's status to new one
+        item.status = status;
       }
     },
     collect: (monitor) => ({
@@ -83,7 +83,12 @@ const Board = ({ projectId, projectName }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Map frontend status to backend status before sending update
+  const token = localStorage.getItem("token");
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
   const backendStatusMap = {
     TO_DO: "TODO",
     IN_PROGRESS: "IN_PROGRESS",
@@ -94,7 +99,8 @@ const Board = ({ projectId, projectName }) => {
     const fetchTasks = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
+          { headers }
         );
 
         const normalizedTasks = res.data.map((task) => ({
@@ -118,7 +124,7 @@ const Board = ({ projectId, projectName }) => {
     };
 
     fetchTasks();
-  }, [projectId]);
+  }, [projectId, token]);
 
   const handleDrop = async (taskId, newStatus) => {
     const task = tasks.find((t) => t.id === taskId);
@@ -127,10 +133,11 @@ const Board = ({ projectId, projectName }) => {
     const updatedTask = { ...task, status: newStatus };
 
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`, {
-        ...updatedTask,
-        status: backendStatusMap[newStatus], // map to backend enum
-      });
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
+        { ...updatedTask, status: backendStatusMap[newStatus] },
+        { headers }
+      );
       setTasks((prevTasks) =>
         prevTasks.map((t) => (t.id === taskId ? updatedTask : t))
       );

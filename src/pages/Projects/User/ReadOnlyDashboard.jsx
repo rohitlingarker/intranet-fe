@@ -13,17 +13,23 @@ const ProjectDashboard = () => {
   const [dashboardLoading, setDashboardLoading] = useState(true);
 
   const navigate = useNavigate();
+  const token = localStorage.getItem("token"); // JWT token
+
+  const axiosConfig = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  };
 
   const fetchProjects = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
+        axiosConfig
+      );
       const data = res.data.content || res.data;
       setProjects(data);
     } catch (err) {
@@ -36,11 +42,10 @@ const ProjectDashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary`,
+        axiosConfig
+      );
       setDashboardData(res.data);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
@@ -51,11 +56,10 @@ const ProjectDashboard = () => {
 
   const fetchReminders = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      });
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders`,
+        axiosConfig
+      );
       setReminders(res.data);
     } catch (err) {
       console.error("Failed to fetch reminders:", err);
@@ -68,17 +72,19 @@ const ProjectDashboard = () => {
     fetchReminders();
   }, []);
 
-  const goToProjectTab = (projectId) => navigate(`/projects/${projectId}`);
+  const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <div className="flex gap-3">
-          <Button onClick={() => navigate("/projects/userprojectlist")} variant="secondary">
+          <Button
+            onClick={() => navigate("/projects/userprojectlist")}
+            variant="secondary"
+          >
             View Project List
           </Button>
-          {/* Removed Create Project Button */}
         </div>
       </div>
 
@@ -88,43 +94,80 @@ const ProjectDashboard = () => {
         <>
           {/* 🔹 Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-            <ThreeCard title="Projects" value={dashboardData.totalProjects} textColor="text-indigo-900" />
-            <ThreeCard title="Tasks" value={dashboardData.totalTasks} textColor="text-green-700" />
-            <ThreeCard title="Epics" value={dashboardData.totalEpics} textColor="text-purple-700" />
-            <ThreeCard title="Users" value={dashboardData.totalUsers} textColor="text-pink-700" />
-            <ThreeCard title="Stories" value={dashboardData.totalStories} textColor="text-orange-600" />
+            <ThreeCard
+              title="Projects"
+              value={dashboardData.totalProjects}
+              textColor="text-indigo-900"
+            />
+            <ThreeCard
+              title="Tasks"
+              value={dashboardData.totalTasks}
+              textColor="text-green-700"
+            />
+            <ThreeCard
+              title="Epics"
+              value={dashboardData.totalEpics}
+              textColor="text-purple-700"
+            />
+            <ThreeCard
+              title="Users"
+              value={dashboardData.totalUsers}
+              textColor="text-pink-700"
+            />
+            <ThreeCard
+              title="Stories"
+              value={dashboardData.totalStories}
+              textColor="text-orange-600"
+            />
           </div>
 
           {/* 🔸 Status Count Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map((key) => (
-              <div key={key} className="bg-white rounded-2xl shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                  {key.replace("StatusCount", " Status").replace(/([a-z])([A-Z])/g, "$1 $2")}
-                </h3>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  {Object.entries(dashboardData[key] || {}).map(([status, count]) => (
-                    <li key={status} className="flex justify-between">
-                      <span>{status.replace("_", " ")}</span>
-                      <span className="font-semibold">{count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map(
+              (key) => (
+                <div key={key} className="bg-white rounded-2xl shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
+                    {key
+                      .replace("StatusCount", " Status")
+                      .replace(/([a-z])([A-Z])/g, "$1 $2")}
+                  </h3>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    {Object.entries(dashboardData[key] || {}).map(
+                      ([status, count]) => (
+                        <li key={status} className="flex justify-between">
+                          <span>{status.replace("_", " ")}</span>
+                          <span className="font-semibold">{count}</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )
+            )}
           </div>
 
           {/* 🔔 Reminders / Deadlines */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Reminders</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
+                Reminders
+              </h3>
               {reminders ? (
                 <ul className="space-y-1 text-sm text-gray-700">
-                  <li>🔔 {reminders?.taskDueSoonCount ?? 0} tasks are due in the next 2 days</li>
+                  <li>
+                    🔔 {reminders?.taskDueSoonCount ?? 0} tasks are due in the
+                    next 2 days
+                  </li>
                   <li>📌 {reminders?.todoTaskCount ?? 0} tasks are in TODO</li>
                   <li>📝 {reminders?.todoStoryCount ?? 0} stories are in TODO</li>
-                  <li>🚩 {reminders?.unassignedProjectCount ?? 0} projects have no assigned owner</li>
-                  <li>🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon</li>
+                  <li>
+                    🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
+                    assigned owner
+                  </li>
+                  <li>
+                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are
+                    ending soon
+                  </li>
                 </ul>
               ) : (
                 <p className="text-sm text-gray-500">Loading reminders...</p>
@@ -135,7 +178,9 @@ const ProjectDashboard = () => {
           {/* 📌 Quick Access Projects */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Quick Access</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
+                Quick Access
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.slice(0, 3).map((project) => (
                   <div
@@ -143,8 +188,12 @@ const ProjectDashboard = () => {
                     onClick={() => goToProjectTab(project.id)}
                     className="cursor-pointer hover:shadow-md transition-all border p-4 rounded-xl"
                   >
-                    <h4 className="font-semibold text-indigo-700 text-lg">{project.name}</h4>
-                    <p className="text-sm text-gray-600">Key: {project.projectKey}</p>
+                    <h4 className="font-semibold text-indigo-700 text-lg">
+                      {project.name}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Key: {project.projectKey}
+                    </p>
                     <p className="text-xs text-gray-400">{project.status}</p>
                   </div>
                 ))}

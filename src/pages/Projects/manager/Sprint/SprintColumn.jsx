@@ -2,10 +2,15 @@ import React from 'react';
 import { useDrop } from 'react-dnd';
 import StoryCard from './StoryCard';
 
-const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
+const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus, token }) => {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
   const [{ isOver }, dropRef] = useDrop(() => ({
     accept: 'STORY',
-    drop: (item) => onDropStory(item.id, sprint.id),
+    drop: (item) => {
+      // Pass token to parent handler if needed
+      onDropStory(item.id, sprint.id, headers);
+    },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
@@ -30,7 +35,7 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
         {sprint.status === 'PLANNING' && (
           <button
             className="text-indigo-900 border border-indigo-900 px-2 py-1 rounded text-xs hover:bg-indigo-900 hover:text-white"
-            onClick={() => onChangeStatus(sprint.id, 'start')}
+            onClick={() => onChangeStatus(sprint.id, 'start', headers)}
           >
             Start
           </button>
@@ -39,7 +44,7 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
         {sprint.status === 'ACTIVE' && (
           <button
             className="text-pink-800 border border-pink-800 px-2 py-1 rounded text-xs hover:bg-pink-800 hover:text-white"
-            onClick={() => onChangeStatus(sprint.id, 'complete')}
+            onClick={() => onChangeStatus(sprint.id, 'complete', headers)}
           >
             Complete
           </button>

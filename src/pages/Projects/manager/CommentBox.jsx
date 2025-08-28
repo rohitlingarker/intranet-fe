@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
- 
+
+// Get token from localStorage (or wherever you store it)
+const token = localStorage.getItem('token');
+
 const CommentBox = ({ entityId, entityType, currentUser }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [loading, setLoading] = useState(false);
- 
+
+  // Create Axios instance with Authorization header
+  const axiosInstance = axios.create({
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   // Fetch comments from backend
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`);
+      const response = await axiosInstance.get(`/api/comments/${entityType}/${entityId}`);
       const data = response.data;
- 
+
       if (Array.isArray(data)) {
         setComments(data);
       } else {
@@ -26,23 +37,23 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
       setLoading(false);
     }
   };
- 
+
   useEffect(() => {
     fetchComments();
   }, [entityId, entityType]);
- 
+
   // Submit comment or reply
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
- 
+
     const payload = {
       content: newComment,
       userId: currentUser.id,
       parentId: replyingTo,
     };
- 
+
     try {
-      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`, payload);
+      await axiosInstance.post(`/api/comments/${entityType}/${entityId}`, payload);
       setNewComment('');
       setReplyingTo(null);
       fetchComments();
@@ -50,7 +61,7 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
       console.error('Failed to submit comment:', error);
     }
   };
- 
+
   // Recursive rendering of comments and replies
   const renderComments = (parentId = null) => {
     return comments
@@ -79,17 +90,17 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
         </div>
       ));
   };
- 
+
   return (
     <div className="mt-4 text-sm">
       <h2 className="text-base font-semibold mb-2">Comments</h2>
- 
+
       {loading ? (
         <p className="text-gray-500">Loading comments...</p>
       ) : (
         <div>{renderComments()}</div>
       )}
- 
+
       <div className="mt-4">
         {replyingTo && (
           <p className="text-sm text-gray-500 mb-1">
@@ -102,7 +113,7 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
             </button>
           </p>
         )}
- 
+
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
@@ -110,7 +121,7 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
           className="w-full border border-gray-300 rounded p-2"
           rows={3}
         />
- 
+
         <button
           onClick={handleSubmit}
           className="mt-2 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -121,5 +132,5 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
     </div>
   );
 };
- 
+
 export default CommentBox;

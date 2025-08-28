@@ -14,6 +14,7 @@ const ProjectTabs = () => {
   const { projectId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
@@ -26,9 +27,13 @@ const ProjectTabs = () => {
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
   useEffect(() => {
-    if (projectId) {
+    if (projectId && token) {
       axios
-        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`)
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         .then((res) => {
           setProjectName(res.data.name);
           setNotFound(false);
@@ -37,7 +42,7 @@ const ProjectTabs = () => {
           setNotFound(true);
         });
     }
-  }, [projectId]);
+  }, [projectId, token]);
 
   useEffect(() => {
     setSelectedTab(getSelectedTabFromLocation());

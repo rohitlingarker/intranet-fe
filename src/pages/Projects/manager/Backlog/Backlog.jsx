@@ -16,6 +16,13 @@ const Backlog = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
 
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
   const handleCloseForms = () => {
     setShowIssueForm(false);
     setShowSprintForm(false);
@@ -23,14 +30,20 @@ const Backlog = ({ projectId, projectName }) => {
 
   const fetchStories = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`)
+      .get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+        { headers }
+      )
       .then((res) => setStories(res.data))
       .catch((err) => console.error("Failed to fetch stories", err));
   };
 
   const fetchSprints = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`)
+      .get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+        { headers }
+      )
       .then((res) =>
         setSprints(res.data.filter((s) => s.status === "PLANNING"))
       )
@@ -44,9 +57,11 @@ const Backlog = ({ projectId, projectName }) => {
 
   const handleDropStory = (storyId, sprintId) => {
     axios
-      .put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, {
-        sprintId,
-      })
+      .put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
+        { sprintId },
+        { headers }
+      )
       .then(() => {
         setStories((prev) =>
           prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))

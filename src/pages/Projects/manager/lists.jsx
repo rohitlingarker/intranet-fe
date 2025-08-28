@@ -8,6 +8,9 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Pencil, Trash, X } from 'lucide-react';
 
+// Get token from localStorage (or wherever you store it)
+const token = localStorage.getItem('token');
+
 const Lists = ({ projectId }) => {
   const [epics, setEpics] = useState([]);
   const [noEpicStories, setNoEpicStories] = useState([]);
@@ -23,13 +26,21 @@ const Lists = ({ projectId }) => {
   ];
   const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
 
+  // Create an axios instance with the token
+  const axiosInstance = axios.create({
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   const fetchData = async () => {
     try {
       const [epicRes, storyRes, taskRes, noEpicRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`),
+        axiosInstance.get(`/api/projects/${projectId}/epics`),
+        axiosInstance.get(`/api/projects/${projectId}/stories`),
+        axiosInstance.get(`/api/projects/${projectId}/tasks`),
+        axiosInstance.get(`/api/stories/no-epic`),
       ]);
 
       const enrichedStories = storyRes.data.map((story) => ({
@@ -73,7 +84,7 @@ const Lists = ({ projectId }) => {
     if (type === 'task') endpoint = `/api/tasks/${id}`;
 
     try {
-      await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`);
+      await axiosInstance.delete(endpoint);
       toast.success(`${type} deleted successfully!`, { position: 'top-right' });
       await fetchData();
     } catch (err) {
@@ -141,7 +152,6 @@ const Lists = ({ projectId }) => {
 
   return (
     <div className="p-6 space-y-6">
-      
       <ToastContainer />
       {/* User Switch */}
       <div className="flex justify-end gap-2 mb-4 items-center">
@@ -157,8 +167,8 @@ const Lists = ({ projectId }) => {
 
       {/* Epics */}
       <h2 className="text-xl font-bold  pb-1 text-indigo-700">
-      Epics
-    </h2>
+        Epics
+      </h2>
       {epics.map((epic) => (
         <ExpandableList
           key={epic.id}
@@ -200,15 +210,12 @@ const Lists = ({ projectId }) => {
           ))}
         </ExpandableList>
       ))}
-      
+
       {/* No Epics */}
       {noEpicStories.length > 0 && (
-
         <ExpandableList className="text-pink-950" title="Unassigned Stories" count={noEpicStories.length}>
-
           {noEpicStories.map((story) => (
             <li key={story.id}>
-
               <ExpandableList
                 title={<>{story.title} <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 rounded">Story</span></>}
                 count={story.tasks.length}

@@ -11,7 +11,6 @@ const Lists = ({ projectId }) => {
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
-  const [editItem, setEditItem] = useState(null);
 
   const fakeUsers = [
     { id: 1, name: 'Sindhu Reddy' },
@@ -21,13 +20,24 @@ const Lists = ({ projectId }) => {
   ];
   const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
 
+  const token = localStorage.getItem('token');
+
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [epicRes, storyRes, taskRes, noEpicRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       const enrichedStories = storyRes.data.map((story) => ({
@@ -60,7 +70,7 @@ const Lists = ({ projectId }) => {
   }, [projectId]);
 
   useEffect(() => {
-    if (editItem) {
+    if (selectedEntity) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -68,7 +78,7 @@ const Lists = ({ projectId }) => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [editItem]);
+  }, [selectedEntity]);
 
   if (loading)
     return (
@@ -246,6 +256,7 @@ const Lists = ({ projectId }) => {
             entityId={selectedEntity.id}
             entityType={selectedEntity.type}
             currentUser={currentUser}
+            token={token} // Pass token if CommentBox needs it
           />
         </div>
       )}
