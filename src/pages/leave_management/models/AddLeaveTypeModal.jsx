@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, FileText } from "lucide-react";
 import axios from "axios";
 // import { fetchData } from "./PendingLeaveRequests";
+// import  {useAuth} from "../../../contexts/AuthContext"
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 // A custom hook to fetch leave types from the API
@@ -16,7 +17,7 @@ const useLeaveTypes = () => {
         const response = await axios.get(
           `${BASE_URL}/api/leave/types`, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
             }
           }
         );
@@ -175,11 +176,12 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
         setSuccess("Leave type updated successfully!");
       } else {
         await axios.post(url, payload, {
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+           },
         });
         setSuccess("Leave type added successfully!");
       }
- 
       setTimeout(() => {
         onSuccess?.();
         onClose();

@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import ActionDropdownPendingLeaveRequests from "./ActionDropDownPendingLeaveRequests";
 import DateRangePicker from "./DateRangePicker";
+import { PencilIcon, XCircle } from "lucide-react";
 const token = localStorage.getItem('token')
 const BASE_URL = import.meta.env.VITE_BASE_URL;
  
@@ -104,8 +105,6 @@ const PendingLeaveRequestsTable = ({
       };
  
       setPendingLeaves(updated);
-      toast.success("Leave request updated successfully");
- 
       setEditIndex(null);
       setEditedLeave({});
     } catch (error) {
@@ -116,7 +115,6 @@ const PendingLeaveRequestsTable = ({
         console.error("Axios Error:", errorMessage);
       } else {
         toast.error("Unexpected error occurred");
-        console.error("Unexpected Error:", error);
       }
     } finally {
       setLoading(false);
@@ -149,7 +147,6 @@ const PendingLeaveRequestsTable = ({
       setPendingLeaves((prev) => prev.filter((l) => l.leaveId !== cancelId));
       toast.success("Leave cancelled");
     } catch (err) {
-      console.error(err);
       toast.error(err?.response?.data?.message || "Cancel failed");
     } finally {
       setCancelId(null);
@@ -316,15 +313,21 @@ const PendingLeaveRequestsTable = ({
                       </button>
                     </div>
                   ) : (
-                    <ActionDropdownPendingLeaveRequests
-                      onEdit={() => handleEdit(index)}
-                      onCancel={() => setCancelId(leave.leaveId)}
-                      onSuccess={() =>
-                        setPendingLeaves((prev) =>
-                          prev.filter((l) => l.leaveId !== leave.leaveId)
-                        )
-                      }
-                    />
+                    <div className="flex items-center space-x-2">
+                      <PencilIcon className="cursor-pointer text-blue-700 w-4 h-4" onClick={() => handleEdit(index)} />
+                      <button className="text-red-500 hover:underline" onClick={() => setCancelId(leave.leaveId)}>
+                        Cancel
+                      </button>
+                    </div>
+                    // <ActionDropdownPendingLeaveRequests
+                    //   onEdit={() => handleEdit(index)}
+                    //   onCancel={() => setCancelId(leave.leaveId)}
+                    //   onSuccess={() =>
+                    //     setPendingLeaves((prev) =>
+                    //       prev.filter((l) => l.leaveId !== leave.leaveId)
+                    //     )
+                    //   }
+                    // />
                   )}
                 </td>
               </tr>
