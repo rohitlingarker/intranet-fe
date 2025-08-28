@@ -52,7 +52,7 @@ const AccessPointEdit = () => {
       // Call the unmap permission API
       const response = await fetch(
         `${
-          import.meta.env.USER_MANAGEMENT_URL
+          import.meta.env.VITE_USER_MANAGEMENT_URL
         }/admin/access-points/${access_id}/unmap-permission/${
           accessPointData.permission_id
         }`,

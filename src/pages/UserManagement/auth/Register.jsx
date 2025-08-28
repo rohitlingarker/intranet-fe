@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import { showStatusToast } from "../../../components/toastfy/toast";
 export default function Register() {
   const [form, setForm] = useState({
     first_name: "",
@@ -19,15 +19,13 @@ export default function Register() {
   const handleRegister = async () => {
     try {
       await axios.post(
-        `${import.meta.env.USER_MANAGEMENT_URL}/auth/register`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/register`,
         form
       );
-      alert("Registered successfully!");
+      showStatusToast("Registered successfully!", "success");
       navigate("/");
     } catch (err) {
-      alert(
-        "Registration failed: " + (err.response?.data?.detail || err.message)
-      );
+      showStatusToast("Registration failed: " + (err.response?.data?.detail || err.message, "error"));
     }
   };
 

@@ -5,10 +5,10 @@ import { Users, FolderKanban, PlaneTakeoff, Clock, Calendar, TrendingUp, AlertCi
 const Dashboard = () => {
   const moduleCards = [
     {
-      title: 'User Management',
+      title: 'User Management ',
       description: 'Manage employees, roles, and permissions',
       icon: Users,
-      href: '/users',
+      href: '/user-management/users',
       color: 'bg-[#263383]',
       stats: '245 active users'
     },
@@ -24,7 +24,7 @@ const Dashboard = () => {
       title: 'Leave Management',
       description: 'Handle leave requests and approvals',
       icon: PlaneTakeoff,
-      href: '/leave',
+      href: '/leave-management',
       color: 'bg-[#b22a4f]',
       stats: '8 pending requests'
     },
@@ -88,7 +88,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Module Cards */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Access  swwsw</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {moduleCards.map((card, index) => (
               <Link

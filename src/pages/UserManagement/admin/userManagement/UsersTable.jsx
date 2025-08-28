@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { showStatusToast } from "../../../../components/toastfy/toast";
 import GenericTable from "../../../../components/Table/table"; // ✅ Use GenericTable
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
@@ -29,7 +29,7 @@ export default function UsersTable() {
 
   useEffect(() => {
     if (!token) {
-      toast.warn("Session expired. Please login again.");
+      showStatusToast("Session expired. Please login again.", "warning");
       navigate("/");
     }
   }, [token, navigate]);
@@ -45,13 +45,14 @@ export default function UsersTable() {
           }
         );
         setUsers(res.data || []);
+        console.log(users);
       } catch (err) {
         console.error("Failed to fetch users:", err);
         if (err.response?.status === 403 || err.response?.status === 401) {
-          toast.error("Access denied. Admins only.");
+          showStatusToast("Access denied. Admins only.", "error");
           navigate("/home");
         } else {
-          toast.error("Failed to load users.");
+          showStatusToast("Failed to load users.", "error");
         }
       } finally {
         setLoading(false);
@@ -62,6 +63,7 @@ export default function UsersTable() {
   }, [token, navigate]);
 
   const filteredUsers = useMemo(() => {
+    console.log(users)
     return users.filter((user) =>
       `${user.first_name} ${user.last_name} ${user.mail} ${user.contact}`
         .toLowerCase()
@@ -133,10 +135,10 @@ export default function UsersTable() {
       setUsers((prev) =>
         prev.map((u) => (u.user_id === userId ? { ...u, is_active: false } : u))
       );
-      toast.success("User deactivated.");
+      showStatusToast("User deactivated.", "success");
     } catch (err) {
       console.error("Delete failed:", err);
-      toast.error("Failed to deactivate user.");
+      showStatusToast("Failed to deactivate user.", "error");
     }
   };
 

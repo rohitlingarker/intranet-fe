@@ -13,7 +13,7 @@ export default function GroupDetails() {
     const fetchGroup = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.USER_MANAGEMENT_URL}/admin/groups/${groupId}`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/groups/${groupId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -22,7 +22,7 @@ export default function GroupDetails() {
         // Fetch permissions for the group
         const permRes = await axios.get(
           `${
-            import.meta.env.USER_MANAGEMENT_URL
+            import.meta.env.VITE_USER_MANAGEMENT_URL
           }/admin/groups/${groupId}/permissions`,
           {
             headers: { Authorization: `Bearer ${token}` },

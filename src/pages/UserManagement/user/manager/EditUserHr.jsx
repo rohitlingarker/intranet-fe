@@ -14,7 +14,7 @@ export default function EditUserHr() {
     axios
       .get(
         `${
-          import.meta.env.USER_MANAGEMENT_URL
+          import.meta.env.VITE_USER_MANAGEMENT_URL
         }/general_user/edit-user/${user_id}`,
         {
           headers: {
@@ -40,7 +40,7 @@ export default function EditUserHr() {
     try {
       await axios.put(
         `${
-          import.meta.env.USER_MANAGEMENT_URL
+          import.meta.env.VITE_USER_MANAGEMENT_URL
         }/general_user/edit-user/${user_id}`,
         form,
         {

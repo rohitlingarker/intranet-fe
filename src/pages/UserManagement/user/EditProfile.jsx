@@ -1,19 +1,50 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
 import { useAuth } from "../../../contexts/AuthContext";
+import { showStatusToast } from "../../../components/toastfy/toast"; // ✅ custom toast wrapper
+
+// Simple reusable Modal component
+function Modal({ open, title, message, onConfirm, onCancel, loading }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white rounded-2xl shadow-lg w-96 p-6">
+        <h2 className="text-lg font-semibold mb-2">{title}</h2>
+        <p className="text-gray-600 mb-4">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 rounded-md border border-gray-300 bg-gray-100 hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+          >
+            {loading ? "Saving..." : "Confirm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function EditProfile() {
   const { user } = useAuth();
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user?.email) {
       axios
-        .get(`${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`, {
+        .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -21,20 +52,26 @@ export default function EditProfile() {
         .then((res) => setForm(res.data))
         .catch((err) => {
           console.error("Failed to fetch profile", err);
-          toast.error("Failed to load profile.");
+          showStatusToast("Failed to load profile.", "error"); // ❌ error toast
         });
     }
   }, [user]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    // ✅ For "contact" field: only allow numbers & max 10 digits
+    if (e.target.name === "contact") {
+      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+      setForm({ ...form, [e.target.name]: value });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
   };
 
   const doSave = async () => {
     try {
       setSaving(true);
       const response = await axios.put(
-        `${import.meta.env.USER_MANAGEMENT_URL}/general_user/profile`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
         form,
         {
           headers: {
@@ -43,92 +80,22 @@ export default function EditProfile() {
         }
       );
       console.log("Response:", response.data);
-      toast.success("Profile updated!");
+      showStatusToast("Profile updated!", "success"); // ✅ success toast
       navigate("/profile");
     } catch (err) {
       console.error("Update failed:", err);
-      toast.error(
-        "Update failed: " + (err.response?.data?.detail || err.message)
-      );
+      showStatusToast(
+        "Update failed: " + (err.response?.data?.detail || err.message),
+        "error"
+      ); // ❌ error toast
     } finally {
       setSaving(false);
+      setShowModal(false);
     }
   };
 
   const handleSave = () => {
-    toast.info(
-      ({ closeToast }) => (
-        <div
-          style={{
-            background: "#ffffff",
-            borderRadius: 8,
-            padding: "16px",
-            width: "280px",
-            fontFamily: "sans-serif",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: "600",
-              fontSize: "16px",
-              marginBottom: "8px",
-              color: "#333",
-            }}
-          >
-            Confirm Profile Edit
-          </div>
-          <p style={{ fontSize: "14px", marginBottom: "16px", color: "#555" }}>
-            Are you sure you want to save these changes?
-          </p>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={() => {
-                closeToast?.();
-                doSave();
-              }}
-              disabled={saving}
-              style={{
-                flex: 1,
-                background: "#1d4ed8",
-                color: "#fff",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              {saving ? "Saving..." : "Confirm"}
-            </button>
-            <button
-              type="button"
-              onClick={() => closeToast?.()}
-              disabled={saving}
-              style={{
-                flex: 1,
-                background: "#fff",
-                color: "#333",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        position: "top-center",
-        autoClose: false,
-        closeOnClick: false,
-        closeButton: false,
-        draggable: false,
-      }
-    );
+    setShowModal(true);
   };
 
   const handleCancel = () => {
@@ -146,35 +113,57 @@ export default function EditProfile() {
 
         <div className="space-y-4">
           <div>
-            <label className="block font-medium mb-1">First Name</label>
-            <input
-              name="first_name"
-              value={form.first_name || ""}
-              onChange={handleChange}
-              placeholder="Enter your first name"
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
+  <label className="block font-medium mb-1">First Name</label>
+  <input
+    type="text"
+    name="first_name"
+    value={form.first_name || ""}
+    onChange={(e) => {
+      const regex = /^[A-Za-z]*$/; // ✅ only alphabets allowed
+      if (regex.test(e.target.value)) {
+        handleChange(e); // call your existing handler only if valid
+      }
+    }}
+    placeholder="Enter your first name"
+    className="w-full border px-3 py-2 rounded-md"
+  />
+</div>
+
           <div>
-            <label className="block font-medium mb-1">Last Name</label>
-            <input
-              name="last_name"
-              value={form.last_name || ""}
-              onChange={handleChange}
-              placeholder="Enter your last name"
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
+  <label className="block font-medium mb-1">Last Name</label>
+  <input
+    type="text"
+    name="last_name"
+    value={form.last_name || ""}
+    onChange={(e) => {
+      const regex = /^[A-Za-z]*$/; // ✅ only alphabets allowed
+      if (regex.test(e.target.value)) {
+        handleChange(e); // call your existing handler only if valid
+      }
+    }}
+    placeholder="Enter your last name"
+    className="w-full border px-3 py-2 rounded-md"
+  />
+</div>
+
           <div>
-            <label className="block font-medium mb-1">Contact</label>
-            <input
-              name="contact"
-              value={form.contact || ""}
-              onChange={handleChange}
-              placeholder="Enter contact number"
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
+  <label className="block font-medium mb-1">Contact</label>
+  <input
+    type="text"
+    name="contact"
+    value={form.contact || ""}
+    onChange={(e) => {
+      const regex = /^[0-9]*$/; // ✅ only numbers allowed
+      if (regex.test(e.target.value) && e.target.value.length <= 10) {
+        handleChange(e); // update only if valid
+      }
+    }}
+    placeholder="Enter contact number"
+    className="w-full border px-3 py-2 rounded-md"
+    maxLength={10} // extra safeguard
+  />
+</div>
+
           <div>
             <label className="block font-medium mb-1">New Password</label>
             <input
@@ -207,6 +196,16 @@ export default function EditProfile() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <Modal
+        open={showModal}
+        title="Confirm Profile Edit"
+        message="Are you sure you want to save these changes?"
+        onConfirm={doSave}
+        onCancel={() => setShowModal(false)}
+        loading={saving}
+      />
     </div>
   );
 }

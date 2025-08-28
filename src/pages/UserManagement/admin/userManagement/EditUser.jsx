@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import FormInput from "../../../../components/forms/FormInput"; // Adjust path as needed
-import Button from "../../../../components/Button/Button"; // Adjust path as needed
+import Button from "../../../../components/Button/Button";        // Adjust path as needed
+import { showStatusToast } from "../../../../components/toastfy/toast";
 
 export default function EditUser() {
   const { id } = useParams();
@@ -28,7 +29,7 @@ export default function EditUser() {
       .then((res) => setUser((prev) => ({ ...prev, ...res.data })))
       .catch((err) => {
         console.error("Failed to fetch user:", err);
-        alert("Access denied or user not found.");
+        showStatusToast("Access denied or user not found.", "error");
         navigate("/user-management/users");
       });
   }, [id]);
@@ -46,6 +47,14 @@ export default function EditUser() {
     try {
       const payload = { ...user };
       if (!payload.password) delete payload.password;
+ 
+      await axios.put(`http://localhost:8000/admin/users/${id}`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+ 
+      showStatusToast("User updated successfully!", "success");
 
       await axios.put(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`,
@@ -61,7 +70,7 @@ export default function EditUser() {
       navigate("/user-management/users");
     } catch (err) {
       console.error("Update failed:", err);
-      alert("Failed to update user.");
+      showStatusToast("Failed to update user.", "error");
     }
   };
 

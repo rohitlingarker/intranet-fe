@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button"; // Adjust if different
 import SearchInput from "../../../../components/filter/Searchbar"; // Adjust if different
-
+import { showStatusToast } from "../../../../components/toastfy/toast";
 // PermissionList component that supports optional Add/Delete buttons
 function PermissionList({
   permissions,
@@ -75,7 +75,7 @@ export default function PermissionGroupManagement() {
   const navigate = useNavigate();
 
   const axiosInstance = axios.create({
-    baseURL: `${import.meta.env.USER_MANAGEMENT_URL}`,
+    baseURL: `${import.meta.env.VITE_USER_MANAGEMENT_URL}`,
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -93,7 +93,7 @@ export default function PermissionGroupManagement() {
       const res = await axiosInstance.get("/admin/groups");
       setGroups(res.data);
     } catch (err) {
-      alert("Failed to fetch groups: " + err.message);
+      showStatusToast("Failed to fetch groups: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export default function PermissionGroupManagement() {
       const res = await axiosInstance.get("/admin/permissions/");
       setAllPermissions(res.data);
     } catch (err) {
-      alert("Failed to fetch all permissions: " + err.message);
+      showStatusToast("Failed to fetch all permissions: " + err.message, "error");
     }
   };
 
@@ -115,14 +115,14 @@ export default function PermissionGroupManagement() {
       );
       setGroupPermissions(res.data);
     } catch (err) {
-      alert("Failed to fetch group permissions: " + err.message);
+      showStatusToast("Failed to fetch group permissions: " + err.message, "error");
     }
   };
 
   const handleCreateOrUpdate = async () => {
     try {
       if (!newGroupName.trim()) {
-        alert("Group name cannot be empty.");
+        showStatusToast("Group name cannot be empty.", "warning");
         return;
       }
 
@@ -139,7 +139,7 @@ export default function PermissionGroupManagement() {
       resetForm();
       fetchGroups();
     } catch (err) {
-      alert("Failed to save group: " + err.message);
+      showStatusToast("Failed to save group: " + err.message, "error");
     }
   };
 
@@ -154,7 +154,7 @@ export default function PermissionGroupManagement() {
         await axiosInstance.delete(`/admin/groups/${group_id}`);
         fetchGroups();
       } catch (err) {
-        alert("Failed to delete group: " + err.message);
+        showStatusToast("Failed to delete group: " + err.message, "error");
       }
     }
   };
@@ -166,7 +166,7 @@ export default function PermissionGroupManagement() {
 
   const handleGroupSelect = async () => {
     if (!selectedGroupId) {
-      alert("Please select a group.");
+      showStatusToast("Please select a group.", "warning");
       return;
     }
     setShowPermissionActions(true);
@@ -196,7 +196,7 @@ export default function PermissionGroupManagement() {
 
   const handleViewClick = () => {
     if (!selectedGroupId) {
-      alert("Please select a group.");
+      showStatusToast("Please select a group.", "warning");
       return;
     }
     setShowViewList(true);
@@ -207,24 +207,24 @@ export default function PermissionGroupManagement() {
   // Add permission to group
   const handleAddPermissionToGroup = async (permission_id) => {
     if (!selectedGroupId) {
-      alert("Please select a group first.");
+      showStatusToast("Please select a group first.", "warning");
       return;
     }
     try {
       await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [
         permission_id,
       ]);
-      alert("Permission added successfully.");
+      showStatusToast("Permission added successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
-      alert("Failed to add permission: " + err.message);
+      showStatusToast("Failed to add permission: " + err.message, "error");
     }
   };
 
   // Remove permission from group
   const handleRemovePermissionFromGroup = async (permission_id) => {
     if (!selectedGroupId) {
-      alert("Please select a group first.");
+      showStatusToast("Please select a group first.", "warning");
       return;
     }
     try {
@@ -234,10 +234,10 @@ export default function PermissionGroupManagement() {
           data: [permission_id],
         }
       );
-      alert("Permission removed successfully.");
+      showStatusToast("Permission removed successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
-      alert("Failed to remove permission: " + err.message);
+      showStatusToast("Failed to remove permission: " + err.message, "error");
     }
   };
 

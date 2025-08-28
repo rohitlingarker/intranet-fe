@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { showStatusToast } from "../../../../components/toastfy/toast";
 
 import FormInput from "../../../../components/forms/FormInput";
 import Button from "../../../../components/Button/Button";
@@ -39,11 +39,12 @@ export default function CreateUser() {
           },
         }
       );
-      toast.success("User created successfully!");
+      showStatusToast("User created successfully!", "success");
       navigate("/user-management/users");
     } catch (err) {
+      toast.error(err?.response?.data?.detail);
       console.error("User creation failed:", err);
-      toast.error("Failed to create user.");
+      showStatusToast("Failed to create user.", "error");
     }
   };
 
@@ -64,21 +65,35 @@ export default function CreateUser() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormInput
-            label="First Name"
-            name="first_name"
-            value={form.first_name}
-            onChange={handleChange}
-            placeholder="Enter first name"
-            required
-          />
+  label="First Name"
+  name="first_name"
+  value={form.first_name}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only letters and spaces
+    if (/^[A-Za-z\s]*$/.test(value)) {
+      handleChange(e); // Uses your existing handler
+    }
+  }}
+  placeholder="Enter first name"
+  required
+/>
+
           <FormInput
-            label="Last Name"
-            name="last_name"
-            value={form.last_name}
-            onChange={handleChange}
-            placeholder="Enter last name"
-            required
-          />
+  label="Last Name"
+  name="last_name"
+  value={form.last_name}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only alphabets and spaces
+    if (/^[A-Za-z\s]*$/.test(value)) {
+      handleChange(e); // Keep your existing handler
+    }
+  }}
+  placeholder="Enter last name"
+  required
+/>
+
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -92,14 +107,21 @@ export default function CreateUser() {
             required
           />
           <FormInput
-            label="Contact"
-            type="tel"
-            name="contact"
-            value={form.contact}
-            onChange={handleChange}
-            placeholder="Enter contact number"
-            required
-          />
+  label="Contact"
+  type="tel"
+  name="contact"
+  value={form.contact}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only digits and limit to 10
+    if (/^\d{0,10}$/.test(value)) {
+      handleChange(e); // Call your existing handler
+    }
+  }}
+  placeholder="Enter 10-digit contact number"
+  required
+/>
+
         </div>
 
         <FormInput
