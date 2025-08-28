@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getPermissionsByRole } from "../../../../services/roleManagementService";
 import Button from "../../../../components/Button/Button";
 import Pagination from "../../../../components/Pagination/pagination"; // ✅ Import Pagination
-
+import { showStatusToast } from "../../../../components/toastfy/toast";
 const PermissionManagement = ({ roles }) => {
   const [selectedRole, setSelectedRole] = useState(null);
   const [rolePermissions, setRolePermissions] = useState([]);
@@ -27,7 +27,7 @@ const PermissionManagement = ({ roles }) => {
       setCurrentPage(1); // ✅ Reset to first page when role changes
     } catch (err) {
       setShowPermissions(false);
-      alert("Failed to fetch permissions for this role");
+      showStatusToast("Failed to fetch permissions for this role", "error");
     }
   };
 

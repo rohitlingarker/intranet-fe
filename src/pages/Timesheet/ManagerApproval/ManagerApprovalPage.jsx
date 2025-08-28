@@ -14,7 +14,13 @@ const ManagerApprovalPage = () => {
     const fetchTimesheets = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`
+          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch timesheets");

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { showStatusToast } from "../../../../components/toastfy/toast";
 
 import SearchInput from "../../../../components/filter/Searchbar";
 import GenericTable from "../../../../components/Table/table"; // ✅ New Generic Table
@@ -26,7 +26,7 @@ export default function UpdateUserRole() {
 
   useEffect(() => {
     if (!token) {
-      toast.warn("Session expired. Please login again.");
+      showStatusToast("Session expired. Please login again.", "warning");
       navigate("/");
     }
   }, [token, navigate]);
@@ -43,7 +43,7 @@ export default function UpdateUserRole() {
         setUsers(res.data || []);
       } catch (err) {
         console.error("Failed to fetch users with roles:", err);
-        toast.error("Failed to load user roles.");
+        showStatusToast("Failed to load user roles.", "error");
         if (err.response?.status === 401 || err.response?.status === 403) {
           navigate("/home");
         }

@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_USER_MANAGEMENT_URL,
   headers: {
     "Content-Type": "application/json",
   },

@@ -10,7 +10,7 @@ import { Eye, Plus, Trash2, X } from 'lucide-react';
 import Button from "../../../../components/Button/Button";
 import Navbar from "../../../../components/Navbar/Navbar";
 import Pagination from "../../../../components/Pagination/pagination";
- 
+import { showStatusToast } from "../../../../components/toastfy/toast"; 
 const AccessPointMapping = () => {
   const [aps, setAps] = useState([]);
   const [unmappedPermissions, setUnmappedPermissions] = useState([]);
@@ -69,7 +69,7 @@ const AccessPointMapping = () => {
       setShowModal(true);
     } catch (error) {
       console.error('Error fetching unmapped permissions:', error);
-      alert('Failed to load permissions');
+      showStatusToast('Failed to load permissions', 'error');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ const AccessPointMapping = () => {
  
   const handleAssignPermission = async () => {
     if (!selectedPermission) {
-      alert('Please select a permission');
+      showStatusToast('Please select a permission','success');
       return;
     }
     setLoading(true);
@@ -86,13 +86,13 @@ const AccessPointMapping = () => {
         selectedAccessPoint.access_id,
         selectedPermission.permission_id
       );
-      alert('Permission assigned successfully!');
+      showStatusToast('Permission assigned successfully!', 'success');
       setShowModal(false);
       const response = await listAccessPointsumapped();
       setAps(response.data);
     } catch (error) {
       console.error('Error assigning permission:', error);
-      alert('Failed to assign permission');
+      showStatusToast('Failed to assign permission', 'error');
     } finally {
       setLoading(false);
     }

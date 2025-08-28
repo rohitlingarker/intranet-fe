@@ -5,7 +5,7 @@ import PermissionManagement from "./PermissionManagement";
 import PermissionGroupManagement from "./PermissionGroupManagement";
 import { getAllAccessPoints } from "../../../../services/roleManagementService";
 import Navbar from "../../../../components/Navbar/Navbar";
-
+import { showStatusToast } from "../../../../components/toastfy/toast";
 export default function RoleManagement() {
   const [roles, setRoles] = useState([]);
   const [accessPoints, setAccessPoints] = useState([]);
@@ -28,7 +28,7 @@ export default function RoleManagement() {
     } catch (err) {
       console.error("Failed to fetch roles:", err);
       if (err.response?.status === 401) {
-        alert("Session expired. Please log in again.");
+        showStatusToast("Session expired. Please log in again.", "error");
       }
     }
   };
