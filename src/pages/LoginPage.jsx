@@ -66,7 +66,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
+          `${import.meta.env.VITE_MSOffice_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
         );
         const { access_token, redirect: redirectPath } = response.data;
 
