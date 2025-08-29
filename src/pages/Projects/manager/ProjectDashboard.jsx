@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "./CreateProjectModal";
 import Button from "../../../components/Button/Button";
-// import ThreeCard from "../../../components/Cards/ThreeCards";
+import ThreeCard from "../../../components/Cards/ThreeCards";
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -32,6 +32,8 @@ const ProjectDashboard = () => {
     setLoading(true);
     setError(null);
     try {
+        console.log(localStorage.getItem("token") , "12345678");
+      
       const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
         headers: {
           "Content-Type": "application/json",

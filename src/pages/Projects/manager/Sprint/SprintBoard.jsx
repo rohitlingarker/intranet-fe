@@ -13,16 +13,9 @@ const SprintBoard = ({ projectId, projectName }) => {
   const [filter, setFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  // Get JWT token from localStorage
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}` };
-
   const fetchStories = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-        { headers }
-      );
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`);
       setStories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load stories:', err);
@@ -32,10 +25,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-        { headers }
-      );
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`);
       setSprints(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load sprints:', err);
@@ -50,11 +40,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
-        { sprintId },
-        { headers }
-      );
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId });
       await fetchStories();
     } catch (err) {
       console.error('Error assigning story to sprint:', err);
@@ -64,9 +50,7 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
-        {},
-        { headers }
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`
       );
       const updatedSprint = response.data;
 
@@ -80,8 +64,9 @@ const SprintBoard = ({ projectId, projectName }) => {
     }
   };
 
-  const filteredSprints =
-    filter === 'ALL' ? sprints : sprints.filter(s => s.status === filter);
+  const filteredSprints = filter === 'ALL'
+    ? sprints
+    : sprints.filter(s => s.status === filter);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -99,24 +84,30 @@ const SprintBoard = ({ projectId, projectName }) => {
           </Button>
         </div>
 
-        {/* Filter Dropdown */}
+        {/* Filter Buttons */}
         <div className="flex gap-3">
-          <select
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            className="px-4 py-2 border rounded bg-white text-gray-800"
-          >
-            <option value="ALL">ALL</option>
-            <option value="PLANNING">PLANNING</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="COMPLETED">COMPLETED</option>
-          </select>
+          {['ALL', 'PLANNING', 'ACTIVE', 'COMPLETED'].map(type => (
+            <button
+              key={type}
+              className={`px-4 py-1 rounded transition ${
+                filter === type
+                  ? 'bg-pink-800 text-white'
+                  : 'bg-white text-gray-800 border'
+              }`}
+              onClick={() => setFilter(type)}
+            >
+              {type}
+            </button>
+          ))}
         </div>
 
         {/* Sprint Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredSprints.map(sprint => (
-            <div key={sprint.id} className="bg-white rounded-2xl shadow p-6">
+            <div
+              key={sprint.id}
+              className="bg-white rounded-2xl shadow p-6"
+            >
               <SprintColumn
                 sprint={sprint}
                 stories={stories.filter(story => story.sprintId === sprint.id)}
@@ -132,7 +123,7 @@ const SprintBoard = ({ projectId, projectName }) => {
           projectId={projectId}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          onCreated={newSprint => setSprints(prev => [...prev, newSprint])}
+          onCreated={(newSprint) => setSprints(prev => [...prev, newSprint])}
         />
       </div>
     </DndProvider>

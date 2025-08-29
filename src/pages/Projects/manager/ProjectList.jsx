@@ -26,19 +26,18 @@ const ProjectList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [projectsPerPage] = useState(5); // change this number to control projects per page
+  const [projectsPerPage] = useState(5);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  // Fetch all projects
   const fetchProjects = async () => {
     setLoading(true);
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setProjects(data);
@@ -49,13 +48,12 @@ const ProjectList = () => {
     }
   };
 
+  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setUsers(data);
@@ -69,19 +67,13 @@ const ProjectList = () => {
     fetchUsers();
   }, []);
 
-  // Reset page to 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
   const toggleExpand = (id) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-      setEditingProjectId(null);
-    } else {
-      setExpandedId(id);
-      setEditingProjectId(null);
-    }
+    setExpandedId(expandedId === id ? null : id);
+    setEditingProjectId(null);
   };
 
   const startEdit = (project) => {
@@ -116,8 +108,7 @@ const ProjectList = () => {
   };
 
   const handleStatusChange = (e) => {
-    const newStatus = e.target.value;
-    setFormData((prev) => ({ ...prev, status: newStatus }));
+    setFormData((prev) => ({ ...prev, status: e.target.value }));
   };
 
   const handleMemberToggle = (userId) => {
@@ -145,9 +136,7 @@ const ProjectList = () => {
           ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
           memberIds: formData.memberIds || [],
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project updated successfully!", { position: "top-right" });
       setEditingProjectId(null);
@@ -164,9 +153,7 @@ const ProjectList = () => {
     try {
       await axios.delete(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project deleted successfully!", { position: "top-right" });
       fetchProjects();
@@ -181,7 +168,7 @@ const ProjectList = () => {
       p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination calculation
+  // Pagination
   const indexOfLastProject = currentPage * projectsPerPage;
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
   const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
@@ -377,7 +364,6 @@ const ProjectList = () => {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}

@@ -31,6 +31,7 @@ const ProjectTabs = () => {
       axios
         .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`, {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         })

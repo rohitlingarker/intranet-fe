@@ -7,9 +7,6 @@ import 'react-toastify/dist/ReactToastify.css';
 const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
   if (!isOpen) return null;
 
-  const token = localStorage.getItem('token'); // JWT token
-  const headers = { Authorization: `Bearer ${token}` };
-
   const [formData, setFormData] = useState({
     name: '',
     goal: '',
@@ -24,10 +21,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
-          { headers }
-        );
+        const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`);
         const content = Array.isArray(response.data.content)
           ? response.data.content
           : response.data;
@@ -38,7 +32,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
       }
     };
     fetchProjects();
-  }, [token]);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,7 +47,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
 
     const payload = {
       name: formData.name,
-      goal: formData.goal || null,
+      goal: formData.goal || null, // optional
       startDate: toLocalDateTime(formData.startDate),
       endDate: toLocalDateTime(formData.endDate),
       status: formData.status,
@@ -61,11 +55,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
     };
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`,
-        payload,
-        { headers }
-      );
+      const response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, payload);
 
       toast.success('✅ Sprint created successfully!', {
         position: 'top-right',
@@ -83,6 +73,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
         projectId: projectId.toString(),
       });
 
+      // Wait for toast to be visible before closing modal
       setTimeout(() => {
         onClose();
       }, 500);
@@ -99,6 +90,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
     <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xl max-h-screen overflow-y-auto p-6 relative">
         <ToastContainer />
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"

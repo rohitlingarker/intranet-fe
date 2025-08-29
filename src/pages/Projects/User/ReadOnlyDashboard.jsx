@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
-// import ThreeCard from "../../../components/Cards/ThreeCards";
+import ThreeCard from "../../../components/Cards/ThreeCards";
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -80,7 +80,7 @@ const ProjectDashboard = () => {
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <div className="flex gap-3">
           <Button
-            onClick={() => navigate("/projects/userprojectlist")}
+            onClick={() => navigate("/projects/userlist")}
             variant="secondary"
           >
             View Project List

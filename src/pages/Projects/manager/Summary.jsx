@@ -17,6 +17,7 @@ const Summary = ({ projectId, projectName }) => {
   const [expandedItems, setExpandedItems] = useState({});
 
   const token = localStorage.getItem('token');
+  
 
   useEffect(() => {
     const fetchAll = async () => {
