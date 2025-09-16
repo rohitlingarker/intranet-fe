@@ -22,7 +22,7 @@ const CreateEpic = ({ onClose }) => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/projects")
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`)
       .then((response) => {
         const content = response.data.content || response.data;
         if (Array.isArray(content)) {
@@ -56,7 +56,7 @@ const CreateEpic = ({ onClose }) => {
     };
 
     axios
-      .post("http://localhost:8080/api/epics", payload)
+      .post(`${import.meta.env.VITE_PMS_BASE_URL}/api/epics`, payload)
       .then((res) => {
         console.log("Epic created:", res.data);
         setShowSuccess(true);
