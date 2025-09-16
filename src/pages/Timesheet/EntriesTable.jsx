@@ -17,10 +17,10 @@ const EntriesTable = ({
   setAddingNewEntry,
   setAddingNewTimesheet,
   refreshData, // callback to reload entries after update
+  projectInfo,
 }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
-  const [projectInfo, setProjectInfo] = useState([]);
 
   const [addData, setAddData] = useState({workType:"Office"});
 
@@ -30,9 +30,7 @@ const EntriesTable = ({
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
-  useEffect(() => {
-    fetchProjectTaskInfo().then(setProjectInfo);
-  }, [userId]);
+  
 
   const workTypeOptions = [
     { label: "Office", value: "Office" },
