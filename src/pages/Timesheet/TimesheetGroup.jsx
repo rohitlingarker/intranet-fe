@@ -35,6 +35,7 @@ const TimesheetGroup = ({
   addingNewTimesheet,
   setAddingNewTimesheet,
   refreshData, // ✅ Optional: Refresh parent state after save
+  projectInfo
 }) => {
   const totalHours = calculateTotalHours(entries);
 
@@ -87,6 +88,7 @@ const TimesheetGroup = ({
         setAddingNewEntry={setAddingNewEntry}
         setAddingNewTimesheet={setAddingNewTimesheet}
         refreshData={refreshData} // ✅ Pass the callback to refresh data
+        projectInfo = {projectInfo}
       />
     </div>
   );
