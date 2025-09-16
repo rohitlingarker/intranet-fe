@@ -49,13 +49,14 @@ const ManagerApprovalTable = () => {
   const fetchProjectTaskInfo = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/project-info`,
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/timesheet/project-info`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      if (!res.ok)
-        throw new Error(`Failed to fetch project info for user`);
+      if (!res.ok) throw new Error(`Failed to fetch project info for user`);
 
       const data = await res.json();
       const newProjects = {};
@@ -129,7 +130,7 @@ const ManagerApprovalTable = () => {
     comment = "Approved"
   ) => {
     try {
-      await reviewTimesheet( timesheetId, comment, status);
+      await reviewTimesheet(timesheetId, comment, status);
       fetchTimesheets();
     } catch (err) {
       console.error(`Error updating timesheet status: ${err.message}`);
@@ -161,7 +162,16 @@ const ManagerApprovalTable = () => {
     setCurrentPage(1);
   };
 
-  const uniqueUsers = [...new Set(timesheets.map((ts) => ts.userId))];
+  const uniqueUsers = [
+    ...new Map(
+      timesheets.map((ts) => [
+        ts.userId,
+        { userId: ts.userId, userName: ts.userName },
+      ])
+    ).values(),
+  ];
+
+  console.log("uniqueUsers", uniqueUsers);
 
   // CSV Export
   const exportCSV = () => {
@@ -299,9 +309,9 @@ const ManagerApprovalTable = () => {
           className="border rounded p-2 bg-gray-50"
         >
           <option value="All">All Users</option>
-          {uniqueUsers.map((uid) => (
-            <option key={uid} value={uid}>
-              {`${uid} - User_${uid}`}
+          {uniqueUsers.map((user) => (
+            <option key={user.userId} value={user.userName}>
+              {user.userName}
             </option>
           ))}
         </select>
@@ -357,8 +367,8 @@ const ManagerApprovalTable = () => {
                 {formattedDate}
               </span>
               <div className="flex items-center gap-4">
-                <span  className="text-gray-600 text-sm">
-                 Total Hours: {totalHours.toFixed(2)}
+                <span className="text-gray-600 text-sm">
+                  Total Hours: {totalHours.toFixed(2)}
                 </span>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
