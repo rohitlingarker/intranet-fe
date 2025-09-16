@@ -410,7 +410,7 @@ const ManagerApprovalTable = () => {
                 {sheet.entries.map((entry) => (
                   <tr key={entry.timesheetEntryId} className="border-t">
                     <td className="px-4 py-2">{sheet.userId}</td>
-                    <td className="px-4 py-2">{`user_${sheet.userId}`}</td>
+                    <td className="px-4 py-2">{sheet.userName}</td>
                     <td className="px-4 py-2">
                       {projectMap[entry.projectId] ||
                         `Project-${entry.projectId}`}
