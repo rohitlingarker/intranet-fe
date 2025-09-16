@@ -66,13 +66,13 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
+          `${import.meta.env.VITE_MSOffice_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
         );
         const { access_token, redirect: redirectPath } = response.data;
 
         console.log("Access Token:", access_token);
         login(access_token);
-        localStorage.setItem("user", JSON.stringify({ email, role: mockUsers[email].role }));
+        localStorage.setItem("user", JSON.stringify({ access_token: access_token }));
         window.history.replaceState({}, document.title, window.location.pathname);
         navigate(redirectPath || "/home", { replace: true });
       } catch (err) {

@@ -1,9 +1,9 @@
 import React from 'react';
 import StoryCard from './StoryCard';
 
-const SprintColumn = ({ sprint, stories }) => {
+const SprintColumn = ({ sprint, stories, onChangeStatus }) => {
   return (
-    <div className="border rounded-xl shadow p-4 bg-white transition">
+    <div className="border rounded-xl shadow p-4 bg-white">
       <div className="flex justify-between items-start mb-2">
         <div>
           <h3 className="text-lg font-semibold text-indigo-900">{sprint.name}</h3>
@@ -11,6 +11,25 @@ const SprintColumn = ({ sprint, stories }) => {
             {sprint.startDate} → {sprint.endDate}
           </p>
         </div>
+
+        {/* Sprint Status Actions */}
+        {onChangeStatus && sprint.status === 'PLANNING' && (
+          <button
+            className="text-indigo-900 border border-indigo-900 px-2 py-1 rounded text-xs hover:bg-indigo-900 hover:text-white"
+            onClick={() => onChangeStatus(sprint.id, 'start')}
+          >
+            Start
+          </button>
+        )}
+
+        {onChangeStatus && sprint.status === 'ACTIVE' && (
+          <button
+            className="text-pink-800 border border-pink-800 px-2 py-1 rounded text-xs hover:bg-pink-800 hover:text-white"
+            onClick={() => onChangeStatus(sprint.id, 'complete')}
+          >
+            Complete
+          </button>
+        )}
       </div>
 
       {/* Stories */}

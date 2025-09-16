@@ -32,7 +32,7 @@ import Board from './pages/Projects/manager/Board';
 import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
 import ProjectTabs from './pages/Projects/manager/ProjectTabs';
 import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
-import AdminDashboard from './pages/Projects/Admin/admindashboard';
+// import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
 import UserBacklog from './pages/Projects/User/UserBacklog/userbacklog';
 import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
 import ProjectList from './pages/Projects/manager/ProjectList';
@@ -172,11 +172,25 @@ const AppRoutes = () => {
           <Route path="/profile/edit" element={<EditProfile />} />
 
           {/* Projects */}
-          <Route path="/projects/dashboard" element={<AdminDashboard />} />
+          {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
-          <Route path="/projects/manager" element={<ProjectDashboard />} />
+
+
+          <Route path="/projects/manager" element={
+              <ProtectedRoute allowedRoles={["Manager"]}>
+                <ProjectDashboard />
+              </ProtectedRoute>
+            }/>
+
+
           <Route path="/projects/*" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
+          <Route path="/projects/list" element={<ProjectList />} />
+          <Route path="/projects/performance" element={<EmployeePerformance />} />
+          <Route path="/projects/userlist" element={<UserProjectList />} />
+          {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
+          <Route path="/projects/userbacklog/:projectId" element={<UserBacklog />} />
+          {/* <Route path="/projects/admin" element={<AdminDashboard />} /> */}
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}

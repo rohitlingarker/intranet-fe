@@ -3,12 +3,12 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
-
+ 
 import FormInput from "../../../../components/forms/FormInput";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
-
+ 
 const CreateIssueForm = ({
   mode = "create",
   issueType: initialIssueType = "Epic",
@@ -24,12 +24,16 @@ const CreateIssueForm = ({
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
 
+  // Set token here
+  const token = localStorage.getItem("token"); // or wherever you store your JWT
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+ 
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setFormData(initialData);
     }
   }, [mode, initialData]);
-
+ 
   useEffect(() => {
     axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`)
       .then((res) => setProjects(res.data.content || res.data || []));
@@ -38,7 +42,7 @@ const CreateIssueForm = ({
     axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`)
       .then((res) => setSprints(res.data.content || res.data || []));
   }, []);
-
+ 
   useEffect(() => {
     const projectId = formData.projectId;
     if (projectId) {
@@ -51,7 +55,7 @@ const CreateIssueForm = ({
       setStories([]);
     }
   }, [formData.projectId]);
-
+ 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -61,10 +65,12 @@ const CreateIssueForm = ({
         : value,
     }));
   };
-
+ 
+  const regex = /^(?!.* {3,})[A-Za-z0-9 ]+$/;
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+ 
     let payload = {};
     const endpoint =
       issueType === "Epic"
@@ -72,7 +78,7 @@ const CreateIssueForm = ({
         : issueType === "User Story"
         ? "/api/stories"
         : "/api/tasks";
-
+ 
     if (issueType === "Epic") {
       payload = {
         name: formData.name,
@@ -113,7 +119,7 @@ const CreateIssueForm = ({
         projectId: Number(formData.projectId),
       };
     }
-
+ 
     try {
       if (mode === "edit") {
         await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload);
@@ -133,7 +139,7 @@ const CreateIssueForm = ({
       );
     }
   };
-
+ 
   return (
     <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
       <button
@@ -143,12 +149,12 @@ const CreateIssueForm = ({
       >
         <X size={20} />
       </button>
-
+ 
       <ToastContainer />
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
         {mode === "edit" ? `Edit ${issueType}` : `Create ${issueType}`}
       </h2>
-
+ 
       {mode === "create" && (
         <div className="mb-4">
           <FormSelect
@@ -167,7 +173,7 @@ const CreateIssueForm = ({
           />
         </div>
       )}
-
+ 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Common Project */}
         <FormSelect
@@ -178,7 +184,7 @@ const CreateIssueForm = ({
           options={projects.map((p) => ({ label: p.name, value: p.id }))}
           required
         />
-
+ 
         {/* Epic */}
         {issueType === "Epic" && (
           <>
@@ -186,8 +192,13 @@ const CreateIssueForm = ({
               label="Name *"
               name="name"
               value={formData.name || ""}
-              onChange={handleChange}
-              required
+              onChange={(e) => {
+        const value = e.target.value;
+        const regex = /^(?!.* {3,})[A-Za-z0-9 ]*$/;
+        if (value === "" || regex.test(value)) {
+          handleChange(e);
+        }
+      }}
             />
             <FormTextArea
               label="Description (Optional)"
@@ -218,7 +229,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         {/* User Story */}
         {issueType === "User Story" && (
           <>
@@ -226,8 +237,13 @@ const CreateIssueForm = ({
               label="Title *"
               name="title"
               value={formData.title || ""}
-              onChange={handleChange}
-              required
+              onChange={(e) => {
+        const value = e.target.value;
+        const regex = /^(?!.* {3,})[A-Za-z0-9 ]*$/;
+        if (value === "" || regex.test(value)) {
+          handleChange(e);
+        }
+      }}
             />
             <FormTextArea
               label="Description (Optional)"
@@ -283,7 +299,7 @@ const CreateIssueForm = ({
               required
             />
             <FormSelect
-              label="Sprint (optional)"
+              label="Sprint *"
               name="sprintId"
               value={formData.sprintId || ""}
               onChange={handleChange}
@@ -307,7 +323,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         {/* Task */}
         {issueType === "Task" && (
           <>
@@ -315,8 +331,13 @@ const CreateIssueForm = ({
               label="Title *"
               name="title"
               value={formData.title || ""}
-              onChange={handleChange}
-              required
+              onChange={(e) => {
+        const value = e.target.value;
+        const regex = /^(?!.* {3,})[A-Za-z0-9 ]*$/;
+        if (value === "" || regex.test(value)) {
+          handleChange(e);
+        }
+      }}
             />
             <FormTextArea
               label="Description (Optional)"
@@ -395,7 +416,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         <div className="pt-4">
           <button
             type="submit"
@@ -408,5 +429,5 @@ const CreateIssueForm = ({
     </div>
   );
 };
-
+ 
 export default CreateIssueForm;

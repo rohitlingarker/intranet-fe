@@ -16,12 +16,17 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     startDate: "",     // Optional
     endDate: "",       // Optional
   });
+  const [dateError, setDateError] = useState(false);
+
+  const token = localStorage.getItem("token"); // JWT token
 
   useEffect(() => {
     if (!isOpen) return;
 
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`)
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((res) => {
         const content = res.data.content;
         if (Array.isArray(content)) {
@@ -31,18 +36,41 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         }
       })
       .catch((err) => console.error("Error fetching users:", err));
-  }, [isOpen]);
+  }, [isOpen, token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "name") {
+      const cleanedValue = value.replace(/[^a-zA-Z0-9 ]/g, "");
+      const finalValue = cleanedValue.replace(/\s+/g, " ");
+      setFormData((prev) => ({ ...prev, [name]: finalValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    if (name === "startDate" || name === "endDate") {
+      const { startDate, endDate } = { ...formData, [name]: value };
+      if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+        setDateError(true);
+      } else {
+        setDateError(false);
+      }
+    }
   };
 
   const handleOwnerChange = (e) => {
-    setFormData({ ...formData, ownerId: e.target.value });
+    const newOwnerId = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      ownerId: newOwnerId,
+      memberIds: prev.memberIds.filter((id) => id.toString() !== newOwnerId),
+    }));
   };
 
   const handleMemberCheckboxChange = (userId) => {
+    if (userId.toString() === formData.ownerId.toString()) return;
+
     setFormData((prev) => {
       const updated = prev.memberIds.includes(userId)
         ? prev.memberIds.filter((id) => id !== userId)
@@ -58,13 +86,25 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const projectName = formData.name.trim();
+    if (!projectName || /^[^a-zA-Z0-9]+$/.test(projectName)) {
+      toast.error("❌ Project name must contain valid characters (letters/numbers).");
+      return;
+    }
+
     if (!formData.ownerId) {
       alert("Please select a project owner.");
       return;
     }
 
+    if (dateError) {
+      toast.error("❌ End date cannot be before Start date.");
+      return;
+    }
+
     const payload = {
       ...formData,
+      name: projectName,
       ownerId: parseInt(formData.ownerId),
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
       endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
@@ -72,13 +112,14 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 
     try {
       setIsSubmitting(true);
-      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload);
+      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      toast.success(" Project created successfully!");
+      toast.success("✅ Project created successfully!");
 
       if (onProjectCreated) onProjectCreated();
 
-      // Reset form
       setFormData({
         name: "",
         projectKey: "",
@@ -90,6 +131,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         endDate: "",
       });
 
+      setDateError(false);
       onClose();
     } catch (error) {
       console.error("Failed to create project:", error.response?.data || error);
@@ -107,7 +149,6 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Required Fields */}
           <input
             name="name"
             placeholder="Project Name *"
@@ -150,7 +191,6 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             ))}
           </select>
 
-          {/* Optional Fields */}
           <textarea
             name="description"
             placeholder="Project Description (Optional)"
@@ -165,9 +205,10 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
               <input
                 type="date"
                 name="startDate"
-                className="w-full border px-4 py-2 rounded"
+                className={`w-full border px-4 py-2 rounded ${dateError ? "border-red-500" : ""}`}
                 value={formData.startDate}
                 onChange={handleInputChange}
+                onKeyDown={(e) => e.preventDefault()}
               />
             </div>
             <div>
@@ -175,12 +216,16 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
               <input
                 type="date"
                 name="endDate"
-                className="w-full border px-4 py-2 rounded"
+                className={`w-full border px-4 py-2 rounded ${dateError ? "border-red-500" : ""}`}
                 value={formData.endDate}
                 onChange={handleInputChange}
+                onKeyDown={(e) => e.preventDefault()}
               />
             </div>
           </div>
+          {dateError && (
+            <p className="text-red-600 text-sm mt-1">⚠️ End date cannot be before Start date</p>
+          )}
 
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members (Optional):</p>
@@ -191,6 +236,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
                     type="checkbox"
                     checked={formData.memberIds.includes(user.id)}
                     onChange={() => handleMemberCheckboxChange(user.id)}
+                    disabled={formData.ownerId.toString() === user.id.toString()}
                   />
                   {user.name} ({user.role})
                 </label>

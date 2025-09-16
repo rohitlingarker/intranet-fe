@@ -14,10 +14,17 @@ const CreateSprint = ({ onClose }) => {
 
   const [projects, setProjects] = useState([]);
 
+  // Get token from localStorage (or wherever you store it)
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/projects');
+        const response = await axios.get('http://localhost:8080/api/projects', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const content = Array.isArray(response.data.content)
           ? response.data.content
           : response.data;
@@ -27,7 +34,7 @@ const CreateSprint = ({ onClose }) => {
       }
     };
     fetchProjects();
-  }, []);
+  }, [token]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,7 +50,6 @@ const CreateSprint = ({ onClose }) => {
       return;
     }
 
-    // Payload example for backend expecting `projectId`
     const payload = {
       name: formData.name,
       goal: formData.goal,
@@ -54,7 +60,11 @@ const CreateSprint = ({ onClose }) => {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/sprints', payload);
+      await axios.post('http://localhost:8080/api/sprints', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       alert('✅ Sprint created successfully!');
       setFormData({
         name: '',

@@ -20,27 +20,36 @@ const CreateUserStory = ({ onClose }) => {
   const [sprints, setSprints] = useState([]);
   const [epics, setEpics] = useState([]);
 
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+
   useEffect(() => {
-    axios.get('http://localhost:8080/api/users').then((res) => {
-      setUsers(res.data?.content ?? res.data ?? []);
-    });
+    const fetchData = async () => {
+      try {
+        const [usersRes, projectsRes, sprintsRes] = await Promise.all([
+          axios.get('http://localhost:8080/api/users', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/api/projects', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/api/sprints', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
 
-    axios.get('http://localhost:8080/api/projects').then((res) => {
-      setProjects(res.data?.content ?? res.data ?? []);
-    });
+        setUsers(usersRes.data?.content ?? usersRes.data ?? []);
+        setProjects(projectsRes.data?.content ?? projectsRes.data ?? []);
+        setSprints(sprintsRes.data?.content ?? sprintsRes.data ?? []);
+      } catch (err) {
+        console.error('Failed to fetch users, projects, or sprints:', err);
+      }
+    };
 
-    axios.get('http://localhost:8080/api/sprints').then((res) => {
-      setSprints(res.data?.content ?? res.data ?? []);
-    });
-  }, []);
+    fetchData();
+  }, [token]);
 
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`http://localhost:8080/api/projects/${projectId}/epics`)
-        .then((res) => {
-          setEpics(res.data?.content ?? res.data ?? []);
+        .get(`http://localhost:8080/api/projects/${projectId}/epics`, {
+          headers: { Authorization: `Bearer ${token}` },
         })
+        .then((res) => setEpics(res.data?.content ?? res.data ?? []))
         .catch((err) => {
           console.error('Failed to load epics for project:', err);
           setEpics([]);
@@ -48,7 +57,7 @@ const CreateUserStory = ({ onClose }) => {
     } else {
       setEpics([]);
     }
-  }, [projectId]);
+  }, [projectId, token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,7 +82,10 @@ const CreateUserStory = ({ onClose }) => {
 
       console.log('Submitting story:', payload);
 
-      const response = await axios.post('http://localhost:8080/api/stories', payload);
+      const response = await axios.post('http://localhost:8080/api/stories', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       console.log('Story created:', response.data);
       onClose();
     } catch (error) {
@@ -86,7 +98,6 @@ const CreateUserStory = ({ onClose }) => {
     <div className="p-6 bg-white rounded-lg shadow-md max-w-xl mx-auto">
       <h2 className="text-xl font-bold mb-4">Create User Story</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-
         <input
           type="text"
           placeholder="Title"

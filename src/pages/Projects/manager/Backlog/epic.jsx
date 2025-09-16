@@ -14,6 +14,12 @@ const CreateEpic = ({ onClose }) => {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Get token from localStorage (or wherever you store it)
+  const token = localStorage.getItem("token");
+
+  // Axios default header for Authorization
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
   useEffect(() => {
     axios
       .get("http://localhost:8080/api/projects")

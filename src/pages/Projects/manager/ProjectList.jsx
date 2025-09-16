@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
 import CreateProjectModal from "./CreateProjectModal";
+import Pagination from "../../../components/Pagination/pagination";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -24,19 +25,21 @@ const ProjectList = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [projectsPerPage] = useState(5);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  // Fetch all projects
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data.content || [];
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setProjects(data);
     } catch (error) {
       console.error("Failed to fetch projects", error);
@@ -45,17 +48,14 @@ const ProjectList = () => {
     }
   };
 
+  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data.content || [];
+      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setUsers(data);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -67,14 +67,13 @@ const ProjectList = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   const toggleExpand = (id) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-      setEditingProjectId(null);
-    } else {
-      setExpandedId(id);
-      setEditingProjectId(null);
-    }
+    setExpandedId(expandedId === id ? null : id);
+    setEditingProjectId(null);
   };
 
   const startEdit = (project) => {
@@ -98,7 +97,6 @@ const ProjectList = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Restrict edits if archived and not changing status
     if (formData.status === "ARCHIVED" && name !== "status") {
       toast.warn("Archived projects can only have their status changed to ACTIVE.", {
         position: "top-right",
@@ -110,8 +108,7 @@ const ProjectList = () => {
   };
 
   const handleStatusChange = (e) => {
-    const newStatus = e.target.value;
-    setFormData((prev) => ({ ...prev, status: newStatus }));
+    setFormData((prev) => ({ ...prev, status: e.target.value }));
   };
 
   const handleMemberToggle = (userId) => {
@@ -139,9 +136,7 @@ const ProjectList = () => {
           ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
           memberIds: formData.memberIds || [],
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project updated successfully!", { position: "top-right" });
       setEditingProjectId(null);
@@ -158,9 +153,7 @@ const ProjectList = () => {
     try {
       await axios.delete(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project deleted successfully!", { position: "top-right" });
       fetchProjects();
@@ -174,6 +167,12 @@ const ProjectList = () => {
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination
+  const indexOfLastProject = currentPage * projectsPerPage;
+  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
+  const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
+  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -198,11 +197,11 @@ const ProjectList = () => {
 
       {loading ? (
         <p className="text-gray-600">Loading projects...</p>
-      ) : filteredProjects.length === 0 ? (
+      ) : currentProjects.length === 0 ? (
         <p className="text-gray-600">No projects found.</p>
       ) : (
         <div className="space-y-4">
-          {filteredProjects.map((project) => (
+          {currentProjects.map((project) => (
             <div key={project.id} className="bg-white rounded-xl shadow p-4">
               <div
                 className="flex justify-between items-center cursor-pointer"
@@ -211,9 +210,7 @@ const ProjectList = () => {
                 <div className="flex items-center gap-2">
                   {expandedId === project.id ? <ChevronDown /> : <ChevronRight />}
                   <h2 className="text-xl font-semibold">{project.name}</h2>
-                  <span className="text-gray-500 text-sm">
-                    ({project.projectKey})
-                  </span>
+                  <span className="text-gray-500 text-sm">({project.projectKey})</span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -331,8 +328,7 @@ const ProjectList = () => {
                   ) : (
                     <div className="space-y-2 text-sm text-gray-700">
                       <p>
-                        <strong>Description:</strong>{" "}
-                        {project.description || "—"}
+                        <strong>Description:</strong> {project.description || "—"}
                       </p>
                       <p>
                         <strong>Status:</strong> {project.status}
@@ -366,6 +362,15 @@ const ProjectList = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        />
       )}
 
       <CreateProjectModal
