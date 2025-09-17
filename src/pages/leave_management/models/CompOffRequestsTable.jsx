@@ -1,30 +1,44 @@
 import React, { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
+import { toast } from "react-toastify"; // 1. Import toast
 
 const CompOffRequestsTable = ({ requests, onCancel }) => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // 2. Add loading state
 
   const handleCancelClick = (id) => {
     setSelectedRequestId(id);
     setConfirmModalOpen(true);
   };
 
-  const confirmCancellation = () => {
-    if (selectedRequestId) {
-      onCancel(selectedRequestId);
+  // 3. Make the confirmation handler async to await the onCancel prop
+  const confirmCancellation = async () => {
+    if (!selectedRequestId) return;
+
+    setIsLoading(true); // Start loading
+    try {
+      // The onCancel function (passed from the parent) handles the API call
+      // and the subsequent data refresh. We just await its completion.
+      await onCancel(selectedRequestId);
+      
+      toast.success("Request cancelled successfully!"); // Show success message
+      
+    } catch (error) {
+      toast.error(error.message || "Failed to cancel request."); // Show error message
+    } finally {
+      setIsLoading(false); // Stop loading
+      setConfirmModalOpen(false);
+      setSelectedRequestId(null);
     }
-    setConfirmModalOpen(false);
-    setSelectedRequestId(null);
   };
 
   const cancelModal = () => {
     setConfirmModalOpen(false);
     setSelectedRequestId(null);
-  }; 
+  };
 
-  // Filter only pending requests once
   const pendingRequests = requests?.filter((req) => req.status === "PENDING") || [];
 
   return (
@@ -75,13 +89,14 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
         )}
       </div>
 
-      {/* Confirmation Modal */}
+      {/* 4. Pass the loading state to the modal */}
       <ConfirmationModal
         isOpen={confirmModalOpen}
         title="Cancel Comp-Off Request"
         message="Are you sure you want to cancel this comp-off request?"
         onConfirm={confirmCancellation}
         onCancel={cancelModal}
+        isLoading={isLoading} 
       />
     </div>
   );
