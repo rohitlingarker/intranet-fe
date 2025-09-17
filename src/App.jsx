@@ -163,6 +163,7 @@ const AppRoutes = () => {
         >
           {/* Main */}
           <Route path="/dashboard" element={<Dashboard />} />
+          {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
@@ -183,7 +184,7 @@ const AppRoutes = () => {
             }/>
 
 
-          <Route path="/projects/*" element={<ProjectManager />} />
+          <Route path="/projects/" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
           <Route path="/projects/performance" element={<EmployeePerformance />} />

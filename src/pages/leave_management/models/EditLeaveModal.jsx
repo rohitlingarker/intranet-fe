@@ -6,12 +6,19 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const token = localStorage.getItem("token");
 
-// --- Helper functions remain the same ---
-function mapLeaveBalancesToDropdown(balances) {
+// --- 1. UPDATED HELPER FUNCTION ---
+// This new version now accepts 'leaveTypes' to map names to user-friendly labels.
+function mapLeaveBalancesToDropdown(balances, leaveTypes) {
   return balances.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
-    const leaveName = balance.leaveType.leaveName.replace(/^L-/, "");
+    const originalName = balance.leaveType.leaveName;
+
+    // Find the corresponding type from the fetched list to get its 'label'
+    const matchingType = leaveTypes.find((type) => type.name === originalName);
+    const leaveName = matchingType ? matchingType.label : originalName.replace(/^L-/, "");
+
     let availableText;
     let isInfinite = false;
 
@@ -29,7 +36,7 @@ function mapLeaveBalancesToDropdown(balances) {
 
     return {
       leaveTypeId,
-      leaveName,
+      leaveName, // This will now be the user-friendly label
       availableText,
       availableDays: isInfinite ? Infinity : balance.remainingLeaves,
       isInfinite,
@@ -40,14 +47,18 @@ function mapLeaveBalancesToDropdown(balances) {
   });
 }
 
+
+// --- Other helper functions remain the same ---
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0];
 }
+
 function isWeekend(dateStr) {
   if (!dateStr) return false;
   const d = new Date(dateStr);
   return d.getDay() === 0 || d.getDay() === 6;
 }
+
 function countWeekdaysBetween(fromDate, toDate, isHalfDay) {
   if (!fromDate || !toDate) return 0;
   if (isHalfDay) return isWeekend(fromDate) ? 0 : 0.5;
@@ -61,12 +72,8 @@ function countWeekdaysBetween(fromDate, toDate, isHalfDay) {
   }
   return count;
 }
-function countAllDaysBetween(fromDate, toDate) {
-  if (!fromDate || !toDate) return 0;
-  const diffTime = new Date(toDate) - new Date(fromDate);
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-}
 
+// --- HeadlessUI Dropdown Component (Unchanged) ---
 function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
   const sel = options.find((o) => o.leaveTypeId === selectedId) ?? null;
   return (
@@ -95,7 +102,11 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
           </span>
         </Listbox.Button>
-        <Transition as={Fragment}>
+        <Transition as={Fragment}
+            leave="transition ease-in duration-100"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+        >
           <Listbox.Options className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 shadow-2xl ring-1 ring-black ring-opacity-5">
             {options.map((option) => (
               <Listbox.Option
@@ -104,8 +115,8 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
                 disabled={option.disabled}
                 className={({ active, disabled }) =>
                   `py-3 px-4 flex items-center justify-between cursor-pointer select-none rounded-lg
-                   ${active && !disabled ? "bg-indigo-50 text-indigo-900" : ""}
-                   ${disabled ? "opacity-40 cursor-not-allowed" : ""}`
+                  ${active && !disabled ? "bg-indigo-50 text-indigo-900" : ""}
+                  ${disabled ? "opacity-40 cursor-not-allowed" : ""}`
                 }
               >
                 {({ selected }) => (
@@ -126,6 +137,7 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
   );
 }
 
+
 export default function EditLeaveModal({
   employeeId,
   isOpen,
@@ -142,8 +154,27 @@ export default function EditLeaveModal({
   const [driveLink, setDriveLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const token = localStorage.getItem('token');
+  
+  // --- 2. ADD STATE TO STORE FETCHED LEAVE TYPES ---
+  const [leaveTypes, setLeaveTypes] = useState([]);
+
+
+  // --- 3. FETCH LEAVE TYPES WHEN THE MODAL OPENS ---
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      if (!isOpen) return;
+      try {
+        const res = await axios.get(`${BASE_URL}/api/leave/types`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLeaveTypes(res.data); // Backend returns [{ name, label }]
+      } catch (err) {
+        toast.error("Failed to load leave type details.");
+      }
+    };
+
+    fetchLeaveTypes();
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -158,16 +189,14 @@ export default function EditLeaveModal({
     }
   }, [isOpen, initialData]);
 
-  const leaveTypeOptions = mapLeaveBalancesToDropdown(leaveBalances);
+  // --- 4. USE THE NEW HELPER FUNCTION WITH BOTH BALANCES AND TYPES ---
+  const leaveTypeOptions = mapLeaveBalancesToDropdown(leaveBalances, leaveTypes);
+
   const todayStr = getTodayDateString();
   const weekdays = countWeekdaysBetween(
     startDate,
     isHalfDay ? startDate : endDate,
     isHalfDay
-  );
-  const totalDays = countAllDaysBetween(
-    startDate,
-    isHalfDay ? startDate : endDate
   );
   const selectedLeaveType = leaveTypeOptions.find(
     (o) => o.leaveTypeId === leaveTypeId
@@ -203,9 +232,7 @@ export default function EditLeaveModal({
       const { data } = await axios.put(
         `${BASE_URL}/api/leave-requests/employee/update`,
         payload,
-        {headers:{
-          Authorization: `Bearer ${token}`
-        }}
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Leave request updated successfully");
       if (onSuccess) onSuccess(data);
@@ -228,7 +255,6 @@ export default function EditLeaveModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 max-h-[90vh] overflow-y-auto border border-gray-100">
-        {/* Header */}
         <div className="sticky top-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-900">Edit Leave</h2>
           <button
@@ -239,20 +265,13 @@ export default function EditLeaveModal({
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleUpdate} className="px-6 py-5 space-y-6">
           {error && (
             <div className="bg-red-50 p-3 rounded-lg text-red-700 text-sm">
               {error}
             </div>
           )}
-          {success && (
-            <div className="bg-green-50 p-3 rounded-lg text-green-700 text-sm">
-              {success}
-            </div>
-          )}
 
-          {/* Dates */}
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-gray-700">
@@ -283,7 +302,6 @@ export default function EditLeaveModal({
             </div>
           </div>
 
-          {/* Half Day Toggle */}
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <input
               type="checkbox"
@@ -298,15 +316,12 @@ export default function EditLeaveModal({
             Apply for half day
           </label>
 
-
-          {/* Days Info */}
           <div className="flex justify-center">
             <span className="px-4 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-200 shadow-sm">
               {weekdays} {weekdays === 1 ? "day" : "days"}
             </span>
           </div>
 
-          {/* Leave Type */}
           <div>
             <label className="text-sm font-medium text-gray-700">
               Leave Type
@@ -318,7 +333,6 @@ export default function EditLeaveModal({
             />
           </div>
 
-          {/* Reason */}
           <div>
             <label className="text-sm font-medium text-gray-700">Reason</label>
             <textarea
@@ -329,7 +343,6 @@ export default function EditLeaveModal({
             />
           </div>
 
-          {/* Drive Link */}
           {shouldShowDriveLink() && (
             <div>
               <label className="text-sm font-medium text-gray-700">
@@ -344,7 +357,6 @@ export default function EditLeaveModal({
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
