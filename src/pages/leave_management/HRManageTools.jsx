@@ -7,7 +7,8 @@ import { Trash } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
 import toast from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
- 
+import ConfirmationModal from "./models/ConfirmationModal";
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const HRManageTools = ({ employeeId }) => {
@@ -15,26 +16,32 @@ const HRManageTools = ({ employeeId }) => {
   const [isAddLeaveTypeModalOpen, setIsAddLeaveTypeModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] = useState(null);
   const navigate = useNavigate();
- 
-  const token = localStorage.getItem('token');
+
+  const token = localStorage.getItem("token");
   // const isHR = user?.role?.toLowerCase() === "hr";
- 
+
   useEffect(() => {
     fetchLeaveTypes();
   }, []);
- 
+
   const fetchLeaveTypes = () => {
     axios
-      .get(`${BASE_URL}/api/leave/get-all-leave-types`,{
-        headers:{
-          Authorization: `Bearer ${token}`
-        }
+      .get(`${BASE_URL}/api/leave/get-all-leave-types`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
       .then((res) => setLeaveTypes(res.data))
       .catch((err) => console.error("Failed to fetch leave types", err));
   };
- 
+
+  const confirmDelete = (leaveTypeId) => {
+    setSelectedLeaveTypeIdToDelete(leaveTypeId);
+    setIsDeleteConfirmationOpen(true);
+  };
   // if (!isHR) {
   //   return (
   //     <div className="text-red-600 font-semibold p-4">
@@ -42,43 +49,45 @@ const HRManageTools = ({ employeeId }) => {
   //     </div>
   //   );
   // }
- 
- const handleDeleteLeaveType = async (leaveTypeId) => {
-  try {
-    await axios.delete(
-      `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,{
-        headers:{
-          Authorization: `Bearer ${token}`
+
+  const handleDeleteLeaveType = async (leaveTypeId) => {
+    try {
+      await axios.delete(
+        `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      }
-    );
-    toast.success("Leave type deleted successfully");
- 
-    // Remove deleted leave from UI without refetching
-    setLeaveTypes(prev => prev.filter(lt => lt.leaveTypeId !== leaveTypeId));
- 
-    // Or, if you want to ensure fresh data from backend:
-    // fetchLeaveTypes();
-  } catch (error) {
-    console.error("Delete failed:", error);
-    toast.error("Failed to delete leave type");
-  }
-};
- 
- 
+      );
+      toast.success("Leave type deleted successfully");
+
+      // Remove deleted leave from UI without refetching
+      setLeaveTypes((prev) =>
+        prev.filter((lt) => lt.leaveTypeId !== leaveTypeId)
+      );
+
+      // Or, if you want to ensure fresh data from backend:
+      // fetchLeaveTypes();
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete leave type");
+    }
+  };
+
   // useEffect(()=>{
   //   fetchLeaveTypes()
   // })
- 
+
   // Extract unique keys from the first item
   const tableHeaders = leaveTypes.length > 0 ? Object.keys(leaveTypes[0]) : [];
   console.log("hhaja", leaveTypes);
- 
+
   return (
     <div className="space-y-6 py-6 px-6">
       <h1 className="text-2xl font-bold text-gray-800">HR Tools</h1>
       <p className="text-gray-600 mb-2">Manage employees and leave types.</p>
- 
+
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
         <button
           onClick={() => setIsAddEmployeeModalOpen(true)}
@@ -102,7 +111,7 @@ const HRManageTools = ({ employeeId }) => {
           Edit Leave Balance
         </button>
       </div>
- 
+
       <div className="overflow-x-auto border rounded-md max-w-full">
         <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
           <thead className="bg-gray-100 text-base">
@@ -138,6 +147,7 @@ const HRManageTools = ({ employeeId }) => {
               </tr>
             ) : (
               leaveTypes.map((lt, index) => (
+                console.log("lt", lt),
                 <tr key={index} className="border-t">
                   {tableHeaders.map((key, i) => (
                     <td
@@ -159,7 +169,7 @@ const HRManageTools = ({ employeeId }) => {
                         setEditLeaveType(lt);
                         setIsAddLeaveTypeModalOpen(true);
                       }}
-                      onDelete={() => handleDeleteLeaveType(lt.leaveTypeId)}
+                      onDelete={() => confirmDelete(lt.leaveTypeId)}
                     />
                   </td>
                 </tr>
@@ -168,7 +178,7 @@ const HRManageTools = ({ employeeId }) => {
           </tbody>
         </table>
       </div>
- 
+
       {/* Modals */}
       <AddEmployeeModal
         isOpen={isAddEmployeeModalOpen}
@@ -187,8 +197,15 @@ const HRManageTools = ({ employeeId }) => {
           setIsAddLeaveTypeModalOpen(false);
         }}
       />
+      <ConfirmationModal
+        isOpen={isDeleteConfirmationOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this leave type? This action cannot be undone."
+        onCancel={() => setIsDeleteConfirmationOpen(false)}
+        onConfirm={() => handleDeleteLeaveType(selectedLeaveTypeIdToDelete)}
+      />
     </div>
   );
 };
- 
+
 export default HRManageTools;

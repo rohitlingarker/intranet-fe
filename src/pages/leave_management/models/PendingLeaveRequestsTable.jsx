@@ -28,6 +28,8 @@ const PendingLeaveRequestsTable = ({
       leaveTypeId: leave.leaveType?.leaveTypeId,
     });
   };
+
+  
  
   const fetchLeaveType = async () => {
     try {
@@ -133,11 +135,11 @@ const PendingLeaveRequestsTable = ({
       const empId = leaveToCancel.employee?.employeeId || "UNKNOWN_EMPLOYEE";
  
       await axios.put(
-        `${BASE_URL}/leave-requests/${cancelId}/cancel`,
+        `${BASE_URL}/api/leave-requests/${cancelId}/cancel`,
         null,
         {
           params: { employeeId: empId },
-          headers: { "Cache-Control": "no-store", 
+          headers: { "Cache-Control": "no-store",  
             Authorization: `Bearer ${token}`
            },
           withCredentials: true,
