@@ -1,151 +1,69 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import ActionDropdownPendingLeaveRequests from "./ActionDropDownPendingLeaveRequests";
-import DateRangePicker from "./DateRangePicker";
-import { PencilIcon, XCircle } from "lucide-react";
-const token = localStorage.getItem('token')
+import { PencilIcon } from "lucide-react";
+import EditLeaveModal from "./EditLeaveModal";
+
+const token = localStorage.getItem('token');
 const BASE_URL = import.meta.env.VITE_BASE_URL;
- 
+
+/**
+ * This is now a "presentational" component. It receives data and functions as props.
+ * - `pendingLeaves`: The array of leaves to display (already paginated by the parent).
+ * - `leaveBalances`: Needed for the Edit Modal.
+ * - `leaveTypeNames`: An array of [{name, label}] for displaying friendly leave names.
+ * - `employeeId`: The current user's ID.
+ * - `refreshData`: A function from the parent to trigger a full data refresh.
+ */
 const PendingLeaveRequestsTable = ({
-  leaveBalances,
   pendingLeaves,
-  leaveTypes,
-  setPendingLeaves,
+  leaveBalances,
+  leaveTypeNames, // Receive this from the parent
   employeeId,
+  refreshData, // This is the key prop for refreshing
 }) => {
-  const [editIndex, setEditIndex] = useState(null);
-  const [editedLeave, setEditedLeave] = useState({});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentLeaveToEdit, setCurrentLeaveToEdit] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cancelId, setCancelId] = useState(null);
-  const [leaveTypeNames, setLeaveTypeNames] = useState([]);
- 
-  const handleEdit = (index) => {
-    const leave = pendingLeaves[index];
-    setEditIndex(index);
-    setEditedLeave({
-      ...leave,
-      leaveTypeId: leave.leaveType?.leaveTypeId,
-    });
+
+  const handleEdit = (leave) => {
+    setCurrentLeaveToEdit(leave);
+    setIsEditModalOpen(true);
   };
- 
-  const fetchLeaveType = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/leave/types`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setLeaveTypeNames(res.data); // Backend returns [{name, label}]
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load leave types");
-    }
+
+  // When the modal succeeds, just call the refresh function from the parent.
+  const handleUpdateSuccess = () => {
+    refreshData();
   };
- 
-  useEffect(() => {
-    fetchLeaveType();
-  }, []);
- 
-  const handleCancelEdit = () => {
-    setEditIndex(null);
-    setEditedLeave({});
-  };
- 
-  const handleChange = (field, value) => {
-    setEditedLeave((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
- 
-  const handleSave = async () => {
-    setLoading(true);
- 
-    try {
-      const { startDate, endDate, leaveTypeId } = editedLeave;
- 
-      if (!startDate || !endDate) {
-        toast.error("Both start and end dates are required.");
-        return;
-      }
- 
-      if (!leaveTypeId) {
-        toast.error("Please select a leave type.");
-        return;
-      }
- 
-      const payload = {
-        startDate,
-        endDate,
-        reason: editedLeave.reason || "",
-        requestDate: editedLeave.requestDate,
-        leaveId: pendingLeaves[editIndex].leaveId || null,
-        leaveTypeId,
-        daysRequested: editedLeave.daysRequested || 0,
-        employeeId: employeeId || "UNKNOWN_EMPLOYEE",
-        driveLink: editedLeave.driveLink || "",
-      };
- 
-      await axios.put(
-        `${BASE_URL}/leave-requests/employee/update`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      toast.success("Leave request submitted successfully");
- 
-      // Update local state if request is successful
-      const updated = [...pendingLeaves];
-      updated[editIndex] = {
-        ...editedLeave,
-        leaveType: leaveTypes.find((l) => l.leaveTypeId === leaveTypeId),
-      };
- 
-      setPendingLeaves(updated);
-      setEditIndex(null);
-      setEditedLeave({});
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message || "Something went wrong";
-        toast.error(errorMessage);
-        console.error("Axios Error:", errorMessage);
-      } else {
-        toast.error("Unexpected error occurred");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
- 
+
   const confirmCancel = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const leaveToCancel = pendingLeaves.find((l) => l.leaveId === cancelId);
       if (!leaveToCancel) {
         toast.error("Leave not found.");
         return;
       }
- 
-      const empId = leaveToCancel.employee?.employeeId || "UNKNOWN_EMPLOYEE";
- 
+      
+      const empId = leaveToCancel.employee?.employeeId || employeeId;
+
       await axios.put(
-        `${BASE_URL}/leave-requests/${cancelId}/cancel`,
+        `${BASE_URL}/api/leave-requests/${cancelId}/cancel`,
         null,
         {
           params: { employeeId: empId },
-          headers: { "Cache-Control": "no-store", 
+          headers: { 
+            "Cache-Control": "no-store",
             Authorization: `Bearer ${token}`
-           },
+          },
           withCredentials: true,
         }
       );
- 
-      setPendingLeaves((prev) => prev.filter((l) => l.leaveId !== cancelId));
-      toast.success("Leave cancelled");
+
+      toast.success("Leave cancelled successfully");
+      refreshData(); // Instead of filtering, just tell the parent to refresh.
+
     } catch (err) {
       toast.error(err?.response?.data?.message || "Cancel failed");
     } finally {
@@ -153,19 +71,34 @@ const PendingLeaveRequestsTable = ({
       setLoading(false);
     }
   };
- 
-  // Helper: Map backend "name" to "label"
+
+  // This helper now uses the prop for leave type names.
   const getLabelFromName = (name) => {
-    const match = leaveTypeNames.find((lt) => lt.name === name);
-    return match ? match.label : name;
+    if (!name) return "-";
+    
+    // First, try to find a direct match from the props
+    if (Array.isArray(leaveTypeNames) && leaveTypeNames.length > 0) {
+      const match = leaveTypeNames.find((lt) => lt.name === name);
+      if (match && match.label) {
+        return match.label; // e.g., "Sick Leave"
+      }
+    }
+
+    // If no match is found, format the raw name gracefully.
+    // "L-SICK_LEAVE" -> "Sick Leave"
+    return name
+      .replace(/^L-/, "") // Removes "L-" prefix
+      .replace(/_/g, " ")   // Replaces underscores with spaces
+      .toLowerCase()       // Converts to lowercase
+      .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()); // Capitalizes each word
   };
- 
+
   return (
     <div className="overflow-x-auto w-full px-4">
       <div className="w-full max-w-screen-xl mx-auto">
-        <table className="w-full table-auto border border-gray-300 rounded shadow">
-          <thead className="bg-gray-100 text-gray-700">
-            <tr>
+        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+          <thead>
+            <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               <th className="p-3 text-left">Leave Type</th>
               <th className="p-3 text-left">Start Date</th>
               <th className="p-3 text-left">End Date</th>
@@ -175,174 +108,54 @@ const PendingLeaveRequestsTable = ({
             </tr>
           </thead>
           <tbody>
-            {pendingLeaves.map((leave, index) => (
-              <tr key={leave.leaveId || index} className="border-t">
+            {/* The component now just maps over the leaves it was given. */}
+            {pendingLeaves.map((leave) => (
+              <tr key={leave.leaveId} className="border-t">
+                <td className="p-3">{getLabelFromName(leave.leaveType?.leaveName)}</td>
+                <td className="p-3">{leave.startDate}</td>
+                <td className="p-3">{leave.endDate}</td>
+                <td className="p-3 text-center">{leave.daysRequested}</td>
+                <td className="p-3">{leave.reason || "-"}</td>
                 <td className="p-3">
-                  {editIndex === index ? (
-                    <select
-                      className="border p-2 rounded w-full"
-                      value={editedLeave.leaveTypeId || ""}
-                      onChange={(e) =>
-                        handleChange("leaveTypeId", e.target.value)
-                      }
+                  <div className="flex items-center space-x-2">
+                    <PencilIcon
+                      className="cursor-pointer text-blue-700 w-4 h-4"
+                      onClick={() => handleEdit(leave)}
+                    />
+                    <button
+                      className="text-red-500 hover:underline"
+                      onClick={() => setCancelId(leave.leaveId)}
                     >
-                      <option value="">Select Type</option>
-                      {leaveTypes
-                        .filter((type) => {
-                          const balance = leaveBalances.find(
-                            (b) => b.leaveType.leaveTypeId === type.leaveTypeId
-                          );
-                          return (
-                            balance?.remainingLeaves > 0 ||
-                            type.leaveTypeId === "L-UP"
-                          );
-                        })
-                        .map((type) => {
-                          const balance = leaveBalances.find(
-                            (b) => b.leaveType.leaveTypeId === type.leaveTypeId
-                          );
-                          const isUnpaid = type.leaveTypeId === "L-UP";
-                          const remaining = isUnpaid
-                            ? "∞"
-                            : balance?.remainingLeaves ?? 0;
- 
-                          // Use label from leaveTypeNames
-                          const label = getLabelFromName(type.leaveName);
- 
-                          return (
-                            <option
-                              key={type.leaveTypeId}
-                              value={type.leaveTypeId}
-                            >
-                              {label} ({remaining} days left)
-                            </option>
-                          );
-                        })}
-                    </select>
-                  ) : (
-                    getLabelFromName(leave.leaveType?.leaveName) || "-"
-                  )}
-                </td>
- 
-                {/* Start Date */}
-                <td className="p-3">
-                  {editIndex === index ? (
-                    <input
-                      type="date"
-                      className="border p-2 rounded w-full"
-                      value={editedLeave.startDate || ""}
-                      onChange={(e) => {
-                        const newStart = e.target.value;
-                        handleChange("startDate", newStart);
- 
-                        if (editedLeave.endDate) {
-                          const start = new Date(newStart);
-                          const end = new Date(editedLeave.endDate);
-                          const diff =
-                            Math.floor((end - start) / (1000 * 60 * 60 * 24)) +
-                            1;
-                          handleChange("daysRequested", diff > 0 ? diff : 0);
-                        }
-                      }}
-                    />
-                  ) : (
-                    leave.startDate
-                  )}
-                </td>
- 
-                {/* End Date */}
-                <td className="p-3">
-                  {editIndex === index ? (
-                    <input
-                      type="date"
-                      className="border p-2 rounded w-full"
-                      value={editedLeave.endDate || ""}
-                      onChange={(e) => {
-                        const newEnd = e.target.value;
-                        handleChange("endDate", newEnd);
- 
-                        if (editedLeave.startDate) {
-                          const start = new Date(editedLeave.startDate);
-                          const end = new Date(newEnd);
-                          const diff =
-                            Math.floor((end - start) / (1000 * 60 * 60 * 24)) +
-                            1;
-                          handleChange("daysRequested", diff > 0 ? diff : 0);
-                        }
-                      }}
-                    />
-                  ) : (
-                    leave.endDate
-                  )}
-                </td>
- 
-                <td className="p-3 text-center">
-                  {editIndex === index
-                    ? editedLeave.daysRequested || "-"
-                    : leave.daysRequested}
-                </td>
- 
-                <td className="p-3">
-                  {editIndex === index ? (
-                    <input
-                      type="text"
-                      className="border p-2 rounded w-full"
-                      value={editedLeave.reason}
-                      onChange={(e) => handleChange("reason", e.target.value)}
-                    />
-                  ) : (
-                    leave.reason
-                  )}
-                </td>
- 
-                <td className="p-3">
-                  {editIndex === index ? (
-                    <div className="space-x-2">
-                      <button
-                        onClick={handleSave}
-                        className="px-3 py-1 bg-green-500 text-white rounded"
-                        disabled={loading}
-                      >
-                        {loading ? "Saving..." : "Save"}
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-3 py-1 bg-gray-400 text-white rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <PencilIcon className="cursor-pointer text-blue-700 w-4 h-4" onClick={() => handleEdit(index)} />
-                      <button className="text-red-500 hover:underline" onClick={() => setCancelId(leave.leaveId)}>
-                        Cancel
-                      </button>
-                    </div>
-                    // <ActionDropdownPendingLeaveRequests
-                    //   onEdit={() => handleEdit(index)}
-                    //   onCancel={() => setCancelId(leave.leaveId)}
-                    //   onSuccess={() =>
-                    //     setPendingLeaves((prev) =>
-                    //       prev.filter((l) => l.leaveId !== leave.leaveId)
-                    //     )
-                    //   }
-                    // />
-                  )}
+                      Cancel
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
- 
+
+      {isEditModalOpen && (
+        <EditLeaveModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setCurrentLeaveToEdit(null);
+          }}
+          initialData={currentLeaveToEdit}
+          leaveBalances={leaveBalances}
+          onSuccess={handleUpdateSuccess}
+          employeeId={employeeId}
+        />
+      )}
+
       {cancelId && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-sm">
             <h2 className="text-lg font-semibold mb-2">Cancel Leave Request</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to cancel this leave request? This action
-              cannot be undone.
+              Are you sure you want to cancel this leave request?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -354,8 +167,9 @@ const PendingLeaveRequestsTable = ({
               <button
                 onClick={confirmCancel}
                 className="px-4 py-2 bg-red-600 text-white rounded"
+                disabled={loading}
               >
-                Yes, Cancel
+                {loading ? "Cancelling..." : "Yes, Cancel"}
               </button>
             </div>
           </div>
@@ -364,5 +178,5 @@ const PendingLeaveRequestsTable = ({
     </div>
   );
 };
- 
+
 export default PendingLeaveRequestsTable;

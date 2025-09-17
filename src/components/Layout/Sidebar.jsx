@@ -7,7 +7,6 @@ import {
   Calendar,
   Clock,
   PlaneTakeoff,
-  Building2,
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -28,13 +27,14 @@ const userManagementSubmenu = [
   { label: "Access Point Manage", to: "/user-management/access-points" },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const isUserManagementActive = location.pathname.startsWith("/user-management");
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  const isAdmin =
+    user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
 
-
+  // hover submenu (desktop logic)
   const [hovered, setHovered] = useState(false);
   const hoverTimeout = useRef(null);
 
@@ -46,24 +46,27 @@ const Sidebar = () => {
   const handleMouseLeave = () => {
     hoverTimeout.current = setTimeout(() => {
       setHovered(false);
-    }, 200); // ⏱️ 200ms delay
+    }, 200);
   };
 
+  // collapsible submenu (mobile/narrow)
+  const [submenuOpen, setSubmenuOpen] = useState(false);
+
   return (
-    <aside className="fixed top-0 left-0 w-64 h-screen bg-[#081534] text-white flex flex-col shadow-lg z-50">
+    <aside
+      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
+        isCollapsed ? "w-20" : "w-64"
+      }`}
+    >
       {/* Branding */}
-      <div className="p-6 border-b border-[#0f1a3a]">
-        <div className="flex items-center gap-3">
-          <img
-            src="logo.png"
-            alt="Logo"
-            className="h-10 w-10"
-          />
+      <div className="p-6 border-b border-[#0f1a3a] flex items-center gap-3">
+        <img src="logo.png" alt="Logo" className="h-10 w-10" />
+        {!isCollapsed && (
           <div>
             <h1 className="text-lg font-bold leading-none">Paves Tech</h1>
             <p className="text-xs text-gray-400 mt-1">intranet</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -80,57 +83,87 @@ const Sidebar = () => {
               }`}
             >
               <LayoutDashboard className="h-5 w-5 shrink-0" />
-              <span>Dashboard</span>
+              {!isCollapsed && <span>Dashboard</span>}
             </Link>
           </li>
 
-          {/* User Management with hover submenu */}
-          {isAdmin && 
-          <li
-            className="relative"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            <div
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 ${
-                isUserManagementActive
-                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-              }`}
+          {/* User Management */}
+          {isAdmin && (
+            <li
+              className="relative"
+              {...(!isCollapsed && {
+                onMouseEnter: handleMouseEnter,
+                onMouseLeave: handleMouseLeave,
+              })}
             >
-              <Users className="h-5 w-5 shrink-0" />
-              <span className="flex-1">User Management</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  hovered ? "rotate-180" : ""
+              <div
+                onClick={() => isCollapsed && setSubmenuOpen(!submenuOpen)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 ${
+                  isUserManagementActive
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
-              />
-            </div>
-
-            {hovered && (
-              <ul
-                className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"
-                style={{ transform: "translateY(-40%)" }}
               >
-                {userManagementSubmenu.map((item) => (
-                  <li key={item.label}>
-                    <NavLink
-                      to={item.to}
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded text-sm transition-colors ${
-                          isActive
-                            ? "bg-blue-100 text-[#0a174e] font-semibold"
-                            : "hover:bg-[#263383] hover:text-white"
-                        }`
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>}
+                <Users className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span className="flex-1">User Management</span>}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    (!isCollapsed && hovered) || (isCollapsed && submenuOpen)
+                      ? "rotate-180"
+                      : ""
+                  }`}
+                />
+              </div>
+
+              {/* Submenu */}
+              {!isCollapsed ? (
+                hovered && (
+                  <ul
+                    className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"
+                    style={{ transform: "translateY(-40%)" }}
+                  >
+                    {userManagementSubmenu.map((item) => (
+                      <li key={item.label}>
+                        <NavLink
+                          to={item.to}
+                          className={({ isActive }) =>
+                            `block px-4 py-2 rounded text-sm transition-colors ${
+                              isActive
+                                ? "bg-blue-100 text-[#0a174e] font-semibold"
+                                : "hover:bg-[#263383] hover:text-white"
+                            }`
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              ) : (
+                submenuOpen && (
+                  <ul className="mt-1 ml-6 space-y-1">
+                    {userManagementSubmenu.map((item) => (
+                      <li key={item.label}>
+                        <NavLink
+                          to={item.to}
+                          className={({ isActive }) =>
+                            `block px-3 py-2 rounded text-sm transition-colors ${
+                              isActive
+                                ? "bg-blue-100 text-[#0a174e] font-semibold"
+                                : "text-gray-300 hover:bg-[#263383] hover:text-white"
+                            }`
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              )}
+            </li>
+          )}
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
@@ -146,7 +179,7 @@ const Sidebar = () => {
                   }`}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span>{item.name}</span>
+                  {!isCollapsed && <span>{item.name}</span>}
                 </Link>
               </li>
             );

@@ -130,10 +130,10 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
         <>
           <PendingLeaveRequestsTable
             pendingLeaves={paginatedLeaves}
-            leaveTypes={leaveTypes}
             leaveBalances={leaveBalances}
-            setPendingLeaves={setPendingLeaves}
+            leaveTypeNames={leaveTypes} 
             employeeId={employeeId}
+            refreshData={handleLeaveRequestSuccess}
           />
  
           {pendingLeaves.length > ITEMS_PER_PAGE && (

@@ -1,14 +1,14 @@
 import React, { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import axios from "axios";
 import CompOffRequestsTable from "./CompOffRequestsTable";
-import toast from "react-hot-toast";
+import { useNotification } from "../../../contexts/NotificationContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const CompOffPage = forwardRef(({ employeeId }, ref) => {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
   const token = localStorage.getItem('token');
+  const { showNotification } = useNotification();
 
   const fetchRequests = async () => {
     try {
@@ -24,12 +24,12 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
         setRequests(res.data.data);
       }
     } catch {
-      toast.error("Failed to fetch comp-off requests");
+      showNotification("Failed to fetch comp-off requests", "error");
     }
   };
 
   const handleCompOffSubmit = async (modalData) => {
-    setLoading(true);
+    // The parent component will now control the loading state
     const { dates, note, numberOfDays } = modalData;
     try {
       await axios.post(
@@ -42,19 +42,14 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
           note,
           duration: numberOfDays,
         },
-        { withCredentials: true ,
-        headers:{
-          Authorization: `Bearer ${token}`
-        }}
+        { withCredentials: true, headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Request submitted!");
-      fetchRequests();
-      return true; // indicate success
+      showNotification("Request submitted!", "success");
+      fetchRequests(); // Re-fetch the data to update the table
+      return true; // Indicate success
     } catch (e) {
-      toast.error("Submission failed!");
-      return false; // indicate failure
-    } finally {
-      setLoading(false);
+      showNotification("Submission failed!", "error");
+      return false; // Indicate failure
     }
   };
 
@@ -69,7 +64,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
   const cancelRequest = async (requestId) => {
     try {
       await axios.put(
-        `${BASE_URL}/api/compoff/cancel/${requestId}`,
+        `${BASE_URL}/api/compoff/employee/cancel/${requestId}`,
         {},
         { withCredentials: true, headers: { 
           "Cache-Control": "no-store",
@@ -78,7 +73,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
       );
       fetchRequests();
     } catch {
-      toast.error("Failed to cancel request");
+      showNotification("Failed to cancel request", "error");
     }
   };
 
