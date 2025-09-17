@@ -199,16 +199,26 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
   const shouldShowDriveLink = () => {
     
     if (!selectedLeaveType) return false;
+    console.log("Checking if Drive link should be shown...", selectedLeaveType)
     // Add check for unpaid leave
-    if (
-      selectedLeaveType.leaveTypeId === "L-UP" ||
-      selectedLeaveType.leaveName.toLowerCase().includes("unpaid")
-    )
-      return false;
-    const requiresDocs = selectedLeaveType.requiresDocumentation;
-    const isSickLeave = selectedLeaveType.leaveTypeId === "L-SL";
-    const enoughDays = weekdays > 3;
-    return requiresDocs && (isSickLeave ? enoughDays : true);
+      const requiredDocs = selectedLeaveType.requiresDocumentation === true;
+      const isSickLeave =  selectedLeaveType.leaveTypeId === "L-SL";
+      const enoughDays =  weekdays > 3;
+
+        // Rule:
+        // 1. If leave type requires documentation → always true
+        // 2. If sick leave → only true when weekdays > 3
+      // if (requiredDocs && ((isSickLeave && enoughDays))) return true;
+      if (isSickLeave){
+        return enoughDays;
+      }
+      return requiredDocs
+
+      // selectedLeaveType.leaveName.toLowerCase().includes("unpaid")
+    // const requiresDocs = selectedLeaveType.requiresDocumentation;
+    // const isSickLeave = selectedLeaveType.leaveTypeId === "L-SL";
+    // const enoughDays = weekdays > 3;
+    // return requiresDocs && (isSickLeave ? enoughDays : true);
   };
 
   // Calculate days for display in the UI
@@ -506,7 +516,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                 <span className="text-red-500">*</span>
               </label>
               <input
-                type="url"
+                type="text"
                 value={driveLink}
                 onChange={(e) => setDriveLink(e.target.value)}
                 placeholder="https://drive.google.com/..."

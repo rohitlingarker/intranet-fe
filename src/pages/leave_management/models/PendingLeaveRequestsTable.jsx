@@ -54,7 +54,7 @@ const PendingLeaveRequestsTable = ({
         {
           params: { employeeId: empId },
           headers: { 
-            "Cache-Control": "no-store",
+            "Cache-Control": "no-store", 
             Authorization: `Bearer ${token}`
           },
           withCredentials: true,
