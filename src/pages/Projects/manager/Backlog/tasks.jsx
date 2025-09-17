@@ -32,10 +32,10 @@ const CreateTaskModal = ({ onTaskCreated }) => {
     const fetchData = async () => {
       try {
         const [usersRes, projectsRes, storiesRes, sprintsRes] = await Promise.all([
-          axios.get("http://localhost:8080/api/users", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:8080/api/projects", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:8080/api/stories", { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get("http://localhost:8080/api/sprints", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         setUsers(usersRes.data.content || []);
@@ -67,7 +67,7 @@ const CreateTaskModal = ({ onTaskCreated }) => {
         storyId: formData.storyId || null,
       };
 
-      await axios.post("http://localhost:8080/api/tasks", payload, {
+      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/tasks`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

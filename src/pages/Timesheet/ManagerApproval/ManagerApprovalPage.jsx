@@ -30,7 +30,7 @@ const ManagerApprovalPage = () => {
         const mappedData = result.map((item) => ({
           timesheetId: item.timesheetId,
           userId: item.userId,
-          userName: `User ${item.userId}`,
+          userName: item.userName,
           workDate: item.workDate,
           hoursWorked: item.entries.reduce(
             (sum, entry) => sum + entry.hoursWorked,
