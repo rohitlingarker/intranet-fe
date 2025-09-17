@@ -328,7 +328,7 @@ const ManagerApprovalTable = () => {
         >
           <option value="All">All Users</option>
           {uniqueUsers.map((user) => (
-            <option key={user.userId} value={user.userName}>
+            <option key={user.userId} value={user.userId}>
               {user.userName}
             </option>
           ))}
@@ -339,23 +339,26 @@ const ManagerApprovalTable = () => {
       </div>
       <div className="flex justify-between items-center">
         <div>
+          <label className="cursor-pointer" >
+
           <input
             type="checkbox"
             checked={
               selectedTimesheets.length > 0 &&
-              selectedTimesheets.length === paginatedTimesheets.length
+              selectedTimesheets.length === filteredTimesheets.length
             }
             onChange={(e) => {
               if (e.target.checked) {
                 setSelectedTimesheets(
-                  paginatedTimesheets.map((s) => s.timesheetId)
+                  filteredTimesheets.map((s) => s.timesheetId)
                 );
               } else {
                 setSelectedTimesheets([]);
               }
             }}
-          />
+            />
           &nbsp; Select All
+            </label>
         </div>
         {selectedTimesheets.length > 0 && (
           <div className="flex flex-col gap-2 rounded bg-gray-50">
