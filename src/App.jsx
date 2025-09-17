@@ -163,7 +163,7 @@ const AppRoutes = () => {
         >
           {/* Main */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects/manager" element={<ProjectManager />} />
+          {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
