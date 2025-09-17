@@ -1,6 +1,6 @@
 //MAT
 import React, { useEffect, useState, useMemo } from "react";
-import { reviewTimesheet } from "../api";
+import { bulkReviewTimesheet, reviewTimesheet } from "../api";
 import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
 import { Check, X, Download } from "lucide-react";
@@ -19,6 +19,9 @@ const ManagerApprovalTable = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedUser, setSelectedUser] = useState("All");
+  const [selectedTimesheets, setSelectedTimesheets] = useState([]);
+  const [bulkMode, setBulkMode] = useState(""); // "", "approve", "reject"
+  const [bulkComment, setBulkComment] = useState("");
 
   const pageSize = 5;
 
@@ -131,6 +134,21 @@ const ManagerApprovalTable = () => {
   ) => {
     try {
       await reviewTimesheet(timesheetId, comment, status);
+      fetchTimesheets();
+    } catch (err) {
+      console.error(`Error updating timesheet status: ${err.message}`);
+    }
+  };
+
+  const handleBulkStatusChange = async (status) => {
+    try {
+      if (status === "Rejected" && !bulkComment.trim()) {
+        alert("Rejection comment is required");
+        return;
+      }
+      await bulkReviewTimesheet(selectedTimesheets, status, bulkComment);
+      setSelectedTimesheets([]);
+      setBulkComment("");
       fetchTimesheets();
     } catch (err) {
       console.error(`Error updating timesheet status: ${err.message}`);
@@ -319,30 +337,108 @@ const ManagerApprovalTable = () => {
           Reset Filters
         </Button>
       </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <input
+            type="checkbox"
+            checked={
+              selectedTimesheets.length > 0 &&
+              selectedTimesheets.length === paginatedTimesheets.length
+            }
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedTimesheets(
+                  paginatedTimesheets.map((s) => s.timesheetId)
+                );
+              } else {
+                setSelectedTimesheets([]);
+              }
+            }}
+          />
+          &nbsp; Select All
+        </div>
+        {selectedTimesheets.length > 0 && (
+          <div className="flex flex-col gap-2 rounded bg-gray-50">
+            {/* Default Mode: Show Approve/Reject */}
+            {bulkMode === "" && (
+              <div className="flex gap-2">
+                <Button
+                  variant="success"
+                  size="small"
+                  onClick={() => handleBulkStatusChange("Approved")}
+                >
+                  Approve Selected
+                </Button>
+                <Button
+                  variant="danger"
+                  size="small"
+                  onClick={() => setBulkMode("reject")}
+                >
+                  Reject Selected
+                </Button>
+              </div>
+            )}
 
-      {/* Download Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="success"
-          size="small"
-          onClick={exportCSV}
-          className="flex items-center gap-1"
-        >
-          <Download size={16} />
-          CSV
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={exportPDF}
-          className="flex items-center gap-1"
-        >
-          <Download size={16} />
-          PDF
-        </Button>
+            {/* Reject Mode: Show input + confirm/cancel */}
+            {bulkMode === "reject" && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={bulkComment}
+                  onChange={(e) => setBulkComment(e.target.value)}
+                  placeholder="Enter rejection comment..."
+                  className="border rounded p-2 flex-1"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="small"
+                    onClick={() => handleBulkStatusChange("Rejected")}
+                    disabled={!bulkComment.trim()}
+                  >
+                    Confirm Rejection
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={() => {
+                      setBulkMode("");
+                      setBulkComment("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Download Buttons */}
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="success"
+            size="small"
+            onClick={exportCSV}
+            className="flex items-center gap-1"
+          >
+            <Download size={16} />
+            CSV
+          </Button>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={exportPDF}
+            className="flex items-center gap-1"
+          >
+            <Download size={16} />
+            PDF
+          </Button>
+        </div>
       </div>
 
       {/* Timesheet List */}
+
       {paginatedTimesheets.map((sheet) => {
         const totalHours = sheet.entries.reduce(
           (sum, e) => sum + (e.hoursWorked || 0),
@@ -363,9 +459,28 @@ const ManagerApprovalTable = () => {
             className="rounded-lg border bg-white shadow-md overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-2 bg-gray-100">
-              <span className="font-semibold text-gray-800">
-                {formattedDate}
-              </span>
+              <div>
+                <input
+                  type="checkbox"
+                  checked={selectedTimesheets.includes(sheet.timesheetId)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedTimesheets((prev) => [
+                        ...prev,
+                        sheet.timesheetId,
+                      ]);
+                    } else {
+                      setSelectedTimesheets((prev) =>
+                        prev.filter((id) => id !== sheet.timesheetId)
+                      );
+                    }
+                  }}
+                />
+
+                <span className="font-semibold text-gray-800 ml-3">
+                  {formattedDate}
+                </span>
+              </div>
               <div className="flex items-center gap-4">
                 <span className="text-gray-600 text-sm">
                   Total Hours: {totalHours.toFixed(2)}
