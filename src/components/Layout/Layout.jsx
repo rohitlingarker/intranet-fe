@@ -22,7 +22,7 @@ const Layout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <Sidebar isCollapsed={isCollapsed} />
 

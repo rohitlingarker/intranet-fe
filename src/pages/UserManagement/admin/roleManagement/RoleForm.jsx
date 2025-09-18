@@ -69,7 +69,8 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
       setIsEditModalOpen(false); // ✅ Close edit modal
     } catch (err) {
       console.error("Error saving role:", err);
-      toast.error("Failed to save role");
+      // showStatusToast(err?.response?.data?.detail || err.message, "error");
+      toast.error(err?.response?.data?.detail);
     } finally {
       setSaving(false);
     }
