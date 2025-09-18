@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
 import { showStatusToast } from "../../../../components/toastfy/toast";
-import Modal from "../../../../components/Modal/Modal";
+import Modal from "../../../../components/Modal/modal";
 
 // PermissionList Component
 function PermissionList({ permissions, showAdd = false, showDelete = false, onAdd, onDelete }) {
