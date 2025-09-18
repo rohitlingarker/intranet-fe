@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import FormInput from "../../../../components/forms/FormInput"; // Adjust path as needed
-import Button from "../../../../components/Button/Button";        // Adjust path as needed
+import FormInput from "../../../../components/forms/FormInput";
+import Button from "../../../../components/Button/Button";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
 export default function EditUser() {
@@ -19,14 +19,17 @@ export default function EditUser() {
     is_active: true,
   });
 
+  const [loading, setLoading] = useState(false); // Track API request
+
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((res) => setUser((prev) => ({ ...prev, ...res.data })))
+      .then((res) => {
+        const { password, ...rest } = res.data; // ⛔ don't include password
+        setUser((prev) => ({ ...prev, ...rest }));
+      })
       .catch((err) => {
         console.error("Failed to fetch user:", err);
         showStatusToast("Access denied or user not found.", "error");
@@ -44,33 +47,31 @@ export default function EditUser() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (user.contact.length !== 10) {
+      showStatusToast("Contact number must be exactly 10 digits.", "error");
+      return;
+    }
+
+    setLoading(true); // Disable button
+
     try {
       const payload = { ...user };
       if (!payload.password) delete payload.password;
- 
-      await axios.put(`http://localhost:8000/admin/users/${id}`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
- 
-      showStatusToast("User updated successfully!", "success");
 
       await axios.put(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`,
         payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("User updated successfully!");
+      showStatusToast("User updated successfully!", "success");
       navigate("/user-management/users");
     } catch (err) {
       console.error("Update failed:", err);
-      showStatusToast("Failed to update user.", "error");
+      showStatusToast( err.response?.data?.detail||"Failed to update user.", "error");
+    } finally {
+      setLoading(false); // Re-enable button
     }
   };
 
@@ -81,50 +82,89 @@ export default function EditUser() {
         onSubmit={handleSubmit}
         className="space-y-4 bg-white p-6 shadow rounded-lg"
       >
-        <FormInput
-          label="First Name"
-          name="first_name"
-          value={user.first_name}
-          onChange={handleChange}
-          placeholder="Enter first name"
-        />
-        <FormInput
-          label="Last Name"
-          name="last_name"
-          value={user.last_name}
-          onChange={handleChange}
-          placeholder="Enter last name"
-        />
-        <FormInput
-          label="Email"
-          name="mail"
-          type="email"
-          value={user.mail}
-          onChange={handleChange}
-          placeholder="Enter email"
-        />
+      <FormInput
+  label="First Name"
+  name="first_name"
+  value={user.first_name}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only alphabets
+    if (/^[a-zA-Z]*$/.test(value)) {
+      handleChange(e);
+    }
+  }}
+  onKeyDown={(e) => {
+    // Allow only letters and control keys
+    if (
+      !/[a-zA-Z]/.test(e.key) &&
+      !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  }}
+  placeholder="Enter first name"
+/>
+
+<FormInput
+  label="Last Name"
+  name="last_name"
+  value={user.last_name}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only alphabets
+    if (/^[a-zA-Z]*$/.test(value)) {
+      handleChange(e);
+    }
+  }}
+  onKeyDown={(e) => {
+    // Allow only letters and control keys
+    if (
+      !/[a-zA-Z]/.test(e.key) &&
+      !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  }}
+  placeholder="Enter last name"
+/>
+<FormInput
+  label="Email"
+  name="mail"
+  type="email"
+  value={user.mail}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Allow only letters, numbers, @, ., _, -
+    if (/^[a-zA-Z0-9@._-]*$/.test(value)) {
+      handleChange(e);
+    }
+  }}
+  onKeyDown={(e) => {
+    // Allow letters, numbers, @, ., _, - and control keys
+    if (
+      !/[a-zA-Z0-9@._-]/.test(e.key) &&
+      !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  }}
+  placeholder="Enter email"
+/>
+
         <FormInput
           label="Contact"
           name="contact"
           value={user.contact}
           onChange={(e) => {
-            // Allow only numbers
             const value = e.target.value;
             if (/^\d{0,10}$/.test(value)) {
-              handleChange(e); // update only if valid
+              handleChange(e);
             }
           }}
           onKeyDown={(e) => {
-            // Block non-numeric keys except Backspace, Delete, Tab, Arrow keys
             if (
               !/[0-9]/.test(e.key) &&
-              ![
-                "Backspace",
-                "Delete",
-                "Tab",
-                "ArrowLeft",
-                "ArrowRight",
-              ].includes(e.key)
+              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
             ) {
               e.preventDefault();
             }
@@ -132,14 +172,13 @@ export default function EditUser() {
           placeholder="Enter contact number"
           maxLength={10}
         />
-
         <FormInput
           label="New Password ()"
           name="password"
           type="password"
           value={user.password}
           onChange={handleChange}
-          placeholder="Enter new password"
+          placeholder="Leave blank to keep current password"
         />
         <div className="flex items-center gap-2">
           <input
@@ -155,11 +194,14 @@ export default function EditUser() {
         </div>
 
         <div className="flex gap-4">
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={() => navigate("/user-management/users")}
+            disabled={loading}
           >
             Cancel
           </Button>

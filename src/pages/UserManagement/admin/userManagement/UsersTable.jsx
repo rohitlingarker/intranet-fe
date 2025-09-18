@@ -178,9 +178,9 @@ export default function UsersTable() {
   }));
 
   return (
-    <div>
+    <div className="px-6 py-4">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-semibold text-gray-800">Users</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 ">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
           <Button
             onClick={() => navigate("/user-management/users/create")}
