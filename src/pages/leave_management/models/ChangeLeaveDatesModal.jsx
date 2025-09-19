@@ -33,6 +33,9 @@ function ChangeLeaveDatesModal({
       setError('');
       setStart(value);
       // Optional: enforce start <= end, if needed you can adjust end date here as well
+      if (end && value > end) {
+        setEnd(value);
+      }
     }
   };
 
@@ -63,6 +66,7 @@ function ChangeLeaveDatesModal({
           type="date"
           className="w-full border rounded px-3 py-2"
           value={end}
+          min={start}
           onChange={e => handleEndChange(e.target.value)}
         />
         {error && (
