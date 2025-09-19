@@ -44,7 +44,10 @@ const CompOffBalanceRequests = ({ managerId }) => {
       await axios.put(`${BASE_URL}/api/compoff/approve`, {
         managerId,
         compoffId,
-      });
+      },
+      {headers:{
+        Authorization: `Bearer ${token}`
+      }});
       showToast("Comp-Off approved.", "success");
       fetchCompOffs();
     } catch {
@@ -60,6 +63,9 @@ const CompOffBalanceRequests = ({ managerId }) => {
       setLoading(true);
       await axios.put(`${BASE_URL}/api/compoff/reject`,
         { managerId, compoffId },
+        {headers:{
+          Authorization: `Bearer ${token}`
+        }}
       );
       showToast("Comp-Off rejected.", "success");
       fetchCompOffs();

@@ -202,7 +202,10 @@ const HRManageTools = ({ employeeId }) => {
         title="Confirm Deletion"
         message="Are you sure you want to delete this leave type? This action cannot be undone."
         onCancel={() => setIsDeleteConfirmationOpen(false)}
-        onConfirm={() => handleDeleteLeaveType(selectedLeaveTypeIdToDelete)}
+        onConfirm={() => {handleDeleteLeaveType(selectedLeaveTypeIdToDelete);
+          setIsDeleteConfirmationOpen(false);
+        }}
+        isOpening={false}
       />
     </div>
   );
