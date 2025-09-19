@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
 import { showStatusToast } from "../../../../components/toastfy/toast";
+import { toast } from "react-toastify";
 import Modal from "../../../../components/Modal/modal";
 
 // PermissionList Component
@@ -82,6 +83,18 @@ export default function PermissionGroupManagement() {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  // Validate group name function
+  const validateGroupName = (name) => {
+    const regex = /^[A-Za-z\s\-_]+$/;
+    return regex.test(name.trim());
+  };
+
+  // Show toast with unique ID to prevent duplicates
+  const showUniqueToast = (message, type) => {
+    toast.dismiss(); // Dismiss all existing toasts
+    showStatusToast(message, type, { toastId: "unique-toast" });
+  };
+
   useEffect(() => {
     fetchGroups();
     fetchAllPermissions();
@@ -93,7 +106,7 @@ export default function PermissionGroupManagement() {
       const res = await axiosInstance.get("/admin/groups");
       setGroups(res.data);
     } catch (err) {
-      showStatusToast("Failed to fetch groups: " + err.message, "error");
+      showUniqueToast("Failed to fetch groups: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -104,7 +117,7 @@ export default function PermissionGroupManagement() {
       const res = await axiosInstance.get("/admin/permissions/");
       setAllPermissions(res.data);
     } catch (err) {
-      showStatusToast("Failed to fetch all permissions: " + err.message, "error");
+      showUniqueToast("Failed to fetch all permissions: " + err.message, "error");
     }
   };
 
@@ -113,19 +126,30 @@ export default function PermissionGroupManagement() {
       const res = await axiosInstance.get(`/admin/groups/${groupId}/permissions`);
       setGroupPermissions(res.data);
     } catch (err) {
-      showStatusToast("Failed to fetch group permissions: " + err.message, "error");
+      showUniqueToast("Failed to fetch group permissions: " + err.message, "error");
     }
   };
 
   const handleCreate = async () => {
-    if (!newGroupName.trim()) return showStatusToast("Group name cannot be empty.", "warning");
+    // Check if input is empty
+    if (!newGroupName.trim()) {
+      return showUniqueToast("Enter the group name", "error");
+    }
+
+    // Validate group name format
+    if (!validateGroupName(newGroupName)) {
+      return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
+    }
+
     try {
-      await axiosInstance.post("/admin/groups", { group_name: newGroupName });
-      showStatusToast("Group created successfully!", "success");
+      await axiosInstance.post("/admin/groups", { group_name: newGroupName.trim() });
+      showUniqueToast("Group created successfully!", "success");
       setNewGroupName("");
       fetchGroups();
     } catch (err) {
-      showStatusToast(err?.response?.data?.detail || err.message, "error");
+      // Show backend error message or fallback
+      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+      showUniqueToast(errorMessage, "error");
     }
   };
 
@@ -136,16 +160,29 @@ export default function PermissionGroupManagement() {
   };
 
   const handleUpdate = async () => {
-    if (!editGroupName.trim()) return showStatusToast("Group name cannot be empty.", "warning");
+    // Check if input is empty
+    if (!editGroupName.trim()) {
+      return showUniqueToast("Enter the group name", "error");
+    }
+
+    // Validate group name format
+    if (!validateGroupName(editGroupName)) {
+      return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
+    }
+
     try {
-      await axiosInstance.put(`/admin/groups/${editingGroup.group_id}`, { group_name: editGroupName });
-      showStatusToast("Group updated successfully!", "success");
+      await axiosInstance.put(`/admin/groups/${editingGroup.group_id}`, { 
+        group_name: editGroupName.trim() 
+      });
+      showUniqueToast("Group updated successfully!", "success");
       setShowEditModal(false);
       setEditingGroup(null);
       setEditGroupName("");
       fetchGroups();
     } catch (err) {
-      showStatusToast(err?.response?.data?.detail || err.message, "error");
+      // Show backend error message or fallback
+      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+      showUniqueToast(errorMessage, "error");
     }
   };
 
@@ -158,9 +195,10 @@ export default function PermissionGroupManagement() {
     try {
       await axiosInstance.delete(`/admin/groups/${deleteGroupId}`);
       fetchGroups();
-      showStatusToast("Group deleted successfully!", "success");
+      showUniqueToast("Group deleted successfully!", "success");
     } catch (err) {
-      showStatusToast("Failed to delete group: " + err.message, "error");
+      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+      showUniqueToast("Failed to delete group: " + errorMessage, "error");
     } finally {
       setShowDeleteModal(false);
       setDeleteGroupId(null);
@@ -168,7 +206,9 @@ export default function PermissionGroupManagement() {
   };
 
   const handleGroupSelect = async () => {
-    if (!selectedGroupId) return showStatusToast("Please select a group.", "warning");
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group.", "warning");
+    }
     setShowPermissionActions(true);
     setShowPermissionList(false);
     setShowDeleteList(false);
@@ -179,6 +219,9 @@ export default function PermissionGroupManagement() {
   };
 
   const handleAddClick = () => {
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group first.", "warning");
+    }
     setShowPermissionList(true);
     setShowDeleteList(false);
     setShowViewList(false);
@@ -187,6 +230,9 @@ export default function PermissionGroupManagement() {
   };
 
   const handleDeleteClickPermission = () => {
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group first.", "warning");
+    }
     setShowDeleteList(true);
     setShowPermissionList(false);
     setShowViewList(false);
@@ -195,31 +241,51 @@ export default function PermissionGroupManagement() {
   };
 
   const handleViewClick = () => {
-    if (!selectedGroupId) return showStatusToast("Please select a group.", "warning");
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group first.", "warning");
+    }
     setShowViewList(true);
     setShowPermissionList(false);
     setShowDeleteList(false);
   };
 
   const handleAddPermissionToGroup = async (permission_id) => {
-    if (!selectedGroupId) return showStatusToast("Please select a group first.", "warning");
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group first.", "warning");
+    }
+
+    if (!permission_id) {
+      return showUniqueToast("Enter the permission", "error");
+    }
+
     try {
       await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [permission_id]);
-      showStatusToast("Permission added successfully.", "success");
+      showUniqueToast("Permission added successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
-      showStatusToast("Failed to add permission: " + err.message, "error");
+      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+      showUniqueToast("Failed to add permission: " + errorMessage, "error");
     }
   };
 
   const handleRemovePermissionFromGroup = async (permission_id) => {
-    if (!selectedGroupId) return showStatusToast("Please select a group first.", "warning");
+    if (!selectedGroupId) {
+      return showUniqueToast("Please select a group first.", "warning");
+    }
+
+    if (!permission_id) {
+      return showUniqueToast("Enter the permission", "error");
+    }
+
     try {
-      await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { data: [permission_id] });
-      showStatusToast("Permission removed successfully.", "success");
+      await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { 
+        data: [permission_id] 
+      });
+      showUniqueToast("Permission removed successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
-      showStatusToast("Failed to remove permission: " + err.message, "error");
+      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+      showUniqueToast("Failed to remove permission: " + errorMessage, "error");
     }
   };
 
@@ -252,10 +318,11 @@ export default function PermissionGroupManagement() {
       <div className="bg-white p-4 rounded shadow mb-6 flex flex-col sm:flex-row gap-3 sm:items-center">
         <input
           type="text"
-          placeholder="Group Name"
+          placeholder="Group Name (letters, spaces, hyphens, underscores only)"
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
           className="flex-1 p-2 border rounded w-full"
+          onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
         />
         <Button size="medium" variant="primary" onClick={handleCreate} type="button" className="w-full sm:w-auto">
           Create Group
@@ -267,6 +334,8 @@ export default function PermissionGroupManagement() {
         <h3 className="text-lg font-semibold mb-3">Existing Groups</h3>
         {loading ? (
           <p className="text-gray-500">Loading groups...</p>
+        ) : groups.length === 0 ? (
+          <p className="text-gray-500">No groups found.</p>
         ) : (
           <ul className="space-y-2">
             {groups.map((group) => (
@@ -274,7 +343,7 @@ export default function PermissionGroupManagement() {
                 key={group?.group_id}
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
               >
-                <span>{group?.group_name}</span>
+                <span className="font-medium">{group?.group_name}</span>
                 <div className="flex gap-3 flex-wrap">
                   <Button
                     size="small"
@@ -306,16 +375,22 @@ export default function PermissionGroupManagement() {
         <h2 className="text-lg font-semibold mb-4">Edit Group</h2>
         <input
           type="text"
+          placeholder="Group Name (letters, spaces, hyphens, underscores only)"
           value={editGroupName}
           onChange={(e) => setEditGroupName(e.target.value)}
           className="w-full p-2 border rounded mb-4"
+          onKeyPress={(e) => e.key === 'Enter' && handleUpdate()}
         />
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={handleUpdate} variant="primary" size="medium" className="w-full sm:w-auto">
             Save
           </Button>
           <Button
-            onClick={() => setShowEditModal(false)}
+            onClick={() => {
+              setShowEditModal(false);
+              setEditingGroup(null);
+              setEditGroupName("");
+            }}
             variant="secondary"
             size="medium"
             className="w-full sm:w-auto"
@@ -328,13 +403,16 @@ export default function PermissionGroupManagement() {
       {/* Delete Modal */}
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
         <h2 className="text-lg font-semibold mb-4">Confirm Delete</h2>
-        <p>Are you sure you want to delete this group?</p>
-        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+        <p className="mb-4">Are you sure you want to delete this group? This action cannot be undone.</p>
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={confirmDelete} variant="danger" size="medium" className="w-full sm:w-auto">
             Yes, Delete
           </Button>
           <Button
-            onClick={() => setShowDeleteModal(false)}
+            onClick={() => {
+              setShowDeleteModal(false);
+              setDeleteGroupId(null);
+            }}
             variant="secondary"
             size="medium"
             className="w-full sm:w-auto"
@@ -373,56 +451,67 @@ export default function PermissionGroupManagement() {
             <h4 className="text-md font-semibold mb-3">Actions:</h4>
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-6 mb-6">
               <Button size="medium" variant="primary" onClick={handleAddClick} type="button" className="w-full sm:w-auto">
-                Add
+                Add Permissions
               </Button>
               <Button size="medium" variant="danger" onClick={handleDeleteClickPermission} type="button" className="w-full sm:w-auto">
-                Delete
+                Remove Permissions
               </Button>
               <Button size="medium" variant="secondary" onClick={handleViewClick} type="button" className="w-full sm:w-auto">
-                View
+                View Permissions
               </Button>
             </div>
 
             {/* Search Input */}
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <div className="flex-1">
-                <SearchInput
-                  placeholder="Search permissions..."
-                  onSearch={(q) => {
-                    setSearchTerm(q);
-                    setSearchTrigger(q.length > 0);
-                  }}
-                />
+            {(showPermissionList || showDeleteList || showViewList) && (
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <div className="flex-1">
+                  <SearchInput
+                    placeholder="Search permissions by code or description..."
+                    onSearch={(q) => {
+                      setSearchTerm(q);
+                      setSearchTrigger(q.length > 0);
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Add Permissions */}
             {showPermissionList && (
-              <PermissionList
-                permissions={filterPermissions(unassignedPermissions)}
-                showAdd={true}
-                showDelete={false}
-                onAdd={handleAddPermissionToGroup}
-              />
+              <div>
+                <h5 className="text-md font-medium mb-2">Available Permissions to Add:</h5>
+                <PermissionList
+                  permissions={filterPermissions(unassignedPermissions)}
+                  showAdd={true}
+                  showDelete={false}
+                  onAdd={handleAddPermissionToGroup}
+                />
+              </div>
             )}
 
             {/* Delete Permissions */}
             {showDeleteList && (
-              <PermissionList
-                permissions={filterPermissions(enrichWithCode(groupPermissions))}
-                showAdd={false}
-                showDelete={true}
-                onDelete={handleRemovePermissionFromGroup}
-              />
+              <div>
+                <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
+                <PermissionList
+                  permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                  showAdd={false}
+                  showDelete={true}
+                  onDelete={handleRemovePermissionFromGroup}
+                />
+              </div>
             )}
 
             {/* View Permissions */}
             {showViewList && (
-              <PermissionList
-                permissions={filterPermissions(enrichWithCode(groupPermissions))}
-                showAdd={false}
-                showDelete={false}
-              />
+              <div>
+                <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
+                <PermissionList
+                  permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                  showAdd={false}
+                  showDelete={false}
+                />
+              </div>
             )}
           </>
         )}

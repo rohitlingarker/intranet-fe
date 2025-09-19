@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -34,23 +34,33 @@ const Sidebar = ({ isCollapsed }) => {
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
 
-  // hover submenu (desktop logic)
+  // State and Refs for the hover-based submenu
   const [hovered, setHovered] = useState(false);
+  const [submenuTop, setSubmenuTop] = useState(0); // State to hold the submenu's vertical position
+  const userManagementRef = useRef(null); // Ref to get the position of the parent menu item
   const hoverTimeout = useRef(null);
 
   const handleMouseEnter = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    // Get the position of the "User Management" item to align the submenu
+    if (userManagementRef.current) {
+      const rect = userManagementRef.current.getBoundingClientRect();
+      setSubmenuTop(rect.top);
+    }
     setHovered(true);
   };
 
   const handleMouseLeave = () => {
+    // Delay hiding the submenu to allow the cursor to move into it
     hoverTimeout.current = setTimeout(() => {
       setHovered(false);
     }, 200);
   };
 
-  // collapsible submenu (mobile/narrow)
-  const [submenuOpen, setSubmenuOpen] = useState(false);
+  // Close submenu on route change
+  useEffect(() => {
+    setHovered(false);
+  }, [location.pathname]);
 
   return (
     <aside
@@ -60,7 +70,7 @@ const Sidebar = ({ isCollapsed }) => {
     >
       {/* Branding */}
       <div className="p-6 border-b border-[#0f1a3a] flex items-center gap-3">
-        <img src="logo.png" alt="Logo" className="h-10 w-10" />
+        <img src="logo.png" alt="Logo" className="h-10 w-10 shrink-0" />
         {!isCollapsed && (
           <div>
             <h1 className="text-lg font-bold leading-none">Paves Tech</h1>
@@ -81,6 +91,7 @@ const Sidebar = ({ isCollapsed }) => {
                   ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                   : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
               }`}
+              title={isCollapsed ? "Dashboard" : ""}
             >
               <LayoutDashboard className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>Dashboard</span>}
@@ -90,77 +101,59 @@ const Sidebar = ({ isCollapsed }) => {
           {/* User Management */}
           {isAdmin && (
             <li
+              ref={userManagementRef}
               className="relative"
-              {...(!isCollapsed && {
-                onMouseEnter: handleMouseEnter,
-                onMouseLeave: handleMouseLeave,
-              })}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               <div
-                onClick={() => isCollapsed && setSubmenuOpen(!submenuOpen)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 ${
                   isUserManagementActive
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
+                title={isCollapsed ? "User Management" : ""}
               >
                 <Users className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span className="flex-1">User Management</span>}
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    (!isCollapsed && hovered) || (isCollapsed && submenuOpen)
-                      ? "rotate-180"
-                      : ""
-                  }`}
-                />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">User Management</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        hovered ? "rotate-180" : ""
+                      }`}
+                    />
+                  </>
+                )}
               </div>
 
-              {/* Submenu */}
-              {!isCollapsed ? (
-                hovered && (
-                  <ul
-                    className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"
-                    style={{ transform: "translateY(-40%)" }}
-                  >
-                    {userManagementSubmenu.map((item) => (
-                      <li key={item.label}>
-                        <NavLink
-                          to={item.to}
-                          className={({ isActive }) =>
-                            `block px-4 py-2 rounded text-sm transition-colors ${
-                              isActive
-                                ? "bg-blue-100 text-[#0a174e] font-semibold"
-                                : "hover:bg-[#263383] hover:text-white"
-                            }`
-                          }
-                        >
-                          {item.label}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                )
-              ) : (
-                submenuOpen && (
-                  <ul className="mt-1 ml-6 space-y-1">
-                    {userManagementSubmenu.map((item) => (
-                      <li key={item.label}>
-                        <NavLink
-                          to={item.to}
-                          className={({ isActive }) =>
-                            `block px-3 py-2 rounded text-sm transition-colors ${
-                              isActive
-                                ? "bg-blue-100 text-[#0a174e] font-semibold"
-                                : "text-gray-300 hover:bg-[#263383] hover:text-white"
-                            }`
-                          }
-                        >
-                          {item.label}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                )
+              {/* Unified Submenu for both Collapsed and Expanded states */}
+              {hovered && (
+                <ul
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                    isCollapsed ? "left-20" : "left-64"
+                  }`}
+                  style={{ top: `${submenuTop}px` }}
+                  onMouseEnter={handleMouseEnter} // Keep menu open when mouse enters it
+                  onMouseLeave={handleMouseLeave}
+                >
+                  {userManagementSubmenu.map((item) => (
+                    <li key={item.label}>
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) =>
+                          `block px-4 py-2 text-sm transition-colors ${
+                            isActive
+                              ? "bg-blue-100 text-[#0a174e] font-semibold"
+                              : "hover:bg-[#263383] hover:text-white"
+                          }`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
               )}
             </li>
           )}
@@ -177,6 +170,7 @@ const Sidebar = ({ isCollapsed }) => {
                       ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                       : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                   }`}
+                  title={isCollapsed ? item.name : ""}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {!isCollapsed && <span>{item.name}</span>}

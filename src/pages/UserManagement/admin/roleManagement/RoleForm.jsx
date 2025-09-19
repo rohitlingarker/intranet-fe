@@ -4,6 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../../../components/Button/Button"; 
 import Modal from "../../../../components/Modal/modal"; // ✅ Global Modal component
+import { showStatusToast } from "../../../../components/toastfy/toast";
 
 const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
   const [newRole, setNewRole] = useState("");
@@ -34,7 +35,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     } catch (err) {
       console.error("Failed to fetch roles:", err);
       if (err.response?.status === 401) {
-        toast.error("Session expired. Please log in again.");
+        toast.error("Session expired. Please log in again.", { toastId: "session-expired" });
       }
     } finally {
       setLoading(false);
@@ -43,7 +44,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
 
   const doSave = async () => {
     if (!newRole.trim()) {
-      toast.error("Role name cannot be empty.");
+      toast.error("Role name cannot be empty.", { toastId: "role-error" });
       return;
     }
     setSaving(true);
@@ -54,14 +55,14 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
           { role_name: newRole },
           authHeader
         );
-        toast.success("Role updated successfully!");
+        toast.success("Role updated successfully!", { toastId: "role-success" });
       } else {
         await axios.post(
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles`,
           { role_name: newRole },
           authHeader
         );
-        toast.success("Role created successfully!");
+        toast.success("Role created successfully!", { toastId: "role-success" });
       }
       setNewRole("");
       setEditingRole(null);
@@ -69,8 +70,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
       setIsEditModalOpen(false); // ✅ Close edit modal
     } catch (err) {
       console.error("Error saving role:", err);
-      // showStatusToast(err?.response?.data?.detail || err.message, "error");
-      toast.error(err?.response?.data?.detail);
+      toast.error(err?.response?.data?.detail || "Failed to save role", { toastId: "role-error" });
     } finally {
       setSaving(false);
     }
@@ -83,11 +83,11 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${roleToDelete}`,
         authHeader
       );
-      toast.success("Role deleted successfully!");
+      toast.success("Role deleted successfully!", { toastId: "role-delete" });
       fetchRoles();
     } catch (err) {
       console.error("Failed to delete role:", err);
-      toast.error("Failed to delete role");
+      toast.error("Failed to delete role", { toastId: "role-delete-error" });
     } finally {
       setRoleToDelete(null);
       setIsDeleteModalOpen(false); // ✅ Close delete modal
