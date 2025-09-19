@@ -67,7 +67,10 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
       onSuccess(); // Call success handler from parent
     } catch (err) {
       console.error("Update failed:", err);
-      showStatusToast(err.response?.data?.detail || "Failed to update user.", "error");
+      showStatusToast(
+        err.response?.data?.detail || "Failed to update user.",
+        "error"
+      );
     } finally {
       setLoading(false); // Re-enable button
     }
@@ -86,16 +89,18 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
             value={user.first_name}
             onChange={(e) => {
               const value = e.target.value;
-              // Allow only alphabets
-              if (/^[a-zA-Z]*$/.test(value)) {
+              // ✅ Allow alphabets and spaces
+              if (/^[a-zA-Z\s]*$/.test(value)) {
                 handleChange(e);
               }
             }}
             onKeyDown={(e) => {
-              // Allow only letters and control keys
+              // ✅ Allow letters, space, and control keys
               if (
-                !/[a-zA-Z]/.test(e.key) &&
-                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+                !/[a-zA-Z\s]/.test(e.key) &&
+                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                  e.key
+                )
               ) {
                 e.preventDefault();
               }
@@ -109,16 +114,18 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
             value={user.last_name}
             onChange={(e) => {
               const value = e.target.value;
-              // Allow only alphabets
-              if (/^[a-zA-Z]*$/.test(value)) {
+              // ✅ Allow alphabets and spaces
+              if (/^[a-zA-Z\s]*$/.test(value)) {
                 handleChange(e);
               }
             }}
             onKeyDown={(e) => {
-              // Allow only letters and control keys
+              // ✅ Allow letters, space, and control keys
               if (
-                !/[a-zA-Z]/.test(e.key) &&
-                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+                !/[a-zA-Z\s]/.test(e.key) &&
+                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                  e.key
+                )
               ) {
                 e.preventDefault();
               }
@@ -143,7 +150,9 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
             // Allow letters, numbers, @, ., _, - and control keys
             if (
               !/[a-zA-Z0-9@._-]/.test(e.key) &&
-              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                e.key
+              )
             ) {
               e.preventDefault();
             }
@@ -164,7 +173,9 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
           onKeyDown={(e) => {
             if (
               !/[0-9]/.test(e.key) &&
-              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)
+              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                e.key
+              )
             ) {
               e.preventDefault();
             }
@@ -197,11 +208,7 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
         </div>
 
         <div className="flex gap-4 pt-4 border-t sticky bottom-0 bg-white">
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="flex-1 sm:flex-none"
-          >
+          <Button type="submit" disabled={loading} className="flex-1 sm:flex-none">
             {loading ? "Saving..." : "Save Changes"}
           </Button>
           <Button
