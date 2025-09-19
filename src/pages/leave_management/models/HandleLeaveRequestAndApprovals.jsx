@@ -325,68 +325,83 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col lg:flex-row items-center gap-4 flex-wrap">
+          
+          {/* --- SEARCH INPUT --- */}
+          {/* No changes needed here, it already matches the new style. */}
+          <div className="relative flex-1 w-full lg:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Search by Name or Leave Type"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             />
           </div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option>All</option>
-            <option>PENDING</option>
-            <option>APPROVED</option>
-            <option>REJECTED</option>
-            <option>CANCELLED</option>
-          </select>
-          {/* Year Filter (Dynamic) */}
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option value="">All Years</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
- 
-          {/* Month Filter */}
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option value="">All Months</option>
-            {[
-              { value: 1, label: "January" },
-              { value: 2, label: "February" },
-              { value: 3, label: "March" },
-              { value: 4, label: "April" },
-              { value: 5, label: "May" },
-              { value: 6, label: "June" },
-              { value: 7, label: "July" },
-              { value: 8, label: "August" },
-              { value: 9, label: "September" },
-              { value: 10, label: "October" },
-              { value: 11, label: "November" },
-              { value: 12, label: "December" },
-            ].map((month) => (
-              <option key={month.value} value={month.value}>
-                {month.label}
-              </option>
-            ))}
-          </select>
+
+          {/* --- STATUS DROPDOWN --- */}
+          {/* This is the new, styled dropdown structure */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              // MODIFICATION: Added 'appearance-none' to hide the default arrow and 'pr-10' for spacing
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option>All Status</option>
+              <option>PENDING</option>
+              <option>APPROVED</option>
+              <option>REJECTED</option>
+              <option>CANCELLED</option>
+            </select>
+            {/* MODIFICATION: Added this div for the custom chevron icon */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
+          {/* --- YEAR DROPDOWN --- */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.g.target.value)}
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">All Years</option>
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
+          {/* --- MONTH DROPDOWN --- */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">All Months</option>
+              {[
+                { value: 1, label: "January" }, { value: 2, label: "February" },
+                { value: 3, label: "March" }, { value: 4, label: "April" },
+                { value: 5, label: "May" }, { value: 6, label: "June" },
+                { value: 7, label: "July" }, { value: 8, label: "August" },
+                { value: 9, label: "September" }, { value: 10, label: "October" },
+                { value: 11, label: "November" }, { value: 12, label: "December" },
+              ].map((month) => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
         </div>
       </div>
  
