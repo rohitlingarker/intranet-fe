@@ -80,7 +80,7 @@ export default function LeaveDashboard({ employeeId }) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>
-                    {Math.max(leave.remainingLeaves - leave.usedLeaves, 0)} days
+                    {Math.max(leave.remainingLeaves, 0)} days
                   </span>
                   <span>{leave.usedLeaves} days</span>
                 </div>

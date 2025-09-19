@@ -11,40 +11,47 @@ const LeaveHistory = () => {
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
 
   const employeeId = useAuth()?.user?.user_id;
-  // Filter/search state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const itemsPerPage = 8;
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
 
-  // Fetch leave data and leave types
+  // Fetch data
   useEffect(() => {
     setLoading(true);
     setError(null);
     Promise.all([
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
-        headers: { 
+        headers: {
           "Cache-Control": "no-store",
-          Authorization:`Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
       }),
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
-        headers: { "Cache-Control": "no-store",
-          Authorization:`Bearer ${token}`
+        headers: {
+          "Cache-Control": "no-store",
+          Authorization: `Bearer ${token}`,
         },
-
       }),
     ])
       .then(([leavesResp, typesResp]) => {
         const data = leavesResp.data;
         setLeaves(Array.isArray(data?.data) ? data.data : []);
-        setLeaveTypeOptions(Array.isArray(typesResp.data) ? typesResp.data : []);
+        setLeaveTypeOptions(
+          Array.isArray(typesResp.data) ? typesResp.data : []
+        );
         setLoading(false);
       })
       .catch(() => {
@@ -53,7 +60,67 @@ const LeaveHistory = () => {
       });
   }, []);
 
-  // Status options
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      // if (!isOpen) return;
+      try {
+        const res = await axios.get(`${BASE_URL}/api/leave/types`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLeaveTypes(res.data); // Backend returns [{ name, label }]
+        console.log("Fetched leave types:", res.data);
+      } catch (err) {
+        toast.error("Failed to load leave type details.");
+      }
+    };
+
+    fetchLeaveTypes();
+  }, [token]);
+
+  function mapLeaveBalancesToDropdown(balances, leaveTypes) {
+    return balances.map((balance) => {
+      const leaveTypeId = balance.leaveType.leaveTypeId;
+      const originalName = balance.leaveType.leaveName;
+
+      // Find the corresponding type from the fetched list to get its 'label'
+      const matchingType = leaveTypes.find(
+        (type) => type.name === originalName
+      );
+      const leaveName = matchingType
+        ? matchingType.label
+        : originalName.replace(/^L-/, "");
+
+      let availableText;
+      let isInfinite = false;
+
+      if (
+        leaveTypeId === "L-UP" ||
+        leaveName.toLowerCase().includes("unpaid")
+      ) {
+        availableText = "Infinite balance";
+        isInfinite = true;
+      } else if (balance.remainingLeaves > 0) {
+        availableText =
+          (balance.remainingLeaves % 1 === 0
+            ? balance.remainingLeaves
+            : balance.remainingLeaves.toFixed(1)) + " days available";
+      } else {
+        availableText = "Not Available";
+      }
+
+      return {
+        leaveTypeId,
+        leaveName, // This will now be the user-friendly label
+        availableText,
+        availableDays: isInfinite ? Infinity : balance.remainingLeaves,
+        isInfinite,
+        disabled: !isInfinite && balance.remainingLeaves <= 0,
+        allowHalfDay: !!balance.leaveType.allowHalfDay,
+        requiresDocumentation: !!balance.leaveType.requiresDocumentation,
+      };
+    });
+  }
+
   const statusOptions = Array.from(
     new Set(
       leaves
@@ -62,6 +129,35 @@ const LeaveHistory = () => {
         .filter(Boolean)
     )
   );
+
+  // Component to handle long reason text with "View More"/"View Less"
+  const LeaveReasonCell = ({ reason }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    // limit characters shown before truncation
+    const MAX_LENGTH = 50;
+
+    if (!reason) return <span>-</span>;
+
+    const isLong = reason.length > MAX_LENGTH;
+    const displayText = expanded
+      ? reason
+      : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+
+    return (
+      <div className="flex flex-col">
+        <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+        {isLong && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-blue-600 text-xs hover:underline self-start"
+          >
+            {expanded ? "View Less" : "View More"}
+          </button>
+        )}
+      </div>
+    );
+  };
 
   // Filtering
   const filteredLeaves = leaves
@@ -87,7 +183,19 @@ const LeaveHistory = () => {
       const statusMatch =
         filterStatus === "All" || leave.status === filterStatus;
 
-      return searchMatch && typeMatch && statusMatch;
+      const leaveYear = leave.startDate
+        ? new Date(leave.startDate).getFullYear()
+        : null;
+      const yearMatch =
+        selectedYear === "" || leaveYear === Number(selectedYear);
+
+      const leaveMonth = leave.startDate
+        ? new Date(leave.startDate).getMonth() + 1
+        : null;
+      const monthMatch =
+        selectedMonth === "" || leaveMonth === Number(selectedMonth);
+
+      return searchMatch && typeMatch && statusMatch && yearMatch && monthMatch;
     });
 
   const totalPages = Math.ceil(filteredLeaves.length / itemsPerPage);
@@ -96,7 +204,13 @@ const LeaveHistory = () => {
     currentPage * itemsPerPage
   );
 
-  // Loading
+  // Helper: map DB leaveName to user-friendly label
+  const getLeaveLabel = (leaveName) => {
+    if (!leaveName) return "-";
+    const match = leaveTypes.find((lt) => lt.name === leaveName);
+    return match ? match.label : leaveName.replace(/^L-/, ""); // fallback to raw or cleaned name
+  };
+
   if (loading) {
     return (
       <div className="text-center py-10 text-gray-600 text-lg">
@@ -105,7 +219,6 @@ const LeaveHistory = () => {
     );
   }
 
-  // Error
   if (error) {
     return (
       <div className="text-center py-10 text-red-500 font-semibold">
@@ -116,133 +229,171 @@ const LeaveHistory = () => {
 
   return (
     <div className="w-6xl mx-auto h-auto px-6 py-8 bg-white rounded-lg shadow-md">
+      {/* 🔹 Filters should always be visible */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <input
+          type="text"
+          className="border px-3 py-2 rounded-md w-full sm:w-1/3"
+          placeholder="Search by employee, type, reason…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <select
+          className="border px-3 py-2 rounded-md"
+          value={filterLeaveType}
+          onChange={(e) => setFilterLeaveType(e.target.value)}
+        >
+          <option value="All">All Leave Types</option>
+          {leaveTypeOptions.map((type) => (
+            <option
+              key={type.leaveTypeId || type.id || type.leaveName}
+              value={type.leaveName}
+            >
+              {getLeaveLabel(type.leaveName)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="border px-3 py-2 rounded-md"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="All">All Statuses</option>
+          {statusOptions.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+          className="px-4 py-3 border border-gray-300 rounded-lg"
+        >
+          <option value="">All Years</option>
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="px-4 py-3 border border-gray-300 rounded-lg"
+        >
+          <option value="">All Months</option>
+          {[
+            { value: 1, label: "January" },
+            { value: 2, label: "February" },
+            { value: 3, label: "March" },
+            { value: 4, label: "April" },
+            { value: 5, label: "May" },
+            { value: 6, label: "June" },
+            { value: 7, label: "July" },
+            { value: 8, label: "August" },
+            { value: 9, label: "September" },
+            { value: 10, label: "October" },
+            { value: 11, label: "November" },
+            { value: 12, label: "December" },
+          ].map((month) => (
+            <option key={month.value} value={month.value}>
+              {month.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 🔹 Table or No Data */}
       {filteredLeaves.length > 0 ? (
-        <>
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <input
-              type="text"
-              className="border px-3 py-2 rounded-md w-full sm:w-1/3"
-              placeholder="Search by employee, type, reason…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <select
-              className="border px-3 py-2 rounded-md"
-              value={filterLeaveType}
-              onChange={(e) => setFilterLeaveType(e.target.value)}
-            >
-              <option value="All">All Leave Types</option>
-              {leaveTypeOptions.map((type) => (
-                <option
-                  key={type.leaveTypeId || type.id || type.leaveName}
-                  value={type.leaveName}
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+            <thead className="bg-gray-100 text-xs uppercase text-gray-600">
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
+                <th className="text-left px-4 py-3 text-xs">Leave Type</th>
+                <th className="text-left px-4 py-3 text-xs">Requested by</th>
+                <th className="text-left px-4 py-3 text-xs">From</th>
+                <th className="text-left px-4 py-3 text-xs">To</th>
+                <th className="text-left px-4 py-3 text-xs">Days</th>
+                <th className="text-left px-4 py-3 text-xs">Status</th>
+                <th className="text-left px-4 py-3 text-xs">Reason</th>
+                <th className="text-left px-4 py-3 text-xs">Comment</th>
+                <th className="text-left px-4 py-3 text-xs">Approved By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRequests.map((leave, index) => (
+                <tr
+                  key={leave.leaveId || index}
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-gray-100 transition`}
                 >
-                  {type.leaveName}
-                </option>
-              ))}
-            </select>
-            <select
-              className="border px-3 py-2 rounded-md"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="All">All Statuses</option>
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {getLeaveLabel(leave.leaveType?.leaveName)}
+                  </td>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-lg  border border-gray-200">
-            <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-              <thead className="bg-gray-100 text-xs uppercase text-gray-600">
-                <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                  <th className="text-left px-4 py-3">Leave Type</th>
-                  <th className="text-left px-4 py-3">Requested by</th>
-                  <th className="text-left px-4 py-3">From</th>
-                  <th className="text-left px-4 py-3">To</th>
-                  <th className="text-left px-4 py-3">Days</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="text-left px-4 py-3">Reason</th>
-                  <th className="text-left px-4 py-3">Comment</th>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.employee?.fullName || "-"}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.startDate
+                      ? new Date(leave.startDate).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.endDate
+                      ? new Date(leave.endDate).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs text-center">
+                    {leave.daysRequested}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    <span
+                      className={`px-1.5 py-1 text-xs font-medium rounded-full text-white ${
+                        leave.status === "APPROVED"
+                          ? "bg-green-500"
+                          : leave.status === "REJECTED"
+                          ? "bg-red-500"
+                          : "bg-gray-500"
+                      }`}
+                    >
+                      {leave.status}
+                    </span>
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs whitespace-pre-wrap">
+                    <LeaveReasonCell reason={leave.reason} />
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.managerComment || "-"}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.approvedBy?.fullName || "-"}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {paginatedRequests.map((leave, index) => (
-                  <tr
-                    key={leave.leaveId || index}
-                    className={`${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    } hover:bg-gray-100 transition`}
-                  >
-                    <td className="p-3 text-gray-700 font-medium">
-                      {leave.leaveType?.leaveName || "-"}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      {leave.employee?.fullName || "-"}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      {leave.startDate
-                        ? new Date(leave.startDate).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      {leave.endDate
-                        ? new Date(leave.endDate).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium text-center">
-                      {leave.daysRequested}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${
-                          leave.status === "APPROVED"
-                            ? "bg-green-500"
-                            : leave.status === "REJECTED"
-                            ? "bg-red-500"
-                            : "bg-gray-500"
-                        }`}
-                      >
-                        {leave.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium whitespace-pre-wrap">
-                      {leave.reason || "-"}
-                    </td>
-                    <td className="p-3 text-gray-700 font-medium">
-                      {leave.managerComment || "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
 
-            {/* Pagination */}
-            <div className="mb-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPrevious={() =>
-                  setCurrentPage((page) => Math.max(page - 1, 1))
-                }
-                onNext={() =>
-                  setCurrentPage((page) => Math.min(page + 1, totalPages))
-                }
-              />
-            </div>
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              onNext={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+            />
           </div>
-        </>
+        </div>
       ) : (
-        // No data message
-        <div className="flex h-40">
-          <p className={Fonts.caption}>
-            No leave history found.
-          </p>
+        <div className="flex h-40 items-center justify-center">
+          <p className={Fonts.caption}>No leave history found.</p>
         </div>
       )}
     </div>

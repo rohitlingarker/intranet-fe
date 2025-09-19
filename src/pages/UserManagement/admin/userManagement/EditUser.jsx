@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import FormInput from "../../../../components/forms/FormInput"; // Adjust path as needed
-import Button from "../../../../components/Button/Button";        // Adjust path as needed
+import FormInput from "../../../../components/forms/FormInput";
+import Button from "../../../../components/Button/Button";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
-export default function EditUser() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+export default function EditUserForm({ userId, onSuccess, onClose }) {
   const token = localStorage.getItem("token");
 
   const [user, setUser] = useState({
@@ -19,20 +16,25 @@ export default function EditUser() {
     is_active: true,
   });
 
+  const [loading, setLoading] = useState(false); // Track API request
+
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => setUser((prev) => ({ ...prev, ...res.data })))
-      .catch((err) => {
-        console.error("Failed to fetch user:", err);
-        showStatusToast("Access denied or user not found.", "error");
-        navigate("/user-management/users");
-      });
-  }, [id]);
+    if (userId) {
+      axios
+        .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const { password, ...rest } = res.data; // ⛔ don't include password
+          setUser((prev) => ({ ...prev, ...rest }));
+        })
+        .catch((err) => {
+          console.error("Failed to fetch user:", err);
+          showStatusToast("Access denied or user not found.", "error");
+          onClose(); // Close modal on error
+        });
+    }
+  }, [userId, token, onClose]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -44,87 +46,136 @@ export default function EditUser() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (user.contact.length !== 10) {
+      showStatusToast("Contact number must be exactly 10 digits.", "error");
+      return;
+    }
+
+    setLoading(true); // Disable button
+
     try {
       const payload = { ...user };
       if (!payload.password) delete payload.password;
- 
-      await axios.put(`http://localhost:8000/admin/users/${id}`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
- 
-      showStatusToast("User updated successfully!", "success");
 
       await axios.put(
-        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${id}`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}`,
         payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("User updated successfully!");
-      navigate("/user-management/users");
+      onSuccess(); // Call success handler from parent
     } catch (err) {
       console.error("Update failed:", err);
-      showStatusToast("Failed to update user.", "error");
+      showStatusToast(
+        err.response?.data?.detail || "Failed to update user.",
+        "error"
+      );
+    } finally {
+      setLoading(false); // Re-enable button
     }
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-bold text-blue-700 mb-4">Edit User</h2>
+    <div className="w-full max-w-3xl mx-auto">
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 bg-white p-6 shadow rounded-lg"
+        className="space-y-4 p-4 max-h-[60vh] overflow-y-auto"
       >
-        <FormInput
-          label="First Name"
-          name="first_name"
-          value={user.first_name}
-          onChange={handleChange}
-          placeholder="Enter first name"
-        />
-        <FormInput
-          label="Last Name"
-          name="last_name"
-          value={user.last_name}
-          onChange={handleChange}
-          placeholder="Enter last name"
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormInput
+            label="First Name"
+            name="first_name"
+            value={user.first_name}
+            onChange={(e) => {
+              const value = e.target.value;
+              // ✅ Allow alphabets and spaces
+              if (/^[a-zA-Z\s]*$/.test(value)) {
+                handleChange(e);
+              }
+            }}
+            onKeyDown={(e) => {
+              // ✅ Allow letters, space, and control keys
+              if (
+                !/[a-zA-Z\s]/.test(e.key) &&
+                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                  e.key
+                )
+              ) {
+                e.preventDefault();
+              }
+            }}
+            placeholder="Enter first name"
+          />
+
+          <FormInput
+            label="Last Name"
+            name="last_name"
+            value={user.last_name}
+            onChange={(e) => {
+              const value = e.target.value;
+              // ✅ Allow alphabets and spaces
+              if (/^[a-zA-Z\s]*$/.test(value)) {
+                handleChange(e);
+              }
+            }}
+            onKeyDown={(e) => {
+              // ✅ Allow letters, space, and control keys
+              if (
+                !/[a-zA-Z\s]/.test(e.key) &&
+                !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                  e.key
+                )
+              ) {
+                e.preventDefault();
+              }
+            }}
+            placeholder="Enter last name"
+          />
+        </div>
+
         <FormInput
           label="Email"
           name="mail"
           type="email"
           value={user.mail}
-          onChange={handleChange}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Allow only letters, numbers, @, ., _, -
+            if (/^[a-zA-Z0-9@._-]*$/.test(value)) {
+              handleChange(e);
+            }
+          }}
+          onKeyDown={(e) => {
+            // Allow letters, numbers, @, ., _, - and control keys
+            if (
+              !/[a-zA-Z0-9@._-]/.test(e.key) &&
+              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                e.key
+              )
+            ) {
+              e.preventDefault();
+            }
+          }}
           placeholder="Enter email"
         />
+
         <FormInput
           label="Contact"
           name="contact"
           value={user.contact}
           onChange={(e) => {
-            // Allow only numbers
             const value = e.target.value;
             if (/^\d{0,10}$/.test(value)) {
-              handleChange(e); // update only if valid
+              handleChange(e);
             }
           }}
           onKeyDown={(e) => {
-            // Block non-numeric keys except Backspace, Delete, Tab, Arrow keys
             if (
               !/[0-9]/.test(e.key) &&
-              ![
-                "Backspace",
-                "Delete",
-                "Tab",
-                "ArrowLeft",
-                "ArrowRight",
-              ].includes(e.key)
+              !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight"].includes(
+                e.key
+              )
             ) {
               e.preventDefault();
             }
@@ -134,13 +185,14 @@ export default function EditUser() {
         />
 
         <FormInput
-          label="New Password ()"
+          label="New Password (Optional)"
           name="password"
           type="password"
           value={user.password}
           onChange={handleChange}
-          placeholder="Enter new password"
+          placeholder="Leave blank to keep current password"
         />
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -148,18 +200,23 @@ export default function EditUser() {
             checked={user.is_active}
             onChange={handleChange}
             id="is_active"
+            className="rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
           />
           <label htmlFor="is_active" className="text-sm text-gray-700">
             Is Active
           </label>
         </div>
 
-        <div className="flex gap-4">
-          <Button type="submit">Save Changes</Button>
+        <div className="flex gap-4 pt-4 border-t sticky bottom-0 bg-white">
+          <Button type="submit" disabled={loading} className="flex-1 sm:flex-none">
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
           <Button
             type="button"
             variant="secondary"
-            onClick={() => navigate("/user-management/users")}
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 sm:flex-none"
           >
             Cancel
           </Button>

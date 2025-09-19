@@ -1,9 +1,10 @@
 import React from "react";
 import { MoreVertical, Pencil, Trash } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef} from "react";
  
 const ActionDropdown = ({ onEdit, onDelete }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
  
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -20,9 +21,26 @@ const ActionDropdown = ({ onEdit, onDelete }) => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
  
   return (
-    <div className="relative inline-block text-left">
+    <div className="relative inline-block text-left" ref={dropdownRef}>
       <button onClick={() => setIsOpen(!isOpen)}>
         <MoreVertical className="w-5 h-5 cursor-pointer" />
       </button>
