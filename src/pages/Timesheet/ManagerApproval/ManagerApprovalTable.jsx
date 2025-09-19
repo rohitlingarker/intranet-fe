@@ -22,14 +22,18 @@ const ManagerApprovalTable = () => {
   const [selectedTimesheets, setSelectedTimesheets] = useState([]);
   const [bulkMode, setBulkMode] = useState(""); // "", "approve", "reject"
   const [bulkComment, setBulkComment] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const pageSize = 5;
 
   useEffect(() => {
+    // setLoading(true);
     fetchTimesheets();
+    // setLoading(false);
   }, []);
 
   const fetchTimesheets = async () => {
+    setLoading(true);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`,
@@ -37,10 +41,16 @@ const ManagerApprovalTable = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      if (!res.ok) throw new Error("Failed to fetch timesheets");
+      if (!res.ok) {
+        setLoading(false);
+        throw new Error("Failed to fetch timesheets");
+      };
 
       const data = await res.json();
       setTimesheets(data);
+      console.log(loading );
+      
+      setLoading(false);
 
       const uniqueUserIds = [...new Set(data.map((ts) => ts.userId))];
       uniqueUserIds.forEach((uid) => fetchProjectTaskInfo(uid));
@@ -339,26 +349,25 @@ const ManagerApprovalTable = () => {
       </div>
       <div className="flex justify-between items-center">
         <div>
-          <label className="cursor-pointer" >
-
-          <input
-            type="checkbox"
-            checked={
-              selectedTimesheets.length > 0 &&
-              selectedTimesheets.length === filteredTimesheets.length
-            }
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedTimesheets(
-                  filteredTimesheets.map((s) => s.timesheetId)
-                );
-              } else {
-                setSelectedTimesheets([]);
+          <label className="cursor-pointer">
+            <input
+              type="checkbox"
+              checked={
+                selectedTimesheets.length > 0 &&
+                selectedTimesheets.length === filteredTimesheets.length
               }
-            }}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedTimesheets(
+                    filteredTimesheets.map((s) => s.timesheetId)
+                  );
+                } else {
+                  setSelectedTimesheets([]);
+                }
+              }}
             />
-          &nbsp; Select All
-            </label>
+            &nbsp; Select All
+          </label>
         </div>
         {selectedTimesheets.length > 0 && (
           <div className="flex flex-col gap-2 rounded bg-gray-50">
@@ -441,8 +450,12 @@ const ManagerApprovalTable = () => {
       </div>
 
       {/* Timesheet List */}
-
-      {paginatedTimesheets.map((sheet) => {
+      {loading ? (
+        <div className="text-center text-gray-600">Loading TimeSheet Approvals...</div>
+      ) : paginatedTimesheets.length === 0 ? (
+        <div className="text-center text-gray-600">No timesheets found.</div>
+      ) : (
+      paginatedTimesheets.map((sheet) => {
         const totalHours = sheet.entries.reduce(
           (sum, e) => sum + (e.hoursWorked || 0),
           0
@@ -595,10 +608,12 @@ const ManagerApprovalTable = () => {
             </table>
           </div>
         );
-      })}
+      })
+      )}
+      
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -606,6 +621,7 @@ const ManagerApprovalTable = () => {
           onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         />
       )}
+      
     </div>
   );
 };
