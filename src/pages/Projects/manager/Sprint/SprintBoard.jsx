@@ -15,7 +15,9 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,{
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
       setStories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load stories:', err);
@@ -25,7 +27,9 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,{
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
       setSprints(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load sprints:', err);
@@ -40,7 +44,9 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId });
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId },{
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
       await fetchStories();
     } catch (err) {
       console.error('Error assigning story to sprint:', err);
@@ -50,7 +56,8 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,{},
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       const updatedSprint = response.data;
 

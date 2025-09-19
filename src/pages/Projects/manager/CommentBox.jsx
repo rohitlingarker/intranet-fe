@@ -46,9 +46,13 @@ const CommentBox = ({ entityId, entityType, currentUser }) => {
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
 
+    const userId = currentUser.user_id;
+    console.log('Submitting comment:', { content: newComment, userId, parentId: replyingTo });
+    
+
     const payload = {
       content: newComment,
-      userId: currentUser.id,
+      userId: userId,
       parentId: replyingTo,
     };
 
