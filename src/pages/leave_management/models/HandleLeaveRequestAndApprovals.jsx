@@ -132,7 +132,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           {isLong && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-blue-600 text-xs mt-1 hover:underline self-start"
+              className="text-blue-600 text-xs hover:underline self-start"
             >
               {expanded ? "View Less" : "View More"}
             </button>
@@ -315,10 +315,8 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         return "bg-yellow-100 text-yellow-800";
       case "rejected":
         return "bg-red-100 text-red-800";
-      case "cancelled":
-        return "bg-gray-200 text-gray-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-200 text-gray-800";
     }
   };
  
@@ -411,7 +409,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             {selectedRequests.length > 0 && (
               <tr>
                 <th
-                  colSpan={9}
+                  colSpan={12}
                   className="bg-indigo-100 text-indigo-700 px-6 py-2 text-left rounded-t-lg"
                 >
                   <div className="flex items-center gap-4">
@@ -442,7 +440,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </tr>
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              <th className="px-4 py-3 text-left">
+              <th className="px-4 py-3 text-center">
                 <input
                   type="checkbox"
                   checked={
@@ -457,7 +455,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </th>
               {[
                 "Employee",
-                "Leave Dates",
+                "From",
+                "To",
+                "Days",
+                "Requested On",
                 "Leave Type",
                 "Reason",
                 "Status",
@@ -467,14 +468,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               ].map((heading, i) => (
                 <th
                   key={i}
-                  className="px-4 py-3 text-center text-xs uppercase w-[15%]"
+                  className="px-4 py-3 text-center text-xs uppercase w-[20%]"
                 >
                   {heading}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 w-[20%] text-center">
             {paginatedRequests.map((request) => {
               console.log(request)
               const typeObj =
@@ -518,15 +519,47 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {request.startDate}
-                        {request.startDate !== request.endDate
+                        {request.startDate
+                          ? new Date(request.startDate).toLocaleDateString()
+                          : "-"}
+                        {/* {request.startDate !== request.endDate
                           ? ` to ${request.endDate}`
-                          : ""}
+                          : ""} */}
+                      </div>
+                      {/* <div className="text-gray-500">
+                        {request.daysRequested}{" "}
+                        {request.daysRequested === 1 ? "Day" : "Days"}
+                      </div> */}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {request.endDate
+                          ? new Date(request.endDate).toLocaleDateString()
+                          : "-"}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {request.daysRequested}
+                      </div>
+                      {/* <div className="font-medium text-gray-900">
+                        {request.requestDate}
                       </div>
                       <div className="text-gray-500">
                         {request.daysRequested}{" "}
-                        {request.daysRequested === 1 ? "Day" : "Days"}
-                      </div>
+                        {request.daysRequested <= 1 ? "Day" : "Days"}
+                      </div> */}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-gray-900">
+                      {request.requestDate
+                        ? new Date(request.requestDate).toLocaleDateString()
+                        : "-"}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -534,13 +567,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       <div className="font-medium text-gray-900">
                         {request.leaveType.leaveName}
                       </div>
-                      <div className="text-gray-500">
+                      {/* <div className="text-gray-500">
                         Requested on {request.requestDate}
-                      </div>
+                      </div> */}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-gray-900">
+                    <div className="text-gray-900 text-left">
                       <LeaveReasonCell reason={request.reason} />
                     </div>
                   </td>
@@ -558,7 +591,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       <div className="font-medium text-gray-900">
                         {request.approvedBy
                           ? request.approvedBy.fullName
-                          : request.managerComment ?? "—"}
+                          : "—"}
                       </div>
                       {request.managerComment && (
                         <div className="text-gray-500 mt-1">
