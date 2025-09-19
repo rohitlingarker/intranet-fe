@@ -7,6 +7,7 @@ import Modal from "../../../../components/Modal/modal";
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify"; // ✅ For single toast
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
 export default function PermissionManagement() {
@@ -61,8 +62,60 @@ export default function PermissionManagement() {
     }
   };
 
+  // 🔹 Utility: Show single toast at a time
+  const showSingleToast = (msg, type) => {
+    toast.dismiss(); // ✅ Dismiss any existing toast
+    showStatusToast(msg, type);
+  };
+
+  // 🔹 Enhanced validation helper
+  const validatePermissionCode = (code) => {
+    if (!code.trim()) {
+      showSingleToast("Enter the permission", "error");
+      return false;
+    }
+    
+    // Check if contains capital letters
+    if (!/[A-Z]/.test(code)) {
+      showSingleToast("Permission code must contain at least one capital letter", "error");
+      return false;
+    }
+    
+    // Check allowed characters (letters, spaces, hyphens, underscores)
+    const validCharsRegex = /^[A-Za-z\s-_]+$/;
+    if (!validCharsRegex.test(code)) {
+      showSingleToast(
+        "Permission code can only contain letters, spaces, hyphens, and underscores",
+        "error"
+      );
+      return false;
+    }
+    
+    return true;
+  };
+
+  // 🔹 Description validation helper
+  const validateDescription = (desc) => {
+    if (!desc.trim()) {
+      showSingleToast("Description shouldn't be empty", "error");
+      return false;
+    }
+    
+    // Check if contains only text (letters, spaces, and basic punctuation)
+    const textOnlyRegex = /^[A-Za-z\s.,!?-_()]+$/;
+    if (!textOnlyRegex.test(desc)) {
+      showSingleToast("Description should contain only text format", "error");
+      return false;
+    }
+    
+    return true;
+  };
+
   // 🔹 Add Permission
   const handleCreate = async () => {
+    if (!validatePermissionCode(newPermission)) return;
+    if (!validateDescription(description)) return;
+
     try {
       const payload = {
         permission_code: newPermission,
@@ -74,18 +127,26 @@ export default function PermissionManagement() {
       }
 
       await axiosInstance.post("/admin/permissions/", payload);
-      showStatusToast("Permission created successfully!", "success");
+      showSingleToast("Permission created successfully!", "success");
 
       resetForm();
       fetchPermissions();
     } catch (err) {
       console.error("Error creating permission", err);
-      showStatusToast("Failed to create permission", "error");
+
+      if (err.response?.data?.detail) {
+        showSingleToast(err.response.data.detail, "error");
+      } else {
+        showSingleToast("Failed to create permission", "error");
+      }
     }
   };
 
   // 🔹 Update Permission (from modal)
   const handleUpdate = async () => {
+    if (!validatePermissionCode(editCode)) return;
+    if (!validateDescription(editDescription)) return;
+
     try {
       await axiosInstance.put(`/admin/permissions/${editingPermission.permission_id}`, {
         permission_code: editCode,
@@ -98,16 +159,20 @@ export default function PermissionManagement() {
         });
       }
 
-      showStatusToast("Permission updated successfully!", "success");
+      showSingleToast("Permission updated successfully!", "success");
       setShowModal(false);
       fetchPermissions();
     } catch (err) {
       console.error("Error updating permission", err);
-      showStatusToast("Failed to update permission", "error");
+
+      if (err.response?.data?.detail) {
+        showSingleToast(err.response.data.detail, "error");
+      } else {
+        showSingleToast("Failed to update permission", "error");
+      }
     }
   };
 
-  // 🔹 Open Edit Modal with prefilled values
   const handleEdit = (permission) => {
     setEditingPermission(permission);
     setEditCode(permission.permission_code);
@@ -125,10 +190,10 @@ export default function PermissionManagement() {
     try {
       await axiosInstance.delete(`/admin/permissions/${deleteId}`);
       fetchPermissions();
-      showStatusToast("Permission deleted successfully!", "success");
+      showSingleToast("Permission deleted successfully!", "success");
     } catch (err) {
       console.error("Failed to delete permission", err);
-      showStatusToast("Failed to delete permission", "error");
+      showSingleToast("Failed to delete permission", "error");
     } finally {
       setShowDeleteModal(false);
       setDeleteId(null);
@@ -139,6 +204,42 @@ export default function PermissionManagement() {
     setNewPermission("");
     setNewDescription("");
     setSelectedGroup("");
+  };
+
+  // 🔹 Handle permission code input with validation
+  const handlePermissionChange = (e) => {
+    const value = e.target.value;
+    // Allow only letters, spaces, hyphens, underscores
+    if (/^[A-Za-z\s-_]*$/.test(value)) {
+      setNewPermission(value);
+    }
+  };
+
+  // 🔹 Handle description input with validation
+  const handleDescriptionChange = (e) => {
+    const value = e.target.value;
+    // Allow only text format (letters, spaces, basic punctuation)
+    if (/^[A-Za-z\s.,!?-_()]*$/.test(value)) {
+      setNewDescription(value);
+    }
+  };
+
+  // 🔹 Handle edit permission code input with validation
+  const handleEditPermissionChange = (e) => {
+    const value = e.target.value;
+    // Allow only letters, spaces, hyphens, underscores
+    if (/^[A-Za-z\s-_]*$/.test(value)) {
+      setEditCode(value);
+    }
+  };
+
+  // 🔹 Handle edit description input with validation
+  const handleEditDescriptionChange = (e) => {
+    const value = e.target.value;
+    // Allow only text format (letters, spaces, basic punctuation)
+    if (/^[A-Za-z\s.,!?-_()]*$/.test(value)) {
+      setEditDescription(value);
+    }
   };
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -179,17 +280,18 @@ export default function PermissionManagement() {
           label="Permission Code"
           name="permission_code"
           value={newPermission}
-          onChange={(e) => setNewPermission(e.target.value)}
-          placeholder="e.g., READ_USER"
+          onChange={handlePermissionChange}
+          placeholder="e.g., READ_USER (must contain capital letters)"
           className="mb-3"
         />
 
         <FormInput
           type="text"
+          label="Description"
           padding="medium"
-          placeholder="Description"
+          placeholder="Enter description (text only)"
           value={description}
-          onChange={(e) => setNewDescription(e.target.value)}
+          onChange={handleDescriptionChange}
           className="w-full p-2 border rounded mb-3"
         />
 
@@ -267,15 +369,16 @@ export default function PermissionManagement() {
           label="Permission Code"
           name="edit_permission_code"
           value={editCode}
-          onChange={(e) => setEditCode(e.target.value)}
-          placeholder="e.g., READ_USER"
+          onChange={handleEditPermissionChange}
+          placeholder="e.g., READ_USER (must contain capital letters)"
           className="mb-3"
         />
         <FormInput
           type="text"
-          placeholder="Description"
+          label="Description"
+          placeholder="Enter description (text only)"
           value={editDescription}
-          onChange={(e) => setEditDescription(e.target.value)}
+          onChange={handleEditDescriptionChange}
           className="w-full p-2 border rounded mb-3"
         />
         {mode === "withGroup" && (

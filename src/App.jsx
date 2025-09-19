@@ -25,21 +25,19 @@ import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprov
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
-import ProjectDashboard from './pages/Projects/manager/ProjectDashboard';
-import Summary from './pages/Projects/manager/Summary';
-import Backlog from './pages/Projects/manager/Backlog/Backlog';
-import Board from './pages/Projects/manager/Board';
-import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
-import ProjectTabs from './pages/Projects/manager/ProjectTabs';
-import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
+import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
+import Summary from "./pages/Projects/manager/Summary";
+import Backlog from "./pages/Projects/manager/Backlog/Backlog";
+import Board from "./pages/Projects/manager/Board";
+import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
+import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
+import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
 // import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
-import UserBacklog from './pages/Projects/User/UserBacklog/userbacklog';
-import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
-import ProjectList from './pages/Projects/manager/ProjectList';
-import UserProjectList from './pages/Projects/User/UserProjectList';
-import EmployeePerformance from './pages/Projects/manager/EmployeePerformance';
-
-
+import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
+import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
+import ProjectList from "./pages/Projects/manager/ProjectList";
+import UserProjectList from "./pages/Projects/User/UserProjectList";
+import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -112,8 +110,6 @@ const ProjectManager = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-     
-
       {/* <div className="flex-1 flex flex-col">
         <ProjectTabs selectedTab="summary" onTabSelect={() => {}} />
         <main className="flex-1 overflow-auto bg-white">
@@ -177,21 +173,28 @@ const AppRoutes = () => {
           {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
-
-          <Route path="/projects/manager" element={
+          <Route
+            path="/projects/manager"
+            element={
               <ProtectedRoute allowedRoles={["Manager"]}>
                 <ProjectDashboard />
               </ProtectedRoute>
-            }/>
-
+            }
+          />
 
           <Route path="/projects/" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
-          <Route path="/projects/performance" element={<EmployeePerformance />} />
+          <Route
+            path="/projects/performance"
+            element={<EmployeePerformance />}
+          />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
-          <Route path="/projects/userbacklog/:projectId" element={<UserBacklog />} />
+          <Route
+            path="/projects/userbacklog/:projectId"
+            element={<UserBacklog />}
+          />
           {/* <Route path="/projects/admin" element={<AdminDashboard />} /> */}
           <Route
             path="/projects/user/:projectId"
@@ -199,8 +202,8 @@ const AppRoutes = () => {
           />
 
           {/* User Management */}
-          
-          <Route path="/user-management/users" element={<UsersTable />} />
+
+          {/* <Route path="/user-management/users" element={<UsersTable />} />
           <Route
             path="/user-management/users/create"
             element={<CreateUser />}
@@ -249,6 +252,119 @@ const AppRoutes = () => {
           <Route
             path="/user-management/access-points/admin/access-point-mapping"
             element={<AccessPointMapping />}
+          /> */}
+
+          <Route
+            path="/user-management/users"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <UsersTable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/users/create"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <CreateUser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/users/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <EditUser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/users/roles"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <UpdateUserRoles />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/roles/edit-role/:userId"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <EditUserRoleForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/roles"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <RoleManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/permissions"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <PermissionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/groups"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <PermissionGroupManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/groups/:groupId"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <GroupDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/access-points"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <AccessPointManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/access-points/create"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <AccessPointForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/access-points/:access_id"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <AccessPointDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/access-points/edit/:access_id"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <AccessPointEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management/access-points/admin/access-point-mapping"
+            element={
+              <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
+                <AccessPointMapping />
+              </ProtectedRoute>
+            }
           />
 
           {/* Leave Management */}
