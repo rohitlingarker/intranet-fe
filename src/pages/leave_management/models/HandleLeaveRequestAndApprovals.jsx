@@ -4,6 +4,7 @@ import axios from "axios";
 import ActionDropdown from "./ActionDropdown";
 import Pagination from "../../../components/Pagination/pagination";
 import LeaveDashboard from "../charts/LeaveDashboard";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
  
@@ -78,7 +79,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     if (managerId) {
       fetchData();
     }
-  }, [managerId, selectedYear, selectedMonth, searchTerm]); // selectedStatus (can be added)
+  }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus ]); // selectedStatus (can be added)
  
   const fetchData = async () => {
     try {
@@ -111,11 +112,42 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setAdminLeaveRequests(arr);
       setAllLeaveTypes(types.data || []);
     } catch (err) {
-      console.error("Error fetching leave data:", err);
+      toast.error("Error fetching leave data:", err);
     } finally {
       setLoading(false);
     }
   };
+
+
+    // Component to handle long reason text with "View More"/"View Less"
+    const LeaveReasonCell = ({ reason }) => {
+      const [expanded, setExpanded] = useState(false);
+  
+      // limit characters shown before truncation
+      const MAX_LENGTH = 50;
+  
+      if (!reason) return <span>-</span>;
+  
+      const isLong = reason.length > MAX_LENGTH;
+      const displayText = expanded
+        ? reason
+        : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+  
+      return (
+        <div className="flex flex-col">
+          <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-blue-600 text-sm mt-1 hover:underline self-start"
+            >
+              {expanded ? "View Less" : "View More"}
+            </button>
+          )}
+        </div>
+      );
+    };
+  
  
   // for the leaveBalaceDashBoard
   // const handleOpenDetails = (request) => {
@@ -180,11 +212,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         }
       }
       );
-      showToast(`${selectedRequests.length} requests approved.`, "success");
+      toast.success(`${selectedRequests.length} requests approved.`);
       setSelectedRequests([]);
       await fetchData();
     } catch (err) {
-      showToast("Failed to approve selected requests.", "error");
+      toast.error("Failed to approve selected requests.");
     } finally {
       setLoading(false);
     }
@@ -207,11 +239,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           }
         }
       );
-      showToast(`${selectedRequests.length} requests rejected.`, "success");
+      toast.success(`${selectedRequests.length} requests rejected.`);
       setSelectedRequests([]);
       await fetchData();
     } catch (err) {
-      showToast("Error rejecting selected requests.", "error");
+      toast.error("Error rejecting selected requests.");
     } finally {
       setLoading(false);
     }
@@ -221,7 +253,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const handleDecision = async (action, leaveId, commentParam) => {
     const comment = commentParam ?? (comments[leaveId] || "");
     if (action === "reject" && !comment) {
-      showToast("Manager comment required to reject.", "error");
+      toast.error("Manager comment required to reject.");
       return;
     }
     setLoading(true);
@@ -235,12 +267,12 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           Authorization: `Bearer ${token}`
         }
       });
-      showToast(`Leave ${action}ed successfully.`, "success");
+      toast.success(`Leave ${action}ed successfully.`);
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
       await fetchData();
       setConfirmation(null);
     } catch {
-      showToast("Something went wrong. Please try again.", "error");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -264,16 +296,16 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       };
       await axios.put(
         `${BASE_URL}/api/leave-requests/update`,
-        payload,{
-          header:{
+        payload ,{
+          headers:{
             Authorization: `Bearer ${token}`
           }
         }
       );
-      showToast("Leave request updated.", "success");
+      toast.success("Leave request updated.");
       await fetchData();
     } catch {
-      showToast("Update failed! Try again.", "error");
+      toast.error("Update failed! Try again.");
     } finally {
       setLoading(false);
     }
@@ -314,10 +346,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
           >
             <option>All</option>
-            <option>Pending</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-            <option>Cancelled</option>
+            <option>PENDING</option>
+            <option>APPROVED</option>
+            <option>REJECTED</option>
+            <option>CANCELLED</option>
           </select>
           {/* Year Filter (Dynamic) */}
           <select
@@ -498,7 +530,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {request.reason}
+                      <LeaveReasonCell reason={request.reason} />
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -568,6 +600,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                           </button>
                           <ActionDropdown
                             requestId={request.leaveId}
+                            employeeId={request.employee.employeeId}
                             currentLeaveType={typeObj}
                             currentStartDate={request.startDate}
                             currentEndDate={request.endDate}

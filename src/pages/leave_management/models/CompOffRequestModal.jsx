@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useNotification } from "../../../contexts/NotificationContext";
 
 const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [note, setNote] = useState("");
+  const { showNotification} = useNotification();
 
   // Calculate duration
   const calculateDays = () => {
@@ -23,14 +25,24 @@ const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
 
   const handleSubmit = async () => {
     if (!startDate) {
-      alert("Please select a start date");
+      showNotification("Please select a start date", "error");
       return;
     }
 
+    const formatDate = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      const year = d.getFullYear();
+      // getMonth() is 0-indexed, so we add 1
+      const month = String(d.getMonth() + 1).padStart(2, "0"); 
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
     const payload = {
       dates: {
-        start: startDate,
-        end: endDate || startDate,
+        start: formatDate(startDate),
+        end: formatDate(endDate || startDate),
         isHalf: isHalfDay,
       },
       note,
@@ -38,7 +50,11 @@ const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
     };
 
     // This will trigger parent's async function
-    await onSubmit(payload);
+    const isSuccess = await onSubmit(payload);
+
+    if (isSuccess) {
+      onClose();
+    }
   }; 
 
   return (

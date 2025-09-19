@@ -12,6 +12,7 @@ const TimesheetTable = ({
   setCurrentPage,
   mapWorkType,
   refreshData, // Callback to refresh data after save
+  projectInfo,
 }) => {
   const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
 
@@ -43,6 +44,7 @@ const TimesheetTable = ({
               refreshData={refreshData}
               addingNewTimesheet={addingNewTimesheet}
               setAddingNewTimesheet={setAddingNewTimesheet}
+              projectInfo={projectInfo}
             />
           )}
       {loading ? (
@@ -66,6 +68,7 @@ const TimesheetTable = ({
               refreshData={refreshData}
               addingNewTimesheet={addingNewTimesheet}
               setAddingNewTimesheet={setAddingNewTimesheet}
+              projectInfo={projectInfo}
             />
           ))}
 

@@ -1,6 +1,6 @@
 //MAT
 import React, { useEffect, useState, useMemo } from "react";
-import { reviewTimesheet } from "../api";
+import { bulkReviewTimesheet, reviewTimesheet } from "../api";
 import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
 import { Check, X, Download } from "lucide-react";
@@ -19,14 +19,21 @@ const ManagerApprovalTable = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedUser, setSelectedUser] = useState("All");
+  const [selectedTimesheets, setSelectedTimesheets] = useState([]);
+  const [bulkMode, setBulkMode] = useState(""); // "", "approve", "reject"
+  const [bulkComment, setBulkComment] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const pageSize = 5;
 
   useEffect(() => {
+    // setLoading(true);
     fetchTimesheets();
+    // setLoading(false);
   }, []);
 
   const fetchTimesheets = async () => {
+    setLoading(true);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`,
@@ -34,10 +41,16 @@ const ManagerApprovalTable = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      if (!res.ok) throw new Error("Failed to fetch timesheets");
+      if (!res.ok) {
+        setLoading(false);
+        throw new Error("Failed to fetch timesheets");
+      };
 
       const data = await res.json();
       setTimesheets(data);
+      console.log(loading );
+      
+      setLoading(false);
 
       const uniqueUserIds = [...new Set(data.map((ts) => ts.userId))];
       uniqueUserIds.forEach((uid) => fetchProjectTaskInfo(uid));
@@ -49,13 +62,14 @@ const ManagerApprovalTable = () => {
   const fetchProjectTaskInfo = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/project-info`,
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/timesheet/project-info`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      if (!res.ok)
-        throw new Error(`Failed to fetch project info for user`);
+      if (!res.ok) throw new Error(`Failed to fetch project info for user`);
 
       const data = await res.json();
       const newProjects = {};
@@ -129,7 +143,22 @@ const ManagerApprovalTable = () => {
     comment = "Approved"
   ) => {
     try {
-      await reviewTimesheet( timesheetId, comment, status);
+      await reviewTimesheet(timesheetId, comment, status);
+      fetchTimesheets();
+    } catch (err) {
+      console.error(`Error updating timesheet status: ${err.message}`);
+    }
+  };
+
+  const handleBulkStatusChange = async (status) => {
+    try {
+      if (status === "Rejected" && !bulkComment.trim()) {
+        alert("Rejection comment is required");
+        return;
+      }
+      await bulkReviewTimesheet(selectedTimesheets, status, bulkComment);
+      setSelectedTimesheets([]);
+      setBulkComment("");
       fetchTimesheets();
     } catch (err) {
       console.error(`Error updating timesheet status: ${err.message}`);
@@ -161,7 +190,16 @@ const ManagerApprovalTable = () => {
     setCurrentPage(1);
   };
 
-  const uniqueUsers = [...new Set(timesheets.map((ts) => ts.userId))];
+  const uniqueUsers = [
+    ...new Map(
+      timesheets.map((ts) => [
+        ts.userId,
+        { userId: ts.userId, userName: ts.userName },
+      ])
+    ).values(),
+  ];
+
+  console.log("uniqueUsers", uniqueUsers);
 
   // CSV Export
   const exportCSV = () => {
@@ -299,9 +337,9 @@ const ManagerApprovalTable = () => {
           className="border rounded p-2 bg-gray-50"
         >
           <option value="All">All Users</option>
-          {uniqueUsers.map((uid) => (
-            <option key={uid} value={uid}>
-              {`${uid} - User_${uid}`}
+          {uniqueUsers.map((user) => (
+            <option key={user.userId} value={user.userId}>
+              {user.userName}
             </option>
           ))}
         </select>
@@ -309,31 +347,115 @@ const ManagerApprovalTable = () => {
           Reset Filters
         </Button>
       </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <label className="cursor-pointer">
+            <input
+              type="checkbox"
+              checked={
+                selectedTimesheets.length > 0 &&
+                selectedTimesheets.length === filteredTimesheets.length
+              }
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedTimesheets(
+                    filteredTimesheets.map((s) => s.timesheetId)
+                  );
+                } else {
+                  setSelectedTimesheets([]);
+                }
+              }}
+            />
+            &nbsp; Select All
+          </label>
+        </div>
+        {selectedTimesheets.length > 0 && (
+          <div className="flex flex-col gap-2 rounded bg-gray-50">
+            {/* Default Mode: Show Approve/Reject */}
+            {bulkMode === "" && (
+              <div className="flex gap-2">
+                <Button
+                  variant="success"
+                  size="small"
+                  onClick={() => handleBulkStatusChange("Approved")}
+                >
+                  Approve Selected
+                </Button>
+                <Button
+                  variant="danger"
+                  size="small"
+                  onClick={() => setBulkMode("reject")}
+                >
+                  Reject Selected
+                </Button>
+              </div>
+            )}
 
-      {/* Download Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="success"
-          size="small"
-          onClick={exportCSV}
-          className="flex items-center gap-1"
-        >
-          <Download size={16} />
-          CSV
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={exportPDF}
-          className="flex items-center gap-1"
-        >
-          <Download size={16} />
-          PDF
-        </Button>
+            {/* Reject Mode: Show input + confirm/cancel */}
+            {bulkMode === "reject" && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={bulkComment}
+                  onChange={(e) => setBulkComment(e.target.value)}
+                  placeholder="Enter rejection comment..."
+                  className="border rounded p-2 flex-1"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="small"
+                    onClick={() => handleBulkStatusChange("Rejected")}
+                    disabled={!bulkComment.trim()}
+                  >
+                    Confirm Rejection
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    onClick={() => {
+                      setBulkMode("");
+                      setBulkComment("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Download Buttons */}
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="success"
+            size="small"
+            onClick={exportCSV}
+            className="flex items-center gap-1"
+          >
+            <Download size={16} />
+            CSV
+          </Button>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={exportPDF}
+            className="flex items-center gap-1"
+          >
+            <Download size={16} />
+            PDF
+          </Button>
+        </div>
       </div>
 
       {/* Timesheet List */}
-      {paginatedTimesheets.map((sheet) => {
+      {loading ? (
+        <div className="text-center text-gray-600">Loading TimeSheet Approvals...</div>
+      ) : paginatedTimesheets.length === 0 ? (
+        <div className="text-center text-gray-600">No timesheets found.</div>
+      ) : (
+      paginatedTimesheets.map((sheet) => {
         const totalHours = sheet.entries.reduce(
           (sum, e) => sum + (e.hoursWorked || 0),
           0
@@ -353,12 +475,31 @@ const ManagerApprovalTable = () => {
             className="rounded-lg border bg-white shadow-md overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-2 bg-gray-100">
-              <span className="font-semibold text-gray-800">
-                {formattedDate}
-              </span>
+              <div>
+                <input
+                  type="checkbox"
+                  checked={selectedTimesheets.includes(sheet.timesheetId)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedTimesheets((prev) => [
+                        ...prev,
+                        sheet.timesheetId,
+                      ]);
+                    } else {
+                      setSelectedTimesheets((prev) =>
+                        prev.filter((id) => id !== sheet.timesheetId)
+                      );
+                    }
+                  }}
+                />
+
+                <span className="font-semibold text-gray-800 ml-3">
+                  {formattedDate}
+                </span>
+              </div>
               <div className="flex items-center gap-4">
-                <span  className="text-gray-600 text-sm">
-                 Total Hours: {totalHours.toFixed(2)}
+                <span className="text-gray-600 text-sm">
+                  Total Hours: {totalHours.toFixed(2)}
                 </span>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
@@ -410,7 +551,7 @@ const ManagerApprovalTable = () => {
                 {sheet.entries.map((entry) => (
                   <tr key={entry.timesheetEntryId} className="border-t">
                     <td className="px-4 py-2">{sheet.userId}</td>
-                    <td className="px-4 py-2">{`user_${sheet.userId}`}</td>
+                    <td className="px-4 py-2">{sheet.userName}</td>
                     <td className="px-4 py-2">
                       {projectMap[entry.projectId] ||
                         `Project-${entry.projectId}`}
@@ -467,10 +608,12 @@ const ManagerApprovalTable = () => {
             </table>
           </div>
         );
-      })}
+      })
+      )}
+      
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -478,6 +621,7 @@ const ManagerApprovalTable = () => {
           onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         />
       )}
+      
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import TimesheetHeader from "./TimesheetHeader";
 import TimesheetFilters from "./TimesheetFilters";
 import TimesheetTable from "./TimesheetTable";
-import { fetchTimesheetHistory } from "./api";
+import { fetchTimesheetHistory ,fetchProjectTaskInfo} from "./api";
 
 const TimesheetHistoryPage = () => {
   const [entries, setEntries] = useState([]);
@@ -16,19 +16,28 @@ const TimesheetHistoryPage = () => {
   const rowsPerPage = 5;
 
   const [user, setUser] = useState(null);
+  const [projectInfo, setProjectInfo] = useState([]);
 
   // Fetch user info
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/me`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch user");
-        return res.json();
-      })
-      .then((userData) => setUser({ name: userData.name, email: userData.email }))
-      .catch((err) => console.error("Error fetching user:", err));
-  }, []);
+  // useEffect(() => {
+  //   fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/me`)
+  //     .then((res) => {
+  //       if (!res.ok) throw new Error("Failed to fetch user");
+  //       return res.json();
+  //     })
+  //     .then((userData) => setUser({ name: userData.name, email: userData.email }))
+  //     .catch((err) => console.error("Error fetching user:", err));
+  // }, []);
 
   // Fetch timesheet history
+useEffect(() => {
+    fetchProjectTaskInfo().then(setProjectInfo);
+  }, []);
+
+  const projectIdToName = Object.fromEntries(
+    projectInfo.map((p) => [p.projectId, p.project])
+  );
+  
 useEffect(() => {
   const loadTimesheetHistory = async () => {
     try {
@@ -59,11 +68,11 @@ useEffect(() => {
 
   // Filter entries
   const filteredEntries = entries.filter((timesheet) => {
-    // const matchesSearch = timesheet.entries.some((entry) => {
-    //   const projectName = projectIdToName[entry.projectId] || "";
-    //   return projectName.toLowerCase().includes(searchText.toLowerCase());
-    // });
-    const matchesSearch = []
+    const matchesSearch = timesheet.entries.some((entry) => {
+      const projectName = projectIdToName[entry.projectId] || "";
+      return projectName.toLowerCase().includes(searchText.toLowerCase());
+    });
+    // const matchesSearch = []
 
     const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
     const matchesStatus =
@@ -98,6 +107,7 @@ useEffect(() => {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           mapWorkType={mapWorkType}
+          projectInfo={projectInfo}
           refreshData={()=>{
             // Callback to refresh data after save
             setLoading(true);
