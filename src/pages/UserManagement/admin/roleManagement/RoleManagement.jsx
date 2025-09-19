@@ -6,6 +6,7 @@ import PermissionGroupManagement from "./PermissionGroupManagement";
 import { getAllAccessPoints } from "../../../../services/roleManagementService";
 import Navbar from "../../../../components/Navbar/Navbar";
 import { showStatusToast } from "../../../../components/toastfy/toast";
+
 export default function RoleManagement() {
   const [roles, setRoles] = useState([]);
   const [accessPoints, setAccessPoints] = useState([]);
@@ -65,13 +66,15 @@ export default function RoleManagement() {
   }));
 
   return (
-    <div>
-      {/* Navbar with sticky behavior */}
-      <Navbar logo="Role Management" navItems={navItems} />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Navbar fixed to top */}
+      <div className="sticky top-0 z-30 bg-white shadow">
+        <Navbar logo="Role Management" navItems={navItems} />
+      </div>
 
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Tab Content */}
-        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200 mt-4">
+      {/* Page content (pushed below navbar) */}
+      <div className="flex-1 p-6 max-w-6xl mx-auto w-full mt-4">
+        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
           {activeTab === "roles" && (
             <div>
               <div className="mb-4">

@@ -15,13 +15,37 @@ const AccessPointList = () => {
   useEffect(() => {
     listAccessPoints().then(res => setAps(res.data));
   }, []);
- 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this access point?')) {
+
+
+
+// Keep track of pending delete confirmation
+let pendingDeleteId = null;
+
+const handleDelete = async (id) => {
+  if (pendingDeleteId === id) {
+    try {
       await deleteAccessPoint(id);
-      setAps(prev => prev.filter(ap => ap.access_id !== id));
+      setAps((prev) => prev.filter((ap) => ap.access_id !== id));
+      showStatusToast("✅ Access Point deleted successfully!", "success");
+    } catch (err) {
+      showStatusToast("❌ Failed to delete access point", "error");
+    } finally {
+      pendingDeleteId = null;
     }
-  };
+  } else {
+    pendingDeleteId = id;
+    showStatusToast("⚠️ Click Delete again within 5s to confirm", "warning");
+
+    // auto reset after 5 seconds
+    setTimeout(() => {
+      if (pendingDeleteId === id) {
+        pendingDeleteId = null;
+      }
+    }, 5000);
+  }
+};
+
+
  
   // 🔹 Pagination logic
   const totalPages = Math.ceil(aps.length / itemsPerPage);

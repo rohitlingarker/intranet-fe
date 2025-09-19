@@ -150,7 +150,7 @@ const LeaveHistory = () => {
         {isLong && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-blue-600 text-sm mt-1 hover:underline self-start"
+            className="text-blue-600 text-xs hover:underline self-start"
           >
             {expanded ? "View Less" : "View More"}
           </button>
@@ -314,14 +314,15 @@ const LeaveHistory = () => {
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
             <thead className="bg-gray-100 text-xs uppercase text-gray-600">
               <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                <th className="text-left px-4 py-3">Leave Type</th>
-                <th className="text-left px-4 py-3">Requested by</th>
-                <th className="text-left px-4 py-3">From</th>
-                <th className="text-left px-4 py-3">To</th>
-                <th className="text-left px-4 py-3">Days</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Reason</th>
-                <th className="text-left px-4 py-3">Comment</th>
+                <th className="text-left px-4 py-3 text-xs">Leave Type</th>
+                <th className="text-left px-4 py-3 text-xs">Requested by</th>
+                <th className="text-left px-4 py-3 text-xs">From</th>
+                <th className="text-left px-4 py-3 text-xs">To</th>
+                <th className="text-left px-4 py-3 text-xs">Days</th>
+                <th className="text-left px-4 py-3 text-xs">Status</th>
+                <th className="text-left px-4 py-3 text-xs">Reason</th>
+                <th className="text-left px-4 py-3 text-xs">Comment</th>
+                <th className="text-left px-4 py-3 text-xs">Approved By</th>
               </tr>
             </thead>
             <tbody>
@@ -332,29 +333,29 @@ const LeaveHistory = () => {
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
                   } hover:bg-gray-100 transition`}
                 >
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     {getLeaveLabel(leave.leaveType?.leaveName)}
                   </td>
 
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.employee?.fullName || "-"}
                   </td>
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.startDate
                       ? new Date(leave.startDate).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.endDate
                       ? new Date(leave.endDate).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td className="p-3 text-gray-700 font-medium text-center">
+                  <td className="p-3 text-gray-700 font-medium text-xs text-center">
                     {leave.daysRequested}
                   </td>
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${
+                      className={`px-1.5 py-1 text-xs font-medium rounded-full text-white ${
                         leave.status === "APPROVED"
                           ? "bg-green-500"
                           : leave.status === "REJECTED"
@@ -365,11 +366,14 @@ const LeaveHistory = () => {
                       {leave.status}
                     </span>
                   </td>
-                  <td className="p-3 text-gray-700 font-medium whitespace-pre-wrap">
+                  <td className="p-3 text-gray-700 font-medium text-xs whitespace-pre-wrap">
                     <LeaveReasonCell reason={leave.reason} />
                   </td>
-                  <td className="p-3 text-gray-700 font-medium">
+                  <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.managerComment || "-"}
+                  </td>
+                  <td className="p-3 text-gray-700 font-medium text-xs">
+                    {leave.approvedBy?.fullName || "-"}
                   </td>
                 </tr>
               ))}
