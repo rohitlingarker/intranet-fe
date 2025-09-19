@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import Button from "../../../../components/Button/Button";
 import Pagination from "../../../../components/Pagination/pagination";
-import Modal from '../../../../components/Modal/Modal';
+import Modal from '../../../../components/Modal/modal';
 import { showStatusToast } from '../../../../components/toastfy/toast';
  
 const AccessPointList = () => {
