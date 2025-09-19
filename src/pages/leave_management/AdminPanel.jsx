@@ -7,7 +7,6 @@ import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLea
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const AdminPanel = ({ employeeId }) => {
-  console.log("manaerig: ",employeeId)
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Status");
   const [selectedRequests, setSelectedRequests] = useState([]);

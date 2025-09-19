@@ -32,9 +32,6 @@ const ActionDropdown = ({
   const [employeeLeaveBalances, setEmployeeLeaveBalances] = useState([]);
   const [isBalancesLoading, setIsBalancesLoading] = useState(false);
 
-  // --- NEW: State to track if the dropdown should open upwards ---
-  const [openUpwards, setOpenUpwards] = useState(false);
-
   // Store selected values here
   const [leaveTypeId, setLeaveTypeId] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -99,20 +96,6 @@ const ActionDropdown = ({
     };
   }, []);
 
-  // --- NEW: Handler to toggle dropdown and check its position ---
-  const toggleDropdown = () => {
-    if (!isOpen) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const menuHeight = 150; // Approximate height of the dropdown menu
-
-      // If not enough space below, open upwards
-      setOpenUpwards(spaceBelow < menuHeight);
-    }
-    setIsOpen(!isOpen);
-  };
-
-
   const handleSaveLeaveType = (newTypeId) => {
     setLeaveTypeId(newTypeId);
     onUpdate({ leaveTypeId: newTypeId });
@@ -146,20 +129,14 @@ const ActionDropdown = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        // --- UPDATED: Use the new toggle handler ---
-        onClick={toggleDropdown}
+        onClick={() => setIsOpen(!isOpen)}
         className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
 
       {isOpen && (
-        // --- UPDATED: Conditionally apply classes to open upwards or downwards ---
-        <div
-          className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${
-            openUpwards ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
-        >
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
           <div className="py-1">
             <button
               onClick={() => handleAction('Add Comment')}
@@ -186,14 +163,17 @@ const ActionDropdown = ({
         </div>
       )}
 
-      {/* MODALS (No changes needed here) */}
+      {/* Change Leave Type Modal */}
       <ChangeLeaveTypeModal
         open={isChangeLeaveTypeOpen}
         onClose={() => setIsChangeLeaveTypeOpen(false)}
         onSave={handleSaveLeaveType}
         currentTypeId={leaveTypeId}
-        leaveBalances={employeeLeaveBalances}
+        // allTypes={allLeaveTypes}
+        leaveBalances={employeeLeaveBalances} 
       />
+
+      {/* Change Leave Dates Modal */}
       <ChangeLeaveDatesModal
         open={isChangeLeaveDatesOpen}
         onClose={() => setIsChangeLeaveDatesOpen(false)}
@@ -201,6 +181,8 @@ const ActionDropdown = ({
         currentStart={startDate}
         currentEnd={endDate}
       />
+
+      {/* Comment Modal */}
       <CommentModal
         open={forceOpen || isCommentOpen}
         onClose={() => {
