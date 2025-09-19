@@ -70,6 +70,7 @@ import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
+import Unauthorized from "./pages/leave_management/Unauthorized";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 // 🔒 Protected Route Wrapper
@@ -284,9 +285,13 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+        
         </Route>
       </Routes>
       <SaveLastPath />
+      <Routes>
+          <Route path="/unauthorized" element={<Unauthorized />} />
+        </Routes>
     </>
   );
 };
