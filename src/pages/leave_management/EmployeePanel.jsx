@@ -22,6 +22,7 @@ const EmployeePanel = () => {
   const employee = useAuth();
   const [activeView, setActiveView] = useState("employee"); // 'employee', 'admin', or 'hr'
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const compOffPageRef = React.useRef();
 
   let roles = employee.user?.roles || "";
@@ -71,12 +72,15 @@ const handleViewChange = (view) => {
 
   // const role = "manager"; // This should be dynamically set based on user role
 
-  const handleCompOffSubmit = (modalData) => {
+  const handleCompOffSubmit = async (modalData) => {
+    setIsLoading(true);
+    let success = false;
     // Call submit method on CompOffPage
     if (compOffPageRef.current) {
-      compOffPageRef.current.handleCompOffSubmit(modalData);
+      success = await compOffPageRef.current.handleCompOffSubmit(modalData);
     }
-    setIsCompOffModalOpen(false);
+    setIsLoading(false);
+    return success;
   };
 
   return (
@@ -145,6 +149,7 @@ const handleViewChange = (view) => {
             <CompOffPage ref={compOffPageRef} employeeId={employeeId} />
             {isCompOffModalOpen && (
               <CompOffRequestModal
+                loading={isLoading} // Pass the loading state down
                 onSubmit={handleCompOffSubmit}
                 onClose={() => setIsCompOffModalOpen(false)}
               />

@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { MoreHorizontal, MessageSquare, Calendar, FileText } from 'lucide-react';
 import ChangeLeaveDatesModal from './ChangeLeaveDatesModal';
 import ChangeLeaveTypeModal from './ChangeLeaveTypeModal';
 import CommentModal from './CommentModal';
+import toast from 'react-hot-toast';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const token = localStorage.getItem('token');
 
 const ActionDropdown = ({
-  requestId,
+  employeeId,
   currentLeaveType,
   currentStartDate,
   currentEndDate,
@@ -24,12 +29,39 @@ const ActionDropdown = ({
   const [isChangeLeaveTypeOpen, setIsChangeLeaveTypeOpen] = useState(false);
   const [isChangeLeaveDatesOpen, setIsChangeLeaveDatesOpen] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [employeeLeaveBalances, setEmployeeLeaveBalances] = useState([]);
+  const [isBalancesLoading, setIsBalancesLoading] = useState(false);
+
+  // --- NEW: State to track if the dropdown should open upwards ---
+  const [openUpwards, setOpenUpwards] = useState(false);
 
   // Store selected values here
   const [leaveTypeId, setLeaveTypeId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (isChangeLeaveTypeOpen && employeeId) {
+        setIsBalancesLoading(true);
+        try {
+          const res = await axios.get(
+            `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setEmployeeLeaveBalances(res.data || []);
+        } catch (error) {
+          console.error("Failed to fetch employee balances", error);
+          toast.error("Failed to fetch employee leave balances");
+        } finally {
+          setIsBalancesLoading(false);
+        }
+      }
+    };
+
+    fetchBalances();
+  }, [isChangeLeaveTypeOpen, employeeId]);
 
   useEffect(() => {
     if (isCommentOpen) setCommentValue(managerComments);
@@ -67,6 +99,20 @@ const ActionDropdown = ({
     };
   }, []);
 
+  // --- NEW: Handler to toggle dropdown and check its position ---
+  const toggleDropdown = () => {
+    if (!isOpen) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuHeight = 150; // Approximate height of the dropdown menu
+
+      // If not enough space below, open upwards
+      setOpenUpwards(spaceBelow < menuHeight);
+    }
+    setIsOpen(!isOpen);
+  };
+
+
   const handleSaveLeaveType = (newTypeId) => {
     setLeaveTypeId(newTypeId);
     onUpdate({ leaveTypeId: newTypeId });
@@ -100,14 +146,20 @@ const ActionDropdown = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        // --- UPDATED: Use the new toggle handler ---
+        onClick={toggleDropdown}
         className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+        // --- UPDATED: Conditionally apply classes to open upwards or downwards ---
+        <div
+          className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 ${
+            openUpwards ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
+        >
           <div className="py-1">
             <button
               onClick={() => handleAction('Add Comment')}
@@ -134,16 +186,14 @@ const ActionDropdown = ({
         </div>
       )}
 
-      {/* Change Leave Type Modal */}
+      {/* MODALS (No changes needed here) */}
       <ChangeLeaveTypeModal
         open={isChangeLeaveTypeOpen}
         onClose={() => setIsChangeLeaveTypeOpen(false)}
         onSave={handleSaveLeaveType}
         currentTypeId={leaveTypeId}
-        allTypes={allLeaveTypes}
+        leaveBalances={employeeLeaveBalances}
       />
-
-      {/* Change Leave Dates Modal */}
       <ChangeLeaveDatesModal
         open={isChangeLeaveDatesOpen}
         onClose={() => setIsChangeLeaveDatesOpen(false)}
@@ -151,8 +201,6 @@ const ActionDropdown = ({
         currentStart={startDate}
         currentEnd={endDate}
       />
-
-      {/* Comment Modal */}
       <CommentModal
         open={forceOpen || isCommentOpen}
         onClose={() => {
