@@ -116,6 +116,37 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setLoading(false);
     }
   };
+
+
+    // Component to handle long reason text with "View More"/"View Less"
+    const LeaveReasonCell = ({ reason }) => {
+      const [expanded, setExpanded] = useState(false);
+  
+      // limit characters shown before truncation
+      const MAX_LENGTH = 50;
+  
+      if (!reason) return <span>-</span>;
+  
+      const isLong = reason.length > MAX_LENGTH;
+      const displayText = expanded
+        ? reason
+        : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+  
+      return (
+        <div className="flex flex-col">
+          <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-blue-600 text-sm mt-1 hover:underline self-start"
+            >
+              {expanded ? "View Less" : "View More"}
+            </button>
+          )}
+        </div>
+      );
+    };
+  
  
   // for the leaveBalaceDashBoard
   // const handleOpenDetails = (request) => {
@@ -498,7 +529,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {request.reason}
+                      <LeaveReasonCell reason={request.reason} />
                     </div>
                   </td>
                   <td className="px-6 py-4">

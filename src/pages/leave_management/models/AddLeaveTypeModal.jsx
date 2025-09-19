@@ -51,6 +51,7 @@ const defaultForm = {
   advanceNoticeDays: "",
   pastDateLimitDays: "",
   allowHalfDay: true,
+  weekendsAndHolidaysAllowed: false,
   allowNegativeBalance: false,
   noticePeriodRestriction: false,
 };
@@ -522,6 +523,23 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </label>
             </div>
           </div>
+
+           <div className="flex items-center gap-2">
+              <input
+                id="weekendsAndHolidaysAllowed"
+                type="checkbox"
+                name="weekendsAndHolidaysAllowed"
+                checked={formData.weekendsAndHolidaysAllowed}
+                onChange={handleChange}
+                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <label
+                htmlFor="weekendsAndHolidaysAllowed"
+                className="text-sm font-medium text-gray-700"
+              >
+                Allow Weekends and Holidays
+              </label>
+            </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button
