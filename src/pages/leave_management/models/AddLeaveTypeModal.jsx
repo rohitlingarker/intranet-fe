@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { X, FileText } from "lucide-react";
+import React, { useState, useEffect, Fragment } from "react";
+import { X, FileText, Check, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
-import { Check, ChevronDown } from "lucide-react";
-import { Fragment } from "react";
-// import { fetchData } from "./PendingLeaveRequests";
-// import  {useAuth} from "../../../contexts/AuthContext"
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 // A custom hook to fetch leave types from the API
 const useLeaveTypes = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLeaveTypes = async () => {
@@ -24,7 +21,7 @@ const useLeaveTypes = () => {
         });
         setLeaveTypes(response.data || []);
       } catch (err) {
-        setError("Failed to fetch leave types. Please try again.");
+        toast.error("Failed to fetch leave types. Please try again.");
         console.error("Fetch error:", err);
       } finally {
         setLoading(false);
@@ -33,7 +30,7 @@ const useLeaveTypes = () => {
     fetchLeaveTypes();
   }, []);
 
-  return { leaveTypes, loading, error };
+  return { leaveTypes, loading };
 };
 
 // Default form state for resetting the form
@@ -59,30 +56,21 @@ const defaultForm = {
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const token = localStorage.getItem("token");
 
   // Use the custom hook to get leave types data
-  const {
-    leaveTypes,
-    loading: loadingLeaveTypes,
-    error: leaveTypesError,
-  } = useLeaveTypes();
+  const { leaveTypes, loading: loadingLeaveTypes } = useLeaveTypes();
 
   // Reset / prefill form when modal opens or editData changes
   useEffect(() => {
     if (isOpen) {
       setFormData(editData ? { ...defaultForm, ...editData } : defaultForm);
-      setError("");
-      setSuccess("");
     }
   }, [isOpen, editData]);
 
   // After leave types load, try to map editData to an option so the select shows correctly
   useEffect(() => {
     if (!loadingLeaveTypes && isOpen && editData) {
-      // match by id, then by name, then by label
       const match =
         leaveTypes.find(
           (t) =>
@@ -106,14 +94,11 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       if (match) {
         setFormData((prev) => ({
           ...prev,
-          // prefer option's "name" as that's what the select uses for value in your original component
           leaveName: match.name ?? prev.leaveName,
-          // also set leaveTypeId if backend needs it
           leaveTypeId:
             match.leaveTypeId ?? prev.leaveTypeId ?? editData.leaveTypeId ?? "",
         }));
       } else {
-        // If no match, ensure any id from editData is kept so update call can use it
         setFormData((prev) => ({
           ...prev,
           leaveTypeId: prev.leaveTypeId || editData.leaveTypeId || "",
@@ -133,13 +118,11 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setSubmitting(true);
 
     const payload = {
       ...formData,
-      leaveTypeId: formData.leaveTypeId, // ID in body
+      leaveTypeId: formData.leaveTypeId,
       maxDaysPerYear:
         formData.maxDaysPerYear === "" ? null : Number(formData.maxDaysPerYear),
       maxCarryForward:
@@ -168,14 +151,13 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
 
     try {
       if (editData) {
-        // Backend expects PATCH (no ID in path)
         await axios.patch(url, payload, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-        setSuccess("Leave type updated successfully!");
+        toast.success("Leave type updated successfully!");
       } else {
         await axios.post(url, payload, {
           headers: {
@@ -183,7 +165,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             Authorization: `Bearer ${token}`,
           },
         });
-        setSuccess("Leave type added successfully!");
+        toast.success("Leave type added successfully!");
       }
       setTimeout(() => {
         onSuccess?.();
@@ -191,7 +173,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       }, 700);
     } catch (err) {
       console.error("Save error:", err);
-      setError(
+      toast.error(
         err.response?.data?.message ||
           err.message ||
           "Failed to submit leave type"
@@ -223,23 +205,14 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
-          {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
-          {success && (
-            <div className="text-green-600 text-sm mb-2">{success}</div>
-          )}
-
+          {/* Messages are now handled by toast, so local state display is removed */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Leave Type *
             </label>
-
             {loadingLeaveTypes ? (
               <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-500">
                 Loading leave types...
-              </div>
-            ) : leaveTypesError ? (
-              <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-                {leaveTypesError}
               </div>
             ) : (
               <Listbox
@@ -250,15 +223,12 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 disabled={!!editData}
               >
                 <div className="relative">
-                  {/* Button */}
                   <Listbox.Button
-                    className={`w-full rounded-lg border px-4 py-3 text-left sm:text-base text-sm 
-        ${
-          editData
-            ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
-            : "bg-white cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        }
-      `}
+                    className={`w-full rounded-lg border px-4 py-3 text-left sm:text-base text-sm ${
+                      editData
+                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
+                        : "bg-white cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    }`}
                   >
                     <span>
                       {formData.leaveName
@@ -266,17 +236,12 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                             ?.label ?? formData.leaveName
                         : "Select a leave type"}
                     </span>
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </span>
-                    {!editData && ( // ✅ Hide arrow when editing
+                    {!editData && (
                       <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <ChevronDown className="h-5 w-5 text-gray-400" />
                       </span>
                     )}
                   </Listbox.Button>
-
-                  {/* Options */}
                   <Transition
                     as={Fragment}
                     leave="transition ease-in duration-100"
@@ -321,7 +286,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             )}
           </div>
 
-          {/* rest of fields unchanged */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -471,7 +435,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 Requires Documentation
               </label>
             </div>
-
             <div className="flex items-center gap-2">
               <input
                 id="allowHalfDay"
@@ -488,7 +451,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 Allow Half Day
               </label>
             </div>
-
             <div className="flex items-center gap-2">
               <input
                 id="allowNegativeBalance"
@@ -505,7 +467,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 Allow Negative Balance
               </label>
             </div>
-
             <div className="flex items-center gap-2">
               <input
                 id="noticePeriodRestriction"
@@ -524,22 +485,22 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             </div>
           </div>
 
-           <div className="flex items-center gap-2">
-              <input
-                id="weekendsAndHolidaysAllowed"
-                type="checkbox"
-                name="weekendsAndHolidaysAllowed"
-                checked={formData.weekendsAndHolidaysAllowed}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <label
-                htmlFor="weekendsAndHolidaysAllowed"
-                className="text-sm font-medium text-gray-700"
-              >
-                Allow Weekends and Holidays
-              </label>
-            </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="weekendsAndHolidaysAllowed"
+              type="checkbox"
+              name="weekendsAndHolidaysAllowed"
+              checked={formData.weekendsAndHolidaysAllowed}
+              onChange={handleChange}
+              className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <label
+              htmlFor="weekendsAndHolidaysAllowed"
+              className="text-sm font-medium text-gray-700"
+            >
+              Allow Weekends and Holidays
+            </label>
+          </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button

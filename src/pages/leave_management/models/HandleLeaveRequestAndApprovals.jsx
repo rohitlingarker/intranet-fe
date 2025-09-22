@@ -132,7 +132,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           {isLong && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-blue-600 text-xs mt-1 hover:underline self-start"
+              className="text-blue-600 text-xs hover:underline self-start"
             >
               {expanded ? "View Less" : "View More"}
             </button>
@@ -147,18 +147,18 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   //   setSelectedRequestDetails(request);
   // };
  
-  const filteredAdminRequests = adminLeaveRequests.filter((req) => {
-    const matchesSearch =
-      req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.leaveType.leaveName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      selectedStatus === "All" ||
-      req.status.toLowerCase() === selectedStatus.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  // const filteredAdminRequests = adminLeaveRequests.filter((req) => {
+  //   const matchesSearch =
+  //     req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     req.leaveType.leaveName.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesStatus =
+  //     selectedStatus === "All" ||
+  //     req.status.toLowerCase() === selectedStatus.toLowerCase();
+  //   return matchesSearch && matchesStatus;
+  // });
  
-  const totalPages = Math.ceil(filteredAdminRequests.length / itemsPerPage);
-  const paginatedRequests = filteredAdminRequests.slice(
+  const totalPages = Math.ceil(adminLeaveRequests.length / itemsPerPage);
+  const paginatedRequests = adminLeaveRequests.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -167,7 +167,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     setCurrentPage(1);
   }, [searchTerm, selectedStatus]);
  
-  const selectableRequests = filteredAdminRequests.filter(
+  const selectableRequests = adminLeaveRequests.filter(
     (r) =>
       !["approved", "rejected", "cancelled"].includes(r.status.toLowerCase())
   );
@@ -315,78 +315,91 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         return "bg-yellow-100 text-yellow-800";
       case "rejected":
         return "bg-red-100 text-red-800";
-      case "cancelled":
-        return "bg-gray-200 text-gray-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-200 text-gray-800";
     }
   };
  
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col lg:flex-row items-center gap-4 flex-wrap">
+          
+          {/* --- SEARCH INPUT --- */}
+          {/* No changes needed here, it already matches the new style. */}
+          <div className="relative flex-1 w-full lg:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Search by Name or Leave Type"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             />
           </div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option>All</option>
-            <option>PENDING</option>
-            <option>APPROVED</option>
-            <option>REJECTED</option>
-            <option>CANCELLED</option>
-          </select>
-          {/* Year Filter (Dynamic) */}
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option value="">All Years</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
- 
-          {/* Month Filter */}
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
-          >
-            <option value="">All Months</option>
-            {[
-              { value: 1, label: "January" },
-              { value: 2, label: "February" },
-              { value: 3, label: "March" },
-              { value: 4, label: "April" },
-              { value: 5, label: "May" },
-              { value: 6, label: "June" },
-              { value: 7, label: "July" },
-              { value: 8, label: "August" },
-              { value: 9, label: "September" },
-              { value: 10, label: "October" },
-              { value: 11, label: "November" },
-              { value: 12, label: "December" },
-            ].map((month) => (
-              <option key={month.value} value={month.value}>
-                {month.label}
-              </option>
-            ))}
-          </select>
+
+          {/* --- STATUS DROPDOWN --- */}
+          {/* This is the new, styled dropdown structure */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              // MODIFICATION: Added 'appearance-none' to hide the default arrow and 'pr-10' for spacing
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option>All</option>
+              <option>PENDING</option>
+              <option>APPROVED</option>
+              <option>REJECTED</option>
+              <option>CANCELLED</option>
+            </select>
+            {/* MODIFICATION: Added this div for the custom chevron icon */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
+          {/* --- YEAR DROPDOWN --- */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">All Years</option>
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
+          {/* --- MONTH DROPDOWN --- */}
+          <div className="relative w-full lg:w-auto">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">All Months</option>
+              {[
+                { value: 1, label: "January" }, { value: 2, label: "February" },
+                { value: 3, label: "March" }, { value: 4, label: "April" },
+                { value: 5, label: "May" }, { value: 6, label: "June" },
+                { value: 7, label: "July" }, { value: 8, label: "August" },
+                { value: 9, label: "September" }, { value: 10, label: "October" },
+                { value: 11, label: "November" }, { value: 12, label: "December" },
+              ].map((month) => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+
         </div>
       </div>
  
@@ -396,7 +409,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             {selectedRequests.length > 0 && (
               <tr>
                 <th
-                  colSpan={9}
+                  colSpan={12}
                   className="bg-indigo-100 text-indigo-700 px-6 py-2 text-left rounded-t-lg"
                 >
                   <div className="flex items-center gap-4">
@@ -427,7 +440,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </tr>
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              <th className="px-4 py-3 text-left">
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "4%" }}>
                 <input
                   type="checkbox"
                   checked={
@@ -440,26 +453,20 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   disabled={selectableRequests.length === 0}
                 />
               </th>
-              {[
-                "Employee",
-                "Leave Dates",
-                "Leave Type",
-                "Reason",
-                "Status",
-                "Last Action By",
-                "Documents",
-                "Actions",
-              ].map((heading, i) => (
-                <th
-                  key={i}
-                  className="px-4 py-3 text-center text-xs uppercase w-[15%]"
-                >
-                  {heading}
-                </th>
-              ))}
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "12%" }}>Employee</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>From</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>To</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "5%" }}>Days</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Requested On</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>Leave Type</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "16%" }}>Reason</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Status</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Last Action By</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Documents</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 text-center">
             {paginatedRequests.map((request) => {
               console.log(request)
               const typeObj =
@@ -471,7 +478,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   key={request.leaveId}
                   className="hover:bg-gray-50 transition-colors text-xs"
                 >
-                  <td className="px-6 py-4">
+                  <td>
                     <input
                       type="checkbox"
                       checked={selectedRequests.includes(request.leaveId)}
@@ -503,15 +510,47 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {request.startDate}
-                        {request.startDate !== request.endDate
+                        {request.startDate
+                          ? new Date(request.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : "-"}
+                        {/* {request.startDate !== request.endDate
                           ? ` to ${request.endDate}`
-                          : ""}
+                          : ""} */}
+                      </div>
+                      {/* <div className="text-gray-500">
+                        {request.daysRequested}{" "}
+                        {request.daysRequested === 1 ? "Day" : "Days"}
+                      </div> */}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {request.endDate
+                          ? new Date(request.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : "-"}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {request.daysRequested}
+                      </div>
+                      {/* <div className="font-medium text-gray-900">
+                        {request.requestDate}
                       </div>
                       <div className="text-gray-500">
                         {request.daysRequested}{" "}
-                        {request.daysRequested === 1 ? "Day" : "Days"}
-                      </div>
+                        {request.daysRequested <= 1 ? "Day" : "Days"}
+                      </div> */}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-gray-900">
+                      {request.requestDate
+                        ? new Date(request.requestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : "-"}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -519,13 +558,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       <div className="font-medium text-gray-900">
                         {request.leaveType.leaveName}
                       </div>
-                      <div className="text-gray-500">
+                      {/* <div className="text-gray-500">
                         Requested on {request.requestDate}
-                      </div>
+                      </div> */}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-gray-900">
+                    <div className="text-gray-900 text-left">
                       <LeaveReasonCell reason={request.reason} />
                     </div>
                   </td>
@@ -543,7 +582,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       <div className="font-medium text-gray-900">
                         {request.approvedBy
                           ? request.approvedBy.fullName
-                          : request.managerComment ?? "—"}
+                          : "—"}
                       </div>
                       {request.managerComment && (
                         <div className="text-gray-500 mt-1">

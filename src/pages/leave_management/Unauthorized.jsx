@@ -2,6 +2,7 @@ import React from 'react';
 import { Lock, Home, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+
 const Unauthorized = () => {
   const navigate = useNavigate();
   const handleGoToDashboard = () => {
