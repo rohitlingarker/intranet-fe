@@ -401,13 +401,12 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-        
         </Route>
       </Routes>
       <SaveLastPath />
       <Routes>
-          <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes>
+        <Route path="/unauthorized" element={<Unauthorized />} />
+      </Routes>
     </>
   );
 };
@@ -431,4 +430,3 @@ function App() {
 }
 
 export default App;
-
