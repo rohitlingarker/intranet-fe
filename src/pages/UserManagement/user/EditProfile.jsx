@@ -59,7 +59,7 @@ export default function EditProfile() {
   // Handle form field changes
   const handleChange = (e) => {
     if (e.target.name === "contact") {
-      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+      const value = e.target.value.replace(/\D/g, "").slice(0, 10); // keep only numbers, max 10
       setForm({ ...form, [e.target.name]: value });
     } else {
       setForm({ ...form, [e.target.name]: e.target.value });
@@ -70,6 +70,11 @@ export default function EditProfile() {
   const doSave = async () => {
     if (!form.password || form.password.trim() === "") {
       showStatusToast("Password is required", "error");
+      return;
+    }
+
+    if (!form.contact || form.contact.length !== 10) {
+      showStatusToast("Contact number must be exactly 10 digits.", "error");
       return;
     }
 
@@ -116,7 +121,8 @@ export default function EditProfile() {
               name="first_name"
               value={form.first_name || ""}
               onChange={(e) => {
-                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+                // ✅ Allow alphabets + spaces only
+                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your first name"
               className="w-full border px-3 py-2 rounded-md"
@@ -131,7 +137,8 @@ export default function EditProfile() {
               name="last_name"
               value={form.last_name || ""}
               onChange={(e) => {
-                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+                // ✅ Allow alphabets + spaces only
+                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your last name"
               className="w-full border px-3 py-2 rounded-md"
@@ -146,7 +153,8 @@ export default function EditProfile() {
               name="contact"
               value={form.contact || ""}
               onChange={(e) => {
-                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10) handleChange(e);
+                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10)
+                  handleChange(e);
               }}
               placeholder="Enter contact number"
               className="w-full border px-3 py-2 rounded-md"

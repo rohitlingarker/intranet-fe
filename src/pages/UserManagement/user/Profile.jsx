@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../contexts/AuthContext";
+import Button from "../../../components/Button/Button"; // ✅ global Button
 
 export default function Profile() {
   const { user } = useAuth();
@@ -35,6 +36,16 @@ export default function Profile() {
 
   return (
     <div className="max-w-xl mx-auto p-6">
+      {/* ✅ Back Button (Global) */}
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => navigate("/user-management/users")}
+        className="mb-4"
+      >
+        ← Back
+      </Button>
+
       <div className="bg-white shadow-md border border-gray-200 rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-blue-700 mb-6">User Profile</h2>
 
@@ -59,12 +70,13 @@ export default function Profile() {
           </p>
         </div>
 
-        <button
+        <Button
+          type="button"
           onClick={() => navigate("/profile/edit")}
-          className="mt-6 w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+          className="mt-6 w-full"
         >
           Edit Profile
-        </button>
+        </Button>
       </div>
     </div>
   );
