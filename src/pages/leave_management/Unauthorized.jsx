@@ -1,14 +1,19 @@
 import React from 'react';
 import { Lock, Home, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 
 const Unauthorized = () => {
+  const navigate = useNavigate();
   const handleGoToDashboard = () => {
-    window.location.href = '/dashboard';
+    // window.location.href = '/dashboard';
+  
+  navigate('/dashboard');
   };
 
   const handleGoBack = () => {
-    window.history.back();
+    // window.history.back();
+    navigate(-1);
   };
 
   return (
