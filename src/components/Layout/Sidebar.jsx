@@ -34,6 +34,8 @@ const Sidebar = ({ isCollapsed }) => {
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
 
+  const isManager = user?.roles?.includes("Manager");
+
   // State and Refs for the hover-based submenu
   const [hovered, setHovered] = useState(false);
   const [submenuTop, setSubmenuTop] = useState(0); // State to hold the submenu's vertical position
