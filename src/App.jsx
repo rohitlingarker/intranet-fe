@@ -32,12 +32,13 @@ import Board from './pages/Projects/manager/Board';
 import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
 import ProjectTabs from './pages/Projects/manager/ProjectTabs';
 import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
-// import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
+import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
 import UserBacklog from './pages/Projects/User/UserBacklog/userbacklog';
 import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
 import ProjectList from './pages/Projects/manager/ProjectList';
 import UserProjectList from './pages/Projects/User/UserProjectList';
 import EmployeePerformance from './pages/Projects/manager/EmployeePerformance';
+import Adminprojectslist from './pages/Projects/Admin/Adminprojectslist';
 
 
 
@@ -176,12 +177,7 @@ const AppRoutes = () => {
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
 
-          <Route path="/projects/manager" element={
-              <ProtectedRoute allowedRoles={["Manager"]}>
-                <ProjectDashboard />
-              </ProtectedRoute>
-            }/>
-
+          <Route path="/projects/manager" element={<ProjectDashboard />} />
 
           <Route path="/projects/*" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
@@ -190,7 +186,8 @@ const AppRoutes = () => {
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
           <Route path="/projects/userbacklog/:projectId" element={<UserBacklog />} />
-          {/* <Route path="/projects/admin" element={<AdminDashboard />} /> */}
+          <Route path="/projects/admin" element={<AdminDashboard />} />
+          <Route path="/projects/adminprojectlist" element={<Adminprojectslist />} />
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}

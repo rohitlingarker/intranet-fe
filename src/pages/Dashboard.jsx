@@ -16,7 +16,7 @@ const Dashboard = () => {
       title: 'Project Management',
       description: 'Track projects, deadlines, and team progress',
       icon: FolderKanban,
-      href: '/projects/manager',
+      href: '/projects',
       color: 'bg-[#3548b6]',
       stats: '12 active projects'
     },

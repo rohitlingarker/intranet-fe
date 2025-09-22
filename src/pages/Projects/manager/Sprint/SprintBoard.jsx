@@ -84,21 +84,22 @@ const SprintBoard = ({ projectId, projectName }) => {
           </Button>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex gap-3">
-          {['ALL', 'PLANNING', 'ACTIVE', 'COMPLETED'].map(type => (
-            <button
-              key={type}
-              className={`px-4 py-1 rounded transition ${
-                filter === type
-                  ? 'bg-pink-800 text-white'
-                  : 'bg-white text-gray-800 border'
-              }`}
-              onClick={() => setFilter(type)}
-            >
-              {type}
-            </button>
-          ))}
+        {/* Filter Dropdown */}
+        <div className="flex items-center gap-3">
+          <label htmlFor="sprintFilter" className="text-sm font-medium text-gray-700">
+            Filter Sprints:
+          </label>
+          <select
+            id="sprintFilter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">ALL</option>
+            <option value="PLANNING">PLANNING</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="COMPLETED">COMPLETED</option>
+          </select>
         </div>
 
         {/* Sprint Columns */}
