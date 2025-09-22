@@ -147,18 +147,18 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   //   setSelectedRequestDetails(request);
   // };
  
-  const filteredAdminRequests = adminLeaveRequests.filter((req) => {
-    const matchesSearch =
-      req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.leaveType.leaveName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      selectedStatus === "All" ||
-      req.status.toLowerCase() === selectedStatus.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  // const filteredAdminRequests = adminLeaveRequests.filter((req) => {
+  //   const matchesSearch =
+  //     req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     req.leaveType.leaveName.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesStatus =
+  //     selectedStatus === "All" ||
+  //     req.status.toLowerCase() === selectedStatus.toLowerCase();
+  //   return matchesSearch && matchesStatus;
+  // });
  
-  const totalPages = Math.ceil(filteredAdminRequests.length / itemsPerPage);
-  const paginatedRequests = filteredAdminRequests.slice(
+  const totalPages = Math.ceil(adminLeaveRequests.length / itemsPerPage);
+  const paginatedRequests = adminLeaveRequests.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -167,7 +167,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     setCurrentPage(1);
   }, [searchTerm, selectedStatus]);
  
-  const selectableRequests = filteredAdminRequests.filter(
+  const selectableRequests = adminLeaveRequests.filter(
     (r) =>
       !["approved", "rejected", "cancelled"].includes(r.status.toLowerCase())
   );
@@ -347,7 +347,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               // MODIFICATION: Added 'appearance-none' to hide the default arrow and 'pr-10' for spacing
               className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             >
-              <option>All Status</option>
+              <option>All</option>
               <option>PENDING</option>
               <option>APPROVED</option>
               <option>REJECTED</option>
@@ -363,7 +363,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           <div className="relative w-full lg:w-auto">
             <select
               value={selectedYear}
-              onChange={(e) => setSelectedYear(e.g.target.value)}
+              onChange={(e) => setSelectedYear(e.target.value)}
               className="w-full lg:min-w-[150px] appearance-none bg-white pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             >
               <option value="">All Years</option>
@@ -440,7 +440,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </tr>
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              <th className="px-4 py-3 text-center">
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "4%" }}>
                 <input
                   type="checkbox"
                   checked={
@@ -453,29 +453,20 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   disabled={selectableRequests.length === 0}
                 />
               </th>
-              {[
-                "Employee",
-                "From",
-                "To",
-                "Days",
-                "Requested On",
-                "Leave Type",
-                "Reason",
-                "Status",
-                "Last Action By",
-                "Documents",
-                "Actions",
-              ].map((heading, i) => (
-                <th
-                  key={i}
-                  className="px-4 py-3 text-center text-xs uppercase w-[20%]"
-                >
-                  {heading}
-                </th>
-              ))}
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "12%" }}>Employee</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>From</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>To</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "5%" }}>Days</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Requested On</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>Leave Type</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "16%" }}>Reason</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Status</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Last Action By</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Documents</th>
+              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200 w-[20%] text-center">
+          <tbody className="bg-white divide-y divide-gray-200 text-center">
             {paginatedRequests.map((request) => {
               console.log(request)
               const typeObj =
@@ -487,7 +478,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   key={request.leaveId}
                   className="hover:bg-gray-50 transition-colors text-xs"
                 >
-                  <td className="px-6 py-4">
+                  <td>
                     <input
                       type="checkbox"
                       checked={selectedRequests.includes(request.leaveId)}
@@ -520,7 +511,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     <div>
                       <div className="font-medium text-gray-900">
                         {request.startDate
-                          ? new Date(request.startDate).toLocaleDateString()
+                          ? new Date(request.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                           : "-"}
                         {/* {request.startDate !== request.endDate
                           ? ` to ${request.endDate}`
@@ -536,7 +527,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     <div>
                       <div className="font-medium text-gray-900">
                         {request.endDate
-                          ? new Date(request.endDate).toLocaleDateString()
+                          ? new Date(request.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                           : "-"}
                       </div>
                     </div>
@@ -558,7 +549,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">
                       {request.requestDate
-                        ? new Date(request.requestDate).toLocaleDateString()
+                        ? new Date(request.requestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : "-"}
                     </div>
                   </td>

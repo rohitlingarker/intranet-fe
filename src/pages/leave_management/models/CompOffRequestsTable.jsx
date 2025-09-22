@@ -55,7 +55,7 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
           <>
             <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
               <thead>
-                <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-xs">
+                <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
                   <th className="p-3 text-center">Start Date</th>
                   <th className="p-3 text-center">End Date</th>
                   <th className="p-3 text-center">Days</th>
@@ -65,9 +65,9 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
               </thead>
               <tbody>
                 {currentRequests.map((req) => (
-                  <tr key={req.idleaveCompoff} className="border-t border-gray-200 text-xs">
-                    <td className="p-3 text-center">{req.startDate}</td>
-                    <td className="p-3 text-center">{req.endDate}</td>
+                  <tr key={req.idleaveCompoff} className="border-t border-gray-200 text-sm">
+                    <td className="p-3 text-center">{req.startDate ? new Date(req.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
+                    <td className="p-3 text-center">{req.endDate ? new Date(req.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
                     <td className="p-3 text-center">{req.duration}</td>
                     <td className="p-3 text-center">{req.status}</td>
                     <td className="p-3 text-center">
