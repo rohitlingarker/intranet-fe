@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lock, Home, ArrowLeft } from 'lucide-react';
 
+
 const Unauthorized = () => {
   const handleGoToDashboard = () => {
     window.location.href = '/dashboard';

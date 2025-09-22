@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
-import { toast } from "react-toastify"; // 1. Import toast
-import Pagination from "../../../components/Pagination/pagination"; // <-- Import your Pagination component
+import { toast } from "react-toastify"; 
+import Pagination from "../../../components/Pagination/pagination"; 
 
 const CompOffRequestsTable = ({ requests, onCancel }) => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -24,13 +24,9 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
 
     setIsLoading(true); // Start loading
     try {
-      // The onCancel function (passed from the parent) handles the API call
-      // and the subsequent data refresh. We just await its completion.
       await onCancel(selectedRequestId);
-      
       toast.success("Request cancelled successfully!"); // Show success message
-      
-    } catch (error) {
+    } catch (error) { 
       toast.error(error.message || "Failed to cancel request."); // Show error message
     } finally {
       setIsLoading(false); // Stop loading
@@ -60,21 +56,21 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
             <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                  <th className="p-3 text-left">Start Date</th>
-                  <th className="p-3 text-left">End Date</th>
-                  <th className="p-3 text-left">Days</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Actions</th>
+                  <th className="p-3 text-center">Start Date</th>
+                  <th className="p-3 text-center">End Date</th>
+                  <th className="p-3 text-center">Days</th>
+                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {currentRequests.map((req) => (
-                  <tr key={req.idleaveCompoff} className="border-t border-gray-200">
-                    <td className="p-3 text-left">{req.startDate}</td>
-                    <td className="p-3 text-left">{req.endDate}</td>
-                    <td className="p-3 text-left">{req.duration}</td>
-                    <td className="p-3 text-left">{req.status}</td>
-                    <td className="p-3 text-left">
+                  <tr key={req.idleaveCompoff} className="border-t border-gray-200 text-sm">
+                    <td className="p-3 text-center">{req.startDate ? new Date(req.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
+                    <td className="p-3 text-center">{req.endDate ? new Date(req.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
+                    <td className="p-3 text-center">{req.duration}</td>
+                    <td className="p-3 text-center">{req.status}</td>
+                    <td className="p-3 text-center">
                       <button
                         onClick={() => handleCancelClick(req.idleaveCompoff)}
                         className="text-red-600 hover:underline text-sm font-medium"
