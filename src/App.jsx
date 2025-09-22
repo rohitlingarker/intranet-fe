@@ -76,7 +76,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useAuth();
   console.log(user);
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
