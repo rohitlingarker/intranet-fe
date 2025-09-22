@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { MoreHorizontal, MessageSquare, Calendar, FileText } from 'lucide-react';
 import ChangeLeaveDatesModal from './ChangeLeaveDatesModal';
 import ChangeLeaveTypeModal from './ChangeLeaveTypeModal';
 import CommentModal from './CommentModal';
+import toast from 'react-hot-toast';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const token = localStorage.getItem('token');
 
 const ActionDropdown = ({
-  requestId,
+  employeeId,
   currentLeaveType,
   currentStartDate,
   currentEndDate,
@@ -24,12 +29,36 @@ const ActionDropdown = ({
   const [isChangeLeaveTypeOpen, setIsChangeLeaveTypeOpen] = useState(false);
   const [isChangeLeaveDatesOpen, setIsChangeLeaveDatesOpen] = useState(false);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [employeeLeaveBalances, setEmployeeLeaveBalances] = useState([]);
+  const [isBalancesLoading, setIsBalancesLoading] = useState(false);
 
   // Store selected values here
   const [leaveTypeId, setLeaveTypeId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (isChangeLeaveTypeOpen && employeeId) {
+        setIsBalancesLoading(true);
+        try {
+          const res = await axios.get(
+            `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setEmployeeLeaveBalances(res.data || []);
+        } catch (error) {
+          console.error("Failed to fetch employee balances", error);
+          toast.error("Failed to fetch employee leave balances");
+        } finally {
+          setIsBalancesLoading(false);
+        }
+      }
+    };
+
+    fetchBalances();
+  }, [isChangeLeaveTypeOpen, employeeId]);
 
   useEffect(() => {
     if (isCommentOpen) setCommentValue(managerComments);
@@ -140,7 +169,8 @@ const ActionDropdown = ({
         onClose={() => setIsChangeLeaveTypeOpen(false)}
         onSave={handleSaveLeaveType}
         currentTypeId={leaveTypeId}
-        allTypes={allLeaveTypes}
+        // allTypes={allLeaveTypes}
+        leaveBalances={employeeLeaveBalances} 
       />
 
       {/* Change Leave Dates Modal */}

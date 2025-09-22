@@ -4,10 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import Button from "../../../../components/Button/Button";
 import Pagination from "../../../../components/Pagination/pagination";
+import Modal from '../../../../components/Modal/modal';
+import { showStatusToast } from '../../../../components/toastfy/toast';
  
 const AccessPointList = () => {
   const [aps, setAps] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // 🔹 pagination state
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // 🔹 modal state
+  const [selectedAccessPointId, setSelectedAccessPointId] = useState(null); // 🔹 selected access point for deletion
   const itemsPerPage = 6; // 🔹 2 rows of 3 cards
  
   const navigate = useNavigate();
@@ -15,14 +19,33 @@ const AccessPointList = () => {
   useEffect(() => {
     listAccessPoints().then(res => setAps(res.data));
   }, []);
- 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this access point?')) {
-      await deleteAccessPoint(id);
-      setAps(prev => prev.filter(ap => ap.access_id !== id));
+
+  // 🔹 Handle delete button click - show confirmation modal
+  const handleDeleteClick = (id) => {
+    setSelectedAccessPointId(id);
+    setShowDeleteModal(true);
+  };
+
+  // 🔹 Handle actual deletion after confirmation
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteAccessPoint(selectedAccessPointId);
+      setAps((prev) => prev.filter((ap) => ap.access_id !== selectedAccessPointId));
+      showStatusToast("Access Point Successfully deleted", "success");
+    } catch (err) {
+      showStatusToast("Failed to delete access point", "error");
+    } finally {
+      setShowDeleteModal(false);
+      setSelectedAccessPointId(null);
     }
   };
- 
+
+  // 🔹 Handle cancel deletion
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedAccessPointId(null);
+  };
+
   // 🔹 Pagination logic
   const totalPages = Math.ceil(aps.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -73,7 +96,7 @@ const AccessPointList = () => {
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                   <Button
-                    onClick={() => handleDelete(ap.access_id)}
+                    onClick={() => handleDeleteClick(ap.access_id)}
                     className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
                   >
                     <Trash2 className="w-4 h-4" /> Delete
@@ -94,6 +117,33 @@ const AccessPointList = () => {
           )}
         </>
       )}
+
+      {/* 🔹 Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={handleCancelDelete}
+        title="Confirm Deletion"
+      >
+        <div className="p-4">
+          <p className="text-gray-600 mb-6">
+            Please confirm you really want delete the access point
+          </p>
+          <div className="flex justify-end space-x-4">
+            <Button
+              onClick={handleCancelDelete}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+            >
+              Confirm
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

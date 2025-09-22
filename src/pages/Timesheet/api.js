@@ -151,3 +151,41 @@ export async function addEntryToTimesheet(timesheetId,workdate, payload) {
     throw err;
   }
 }
+
+export async function bulkReviewTimesheet(timesheetIds, status, comment) {
+  try {
+    // example body
+    // {
+    //   "timesheetIds": [14,15
+    //   ],
+    //   "status": "Approved",
+    //   "comment": "Testing Bulk"
+    // }
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheets/review/bulk`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          timesheetIds,
+          status,
+          comment: status === "Rejected" ? comment : "Bulk Approved",
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to bulk review timesheet");
+    }
+
+    showStatusToast(`Timesheet ${status} successfully`, "success");
+    return;
+  } catch (err) {
+    showStatusToast("Update failed", "error");
+    throw err;
+  }
+}

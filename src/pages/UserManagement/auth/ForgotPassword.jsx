@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { showStatusToast } from "../../../components/toastfy/toast";
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -14,11 +15,11 @@ export default function ForgotPassword() {
 
   const handleSendOtp = async () => {
     if (!email.trim()) {
-      alert("Email is required to send OTP.");
+      showStatusToast("Email is required to send OTP.", "error");
       return;
     }
     if (!isEmailValid(email.trim())) {
-      alert("Please enter a valid email.");
+      showStatusToast("Please enter a valid email.", "error");
       return;
     }
     setSendingOtp(true);
@@ -30,11 +31,12 @@ export default function ForgotPassword() {
         }
       );
       setOtpSent(true);
-      alert("OTP sent to your email. Check inbox/spam.");
+      showStatusToast("OTP sent to your email. Check inbox/spam.", "success");
     } catch (err) {
       console.error("sendOtp error:", err);
-      alert(
-        "Failed to send OTP: " + (err.response?.data?.detail || err.message)
+      showStatusToast(
+        "Failed to send OTP: " + (err.response?.data?.detail || err.message),
+        "error"
       );
     } finally {
       setSendingOtp(false);
@@ -43,11 +45,11 @@ export default function ForgotPassword() {
 
   const handleReset = async () => {
     if (!email.trim() || !otp.trim() || !newPassword.trim()) {
-      alert("Email, OTP, and new password are required.");
+      showStatusToast("Email, OTP, and new password are required.", "error");
       return;
     }
     if (!isEmailValid(email.trim())) {
-      alert("Please enter a valid email.");
+      showStatusToast("Please enter a valid email.", "error");
       return;
     }
     setResetting(true);
@@ -66,13 +68,14 @@ export default function ForgotPassword() {
           new_password: newPassword,
         }
       );
-      alert("Password reset successfully!");
+      showStatusToast("Password reset successfully!", "success");
       navigate("/");
     } catch (err) {
       console.error("handleReset error:", err);
-      alert(
+      showStatusToast(
         "Error resetting password: " +
-          (err.response?.data?.detail || err.message)
+          (err.response?.data?.detail || err.message),
+        "error"
       );
     } finally {
       setResetting(false);

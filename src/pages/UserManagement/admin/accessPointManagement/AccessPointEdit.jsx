@@ -85,94 +85,108 @@ const AccessPointEdit = () => {
     );
 
   return (
-    <div className="max-w-xl mx-auto bg-white shadow-md rounded-lg p-8 mt-10">
-      <h2 className="text-2xl font-semibold mb-6 text-blue-600 text-center">
-        Edit Access Point
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block mb-1 text-gray-700 font-medium">
-            Endpoint Path
-          </label>
-          <input
-            name="endpoint_path"
-            value={form.endpoint_path}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1 text-gray-700 font-medium">Method</label>
-          <select
-            name="method"
-            value={form.method}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option>GET</option>
-            <option>POST</option>
-            <option>PUT</option>
-            <option>DELETE</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1 text-gray-700 font-medium">Module</label>
-          <select
-            name="module"
-            value={form.module}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Module</option>
-            {modules.map((mod, idx) => (
-              <option key={idx} value={mod}>
-                {mod}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="is_public"
-            checked={form.is_public}
-            onChange={handleChange}
-            className="w-5 h-5 text-blue-600"
-          />
-          <label className="text-gray-700 font-medium">Public</label>
-        </div>
-
-        {/* Permission Display with Delete Button */}
-        {accessPointData && accessPointData.permission_code && (
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium text-gray-800">
-                Permission: {accessPointData.permission_code}
-              </span>
-              <Button
-                type="button"
-                onClick={handleDeletePermission}
-                disabled={isDeleting}
-                className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </Button>
-            </div>
-          </div>
-        )}
-
+    <div className="max-w-6xl mx-auto p-6">
+      {/* ✅ Back Button Section */}
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+        <h2 className="text-3xl font-semibold text-blue-700">
+          Edit Access Point
+        </h2>
         <Button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+          variant="secondary"
+          size="medium"
+          onClick={() => navigate("/user-management/access-points")}
         >
-          Update
+          ← Back
         </Button>
-      </form>
+      </div>
+
+      {/* ✅ Form Card */}
+      <div className="max-w-xl mx-auto bg-white shadow-md rounded-lg p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block mb-1 text-gray-700 font-medium">
+              Endpoint Path
+            </label>
+            <input
+              name="endpoint_path"
+              value={form.endpoint_path}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-gray-700 font-medium">Method</label>
+            <select
+              name="method"
+              value={form.method}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option>GET</option>
+              <option>POST</option>
+              <option>PUT</option>
+              <option>DELETE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-1 text-gray-700 font-medium">Module</label>
+            <select
+              name="module"
+              value={form.module}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Module</option>
+              {modules.map((mod, idx) => (
+                <option key={idx} value={mod}>
+                  {mod}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="is_public"
+              checked={form.is_public}
+              onChange={handleChange}
+              className="w-5 h-5 text-blue-600"
+            />
+            <label className="text-gray-700 font-medium">Public</label>
+          </div>
+
+          {/* Permission Display with Delete Button */}
+          {accessPointData && accessPointData.permission_code && (
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-800">
+                  Permission: {accessPointData.permission_code}
+                </span>
+                <Button
+                  type="button"
+                  onClick={handleDeletePermission}
+                  disabled={isDeleting}
+                  className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+          >
+            Update
+          </Button>
+        </form>
+      </div>
     </div>
   );
 };

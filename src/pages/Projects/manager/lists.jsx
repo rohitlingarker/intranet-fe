@@ -7,9 +7,12 @@ import CreateIssueForm from './Backlog/CreateIssueForm';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Pencil, Trash, X } from 'lucide-react';
+import { useAuth } from "../../../contexts/AuthContext";
 
 // Get token from localStorage (or wherever you store it)
 const token = localStorage.getItem('token');
+
+// console.log(token, "token in lists");
 
 const Lists = ({ projectId }) => {
   const [epics, setEpics] = useState([]);
@@ -17,14 +20,18 @@ const Lists = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const { isAuthenticated, user } = useAuth();
+  // const userId = user?.id;
+  // const currentUser = user?.name;
 
-  const fakeUsers = [
-    { id: 1, name: 'Sindhu Reddy' },
-    { id: 2, name: 'Vijayadurga' },
-    { id: 3, name: 'Niharika Kandukoori' },
-    { id: 4, name: 'Ruchitha Nuthula' },
-  ];
-  const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
+
+  // const fakeUsers = [
+  //   { id: 1, name: 'Sindhu Reddy' },
+  //   { id: 2, name: 'Vijayadurga' },
+  //   { id: 3, name: 'Niharika Kandukoori' },
+  //   { id: 4, name: 'Ruchitha Nuthula' },
+  // ];
+  // const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
 
   // Create an axios instance with the token
   const axiosInstance = axios.create({
@@ -38,6 +45,7 @@ const Lists = ({ projectId }) => {
     try {
       const [epicRes, storyRes, taskRes, noEpicRes] = await Promise.all([
         axiosInstance.get(`/api/projects/${projectId}/epics`),
+        
         axiosInstance.get(`/api/projects/${projectId}/stories`),
         axiosInstance.get(`/api/projects/${projectId}/tasks`),
         axiosInstance.get(`/api/stories/no-epic`),
@@ -154,7 +162,7 @@ const Lists = ({ projectId }) => {
     <div className="p-6 space-y-6">
       <ToastContainer />
       {/* User Switch */}
-      <div className="flex justify-end gap-2 mb-4 items-center">
+      {/* <div className="flex justify-end gap-2 mb-4 items-center">
         <label>Logged in as:</label>
         <select
           value={currentUser.id}
@@ -163,7 +171,7 @@ const Lists = ({ projectId }) => {
         >
           {fakeUsers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
-      </div>
+      </div> */}
 
       {/* Epics */}
       <h2 className="text-xl font-bold  pb-1 text-indigo-700">
@@ -271,7 +279,7 @@ const Lists = ({ projectId }) => {
             </h2>
             <button onClick={() => setSelectedEntity(null)}><X className="w-5 h-5" /></button>
           </div>
-          <CommentBox entityId={selectedEntity.id} entityType={selectedEntity.type} currentUser={currentUser} />
+          <CommentBox entityId={selectedEntity.id} entityType={selectedEntity.type} currentUser={user} />
         </div>
       )}
     </div>

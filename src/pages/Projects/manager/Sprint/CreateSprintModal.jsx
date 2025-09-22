@@ -1,34 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { X } from 'lucide-react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { X } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
   if (!isOpen) return null;
 
   const [formData, setFormData] = useState({
-    name: '',
-    goal: '',
-    startDate: '',
-    endDate: '',
-    status: 'PLANNING',
+    name: "",
+    goal: "",
+    startDate: "",
+    endDate: "",
+    status: "PLANNING",
     projectId: projectId.toString(),
   });
+  const token = localStorage.getItem("token");
 
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`);
+        const response = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const content = Array.isArray(response.data.content)
           ? response.data.content
           : response.data;
         setProjects(content);
       } catch (error) {
-        toast.error('Error fetching projects list.', { position: 'top-right', autoClose: 3000 });
-        console.error('Error fetching projects:', error);
+        toast.error("Error fetching projects list.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        console.error("Error fetching projects:", error);
       }
     };
     fetchProjects();
@@ -55,21 +64,27 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
     };
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, payload);
+      const response = await axios.post(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`,
+        payload, 
+        {
+          headers: { Authorization: `Bearer ${token}` }, 
+        }
+      );
 
-      toast.success('✅ Sprint created successfully!', {
-        position: 'top-right',
+      toast.success("✅ Sprint created successfully!", {
+        position: "top-right",
         autoClose: 5000,
       });
 
       onCreated(response.data);
 
       setFormData({
-        name: '',
-        goal: '',
-        startDate: '',
-        endDate: '',
-        status: 'PLANNING',
+        name: "",
+        goal: "",
+        startDate: "",
+        endDate: "",
+        status: "PLANNING",
         projectId: projectId.toString(),
       });
 
@@ -78,11 +93,14 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
         onClose();
       }, 500);
     } catch (error) {
-      console.error('🚫 Error creating sprint:', error.response?.data || error.message);
+      console.error(
+        "🚫 Error creating sprint:",
+        error.response?.data || error.message
+      );
       const errorMsg =
         error.response?.data?.message ||
-        'Sprint creation failed. Please check your inputs.';
-      toast.error(`❌ ${errorMsg}`, { position: 'top-right', autoClose: 5000 });
+        "Sprint creation failed. Please check your inputs.";
+      toast.error(`❌ ${errorMsg}`, { position: "top-right", autoClose: 5000 });
     }
   };
 
@@ -99,7 +117,9 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Create a New Sprint</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Create a New Sprint
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block font-medium text-gray-700 mb-1">
@@ -157,7 +177,9 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
           </div>
 
           <div>
-            <label className="block font-medium text-gray-700 mb-1">Status</label>
+            <label className="block font-medium text-gray-700 mb-1">
+              Status
+            </label>
             <select
               name="status"
               value={formData.status}

@@ -7,19 +7,20 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",          // Required
-    projectKey: "",    // Required
-    description: "",   // Optional
-    status: "ACTIVE",  // Required
-    ownerId: "",       // Required
-    memberIds: [],     // Optional
-    startDate: "",     // Optional
-    endDate: "",       // Optional
+    name: "",
+    projectKey: "",
+    description: "",
+    status: "ACTIVE",
+    ownerId: "",
+    memberIds: [],
+    startDate: "",
+    endDate: "",
   });
   const [dateError, setDateError] = useState(false);
 
   const token = localStorage.getItem("token"); // JWT token
 
+  // ✅ Fetch users for Owner & Members dropdowns
   useEffect(() => {
     if (!isOpen) return;
 
@@ -38,24 +39,20 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       .catch((err) => console.error("Error fetching users:", err));
   }, [isOpen, token]);
 
+  // ✅ Handle inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "name") {
-      const cleanedValue = value.replace(/[^a-zA-Z0-9 ]/g, "");
-      const finalValue = cleanedValue.replace(/\s+/g, " ");
-      setFormData((prev) => ({ ...prev, [name]: finalValue }));
+      const cleanedValue = value.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, " ");
+      setFormData((prev) => ({ ...prev, [name]: cleanedValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
     if (name === "startDate" || name === "endDate") {
       const { startDate, endDate } = { ...formData, [name]: value };
-      if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-        setDateError(true);
-      } else {
-        setDateError(false);
-      }
+      setDateError(startDate && endDate && new Date(endDate) < new Date(startDate));
     }
   };
 
@@ -83,29 +80,36 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     setFormData({ ...formData, status: e.target.value });
   };
 
+  // ✅ Final Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const projectName = formData.name.trim();
-    if (!projectName || /^[^a-zA-Z0-9]+$/.test(projectName)) {
-      toast.error("❌ Project name must contain valid characters (letters/numbers).");
+    if (!projectName) {
+      toast.error("❌ Project name is required.");
       return;
     }
-
+    if (!formData.projectKey.trim()) {
+      toast.error("❌ Project key is required.");
+      return;
+    }
     if (!formData.ownerId) {
-      alert("Please select a project owner.");
+      toast.error("❌ Please select a project owner.");
       return;
     }
-
     if (dateError) {
       toast.error("❌ End date cannot be before Start date.");
       return;
     }
 
+    // ✅ Build payload matching backend DTO
     const payload = {
-      ...formData,
       name: projectName,
-      ownerId: parseInt(formData.ownerId),
+      projectKey: formData.projectKey.trim(),
+      description: formData.description || null,
+      status: formData.status,
+      ownerId: parseInt(formData.ownerId, 10), // 👈 FIXED
+      memberIds: formData.memberIds,
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
       endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
     };
@@ -117,9 +121,9 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       });
 
       toast.success("✅ Project created successfully!");
-
       if (onProjectCreated) onProjectCreated();
 
+      // reset
       setFormData({
         name: "",
         projectKey: "",
@@ -130,12 +134,11 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         startDate: "",
         endDate: "",
       });
-
       setDateError(false);
       onClose();
     } catch (error) {
       console.error("Failed to create project:", error.response?.data || error);
-      toast.error("❌ Failed to create project. Check required fields or console for more info.");
+      toast.error(error.response?.data?.message || "❌ Failed to create project.");
     } finally {
       setIsSubmitting(false);
     }
@@ -165,6 +168,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             onChange={handleInputChange}
             required
           />
+
           <select
             name="status"
             className="w-full border px-4 py-2 rounded"
@@ -176,6 +180,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             <option value="PLANNING">PLANNING</option>
             <option value="ARCHIVED">ARCHIVED</option>
           </select>
+
           <select
             name="ownerId"
             className="w-full border px-4 py-2 rounded"
@@ -186,7 +191,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             <option value="">Select Owner *</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.name} ({user.role})
+                {user.name} ({user.roles.map(role => role).join(", ")})
               </option>
             ))}
           </select>
@@ -201,7 +206,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Start Date </label>
+              <label className="block text-sm font-medium mb-1">Start Date</label>
               <input
                 type="date"
                 name="startDate"
@@ -212,7 +217,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">End Date </label>
+              <label className="block text-sm font-medium mb-1">End Date</label>
               <input
                 type="date"
                 name="endDate"

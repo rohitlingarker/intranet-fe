@@ -41,70 +41,71 @@ export default function EditProfile() {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
+  // Load user profile on mount
   useEffect(() => {
     if (user?.email) {
       axios
         .get(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
         .then((res) => setForm(res.data))
         .catch((err) => {
           console.error("Failed to fetch profile", err);
-          showStatusToast("Failed to load profile.", "error"); // ❌ error toast
+          showStatusToast("Failed to load profile.", "error");
         });
     }
   }, [user]);
 
+  // Handle form field changes
   const handleChange = (e) => {
-    // ✅ For "contact" field: only allow numbers & max 10 digits
     if (e.target.name === "contact") {
-      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+      const value = e.target.value.replace(/\D/g, "").slice(0, 10); // keep only numbers, max 10
       setForm({ ...form, [e.target.name]: value });
     } else {
       setForm({ ...form, [e.target.name]: e.target.value });
     }
   };
 
+  // Save profile function
   const doSave = async () => {
+    if (!form.password || form.password.trim() === "") {
+      showStatusToast("Password is required", "error");
+      return;
+    }
+
+    if (!form.contact || form.contact.length !== 10) {
+      showStatusToast("Contact number must be exactly 10 digits.", "error");
+      return;
+    }
+
     try {
       setSaving(true);
       const response = await axios.put(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
         form,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
       console.log("Response:", response.data);
-      showStatusToast("Profile updated!", "success"); // ✅ success toast
+      showStatusToast("Profile updated!", "success");
       navigate("/profile");
     } catch (err) {
       console.error("Update failed:", err);
       showStatusToast(
         "Update failed: " + (err.response?.data?.detail || err.message),
         "error"
-      ); // ❌ error toast
+      );
     } finally {
       setSaving(false);
       setShowModal(false);
     }
   };
 
-  const handleSave = () => {
-    setShowModal(true);
-  };
+  const handleSave = () => setShowModal(true);
+  const handleCancel = () => navigate("/profile");
 
-  const handleCancel = () => {
-    navigate("/profile");
-  };
-
-  if (!user) {
-    return <p className="text-center mt-10">Loading...</p>;
-  }
+  if (!user) return <p className="text-center mt-10">Loading...</p>;
 
   return (
     <div className="max-w-xl mx-auto p-6">
@@ -112,58 +113,56 @@ export default function EditProfile() {
         <h2 className="text-2xl font-bold text-blue-700 mb-6">Edit Profile</h2>
 
         <div className="space-y-4">
+          {/* First Name */}
           <div>
-  <label className="block font-medium mb-1">First Name</label>
-  <input
-    type="text"
-    name="first_name"
-    value={form.first_name || ""}
-    onChange={(e) => {
-      const regex = /^[A-Za-z]*$/; // ✅ only alphabets allowed
-      if (regex.test(e.target.value)) {
-        handleChange(e); // call your existing handler only if valid
-      }
-    }}
-    placeholder="Enter your first name"
-    className="w-full border px-3 py-2 rounded-md"
-  />
-</div>
+            <label className="block font-medium mb-1">First Name</label>
+            <input
+              type="text"
+              name="first_name"
+              value={form.first_name || ""}
+              onChange={(e) => {
+                // ✅ Allow alphabets + spaces only
+                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
+              }}
+              placeholder="Enter your first name"
+              className="w-full border px-3 py-2 rounded-md"
+            />
+          </div>
 
+          {/* Last Name */}
           <div>
-  <label className="block font-medium mb-1">Last Name</label>
-  <input
-    type="text"
-    name="last_name"
-    value={form.last_name || ""}
-    onChange={(e) => {
-      const regex = /^[A-Za-z]*$/; // ✅ only alphabets allowed
-      if (regex.test(e.target.value)) {
-        handleChange(e); // call your existing handler only if valid
-      }
-    }}
-    placeholder="Enter your last name"
-    className="w-full border px-3 py-2 rounded-md"
-  />
-</div>
+            <label className="block font-medium mb-1">Last Name</label>
+            <input
+              type="text"
+              name="last_name"
+              value={form.last_name || ""}
+              onChange={(e) => {
+                // ✅ Allow alphabets + spaces only
+                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
+              }}
+              placeholder="Enter your last name"
+              className="w-full border px-3 py-2 rounded-md"
+            />
+          </div>
 
+          {/* Contact */}
           <div>
-  <label className="block font-medium mb-1">Contact</label>
-  <input
-    type="text"
-    name="contact"
-    value={form.contact || ""}
-    onChange={(e) => {
-      const regex = /^[0-9]*$/; // ✅ only numbers allowed
-      if (regex.test(e.target.value) && e.target.value.length <= 10) {
-        handleChange(e); // update only if valid
-      }
-    }}
-    placeholder="Enter contact number"
-    className="w-full border px-3 py-2 rounded-md"
-    maxLength={10} // extra safeguard
-  />
-</div>
+            <label className="block font-medium mb-1">Contact</label>
+            <input
+              type="text"
+              name="contact"
+              value={form.contact || ""}
+              onChange={(e) => {
+                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10)
+                  handleChange(e);
+              }}
+              placeholder="Enter contact number"
+              className="w-full border px-3 py-2 rounded-md"
+              maxLength={10}
+            />
+          </div>
 
+          {/* Password */}
           <div>
             <label className="block font-medium mb-1">New Password</label>
             <input
@@ -173,9 +172,11 @@ export default function EditProfile() {
               onChange={handleChange}
               placeholder="Enter new password"
               className="w-full border px-3 py-2 rounded-md"
+              required
             />
           </div>
 
+          {/* Action Buttons */}
           <div className="flex gap-4 mt-4">
             <button
               type="button"

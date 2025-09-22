@@ -27,9 +27,9 @@ const CreateUserStory = ({ onClose }) => {
     const fetchData = async () => {
       try {
         const [usersRes, projectsRes, sprintsRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/users', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:8080/api/projects', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:8080/api/sprints', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         setUsers(usersRes.data?.content ?? usersRes.data ?? []);
@@ -46,7 +46,7 @@ const CreateUserStory = ({ onClose }) => {
   useEffect(() => {
     if (projectId) {
       axios
-        .get(`http://localhost:8080/api/projects/${projectId}/epics`, {
+        .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setEpics(res.data?.content ?? res.data ?? []))
@@ -82,7 +82,7 @@ const CreateUserStory = ({ onClose }) => {
 
       console.log('Submitting story:', payload);
 
-      const response = await axios.post('http://localhost:8080/api/stories', payload, {
+      const response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

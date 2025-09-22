@@ -1,12 +1,14 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../../components/toastfy/toast";
-import GenericTable from "../../../../components/Table/table"; // ✅ Use GenericTable
+import GenericTable from "../../../../components/Table/table";
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
-import StatusBadge from "../../../../components/status/statusbadge";
+import Modal from "../../../../components/Modal/modal"; // ✅ Import Modal
+import CreateUserForm from "./CreateUser"; // ✅ Import the form component
+import EditUserForm from "./EditUser"; // ✅ Import the edit form component
 import { Pencil, UserX } from "lucide-react";
 
 const SORT_DIRECTIONS = {
@@ -23,9 +25,17 @@ export default function UsersTable() {
   const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false); 
+  const [isEditModalOpen, setEditModalOpen] = useState(false); 
+  const [selectedUserId, setSelectedUserId] = useState(null); 
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false); 
+  const [userToDelete, setUserToDelete] = useState(null); 
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+
+  // ✅ Ref to ensure "Access denied" toast shows only once
+  const accessDeniedShownRef = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -34,36 +44,89 @@ export default function UsersTable() {
     }
   }, [token, navigate]);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(
-          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setUsers(res.data || []);
-        console.log(users);
-      } catch (err) {
-        console.error("Failed to fetch users:", err);
-        if (err.response?.status === 403 || err.response?.status === 401) {
-          showStatusToast("Access denied. Admins only.", "error");
-          navigate("/home");
-        } else {
-          showStatusToast("Failed to load users.", "error");
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-      } finally {
-        setLoading(false);
+      );
+      setUsers(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        if (!accessDeniedShownRef.current) {
+          showStatusToast("Access denied. Admins only.", "error");
+          accessDeniedShownRef.current = true; // ✅ Mark as shown
+        }
+        navigate("/dashboard");
+      } else {
+        showStatusToast("Failed to load users.", "error");
       }
-    };
-
-    fetchUsers();
+    } finally {
+      setLoading(false);
+    }
   }, [token, navigate]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleUserCreated = () => {
+    setCreateModalOpen(false);
+    showStatusToast("User created successfully!", "success");
+    fetchUsers();
+  };
+
+  const handleUserUpdated = () => {
+    setEditModalOpen(false);
+    setSelectedUserId(null);
+    showStatusToast("User updated successfully!", "success");
+    fetchUsers();
+  };
+
+  const handleEditClick = (userId) => {
+    setSelectedUserId(userId);
+    setEditModalOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditModalOpen(false);
+    setSelectedUserId(null);
+  };
+
+  const handleDeleteClick = (userId) => {
+    setUserToDelete(userId);
+    setConfirmModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userToDelete}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.user_id === userToDelete ? { ...u, is_active: false } : u
+        )
+      );
+      showStatusToast("User deactivated.", "success");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      showStatusToast("Failed to deactivate user.", "error");
+    } finally {
+      setConfirmModalOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
-    console.log(users)
     return users.filter((user) =>
       `${user.first_name} ${user.last_name} ${user.mail} ${user.contact}`
         .toLowerCase()
@@ -122,44 +185,20 @@ export default function UsersTable() {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm("Are you sure you want to deactivate this user?"))
-      return;
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUsers((prev) =>
-        prev.map((u) => (u.user_id === userId ? { ...u, is_active: false } : u))
-      );
-      showStatusToast("User deactivated.", "success");
-    } catch (err) {
-      console.error("Delete failed:", err);
-      showStatusToast("Failed to deactivate user.", "error");
-    }
-  };
-
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
-
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
 
-  // ✅ Transform data for GenericTable
   const tableData = paginatedUsers.map((user) => ({
     user_id: user.user_id,
     name: `${user.first_name} ${user.last_name}`,
     mail: user.mail,
     contact: user.contact,
-    status: user.is_active ? "Active" : "Inactive", // ✅ string instead of JSX
+    status: user.is_active ? "Active" : "Inactive",
     actions: (
       <div className="flex gap-4 items-center">
         <span
           className="cursor-pointer text-blue-600 hover:text-blue-800"
-          onClick={() =>
-            navigate(`/user-management/users/edit/${user.user_id}`)
-          }
+          onClick={() => handleEditClick(user.user_id)}
           title="Edit"
         >
           <Pencil size={18} />
@@ -168,7 +207,7 @@ export default function UsersTable() {
           className={`cursor-pointer ${
             user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
           }`}
-          onClick={() => user.is_active && handleDelete(user.user_id)}
+          onClick={() => user.is_active && handleDeleteClick(user.user_id)}
           title="Deactivate"
         >
           <UserX size={18} />
@@ -178,12 +217,12 @@ export default function UsersTable() {
   }));
 
   return (
-    <div>
+    <div className="px-6 py-4">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-semibold text-gray-800">Users</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 ">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
           <Button
-            onClick={() => navigate("/user-management/users/create")}
+            onClick={() => setCreateModalOpen(true)}
             variant="primary"
             size="medium"
           >
@@ -225,6 +264,63 @@ export default function UsersTable() {
           }
         />
       )}
+
+      {/* ✅ Modal for creating a new user */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Create New User"
+        subtitle="Fill out the form to add a new user to the system."
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+      >
+        <CreateUserForm
+          onSuccess={handleUserCreated}
+          onClose={() => setCreateModalOpen(false)}
+        />
+      </Modal>
+
+      {/* ✅ Modal for editing a user */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={handleEditClose}
+        title="Edit User"
+        subtitle="Update the user information below."
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+      >
+        {selectedUserId && (
+          <EditUserForm
+            userId={selectedUserId}
+            onSuccess={handleUserUpdated}
+            onClose={handleEditClose}
+          />
+        )}
+      </Modal>
+
+      {/* ✅ Confirmation Modal */}
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        title="Confirm Deactivation"
+        subtitle="Are you sure you want to deactivate this user?"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+      >
+        <div className="flex justify-end gap-3 mt-6">
+          <Button
+            onClick={() => setConfirmModalOpen(false)}
+            variant="secondary"
+            size="medium"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            variant="danger"
+            size="medium"
+          >
+            Confirm
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

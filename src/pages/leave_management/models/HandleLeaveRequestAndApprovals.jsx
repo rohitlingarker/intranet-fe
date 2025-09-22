@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Check, X, Search } from "lucide-react";
+import { Check, X, Search, Pencil } from "lucide-react";
 import axios from "axios";
-import ActionDropdown from "./ActionDropdown";
 import Pagination from "../../../components/Pagination/pagination";
 import LeaveDashboard from "../charts/LeaveDashboard";
+import { toast } from "react-toastify";
+import ManagerEditLeaveRequest from "./ManagerEditLeaveRequest";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
  
@@ -25,7 +26,7 @@ function countWeekdays(startDateStr, endDateStr) {
   }
   return count;
 }
- 
+
 const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [allLeaveTypes, setAllLeaveTypes] = useState([]);
@@ -34,23 +35,16 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [confirmation, setConfirmation] = useState(null); // { action, leaveId }
   const [loading, setLoading] = useState(false);
-  const [resultMsg, setResultMsg] = useState(null);
   const [comments, setComments] = useState({}); // manager comments keyed by leaveId
-  const [toast, setToast] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
   const token = localStorage.getItem('token');
- 
+  const [editingRequest, setEditingRequest] = useState(null);
   const itemsPerPage = 8;
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
- 
-  const showToast = (text, type) => {
-    setToast({ text, type });
-    setTimeout(() => setToast(null), 3000);
-  };
  
   const managerId = employeeId;
  
@@ -78,7 +72,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     if (managerId) {
       fetchData();
     }
-  }, [managerId, selectedYear, selectedMonth, searchTerm]); // selectedStatus (can be added)
+  }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus ]); // selectedStatus (can be added)
  
   const fetchData = async () => {
     try {
@@ -111,11 +105,42 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setAdminLeaveRequests(arr);
       setAllLeaveTypes(types.data || []);
     } catch (err) {
-      console.error("Error fetching leave data:", err);
+      toast.error("Error fetching leave data:", err);
     } finally {
       setLoading(false);
     }
   };
+
+
+    // Component to handle long reason text with "View More"/"View Less"
+    const LeaveReasonCell = ({ reason }) => {
+      const [expanded, setExpanded] = useState(false);
+  
+      // limit characters shown before truncation
+      const MAX_LENGTH = 50;
+  
+      if (!reason) return <span>-</span>;
+  
+      const isLong = reason.length > MAX_LENGTH;
+      const displayText = expanded
+        ? reason
+        : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+  
+      return (
+        <div className="flex flex-col">
+          <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-blue-600 text-xs mt-1 hover:underline self-start"
+            >
+              {expanded ? "View Less" : "View More"}
+            </button>
+          )}
+        </div>
+      );
+    };
+  
  
   // for the leaveBalaceDashBoard
   // const handleOpenDetails = (request) => {
@@ -180,11 +205,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         }
       }
       );
-      showToast(`${selectedRequests.length} requests approved.`, "success");
+      toast.success(`${selectedRequests.length} requests approved.`);
       setSelectedRequests([]);
       await fetchData();
     } catch (err) {
-      showToast("Failed to approve selected requests.", "error");
+      toast.error("Failed to approve selected requests.");
     } finally {
       setLoading(false);
     }
@@ -207,11 +232,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           }
         }
       );
-      showToast(`${selectedRequests.length} requests rejected.`, "success");
+      toast.success(`${selectedRequests.length} requests rejected.`);
       setSelectedRequests([]);
       await fetchData();
     } catch (err) {
-      showToast("Error rejecting selected requests.", "error");
+      toast.error("Error rejecting selected requests.");
     } finally {
       setLoading(false);
     }
@@ -221,7 +246,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const handleDecision = async (action, leaveId, commentParam) => {
     const comment = commentParam ?? (comments[leaveId] || "");
     if (action === "reject" && !comment) {
-      showToast("Manager comment required to reject.", "error");
+      toast.error("Manager comment required to reject.");
       return;
     }
     setLoading(true);
@@ -235,45 +260,48 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           Authorization: `Bearer ${token}`
         }
       });
-      showToast(`Leave ${action}ed successfully.`, "success");
+      toast.success(`Leave ${action}ed successfully.`);
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
       await fetchData();
       setConfirmation(null);
     } catch {
-      showToast("Something went wrong. Please try again.", "error");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
  
   // Update leave (for ActionDropdown editing)
-  const handleLeaveUpdate = async (leaveId, data) => {
+  const handleLeaveUpdate = async (leaveId, updatedData) => {
     setLoading(true);
     try {
-      const payload = {
-        leaveId,
-        managerId,
-        ...(data.leaveTypeId && { leaveTypeId: data.leaveTypeId }),
-        ...(data.startDate && { startDate: data.startDate }),
-        ...(data.endDate && { endDate: data.endDate }),
-        ...(data.startDate &&
-          data.endDate && {
-            daysRequested: countWeekdays(data.startDate, data.endDate),
-          }),
-        ...(data.requestDate && {requestDate: data.requestDate})
-      };
-      await axios.put(
-        `${BASE_URL}/api/leave-requests/update`,
-        payload,{
-          header:{
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const originalRequest = adminLeaveRequests.find(
+        (req) => req.leaveId === leaveId
       );
-      showToast("Leave request updated.", "success");
-      await fetchData();
-    } catch {
-      showToast("Update failed! Try again.", "error");
+      if (!originalRequest) {
+        throw new Error("Original request not found.");
+      }
+      
+      const payload = {
+        leaveId: originalRequest.leaveId,
+        employeeId: originalRequest.employee.employeeId,
+        managerId,
+        reason: originalRequest.reason, // Keep original employee reason
+        driveLink: originalRequest.driveLink || null,
+
+        // Merge updated data
+        ...updatedData,
+      };
+
+      await axios.put(`${BASE_URL}/api/leave-requests/update`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      toast.success("Leave request updated successfully.");
+      setEditingRequest(null); // Close the modal
+      await fetchData(); // Refresh data
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed! Please try again.");
     } finally {
       setLoading(false);
     }
@@ -314,10 +342,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[150px]"
           >
             <option>All</option>
-            <option>Pending</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-            <option>Cancelled</option>
+            <option>PENDING</option>
+            <option>APPROVED</option>
+            <option>REJECTED</option>
+            <option>CANCELLED</option>
           </select>
           {/* Year Filter (Dynamic) */}
           <select
@@ -424,7 +452,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               ].map((heading, i) => (
                 <th
                   key={i}
-                  className="px-4 py-3 text-left text-xs uppercase"
+                  className="px-4 py-3 text-center text-xs uppercase w-[15%]"
                 >
                   {heading}
                 </th>
@@ -441,7 +469,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               return (
                 <tr
                   key={request.leaveId}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 transition-colors text-xs"
                 >
                   <td className="px-6 py-4">
                     <input
@@ -466,7 +494,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       }
                     >
                       {request.employee.fullName}
-                      <div className="text-sm text-gray-500">
+                      <div className="text-gray-500">
                         {request.employee.jobTitle}
                       </div>
                     </button>
@@ -474,13 +502,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
  
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="font-medium text-gray-900">
                         {request.startDate}
                         {request.startDate !== request.endDate
                           ? ` to ${request.endDate}`
                           : ""}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-gray-500">
                         {request.daysRequested}{" "}
                         {request.daysRequested === 1 ? "Day" : "Days"}
                       </div>
@@ -488,17 +516,17 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="font-medium text-gray-900">
                         {request.leaveType.leaveName}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-gray-500">
                         Requested on {request.requestDate}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {request.reason}
+                    <div className="text-gray-900">
+                      <LeaveReasonCell reason={request.reason} />
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -510,27 +538,27 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       {request.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-6 py-4 text-gray-500">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="font-medium text-gray-900">
                         {request.approvedBy
                           ? request.approvedBy.fullName
                           : request.managerComment ?? "—"}
                       </div>
                       {request.managerComment && (
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-gray-500 mt-1">
                           {request.managerComment}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                  <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
                     {request.driveLink && request.driveLink.trim() && (
                       <a
                         href={request.driveLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-indigo-600 hover:text-indigo-900"
+                        className="text-indigo-600 hover:text-indigo-900"
                       >
                         View Documents
                       </a>
@@ -566,31 +594,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <ActionDropdown
-                            requestId={request.leaveId}
-                            currentLeaveType={typeObj}
-                            currentStartDate={request.startDate}
-                            currentEndDate={request.endDate}
-                            currentReason={request.reason}
-                            allLeaveTypes={allLeaveTypes}
-                            managerComments={comments[request.leaveId] ?? ""}
-                            onModalClose={() => {}}
-                            onCommentSave={(comment) => {
-                              setComments((prev) => ({
-                                ...prev,
-                                [request.leaveId]: comment || "",
-                              }));
-                            }}
-                            onUpdate={(data) => {
-                              if (data.comment !== undefined) {
-                                setComments((prev) => ({
-                                  ...prev,
-                                  [request.leaveId]: data.comment || "",
-                                }));
-                              }
-                              handleLeaveUpdate(request.leaveId, data);
-                            }}
-                          />
+                          <button
+                            onClick={() => setEditingRequest(request)}
+                            title="Edit Request"
+                            disabled={loading}
+                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
                         </>
                       )}
                     </div>
@@ -611,6 +622,16 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             }
           />
         </div>
+
+        {/* NEW: Render the Edit Modal */}
+        {editingRequest && (
+          <ManagerEditLeaveRequest
+            isOpen={!!editingRequest}
+            onClose={() => setEditingRequest(null)}
+            onSave={handleLeaveUpdate}
+            requestDetails={editingRequest}
+          />
+        )}
  
         {leaveBalanceModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -696,30 +717,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         {loading && (
           <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
- 
-        {toast && (
-          <div
-            className={`
-              fixed top-6 right-6 z-[70] min-w-[240px] px-5 py-3 rounded-lg shadow-lg flex items-center gap-4 animate-slide-left
-              ${
-                toast.type === "success"
-                  ? "bg-green-500 text-white"
-                  : "bg-red-500 text-white"
-              }
-            `}
-            style={{ transition: "all 0.4s" }}
-            role="alert"
-          >
-            <span className="flex-1">{toast.text}</span>
-            <button
-              className="ml-2 text-white opacity-80 hover:opacity-100 text-lg leading-none"
-              onClick={() => setToast(null)}
-              aria-label="Close"
-            >
-              ×
-            </button>
           </div>
         )}
       </div>

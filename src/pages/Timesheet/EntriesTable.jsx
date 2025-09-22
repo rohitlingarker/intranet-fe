@@ -17,10 +17,10 @@ const EntriesTable = ({
   setAddingNewEntry,
   setAddingNewTimesheet,
   refreshData, // callback to reload entries after update
+  projectInfo,
 }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
-  const [projectInfo, setProjectInfo] = useState([]);
 
   const [addData, setAddData] = useState({workType:"Office"});
 
@@ -30,9 +30,7 @@ const EntriesTable = ({
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
-  useEffect(() => {
-    fetchProjectTaskInfo().then(setProjectInfo);
-  }, [userId]);
+  
 
   const workTypeOptions = [
     { label: "Office", value: "Office" },
@@ -268,8 +266,12 @@ const EntriesTable = ({
                 </td>
                 <td className="px-4 py-2">
                   <button
-                    className="text-blue-600 hover:underline text-sm"
-                    disabled={entry.approvalStatus === "Approved"}
+                    className={`text-blue-600 hover:underline text-sm ${
+                      status === "Approved"
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    disabled={status === "Approved"}
                     onClick={() => handleEditClick(idx)}
                   >
                     <Pencil className="inline w-4 h-4" />

@@ -1,6 +1,14 @@
 import React from "react";
 
-const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+const ConfirmationModal = ({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  isLoading, // New prop for loading state
+  confirmText = "Confirm", // Optional prop for custom button text
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -11,15 +19,18 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
         <div className="flex justify-end space-x-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            disabled={isLoading} // Disable button when loading
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={isLoading} // Disable button when loading
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm
+            {/* Change text based on loading state */}
+            {isLoading ? `${confirmText}ing...` : confirmText}
           </button>
         </div>
       </div>
@@ -28,4 +39,3 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
 };
 
 export default ConfirmationModal;
-  

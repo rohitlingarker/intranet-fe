@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -7,18 +7,17 @@ import {
   Calendar,
   Clock,
   PlaneTakeoff,
-  Building2,
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-
+ 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Leave Management", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
 ];
-
+ 
 const userManagementSubmenu = [
   { label: "User Manage", to: "/user-management/users" },
   { label: "Role Manage", to: "/user-management/roles" },
@@ -27,43 +26,71 @@ const userManagementSubmenu = [
   { label: "Access Point Manage", to: "/user-management/access-points" },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const isUserManagementActive =
     location.pathname.startsWith("/user-management");
   const { user } = useAuth();
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
   const isManager = user?.roles?.includes("Manager");
 
+  // State and Refs for the hover-based submenu
   const [hovered, setHovered] = useState(false);
+  const [submenuTop, setSubmenuTop] = useState(0); // State to hold the submenu's vertical position
+  const userManagementRef = useRef(null); // Ref to get the position of the parent menu item
   const hoverTimeout = useRef(null);
-
+ 
   const handleMouseEnter = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    // Get the position of the "User Management" item to align the submenu
+    if (userManagementRef.current) {
+      const rect = userManagementRef.current.getBoundingClientRect();
+      setSubmenuTop(rect.top);
+    }
     setHovered(true);
   };
-
+ 
   const handleMouseLeave = () => {
+    // Delay hiding the submenu to allow the cursor to move into it
     hoverTimeout.current = setTimeout(() => {
       setHovered(false);
-    }, 200); // ⏱️ 200ms delay
+    }, 200);
   };
 
+  // Close submenu on route change
+  useEffect(() => {
+    setHovered(false);
+  }, [location.pathname]);
+
   return (
-    <aside className="fixed top-0 left-0 w-64 h-screen bg-[#081534] text-white flex flex-col shadow-lg z-50">
+    <aside
+      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
+        isCollapsed ? "w-20" : "w-64"
+      }`}
+    >
       {/* Branding */}
+<<<<<<< HEAD
       <div className="p-6 border-b border-[#0f1a3a]">
         <div className="flex items-center gap-3">
           <img src="logo.png" alt="Logo" className="h-10 w-10" />
+=======
+      <div className="p-6 border-b border-[#0f1a3a] flex items-center gap-3">
+        <img src="logo.png" alt="Logo" className="h-10 w-10 shrink-0" />
+        {!isCollapsed && (
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <div>
             <h1 className="text-lg font-bold leading-none">Paves Tech</h1>
             <p className="text-xs text-gray-400 mt-1">intranet</p>
           </div>
-        </div>
+        )}
       </div>
-
+ 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
@@ -76,15 +103,23 @@ const Sidebar = () => {
                   ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                   : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
               }`}
+              title={isCollapsed ? "Dashboard" : ""}
             >
               <LayoutDashboard className="h-5 w-5 shrink-0" />
-              <span>Dashboard</span>
+              {!isCollapsed && <span>Dashboard</span>}
             </Link>
           </li>
 
+<<<<<<< HEAD
           {/* User Management with hover submenu */}
           {isAdmin && (
             <li
+=======
+          {/* User Management */}
+          {isAdmin && (
+            <li
+              ref={userManagementRef}
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
               className="relative"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
@@ -95,6 +130,7 @@ const Sidebar = () => {
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
+<<<<<<< HEAD
               >
                 <Users className="h-5 w-5 shrink-0" />
                 <span className="flex-1">User Management</span>
@@ -109,13 +145,43 @@ const Sidebar = () => {
                 <ul
                   className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"
                   style={{ transform: "translateY(-40%)" }}
+=======
+                title={isCollapsed ? "User Management" : ""}
+              >
+                <Users className="h-5 w-5 shrink-0" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">User Management</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        hovered ? "rotate-180" : ""
+                      }`}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Unified Submenu for both Collapsed and Expanded states */}
+              {hovered && (
+                <ul
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                    isCollapsed ? "left-20" : "left-64"
+                  }`}
+                  style={{ top: `${submenuTop}px` }}
+                  onMouseEnter={handleMouseEnter} // Keep menu open when mouse enters it
+                  onMouseLeave={handleMouseLeave}
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
                 >
                   {userManagementSubmenu.map((item) => (
                     <li key={item.label}>
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
+<<<<<<< HEAD
                           `block px-4 py-2 rounded text-sm transition-colors ${
+=======
+                          `block px-4 py-2 text-sm transition-colors ${
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
                             isActive
                               ? "bg-blue-100 text-[#0a174e] font-semibold"
                               : "hover:bg-[#263383] hover:text-white"
@@ -132,7 +198,11 @@ const Sidebar = () => {
           )}
 
           {/* Projects */}
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <li key="Projects">
             <Link
               to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" : "/projects/developer"}
@@ -146,6 +216,10 @@ const Sidebar = () => {
               <span>{"Projects"}</span>
             </Link>
           </li>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
@@ -159,9 +233,10 @@ const Sidebar = () => {
                       ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                       : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                   }`}
+                  title={isCollapsed ? item.name : ""}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span>{item.name}</span>
+                  {!isCollapsed && <span>{item.name}</span>}
                 </Link>
               </li>
             );
@@ -171,5 +246,5 @@ const Sidebar = () => {
     </aside>
   );
 };
-
+ 
 export default Sidebar;

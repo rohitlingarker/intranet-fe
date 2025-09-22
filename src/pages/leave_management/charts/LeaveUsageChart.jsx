@@ -68,7 +68,7 @@ export default function LeaveUsageChart({ leave }) {
 
   const isUnpaid = leaveType?.leaveName === "UNPAID_LEAVE";
 
-  const remaining = Math.max(remainingLeaves - usedLeaves, 0);
+  const remaining = Math.max(remainingLeaves, 0);
 
   const chartData = isUnpaid
   ? [{ name: "Used", value: usedLeaves }]
