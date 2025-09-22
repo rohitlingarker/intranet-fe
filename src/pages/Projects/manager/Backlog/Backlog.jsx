@@ -15,6 +15,7 @@ const Backlog = ({ projectId, projectName }) => {
   const [showSprintForm, setShowSprintForm] = useState(false);
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
+  const [noEpicStories, setNoEpicStories] = useState([]);
 
   const token = localStorage.getItem("token");
 
@@ -38,37 +39,56 @@ const Backlog = ({ projectId, projectName }) => {
       .catch((err) => console.error("Failed to fetch stories", err));
   };
 
+  const fetchNoEpicStories = () => {
+    axios
+      .get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`,
+        { headers }
+      )
+      .then((res) => setNoEpicStories(res.data))
+      .catch((err) => console.error("Failed to fetch no epic stories", err));
+  };
+
   const fetchSprints = () => {
     axios
       .get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
         { headers }
       )
-      .then((res) =>
-        setSprints(res.data.filter((s) => s.status === "PLANNING"))
-      )
+      .then((res) => {
+        console.log("Fetched sprints:", res.data); // debug
+        setSprints(res.data); // load all sprints
+      })
       .catch((err) => console.error("Failed to fetch sprints", err));
   };
 
   useEffect(() => {
     fetchStories();
     fetchSprints();
+    fetchNoEpicStories();
   }, [projectId]);
 
   const handleDropStory = (storyId, sprintId) => {
-    axios
-      .put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
-        { sprintId },
-        { headers }
-      )
-      .then(() => {
-        setStories((prev) =>
-          prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
-        );
-      })
-      .catch((err) => console.error("Failed to assign story to sprint", err));
-  };
+  console.log(`Assigning story ${storyId} to sprint ${sprintId}`);
+
+  axios
+    .put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
+      { sprintId },
+      { headers }
+    )
+    .then(() => {
+      // update in stories
+      setStories((prev) =>
+        prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
+      );
+
+      // remove from noEpicStories if it was listed there
+      setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
+    })
+    .catch((err) => console.error("Failed to assign story to sprint", err));
+};
+
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -88,16 +108,6 @@ const Backlog = ({ projectId, projectName }) => {
             >
               <Plus size={18} /> Create Issue
             </Button>
-
-            {/* Optional Create Sprint Button */}
-            {/* <Button
-              size="medium"
-              variant="secondary"
-              className="flex items-center gap-2"
-              onClick={() => setShowSprintForm(true)}
-            >
-              <Plus size={18} /> Create Sprint
-            </Button> */}
           </div>
         </div>
 
@@ -120,12 +130,11 @@ const Backlog = ({ projectId, projectName }) => {
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Backlog Stories
           </h2>
-          {stories.filter((s) => !s.sprintId).length === 0 ? (
+          {noEpicStories.length === 0 ? (
             <p className="text-gray-400 italic">No unassigned stories</p>
           ) : (
             <div className="space-y-2">
-              {stories
-                .filter((s) => !s.sprintId)
+              {noEpicStories
                 .map((story) => (
                   <StoryCard key={story.id} story={story} />
                 ))}
@@ -143,7 +152,7 @@ const Backlog = ({ projectId, projectName }) => {
               <SprintColumn
                 key={sprint.id}
                 sprint={sprint}
-                stories={stories.filter((s) => s.sprintId === sprint.id)}
+                stories={stories.filter((s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id)}
                 onDropStory={handleDropStory}
                 onChangeStatus={() => {}}
               />

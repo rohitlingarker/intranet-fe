@@ -5,20 +5,23 @@ import ExpandableList from '../../../components/List/List';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { X } from 'lucide-react';
+import { useAuth } from "../../../contexts/AuthContext";
 
 const Lists = ({ projectId }) => {
   const [epics, setEpics] = useState([]);
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const { user } = useAuth();
+  const currentUser = user;
 
-  const fakeUsers = [
-    { id: 1, name: 'Sindhu Reddy' },
-    { id: 2, name: 'Vijayadurga' },
-    { id: 3, name: 'Niharika Kandukoori' },
-    { id: 4, name: 'Ruchitha Nuthula' },
-  ];
-  const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
+  // const fakeUsers = [
+  //   { id: 1, name: 'Sindhu Reddy' },
+  //   { id: 2, name: 'Vijayadurga' },
+  //   { id: 3, name: 'Niharika Kandukoori' },
+  //   { id: 4, name: 'Ruchitha Nuthula' },
+  // ];
+  // const [currentUser, setCurrentUser] = useState(fakeUsers[0]);
 
   const token = localStorage.getItem('token');
 
@@ -89,7 +92,7 @@ const Lists = ({ projectId }) => {
     <div className="p-6 space-y-6">
       <ToastContainer />
       {/* User Switch */}
-      <div className="flex justify-end gap-2 mb-4 items-center">
+      {/* <div className="flex justify-end gap-2 mb-4 items-center">
         <label className="text-base font-medium text-gray-700">
           Logged in as:
         </label>
@@ -109,7 +112,7 @@ const Lists = ({ projectId }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
 
       {/* Epics */}
       <h2 className="text-xl font-bold text-indigo-700">Epics</h2>

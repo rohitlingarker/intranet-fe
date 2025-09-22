@@ -10,15 +10,14 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-
+ 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Projects", href: "/projects/manager", icon: FolderKanban },
   { name: "Leave Management", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
 ];
-
+ 
 const userManagementSubmenu = [
   { label: "User Manage", to: "/user-management/users" },
   { label: "Role Manage", to: "/user-management/roles" },
@@ -29,17 +28,20 @@ const userManagementSubmenu = [
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
-  const isUserManagementActive = location.pathname.startsWith("/user-management");
+  const isUserManagementActive =
+    location.pathname.startsWith("/user-management");
   const { user } = useAuth();
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+
+  const isManager = user?.roles?.includes("Manager");
 
   // State and Refs for the hover-based submenu
   const [hovered, setHovered] = useState(false);
   const [submenuTop, setSubmenuTop] = useState(0); // State to hold the submenu's vertical position
   const userManagementRef = useRef(null); // Ref to get the position of the parent menu item
   const hoverTimeout = useRef(null);
-
+ 
   const handleMouseEnter = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     // Get the position of the "User Management" item to align the submenu
@@ -49,7 +51,7 @@ const Sidebar = ({ isCollapsed }) => {
     }
     setHovered(true);
   };
-
+ 
   const handleMouseLeave = () => {
     // Delay hiding the submenu to allow the cursor to move into it
     hoverTimeout.current = setTimeout(() => {
@@ -78,7 +80,7 @@ const Sidebar = ({ isCollapsed }) => {
           </div>
         )}
       </div>
-
+ 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
@@ -158,6 +160,23 @@ const Sidebar = ({ isCollapsed }) => {
             </li>
           )}
 
+          {/* Projects */}
+ 
+          <li key="Projects">
+            <Link
+              to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" : "/projects/developer"}
+              className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
+                (location.pathname.startsWith("/projects"))
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+              }`}
+            >
+              <FolderKanban className="h-5 w-5 shrink-0" />
+              <span>{"Projects"}</span>
+            </Link>
+          </li>
+
+
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
             const isActive = location.pathname === item.href;
@@ -183,5 +202,5 @@ const Sidebar = ({ isCollapsed }) => {
     </aside>
   );
 };
-
+ 
 export default Sidebar;

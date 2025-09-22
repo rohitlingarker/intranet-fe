@@ -5,7 +5,7 @@ import StoryCard from './StoryCard';
 const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
   const [{ isOver }, dropRef] = useDrop(() => ({
     accept: 'STORY',
-    drop: (item) => onDropStory(item.id, sprint.id),
+    drop: (item) => { console.log('Dropped story:', item.id, 'in sprint:', sprint.id); onDropStory(item.id, sprint.id); },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),

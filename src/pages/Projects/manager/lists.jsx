@@ -12,7 +12,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 // Get token from localStorage (or wherever you store it)
 const token = localStorage.getItem('token');
 
-console.log(token, "token in lists");
+// console.log(token, "token in lists");
 
 const Lists = ({ projectId }) => {
   const [epics, setEpics] = useState([]);
@@ -22,7 +22,7 @@ const Lists = ({ projectId }) => {
   const [editItem, setEditItem] = useState(null);
   const { isAuthenticated, user } = useAuth();
   // const userId = user?.id;
-  const currentUser = user?.name;
+  // const currentUser = user?.name;
 
 
   // const fakeUsers = [
@@ -45,6 +45,7 @@ const Lists = ({ projectId }) => {
     try {
       const [epicRes, storyRes, taskRes, noEpicRes] = await Promise.all([
         axiosInstance.get(`/api/projects/${projectId}/epics`),
+        
         axiosInstance.get(`/api/projects/${projectId}/stories`),
         axiosInstance.get(`/api/projects/${projectId}/tasks`),
         axiosInstance.get(`/api/stories/no-epic`),
@@ -278,7 +279,7 @@ const Lists = ({ projectId }) => {
             </h2>
             <button onClick={() => setSelectedEntity(null)}><X className="w-5 h-5" /></button>
           </div>
-          <CommentBox entityId={selectedEntity.id} entityType={selectedEntity.type} currentUser={currentUser} />
+          <CommentBox entityId={selectedEntity.id} entityType={selectedEntity.type} currentUser={user} />
         </div>
       )}
     </div>

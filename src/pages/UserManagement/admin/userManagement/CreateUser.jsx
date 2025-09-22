@@ -39,9 +39,9 @@ export default function CreateUserForm({ onSuccess, onClose }) {
 
   const validateForm = () => {
     if (!form.first_name.trim()) return showSingleToast("First Name is required.");
-    if (!/^[A-Za-z]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters.");
+    if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
     if (!form.last_name.trim()) return showSingleToast("Last Name is required.");
-    if (!/^[A-Za-z]*$/.test(form.last_name)) return showSingleToast("Last Name must contain only letters.");
+    if (!/^[A-Za-z ]*$/.test(form.last_name)) return showSingleToast("Last Name must contain only letters and spaces.");
     if (!form.mail.trim()) return showSingleToast("Email is required.");
     if (!/^[a-zA-Z0-9@._-]+$/.test(form.mail)) return showSingleToast("Email contains invalid characters.");
     if (!form.contact.trim()) return showSingleToast("Contact number is required.");
@@ -86,7 +86,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             name="first_name"
             value={form.first_name}
             onChange={(e) => {
-              if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+              if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
             }}
             placeholder="Enter first name"
             required
@@ -96,7 +96,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             name="last_name"
             value={form.last_name}
             onChange={(e) => {
-              if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+              if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
             }}
             placeholder="Enter last name"
             required
