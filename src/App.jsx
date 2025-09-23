@@ -406,9 +406,15 @@ const AppRoutes = () => {
         </Route>
       </Routes>
       <SaveLastPath />
+{/* <<<<<<<<< Temporary merge branch 1
       {/* <Routes>
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes> */}
+{/* ========= */}
+      <Routes>
+        <Route path="/unauthorized" element={<Unauthorized />} />
+      </Routes>
+{/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
 };
