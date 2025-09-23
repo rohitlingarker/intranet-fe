@@ -149,6 +149,8 @@ const AppRoutes = () => {
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
+        {/* Unauthorized should be here */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Protected Routes */}
         <Route
@@ -405,9 +407,9 @@ const AppRoutes = () => {
         </Route>
       </Routes>
       <SaveLastPath />
-      <Routes>
+      {/* <Routes>
           <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes>
+        </Routes> */}
     </>
   );
 };
@@ -416,7 +418,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <>
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={3000} />
       <Router>
         <AuthProvider>
           <NotificationProvider>
@@ -431,3 +433,4 @@ function App() {
 }
 
 export default App;
+

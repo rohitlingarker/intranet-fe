@@ -64,7 +64,7 @@ const ManagerApprovalTable = () => {
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/api/timesheet/project-info`,
+        }/api/timesheet/project-info/all`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
