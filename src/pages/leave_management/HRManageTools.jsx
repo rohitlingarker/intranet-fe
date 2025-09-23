@@ -5,8 +5,7 @@ import AddEmployeeModal from "./models/AddEmployeeModal";
 import AddLeaveTypeModal from "./models/AddLeaveTypeModal";
 import { Trash } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
-import toast from "react-hot-toast";
-import "react-toastify/dist/ReactToastify.css";
+import {toast} from "react-toastify";
 import ConfirmationModal from "./models/ConfirmationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
