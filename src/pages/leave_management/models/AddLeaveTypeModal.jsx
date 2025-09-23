@@ -167,6 +167,8 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
         });
         toast.success("Leave type added successfully!");
       }
+
+      // ✅ Close modal after successful submit
       setTimeout(() => {
         onSuccess?.();
         onClose();
@@ -517,9 +519,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               disabled={submitting || loadingLeaveTypes}
             >
               {submitting
-                ? editData
-                  ? "Updating..."
-                  : "Adding..."
+                ? "Submitting..."
                 : editData
                 ? "Update Leave Type"
                 : "Add Leave Type"}

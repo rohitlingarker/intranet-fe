@@ -76,7 +76,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useAuth();
   console.log(user);
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
@@ -403,13 +403,18 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-        
         </Route>
       </Routes>
       <SaveLastPath />
+{/* <<<<<<<<< Temporary merge branch 1
       {/* <Routes>
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes> */}
+{/* ========= */}
+      <Routes>
+        <Route path="/unauthorized" element={<Unauthorized />} />
+      </Routes>
+{/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
 };
@@ -433,4 +438,3 @@ function App() {
 }
 
 export default App;
-

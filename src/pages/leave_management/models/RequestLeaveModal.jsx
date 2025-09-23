@@ -428,6 +428,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                 value={isHalfDay ? startDate : endDate}
                 onChange={handleEndDateChange}
                 disabled={isHalfDay}
+                min={startDate}
                 required={!isHalfDay}
                 className={`w-full px-4 py-2.5 border ${
                   isHalfDay ? "border-gray-200 bg-gray-50" : "border-gray-300"
