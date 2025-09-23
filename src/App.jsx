@@ -25,24 +25,6 @@ import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprov
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
-<<<<<<< HEAD
-import ProjectDashboard from './pages/Projects/manager/ProjectDashboard';
-import Summary from './pages/Projects/manager/Summary';
-import Backlog from './pages/Projects/manager/Backlog/Backlog';
-import Board from './pages/Projects/manager/Board';
-import CreateProjectModal from './pages/Projects/manager/CreateProjectModal';
-import ProjectTabs from './pages/Projects/manager/ProjectTabs';
-import ReadOnlyDashboard from './pages/Projects/User/ReadOnlyDashboard';
-import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
-import UserBacklog from './pages/Projects/User/UserBacklog/userbacklog';
-import UserProjectTabs from './pages/Projects/User/UserProjectTabs';
-import ProjectList from './pages/Projects/manager/ProjectList';
-import UserProjectList from './pages/Projects/User/UserProjectList';
-import EmployeePerformance from './pages/Projects/manager/EmployeePerformance';
-import Adminprojectslist from './pages/Projects/Admin/Adminprojectslist';
-
-
-=======
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
 import Summary from "./pages/Projects/manager/Summary";
 import Backlog from "./pages/Projects/manager/Backlog/Backlog";
@@ -56,7 +38,6 @@ import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -192,12 +173,6 @@ const AppRoutes = () => {
           {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
-<<<<<<< HEAD
-
-          <Route path="/projects/manager" element={<ProjectDashboard />} />
-
-          <Route path="/projects/*" element={<ProjectManager />} />
-=======
           <Route
             path="/projects/manager"
             element={
@@ -208,7 +183,6 @@ const AppRoutes = () => {
           />
 
           <Route path="/projects/" element={<ProjectManager />} />
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
           <Route
@@ -217,17 +191,11 @@ const AppRoutes = () => {
           />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
-<<<<<<< HEAD
-          <Route path="/projects/userbacklog/:projectId" element={<UserBacklog />} />
-          <Route path="/projects/admin" element={<AdminDashboard />} />
-          <Route path="/projects/adminprojectlist" element={<Adminprojectslist />} />
-=======
           <Route
             path="/projects/userbacklog/:projectId"
             element={<UserBacklog />}
           />
           {/* <Route path="/projects/admin" element={<AdminDashboard />} /> */}
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}

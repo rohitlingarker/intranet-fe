@@ -291,20 +291,20 @@ const CreateIssueForm = ({
               onChange={handleChange}
             />
             <FormSelect
-              label="Epic *"
+              label="Epic (optional)"
               name="epicId"
               value={formData.epicId || ""}
               onChange={handleChange}
               options={epics.map((e) => ({ label: e.name, value: e.id }))}
-              required
+              
             />
             <FormSelect
-              label="Sprint *"
+              label="Sprint (optional)"
               name="sprintId"
               value={formData.sprintId || ""}
               onChange={handleChange}
               options={sprints.map((s) => ({ label: s.name, value: s.id }))}
-              required
+          
             />
             <FormSelect
               label="Reporter *"

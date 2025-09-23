@@ -151,7 +151,7 @@ const EmployeePerformance = () => {
                         aria-label={`${expandedEmployees.has(emp.employeeEmail) ? 'Collapse' : 'Expand'} epics for ${emp.employeeName}`}
                         aria-expanded={expandedEmployees.has(emp.employeeEmail)}
                       >
-                        {expandedEmployees.has(emp.employeeEmail) ? 'Hide' : 'Show'}
+                        {expandedEmployees.has(emp.employeeEmail) ? 'Hide Details' : 'Show Details'}
                       </button>
                     ) : (
                       <span className="text-gray-400">None</span>
@@ -208,19 +208,19 @@ const EmployeePerformance = () => {
             className="mb-8 bg-white shadow rounded p-5 max-w-5xl mx-auto"
             aria-label={`Epics details for ${emp.employeeName}`}
           >
-            <h3 className="text-xl font-bold mb-4 text-indigo-800">{emp.employeeName}'s Epics</h3>
+            <h3 className="text-xl font-bold mb-4 text-indigo-800">{emp.employeeName}'s Work Details</h3>
             {emp.epics.map(epic => (
               <div key={epic.epicId} className="mb-6 border-l-4 border-indigo-600 pl-4">
-                <h4 className="font-semibold mb-2 text-indigo-700">{epic.epicName}</h4>
+                <h4 className="font-semibold mb-2 text-indigo-700">Epic: {epic.epicName}</h4>
                 {epic.stories.length > 0 ? (
                   <ul className="list-disc list-inside space-y-2 text-gray-700">
                     {epic.stories.map(story => (
                       <li key={story.storyId}>
-                        <div className="font-semibold mb-1">{story.storyTitle}</div>
+                        <div className="font-semibold mb-1">Story: {story.storyTitle}</div>
                         {story.taskTitles.length > 0 ? (
                           <ul className="list-decimal list-inside ml-6 text-gray-600">
                             {story.taskTitles.map((task, idx) => (
-                              <li key={idx} className="italic">{task}</li>
+                              <li key={idx} className="italic">Task: {task}</li>
                             ))}
                           </ul>
                         ) : (

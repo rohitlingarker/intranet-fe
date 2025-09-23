@@ -17,7 +17,6 @@ const Summary = ({ projectId, projectName }) => {
   const [expandedItems, setExpandedItems] = useState({});
 
   const token = localStorage.getItem('token');
-  
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -34,13 +33,11 @@ const Summary = ({ projectId, projectName }) => {
         const storiesData = storyRes.data;
         const tasksData = taskRes.data;
 
-        // Attach tasks to stories
         const enrichedStories = storiesData.map((story) => ({
           ...story,
           tasks: tasksData.filter((task) => task.storyId === story.id),
         }));
 
-        // Attach stories to epics
         const enrichedEpics = epicsData.map((epic) => ({
           ...epic,
           stories: enrichedStories.filter((story) => story.epicId === epic.id),
@@ -86,67 +83,46 @@ const Summary = ({ projectId, projectName }) => {
     }));
   };
 
-  // ✅ Render details without JSON dumps
-  const renderDetails = (item) => (
-    <div className="mb-1 text-sm text-gray-700">
-      {Object.entries(item).map(([key, value]) => {
-        if (key === 'id') return null;
+  // ✅ Render unique details
+  const renderDetails = (item) => {
+    const seen = new Set();
+    const excludeKeys = ['id', 'epicId', 'storyId', 'projectId', 'sprintId'];
 
-        if (key === 'epicId') {
-          return (
-            <div key={key}>
-              <strong>Epic:</strong>{' '}
-              {epics.find((e) => e.id === value)?.name || 'N/A'}
-            </div>
-          );
-        }
+    return (
+      <div className="overflow-x-auto mb-4">
+        <table className="w-full text-sm text-left border border-gray-200 rounded-lg shadow-sm">
+          <tbody>
+            {Object.entries(item).map(([key, value], index) => {
+              if (excludeKeys.includes(key)) return null;
+              if (seen.has(key)) return null;
+              seen.add(key);
 
-        if (key === 'storyId') {
-          return (
-            <div key={key}>
-              <strong>Story:</strong>{' '}
-              {allStories.find((s) => s.id === value)?.title || 'N/A'}
-            </div>
-          );
-        }
+              let displayValue = value;
+              let displayKey = key;
 
-        if (key === 'projectId') {
-          return (
-            <div key={key}>
-              <strong>Project:</strong> {projectName || 'N/A'}
-            </div>
-          );
-        }
+              if (typeof value === 'object' && value !== null) {
+                displayValue = value.name || value.username || value.title || 'N/A';
+              }
 
-        if (key === 'sprintId') {
-          return (
-            <div key={key}>
-              <strong>Sprint:</strong> Sprint {value}
-            </div>
-          );
-        }
-
-        // ✅ Show only useful fields from nested objects
-        if (typeof value === 'object' && value !== null) {
-          const displayValue = value.name || value.username || value.title;
-          if (!displayValue) return null; // skip unknown objects
-          return (
-            <div key={key}>
-              <strong>{key.replace(/([A-Z])/g, ' $1')}:</strong>{' '}
-              {displayValue}
-            </div>
-          );
-        }
-
-        return (
-          <div key={key}>
-            <strong>{key.replace(/([A-Z])/g, ' $1')}:</strong>{' '}
-            {value ?? 'N/A'}
-          </div>
-        );
-      })}
-    </div>
-  );
+              return (
+                <tr
+                  key={index}
+                  className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                >
+                  <td className="px-4 py-2 font-medium text-gray-700 border-b border-gray-200 w-1/3 capitalize">
+                    {displayKey.replace(/([A-Z])/g, ' $1')}
+                  </td>
+                  <td className="px-4 py-2 border-b border-gray-200">
+                    {displayValue ?? 'N/A'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -246,7 +222,7 @@ const Summary = ({ projectId, projectName }) => {
                       </span>
                     </h5>
                     {expandedItems[`story-${story.id}`] && (
-                      <div className="ml-4 mt-1 border-l border-pink-200 pl-4 list-disc text-emerald-700">
+                      <div className="ml-4 mt-1 border-l border-pink-200 pl-4">
                         {renderDetails(story)}
                         <ul className="list-disc ml-4">
                           {story.tasks.map((task) => (

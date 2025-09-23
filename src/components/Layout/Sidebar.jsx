@@ -33,11 +33,6 @@ const Sidebar = ({ isCollapsed }) => {
   const { user } = useAuth();
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
   const isManager = user?.roles?.includes("Manager");
 
   // State and Refs for the hover-based submenu
@@ -75,15 +70,9 @@ const Sidebar = ({ isCollapsed }) => {
       }`}
     >
       {/* Branding */}
-<<<<<<< HEAD
-      <div className="p-6 border-b border-[#0f1a3a]">
-        <div className="flex items-center gap-3">
-          <img src="logo.png" alt="Logo" className="h-10 w-10" />
-=======
       <div className="p-6 border-b border-[#0f1a3a] flex items-center gap-3">
         <img src="logo.png" alt="Logo" className="h-10 w-10 shrink-0" />
         {!isCollapsed && (
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <div>
             <h1 className="text-lg font-bold leading-none">Paves Tech</h1>
             <p className="text-xs text-gray-400 mt-1">intranet</p>
@@ -110,16 +99,10 @@ const Sidebar = ({ isCollapsed }) => {
             </Link>
           </li>
 
-<<<<<<< HEAD
-          {/* User Management with hover submenu */}
-          {isAdmin && (
-            <li
-=======
           {/* User Management */}
           {isAdmin && (
             <li
               ref={userManagementRef}
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
               className="relative"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
@@ -130,22 +113,6 @@ const Sidebar = ({ isCollapsed }) => {
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
-<<<<<<< HEAD
-              >
-                <Users className="h-5 w-5 shrink-0" />
-                <span className="flex-1">User Management</span>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    hovered ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
-
-              {hovered && (
-                <ul
-                  className="fixed top-auto left-64 mt-0 w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2"
-                  style={{ transform: "translateY(-40%)" }}
-=======
                 title={isCollapsed ? "User Management" : ""}
               >
                 <Users className="h-5 w-5 shrink-0" />
@@ -170,18 +137,13 @@ const Sidebar = ({ isCollapsed }) => {
                   style={{ top: `${submenuTop}px` }}
                   onMouseEnter={handleMouseEnter} // Keep menu open when mouse enters it
                   onMouseLeave={handleMouseLeave}
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
                 >
                   {userManagementSubmenu.map((item) => (
                     <li key={item.label}>
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
-<<<<<<< HEAD
-                          `block px-4 py-2 rounded text-sm transition-colors ${
-=======
                           `block px-4 py-2 text-sm transition-colors ${
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
                             isActive
                               ? "bg-blue-100 text-[#0a174e] font-semibold"
                               : "hover:bg-[#263383] hover:text-white"
@@ -198,11 +160,7 @@ const Sidebar = ({ isCollapsed }) => {
           )}
 
           {/* Projects */}
-<<<<<<< HEAD
-
-=======
  
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
           <li key="Projects">
             <Link
               to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" : "/projects/developer"}
@@ -216,10 +174,6 @@ const Sidebar = ({ isCollapsed }) => {
               <span>{"Projects"}</span>
             </Link>
           </li>
-<<<<<<< HEAD
-=======
-
->>>>>>> 120a7e44636743aca4acce6dd6c3d962b72f3e86
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
