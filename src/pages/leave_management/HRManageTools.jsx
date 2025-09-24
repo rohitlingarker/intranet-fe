@@ -5,7 +5,7 @@ import AddEmployeeModal from "./models/AddEmployeeModal";
 import AddLeaveTypeModal from "./models/AddLeaveTypeModal";
 import { Trash } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ConfirmationModal from "./models/ConfirmationModal";
 
@@ -16,8 +16,11 @@ const HRManageTools = ({ employeeId }) => {
   const [isAddLeaveTypeModalOpen, setIsAddLeaveTypeModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-  const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] = useState(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
+    useState(false);
+  const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] =
+    useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -50,6 +53,16 @@ const HRManageTools = ({ employeeId }) => {
   //   );
   // }
 
+  const executeDelete = async () => {
+    setIsDeleting(true); // Start loading, disable modal buttons
+
+    await handleDeleteLeaveType(selectedLeaveTypeIdToDelete); // Call the existing delete logic
+
+    // This code runs only after the delete operation is complete
+    setIsDeleting(false); // Stop loading
+    setIsDeleteConfirmationOpen(false); // Close the modal
+  };
+
   const handleDeleteLeaveType = async (leaveTypeId) => {
     try {
       await axios.delete(
@@ -70,8 +83,10 @@ const HRManageTools = ({ employeeId }) => {
       // Or, if you want to ensure fresh data from backend:
       // fetchLeaveTypes();
     } catch (error) {
-      console.error("Delete failed:", error);
-      toast.error("Failed to delete leave type");
+      // console.error("Delete failed:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete leave type"
+      );
     }
   };
 
@@ -81,7 +96,7 @@ const HRManageTools = ({ employeeId }) => {
 
   // Extract unique keys from the first item
   const tableHeaders = leaveTypes.length > 0 ? Object.keys(leaveTypes[0]) : [];
-  console.log("hhaja", leaveTypes);
+  // console.log("hhaja", leaveTypes);
 
   return (
     <div className="space-y-6 py-6 px-6">
@@ -146,34 +161,38 @@ const HRManageTools = ({ employeeId }) => {
                 </td>
               </tr>
             ) : (
-              leaveTypes.map((lt, index) => (
-                console.log("lt", lt),
-                <tr key={index} className="border-t">
-                  {tableHeaders.map((key, i) => (
-                    <td
-                      key={key}
-                      className={`border px-4 py-2 min-w-[200px] bg-white ${
-                        i === 0
-                          ? "sticky left-0 z-10" // First column body
-                          : i === 1
-                          ? "sticky left-[200px] z-10" // Second column body
-                          : ""
-                      }`}
-                    >
-                      {String(lt[key])}
-                    </td>
-                  ))}
-                  <td className="border px-4 py-2 min-w-[160px] bg-white">
-                    <ActionDropdown
-                      onEdit={() => {
-                        setEditLeaveType(lt);
-                        setIsAddLeaveTypeModalOpen(true);
-                      }}
-                      onDelete={() => confirmDelete(lt.leaveTypeId)}
-                    />
-                  </td>
-                </tr>
-              ))
+              leaveTypes.map(
+                (lt, index) => (
+                  console.log("lt", lt),
+                  (
+                    <tr key={index} className="border-t">
+                      {tableHeaders.map((key, i) => (
+                        <td
+                          key={key}
+                          className={`border px-4 py-2 min-w-[200px] bg-white ${
+                            i === 0
+                              ? "sticky left-0 z-10" // First column body
+                              : i === 1
+                              ? "sticky left-[200px] z-10" // Second column body
+                              : ""
+                          }`}
+                        >
+                          {String(lt[key])}
+                        </td>
+                      ))}
+                      <td className="border px-4 py-2 min-w-[160px] bg-white">
+                        <ActionDropdown
+                          onEdit={() => {
+                            setEditLeaveType(lt);
+                            setIsAddLeaveTypeModalOpen(true);
+                          }}
+                          onDelete={() => confirmDelete(lt.leaveTypeId)}
+                        />
+                      </td>
+                    </tr>
+                  )
+                )
+              )
             )}
           </tbody>
         </table>
@@ -202,10 +221,8 @@ const HRManageTools = ({ employeeId }) => {
         title="Confirm Deletion"
         message="Are you sure you want to delete this leave type? This action cannot be undone."
         onCancel={() => setIsDeleteConfirmationOpen(false)}
-        onConfirm={() => {handleDeleteLeaveType(selectedLeaveTypeIdToDelete);
-          setIsDeleteConfirmationOpen(false);
-        }}
-        isOpening={false}
+        onConfirm={executeDelete}
+        isLoading={isDeleting}
       />
     </div>
   );
