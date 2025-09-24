@@ -94,12 +94,20 @@ const EntriesTable = ({
 
   const isValid = (data) => {
     const { projectId, taskId, fromTime, toTime, workType } = data;
+    // show error toast mentioning which field is invalid
+    if (!projectId) showStatusToast("Please select a project", "error");
+    if (!taskId) showStatusToast("Please select a task", "error");
+    if (!fromTime) showStatusToast("Please select a start time", "error");
+    if (!toTime) showStatusToast("Please select an end time", "error");
+    if (!workType) showStatusToast("Please select a work type", "error");
+
     return (
       projectId && taskId && fromTime && toTime && workType && fromTime < toTime
     );
   };
 
   const handleSave = async () => {
+    if (!isValid(editData)) return;
     const payload = {
       workDate,
       status,
@@ -129,6 +137,7 @@ const EntriesTable = ({
   };
 
   const handleAddEntry = () => {
+    if (!isValid(addData)) return;
     setPendingEntries((prev) => [
       ...prev,
       {
@@ -223,7 +232,7 @@ const EntriesTable = ({
                   <div className="flex gap-2">
                     <button
                       className="text-green-500"
-                      disabled={!isValid(editData)}
+                      // disabled={!isValid(editData)}
                       onClick={handleSave}
                     >
                       <Check />
@@ -330,7 +339,7 @@ const EntriesTable = ({
                 <div className="flex gap-2">
                   <button
                     className="text-green-500"
-                    disabled={!isValid(addData)}
+                    // disabled={!isValid(addData)}
                     onClick={handleAddEntry}
                   >
                     <Check />
