@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import FormInput from "../../components/forms/FormInput";
 import FormSelect from "../../components/forms/FormSelect";
@@ -63,7 +64,6 @@ const EntriesTable = ({
   const handleEditClick = (idx) => {
     if (addingNewEntry) return;
     if (status === "Approved") return;
-    console.log(status);
 
     const entry = entries[idx];
     setEditIndex(idx);
@@ -106,8 +106,31 @@ const EntriesTable = ({
     );
   };
 
+  // ✅ Check overlap helper
+  const hasOverlap = (newStart, newEnd, ignoreId = null) => {
+    for (let entry of entries) {
+      if (ignoreId && entry.timesheetEntryId === ignoreId) continue;
+
+      const existingStart = new Date(entry.fromTime);
+      const existingEnd = new Date(entry.toTime);
+
+      if (newStart < existingEnd && existingStart < newEnd) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleSave = async () => {
     if (!isValid(editData)) return;
+    const newStart = new Date(`${workDate}T${editData.fromTime}`);
+    const newEnd = new Date(`${workDate}T${editData.toTime}`);
+
+    if (hasOverlap(newStart, newEnd, editData.timesheetEntryId)) {
+      showStatusToast("Time overlap detected with another entry!", "error");
+      return;
+    }
+
     const payload = {
       workDate,
       status,
@@ -118,9 +141,9 @@ const EntriesTable = ({
           taskId: parseInt(editData.taskId),
           description: editData.description,
           workType: editData.workType,
-          hoursWorked: 0, // server may recalculate
-          fromTime: new Date(`${workDate}T${editData.fromTime}`).toISOString(),
-          toTime: new Date(`${workDate}T${editData.toTime}`).toISOString(),
+          hoursWorked: 0,
+          fromTime: newStart.toISOString(),
+          toTime: newEnd.toISOString(),
           otherDescription: "",
         },
       ],
@@ -130,7 +153,7 @@ const EntriesTable = ({
       await updateTimesheet(timesheetId, payload);
       setEditIndex(null);
       setEditData({});
-      refreshData(); // Reload entries after update
+      refreshData();
     } catch (err) {
       showStatusToast("Failed to update entry", "error");
     }
@@ -138,6 +161,14 @@ const EntriesTable = ({
 
   const handleAddEntry = () => {
     if (!isValid(addData)) return;
+    const newStart = new Date(`${workDate}T${addData.fromTime}`);
+    const newEnd = new Date(`${workDate}T${addData.toTime}`);
+
+    if (hasOverlap(newStart, newEnd)) {
+      showStatusToast("Time overlap detected with another entry!", "error");
+      return;
+    }
+
     setPendingEntries((prev) => [
       ...prev,
       {
@@ -146,8 +177,8 @@ const EntriesTable = ({
         description: addData.description,
         workType: addData.workType,
         hoursWorked: 0,
-        fromTime: new Date(`${workDate}T${addData.fromTime}`).toISOString(),
-        toTime: new Date(`${workDate}T${addData.toTime}`).toISOString(),
+        fromTime: newStart.toISOString(),
+        toTime: newEnd.toISOString(),
         otherDescription: "",
       },
     ]);
@@ -156,10 +187,6 @@ const EntriesTable = ({
   };
 
   return (
-    // <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-    //   <h4 className="font-semibold mb-4 text-gray-800 text-md">
-    //     Detailed Entries
-    //   </h4>
     <table className="w-full border-collapse rounded ">
       <thead>
         <tr className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
@@ -177,9 +204,7 @@ const EntriesTable = ({
         {[...entries, ...pendingEntries].map((entry, idx) => (
           <tr
             key={entry.timesheetEntryId}
-            className={`text-sm ${
-              idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-            } hover:bg-blue-50 transition`}
+            className={`text-sm ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition`}
           >
             {editIndex === idx ? (
               <>
@@ -246,8 +271,7 @@ const EntriesTable = ({
             ) : (
               <>
                 <td className="px-4 py-2 border-b border-gray-200">
-                  {projectIdToName[entry.projectId] ||
-                    `Project-${entry.projectId}`}
+                  {projectIdToName[entry.projectId] || `Project-${entry.projectId}`}
                 </td>
                 <td className="px-4 py-2 border-b border-gray-200">
                   {taskIdToName[entry.taskId] || `Task-${entry.taskId}`}
@@ -273,9 +297,7 @@ const EntriesTable = ({
                 <td className="px-4 py-2">
                   <button
                     className={`text-blue-600 hover:underline text-sm ${
-                      status === "Approved"
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
+                      status === "Approved" ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     disabled={status === "Approved"}
                     onClick={() => handleEditClick(idx)}
@@ -381,8 +403,8 @@ const EntriesTable = ({
         </tfoot>
       )}
     </table>
-    // </div>
   );
 };
 
 export default EntriesTable;
+
