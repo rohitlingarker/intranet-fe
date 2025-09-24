@@ -3,6 +3,7 @@ import axios from "axios";
 import Pagination from "../../../components/Pagination/pagination";
 import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -29,7 +30,6 @@ const LeaveHistory = () => {
   // Fetch data
   useEffect(() => {
     setLoading(true);
-    setError(null);
     Promise.all([
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
@@ -55,7 +55,7 @@ const LeaveHistory = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError("Failed to fetch leave history or types.");
+        toast.error("Failed to fetch leave history or types.");
         setLoading(false);
       });
   }, []);
@@ -77,49 +77,49 @@ const LeaveHistory = () => {
     fetchLeaveTypes();
   }, [token]);
 
-  function mapLeaveBalancesToDropdown(balances, leaveTypes) {
-    return balances.map((balance) => {
-      const leaveTypeId = balance.leaveType.leaveTypeId;
-      const originalName = balance.leaveType.leaveName;
+  // function mapLeaveBalancesToDropdown(balances, leaveTypes) {
+  //   return balances.map((balance) => {
+  //     const leaveTypeId = balance.leaveType.leaveTypeId;
+  //     const originalName = balance.leaveType.leaveName;
 
-      // Find the corresponding type from the fetched list to get its 'label'
-      const matchingType = leaveTypes.find(
-        (type) => type.name === originalName
-      );
-      const leaveName = matchingType
-        ? matchingType.label
-        : originalName.replace(/^L-/, "");
+  //     // Find the corresponding type from the fetched list to get its 'label'
+  //     const matchingType = leaveTypes.find(
+  //       (type) => type.name === originalName
+  //     );
+  //     const leaveName = matchingType
+  //       ? matchingType.label
+  //       : originalName.replace(/^L-/, "");
 
-      let availableText;
-      let isInfinite = false;
+  //     let availableText;
+  //     let isInfinite = false;
 
-      if (
-        leaveTypeId === "L-UP" ||
-        leaveName.toLowerCase().includes("unpaid")
-      ) {
-        availableText = "Infinite balance";
-        isInfinite = true;
-      } else if (balance.remainingLeaves > 0) {
-        availableText =
-          (balance.remainingLeaves % 1 === 0
-            ? balance.remainingLeaves
-            : balance.remainingLeaves.toFixed(1)) + " days available";
-      } else {
-        availableText = "Not Available";
-      }
+  //     if (
+  //       leaveTypeId === "L-UP" ||
+  //       leaveName.toLowerCase().includes("unpaid")
+  //     ) {
+  //       availableText = "Infinite balance";
+  //       isInfinite = true;
+  //     } else if (balance.remainingLeaves > 0) {
+  //       availableText =
+  //         (balance.remainingLeaves % 1 === 0
+  //           ? balance.remainingLeaves
+  //           : balance.remainingLeaves.toFixed(1)) + " days available";
+  //     } else {
+  //       availableText = "Not Available";
+  //     }
 
-      return {
-        leaveTypeId,
-        leaveName, // This will now be the user-friendly label
-        availableText,
-        availableDays: isInfinite ? Infinity : balance.remainingLeaves,
-        isInfinite,
-        disabled: !isInfinite && balance.remainingLeaves <= 0,
-        allowHalfDay: !!balance.leaveType.allowHalfDay,
-        requiresDocumentation: !!balance.leaveType.requiresDocumentation,
-      };
-    });
-  }
+  //     return {
+  //       leaveTypeId,
+  //       leaveName, // This will now be the user-friendly label
+  //       availableText,
+  //       availableDays: isInfinite ? Infinity : balance.remainingLeaves,
+  //       isInfinite,
+  //       disabled: !isInfinite && balance.remainingLeaves <= 0,
+  //       allowHalfDay: !!balance.leaveType.allowHalfDay,
+  //       requiresDocumentation: !!balance.leaveType.requiresDocumentation,
+  //     };
+  //   });
+  // }
 
   const statusOptions = Array.from(
     new Set(
@@ -341,13 +341,11 @@ const LeaveHistory = () => {
                     {leave.employee?.fullName || "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs">
-                    {leave.startDate
-                      ? new Date(leave.startDate).toLocaleDateString()
-                      : "-"}
+                    {leave.startDate ? new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.endDate
-                      ? new Date(leave.endDate).toLocaleDateString()
+                      ? new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs text-center">

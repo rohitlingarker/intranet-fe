@@ -1,8 +1,13 @@
+
 import React, { useState, useEffect } from "react";
 import FormInput from "../../components/forms/FormInput";
 import FormSelect from "../../components/forms/FormSelect";
 import FormTime from "../../components/forms/FormTime";
-import { addEntryToTimesheet, fetchProjectTaskInfo, updateTimesheet } from "./api";
+import {
+  addEntryToTimesheet,
+  fetchProjectTaskInfo,
+  updateTimesheet,
+} from "./api";
 import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 
@@ -22,15 +27,15 @@ const EntriesTable = ({
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
 
-  const [addData, setAddData] = useState({workType:"Office"});
+  const [addData, setAddData] = useState({ workType: "Office" });
+
+  const [pendingEntries, setPendingEntries] = useState([]);
 
   userId = userId || 1; // Default to 1 if not provided
 
   useEffect(() => {
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
-
-  
 
   const workTypeOptions = [
     { label: "Office", value: "Office" },
@@ -59,7 +64,6 @@ const EntriesTable = ({
   const handleEditClick = (idx) => {
     if (addingNewEntry) return;
     if (status === "Approved") return;
-    console.log(status);
 
     const entry = entries[idx];
     setEditIndex(idx);
@@ -79,7 +83,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({workType:"Office"});
+    setAddData({ workType: "Office" });
   };
 
   const handleChange = (e) => {
@@ -90,12 +94,43 @@ const EntriesTable = ({
 
   const isValid = (data) => {
     const { projectId, taskId, fromTime, toTime, workType } = data;
+    // show error toast mentioning which field is invalid
+    if (!projectId) showStatusToast("Please select a project", "error");
+    if (!taskId) showStatusToast("Please select a task", "error");
+    if (!fromTime) showStatusToast("Please select a start time", "error");
+    if (!toTime) showStatusToast("Please select an end time", "error");
+    if (!workType) showStatusToast("Please select a work type", "error");
+
     return (
       projectId && taskId && fromTime && toTime && workType && fromTime < toTime
     );
   };
 
+  // ✅ Check overlap helper
+  const hasOverlap = (newStart, newEnd, ignoreId = null) => {
+    for (let entry of entries) {
+      if (ignoreId && entry.timesheetEntryId === ignoreId) continue;
+
+      const existingStart = new Date(entry.fromTime);
+      const existingEnd = new Date(entry.toTime);
+
+      if (newStart < existingEnd && existingStart < newEnd) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleSave = async () => {
+    if (!isValid(editData)) return;
+    const newStart = new Date(`${workDate}T${editData.fromTime}`);
+    const newEnd = new Date(`${workDate}T${editData.toTime}`);
+
+    if (hasOverlap(newStart, newEnd, editData.timesheetEntryId)) {
+      showStatusToast("Time overlap detected with another entry!", "error");
+      return;
+    }
+
     const payload = {
       workDate,
       status,
@@ -106,9 +141,9 @@ const EntriesTable = ({
           taskId: parseInt(editData.taskId),
           description: editData.description,
           workType: editData.workType,
-          hoursWorked: 0, // server may recalculate
-          fromTime: new Date(`${workDate}T${editData.fromTime}`).toISOString(),
-          toTime: new Date(`${workDate}T${editData.toTime}`).toISOString(),
+          hoursWorked: 0,
+          fromTime: newStart.toISOString(),
+          toTime: newEnd.toISOString(),
           otherDescription: "",
         },
       ],
@@ -118,42 +153,40 @@ const EntriesTable = ({
       await updateTimesheet(timesheetId, payload);
       setEditIndex(null);
       setEditData({});
-      refreshData(); // Reload entries after update
+      refreshData();
     } catch (err) {
       showStatusToast("Failed to update entry", "error");
     }
   };
 
-  const handleAddEntry = async () => {
-    const payload = [
+  const handleAddEntry = () => {
+    if (!isValid(addData)) return;
+    const newStart = new Date(`${workDate}T${addData.fromTime}`);
+    const newEnd = new Date(`${workDate}T${addData.toTime}`);
+
+    if (hasOverlap(newStart, newEnd)) {
+      showStatusToast("Time overlap detected with another entry!", "error");
+      return;
+    }
+
+    setPendingEntries((prev) => [
+      ...prev,
       {
         projectId: parseInt(addData.projectId),
         taskId: parseInt(addData.taskId),
         description: addData.description,
         workType: addData.workType,
-        hoursWorked: 0, // server may recalculate
-        fromTime: new Date(`${workDate}T${addData.fromTime}`).toISOString(),
-        toTime: new Date(`${workDate}T${addData.toTime}`).toISOString(),
+        hoursWorked: 0,
+        fromTime: newStart.toISOString(),
+        toTime: newEnd.toISOString(),
         otherDescription: "",
       },
-    ];
-
-    try {
-      await addEntryToTimesheet(timesheetId, workDate, payload);
-      setAddingNewEntry(false);
-      setAddingNewTimesheet(false);
-      setAddData({workType:"Office"});
-      refreshData(); // Reload entries after update
-    } catch (err) {
-      showStatusToast("Failed to update entry", "error");
-    }
+    ]);
+    setAddingNewEntry(false);
+    setAddData({ workType: "Office" });
   };
 
   return (
-    // <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-    //   <h4 className="font-semibold mb-4 text-gray-800 text-md">
-    //     Detailed Entries
-    //   </h4>
     <table className="w-full border-collapse rounded ">
       <thead>
         <tr className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
@@ -168,12 +201,10 @@ const EntriesTable = ({
       </thead>
       <tbody>
         {entries.length === 0 && <tr></tr>}
-        {entries.map((entry, idx) => (
+        {[...entries, ...pendingEntries].map((entry, idx) => (
           <tr
             key={entry.timesheetEntryId}
-            className={`text-sm ${
-              idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-            } hover:bg-blue-50 transition`}
+            className={`text-sm ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition`}
           >
             {editIndex === idx ? (
               <>
@@ -226,7 +257,7 @@ const EntriesTable = ({
                   <div className="flex gap-2">
                     <button
                       className="text-green-500"
-                      disabled={!isValid(editData)}
+                      // disabled={!isValid(editData)}
                       onClick={handleSave}
                     >
                       <Check />
@@ -240,8 +271,7 @@ const EntriesTable = ({
             ) : (
               <>
                 <td className="px-4 py-2 border-b border-gray-200">
-                  {projectIdToName[entry.projectId] ||
-                    `Project-${entry.projectId}`}
+                  {projectIdToName[entry.projectId] || `Project-${entry.projectId}`}
                 </td>
                 <td className="px-4 py-2 border-b border-gray-200">
                   {taskIdToName[entry.taskId] || `Task-${entry.taskId}`}
@@ -267,9 +297,7 @@ const EntriesTable = ({
                 <td className="px-4 py-2">
                   <button
                     className={`text-blue-600 hover:underline text-sm ${
-                      status === "Approved"
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
+                      status === "Approved" ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     disabled={status === "Approved"}
                     onClick={() => handleEditClick(idx)}
@@ -333,7 +361,7 @@ const EntriesTable = ({
                 <div className="flex gap-2">
                   <button
                     className="text-green-500"
-                    disabled={!isValid(addData)}
+                    // disabled={!isValid(addData)}
                     onClick={handleAddEntry}
                   >
                     <Check />
@@ -347,9 +375,36 @@ const EntriesTable = ({
           </tr>
         )}
       </tbody>
+      {pendingEntries.length > 0 && (
+        <tfoot>
+  <tr>
+    <td colSpan="7" className="px-4 py-1">
+      <div className="flex justify-end">
+
+        <button
+          className="mt-2 bg-blue-600 text-white px-4 py-2 rounded "
+          onClick={async () => {
+            try {
+              await addEntryToTimesheet(timesheetId, workDate, pendingEntries);
+              setPendingEntries([]);
+              setAddingNewTimesheet(false);
+              refreshData();
+              showStatusToast("Timesheet submitted!", "success");
+            } catch (err) {
+              showStatusToast("Failed to submit timesheet", "error");
+            }
+          }}
+          >
+          Submit Timesheet
+        </button>
+          </div>
+        </td>
+        </tr>
+        </tfoot>
+      )}
     </table>
-    // </div>
   );
 };
 
 export default EntriesTable;
+
