@@ -73,6 +73,7 @@ const ProjectDashboard = () => {
   }, []);
 
   const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
+  const goToMyProfile = () => navigate("/projects/user/myprofile");
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -84,6 +85,12 @@ const ProjectDashboard = () => {
             variant="secondary"
           >
             View Project List
+          </Button>
+          <Button
+            onClick={goToMyProfile}
+            variant="primary"
+          >
+            My Profile
           </Button>
         </div>
       </div>
@@ -109,11 +116,6 @@ const ProjectDashboard = () => {
               value={dashboardData.totalEpics}
               textColor="text-purple-700"
             />
-            {/* <ThreeCard
-              title="Users"
-              value={dashboardData.totalUsers}
-              textColor="text-pink-700"
-            /> */}
             <ThreeCard
               title="Stories"
               value={dashboardData.totalStories}

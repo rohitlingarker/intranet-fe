@@ -338,13 +338,14 @@ const ProjectList = () => {
                       </p>
                       <div>
                         <strong>Members:</strong>
-                        <ul className="ml-4 list-disc">
-                          {project.members?.map((m) => (
-                            <li key={m.id}>
-                              {m.name} ({m.role})
-                            </li>
-                          ))}
-                        </ul>
+<ul className="ml-4 list-disc">
+  {project.members?.map((m) => (
+    <li key={m.id}>
+      {m.name} {m.role}
+    </li>
+  ))}
+</ul>
+
                       </div>
                       <div className="pt-4">
                         <Button
