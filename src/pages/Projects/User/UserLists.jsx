@@ -12,8 +12,8 @@ const Lists = ({ projectId }) => {
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
-  const { user } = useAuth();
-  const currentUser = user;
+  const {isAuthenticated, user } = useAuth();
+  // const currentUser = user;
 
   // const fakeUsers = [
   //   { id: 1, name: 'Sindhu Reddy' },
@@ -258,7 +258,7 @@ const Lists = ({ projectId }) => {
           <CommentBox
             entityId={selectedEntity.id}
             entityType={selectedEntity.type}
-            currentUser={currentUser}
+            currentUser={user}
             token={token} // Pass token if CommentBox needs it
           />
         </div>

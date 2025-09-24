@@ -120,7 +120,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success("✅ Project created successfully!");
+      toast.success(" Project created successfully!");
       if (onProjectCreated) onProjectCreated();
 
       // reset

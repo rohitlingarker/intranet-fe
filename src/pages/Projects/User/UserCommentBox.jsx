@@ -44,7 +44,7 @@ const CommentBox = ({ entityId, entityType, currentUser, token }) => {
 
     const payload = {
       content: newComment,
-      userId: currentUser.id,
+      userId: userId,
       parentId: replyingTo,
     };
 

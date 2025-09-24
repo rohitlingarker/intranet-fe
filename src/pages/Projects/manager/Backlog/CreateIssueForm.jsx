@@ -40,9 +40,11 @@ const CreateIssueForm = ({
       try {
         const [projectsRes, usersRes, sprintsRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
         ]);
+        // console.log({usersRes});
+        
 
         setProjects(projectsRes.data.content || projectsRes.data || []);
         setUsers(usersRes.data.content || usersRes.data || []);
@@ -277,7 +279,7 @@ const CreateIssueForm = ({
               onChange={handleChange}
             />
             <FormSelect
-              label="Status *"
+              label="Status (Optional)"
               name="status"
               value={formData.status || "BACKLOG"}
               onChange={handleChange}
@@ -290,7 +292,7 @@ const CreateIssueForm = ({
               required
             />
             <FormSelect
-              label="Priority *"
+              label="Priority (Optional)"
               name="priority"
               value={formData.priority || "MEDIUM"}
               onChange={handleChange}
@@ -316,20 +318,20 @@ const CreateIssueForm = ({
               onChange={handleChange}
             />
             <FormSelect
-              label="Epic *"
+              label="Epic (Optional)"
               name="epicId"
               value={formData.epicId || ""}
               onChange={handleChange}
               options={epics.map((e) => ({ label: e.name, value: e.id }))}
-              required
+              // required
             />
             <FormSelect
-              label="Sprint *"
+              label="Sprint (Optional)"
               name="sprintId"
               value={formData.sprintId || ""}
               onChange={handleChange}
               options={sprints.map((s) => ({ label: s.name, value: s.id }))}
-              required
+              // required
             />
             <FormSelect
               label="Reporter *"
@@ -371,7 +373,7 @@ const CreateIssueForm = ({
               onChange={handleChange}
             />
             <FormSelect
-              label="Status *"
+              label="Status (Optional)"
               name="status"
               value={formData.status || "BACKLOG"}
               onChange={handleChange}
@@ -384,7 +386,7 @@ const CreateIssueForm = ({
               required
             />
             <FormSelect
-              label="Priority *"
+              label="Priority (Optional)"
               name="priority"
               value={formData.priority || "MEDIUM"}
               onChange={handleChange}
