@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import FormInput from "../../components/forms/FormInput";
 import FormSelect from "../../components/forms/FormSelect";
 import FormTime from "../../components/forms/FormTime";
-import { addEntryToTimesheet, fetchProjectTaskInfo, updateTimesheet } from "./api";
+import {
+  addEntryToTimesheet,
+  fetchProjectTaskInfo,
+  updateTimesheet,
+} from "./api";
 import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 
@@ -22,15 +26,15 @@ const EntriesTable = ({
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
 
-  const [addData, setAddData] = useState({workType:"Office"});
+  const [addData, setAddData] = useState({ workType: "Office" });
+
+  const [pendingEntries, setPendingEntries] = useState([]);
 
   userId = userId || 1; // Default to 1 if not provided
 
   useEffect(() => {
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
-
-  
 
   const workTypeOptions = [
     { label: "Office", value: "Office" },
@@ -79,7 +83,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({workType:"Office"});
+    setAddData({ workType: "Office" });
   };
 
   const handleChange = (e) => {
@@ -124,29 +128,22 @@ const EntriesTable = ({
     }
   };
 
-  const handleAddEntry = async () => {
-    const payload = [
+  const handleAddEntry = () => {
+    setPendingEntries((prev) => [
+      ...prev,
       {
         projectId: parseInt(addData.projectId),
         taskId: parseInt(addData.taskId),
         description: addData.description,
         workType: addData.workType,
-        hoursWorked: 0, // server may recalculate
+        hoursWorked: 0,
         fromTime: new Date(`${workDate}T${addData.fromTime}`).toISOString(),
         toTime: new Date(`${workDate}T${addData.toTime}`).toISOString(),
         otherDescription: "",
       },
-    ];
-
-    try {
-      await addEntryToTimesheet(timesheetId, workDate, payload);
-      setAddingNewEntry(false);
-      setAddingNewTimesheet(false);
-      setAddData({workType:"Office"});
-      refreshData(); // Reload entries after update
-    } catch (err) {
-      showStatusToast("Failed to update entry", "error");
-    }
+    ]);
+    setAddingNewEntry(false);
+    setAddData({ workType: "Office" });
   };
 
   return (
@@ -168,7 +165,7 @@ const EntriesTable = ({
       </thead>
       <tbody>
         {entries.length === 0 && <tr></tr>}
-        {entries.map((entry, idx) => (
+        {[...entries, ...pendingEntries].map((entry, idx) => (
           <tr
             key={entry.timesheetEntryId}
             className={`text-sm ${
@@ -347,6 +344,33 @@ const EntriesTable = ({
           </tr>
         )}
       </tbody>
+      {pendingEntries.length > 0 && (
+        <tfoot>
+  <tr>
+    <td colSpan="7" className="px-4 py-1">
+      <div className="flex justify-end">
+
+        <button
+          className="mt-2 bg-blue-600 text-white px-4 py-2 rounded "
+          onClick={async () => {
+            try {
+              await addEntryToTimesheet(timesheetId, workDate, pendingEntries);
+              setPendingEntries([]);
+              setAddingNewTimesheet(false);
+              refreshData();
+              showStatusToast("Timesheet submitted!", "success");
+            } catch (err) {
+              showStatusToast("Failed to submit timesheet", "error");
+            }
+          }}
+          >
+          Submit Timesheet
+        </button>
+          </div>
+        </td>
+        </tr>
+        </tfoot>
+      )}
     </table>
     // </div>
   );
