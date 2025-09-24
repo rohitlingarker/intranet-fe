@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../contexts/AuthContext";
 import { showStatusToast } from "../../../components/toastfy/toast"; // ✅ custom toast wrapper
-
+ 
 // Simple reusable Modal component
 function Modal({ open, title, message, onConfirm, onCancel, loading }) {
   if (!open) return null;
-
+ 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white rounded-2xl shadow-lg w-96 p-6">
@@ -33,14 +33,14 @@ function Modal({ open, title, message, onConfirm, onCancel, loading }) {
     </div>
   );
 }
-
+ 
 export default function EditProfile() {
   const { user } = useAuth();
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
-
+ 
   // Load user profile on mount
   useEffect(() => {
     if (user?.email) {
@@ -55,29 +55,24 @@ export default function EditProfile() {
         });
     }
   }, [user]);
-
+ 
   // Handle form field changes
   const handleChange = (e) => {
     if (e.target.name === "contact") {
-      const value = e.target.value.replace(/\D/g, "").slice(0, 10); // keep only numbers, max 10
+      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
       setForm({ ...form, [e.target.name]: value });
     } else {
       setForm({ ...form, [e.target.name]: e.target.value });
     }
   };
-
+ 
   // Save profile function
   const doSave = async () => {
     if (!form.password || form.password.trim() === "") {
       showStatusToast("Password is required", "error");
       return;
     }
-
-    if (!form.contact || form.contact.length !== 10) {
-      showStatusToast("Contact number must be exactly 10 digits.", "error");
-      return;
-    }
-
+ 
     try {
       setSaving(true);
       const response = await axios.put(
@@ -101,17 +96,17 @@ export default function EditProfile() {
       setShowModal(false);
     }
   };
-
+ 
   const handleSave = () => setShowModal(true);
   const handleCancel = () => navigate("/profile");
-
+ 
   if (!user) return <p className="text-center mt-10">Loading...</p>;
-
+ 
   return (
     <div className="max-w-xl mx-auto p-6">
       <div className="bg-white shadow-md border border-gray-200 rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-blue-700 mb-6">Edit Profile</h2>
-
+ 
         <div className="space-y-4">
           {/* First Name */}
           <div>
@@ -121,14 +116,13 @@ export default function EditProfile() {
               name="first_name"
               value={form.first_name || ""}
               onChange={(e) => {
-                // ✅ Allow alphabets + spaces only
-                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
+                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your first name"
               className="w-full border px-3 py-2 rounded-md"
             />
           </div>
-
+ 
           {/* Last Name */}
           <div>
             <label className="block font-medium mb-1">Last Name</label>
@@ -137,14 +131,13 @@ export default function EditProfile() {
               name="last_name"
               value={form.last_name || ""}
               onChange={(e) => {
-                // ✅ Allow alphabets + spaces only
-                if (/^[A-Za-z ]*$/.test(e.target.value)) handleChange(e);
+                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your last name"
               className="w-full border px-3 py-2 rounded-md"
             />
           </div>
-
+ 
           {/* Contact */}
           <div>
             <label className="block font-medium mb-1">Contact</label>
@@ -153,15 +146,14 @@ export default function EditProfile() {
               name="contact"
               value={form.contact || ""}
               onChange={(e) => {
-                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10)
-                  handleChange(e);
+                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10) handleChange(e);
               }}
               placeholder="Enter contact number"
               className="w-full border px-3 py-2 rounded-md"
               maxLength={10}
             />
           </div>
-
+ 
           {/* Password */}
           <div>
             <label className="block font-medium mb-1">New Password</label>
@@ -175,7 +167,7 @@ export default function EditProfile() {
               required
             />
           </div>
-
+ 
           {/* Action Buttons */}
           <div className="flex gap-4 mt-4">
             <button
@@ -197,7 +189,7 @@ export default function EditProfile() {
           </div>
         </div>
       </div>
-
+ 
       {/* Confirmation Modal */}
       <Modal
         open={showModal}

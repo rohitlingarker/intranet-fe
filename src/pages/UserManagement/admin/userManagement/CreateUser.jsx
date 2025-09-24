@@ -1,11 +1,12 @@
 import { useState } from "react";
-// ❌ No longer need useNavigate
 import axios from "axios";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 import FormInput from "../../../../components/forms/FormInput";
 import Button from "../../../../components/Button/Button";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-// ✅ Component is renamed and accepts props for communication
 export default function CreateUserForm({ onSuccess, onClose }) {
   const token = localStorage.getItem("token");
 
@@ -37,6 +38,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     }
   };
 
+  // ✅ Validation function
   const validateForm = () => {
     if (!form.first_name.trim()) return showSingleToast("First Name is required.");
     if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
@@ -45,9 +47,26 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (!form.mail.trim()) return showSingleToast("Email is required.");
     if (!/^[a-zA-Z0-9@._-]+$/.test(form.mail)) return showSingleToast("Email contains invalid characters.");
     if (!form.contact.trim()) return showSingleToast("Contact number is required.");
-    if (!/^\d{10}$/.test(form.contact)) return showSingleToast("Contact number must be exactly 10 digits.");
+
+    // ✅ Parse phone number
+    const phoneNumber = parsePhoneNumberFromString("+" + form.contact.replace(/\D/g, ""));
+    if (!phoneNumber || !phoneNumber.isValid()) {
+      return showSingleToast("Invalid phone number for the selected country.");
+    }
+
+    // ✅ Strict national number length check
+    const countryCode = phoneNumber.countryCallingCode; // e.g., "91"
+    const nationalLen = phoneNumber.nationalNumber.length;
+
+    if (countryCode === "91" && nationalLen !== 10) {
+      return showSingleToast("Indian contact number must be exactly 10 digits.");
+    }
+    // You can add other countries here:
+    // else if(countryCode === "1" && nationalLen !== 10) { ... }
+
     if (!form.password.trim()) return showSingleToast("Password is required.");
     if (form.password.length < 6) return showSingleToast("Password must be at least 6 characters long.");
+
     return true;
   };
 
@@ -63,23 +82,22 @@ export default function CreateUserForm({ onSuccess, onClose }) {
         form,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // ✅ On success, call the callback prop instead of showing toast and navigating
       onSuccess();
     } catch (err) {
       console.error("User creation failed:", err);
-      showSingleToast(
-        err?.response?.data?.detail || "Failed to create user.",
-        "error"
-      );
+      showSingleToast(err?.response?.data?.detail || "Failed to create user.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ The component now returns only the form, as the modal provides the title and wrapper.
   return (
     <div className="w-full max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4 p-4 max-h-[60vh] overflow-y-auto">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 p-4 max-h-[60vh] overflow-y-auto"
+      >
+        {/* First + Last Name */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormInput
             label="First Name"
@@ -103,6 +121,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           />
         </div>
 
+        {/* Email */}
         <FormInput
           label="Email"
           type="email"
@@ -115,18 +134,28 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           required
         />
 
-        <FormInput
-          label="Contact"
-          type="tel"
-          name="contact"
-          value={form.contact}
-          onChange={(e) => {
-            if (/^\d{0,10}$/.test(e.target.value)) handleChange(e);
-          }}
-          placeholder="Enter 10-digit contact number"
-          required
-        />
+        {/* Contact */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Contact
+          </label>
+          <PhoneInput
+            country={"in"}
+            value={form.contact}
+            onChange={(phone) => setForm((prev) => ({ ...prev, contact: phone }))}
+            enableSearch
+            disableDropdown={false}
+            placeholder="Enter phone number"
+            containerClass="w-full"
+            inputClass="!w-full !pl-16 !pr-3 !py-2 !border !rounded-md !shadow-sm sm:!text-sm"
+            buttonClass="!absolute !left-0 !h-full !rounded-l-md !pl-3 !pr-3 !bg-white !border-r"
+            dropdownClass="!z-50"
+            enableAreaCodes={true}
+            countryCodeEditable={false}
+          />
+        </div>
 
+        {/* Password */}
         <FormInput
           label="Password"
           type="password"
@@ -138,10 +167,11 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           minLength={6}
         />
 
+        {/* Active checkbox */}
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
-            id="is_active_modal" // Use a unique ID to avoid label conflicts
+            id="is_active_modal"
             name="is_active"
             checked={form.is_active}
             onChange={handleChange}
@@ -152,12 +182,12 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           </label>
         </div>
 
-        {/* ✅ Buttons are wrapped in a container with a top border for visual separation */}
+        {/* Buttons */}
         <div className="flex gap-4 pt-4 border-t sticky bottom-0 bg-white">
-          <Button 
-            type="submit" 
-            variant="primary" 
-            size="medium" 
+          <Button
+            type="submit"
+            variant="primary"
+            size="medium"
             disabled={loading}
             className="flex-1 sm:flex-none"
           >
@@ -167,7 +197,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             type="button"
             variant="secondary"
             size="medium"
-            onClick={onClose} // ✅ Cancel button now calls the onClose prop
+            onClick={onClose}
             disabled={loading}
             className="flex-1 sm:flex-none"
           >
