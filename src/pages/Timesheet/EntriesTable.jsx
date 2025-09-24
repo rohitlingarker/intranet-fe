@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
+import Button from "../../components/Button/Button";
 
 const EntriesTable = ({
   entries,
@@ -379,10 +380,10 @@ const EntriesTable = ({
         <tfoot>
   <tr>
     <td colSpan="7" className="px-4 py-1">
-      <div className="flex justify-end">
+      <div className="flex justify-end py-1">
 
-        <button
-          className="mt-2 bg-blue-600 text-white px-4 py-2 rounded "
+        <Button
+          size="small"
           onClick={async () => {
             try {
               await addEntryToTimesheet(timesheetId, workDate, pendingEntries);
@@ -391,12 +392,13 @@ const EntriesTable = ({
               refreshData();
               showStatusToast("Timesheet submitted!", "success");
             } catch (err) {
-              showStatusToast("Failed to submit timesheet", "error");
+              // showStatusToast("Failed to submit timesheet", "error");
+              throw err;
             }
           }}
           >
           Submit Timesheet
-        </button>
+        </Button>
           </div>
         </td>
         </tr>
