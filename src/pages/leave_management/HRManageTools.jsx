@@ -5,8 +5,12 @@ import AddEmployeeModal from "./models/AddEmployeeModal";
 import AddLeaveTypeModal from "./models/AddLeaveTypeModal";
 import { Trash } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
+<<<<<<< HEAD
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+=======
+import {toast} from "react-toastify";
+>>>>>>> e8d6e39ee92c98705b05ba0fcd1a1191c00d7bf5
 import ConfirmationModal from "./models/ConfirmationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;

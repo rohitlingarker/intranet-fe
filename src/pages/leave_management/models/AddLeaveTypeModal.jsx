@@ -546,9 +546,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               disabled={submitting || loadingLeaveTypes}
             >
               {submitting
-                ? editData
-                  ? "Updating..."
-                  : "Adding..."
+                ? "Submitting..."
                 : editData
                 ? "Update Leave Type"
                 : "Add Leave Type"}
@@ -561,3 +559,4 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
 };
 
 export default AddLeaveTypeModal;
+
