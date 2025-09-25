@@ -3,6 +3,7 @@ import { X, FileText, Check, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
+import JobProgress from "./JobProgress";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -56,6 +57,8 @@ const defaultForm = {
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
+  const [jobId, setJobId] = useState(null);
+
   const token = localStorage.getItem("token");
 
   // Use the custom hook to get leave types data
@@ -116,6 +119,16 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     }));
   };
 
+  const AddLeaveTypeWrapper = ({ jobId }) => {
+    const [showProgress, setShowProgress] = useState(!!jobId);
+
+    return (
+      <div>
+        {showProgress && <JobProgress jobId={jobId} />}
+      </div>
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -158,19 +171,26 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           },
         });
         toast.success("Leave type updated successfully!");
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+        }, 700);
       } else {
-        await axios.post(url, payload, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await axios.post(`${BASE_URL}/api/leave/add-leave-type`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
         });
         toast.success("Leave type added successfully!");
+
+        const job = res.data?.data?.jobId;
+        if (job) {
+          setJobId(job);
+        } else {
+          setTimeout(() => {
+            onSuccess?.();
+            onClose();
+          }, 1000);
+        }
       }
-      setTimeout(() => {
-        onSuccess?.();
-        onClose();
-      }, 700);
     } catch (err) {
       console.error("Save error:", err);
       toast.error(
@@ -178,354 +198,377 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           err.message ||
           "Failed to submit leave type"
       );
-    } finally {
       setSubmitting(false);
+    } finally {
+      if (!jobId) setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!jobId) return;
+    let timer = setTimeout(() => {
+      setJobId(null);
+      setSubmitting(false);
+      onSuccess?.();
+      onClose();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [jobId, onSuccess, onClose]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg sm:max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <FileText className="w-6 h-6 text-green-600 mr-3" />
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              {editData ? "Edit Leave Type" : "Add New Leave Type"}
-            </h2>
+        {jobId ? (
+          <div className="flex flex-col items-center justify-center p-8">
+            <JobProgress jobId={jobId} />
+            <div className="mt-4 text-gray-600 text-center">
+              Processing leave type addition. Please wait...
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            type="button"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
-          {/* Messages are now handled by toast, so local state display is removed */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Leave Type *
-            </label>
-            {loadingLeaveTypes ? (
-              <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-500">
-                Loading leave types...
+        ) : (
+          <>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center">
+                <FileText className="w-6 h-6 text-green-600 mr-3" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  {editData ? "Edit Leave Type" : "Add New Leave Type"}
+                </h2>
               </div>
-            ) : (
-              <Listbox
-                value={formData.leaveName}
-                onChange={(val) =>
-                  setFormData((prev) => ({ ...prev, leaveName: val }))
-                }
-                disabled={!!editData}
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600"
+                type="button"
+                disabled={submitting}
               >
-                <div className="relative">
-                  <Listbox.Button
-                    className={`w-full rounded-lg border px-4 py-3 text-left sm:text-base text-sm ${
-                      editData
-                        ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
-                        : "bg-white cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    }`}
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
+              {/* Messages are now handled by toast, so local state display is removed */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Leave Type *
+                </label>
+                {loadingLeaveTypes ? (
+                  <div className="p-3 bg-gray-100 rounded-lg text-sm text-gray-500">
+                    Loading leave types...
+                  </div>
+                ) : (
+                  <Listbox
+                    value={formData.leaveName}
+                    onChange={(val) =>
+                      setFormData((prev) => ({ ...prev, leaveName: val }))
+                    }
+                    disabled={!!editData}
                   >
-                    <span>
-                      {formData.leaveName
-                        ? leaveTypes.find((t) => t.name === formData.leaveName)
-                            ?.label ?? formData.leaveName
-                        : "Select a leave type"}
-                    </span>
-                    {!editData && (
-                      <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    )}
-                  </Listbox.Button>
-                  <Transition
-                    as={Fragment}
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-sm sm:text-base z-10">
-                      {leaveTypes.map((type) => (
-                        <Listbox.Option
-                          key={type.name || type.leaveTypeId}
-                          value={type.name}
-                          className={({ active }) =>
-                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                              active
-                                ? "bg-green-100 text-green-900"
-                                : "text-gray-900"
-                            }`
-                          }
-                        >
-                          {({ selected }) => (
-                            <>
-                              <span
-                                className={`block truncate ${
-                                  selected ? "font-medium" : "font-normal"
-                                }`}
-                              >
-                                {type.label ?? type.name}
-                              </span>
-                              {selected && (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-green-600">
-                                  <Check className="h-5 w-5" />
-                                </span>
+                    <div className="relative">
+                      <Listbox.Button
+                        className={`w-full rounded-lg border px-4 py-3 text-left sm:text-base text-sm ${
+                          editData
+                            ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
+                            : "bg-white cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        }`}
+                      >
+                        <span>
+                          {formData.leaveName
+                            ? leaveTypes.find((t) => t.name === formData.leaveName)
+                                ?.label ?? formData.leaveName
+                            : "Select a leave type"}
+                        </span>
+                        {!editData && (
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <ChevronDown className="h-5 w-5 text-gray-400" />
+                          </span>
+                        )}
+                      </Listbox.Button>
+                      <Transition
+                        as={Fragment}
+                        leave="transition ease-in duration-100"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                      >
+                        <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-sm sm:text-base z-10">
+                          {leaveTypes.map((type) => (
+                            <Listbox.Option
+                              key={type.name || type.leaveTypeId}
+                              value={type.name}
+                              className={({ active }) =>
+                                `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                  active
+                                    ? "bg-green-100 text-green-900"
+                                    : "text-gray-900"
+                                }`
+                              }
+                            >
+                              {({ selected }) => (
+                                <>
+                                  <span
+                                    className={`block truncate ${
+                                      selected ? "font-medium" : "font-normal"
+                                    }`}
+                                  >
+                                    {type.label ?? type.name}
+                                  </span>
+                                  {selected && (
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-green-600">
+                                      <Check className="h-5 w-5" />
+                                    </span>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </Listbox.Option>
-                      ))}
-                    </Listbox.Options>
-                  </Transition>
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
+                      </Transition>
+                    </div>
+                  </Listbox>
+                )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Days Per Year
+                  </label>
+                  <input
+                    name="maxDaysPerYear"
+                    type="number"
+                    min="0"
+                    value={formData.maxDaysPerYear}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., 10"
+                  />
                 </div>
-              </Listbox>
-            )}
-          </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Carry Forward
+                  </label>
+                  <input
+                    name="maxCarryForward"
+                    type="number"
+                    min="0"
+                    value={formData.maxCarryForward}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Accrual Rate
+                  </label>
+                  <input
+                    name="accrualRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.accrualRate}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., 1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Accrual Frequency
+                  </label>
+                  <input
+                    name="accrualFrequency"
+                    type="text"
+                    value={formData.accrualFrequency}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Monthly/Yearly"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expiry Days
+                  </label>
+                  <input
+                    name="expiryDays"
+                    type="number"
+                    min="0"
+                    value={formData.expiryDays}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., 365"
+                  />
+                </div>
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Days Per Year
-              </label>
-              <input
-                name="maxDaysPerYear"
-                type="number"
-                min="0"
-                value={formData.maxDaysPerYear}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="e.g., 10"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Carry Forward
-              </label>
-              <input
-                name="maxCarryForward"
-                type="number"
-                min="0"
-                value={formData.maxCarryForward}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Accrual Rate
-              </label>
-              <input
-                name="accrualRate"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.accrualRate}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="e.g., 1.5"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Accrual Frequency
-              </label>
-              <input
-                name="accrualFrequency"
-                type="text"
-                value={formData.accrualFrequency}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Monthly/Yearly"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expiry Days
-              </label>
-              <input
-                name="expiryDays"
-                type="number"
-                min="0"
-                value={formData.expiryDays}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="e.g., 365"
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  rows={2}
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Describe the leave type"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              name="description"
-              rows={2}
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              placeholder="Describe the leave type"
-            />
-          </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Waiting Period Days
+                  </label>
+                  <input
+                    name="waitingPeriodDays"
+                    type="number"
+                    min="0"
+                    value={formData.waitingPeriodDays}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Advance Notice Days
+                  </label>
+                  <input
+                    name="advanceNoticeDays"
+                    type="number"
+                    min="0"
+                    value={formData.advanceNoticeDays}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Past Date Limit Days
+                  </label>
+                  <input
+                    name="pastDateLimitDays"
+                    type="number"
+                    min="0"
+                    value={formData.pastDateLimitDays}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Waiting Period Days
-              </label>
-              <input
-                name="waitingPeriodDays"
-                type="number"
-                min="0"
-                value={formData.waitingPeriodDays}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Advance Notice Days
-              </label>
-              <input
-                name="advanceNoticeDays"
-                type="number"
-                min="0"
-                value={formData.advanceNoticeDays}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Past Date Limit Days
-              </label>
-              <input
-                name="pastDateLimitDays"
-                type="number"
-                min="0"
-                value={formData.pastDateLimitDays}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-          </div>
+              <div className="grid gap-1 sm:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="requiresDocumentation"
+                    type="checkbox"
+                    name="requiresDocumentation"
+                    checked={formData.requiresDocumentation}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <label
+                    htmlFor="requiresDocumentation"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Requires Documentation
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="allowHalfDay"
+                    type="checkbox"
+                    name="allowHalfDay"
+                    checked={formData.allowHalfDay}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <label
+                    htmlFor="allowHalfDay"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Allow Half Day
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="allowNegativeBalance"
+                    type="checkbox"
+                    name="allowNegativeBalance"
+                    checked={formData.allowNegativeBalance}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <label
+                    htmlFor="allowNegativeBalance"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Allow Negative Balance
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="noticePeriodRestriction"
+                    type="checkbox"
+                    name="noticePeriodRestriction"
+                    checked={formData.noticePeriodRestriction}
+                    onChange={handleChange}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <label
+                    htmlFor="noticePeriodRestriction"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Notice Period Restriction
+                  </label>
+                </div>
+              </div>
 
-          <div className="grid gap-1 sm:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <input
-                id="requiresDocumentation"
-                type="checkbox"
-                name="requiresDocumentation"
-                checked={formData.requiresDocumentation}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <label
-                htmlFor="requiresDocumentation"
-                className="text-sm font-medium text-gray-700"
-              >
-                Requires Documentation
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="allowHalfDay"
-                type="checkbox"
-                name="allowHalfDay"
-                checked={formData.allowHalfDay}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <label
-                htmlFor="allowHalfDay"
-                className="text-sm font-medium text-gray-700"
-              >
-                Allow Half Day
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="allowNegativeBalance"
-                type="checkbox"
-                name="allowNegativeBalance"
-                checked={formData.allowNegativeBalance}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <label
-                htmlFor="allowNegativeBalance"
-                className="text-sm font-medium text-gray-700"
-              >
-                Allow Negative Balance
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="noticePeriodRestriction"
-                type="checkbox"
-                name="noticePeriodRestriction"
-                checked={formData.noticePeriodRestriction}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <label
-                htmlFor="noticePeriodRestriction"
-                className="text-sm font-medium text-gray-700"
-              >
-                Notice Period Restriction
-              </label>
-            </div>
-          </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="weekendsAndHolidaysAllowed"
+                  type="checkbox"
+                  name="weekendsAndHolidaysAllowed"
+                  checked={formData.weekendsAndHolidaysAllowed}
+                  onChange={handleChange}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <label
+                  htmlFor="weekendsAndHolidaysAllowed"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Allow Weekends and Holidays
+                </label>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              id="weekendsAndHolidaysAllowed"
-              type="checkbox"
-              name="weekendsAndHolidaysAllowed"
-              checked={formData.weekendsAndHolidaysAllowed}
-              onChange={handleChange}
-              className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-            />
-            <label
-              htmlFor="weekendsAndHolidaysAllowed"
-              className="text-sm font-medium text-gray-700"
-            >
-              Allow Weekends and Holidays
-            </label>
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-6 py-3 rounded-lg text-gray-800 border border-gray-300 hover:bg-gray-100 font-medium transition-colors"
-              disabled={submitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium transition-colors"
-              disabled={submitting || loadingLeaveTypes}
-            >
-              {submitting
-                ? editData
-                  ? "Updating..."
-                  : "Adding..."
-                : editData
-                ? "Update Leave Type"
-                : "Add Leave Type"}
-            </button>
-          </div>
-        </form>
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg text-gray-800 border border-gray-300 hover:bg-gray-100 font-medium transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-3 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium transition-colors"
+                  disabled={submitting || loadingLeaveTypes}
+                >
+                  {submitting
+                    ? editData
+                      ? "Updating..."
+                      : "Adding..."
+                    : editData
+                    ? "Update Leave Type"
+                    : "Add Leave Type"}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
