@@ -33,7 +33,6 @@ const Sidebar = ({ isCollapsed }) => {
   const { user } = useAuth();
   const isAdmin =
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
-
   const isManager = user?.roles?.includes("Manager");
   const isDeveloper = user?.roles?.includes("Developer");
 
@@ -176,7 +175,6 @@ const Sidebar = ({ isCollapsed }) => {
               <span>{"Projects"}</span>
             </Link>
           </li>
-
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {

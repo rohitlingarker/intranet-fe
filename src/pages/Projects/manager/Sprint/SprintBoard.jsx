@@ -15,9 +15,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,{
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`);
       setStories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load stories:', err);
@@ -27,9 +25,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,{
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`);
       setSprints(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load sprints:', err);
@@ -44,9 +40,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId },{
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId });
       await fetchStories();
     } catch (err) {
       console.error('Error assigning story to sprint:', err);
@@ -56,8 +50,7 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,{},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`
       );
       const updatedSprint = response.data;
 
@@ -91,21 +84,22 @@ const SprintBoard = ({ projectId, projectName }) => {
           </Button>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex gap-3">
-          {['ALL', 'PLANNING', 'ACTIVE', 'COMPLETED'].map(type => (
-            <button
-              key={type}
-              className={`px-4 py-1 rounded transition ${
-                filter === type
-                  ? 'bg-pink-800 text-white'
-                  : 'bg-white text-gray-800 border'
-              }`}
-              onClick={() => setFilter(type)}
-            >
-              {type}
-            </button>
-          ))}
+        {/* Filter Dropdown */}
+        <div className="flex items-center gap-3">
+          <label htmlFor="sprintFilter" className="text-sm font-medium text-gray-700">
+            Filter Sprints:
+          </label>
+          <select
+            id="sprintFilter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">ALL</option>
+            <option value="PLANNING">PLANNING</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="COMPLETED">COMPLETED</option>
+          </select>
         </div>
 
         {/* Sprint Columns */}

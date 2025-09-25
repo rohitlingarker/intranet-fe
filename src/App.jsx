@@ -1,4 +1,6 @@
 import React, { useEffect } from "react";
+import "react-phone-input-2/lib/style.css";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -38,6 +40,7 @@ import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
+import Userprofile from "./pages/Projects/User/Userprofile";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -191,6 +194,7 @@ const AppRoutes = () => {
             path="/projects/performance"
             element={<EmployeePerformance />}
           />
+          <Route path="/projects/user/myprofile" element={<Userprofile />} />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
           <Route
@@ -396,10 +400,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/employee-leave-balance"
+            path={`/employee-leave-balance`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EmployeeLeaveBalances />
+                <EmployeeLeaveBalances/>
               </ProtectedRoute>
             }
           />
