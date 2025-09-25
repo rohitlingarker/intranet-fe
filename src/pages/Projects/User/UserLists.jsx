@@ -13,7 +13,7 @@ const Lists = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const {isAuthenticated, user } = useAuth();
-  // const currentUser = user;
+  const currentUser = user;
 
   // const fakeUsers = [
   //   { id: 1, name: 'Sindhu Reddy' },
