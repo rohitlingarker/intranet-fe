@@ -6,10 +6,11 @@ import GenericTable from "../../../../components/Table/table";
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
-import Modal from "../../../../components/Modal/modal"; // ✅ Import Modal
-import CreateUserForm from "./CreateUser"; // ✅ Import the form component
-import EditUserForm from "./EditUser"; // ✅ Import the edit form component
+import Modal from "../../../../components/Modal/modal";
+import CreateUserForm from "./CreateUser";
+import EditUserForm from "./EditUser";
 import { Pencil, UserX } from "lucide-react";
+import { parsePhoneNumberFromString } from "libphonenumber-js"; // ✅ Import libphonenumber-js
 
 const SORT_DIRECTIONS = {
   ASC: "asc",
@@ -33,8 +34,6 @@ export default function UsersTable() {
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-
-  // ✅ Ref to ensure "Access denied" toast shows only once
   const accessDeniedShownRef = useRef(false);
 
   useEffect(() => {
@@ -49,9 +48,7 @@ export default function UsersTable() {
       setLoading(true);
       const res = await axios.get(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setUsers(res.data || []);
     } catch (err) {
@@ -59,7 +56,7 @@ export default function UsersTable() {
       if (err.response?.status === 403 || err.response?.status === 401) {
         if (!accessDeniedShownRef.current) {
           showStatusToast("Access denied. Admins only.", "error");
-          accessDeniedShownRef.current = true; // ✅ Mark as shown
+          accessDeniedShownRef.current = true;
         }
         navigate("/dashboard");
       } else {
@@ -107,9 +104,7 @@ export default function UsersTable() {
     try {
       await axios.delete(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userToDelete}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setUsers((prev) =>
         prev.map((u) =>
@@ -188,33 +183,44 @@ export default function UsersTable() {
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
 
-  const tableData = paginatedUsers.map((user) => ({
-    user_id: user.user_id,
-    name: `${user.first_name} ${user.last_name}`,
-    mail: user.mail,
-    contact: user.contact,
-    status: user.is_active ? "Active" : "Inactive",
-    actions: (
-      <div className="flex gap-4 items-center">
-        <span
-          className="cursor-pointer text-blue-600 hover:text-blue-800"
-          onClick={() => handleEditClick(user.user_id)}
-          title="Edit"
-        >
-          <Pencil size={18} />
-        </span>
-        <span
-          className={`cursor-pointer ${
-            user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
-          }`}
-          onClick={() => user.is_active && handleDeleteClick(user.user_id)}
-          title="Deactivate"
-        >
-          <UserX size={18} />
-        </span>
-      </div>
-    ),
-  }));
+  const tableData = paginatedUsers.map((user) => {
+    // ✅ Format contact number
+    let formattedContact = user.contact;
+    if (user.contact) {
+      const phoneNumber = parsePhoneNumberFromString("+" + user.contact.replace(/\D/g, ""));
+      if (phoneNumber) {
+        formattedContact = `${phoneNumber.formatInternational()}`;
+      }
+    }
+
+    return {
+      user_id: user.user_id,
+      name: `${user.first_name} ${user.last_name}`,
+      mail: user.mail,
+      contact: formattedContact,
+      status: user.is_active ? "Active" : "Inactive",
+      actions: (
+        <div className="flex gap-4 items-center">
+          <span
+            className="cursor-pointer text-blue-600 hover:text-blue-800"
+            onClick={() => handleEditClick(user.user_id)}
+            title="Edit"
+          >
+            <Pencil size={18} />
+          </span>
+          <span
+            className={`cursor-pointer ${
+              user.is_active ? "text-red-600 hover:text-red-800" : "text-gray-400"
+            }`}
+            onClick={() => user.is_active && handleDeleteClick(user.user_id)}
+            title="Deactivate"
+          >
+            <UserX size={18} />
+          </span>
+        </div>
+      ),
+    };
+  });
 
   return (
     <div className="px-6 py-4">
@@ -259,13 +265,11 @@ export default function UsersTable() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
+          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         />
       )}
 
-      {/* ✅ Modal for creating a new user */}
+      {/* Create Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -279,7 +283,7 @@ export default function UsersTable() {
         />
       </Modal>
 
-      {/* ✅ Modal for editing a user */}
+      {/* Edit Modal */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={handleEditClose}
@@ -296,7 +300,7 @@ export default function UsersTable() {
         )}
       </Modal>
 
-      {/* ✅ Confirmation Modal */}
+      {/* Confirm Deactivate Modal */}
       <Modal
         isOpen={isConfirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
