@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { jwtDecode } from "jwt-decode";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
  
@@ -9,6 +10,9 @@ const EmployeeLeaveBalances = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const hrId = jwtDecode(localStorage.getItem('token'))?.user_id;
+  
   const token = localStorage.getItem('token');
  
   useEffect(() => {
@@ -111,6 +115,7 @@ const EmployeeLeaveBalances = () => {
       const payload = {
         employeeId: selectedEmployee.employeeId,
         balances: filteredBalances,
+        performedBy: hrId
       };
  
       await axios.put(

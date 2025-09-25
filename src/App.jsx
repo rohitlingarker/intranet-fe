@@ -1,4 +1,6 @@
 import React, { useEffect } from "react";
+import "react-phone-input-2/lib/style.css";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -398,10 +400,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/employee-leave-balance"
+            path={`/employee-leave-balance`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EmployeeLeaveBalances />
+                <EmployeeLeaveBalances/>
               </ProtectedRoute>
             }
           />
