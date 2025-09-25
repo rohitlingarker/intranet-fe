@@ -396,10 +396,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/employee-leave-balance"
+            path={`/employee-leave-balance`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EmployeeLeaveBalances />
+                <EmployeeLeaveBalances/>
               </ProtectedRoute>
             }
           />
