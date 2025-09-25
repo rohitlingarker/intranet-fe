@@ -1,24 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const CommentBox = ({ entityId, entityType, currentUser, token }) => {
+// Get token from localStorage (or wherever you store it)
+const token = localStorage.getItem('token');
+
+const CommentBox = ({ entityId, entityType, currentUser }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [loading, setLoading] = useState(false);
+   
+  // Create Axios instance with Authorization header
+  const axiosInstance = axios.create({
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   // Fetch comments from backend
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get(`/api/comments/${entityType}/${entityId}`);
       const data = response.data;
 
       if (Array.isArray(data)) {
@@ -42,6 +46,10 @@ const CommentBox = ({ entityId, entityType, currentUser, token }) => {
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
 
+    const userId = currentUser.user_id;
+    console.log('Submitting comment:', { content: newComment, userId, parentId: replyingTo });
+    
+
     const payload = {
       content: newComment,
       userId: userId,
@@ -49,15 +57,7 @@ const CommentBox = ({ entityId, entityType, currentUser, token }) => {
     };
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/comments/${entityType}/${entityId}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axiosInstance.post(`/api/comments/${entityType}/${entityId}`, payload);
       setNewComment('');
       setReplyingTo(null);
       fetchComments();
@@ -69,12 +69,9 @@ const CommentBox = ({ entityId, entityType, currentUser, token }) => {
   // Recursive rendering of comments and replies
   const renderComments = (parentId = null) => {
     return comments
-      .filter((comment) => comment.parentId === parentId)
-      .map((comment) => (
-        <div
-          key={comment.id}
-          className={`ml-${parentId ? 6 : 0} mb-3 border-l pl-4`}
-        >
+      .filter(comment => comment.parentId === parentId)
+      .map(comment => (
+        <div key={comment.id} className={`ml-${parentId ? 6 : 0} mb-3 border-l pl-4`}>
           <div className="bg-gray-100 p-3 rounded">
             <p className="text-sm text-gray-600 font-semibold">
               {comment.userName}{' '}

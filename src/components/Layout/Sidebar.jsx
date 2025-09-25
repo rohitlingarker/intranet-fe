@@ -162,7 +162,7 @@ const Sidebar = ({ isCollapsed }) => {
           )}
 
           {/* Projects */}
- 
+          
           <li key="Projects">
             <Link
               to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" : isDeveloper? "/projects/developer" : "/projects/developer"}

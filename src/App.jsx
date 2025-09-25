@@ -76,7 +76,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user } = useAuth();
   console.log(user);
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
@@ -149,6 +149,8 @@ const AppRoutes = () => {
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
+        {/* Unauthorized should be here */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Protected Routes */}
         <Route
@@ -401,13 +403,18 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-        
         </Route>
       </Routes>
       <SaveLastPath />
-      <Routes>
+{/* <<<<<<<<< Temporary merge branch 1
+      {/* <Routes>
           <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes>
+        </Routes> */}
+{/* ========= */}
+      <Routes>
+        <Route path="/unauthorized" element={<Unauthorized />} />
+      </Routes>
+{/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
 };
@@ -416,7 +423,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <>
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={3000} />
       <Router>
         <AuthProvider>
           <NotificationProvider>

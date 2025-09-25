@@ -2,6 +2,7 @@ import React, { forwardRef, useImperativeHandle, useState, useEffect } from "rea
 import axios from "axios";
 import CompOffRequestsTable from "./CompOffRequestsTable";
 import { useNotification } from "../../../contexts/NotificationContext";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -24,7 +25,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
         setRequests(res.data.data);
       }
     } catch {
-      showNotification("Failed to fetch comp-off requests", "error");
+      toast.error("Failed to fetch comp-off requests");
     }
   };
 
@@ -44,11 +45,11 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
         },
         { withCredentials: true, headers: { Authorization: `Bearer ${token}` } }
       );
-      showNotification("Request submitted!", "success");
+      toast.success("Request submitted!");
       fetchRequests(); // Re-fetch the data to update the table
       return true; // Indicate success
     } catch (e) {
-      showNotification("Submission failed!", "error");
+      toast.error(e.response?.data?.message || "Failed to submit request");
       return false; // Indicate failure
     }
   };
@@ -73,7 +74,7 @@ const CompOffPage = forwardRef(({ employeeId }, ref) => {
       );
       fetchRequests();
     } catch {
-      showNotification("Failed to cancel request", "error");
+      toast.error("Failed to cancel request");
     }
   };
 

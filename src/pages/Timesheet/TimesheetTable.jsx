@@ -1,6 +1,6 @@
 import React from "react";
 import Pagination from "../../components/Pagination/pagination";
-import TimesheetGroup from "./TimesheetGroup";
+import {TimesheetGroup} from "./TimesheetGroup";
 import Button from "../../components/Button/Button";
 import { useState } from "react";
 
@@ -69,6 +69,7 @@ const TimesheetTable = ({
               addingNewTimesheet={addingNewTimesheet}
               setAddingNewTimesheet={setAddingNewTimesheet}
               projectInfo={projectInfo}
+              approvers={row.actionStatus}
             />
           ))}
 
@@ -86,4 +87,4 @@ const TimesheetTable = ({
   );
 };
 
-export default TimesheetTable;
+export {TimesheetTable};

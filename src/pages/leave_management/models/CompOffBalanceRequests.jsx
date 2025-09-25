@@ -1,19 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const CompOffBalanceRequests = ({ managerId }) => {
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
   const token = localStorage.getItem('token');
-  // Toast helper
-  const showToast = (msg, type) => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   // Fetch comp-off requests for the manager
   const fetchCompOffs = async () => {
@@ -30,7 +25,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
         Array.isArray(res.data) ? res.data : (res.data?.data || [])
       );
     } catch (err) {
-      showToast("Failed to fetch Comp-Off requests.", "error");
+      toast.error("Failed to fetch Comp-Off requests.");
       setPendingCompOffs([]);
     } finally {
       setLoading(false);
@@ -48,10 +43,10 @@ const CompOffBalanceRequests = ({ managerId }) => {
       {headers:{
         Authorization: `Bearer ${token}`
       }});
-      showToast("Comp-Off approved.", "success");
+      toast.success("Comp-Off approved.");
       fetchCompOffs();
     } catch {
-      showToast("Approval failed.", "error");
+      toast.error("Approval failed.");
     } finally {
       setLoading(false);
     }
@@ -67,10 +62,10 @@ const CompOffBalanceRequests = ({ managerId }) => {
           Authorization: `Bearer ${token}`
         }}
       );
-      showToast("Comp-Off rejected.", "success");
+      toast.success("Comp-Off rejected.");
       fetchCompOffs();
     } catch {
-      showToast("Rejection failed.", "error");
+      toast.error("Rejection failed.");
     } finally {
       setLoading(false);
     }
@@ -90,25 +85,25 @@ const CompOffBalanceRequests = ({ managerId }) => {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
             <thead>
-              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                <th className="p-3 text-left uppercase">Employee</th>
-                <th className="p-3 text-left uppercase">Dates</th>
-                <th className="p-3 text-left uppercase">Duration</th>
-                <th className="p-3 text-left uppercase">Note</th>
-                <th className="p-3 text-left uppercase">Status</th>
-                <th className="p-3 text-left uppercase">Action</th>
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-xs">
+                <th className="p-3 text-center uppercase">Employee</th>
+                <th className="p-3 text-center uppercase">Dates</th>
+                <th className="p-3 text-center uppercase">Duration</th>
+                <th className="p-3 text-center uppercase">Note</th>
+                <th className="p-3 text-center uppercase">Status</th>
+                <th className="p-3 text-center uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-blue-100">
               {pendingCompOffs.map((req) => (
-                <tr key={req.idleaveCompoff} className="hover:bg-blue-50 transition-colors">
+                <tr key={req.idleaveCompoff} className="hover:bg-blue-50 transition-colors text-xs">
                   <td className="p-3">{req.employeeName}</td>
                   <td className="p-3">
                     {req.startDate}
                     {req.endDate && req.endDate !== req.startDate ? ` to ${req.endDate}` : ""}
                   </td>
                   <td className="p-3">
-                    {req.halfDay ? "Half Day" : `${req.duration} ${req.duration === 1 ? "Day" : "Days"}`}
+                    {req.halfDay ? "Half Day" : `${req.duration} ${req.duration <= 1 ? "Day" : "Days"}`}
                   </td>
                   <td className="p-3">{req.note}</td>
                   <td className="p-3 capitalize">{req.status}</td>
@@ -134,27 +129,6 @@ const CompOffBalanceRequests = ({ managerId }) => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`
-            fixed top-6 right-6 z-[70] min-w-[200px] px-5 py-3 rounded-lg shadow-lg flex items-center gap-4 animate-slide-left
-            ${toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"}
-          `}
-          style={{ transition: "all 0.4s" }}
-          role="alert"
-        >
-          <span className="flex-1">{toast.msg}</span>
-          <button
-            className="ml-2 text-white opacity-80 hover:opacity-100 text-lg leading-none"
-            onClick={() => setToast(null)}
-            aria-label="Close"
-          >
-            ×
-          </button>
         </div>
       )}
 
