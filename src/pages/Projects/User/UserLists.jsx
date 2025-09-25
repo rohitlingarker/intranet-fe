@@ -256,11 +256,12 @@ const Lists = ({ projectId }) => {
             </button>
           </div>
           <CommentBox
-            entityId={selectedEntity.id}
-            entityType={selectedEntity.type}
-            currentUser={currentUser}
-            token={token} // Pass token if CommentBox needs it
-          />
+  entityId={selectedEntity.id}
+  entityType={selectedEntity.type}
+  currentUser={currentUser}
+  token={token} // ✅ correct
+/>
+
         </div>
       )}
     </div>

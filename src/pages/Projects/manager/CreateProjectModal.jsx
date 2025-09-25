@@ -7,10 +7,11 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
+    
     name: "",
     projectKey: "",
     description: "",
-    status: "ACTIVE",
+    status: "PLANNING",
     ownerId: "",
     memberIds: [],
     startDate: "",
@@ -110,6 +111,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       status: formData.status,
       ownerId: parseInt(formData.ownerId, 10), // 👈 FIXED
       memberIds: formData.memberIds,
+       memberCount: formData.memberIds.length, // 👈 count of members
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
       endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
     };
@@ -120,7 +122,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success("✅ Project created successfully!");
+      toast.success(" Project created successfully!");
       if (onProjectCreated) onProjectCreated();
 
       // reset
@@ -128,7 +130,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         name: "",
         projectKey: "",
         description: "",
-        status: "ACTIVE",
+        status: "PLANNING",
         ownerId: "",
         memberIds: [],
         startDate: "",
@@ -272,3 +274,4 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 };
 
 export default CreateProjectModal;
+

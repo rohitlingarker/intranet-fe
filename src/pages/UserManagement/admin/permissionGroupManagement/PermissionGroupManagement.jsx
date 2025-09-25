@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
+import Pagination from "../../../../components/Pagination/pagination";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 import { toast } from "react-toastify";
 import Modal from "../../../../components/Modal/modal";
@@ -69,6 +70,11 @@ export default function PermissionGroupManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTrigger, setSearchTrigger] = useState(false);
 
+  // New state for group search and pagination
+  const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteGroupId, setDeleteGroupId] = useState(null);
 
@@ -131,12 +137,10 @@ export default function PermissionGroupManagement() {
   };
 
   const handleCreate = async () => {
-    // Check if input is empty
     if (!newGroupName.trim()) {
       return showUniqueToast("Enter the group name", "error");
     }
 
-    // Validate group name format
     if (!validateGroupName(newGroupName)) {
       return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
     }
@@ -147,7 +151,6 @@ export default function PermissionGroupManagement() {
       setNewGroupName("");
       fetchGroups();
     } catch (err) {
-      // Show backend error message or fallback
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast(errorMessage, "error");
     }
@@ -160,12 +163,10 @@ export default function PermissionGroupManagement() {
   };
 
   const handleUpdate = async () => {
-    // Check if input is empty
     if (!editGroupName.trim()) {
       return showUniqueToast("Enter the group name", "error");
     }
 
-    // Validate group name format
     if (!validateGroupName(editGroupName)) {
       return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
     }
@@ -180,7 +181,6 @@ export default function PermissionGroupManagement() {
       setEditGroupName("");
       fetchGroups();
     } catch (err) {
-      // Show backend error message or fallback
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast(errorMessage, "error");
     }
@@ -205,17 +205,24 @@ export default function PermissionGroupManagement() {
     }
   };
 
-  const handleGroupSelect = async () => {
-    if (!selectedGroupId) {
-      return showUniqueToast("Please select a group.", "warning");
+  const handleGroupSelect = async (groupId) => {
+    if (!groupId) {
+      setShowPermissionActions(false);
+      setShowPermissionList(false);
+      setShowDeleteList(false);
+      setShowViewList(false);
+      setSearchTerm("");
+      setSearchTrigger(false);
+      return;
     }
+    setSelectedGroupId(groupId);
     setShowPermissionActions(true);
     setShowPermissionList(false);
     setShowDeleteList(false);
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
-    await fetchGroupPermissions(selectedGroupId);
+    await fetchGroupPermissions(groupId);
   };
 
   const handleAddClick = () => {
@@ -247,6 +254,16 @@ export default function PermissionGroupManagement() {
     setShowViewList(true);
     setShowPermissionList(false);
     setShowDeleteList(false);
+  };
+
+  const handleCloseActions = () => {
+    setShowPermissionActions(false);
+    setShowPermissionList(false);
+    setShowDeleteList(false);
+    setShowViewList(false);
+    setSelectedGroupId("");
+    setSearchTerm("");
+    setSearchTrigger(false);
   };
 
   const handleAddPermissionToGroup = async (permission_id) => {
@@ -310,6 +327,22 @@ export default function PermissionGroupManagement() {
     });
   }
 
+  // Filter groups based on search term
+  const filteredGroups = groups.filter(group =>
+    group?.group_name?.toLowerCase().includes(groupSearchTerm.toLowerCase())
+  );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredGroups.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentGroups = filteredGroups.slice(startIndex, endIndex);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [groupSearchTerm]);
+
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center sm:text-left">Permission Group Management</h2>
@@ -329,44 +362,68 @@ export default function PermissionGroupManagement() {
         </Button>
       </div>
 
+      {/* Search Groups */}
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <SearchInput
+          placeholder="Search existing groups..."
+          onSearch={(q) => setGroupSearchTerm(q)}
+        />
+      </div>
+
       {/* Groups List */}
       <div className="bg-white p-4 rounded shadow mb-6 overflow-x-auto">
         <h3 className="text-lg font-semibold mb-3">Existing Groups</h3>
         {loading ? (
           <p className="text-gray-500">Loading groups...</p>
-        ) : groups.length === 0 ? (
-          <p className="text-gray-500">No groups found.</p>
+        ) : currentGroups.length === 0 ? (
+          <p className="text-gray-500">
+            {groupSearchTerm ? "No groups found matching your search." : "No groups found."}
+          </p>
         ) : (
-          <ul className="space-y-2">
-            {groups.map((group) => (
-              <li
-                key={group?.group_id}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
-              >
-                <span className="font-medium">{group?.group_name}</span>
-                <div className="flex gap-3 flex-wrap">
-                  <Button
-                    size="small"
-                    variant="primary"
-                    className="text-sm w-full sm:w-auto"
-                    onClick={() => handleEditClick(group)}
-                    type="button"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="danger"
-                    className="text-sm w-full sm:w-auto"
-                    onClick={() => handleDeleteClick(group?.group_id)}
-                    type="button"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="space-y-2">
+              {currentGroups.map((group) => (
+                <li
+                  key={group?.group_id}
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
+                >
+                  <span className="font-medium">{group?.group_name}</span>
+                  <div className="flex gap-3 flex-wrap">
+                    <Button
+                      size="small"
+                      variant="primary"
+                      className="text-sm w-full sm:w-auto"
+                      onClick={() => handleEditClick(group)}
+                      type="button"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="danger"
+                      className="text-sm w-full sm:w-auto"
+                      onClick={() => handleDeleteClick(group?.group_id)}
+                      type="button"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -430,7 +487,7 @@ export default function PermissionGroupManagement() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
           <select
             value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
+            onChange={(e) => handleGroupSelect(e.target.value)}
             className="flex-1 p-2 border rounded w-full"
           >
             <option value="">-- Select Group --</option>
@@ -440,15 +497,21 @@ export default function PermissionGroupManagement() {
               </option>
             ))}
           </select>
-          <Button size="medium" variant="primary" onClick={handleGroupSelect} type="button" className="w-full sm:w-auto">
-            Select
-          </Button>
         </div>
 
         {showPermissionActions && (
           <>
             <hr className="my-4" />
-            <h4 className="text-md font-semibold mb-3">Actions:</h4>
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-md font-semibold">Actions:</h4>
+              <button 
+                onClick={handleCloseActions} 
+                type="button" 
+                className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+              >
+                ✕ Close
+              </button>
+            </div>
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-6 mb-6">
               <Button size="medium" variant="primary" onClick={handleAddClick} type="button" className="w-full sm:w-auto">
                 Add Permissions
