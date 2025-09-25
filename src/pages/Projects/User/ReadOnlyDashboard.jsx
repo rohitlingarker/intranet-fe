@@ -80,12 +80,12 @@ const ProjectDashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <div className="flex gap-3">
-          <Button
+          {/* <Button
             onClick={() => navigate("/projects/userlist")}
             variant="secondary"
           >
             View Project List
-          </Button>
+          </Button> */}
           <Button
             onClick={goToMyProfile}
             variant="primary"

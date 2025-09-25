@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import TimesheetHeader from "./TimesheetHeader";
 import TimesheetFilters from "./TimesheetFilters";
-import TimesheetTable from "./TimesheetTable";
+import {TimesheetTable} from "./TimesheetTable";
 import { fetchTimesheetHistory ,fetchProjectTaskInfo} from "./api";
 
 const TimesheetHistoryPage = () => {

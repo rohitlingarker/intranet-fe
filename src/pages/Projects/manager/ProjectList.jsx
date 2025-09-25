@@ -337,11 +337,11 @@ const ProjectList = () => {
                         <strong>Owner:</strong> {project.owner?.name || "—"}
                       </p>
                       <div>
-                        <strong>Members:</strong>
-<ul className="ml-4 list-disc">
-  {project.members?.map((m) => (
-    <li key={m.id}>
-      {m.name} {m.role}
+                        <strong>Members ({project.members.length}):</strong>
+<ul>
+  {project.members.map((member) => (
+    <li key={member.id}>
+      {member.name} ({member.role || ""})
     </li>
   ))}
 </ul>
