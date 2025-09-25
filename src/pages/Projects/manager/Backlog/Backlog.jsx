@@ -34,7 +34,7 @@ const Backlog = ({ projectId, projectName }) => {
 
   const fetchNoEpicStories = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories/no-epic`, { headers })
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, { headers })
       .then((res) => setNoEpicStories(res.data))
       .catch((err) => console.error("Failed to fetch no epic stories", err));
   };

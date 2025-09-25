@@ -25,7 +25,8 @@ const CreateIssueForm = ({
   const [sprints, setSprints] = useState([]);
 
   // Set token here
-  const token = localStorage.getItem("token"); // or wherever you store your JWT
+  const token = localStorage.getItem("token"); 
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
  
   useEffect(() => {
