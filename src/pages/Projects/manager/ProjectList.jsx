@@ -27,18 +27,24 @@ const ProjectList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [projectsPerPage] = useState(5);
+  const [filterStatus, setFilterStatus] = useState("All");
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
   // Fetch all projects
-  const fetchProjects = async () => {
+  const fetchProjects = async (status) => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const url =
+        status && status !== "All"
+          ? `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner?status=${status}`
+          : `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner`;
+
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setProjects(data);
     } catch (error) {
@@ -71,6 +77,10 @@ const ProjectList = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  useEffect(() => {
+    fetchProjects(filterStatus);
+  }, [filterStatus]);
+
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
     setEditingProjectId(null);
@@ -98,9 +108,12 @@ const ProjectList = () => {
     const { name, value } = e.target;
 
     if (formData.status === "ARCHIVED" && name !== "status") {
-      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
-        position: "top-right",
-      });
+      toast.warn(
+        "Archived projects can only have their status changed to ACTIVE.",
+        {
+          position: "top-right",
+        }
+      );
       return;
     }
 
@@ -113,9 +126,12 @@ const ProjectList = () => {
 
   const handleMemberToggle = (userId) => {
     if (formData.status === "ARCHIVED") {
-      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
-        position: "top-right",
-      });
+      toast.warn(
+        "Archived projects can only have their status changed to ACTIVE.",
+        {
+          position: "top-right",
+        }
+      );
       return;
     }
     setFormData((prev) => {
@@ -140,7 +156,7 @@ const ProjectList = () => {
       );
       toast.success("Project updated successfully!", { position: "top-right" });
       setEditingProjectId(null);
-      fetchProjects();
+      fetchProjects(filterStatus);
     } catch (err) {
       console.error("Failed to update project", err);
     } finally {
@@ -156,29 +172,38 @@ const ProjectList = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project deleted successfully!", { position: "top-right" });
-      fetchProjects();
+      fetchProjects(filterStatus);
     } catch (err) {
       console.error("Failed to delete project", err);
     }
   };
 
-  const filteredProjects = projects.filter(
-    (p) =>
-      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects.filter((p) => {
+  const matchesSearch =
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase());
+
+  const matchesStatus =
+    filterStatus === "All" ? true : p.status === filterStatus;
+
+  return matchesSearch && matchesStatus;
+});
+
 
   // Pagination
   const indexOfLastProject = currentPage * projectsPerPage;
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
-  const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
+  const currentProjects = filteredProjects.slice(
+    indexOfFirstProject,
+    indexOfLastProject
+  );
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-black mb-6">Projects</h1>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-4">
         <input
           type="text"
           placeholder="Search by name or key"
@@ -186,6 +211,19 @@ const ProjectList = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
+        {/* Status Filter Dropdown */}
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border px-3 py-2 rounded-xl"
+        >
+          <option value="All">All</option>
+          <option value="ACTIVE">Active</option>
+          <option value="PLANNING">Planning</option>
+          <option value="ARCHIVED">Archived</option>
+        </select>
+
         <Button
           variant="primary"
           size="medium"
@@ -210,7 +248,9 @@ const ProjectList = () => {
                 <div className="flex items-center gap-2">
                   {expandedId === project.id ? <ChevronDown /> : <ChevronRight />}
                   <h2 className="text-xl font-semibold">{project.name}</h2>
-                  <span className="text-gray-500 text-sm">({project.projectKey})</span>
+                  <span className="text-gray-500 text-sm">
+                    ({project.projectKey})
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -328,7 +368,8 @@ const ProjectList = () => {
                   ) : (
                     <div className="space-y-2 text-sm text-gray-700">
                       <p>
-                        <strong>Description:</strong> {project.description || "—"}
+                        <strong>Description:</strong>{" "}
+                        {project.description || "—"}
                       </p>
                       <p>
                         <strong>Status:</strong> {project.status}
@@ -338,14 +379,13 @@ const ProjectList = () => {
                       </p>
                       <div>
                         <strong>Members ({project.members.length}):</strong>
-<ul>
-  {project.members.map((member) => (
-    <li key={member.id}>
-      {member.name} ({member.role || ""})
-    </li>
-  ))}
-</ul>
-
+                        <ul>
+                          {project.members.map((member) => (
+                            <li key={member.id}>
+                              {member.name} ({member.role || ""})
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                       <div className="pt-4">
                         <Button
@@ -377,7 +417,7 @@ const ProjectList = () => {
       <CreateProjectModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onProjectCreated={fetchProjects}
+        onProjectCreated={() => fetchProjects(filterStatus)}
       />
 
       <ToastContainer position="top-right" />

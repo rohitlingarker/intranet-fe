@@ -33,7 +33,7 @@ const UserProfile = () => {
   const token = localStorage.getItem("token");
 
   const axiosInstance = axios.create({
-    baseURL: "http://192.168.2.69:4000",
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
     headers: { "Content-Type": "application/json" },
   });
 
