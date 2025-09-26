@@ -1,3 +1,4 @@
+// Backlog.jsx
 import React, { useEffect, useState } from "react";
 import CreateSprint from "./sprint";
 import { Plus } from "lucide-react";
@@ -16,90 +17,75 @@ const Backlog = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [noEpicStories, setNoEpicStories] = useState([]);
+  const [projects, setProjects] = useState([]);
 
   const token = localStorage.getItem("token");
-
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   const handleCloseForms = () => {
     setShowIssueForm(false);
     setShowSprintForm(false);
   };
 
+  const fetchProjects = () => {
+    axios
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers })
+      .then((res) => setProjects(res.data.content || res.data || []))
+      .catch((err) => console.error("Failed to fetch projects", err));
+  };
+
   const fetchStories = () => {
     axios
-      .get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-        { headers }
-      )
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers })
       .then((res) => setStories(res.data))
       .catch((err) => console.error("Failed to fetch stories", err));
   };
 
   const fetchNoEpicStories = () => {
     axios
-      .get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`,
-        { headers }
-      )
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, { headers })
       .then((res) => setNoEpicStories(res.data))
       .catch((err) => console.error("Failed to fetch no epic stories", err));
   };
 
   const fetchSprints = () => {
     axios
-      .get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-        { headers }
-      )
-      .then((res) => {
-        console.log("Fetched sprints:", res.data); // debug
-        setSprints(res.data); // load all sprints
-      })
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers })
+      .then((res) => setSprints(res.data))
       .catch((err) => console.error("Failed to fetch sprints", err));
   };
 
   useEffect(() => {
+    fetchProjects();
     fetchStories();
     fetchSprints();
     fetchNoEpicStories();
   }, [projectId]);
 
   const handleDropStory = (storyId, sprintId) => {
-  console.log(`Assigning story ${storyId} to sprint ${sprintId}`);
+    axios
+      .put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
+        { sprintId },
+        { headers }
+      )
+      .then(() => {
+        setStories((prev) =>
+          prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
+        );
+        setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
+      })
+      .catch((err) => console.error("Failed to assign story to sprint", err));
+  };
 
-  axios
-    .put(
-      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
-      { sprintId },
-      { headers }
-    )
-    .then(() => {
-      // update in stories
-      setStories((prev) =>
-        prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
-      );
-
-      // remove from noEpicStories if it was listed there
-      setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
-    })
-    .catch((err) => console.error("Failed to assign story to sprint", err));
-};
-
+  const selectedProject = projects.find((p) => p.id === projectId);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto mt-6 px-4 space-y-6">
-        {/* Page Title */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-medium text-indigo-900">
-            Backlog of {projectName}
-          </h1>
+          <h1 className="text-xl font-medium text-indigo-900">Backlog of {projectName}</h1>
           <div className="flex gap-3">
-            {/* Create Issue Button */}
             <Button
               size="medium"
               variant="primary"
@@ -111,48 +97,41 @@ const Backlog = ({ projectId, projectName }) => {
           </div>
         </div>
 
-        {/* Create Issue Form */}
-        {showIssueForm && (
+        {showIssueForm && selectedProject && (
           <div className="bg-white border rounded-lg p-4 shadow-sm">
             <CreateIssueForm
               onClose={handleCloseForms}
               onCreated={fetchStories}
               projectId={projectId}
+              ownerId={selectedProject.owner?.id}
+              memberIds={selectedProject.members?.map((m) => m.id) || []}
             />
           </div>
         )}
 
-        {/* Create Sprint Modal */}
-        {showSprintForm && <CreateSprint onClose={handleCloseForms} />}
+        {showSprintForm && <CreateSprint onClose={handleCloseForms} projectId={projectId} />}
 
-        {/* Backlog Stories */}
         <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
-          <h2 className="text-base font-medium text-indigo-900 mb-3">
-            Backlog Stories
-          </h2>
+          <h2 className="text-base font-medium text-indigo-900 mb-3">Backlog Stories</h2>
           {noEpicStories.length === 0 ? (
             <p className="text-gray-400 italic">No unassigned stories</p>
           ) : (
             <div className="space-y-2">
-              {noEpicStories
-                .map((story) => (
-                  <StoryCard key={story.id} story={story} />
-                ))}
+              {noEpicStories.map((story) => (
+                <StoryCard key={story.id} story={story} />
+              ))}
             </div>
           )}
         </div>
 
-        {/* Sprint Assignment */}
         <div>
-          <h2 className="text-base font-medium text-indigo-900 mb-3">
-            Assign to Sprint
-          </h2>
+          <h2 className="text-base font-medium text-indigo-900 mb-3">Assign to Sprint</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {sprints.map((sprint) => (
               <SprintColumn
                 key={sprint.id}
                 sprint={sprint}
-                stories={stories.filter((s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id)}
+                stories={stories.filter((s) => s.sprintId === sprint.id)}
                 onDropStory={handleDropStory}
                 onChangeStatus={() => {}}
               />

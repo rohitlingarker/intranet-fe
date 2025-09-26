@@ -40,6 +40,7 @@ import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
+import Userprofile from "./pages/Projects/User/Userprofile";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -193,6 +194,7 @@ const AppRoutes = () => {
             path="/projects/performance"
             element={<EmployeePerformance />}
           />
+          <Route path="/projects/user/myprofile" element={<Userprofile />} />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
           <Route
@@ -204,6 +206,7 @@ const AppRoutes = () => {
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
           />
+          
 
           {/* User Management */}
 
@@ -398,10 +401,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/employee-leave-balance"
+            path={`/employee-leave-balance`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EmployeeLeaveBalances />
+                <EmployeeLeaveBalances/>
               </ProtectedRoute>
             }
           />

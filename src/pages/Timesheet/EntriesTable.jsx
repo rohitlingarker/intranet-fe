@@ -24,6 +24,9 @@ const EntriesTable = ({
   setAddingNewTimesheet,
   refreshData, // callback to reload entries after update
   projectInfo,
+  selectedEntryIds,  
+  setSelectedEntryIds,
+  selectionMode,
 }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
@@ -61,6 +64,28 @@ const EntriesTable = ({
       ? proj.tasks.map((t) => ({ label: t.task, value: t.taskId }))
       : [];
   };
+
+  const toggleCheckbox = (entryId, checked) => {
+    if (checked) {
+      setSelectedEntryIds((prev) => [...prev, entryId]);
+    } else {
+      setSelectedEntryIds((prev) => prev.filter((id) => id !== entryId));
+    }
+  };
+
+  // Helper to check if all entries are selected
+  const allSelected =
+    entries.length > 0 && selectedEntryIds.length === entries.length;
+
+  // Toggle select all
+  const toggleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedEntryIds(entries.map((e) => e.timesheetEntryId));
+    } else {
+      setSelectedEntryIds([]);
+    }
+  };
+
 
   const handleEditClick = (idx) => {
     if (addingNewEntry) return;
@@ -186,11 +211,24 @@ const EntriesTable = ({
     setAddingNewEntry(false);
     setAddData({ workType: "Office" });
   };
-
+  
   return (
     <table className="w-full border-collapse rounded ">
       <thead>
         <tr className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm">
+          <th className="px-4 py-2">
+            <label className="inline-flex items-center cursor-pointer select-none" title="Select All"></label>
+            <input 
+              type="checkbox"
+              title="Select All"
+              checked={allSelected}
+              onChange={(e) => toggleSelectAll(e.target.checked)}
+            />
+          </th>  
+          
+    
+
+          
           <th className="text-left px-4 py-2">Project</th>
           <th className="text-left px-4 py-2">Task</th>
           <th className="text-left px-4 py-2">Start</th>
@@ -207,6 +245,15 @@ const EntriesTable = ({
             key={entry.timesheetEntryId}
             className={`text-sm ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition`}
           >
+           
+              <td className="px-4 py-2 text-center">
+                <input
+                  type="checkbox"
+                  checked={selectedEntryIds.includes(entry.timesheetEntryId)}
+                  onChange={(e) => toggleCheckbox(entry.timesheetEntryId, e.target.checked)}
+                />
+              </td>
+          
             {editIndex === idx ? (
               <>
                 <td className="px-4 py-2 text-xs">
@@ -313,6 +360,19 @@ const EntriesTable = ({
         {addingNewEntry && (
           <tr>
             <>
+            <td className="px-4 py-2 text-center">
+        <input
+          type="checkbox"
+          checked={selectedEntryIds.includes('add-entry-temp')}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedEntryIds((prev) => [...prev, 'add-entry-temp']);
+            } else {
+              setSelectedEntryIds((prev) => prev.filter((id) => id !== 'add-entry-temp'));
+            }
+          }}
+        />
+      </td>
               <td className="px-4 py-2">
                 <FormSelect
                   name="projectId"

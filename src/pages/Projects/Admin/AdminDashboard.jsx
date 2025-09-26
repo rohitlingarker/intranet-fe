@@ -73,24 +73,17 @@ const ProjectDashboard = () => {
   }, []);
 
   const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
-  const goToMyProfile = () => navigate("/projects/user/myprofile");
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Project Dashboard</h1>
         <div className="flex gap-3">
-          {/* <Button
-            onClick={() => navigate("/projects/userlist")}
+          <Button
+            onClick={() => navigate("/projects/adminprojectlist")}
             variant="secondary"
           >
             View Project List
-          </Button> */}
-          <Button
-            onClick={goToMyProfile}
-            variant="primary"
-          >
-            My Profile
           </Button>
         </div>
       </div>
@@ -115,6 +108,11 @@ const ProjectDashboard = () => {
               title="Epics"
               value={dashboardData.totalEpics}
               textColor="text-purple-700"
+            />
+            <ThreeCard
+              title="Users"
+              value={dashboardData.totalUsers}
+              textColor="text-pink-700"
             />
             <ThreeCard
               title="Stories"
