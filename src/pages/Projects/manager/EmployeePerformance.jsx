@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-  PieChart, Pie, Cell, Tooltip,
-  BarChart, Bar, XAxis, YAxis, Legend,
-  ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#10b981', '#f59e0b'];
@@ -16,15 +14,11 @@ const EmployeePerformance = () => {
   const [page, setPage] = useState(1);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
 
-  // Get token from localStorage
   const token = localStorage.getItem('token');
 
-  // Create Axios instance with Authorization header
   const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_PMS_BASE_URL,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   useEffect(() => {
@@ -43,7 +37,6 @@ const EmployeePerformance = () => {
     }
   };
 
-  // Search filter handler
   const handleSearchChange = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -64,18 +57,17 @@ const EmployeePerformance = () => {
     });
   };
 
-  // Pagination logic
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  // Chart data mapping
-  const getStatusData = () => {
+  // Overall task status aggregation
+  const getOverallTaskStatus = () => {
     const statusMap = {};
-    filtered.forEach(item => {
-      const total = item.totalTasks || 0;
-      const completed = item.tasksCompleted || 0;
-      const inProgress = item.tasksInProgress || 0;
-      const overdue = item.tasksOverdue || 0;
+    filtered.forEach(emp => {
+      const total = emp.totalTasks || 0;
+      const completed = emp.tasksCompleted || 0;
+      const inProgress = emp.tasksInProgress || 0;
+      const overdue = emp.tasksOverdue || 0;
       if (total > 0) {
         statusMap['Total Tasks'] = (statusMap['Total Tasks'] || 0) + total;
         statusMap['Completed'] = (statusMap['Completed'] || 0) + completed;
@@ -84,6 +76,16 @@ const EmployeePerformance = () => {
       }
     });
     return Object.entries(statusMap).map(([name, value]) => ({ name, value }));
+  };
+
+  // Task completion per employee
+  const getTaskCompletionData = () => {
+    return filtered.map(emp => ({
+      name: emp.employeeName,
+      Completed: emp.tasksCompleted || 0,
+      'In Progress': emp.tasksInProgress || 0,
+      Overdue: emp.tasksOverdue || 0,
+    }));
   };
 
   return (
@@ -100,7 +102,7 @@ const EmployeePerformance = () => {
         aria-label="Search Employees"
       />
 
-      {/* Table Container */}
+      {/* Table */}
       <div className="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
         <table className="min-w-full border-collapse text-sm text-left">
           <thead className="bg-indigo-100 sticky top-0 z-10">
@@ -143,15 +145,12 @@ const EmployeePerformance = () => {
                   <td className="px-4 py-3 border-b border-gray-200">
                     {emp.epics?.length > 0 ? (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleExpand(emp.employeeEmail);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); toggleExpand(emp.employeeEmail); }}
                         className="text-indigo-700 hover:text-indigo-900 underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
                         aria-label={`${expandedEmployees.has(emp.employeeEmail) ? 'Collapse' : 'Expand'} epics for ${emp.employeeName}`}
                         aria-expanded={expandedEmployees.has(emp.employeeEmail)}
                       >
-                        {expandedEmployees.has(emp.employeeEmail) ? 'Hide' : 'Show'}
+                        {expandedEmployees.has(emp.employeeEmail) ? 'Hide Details' : 'Show Details'}
                       </button>
                     ) : (
                       <span className="text-gray-400">None</span>
@@ -164,7 +163,7 @@ const EmployeePerformance = () => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       <div className="flex justify-center items-center my-6 space-x-3">
         <button
           onClick={() => setPage(p => Math.max(p - 1, 1))}
@@ -208,19 +207,19 @@ const EmployeePerformance = () => {
             className="mb-8 bg-white shadow rounded p-5 max-w-5xl mx-auto"
             aria-label={`Epics details for ${emp.employeeName}`}
           >
-            <h3 className="text-xl font-bold mb-4 text-indigo-800">{emp.employeeName}'s Epics</h3>
+            <h3 className="text-xl font-bold mb-4 text-indigo-800">{emp.employeeName}'s Work Details</h3>
             {emp.epics.map(epic => (
               <div key={epic.epicId} className="mb-6 border-l-4 border-indigo-600 pl-4">
-                <h4 className="font-semibold mb-2 text-indigo-700">{epic.epicName}</h4>
+                <h4 className="font-semibold mb-2 text-indigo-700">Epic: {epic.epicName}</h4>
                 {epic.stories.length > 0 ? (
                   <ul className="list-disc list-inside space-y-2 text-gray-700">
                     {epic.stories.map(story => (
                       <li key={story.storyId}>
-                        <div className="font-semibold mb-1">{story.storyTitle}</div>
+                        <div className="font-semibold mb-1">Story: {story.storyTitle}</div>
                         {story.taskTitles.length > 0 ? (
                           <ul className="list-decimal list-inside ml-6 text-gray-600">
                             {story.taskTitles.map((task, idx) => (
-                              <li key={idx} className="italic">{task}</li>
+                              <li key={idx} className="italic">Task: {task}</li>
                             ))}
                           </ul>
                         ) : (
@@ -240,47 +239,32 @@ const EmployeePerformance = () => {
 
       {/* Charts */}
       <section className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mt-10">
+        {/* Overall Task Status */}
         <div className="bg-white shadow rounded-lg p-5 flex flex-col">
-          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Task Status - Pie Chart</h3>
+          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Overall Task Status</h3>
           <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie
-                dataKey="value"
-                data={getStatusData()}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name }) => name.replace('_', ' ')}
-                labelLine={false}
-              >
-                {getStatusData().map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [value, 'Tasks']} />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                formatter={(value) => value.replace('_', ' ')}
-                wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-5 flex flex-col">
-          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Task Status - Bar Chart</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={getStatusData()}>
+            <BarChart data={getOverallTaskStatus()}>
               <XAxis dataKey="name" tick={{ fill: '#4b5563', fontWeight: '600' }} />
               <YAxis tick={{ fill: '#4b5563' }} />
               <Tooltip formatter={(value) => [value, 'Tasks']} />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}
-              />
+              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }} />
               <Bar dataKey="value" fill="#4f46e5" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Task Completion Per Employee */}
+        <div className="bg-white shadow rounded-lg p-5 flex flex-col">
+          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Task Completion by Employee</h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={getTaskCompletionData()}>
+              <XAxis dataKey="name" tick={{ fill: '#4b5563', fontWeight: '600' }} />
+              <YAxis tick={{ fill: '#4b5563' }} />
+              <Tooltip />
+              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }} />
+              <Bar dataKey="Completed" fill="#10b981" />
+              <Bar dataKey="In Progress" fill="#f59e0b" />
+              <Bar dataKey="Overdue" fill="#ef4444" />
             </BarChart>
           </ResponsiveContainer>
         </div>
