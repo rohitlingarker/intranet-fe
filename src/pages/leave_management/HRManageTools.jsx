@@ -155,7 +155,7 @@ const HRManageTools = ({ employeeId }) => {
                       className={`border px-4 py-2 min-w-[200px] bg-white ${
                         i === 0
                           ? "sticky left-0 z-10"
-                          : i === 1
+                           : i === 1
                           ? "sticky left-[200px] z-10"
                           : ""
                       }`}
