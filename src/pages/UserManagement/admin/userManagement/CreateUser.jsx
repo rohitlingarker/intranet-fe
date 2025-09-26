@@ -61,8 +61,9 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (countryCode === "91" && nationalLen !== 10) {
       return showSingleToast("Indian contact number must be exactly 10 digits.");
     }
-    // You can add other countries here:
-    // else if(countryCode === "1" && nationalLen !== 10) { ... }
+    if (countryCode === "1" && nationalLen !== 10) {
+      return showSingleToast("US contact number must be exactly 10 digits.");
+    }
 
     if (!form.password.trim()) return showSingleToast("Password is required.");
     if (form.password.length < 6) return showSingleToast("Password must be at least 6 characters long.");
@@ -140,9 +141,14 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             Contact
           </label>
           <PhoneInput
-            country={"in"}
+            country={"us"} // default to US, can be changed by user
             value={form.contact}
-            onChange={(phone) => setForm((prev) => ({ ...prev, contact: phone }))}
+            onChange={(phone, countryData) =>
+              setForm((prev) => ({
+                ...prev,
+                contact: phone, // always update properly
+              }))
+            }
             enableSearch
             disableDropdown={false}
             placeholder="Enter phone number"
@@ -151,7 +157,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             buttonClass="!absolute !left-0 !h-full !rounded-l-md !pl-3 !pr-3 !bg-white !border-r"
             dropdownClass="!z-50"
             enableAreaCodes={true}
-            countryCodeEditable={false}
+            countryCodeEditable={true} // ✅ now user can edit number freely
           />
         </div>
 
