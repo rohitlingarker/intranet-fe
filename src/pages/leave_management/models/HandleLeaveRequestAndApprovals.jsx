@@ -5,6 +5,7 @@ import Pagination from "../../../components/Pagination/pagination";
 import LeaveDashboard from "../charts/LeaveDashboard";
 import { toast } from "react-toastify";
 import ManagerEditLeaveRequest from "./ManagerEditLeaveRequest";
+import LeaveSection from "./LeaveSection";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
  
@@ -506,7 +507,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       </div>
                     </button>
                   </td>
- 
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-gray-900">
@@ -677,7 +677,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">
-                  Leave Balance - {leaveBalanceModal.employeeName}
+                  Analysis for - {leaveBalanceModal.employeeName}
                 </h2>
                 <button
                   onClick={() => setLeaveBalaceModel(null)}
@@ -686,7 +686,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   &times;
                 </button>
               </div>
-              <LeaveDashboard employeeId={leaveBalanceModal.employeeId} />
+              <LeaveSection employeeId={leaveBalanceModal.employeeId} />
             </div>
           </div>
         )}

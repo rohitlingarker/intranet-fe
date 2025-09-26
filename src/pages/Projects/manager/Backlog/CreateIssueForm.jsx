@@ -48,12 +48,26 @@ const CreateIssueForm = ({
 
   // Fetch projects, users, sprints
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`)
-      .then((res) => setProjects(res.data.content || res.data || []));
-    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`)
-      .then((res) => setUsers(res.data.content || res.data || []));
-    axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`)
-      .then((res) => setSprints(res.data.content || res.data || []));
+    const fetchData = async () => {
+      try {
+        const [projectsRes, usersRes, sprintsRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
+        ]);
+        // console.log({usersRes});
+        
+
+        setProjects(projectsRes.data.content || projectsRes.data || []);
+        setUsers(usersRes.data.content || usersRes.data || []);
+        setSprints(sprintsRes.data.content || sprintsRes.data || []);
+      } catch (err) {
+        console.error("Failed to load initial data", err);
+        toast.error("Failed to load projects, users, or sprints");
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Fetch Epics & Stories when project changes

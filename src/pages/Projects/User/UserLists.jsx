@@ -11,7 +11,7 @@ const Lists = ({ projectId }) => {
   const [epics, setEpics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntity, setSelectedEntity] = useState(null);
-  const { user } = useAuth();
+  const {isAuthenticated, user } = useAuth();
   const currentUser = user;
 
   const token = localStorage.getItem('token');

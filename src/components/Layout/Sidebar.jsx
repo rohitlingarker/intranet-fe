@@ -164,7 +164,7 @@ const Sidebar = ({ isCollapsed }) => {
           
           <li key="Projects">
             <Link
-              to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" :isDeveloper? "/projects/developer": "/projects/developer"}
+              to={isAdmin ? "/projects/admin" : isManager? "/projects/manager" : isDeveloper? "/projects/developer" : "/projects/developer"}
               className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
                 (location.pathname.startsWith("/projects"))
                   ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"

@@ -33,7 +33,7 @@ const ProjectDashboard = () => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      console.log(token, "12345678");
+      // console.log(token, "12345678");
  
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
