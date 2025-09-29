@@ -169,7 +169,7 @@ export default function LoginPage() {
             className="hover:underline hover:text-blue-600"
             type="button"
           >
-            Forgot Password?
+            Reset Password?
           </button>
         </div>
       </div>
