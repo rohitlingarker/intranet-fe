@@ -165,7 +165,7 @@ export default function LoginPage() {
             Create Account
           </button>
           <button
-            onClick={() => navigate("/forgot")}
+            onClick={() => navigate("/reset-password")}
             className="hover:underline hover:text-blue-600"
             type="button"
           >

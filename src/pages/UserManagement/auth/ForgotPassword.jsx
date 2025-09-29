@@ -86,7 +86,7 @@ export default function ForgotPassword() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-50 to-blue-100">
       <div className="bg-white shadow-xl rounded-2xl p-8 max-w-md w-full">
         <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
-          Forgot Password
+          Reset Password
         </h2>
 
         <div className="space-y-4">
