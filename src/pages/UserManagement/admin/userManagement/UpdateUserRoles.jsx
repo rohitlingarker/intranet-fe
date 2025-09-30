@@ -154,12 +154,12 @@ export default function UpdateUserRole() {
     <div className="p-6 max-w-6xl mx-auto">
       {/* ✅ Back Button */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <h2 className="text-3xl font-semibold text-blue-700">
+        <h2 className="text-xl font-semibold text-blue-700">
           Update User Roles
         </h2>
         <Button
           variant="secondary"
-          size="medium"
+          size="small"
           onClick={() => navigate("/user-management/users")}
         >
           ← Back

@@ -10,12 +10,16 @@ import { Eye, Plus, Trash2, X } from 'lucide-react';
 import Button from "../../../../components/Button/Button";
 import Navbar from "../../../../components/Navbar/Navbar";
 import Pagination from "../../../../components/Pagination/pagination";
+import Modal from '../../../../components/Modal/modal';
 import { showStatusToast } from "../../../../components/toastfy/toast"; 
+
 const AccessPointMapping = () => {
   const [aps, setAps] = useState([]);
   const [unmappedPermissions, setUnmappedPermissions] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAccessPoint, setSelectedAccessPoint] = useState(null);
+  const [selectedAccessPointId, setSelectedAccessPointId] = useState(null);
   const [selectedPermission, setSelectedPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,11 +56,27 @@ const AccessPointMapping = () => {
     });
   }, []);
  
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this access point?')) {
-      await deleteAccessPoint(id);
-      setAps(aps.filter(ap => ap.access_id !== id));
+  const handleDeleteClick = (id) => {
+    setSelectedAccessPointId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteAccessPoint(selectedAccessPointId);
+      setAps((prev) => prev.filter((ap) => ap.access_id !== selectedAccessPointId));
+      showStatusToast("Access Point Successfully deleted", "success");
+    } catch (err) {
+      showStatusToast("Failed to delete access point", "error");
+    } finally {
+      setShowDeleteModal(false);
+      setSelectedAccessPointId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedAccessPointId(null);
   };
  
   const handleAddPermission = async (accessPoint) => {
@@ -77,7 +97,7 @@ const AccessPointMapping = () => {
  
   const handleAssignPermission = async () => {
     if (!selectedPermission) {
-      showStatusToast('Please select a permission','success');
+      showStatusToast('Please select a permission', 'error');
       return;
     }
     setLoading(true);
@@ -96,8 +116,7 @@ const AccessPointMapping = () => {
     } finally {
       setLoading(false);
     }
- 
-    };
+  };
  
   const totalPages = Math.ceil(aps.length / cardsPerPage);
  
@@ -108,7 +127,6 @@ const AccessPointMapping = () => {
   const handleNext = () => {
     if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
   };
- 
  
   return (
     <div>
@@ -127,25 +145,35 @@ const AccessPointMapping = () => {
               {currentCards.map((ap) => (
                 <div
                   key={ap.access_id}
-                  className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border"
+                  className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border flex flex-col"
                 >
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  {/* Endpoint path with word wrapping */}
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 break-words overflow-wrap-anywhere">
                     {ap.endpoint_path}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Method:</strong> {ap.method}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Module:</strong> {ap.module}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Public:</strong> {ap.is_public ? 'Yes' : 'No'}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    <strong>Permission:</strong> {ap.permission_code || 'N/A'}
-                  </p>
+                  
+                  {/* Details section with consistent spacing */}
+                  <div className="flex-grow mb-4 space-y-2">
+                    <p className="text-sm text-gray-600">
+                      <strong className="font-medium">Method:</strong>
+                      <span className="ml-1">{ap.method}</span>
+                    </p>
+                    <p className="text-sm text-gray-600 break-words">
+                      <strong className="font-medium">Module:</strong>
+                      <span className="ml-1">{ap.module}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong className="font-medium">Public:</strong>
+                      <span className="ml-1">{ap.is_public ? 'Yes' : 'No'}</span>
+                    </p>
+                    <p className="text-sm text-gray-600 break-words">
+                      <strong className="font-medium">Permission:</strong>
+                      <span className="ml-1">{ap.permission_code || 'N/A'}</span>
+                    </p>
+                  </div>
  
-                  <div className="space-y-2">
+                  {/* Action buttons */}
+                  <div className="space-y-2 mt-auto">
                     <Button
                       onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
                       className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
@@ -155,12 +183,12 @@ const AccessPointMapping = () => {
                     <Button
                       onClick={() => handleAddPermission(ap)}
                       disabled={loading}
-                      className="flex items-center w-full justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-500 transition-all shadow disabled:opacity-50"
+                      className="flex items-center w-full justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all shadow disabled:opacity-50"
                     >
                       <Plus className="w-4 h-4" /> Add
                     </Button>
                     <Button
-                      onClick={() => handleDelete(ap.access_id)}
+                      onClick={() => handleDeleteClick(ap.access_id)}
                       className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
                     >
                       <Trash2 className="w-4 h-4" /> Delete
@@ -183,6 +211,7 @@ const AccessPointMapping = () => {
           </>
         )}
  
+        {/* Permission Assignment Modal */}
         {showModal && (
           <PermissionModal
             unmappedPermissions={unmappedPermissions}
@@ -194,6 +223,33 @@ const AccessPointMapping = () => {
             loading={loading}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={handleCancelDelete}
+          title="Confirm Deletion"
+        >
+          <div className="p-4">
+            <p className="text-gray-600 mb-6">
+              Please confirm you really want to delete the access point
+            </p>
+            <div className="flex justify-end space-x-4">
+              <Button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );
@@ -245,7 +301,7 @@ const PermissionModal = ({
         </div>
  
         <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-sm text-gray-600 mb-2 break-words">
             <strong>Access Point:</strong> {selectedAccessPoint?.endpoint_path}
           </p>
           <p className="text-sm text-gray-600 mb-4">
