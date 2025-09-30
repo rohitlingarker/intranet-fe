@@ -117,15 +117,12 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   };
 
   return (
-    // Changed max-w-3xl to max-w-xl for a narrower container
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-xl mx-auto text-[70%]">
       <form
         onSubmit={handleSubmit}
-        // Reduced padding and vertical space
         className="space-y-3 p-3 max-h-[70vh] overflow-y-auto"
       >
         {/* First + Last Name */}
-        {/* Reduced gap */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormInput
             label="First Name"
@@ -136,7 +133,6 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             }}
             placeholder="Enter first name"
             required
-            // Note: You may need to adjust the font size inside your FormInput component
             labelClassName="text-xs"
             inputClassName="text-sm"
           />
@@ -171,7 +167,6 @@ export default function CreateUserForm({ onSuccess, onClose }) {
 
         {/* Contact */}
         <div>
-          {/* Reduced font size for label */}
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Contact
           </label>
@@ -188,9 +183,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             disableDropdown={false}
             placeholder="Enter phone number"
             containerClass="w-full"
-            // Adjusted padding, left-padding for smaller dropdown, and font size
             inputClass="!w-full !pl-12 !pr-2 !py-1.5 !border !rounded-md !shadow-sm !text-sm"
-            // Adjusted padding for a smaller dropdown button
             buttonClass="!absolute !left-0 !h-full !rounded-l-md !px-2 !bg-white !border-r"
             dropdownClass="!z-50"
             enableAreaCodes={true}
@@ -241,22 +234,18 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             name="is_active"
             checked={form.is_active}
             onChange={handleChange}
-            // Reduced checkbox size
             className="h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
           />
-          {/* Reduced label font size */}
           <label htmlFor="is_active_modal" className="text-xs text-gray-700">
             Active
           </label>
         </div>
 
         {/* Buttons */}
-        {/* Reduced padding-top and gap */}
         <div className="flex gap-3 pt-3 border-t sticky bottom-0 bg-white">
           <Button
             type="submit"
             variant="primary"
-            // Changed size to 'small' for a more compact button
             size="small"
             disabled={loading}
             className="flex-1 sm:flex-none"
@@ -266,7 +255,6 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           <Button
             type="button"
             variant="secondary"
-            // Changed size to 'small'
             size="small"
             onClick={onClose}
             disabled={loading}

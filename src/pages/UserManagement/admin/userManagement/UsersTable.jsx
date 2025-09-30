@@ -218,7 +218,7 @@ export default function UsersTable() {
   });
 
   return (
-    <div className="px-6 py-4 text-[75%]"> {/* <-- Reduce all text by 30% */}
+    <div className="px-6 py-4 text-[70%]">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-xl font-semibold text-gray-800">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
@@ -270,7 +270,7 @@ export default function UsersTable() {
         onClose={() => setCreateModalOpen(false)}
         title="Create New User"
         subtitle="Fill out the form to add a new user to the system."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         <CreateUserForm
           onSuccess={handleUserCreated}
@@ -284,7 +284,7 @@ export default function UsersTable() {
         onClose={handleEditClose}
         title="Edit User"
         subtitle="Update the user information below."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         {selectedUserId && (
           <EditUserForm
@@ -301,7 +301,7 @@ export default function UsersTable() {
         onClose={() => setConfirmModalOpen(false)}
         title="Confirm Deactivation"
         subtitle="Are you sure you want to deactivate this user?"
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         <div className="flex justify-end gap-3 mt-6">
           <Button
