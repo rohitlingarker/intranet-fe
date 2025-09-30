@@ -6,10 +6,10 @@ import ReactPaginate from "react-paginate";
 import RequestLeaveModal from "./RequestLeaveModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
+import { toast } from "react-toastify";
  
 const ITEMS_PER_PAGE = 5;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem('token');
  
 /**
  * Reusable function to fetch pending leave requests, leave types, and balances.
@@ -24,8 +24,11 @@ const fetchData = async (
 ) => {
   try {
     setLoading(true);
-    console.log("EmployeeID in ", employeeId);
-
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error("Authentication token not found.");
+      return;
+    }
     const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
       axios.get(
         `${BASE_URL}/api/leave-requests/employee/${employeeId}`,
@@ -51,7 +54,6 @@ const fetchData = async (
           }
         }
       ),
-      console.log("Fetching leave balances for employee:", employeeId)
     ]);
  
     const allLeaves = Array.isArray(leaveReqRes.data?.data)
@@ -65,7 +67,6 @@ const fetchData = async (
     setLeaveTypes(leaveTypeRes.data || []);
     setLeaveBalances(balanceRes.data || {});
   } catch (err) {
-    console.error(err);
     setError("Failed to fetch pending leave requests.");
   } finally {
     setLoading(false);
