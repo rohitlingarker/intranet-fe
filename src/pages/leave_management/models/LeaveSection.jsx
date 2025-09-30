@@ -4,8 +4,10 @@ import LeaveDashboard from "../charts/LeaveDashboard";
 import ProjectMembersOnLeaveDemo from "./ProjectMembersOnLeaveDemo";
 import ProjectMembersOnLeave from "./ProjectMembersOnLeave";
 
-export default function LeaveSection({ employeeId }) {
+export default function LeaveSection({ employeeId, leaveId }) {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "projectMembers"
+  console.log("Employee ID in LeaveSection:", employeeId);
+    console.log("Leave ID in LeaveSection:", leaveId);
 
   return (
     <div className="w-full">
@@ -71,7 +73,8 @@ export default function LeaveSection({ employeeId }) {
               className="absolute w-full"
             >
               {/* <ProjectMembersOnLeaveDemo employeeId={employeeId} /> */}
-                <ProjectMembersOnLeave employeeId={employeeId} />
+                <ProjectMembersOnLeave employeeId={employeeId} leaveId={leaveId} />
+                {/* <ProjectMembersOnLeaveDemo /> */}
             </motion.div>
           )}
         </AnimatePresence>
