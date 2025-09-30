@@ -9,10 +9,10 @@ import { showStatusToast } from '../../../../components/toastfy/toast';
  
 const AccessPointList = () => {
   const [aps, setAps] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1); // 🔹 pagination state
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // 🔹 modal state
-  const [selectedAccessPointId, setSelectedAccessPointId] = useState(null); // 🔹 selected access point for deletion
-  const itemsPerPage = 6; // 🔹 2 rows of 3 cards
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAccessPointId, setSelectedAccessPointId] = useState(null);
+  const itemsPerPage = 6;
  
   const navigate = useNavigate();
  
@@ -20,13 +20,11 @@ const AccessPointList = () => {
     listAccessPoints().then(res => setAps(res.data));
   }, []);
 
-  // 🔹 Handle delete button click - show confirmation modal
   const handleDeleteClick = (id) => {
     setSelectedAccessPointId(id);
     setShowDeleteModal(true);
   };
 
-  // 🔹 Handle actual deletion after confirmation
   const handleConfirmDelete = async () => {
     try {
       await deleteAccessPoint(selectedAccessPointId);
@@ -40,13 +38,11 @@ const AccessPointList = () => {
     }
   };
 
-  // 🔹 Handle cancel deletion
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
     setSelectedAccessPointId(null);
   };
 
-  // 🔹 Pagination logic
   const totalPages = Math.ceil(aps.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -74,15 +70,35 @@ const AccessPointList = () => {
             {paginatedAps.map(ap => (
               <div
                 key={ap.access_id}
-                className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border"
+                className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border flex flex-col"
               >
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{ap.endpoint_path}</h3>
-                <p className="text-sm text-gray-600 mb-1"><strong>Method:</strong> {ap.method}</p>
-                <p className="text-sm text-gray-600 mb-1"><strong>Module:</strong> {ap.module}</p>
-                <p className="text-sm text-gray-600 mb-1"><strong>Public:</strong> {ap.is_public ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600 mb-4"><strong>Permission:</strong> {ap.permission_code || 'N/A'}</p>
+                {/* Endpoint path with word wrapping */}
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 break-words overflow-wrap-anywhere">
+                  {ap.endpoint_path}
+                </h3>
+                
+                {/* Details section with consistent spacing */}
+                <div className="flex-grow mb-4 space-y-2">
+                  <p className="text-sm text-gray-600">
+                    <strong className="font-medium">Method:</strong> 
+                    <span className="ml-1">{ap.method}</span>
+                  </p>
+                  <p className="text-sm text-gray-600 break-words">
+                    <strong className="font-medium">Module:</strong> 
+                    <span className="ml-1">{ap.module}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong className="font-medium">Public:</strong> 
+                    <span className="ml-1">{ap.is_public ? 'Yes' : 'No'}</span>
+                  </p>
+                  <p className="text-sm text-gray-600 break-words">
+                    <strong className="font-medium">Permission:</strong> 
+                    <span className="ml-1">{ap.permission_code || 'N/A'}</span>
+                  </p>
+                </div>
  
-                <div className="space-y-2">
+                {/* Action buttons */}
+                <div className="space-y-2 mt-auto">
                   <Button
                     onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
                     className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-2 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
@@ -106,7 +122,7 @@ const AccessPointList = () => {
             ))}
           </div>
  
-          {/* 🔹 Pagination controls */}
+          {/* Pagination controls */}
           {totalPages > 1 && (
             <Pagination
               currentPage={currentPage}
@@ -118,7 +134,7 @@ const AccessPointList = () => {
         </>
       )}
 
-      {/* 🔹 Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteModal}
         onClose={handleCancelDelete}
@@ -126,7 +142,7 @@ const AccessPointList = () => {
       >
         <div className="p-4">
           <p className="text-gray-600 mb-6">
-            Please confirm you really want delete the access point
+            Please confirm you really want to delete the access point
           </p>
           <div className="flex justify-end space-x-4">
             <Button
