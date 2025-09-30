@@ -31,7 +31,7 @@ const EntriesTable = ({
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
 
-  const [addData, setAddData] = useState({ workType: "Office" });
+  const [addData, setAddData] = useState({ workType: "Office", isBillable: "Yes" });
 
   const [pendingEntries, setPendingEntries] = useState([]);
 
@@ -44,7 +44,15 @@ const EntriesTable = ({
   const workTypeOptions = [
     { label: "Office", value: "Office" },
     { label: "Home", value: "Home" },
+    { label: "Client Location", value: "Client Location" },
+    { label: "Hybrid", value: "Hybrid" },
   ];
+
+  const billableOptions = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
+];
+
 
   const projectOptions = projectInfo.map((p) => ({
     label: p.project,
@@ -102,6 +110,7 @@ const EntriesTable = ({
       toTime: new Date(entry.toTime).toISOString().slice(11, 16),
       workType: entry.workType,
       description: entry.description,
+      isBillable: entry.isBillable ? "Yes" : "No",
     });
   };
 
@@ -109,7 +118,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({ workType: "Office" });
+    setAddData({ workType: "Office" , isBillable: "Yes" });
   };
 
   const handleChange = (e) => {
@@ -171,6 +180,7 @@ const EntriesTable = ({
           fromTime: newStart.toISOString(),
           toTime: newEnd.toISOString(),
           otherDescription: "",
+          isBillable: editData.isBillable === "Yes",
         },
       ],
     };
@@ -206,10 +216,11 @@ const EntriesTable = ({
         fromTime: newStart.toISOString(),
         toTime: newEnd.toISOString(),
         otherDescription: "",
+        isBillable: addData.isBillable === "Yes",
       },
     ]);
     setAddingNewEntry(false);
-    setAddData({ workType: "Office" });
+    setAddData({ workType: "Office" , isBillable: "Yes" });
   };
   
   return (
@@ -235,6 +246,7 @@ const EntriesTable = ({
           <th className="text-left px-4 py-2">End</th>
           <th className="text-left px-4 py-2">Work Type</th>
           <th className="text-left px-4 py-2">Description</th>
+          <th className="text-left px-4 py-2">Billable</th>
           <th className="text-left px-4 py-2">Actions</th>
         </tr>
       </thead>
@@ -301,6 +313,14 @@ const EntriesTable = ({
                     onChange={handleChange}
                   />
                 </td>
+                <td className="px-4 py-2">
+                  <FormSelect
+                    name="isBillable"
+                    value={addData.isBillable}
+                    onChange={handleChange}
+                    options={billableOptions}
+                  />
+                </td>
                 <td className="px-4 py-2 text-xs">
                   <div className="flex gap-2">
                     <button
@@ -341,6 +361,9 @@ const EntriesTable = ({
                 </td>
                 <td className="px-4 py-2 border-b border-gray-200">
                   {entry.description}
+                </td>
+                <td className="px-4 py-2 border-b border-gray-200">
+                  {entry.isBillable ? "Yes" : "No"}
                 </td>
                 <td className="px-4 py-2">
                   <button
@@ -418,6 +441,14 @@ const EntriesTable = ({
                   onChange={handleChange}
                 />
               </td>
+              <td className="px-4 py-2">
+              <FormSelect
+                name="isBillable"
+                value={addData.isBillable}
+                onChange={handleChange}
+                options={billableOptions}
+              />
+            </td>
               <td className="px-4 py-2">
                 <div className="flex gap-2">
                   <button
