@@ -4,12 +4,15 @@ import { X } from "lucide-react";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { toast } from "react-toastify";
+import { format } from "date-fns"; // <-- Step 1: Import format
+import DateRangePicker from "./DateRangePicker"; // <-- Step 1: Import DateRangePicker
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem("token");
 
-// --- Helper 1: Maps leave balances to dropdown options with user-friendly labels ---
+// --- Helper 1: Maps leave balances to dropdown options (Unchanged) ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
+  // ... (this function remains the same as in your original code)
   return balances.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
     const originalName = balance.leaveType.leaveName;
@@ -44,9 +47,9 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
   });
 }
 
-
-// --- Helper 2: Date and Formatting Logic ---
+// --- Helper 2: Date and Formatting Logic (Unchanged) ---
 function formatDateForDisplay(dateStr) {
+    // ... (this function remains the same as in your original code)
     if (!dateStr) return "";
     const date = new Date(`${dateStr}T00:00:00`);
     return date.toLocaleDateString('en-GB', {
@@ -56,19 +59,33 @@ function formatDateForDisplay(dateStr) {
     });
 }
 
-// --- Helper 3: UPDATED Robust UTC-based day calculation ---
-function countWeekdaysBetween(fromDate, toDate, halfDayConfig) {
-  if (!fromDate || !toDate || !halfDayConfig) {
-    return 0;
-  }
+// --- Helper 3: **UPDATED** Robust day calculation to exclude holidays ---
+function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
+  if (!fromDate || !toDate || !halfDayConfig) return 0;
+  
+  const holidaySet = new Set(
+    holidays
+      .filter(Boolean)
+      .map(h => {
+        if (h instanceof Date && !isNaN(h)) {
+          return new Date(h.getTime() - h.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+        }
+        if (typeof h === 'string') return h;
+        return null;
+      }).filter(Boolean)
+  );
+
   let total = 0;
   const current = new Date(fromDate + 'T00:00:00Z');
   const end = new Date(toDate + 'T00:00:00Z');
 
   while (current <= end) {
     const dayOfWeek = current.getUTCDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      const currentDateStr = current.toISOString().split('T')[0];
+    const currentDateStr = current.toISOString().split('T')[0];
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isHoliday = holidaySet.has(currentDateStr);
+
+    if (!isWeekend && !isHoliday) {
       const isStartDate = currentDateStr === fromDate;
       const isEndDate = currentDateStr === toDate;
 
@@ -88,6 +105,7 @@ function countWeekdaysBetween(fromDate, toDate, halfDayConfig) {
 
 // --- Component 1: The HeadlessUI Leave Type Dropdown (Unchanged) ---
 function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
+    // ... (this component remains the same as in your original code)
     const sel = options.find((o) => o.leaveTypeId === selectedId) ?? null;
     return (
       <Listbox value={sel} onChange={(opt) => setSelectedId(opt.leaveTypeId)}>
@@ -145,15 +163,15 @@ export default function EditLeaveModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [leaveTypes, setLeaveTypes] = useState([]);
-  
-  // --- NEW STATE for custom half-day logic ---
+  const [holidays, setHolidays] = useState([]); // <-- Step 2: Add state for holidays
   const [showCustomHalfDay, setShowCustomHalfDay] = useState(false);
   const [halfDayConfig, setHalfDayConfig] = useState({ start: "none", end: "none" });
 
-  // Fetch leave type labels when the modal opens
+  // --- Step 3: Fetch leave types and HOLIDAYS when modal opens ---
   useEffect(() => {
+    if (!isOpen) return;
+
     const fetchLeaveTypes = async () => {
-      if (!isOpen) return;
       try {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -163,10 +181,25 @@ export default function EditLeaveModal({
         toast.error("Failed to load leave type details.");
       }
     };
+    
+    const fetchHolidays = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+          params: { state: "All", country: "India" }, // Adjust params if needed
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const holidayDates = res.data.map(holiday => new Date(holiday.holidayDate + 'T00:00:00'));
+        setHolidays(holidayDates);
+      } catch (err) {
+        toast.error("Could not load company holidays.");
+      }
+    };
+
     fetchLeaveTypes();
+    fetchHolidays();
   }, [isOpen]);
 
-  // Populate form with initial data when it becomes available
+  // Populate form with initial data
   useEffect(() => {
     if (isOpen && initialData) {
       setStartDate(initialData.startDate || "");
@@ -175,7 +208,6 @@ export default function EditLeaveModal({
       setReason(initialData.reason || "");
       setDriveLink(initialData.driveLink || "");
       
-      // --- NEW LOGIC to set initial half-day state ---
       const isCustom = initialData.isHalfDay || (initialData.startSession && initialData.startSession !== 'none');
       setShowCustomHalfDay(isCustom);
       
@@ -193,9 +225,9 @@ export default function EditLeaveModal({
   const leaveTypeOptions = mapLeaveBalancesToDropdown(leaveBalances, leaveTypes);
   const selectedLeaveType = leaveTypeOptions.find((o) => o.leaveTypeId === leaveTypeId);
   
-  // --- UPDATED CALCULATIONS ---
+  // --- Step 4: UPDATED CALCULATIONS to include holidays ---
   const isMultiDay = startDate && endDate && startDate !== endDate;
-  const weekdays = countWeekdaysBetween(startDate, endDate, halfDayConfig);
+  const weekdays = countWeekdaysBetween(startDate, endDate, halfDayConfig, holidays);
 
   const shouldShowDriveLink = () => {
     if (!selectedLeaveType) return false;
@@ -205,11 +237,26 @@ export default function EditLeaveModal({
     return requiresDocs || (isSickLeave && enoughDays);
   };
   
-  // --- NEW HANDLER for custom/full day toggle ---
   const handleHalfDayModeChange = (isCustom) => {
     setShowCustomHalfDay(isCustom);
     setHalfDayConfig(isCustom ? { start: 'fullday', end: 'fullday' } : { start: 'none', end: 'none' });
   }
+
+  // --- Step 5: New handlers for DateRangePicker ---
+  const handleStartDateChange = (date) => {
+    if (!date) return;
+    const dateString = format(date, "yyyy-MM-dd");
+    setStartDate(dateString);
+    if (!endDate || new Date(endDate) < new Date(dateString)) {
+      setEndDate(dateString);
+    }
+  };
+
+  const handleEndDateChange = (date) => {
+    if (!date) return;
+    const dateString = format(date, "yyyy-MM-dd");
+    setEndDate(dateString);
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -221,12 +268,11 @@ export default function EditLeaveModal({
       employeeId: initialData.employee.employeeId,
       leaveTypeId,
       startDate,
-      endDate, // End date is no longer tied to the half-day checkbox
+      endDate,
       daysRequested: weekdays,
       requestDate: initialData.requestDate,
       reason,
       driveLink,
-      // --- UPDATED PAYLOAD fields for half-day ---
       isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
@@ -261,24 +307,36 @@ export default function EditLeaveModal({
         <form onSubmit={handleUpdate} className="px-6 py-5 space-y-6">
           {error && (<div className="bg-red-50 p-3 rounded-lg text-red-700 text-sm">{error}</div>)}
 
+          {/* --- Step 6: Replace inputs with DateRangePicker components --- */}
           <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Start Date</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="mt-1 w-full border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">End Date</label>
-              <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} required className="mt-1 w-full border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg text-sm" />
-            </div>
+            <DateRangePicker
+              label="Start Date"
+              defaultDate={startDate ? new Date(startDate + "T00:00:00") : null}
+              onChange={handleStartDateChange}
+              defaultMonth={startDate ? new Date(startDate + "T00:00:00") : undefined}
+              disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
+            />
+            <DateRangePicker
+              label="End Date"
+              align="right"
+              defaultDate={endDate ? new Date(endDate + "T00:00:00") : null}
+              onChange={handleEndDateChange}
+              defaultMonth={endDate ? new Date(endDate + "T00:00:00") : undefined}
+              disabledDays={[
+                { dayOfWeek: [0, 6] },
+                ...holidays,
+                startDate ? { before: new Date(startDate + "T00:00:00") } : {},
+              ]}
+            />
           </div>
 
           <div className="flex justify-center">
-            <span className="px-4 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-full border border-indigo-200 shadow-sm">
+            <span className="px-4 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-md border border-indigo-200 shadow-sm">
               {weekdays} {weekdays === 1 ? "day" : "days"}
             </span>
           </div>
           
-          {/* --- NEW CUSTOM HALF-DAY UI --- */}
+          {/* ... (The rest of your JSX remains unchanged) ... */}
           {(selectedLeaveType && selectedLeaveType.allowHalfDay) && (
             <div className="space-y-3">
               <div className="p-1 inline-flex items-center bg-gray-200 rounded-lg">
