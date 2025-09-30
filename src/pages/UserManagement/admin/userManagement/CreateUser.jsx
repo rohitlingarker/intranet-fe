@@ -19,6 +19,24 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     is_active: true,
   });
 
+  const [generatedPassword, setGeneratedPassword] = useState("");
+ 
+  const generatePasswordFromUser = (firstName, mobile) => {
+    if (!firstName.trim()) return showSingleToast("First Name is required.");
+    if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
+    const namePart = (firstName || "").slice(0, 4);
+    const digits = String(mobile || "").replace(/\D/g, "");
+    const mobilePart = digits.slice(-4);
+    let base = `${namePart}@${mobilePart}`;
+    // Enforce backend rules: ≥8 chars, upper, lower, digit, special
+    if (!/[A-Z]/.test(base)) base = base.replace(/^[a-z]/, (c) => c.toUpperCase()) || `T${base}`;
+    if (!/[a-z]/.test(base)) base += "a";
+    if (!/\d/.test(base)) base += "1";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(base)) base += "!";
+    while (base.length < 8) base += "0";
+    return base;
+  };
+
   const [loading, setLoading] = useState(false);
   const [toastActive, setToastActive] = useState(false);
 
@@ -61,8 +79,9 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (countryCode === "91" && nationalLen !== 10) {
       return showSingleToast("Indian contact number must be exactly 10 digits.");
     }
-    // You can add other countries here:
-    // else if(countryCode === "1" && nationalLen !== 10) { ... }
+    if (countryCode === "1" && nationalLen !== 10) {
+      return showSingleToast("US contact number must be exactly 10 digits.");
+    }
 
     if (!form.password.trim()) return showSingleToast("Password is required.");
     if (form.password.length < 6) return showSingleToast("Password must be at least 6 characters long.");
@@ -75,6 +94,16 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (loading || !validateForm()) return;
 
     setLoading(true);
+
+  
+    const password = generatePasswordFromUser(form.first_name, form.contact);
+    if (form.password !== password) {
+      showSingleToast("Password does not match the criteria and please click generate password again", "error");
+      setLoading(false);
+      return;
+    }
+    console.log(form.contact);
+    form.password = password;
 
     try {
       await axios.post(
@@ -140,9 +169,14 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             Contact
           </label>
           <PhoneInput
-            country={"in"}
+            country={"us"} // default to US, can be changed by user
             value={form.contact}
-            onChange={(phone) => setForm((prev) => ({ ...prev, contact: phone }))}
+            onChange={(phone, countryData) =>
+              setForm((prev) => ({
+                ...prev,
+                contact: phone, // always update properly
+              }))
+            }
             enableSearch
             disableDropdown={false}
             placeholder="Enter phone number"
@@ -151,21 +185,42 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             buttonClass="!absolute !left-0 !h-full !rounded-l-md !pl-3 !pr-3 !bg-white !border-r"
             dropdownClass="!z-50"
             enableAreaCodes={true}
-            countryCodeEditable={false}
+            countryCodeEditable={true} // ✅ now user can edit number freely
           />
         </div>
 
         {/* Password */}
         <FormInput
-          label="Password"
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          placeholder="Create a password"
-          required
-          minLength={6}
-        />
+            type="text"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            onFocus={() => {
+              if (!form.password) {
+                const localGenerated = generatePasswordFromUser(form.first_name, form.contact);
+                if (localGenerated) {
+                  setForm((prev) => ({ ...prev, password: localGenerated }));
+                  setGeneratedPassword(localGenerated);
+                }
+              }
+            }}
+            placeholder="Generate or enter a password"
+            minLength={8}
+          />
+
+          <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              onClick={() => {
+                const suggestion = generatePasswordFromUser(form.first_name, form.contact);
+                setForm((prev) => ({ ...prev, password: suggestion }));
+                setGeneratedPassword(suggestion);
+                showStatusToast("Password generated from current First Name & Contact.", "info");
+              }}
+            >
+              Generate Password
+            </Button>
 
         {/* Active checkbox */}
         <div className="flex items-center gap-2">

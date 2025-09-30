@@ -151,7 +151,7 @@ const AppRoutes = () => {
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -206,6 +206,7 @@ const AppRoutes = () => {
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
           />
+          
 
           {/* User Management */}
 
@@ -408,6 +409,8 @@ const AppRoutes = () => {
             }
           />
         </Route>
+
+        <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes>
       <SaveLastPath />
 {/* <<<<<<<<< Temporary merge branch 1
