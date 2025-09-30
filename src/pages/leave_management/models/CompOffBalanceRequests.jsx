@@ -13,7 +13,6 @@ const CompOffBalanceRequests = ({ managerId }) => {
   // Fetch comp-off requests for the manager
   const fetchCompOffs = async () => {
     try {
-      setLoading(true);
       const res = await axios.post(
         `${BASE_URL}/api/compoff/pending`,
         { managerId},
@@ -35,7 +34,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
   // Approve comp-off
   const handleApprove = async (compoffId) => {
     try {
-      setLoading(true);
+      // setLoading(true);
       await axios.put(`${BASE_URL}/api/compoff/approve`, {
         managerId,
         compoffId,
@@ -55,7 +54,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
   // Reject comp-off
   const handleReject = async (compoffId) => {
     try {
-      setLoading(true);
+      // setLoading(true);
       await axios.put(`${BASE_URL}/api/compoff/reject`,
         { managerId, compoffId },
         {headers:{
