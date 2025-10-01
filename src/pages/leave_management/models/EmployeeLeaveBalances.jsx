@@ -20,44 +20,66 @@ const EmployeeLeaveBalances = () => {
   }, []);
  
   const fetchLeaveData = async () => {
-    try {
-      const response = await axios.get(
-        `${BASE_URL}/api/leave-balance/all-leave-balances`,{
-          headers:{
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      const raw = response.data;
- 
-      const groupedByEmployee = {};
- 
-      raw.forEach((entry) => {
-        const empId = entry.employee?.employeeId || "Unknown";
-        const empName = `${entry.employee?.firstName || ""} ${
-          entry.employee?.lastName || ""
-        }`.trim();
-        const gender = entry?.employee?.gender;
-        const year = entry?.year;
- 
-        if (!groupedByEmployee[empId]) {
-          groupedByEmployee[empId] = {
-            employeeId: empId,
-            employeeName: empName,
-            employeeGender: gender,
-            balances: {},
-          };
-        }
- 
-        const leaveTypeName = entry.leaveType.leaveName;
-        groupedByEmployee[empId].balances[leaveTypeName] = {
-          ...entry,
-          remainingLeaves: entry.remainingLeaves,
-          leaveTypeId: entry.leaveType.leaveTypeId,
-          year: entry.year,
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/leave-balance/all-leave-balances`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "text", // backend is returning a string!
+      }
+    );
+
+    let raw = response.data;
+
+    // ✅ Parse if string
+    if (typeof raw === "string") {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        console.error("❌ Failed to parse API JSON:", e);
+        return; // Stop here to prevent undefined errors
+      }
+    }
+
+    // ✅ Ensure array
+    if (!Array.isArray(raw)) {
+      console.warn("API didn't return an array:", raw);
+      return;
+    }
+
+    // ✅ Now process
+    const groupedByEmployee = {};
+
+    raw.forEach((entry) => {
+      if (!entry.leaveType || !entry.employee) {
+        console.warn("Skipping malformed entry:", entry);
+        return;
+      }
+
+      const empId = entry.employee.employeeId || "Unknown";
+      const empName = `${entry.employee.firstName || ""} ${entry.employee.lastName || ""}`.trim();
+      const gender = entry.employee.gender;
+      const leaveTypeName = entry.leaveType.leaveName;
+
+      if (!groupedByEmployee[empId]) {
+        groupedByEmployee[empId] = {
+          employeeId: empId,
+          employeeName: empName,
+          employeeGender: gender,
+          balances: {},
         };
-      });
- 
+      }
+
+      groupedByEmployee[empId].balances[leaveTypeName] = {
+        ...entry,
+        remainingLeaves: entry.remainingLeaves,
+        leaveTypeId: entry.leaveType.leaveTypeId,
+        year: entry.year,
+      };
+    });
+
       const allLeaveTypes = Array.from(
         new Map(
           raw.map((entry) => [
