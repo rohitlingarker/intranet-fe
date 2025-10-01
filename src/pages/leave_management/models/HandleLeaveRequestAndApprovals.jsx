@@ -79,7 +79,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     try {
       const payload = {
         managerId,
-        year: selectedYear || null, // from your year dropdown
+        year: selectedYear || Date.now().getFullYear(), // from your year dropdown
         month: selectedMonth || null, // from your month dropdown
         status: selectedStatus !== "All" ? selectedStatus : null,
         searchTerm: searchTerm || null,
