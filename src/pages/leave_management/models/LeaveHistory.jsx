@@ -34,14 +34,12 @@ const LeaveHistory = () => {
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
         headers: {
-          "Cache-Control": "no-store",
           Authorization: `Bearer ${token}`,
         },
       }),
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
         headers: {
-          "Cache-Control": "no-store",
           Authorization: `Bearer ${token}`,
         },
       }),
@@ -67,8 +65,7 @@ const LeaveHistory = () => {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setLeaveTypes(res.data); // Backend returns [{ name, label }]
-        console.log("Fetched leave types:", res.data);
+        setLeaveTypes(res.data); 
       } catch (err) {
         toast.error("Failed to load leave type details.");
       }
