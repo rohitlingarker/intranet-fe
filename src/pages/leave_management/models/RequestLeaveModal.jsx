@@ -401,7 +401,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       endDate: endDate || startDate,
       daysRequested,
       reason,
-      isHalfDay: showCustomHalfDay,
+      // isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
       // halfDayDetails: showCustomHalfDay ? {

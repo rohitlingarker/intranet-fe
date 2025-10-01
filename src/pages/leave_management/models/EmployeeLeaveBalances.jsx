@@ -16,6 +16,8 @@ const EmployeeLeaveBalances = () => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,11 +40,12 @@ const EmployeeLeaveBalances = () => {
       setSuggestions([]);
       return;
     }
-
     const fetchSuggestions = async () => {
       try {
         const res = await axios.get(
-          `${BASE_URL}/api/leave-balance/autocomplete?query=${encodeURIComponent(searchQuery)}`,
+          `${BASE_URL}/api/leave-balance/autocomplete?query=${encodeURIComponent(
+            searchQuery
+          )}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSuggestions(res.data);
@@ -55,12 +58,71 @@ const EmployeeLeaveBalances = () => {
     fetchSuggestions();
   }, [searchQuery]);
 
+
+    const handleSubmit = async () => {
+      try {
+        const gender = selectedEmployee?.employeeGender?.toLowerCase();
+
+        const filteredBalances = leaveTypes
+          .filter(({ leaveTypeName }) => {
+            const lowerName = leaveTypeName.toLowerCase();
+            const isMaternity = lowerName.includes("maternity");
+            const isPaternity = lowerName.includes("paternity");
+
+            // ❌ Exclude maternity for males, paternity for females, or if gender unknown
+            if (
+              (isMaternity && gender === "male") ||
+              (isPaternity && gender === "female") ||
+              ((isMaternity || isPaternity) && !gender)
+            ) {
+              return false;
+            }
+
+            return true;
+          })
+          .map(({ leaveTypeName, leaveTypeId }) => ({
+            leaveTypeId,
+            remainingLeaves:
+              selectedEmployee.balances[leaveTypeName]?.remainingLeaves ?? 0,
+            year:
+              selectedEmployee.balances[leaveTypeName]?.year ??
+              new Date().getFullYear(),
+          }));
+
+        const payload = {
+          employeeId: selectedEmployee.employeeId,
+          balances: filteredBalances,
+          // performedBy: hrId,
+        };
+
+        await axios.put(`${BASE_URL}/api/leave-balance/update`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        toast.success("Leave balances updated successfully");
+        setIsEditModalOpen(false);
+        fetchLeaveData();
+      } catch (err) {
+        toast.error("Error updating leave balances");
+        console.error(err);
+      }
+    };
+
+  const handleEdit = (employee) => {
+    setSelectedEmployee({ ...employee });
+    setIsEditModalOpen(true);
+  };
+
   const fetchLeaveData = async (query = "") => {
     try {
       const url =
         query === ""
           ? `${BASE_URL}/api/leave-balance/all-leave-balances`
-          : `${BASE_URL}/api/leave-balance/search?query=${encodeURIComponent(query)}`;
+          : `${BASE_URL}/api/leave-balance/search?query=${encodeURIComponent(
+              query
+            )}`;
 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -71,7 +133,9 @@ const EmployeeLeaveBalances = () => {
 
       raw.forEach((entry) => {
         const empId = entry.employee?.employeeId || "Unknown";
-        const empName = `${entry.employee?.firstName || ""} ${entry.employee?.lastName || ""}`.trim();
+        const empName = `${entry.employee?.firstName || ""} ${
+          entry.employee?.lastName || ""
+        }`.trim();
         const gender = entry?.employee?.gender;
 
         if (!groupedByEmployee[empId]) {
@@ -128,7 +192,8 @@ const EmployeeLeaveBalances = () => {
   );
 
   const handlePrevious = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const handleNext = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   return (
     <div className="p-6 overflow-auto">
@@ -186,10 +251,17 @@ const EmployeeLeaveBalances = () => {
         <table className="min-w-max text-sm text-left border-collapse relative">
           <thead className="bg-gray-100 text-base">
             <tr>
-              <th className="border px-6 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px]">Employee Id</th>
-              <th className="border px-6 py-3 sticky left-[200px] bg-gray-100 z-10 min-w-[250px]">Employee Name</th>
+              <th className="border px-6 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px]">
+                Employee Id
+              </th>
+              <th className="border px-6 py-3 sticky left-[200px] bg-gray-100 z-10 min-w-[250px]">
+                Employee Name
+              </th>
               {leaveTypes.map(({ leaveTypeName }) => (
-                <th key={leaveTypeName} className="border px-6 py-3 text-center min-w-[160px] whitespace-nowrap">
+                <th
+                  key={leaveTypeName}
+                  className="border px-6 py-3 text-center min-w-[160px] whitespace-nowrap"
+                >
                   {leaveTypeName}
                 </th>
               ))}
@@ -199,15 +271,27 @@ const EmployeeLeaveBalances = () => {
           <tbody className="text-sm">
             {paginatedData.map((emp) => (
               <tr key={emp.employeeId}>
-                <td className="border px-6 py-2 sticky left-0 bg-white z-10 font-medium min-w-[200px]">{emp.employeeId}</td>
-                <td className="border px-6 py-2 sticky left-[200px] bg-white z-10 font-medium min-w-[250px]">{emp.employeeName}</td>
+                <td className="border px-6 py-2 sticky left-0 bg-white z-10 font-medium min-w-[200px]">
+                  {emp.employeeId}
+                </td>
+                <td className="border px-6 py-2 sticky left-[200px] bg-white z-10 font-medium min-w-[250px]">
+                  {emp.employeeName}
+                </td>
                 {leaveTypes.map(({ leaveTypeName }) => (
-                  <td key={leaveTypeName} className="border px-6 py-2 text-center min-w-[160px] whitespace-nowrap">
+                  <td
+                    key={leaveTypeName}
+                    className="border px-6 py-2 text-center min-w-[160px] whitespace-nowrap"
+                  >
                     {emp.balances[leaveTypeName]?.remainingLeaves ?? "-"}
                   </td>
                 ))}
                 <td className="border px-4 py-2 text-center">
-                  <button className="text-blue-600 underline hover:text-blue-800">Edit</button>
+                  <button
+                    onClick={() => handleEdit(emp)}
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             ))}
@@ -223,6 +307,94 @@ const EmployeeLeaveBalances = () => {
           onPrevious={handlePrevious}
           onNext={handleNext}
         />
+      )}
+
+      {isEditModalOpen && selectedEmployee && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-6">
+              Edit Leave Balances – {selectedEmployee.employeeName}
+            </h3>
+
+            <div className="space-y-4">
+              {leaveTypes.map(({ leaveTypeId, leaveTypeName }) => {
+                const gender = selectedEmployee?.employeeGender?.toLowerCase();
+                const totalLeaves =
+                  selectedEmployee.balances[leaveTypeName]?.leaveType
+                    ?.maxDaysPerYear ?? "N/A";
+                const currentValue =
+                  selectedEmployee.balances[leaveTypeName]?.remainingLeaves ??
+                  "";
+
+                const isMaternity = leaveTypeName
+                  .toLowerCase()
+                  .includes("maternity");
+                const isPaternity = leaveTypeName
+                  .toLowerCase()
+                  .includes("paternity");
+
+                let isDisabled = false;
+                if (
+                  (isMaternity && gender === "male") ||
+                  (isPaternity && gender === "female") ||
+                  ((isMaternity || isPaternity) && !gender)
+                ) {
+                  isDisabled = true;
+                }
+
+                return (
+                  <div
+                    key={leaveTypeId}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <label className="font-medium min-w-[150px]">
+                      {leaveTypeName}
+                    </label>
+                    <div className="flex items-center gap-2 w-full sm:w-[300px]">
+                      <input
+                        type="number"
+                        disabled={isDisabled}
+                        className={`border px-3 py-2 w-full rounded shadow-sm ${
+                          isDisabled
+                            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                            : ""
+                        }`}
+                        value={isDisabled ? 0 : currentValue}
+                        onChange={(e) => {
+                          if (isDisabled) return;
+                          const updated = { ...selectedEmployee };
+                          if (!updated.balances[leaveTypeName])
+                            updated.balances[leaveTypeName] = {};
+                          updated.balances[leaveTypeName].remainingLeaves =
+                            parseFloat(e.target.value);
+                          setSelectedEmployee(updated);
+                        }}
+                      />
+                      <span className="text-sm text-gray-500 whitespace-nowrap">
+                        Total: {totalLeaves}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 flex justify-end gap-4">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="bg-gray-500 text-white px-5 py-2 rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
