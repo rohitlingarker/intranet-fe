@@ -35,7 +35,7 @@ const AdminPanel = ({ employeeId }) => {
         }})
       .then((res) => {
         const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setAdminLeaveRequests(arr.map(toLeaveRequest));
+        // setAdminLeaveRequests(arr.map(toLeaveRequest));
       })
       .catch((err) => console.error("Failed to fetch leave requests:", err));
   }, []);
