@@ -82,18 +82,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
-  if (allowedRoles && allowedRoles.length > 0) {
-    const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
-    console.log("ProtectedRoute check:", {
-      isAuthenticated,
-      user,
-      allowedRoles,
-      match: user?.roles?.some((role) => allowedRoles.includes(role)),
-    });
-    if (!hasRole) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-  }
+  // if (allowedRoles && allowedRoles.length > 0) {
+  //   const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
+  //   console.log("ProtectedRoute check:", {
+  //     isAuthenticated,
+  //     user,
+  //     allowedRoles,
+  //     match: user?.roles?.some((role) => allowedRoles.includes(role)),
+  //   });
+  //   if (!hasRole) {
+  //     return <Navigate to="/unauthorized" replace />;
+  //   }
+  // }
   return <>{children}</>;
 };
 
@@ -151,7 +151,7 @@ const AppRoutes = () => {
         {/* Public Route */}
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -206,10 +206,11 @@ const AppRoutes = () => {
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
           />
+          
 
           {/* User Management */}
 
-          {/* <Route path="/user-management/users" element={<UsersTable />} />
+          <Route path="/user-management/users" element={<UsersTable />} />
           <Route
             path="/user-management/users/create"
             element={<CreateUser />}
@@ -258,9 +259,9 @@ const AppRoutes = () => {
           <Route
             path="/user-management/access-points/admin/access-point-mapping"
             element={<AccessPointMapping />}
-          /> */}
+          />
 
-          <Route
+          {/* <Route
             path="/user-management/users"
             element={
               <ProtectedRoute allowedRoles={["Admin", "Super Admin"]}>
@@ -371,7 +372,7 @@ const AppRoutes = () => {
                 <AccessPointMapping />
               </ProtectedRoute>
             }
-          />
+          /> */}
 
           {/* Leave Management */}
           <Route
@@ -408,6 +409,8 @@ const AppRoutes = () => {
             }
           />
         </Route>
+
+        <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes>
       <SaveLastPath />
 {/* <<<<<<<<< Temporary merge branch 1

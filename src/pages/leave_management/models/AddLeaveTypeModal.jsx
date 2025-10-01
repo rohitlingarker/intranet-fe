@@ -3,7 +3,7 @@ import { X, FileText, Check, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
-import LoadingSpinner from "../../../components/loadingSpinner"; // Ensure path is correct
+import LoadingSpinner from "../../../components/LoadingSpinner"; // Ensure path is correct
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 

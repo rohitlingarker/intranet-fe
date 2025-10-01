@@ -10,13 +10,9 @@ import Modal from "../../../../components/Modal/modal";
 import CreateUserForm from "./CreateUser";
 import EditUserForm from "./EditUser";
 import { Pencil, UserX } from "lucide-react";
-import { parsePhoneNumberFromString } from "libphonenumber-js"; // ✅ Import libphonenumber-js
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-const SORT_DIRECTIONS = {
-  ASC: "asc",
-  DESC: "desc",
-};
-
+const SORT_DIRECTIONS = { ASC: "asc", DESC: "desc" };
 const ITEMS_PER_PAGE = 10;
 
 export default function UsersTable() {
@@ -26,11 +22,11 @@ export default function UsersTable() {
   const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false); 
-  const [isEditModalOpen, setEditModalOpen] = useState(false); 
-  const [selectedUserId, setSelectedUserId] = useState(null); 
-  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false); 
-  const [userToDelete, setUserToDelete] = useState(null); 
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -184,13 +180,12 @@ export default function UsersTable() {
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
 
   const tableData = paginatedUsers.map((user) => {
-    // ✅ Format contact number
     let formattedContact = user.contact;
     if (user.contact) {
-      const phoneNumber = parsePhoneNumberFromString("+" + user.contact.replace(/\D/g, ""));
-      if (phoneNumber) {
-        formattedContact = `${phoneNumber.formatInternational()}`;
-      }
+      const phoneNumber = parsePhoneNumberFromString(
+        "+" + user.contact.replace(/\D/g, "")
+      );
+      if (phoneNumber) formattedContact = `${phoneNumber.formatInternational()}`;
     }
 
     return {
@@ -223,21 +218,21 @@ export default function UsersTable() {
   });
 
   return (
-    <div className="px-6 py-4">
+    <div className="px-6 py-4 text-[70%]">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="text-2xl font-semibold text-gray-800 ">Users</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
           <Button
             onClick={() => setCreateModalOpen(true)}
             variant="primary"
-            size="medium"
+            size="small"
           >
             + Add User
           </Button>
           <Button
             onClick={() => navigate("/user-management/users/roles")}
             variant="secondary"
-            size="medium"
+            size="small"
           >
             User Roles
           </Button>
@@ -275,7 +270,7 @@ export default function UsersTable() {
         onClose={() => setCreateModalOpen(false)}
         title="Create New User"
         subtitle="Fill out the form to add a new user to the system."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         <CreateUserForm
           onSuccess={handleUserCreated}
@@ -289,7 +284,7 @@ export default function UsersTable() {
         onClose={handleEditClose}
         title="Edit User"
         subtitle="Update the user information below."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         {selectedUserId && (
           <EditUserForm
@@ -306,7 +301,7 @@ export default function UsersTable() {
         onClose={() => setConfirmModalOpen(false)}
         title="Confirm Deactivation"
         subtitle="Are you sure you want to deactivate this user?"
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden [&_.modal-title]:!text-base [&_.modal-subtitle]:!text-sm"
       >
         <div className="flex justify-end gap-3 mt-6">
           <Button

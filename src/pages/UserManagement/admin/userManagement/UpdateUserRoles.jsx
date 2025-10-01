@@ -154,12 +154,12 @@ export default function UpdateUserRole() {
     <div className="p-6 max-w-6xl mx-auto">
       {/* ✅ Back Button */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <h2 className="text-3xl font-semibold text-blue-700">
+        <h2 className="text-xl font-semibold text-blue-700">
           Update User Roles
         </h2>
         <Button
           variant="secondary"
-          size="medium"
+          size="small"
           onClick={() => navigate("/user-management/users")}
         >
           ← Back
@@ -279,30 +279,53 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
   };
 
   const handleSave = async () => {
-    if (!userId) return;
-    setSaving(true);
-    try {
-      await axiosInstance.put(
-        `/admin/users/${userId}/role`,
-        { role_ids: selectedRoleIds },
-        authHeader
-      );
+  if (!userId) return;
+  setSaving(true);
+  try {
+    await axiosInstance.put(
+      `/admin/users/${userId}/role`,
+      { role_ids: selectedRoleIds },
+      authHeader
+    );
 
-      const updatedRoleNames = roles
-        .filter((r) => selectedRoleIds.includes(r.role_id))
-        .map((r) => r.role_name);
+    const updatedRoleNames = roles
+      .filter((r) => selectedRoleIds.includes(r.role_id))
+      .map((r) => r.role_name);
 
-      showStatusToast("Roles updated successfully!", "success");
-      if (typeof onSaved === "function") onSaved(updatedRoleNames);
-      console.log("Updated roles:", updatedRoleNames);
-      onClose();
-    } catch (err) {
-      console.error("Failed to update roles", err);
-      showStatusToast("Update failed.", "error");
-    } finally {
-      setSaving(false);
+    showStatusToast("Roles updated successfully!", "success");
+    if (typeof onSaved === "function") onSaved(updatedRoleNames);
+    console.log("Updated roles:", updatedRoleNames);
+    onClose();
+  } catch (err) {
+    if (err.response && err.response.data) {
+      const errorData = err.response.data;
+
+      // Log everything dynamically
+      console.error("Failed to update roles", errorData);
+
+      // Use whatever message backend provides
+      const message =
+        errorData.detail ||
+        errorData.message ||
+        "An error occurred while updating roles.";
+
+      showStatusToast(message, "error");
+
+      // Optional: Show permission info if available
+      if (errorData.required_permissions) {
+        console.warn("Required permissions:", errorData.required_permissions);
+        console.warn("User permissions:", errorData.user_permissions);
+      }
+    } else {
+      // Fallback for network/CORS errors
+      console.error("Request failed", err);
+      showStatusToast("Request failed due to network or server issue.", "error");
     }
-  };
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   return (
     <Modal isOpen={true} onClose={onClose}>

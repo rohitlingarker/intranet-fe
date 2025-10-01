@@ -1,8 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Users, FolderKanban, PlaneTakeoff, Clock, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
-
+import { useAuth } from '../contexts/AuthContext';
 const Dashboard = () => {
+  const { user } = useAuth();
+    const isAdmin =
+      user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+    const isManager = user?.roles?.includes("Manager");
+    const isDeveloper = user?.roles?.includes("Developer");
+    let projectHref = "/projects";
+if (isDeveloper) {
+  projectHref = "/projects/developer";
+} else if (isManager) {
+  projectHref = "/projects/manager";
+} else if (isAdmin) {
+  projectHref = "/projects/admin"; // or "/projects/admin" if you want a separate admin route
+}
   const moduleCards = [
     {
       title: 'User Management ',
@@ -13,12 +26,12 @@ const Dashboard = () => {
       stats: '245 active users'
     },
     {
-      title: 'Project Management',
-      description: 'Track projects, deadlines, and team progress',
-      icon: FolderKanban,
-      href: '/projects',
-      color: 'bg-[#3548b6]',
-      stats: '12 active projects'
+      title: "Project Management",
+  description: "Track projects, deadlines, and team progress",
+  icon: FolderKanban,
+  href: projectHref,
+  color: "bg-[#3548b6]",
+  stats: "12 active projects"
     },
     {
       title: 'Leave Management',

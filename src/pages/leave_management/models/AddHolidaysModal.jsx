@@ -149,7 +149,9 @@ const handleFileUpload = (e) => {
       const headers = dataAsArray[0].map(h => String(h).trim());
       // FIX #2: Filter out any truly empty rows after reading them all.
       // This makes the logic more robust.
-      const dataRows = dataAsArray.slice(1).filter(row => row.some(cell => cell != null && cell !== ''));
+      const dataRows = dataAsArray.slice(1).filter(row => 
+        row.some(cell => cell != null && String(cell).trim() !== '')
+      );
 
       if (dataRows.length === 0) {
           toast.error("No valid data rows found after the header.");

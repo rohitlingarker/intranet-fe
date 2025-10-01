@@ -46,7 +46,6 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
     try {
       await axios.post(`${BASE_URL}/api/employee/register`, payload, {
         headers: { 
-          'Content-Type': 'application/json',
           Authorization:`Bearer ${token}` }
       });
       setSuccess('Employee added successfully!');
