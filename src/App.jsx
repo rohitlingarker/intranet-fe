@@ -72,6 +72,7 @@ import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 import Unauthorized from "./pages/leave_management/Unauthorized";
+import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 // 🔒 Protected Route Wrapper
@@ -405,6 +406,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
                 <EmployeeLeaveBalances/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`/edit-holidays`}
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <EditHolidaysPage/>
               </ProtectedRoute>
             }
           />

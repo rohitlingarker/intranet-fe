@@ -16,7 +16,6 @@ const HRManageTools = ({ employeeId }) => {
   const [isAddLeaveTypeModalOpen, setIsAddLeaveTypeModalOpen] = useState(false);
   // 2. Add state for the new modal
   const [isAddHolidaysModalOpen, setIsAddHolidaysModalOpen] = useState(false);
-  const [isEditHolidaysModalOpen, setIsEditHolidaysModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
@@ -114,7 +113,7 @@ const HRManageTools = ({ employeeId }) => {
           Add Holidays
         </button>
         <button
-          onClick={() => setIsEditHolidaysModalOpen(true)}
+          onClick={() => navigate(`/edit-holidays`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
             Edit Holidays
