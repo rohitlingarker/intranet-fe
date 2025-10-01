@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import { toast } from "react-toastify";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { format } from "date-fns";
+import DateRangePicker from "./DateRangePicker";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem("token");
@@ -56,18 +58,32 @@ function formatDateForDisplay(dateStr) {
 }
 
 // --- Helper 3: Robust UTC-based day calculation ---
-function countWeekdaysBetween(fromDate, toDate, halfDayConfig) {
-  if (!fromDate || !toDate || !halfDayConfig) {
-    return 0;
-  }
+function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
+  if (!fromDate || !toDate || !halfDayConfig) return 0;
+  
+  const holidaySet = new Set(
+    holidays
+      .filter(Boolean)
+      .map(h => {
+        if (h instanceof Date && !isNaN(h)) {
+          return new Date(h.getTime() - h.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+        }
+        if (typeof h === 'string') return h;
+        return null;
+      }).filter(Boolean)
+  );
+
   let total = 0;
   const current = new Date(fromDate + 'T00:00:00Z');
   const end = new Date(toDate + 'T00:00:00Z');
 
   while (current <= end) {
     const dayOfWeek = current.getUTCDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      const currentDateStr = current.toISOString().split('T')[0];
+    const currentDateStr = current.toISOString().split('T')[0];
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isHoliday = holidaySet.has(currentDateStr);
+
+    if (!isWeekend && !isHoliday) {
       const isStartDate = currentDateStr === fromDate;
       const isEndDate = currentDateStr === toDate;
 
@@ -137,6 +153,7 @@ export default function ManagerEditLeaveRequest({ isOpen, onClose, onSave, reque
   const [error, setError] = useState("");
   const [balances, setBalances] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // State for custom half-day logic
@@ -163,12 +180,18 @@ export default function ManagerEditLeaveRequest({ isOpen, onClose, onSave, reque
       const fetchData = async () => {
         setLoadingData(true);
         try {
-          const [balancesRes, typesRes] = await Promise.all([
+          const [balancesRes, typesRes, holidays] = await Promise.all([
             axios.get(`${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}`, { headers: { Authorization: `Bearer ${token}` } }),
-            axios.get(`${BASE_URL}/api/leave/types`, { headers: { Authorization: `Bearer ${token}` } })
+            axios.get(`${BASE_URL}/api/leave/types`, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.get(`${BASE_URL}/api/holidays/by-location`, { 
+              params: { state: "All", country: "India" },
+              headers: { Authorization: `Bearer ${token}` } 
+            })
           ]);
           setBalances(balancesRes.data || []);
           setLeaveTypes(typesRes.data || []);
+          const holidayDates = holidays.data.map(h => new Date(h.holidayDate + 'T00:00:00'));
+          setHolidays(holidayDates);
         } catch (err) {
           toast.error("Failed to load necessary leave data.");
         } finally {
@@ -182,11 +205,26 @@ export default function ManagerEditLeaveRequest({ isOpen, onClose, onSave, reque
   const leaveTypeOptions = mapLeaveBalancesToDropdown(balances, leaveTypes);
   const selectedLeaveType = leaveTypeOptions.find((o) => o.leaveTypeId === leaveTypeId);
   const isMultiDay = startDate && endDate && startDate !== endDate;
-  const weekdays = countWeekdaysBetween(startDate, endDate, halfDayConfig);
+  const weekdays = countWeekdaysBetween(startDate, endDate, halfDayConfig, holidays);
 
   const handleHalfDayModeChange = (isCustom) => {
     setShowCustomHalfDay(isCustom);
     setHalfDayConfig(isCustom ? { start: 'fullday', end: 'fullday' } : { start: 'none', end: 'none' });
+  };
+
+  const handleStartDateChange = (date) => {
+    if (!date) return;
+    const dateString = format(date, "yyyy-MM-dd");
+    setStartDate(dateString);
+    if (!endDate || new Date(endDate) < new Date(dateString)) {
+      setEndDate(dateString);
+    }
+  };
+
+  const handleEndDateChange = (date) => {
+    if (!date) return;
+    const dateString = format(date, "yyyy-MM-dd");
+    setEndDate(dateString);
   };
 
   const handleSubmit = (e) => {
@@ -239,20 +277,39 @@ export default function ManagerEditLeaveRequest({ isOpen, onClose, onSave, reque
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700">Start Date</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"/>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">End Date</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required min={startDate} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"/>
-            </div>
+            </div> */}
+            <DateRangePicker
+              label="Start Date"
+              defaultDate={startDate ? new Date(startDate + "T00:00:00") : null}
+              onChange={handleStartDateChange}
+              defaultMonth={startDate ? new Date(startDate + "T00:00:00") : undefined}
+              disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
+            />
+            <DateRangePicker
+              label="End Date"
+              align="right"
+              defaultDate={endDate ? new Date(endDate + "T00:00:00") : null}
+              onChange={handleEndDateChange}
+              defaultMonth={endDate ? new Date(endDate + "T00:00:00") : undefined}
+              disabledDays={[
+                { dayOfWeek: [0, 6] },
+                ...holidays,
+                startDate ? { before: new Date(startDate + "T00:00:00") } : {},
+              ]}
+            />
           </div>
           
           <div className="flex justify-center">
-             <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-semibold rounded-full">
-                Total Days: {weekdays}
-             </span>
+             <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-md border border-indigo-200 shadow-sm">
+              {weekdays} {weekdays === 1 ? "day" : "days"}
+            </span>
           </div>
 
           {(selectedLeaveType && selectedLeaveType.allowHalfDay) && (
@@ -295,8 +352,8 @@ export default function ManagerEditLeaveRequest({ isOpen, onClose, onSave, reque
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Manager Comment (Optional)</label>
-            <textarea value={managerComment} onChange={(e) => setManagerComment(e.target.value)} placeholder="Add a comment for the employee..." rows={3} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"/>
+            <label className="block text-sm font-medium text-gray-700">Manager Comment</label>
+            <textarea maxLength="100" rows="3" cols="40" value={managerComment} onChange={(e) => setManagerComment(e.target.value)} placeholder="Add a comment for the employee..." className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"/>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">

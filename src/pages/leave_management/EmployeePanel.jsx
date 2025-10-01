@@ -108,7 +108,7 @@ const handleViewChange = (view) => {
                     : "text-gray-700 hover:bg-white"
                 }`}
               >
-                Admin View
+                Manager View
               </button>
             )}
 
@@ -155,7 +155,6 @@ const handleViewChange = (view) => {
               />
             )}
           </div>
-
           <h2 className="text-xl font-semibold m-4">My Leave Stats</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <WeeklyPattern employeeId={employeeId} />
