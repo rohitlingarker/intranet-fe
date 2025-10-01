@@ -16,10 +16,10 @@ const Header = () => {
     <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-40">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-1.5xl font-bold text-gray-900">
             Welcome back, {firstName}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-600">
             Here's what's happening with your organization today.
           </p>
         </div>

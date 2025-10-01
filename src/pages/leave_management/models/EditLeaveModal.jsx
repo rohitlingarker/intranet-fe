@@ -295,9 +295,11 @@ export default function EditLeaveModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 max-h-[90vh] overflow-y-auto border border-gray-100">
-        <div className="sticky top-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" 
+    aria-modal="true"
+    onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto border border-gray-100 relative">
+        <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-900">Edit Leave Request</h2>
           <button onClick={onClose} className="hover:bg-gray-100 rounded-full p-1 transition">
             <X className="w-6 h-6 text-gray-500" />
@@ -383,7 +385,7 @@ export default function EditLeaveModal({
 
           <div>
             <label className="text-sm font-medium text-gray-700">Reason</label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} className="mt-1 w-full border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg text-sm" />
+            <textarea maxLength="100" rows="3" cols="40" value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg text-sm" />
           </div>
 
           {shouldShowDriveLink() && (

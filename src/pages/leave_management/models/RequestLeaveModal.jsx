@@ -448,7 +448,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto border border-gray-100 relative">
-        <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200">
+        <div className="sticky top-0 bg-white z-10 p-3 border-b border-gray-200 ">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">Request Leave</h2>
             <button
@@ -635,13 +635,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
 
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">
-              Reason
+              Reason <span className="text-red-500">*</span>
             </label>
             <textarea
+              maxLength="100" rows="3" cols="40"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Add a reason"
-              rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
             />
           </div>

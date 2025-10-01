@@ -98,33 +98,31 @@ const HRManageTools = ({ employeeId }) => {
           }}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-                    Add Leave Type        {" "}
+        Add Leave Type
         </button>
-               {" "}
         <button
           onClick={() => navigate(`/employee-leave-balance`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-        >
-                    Edit Leave Balance       {" "}
+          >
+            Edit Leave Balance
         </button>
-        {/* 3. Connect the button to the state */}       {" "}
         <button
           onClick={() => setIsAddHolidaysModalOpen(true)}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-                    Add Holidays        {" "}
+          Add Holidays
         </button>
-             {" "}
+        <button
+          onClick={() => navigate(`/edit-holidays`)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          >
+            Edit Holidays
+        </button>
       </div>
-           {" "}
       <div className="overflow-x-auto border rounded-md max-w-full">
-               {" "}
         <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
-                   {" "}
           <thead className="bg-gray-100 text-base">
-                       {" "}
             <tr>
-                           {" "}
               {tableHeaders.map((header, i) => (
                 <th
                   key={header}
@@ -136,35 +134,27 @@ const HRManageTools = ({ employeeId }) => {
                       : ""
                   }`}
                 >
-                                    {header}               {" "}
+                  {header}
                 </th>
               ))}
-                           {" "}
               <th className="border px-4 py-3 min-w-[160px] bg-gray-100 z-20">
-                                Actions              {" "}
+                Actions
               </th>
-                         {" "}
             </tr>
-                     {" "}
           </thead>
-                   {" "}
           <tbody>
-                       {" "}
             {leaveTypes.length === 0 ? (
               <tr>
-                               {" "}
                 <td
                   colSpan={tableHeaders.length + 1}
                   className="text-center py-6 text-gray-500"
                 >
-                                    No leave types found.                {" "}
+                  No leave types found.
                 </td>
-                             {" "}
               </tr>
             ) : (
               leaveTypes.map((lt, index) => (
                 <tr key={index} className="border-t">
-                                   {" "}
                   {tableHeaders.map((key, i) => (
                     <td
                       key={key}
@@ -176,12 +166,10 @@ const HRManageTools = ({ employeeId }) => {
                           : ""
                       }`}
                     >
-                                            {String(lt[key])}                   {" "}
+                      {String(lt[key])}
                     </td>
                   ))}
-                                   {" "}
                   <td className="border px-4 py-2 min-w-[160px] bg-white">
-                                       {" "}
                     <ActionDropdown
                       onEdit={() => {
                         setEditLeaveType(lt);
@@ -189,25 +177,17 @@ const HRManageTools = ({ employeeId }) => {
                       }}
                       onDelete={() => confirmDelete(lt.leaveTypeId)}
                     />
-                                     {" "}
                   </td>
-                                 {" "}
                 </tr>
               ))
             )}
-                     {" "}
           </tbody>
-                 {" "}
         </table>
-             {" "}
       </div>
-            {/* Modals */}
-           {" "}
       <AddEmployeeModal
         isOpen={isAddEmployeeModalOpen}
         onClose={() => setIsAddEmployeeModalOpen(false)}
       />
-           {" "}
       <AddLeaveTypeModal
         isOpen={isAddLeaveTypeModalOpen}
         onClose={() => {
@@ -221,7 +201,6 @@ const HRManageTools = ({ employeeId }) => {
           setIsAddLeaveTypeModalOpen(false);
         }}
       />
-           {" "}
       <ConfirmationModal
         isOpen={isDeleteConfirmationOpen}
         title="Confirm Deletion"
@@ -239,7 +218,6 @@ const HRManageTools = ({ employeeId }) => {
           // Optional: refetch holiday list if it's displayed on this page
         }}
       />
-         {" "}
     </div>
   );
 };

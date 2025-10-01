@@ -202,7 +202,7 @@ const EmployeeLeaveBalances = () => {
         onClick={() => navigate(-1)} // go to previous page
         className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800  hover:bg-gray-400 rounded-md font-medium"
       >
-        ← Back
+        ← Back 
       </button>
 
       <h2 className="text-2xl font-bold mb-6">Employee Leave Balances</h2>
