@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Clock, Check, Calendar, User, Search, X, Hand } from "lucide-react";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const AdminPanel = ({ employeeId }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("Status");
-  const [selectedRequests, setSelectedRequests] = useState([]);
-  const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
+  // const [searchTerm, setSearchTerm] = useState("");
+  // const [selectedStatus, setSelectedStatus] = useState("Status");
+  // const [selectedRequests, setSelectedRequests] = useState([]);
+  // const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [resultMsg, setResultMsg] = useState(null);
-  const pendingCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'pending').length;
-  const approvedCount = adminLeaveRequests.filter(req => req.status.toLowerCase() === 'approved').length;
   const token = localStorage.getItem('token');
 
   // const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
@@ -38,7 +35,7 @@ const AdminPanel = ({ employeeId }) => {
         }})
       .then((res) => {
         const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setAdminLeaveRequests(arr.map(toLeaveRequest));
+        // setAdminLeaveRequests(arr.map(toLeaveRequest));
       })
       .catch((err) => console.error("Failed to fetch leave requests:", err));
   }, []);
@@ -50,44 +47,44 @@ const AdminPanel = ({ employeeId }) => {
     }
   }, [resultMsg]);
 
-  const filteredAdminRequests = adminLeaveRequests.filter((request) => {
-    const matchesSearch =
-      request.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.leaveType.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      selectedStatus === "Status" || request.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // const filteredAdminRequests = adminLeaveRequests.filter((request) => {
+  //   const matchesSearch =
+  //     request.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     request.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     request.leaveType.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesStatus =
+  //     selectedStatus === "Status" || request.status === selectedStatus;
+  //   return matchesSearch && matchesStatus;
+  // });
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedRequests(filteredAdminRequests.map((req) => req.id));
-    } else {
-      setSelectedRequests([]);
-    }
-  };
+  // const handleSelectAll = (checked) => {
+  //   if (checked) {
+  //     setSelectedRequests(filteredAdminRequests.map((req) => req.id));
+  //   } else {
+  //     setSelectedRequests([]);
+  //   }
+  // };
 
-  const handleSelectRequest = (id, checked) => {
-    if (checked) {
-      setSelectedRequests([...selectedRequests, id]);
-    } else {
-      setSelectedRequests(selectedRequests.filter((reqId) => reqId !== id));
-    }
-  };
+  // const handleSelectRequest = (id, checked) => {
+  //   if (checked) {
+  //     setSelectedRequests([...selectedRequests, id]);
+  //   } else {
+  //     setSelectedRequests(selectedRequests.filter((reqId) => reqId !== id));
+  //   }
+  // };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "Approved":
-        return "bg-green-100 text-green-800";
-      case "Rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  // const getStatusColor = (status) => {
+  //   switch (status) {
+  //     case "Pending":
+  //       return "bg-yellow-100 text-yellow-800";
+  //     case "Approved":
+  //       return "bg-green-100 text-green-800";
+  //     case "Rejected":
+  //       return "bg-red-100 text-red-800";
+  //     default:
+  //       return "bg-gray-100 text-gray-800";
+  //   }
+  // };
 
   return (
     <div className="space-y-6 py-4">

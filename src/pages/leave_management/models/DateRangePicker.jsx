@@ -1,63 +1,74 @@
-import React, { useState, useEffect } from "react";
+// This is the complete and correct code for your "DateRangePicker.js" file.
 
-const DateRangePicker = ({ onChange }) => {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [daysBetween, setDaysBetween] = useState(0);
-  const [error, setError] = useState("");
+import React, { useState, useRef, useEffect } from "react";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+
+const DateRangePicker = ({ label, onChange, defaultDate, disabledDays, defaultMonth, align = "left" }) => {
+  const [selected, setSelected] = useState(defaultDate);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const handleSelect = (date) => {
+    setSelected(date);
+    if (onChange) onChange(date);
+    setOpen(false);
+  };
 
   useEffect(() => {
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (end < start) {
-        setError("End date cannot be earlier than start date.");
-        setDaysBetween(0);
-      } else {
-        setError("");
-        const timeDiff = end.getTime() - start.getTime();
-        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // inclusive of both days
-        setDaysBetween(days);
-
-        // Optional callback to parent with valid data
-        if (onChange) {
-          onChange({ startDate, endDate, days });
-        }
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
       }
-    }
-  }, [startDate, endDate]);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setSelected(defaultDate);
+  }, [defaultDate]);
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-          />
-        </div>
-      </div>
-
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      {!error && startDate && endDate && (
-        <p className="text-gray-700 text-sm">
-          Total days: <strong>{daysBetween}</strong>
-        </p>
+    <div className="flex flex-col space-y-2 w-full" ref={ref}>
+      {label && (
+        <label className="text-sm font-medium text-gray-700">{label}</label>
       )}
+
+      <div className="relative w-full">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between px-3 py-2 border rounded-lg shadow-sm bg-white text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <span>
+            {selected ? format(selected, "MMM d, yyyy") : "Pick a date"}
+          </span>
+          <CalendarIcon className="w-5 h-5 text-gray-500" />
+        </button>
+
+        {open && (
+          <div
+            className={`absolute z-20 mt-2 bg-gray-100 border rounded-lg shadow-lg p-2 ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+          >
+            <DayPicker
+              mode="single"
+              selected={selected}
+              onSelect={handleSelect}
+              defaultMonth={defaultMonth}
+              disabled={disabledDays}
+              modifiersClassNames={{
+                selected: "bg-indigo-600 text-white rounded-md",
+                today: "font-bold text-indigo-600",
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

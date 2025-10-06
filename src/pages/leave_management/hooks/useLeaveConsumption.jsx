@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-
-
-// import 
+import { toast } from "react-toastify";
 
 const useLeaveConsumption = (employeeId) => {
 
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token');
   // console.log("Fetching leave consumption for employee:", employeeId);
   const [leaveData, setLeaveData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +21,11 @@ const useLeaveConsumption = (employeeId) => {
         }
       })
       .then((res) => {
-        console.log("Leave consumption data fetched:", res.data);
         setLeaveData(res.data); // Keep full data for each leave type
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch leave data:", err);
+        toast.error("Failed to fetch leave data");
         setLoading(false);
       });
   }, [employeeId]);

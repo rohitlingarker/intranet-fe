@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Check, X, Search, Pencil } from "lucide-react";
+import { Check, X, Search, Pencil, XCircle } from "lucide-react";
 import axios from "axios";
 import Pagination from "../../../components/Pagination/pagination";
 import LeaveDashboard from "../charts/LeaveDashboard";
@@ -8,16 +8,16 @@ import ManagerEditLeaveRequest from "./ManagerEditLeaveRequest";
 import LeaveSection from "./LeaveSection";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
- 
+
 function countWeekdays(startDateStr, endDateStr) {
   const start = new Date(startDateStr.split("T")[0] + "T00:00:00");
   const end = new Date(endDateStr.split("T")[0] + "T00:00:00");
- 
+
   if (end < start) return 0;
- 
+
   let count = 0;
   let current = new Date(start);
- 
+
   while (current <= end) {
     const day = current.getDay();
     if (day !== 0 && day !== 6) {
@@ -41,14 +41,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   const [editingRequest, setEditingRequest] = useState(null);
   const itemsPerPage = 8;
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
- 
+
   const managerId = employeeId;
- 
+
   // const toLeaveRequest = (raw) => ({
   //   leaveId: raw.leaveId,
   //   employee: {
@@ -68,40 +68,42 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   //   requestDate: raw.requestDate,
   //   driveLink: raw.driveLink || undefined,
   // });
- 
+
   useEffect(() => {
     if (managerId) {
       fetchData();
     }
-  }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus ]); // selectedStatus (can be added)
- 
+  }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus]); // selectedStatus (can be added)
+
   const fetchData = async () => {
     try {
       const payload = {
         managerId,
-        year: selectedYear || null, // from your year dropdown
+        year: selectedYear || Date.now().getFullYear(), // from your year dropdown
         month: selectedMonth || null, // from your month dropdown
         status: selectedStatus !== "All" ? selectedStatus : null,
         searchTerm: searchTerm || null,
       };
- 
+
       const res = await axios.post(
         `${BASE_URL}/api/leave-requests/manager/history`,
-        payload,{
-          headers:{
-            Authorization:`Bearer ${token}`
-          }
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
- 
+
       const types = await axios.get(
-        `${BASE_URL}/api/leave/get-all-leave-types`,{
-          headers:{
-            Authorization:`Bearer ${token}`
-          }
+        `${BASE_URL}/api/leave/get-all-leave-types`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
- 
+
       const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setAdminLeaveRequests(arr);
       setAllLeaveTypes(types.data || []);
@@ -112,42 +114,40 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     }
   };
 
+  // Component to handle long reason text with "View More"/"View Less"
+  const LeaveReasonCell = ({ reason }) => {
+    const [expanded, setExpanded] = useState(false);
 
-    // Component to handle long reason text with "View More"/"View Less"
-    const LeaveReasonCell = ({ reason }) => {
-      const [expanded, setExpanded] = useState(false);
-  
-      // limit characters shown before truncation
-      const MAX_LENGTH = 50;
-  
-      if (!reason) return <span>-</span>;
-  
-      const isLong = reason.length > MAX_LENGTH;
-      const displayText = expanded
-        ? reason
-        : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
-  
-      return (
-        <div className="flex flex-col">
-          <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
-          {isLong && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-blue-600 text-xs hover:underline self-start"
-            >
-              {expanded ? "View Less" : "View More"}
-            </button>
-          )}
-        </div>
-      );
-    };
-  
- 
+    // limit characters shown before truncation
+    const MAX_LENGTH = 50;
+
+    if (!reason) return <span>-</span>;
+
+    const isLong = reason.length > MAX_LENGTH;
+    const displayText = expanded
+      ? reason
+      : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+
+    return (
+      <div className="flex flex-col">
+        <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+        {isLong && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-blue-600 text-xs hover:underline self-start"
+          >
+            {expanded ? "View Less" : "View More"}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   // for the leaveBalaceDashBoard
   // const handleOpenDetails = (request) => {
   //   setSelectedRequestDetails(request);
   // };
- 
+
   // const filteredAdminRequests = adminLeaveRequests.filter((req) => {
   //   const matchesSearch =
   //     req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -157,29 +157,29 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   //     req.status.toLowerCase() === selectedStatus.toLowerCase();
   //   return matchesSearch && matchesStatus;
   // });
- 
+
   const totalPages = Math.ceil(adminLeaveRequests.length / itemsPerPage);
   const paginatedRequests = adminLeaveRequests.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
- 
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedStatus]);
- 
+
   const selectableRequests = adminLeaveRequests.filter(
     (r) =>
       !["approved", "rejected", "cancelled"].includes(r.status.toLowerCase())
   );
- 
+
   // Select all or none
   const handleSelectAll = (checked) => {
     setSelectedRequests(
       checked ? selectableRequests.map((r) => r.leaveId) : []
     );
   };
- 
+
   // Select single
   const handleSelectRequest = (leaveId, checked) => {
     if (checked) {
@@ -188,7 +188,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
     }
   };
- 
+
   // Batch approve
   const handleAcceptAll = async () => {
     if (selectedRequests.length === 0) return;
@@ -200,11 +200,12 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         {
           managerId,
           leaveIds: selectedRequests,
-        },{
-          headers:{
-            Authorization:`Bearer ${token}`
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      }
       );
       toast.success(`${selectedRequests.length} requests approved.`);
       setSelectedRequests([]);
@@ -215,7 +216,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setLoading(false);
     }
   };
- 
+
   // Batch reject
   const handleRejectAll = async () => {
     if (selectedRequests.length === 0) return;
@@ -227,10 +228,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           managerId,
           leaveIds: selectedRequests,
           // comments: selectedRequests.reduce((res, id) => ({ ...res, [id]: comments[id] || "" }), {})
-        },{
-          headers:{
-            Authorization: `Bearer ${token}`
-          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       toast.success(`${selectedRequests.length} requests rejected.`);
@@ -242,36 +244,55 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setLoading(false);
     }
   };
- 
+
   // Approve or Reject single leave, use comment from param or store
-  const handleDecision = async (action, leaveId, commentParam) => {
-    const comment = commentParam ?? (comments[leaveId] || "");
-    if (action === "reject" && !comment) {
-      toast.error("Manager comment required to reject.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await axios.put(`${BASE_URL}/api/leave-requests/${action}`, {
+const handleDecision = async (action, leaveId, commentParam) => {
+  const comment = commentParam ?? (comments[leaveId] || "");
+
+  if ((action === "reject" || action === "cancel") && !comment) {
+    toast.error(
+      action === "reject"
+        ? "Manager comment required to reject."
+        : "Reason required to cancel approved leave."
+    );
+    return;
+  }
+  console.log("handleDecision", { action, leaveId, comment, managerId });
+  setLoading(true);
+  try {
+    await axios.put(
+      `${BASE_URL}/api/leave-requests/${action}`,
+      {
         managerId,
         leaveId,
         comment,
-      },{
-        headers:{
-          Authorization: `Bearer ${token}`
-        }
-      });
-      toast.success(`Leave ${action}ed successfully.`);
-      setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
-      await fetchData();
-      setConfirmation(null);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
- 
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    toast.success(
+      action === "reject"
+        ? "Leave rejected successfully."
+        : action === "cancel"
+        ? "Leave cancelled successfully."
+        : "Leave approved successfully."
+    );
+
+    setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
+    await fetchData();
+    setConfirmation(null);
+  } catch {
+    toast.error("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   // Update leave (for ActionDropdown editing)
   const handleLeaveUpdate = async (leaveId, updatedData) => {
     setLoading(true);
@@ -282,7 +303,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       if (!originalRequest) {
         throw new Error("Original request not found.");
       }
-      
+
       const payload = {
         leaveId: originalRequest.leaveId,
         employeeId: originalRequest.employee.employeeId,
@@ -302,12 +323,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setEditingRequest(null); // Close the modal
       await fetchData(); // Refresh data
     } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed! Please try again.");
+      toast.error(
+        err.response?.data?.message || "Update failed! Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
- 
+
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case "approved":
@@ -320,12 +343,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         return "bg-gray-200 text-gray-800";
     }
   };
- 
+
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-          
           {/* --- SEARCH INPUT --- */}
           {/* No changes needed here, it already matches the new style. */}
           <div className="relative flex-1 w-full lg:w-auto">
@@ -356,7 +378,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             </select>
             {/* MODIFICATION: Added this div for the custom chevron icon */}
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              <svg
+                className="fill-current h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
 
@@ -369,11 +397,19 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             >
               <option value="">All Years</option>
               {years.map((year) => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              <svg
+                className="fill-current h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
 
@@ -386,24 +422,37 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             >
               <option value="">All Months</option>
               {[
-                { value: 1, label: "January" }, { value: 2, label: "February" },
-                { value: 3, label: "March" }, { value: 4, label: "April" },
-                { value: 5, label: "May" }, { value: 6, label: "June" },
-                { value: 7, label: "July" }, { value: 8, label: "August" },
-                { value: 9, label: "September" }, { value: 10, label: "October" },
-                { value: 11, label: "November" }, { value: 12, label: "December" },
+                { value: 1, label: "January" },
+                { value: 2, label: "February" },
+                { value: 3, label: "March" },
+                { value: 4, label: "April" },
+                { value: 5, label: "May" },
+                { value: 6, label: "June" },
+                { value: 7, label: "July" },
+                { value: 8, label: "August" },
+                { value: 9, label: "September" },
+                { value: 10, label: "October" },
+                { value: 11, label: "November" },
+                { value: 12, label: "December" },
               ].map((month) => (
-                <option key={month.value} value={month.value}>{month.label}</option>
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              <svg
+                className="fill-current h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
-
         </div>
       </div>
- 
+
       <div className="overflow-x-auto">
         <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
           <thead className="bg-gray-50 border-b border-gray-200 relative">
@@ -441,7 +490,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </tr>
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "4%" }}>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "4%" }}
+              >
                 <input
                   type="checkbox"
                   checked={
@@ -454,22 +506,77 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   disabled={selectableRequests.length === 0}
                 />
               </th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "12%" }}>Employee</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>From</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>To</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "5%" }}>Days</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Requested On</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "10%" }}>Leave Type</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "16%" }}>Reason</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Status</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Last Action By</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Documents</th>
-              <th className="px-4 py-3 text-center text-xs uppercase" style={{ width: "8%" }}>Actions</th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "12%" }}
+              >
+                Employee
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "10%" }}
+              >
+                From
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "10%" }}
+              >
+                To
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "5%" }}
+              >
+                Days
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "8%" }}
+              >
+                Requested On
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "10%" }}
+              >
+                Leave Type
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "16%" }}
+              >
+                Reason
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "8%" }}
+              >
+                Status
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "8%" }}
+              >
+                Last Action By
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "8%" }}
+              >
+                Documents
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs uppercase"
+                style={{ width: "8%" }}
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 text-center">
             {paginatedRequests.map((request) => {
-              console.log(request)
+              console.log(request);
               const typeObj =
                 allLeaveTypes.find(
                   (t) => t.leaveName === request.leaveType.leaveName
@@ -498,6 +605,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         setLeaveBalaceModel({
                           employeeId: request.employee.employeeId,
                           employeeName: request.employee.fullName,
+                          leaveId: request.leaveId,
                         })
                       }
                     >
@@ -511,7 +619,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     <div>
                       <div className="font-medium text-gray-900">
                         {request.startDate
-                          ? new Date(request.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          ? new Date(request.startDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )
                           : "-"}
                         {/* {request.startDate !== request.endDate
                           ? ` to ${request.endDate}`
@@ -527,7 +642,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     <div>
                       <div className="font-medium text-gray-900">
                         {request.endDate
-                          ? new Date(request.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          ? new Date(request.endDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )
                           : "-"}
                       </div>
                     </div>
@@ -549,7 +671,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">
                       {request.requestDate
-                        ? new Date(request.requestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        ? new Date(request.requestDate).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", year: "numeric" }
+                          )
                         : "-"}
                     </div>
                   </td>
@@ -580,9 +705,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   <td className="px-6 py-4 text-gray-500">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {request.approvedBy
-                          ? request.approvedBy.fullName
-                          : "—"}
+                        {request.approvedBy ? request.approvedBy.fullName : "—"}
                       </div>
                       {request.managerComment && (
                         <div className="text-gray-500 mt-1">
@@ -604,44 +727,64 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       {request.status.toLowerCase() === "pending" && (
                         <>
                           <button
-                            className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                            className="p-1 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() =>
                               setConfirmation({
                                 action: "approve",
                                 leaveId: request.leaveId,
                               })
                             }
-                            title="Approve"
+                            aria-label="Approve Request"
                             disabled={loading}
                           >
                             <Check className="w-4 h-4" />
                           </button>
+
                           <button
-                            className="p-1 text-red-600 hover:text-red-800 transition-colors"
+                            className="p-1 text-red-600 hover:text-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() =>
                               setConfirmation({
                                 action: "reject",
                                 leaveId: request.leaveId,
                               })
                             }
-                            title="Reject"
+                            aria-label="Reject Request"
                             disabled={loading}
                           >
                             <X className="w-4 h-4" />
                           </button>
+
                           <button
                             onClick={() => setEditingRequest(request)}
-                            title="Edit Request"
+                            aria-label="Edit Request"
                             disabled={loading}
-                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                         </>
+                      )}
+
+                      {/* ✅ Cancel option for approved leaves */}
+                      {request.status.toLowerCase() === "approved" && (
+                        <button
+                          className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() =>
+                            setConfirmation({
+                              action: "cancel",
+                              leaveId: request.leaveId,
+                            })
+                          }
+                          aria-label="Cancel Approved Leave"
+                          disabled={loading}
+                        >
+                          <XCircle className="w-6 h-6" />{" "}
+                          {/* You can use another icon if preferred */}
+                        </button>
                       )}
                     </div>
                   </td>
@@ -650,7 +793,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             })}
           </tbody>
         </table>
- 
+
         <div className="mb-4">
           <Pagination
             currentPage={currentPage}
@@ -671,7 +814,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             requestDetails={editingRequest}
           />
         )}
- 
+
         {leaveBalanceModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
@@ -686,11 +829,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   &times;
                 </button>
               </div>
-              <LeaveSection employeeId={leaveBalanceModal.employeeId} />
+              <LeaveSection
+                employeeId={leaveBalanceModal.employeeId}
+                leaveId={leaveBalanceModal.leaveId}
+              />
             </div>
           </div>
         )}
- 
+
         {confirmation && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40 backdrop-blur">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-[90vw] max-w-[360px] border border-gray-200 animate-fade-in">
@@ -713,9 +859,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     ? "Approve this leave request?"
                     : "Reject this leave request?"}
                 </h3>
-                {confirmation.action === "reject" && (
+                {(confirmation.action === "reject" ||
+                  confirmation.action === "cancel") && (
                   <input
-                    placeholder="Manager comment"
+                    placeholder={
+                      confirmation.action === "reject"
+                        ? "Manager comment"
+                        : "Reason for cancellation"
+                    }
                     className="border rounded px-2 py-1 mb-3 text-sm w-full"
                     value={comments[confirmation.leaveId] || ""}
                     onChange={(e) =>
@@ -726,6 +877,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     }
                   />
                 )}
+
                 <div className="flex gap-3 w-full">
                   <button
                     className="flex-1 px-4 py-2 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
@@ -752,7 +904,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             </div>
           </div>
         )}
- 
+
         {loading && (
           <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -762,5 +914,5 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     </div>
   );
 };
- 
+
 export default HandleLeaveRequestAndApprovals;

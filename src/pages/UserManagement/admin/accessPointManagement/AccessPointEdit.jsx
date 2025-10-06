@@ -6,6 +6,7 @@ import {
 } from "../../../../services/accessPointService";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
+import { showStatusToast } from "../../../../components/toastfy/toast"; // ✅ Import toast
 
 const AccessPointEdit = () => {
   const { access_id } = useParams();
@@ -40,8 +41,20 @@ const AccessPointEdit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await updateAccessPoint(access_id, form);
-    navigate("/user-management/access-points");
+    try {
+      await updateAccessPoint(access_id, form);
+
+      // ✅ Show success toast
+      showStatusToast("Access point updated successfully", "success");
+
+      // Redirect after update
+      navigate("/user-management/access-points");
+    } catch (error) {
+      console.error("Error updating access point:", error);
+
+      // ✅ Show error toast
+      showStatusToast("Failed to update access point", "error");
+    }
   };
 
   const handleDeletePermission = async () => {
@@ -69,11 +82,16 @@ const AccessPointEdit = () => {
         // Refresh the access point data to reflect the change
         const updatedData = await getAccessPoint(access_id);
         setAccessPointData(updatedData.data);
+
+        // ✅ Show toast on delete success
+        showStatusToast("Permission unmapped successfully", "success");
       } else {
         console.error("Failed to delete permission");
+        showStatusToast("Failed to unmap permission", "error");
       }
     } catch (error) {
       console.error("Error deleting permission:", error);
+      showStatusToast("Error deleting permission", "error");
     } finally {
       setIsDeleting(false);
     }

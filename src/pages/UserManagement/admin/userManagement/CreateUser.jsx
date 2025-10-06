@@ -19,6 +19,24 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     is_active: true,
   });
 
+  const [generatedPassword, setGeneratedPassword] = useState("");
+
+  const generatePasswordFromUser = (firstName, mobile) => {
+    if (!firstName.trim()) return showSingleToast("First Name is required.");
+    if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
+    const namePart = (firstName || "").slice(0, 4);
+    const digits = String(mobile || "").replace(/\D/g, "");
+    const mobilePart = digits.slice(-4);
+    let base = `${namePart}@${mobilePart}`;
+    // Enforce backend rules: ≥8 chars, upper, lower, digit, special
+    if (!/[A-Z]/.test(base)) base = base.replace(/^[a-z]/, (c) => c.toUpperCase()) || `T${base}`;
+    if (!/[a-z]/.test(base)) base += "a";
+    if (!/\d/.test(base)) base += "1";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(base)) base += "!";
+    while (base.length < 8) base += "0";
+    return base;
+  };
+
   const [loading, setLoading] = useState(false);
   const [toastActive, setToastActive] = useState(false);
 
@@ -38,7 +56,6 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     }
   };
 
-  // ✅ Validation function
   const validateForm = () => {
     if (!form.first_name.trim()) return showSingleToast("First Name is required.");
     if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
@@ -48,21 +65,20 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (!/^[a-zA-Z0-9@._-]+$/.test(form.mail)) return showSingleToast("Email contains invalid characters.");
     if (!form.contact.trim()) return showSingleToast("Contact number is required.");
 
-    // ✅ Parse phone number
     const phoneNumber = parsePhoneNumberFromString("+" + form.contact.replace(/\D/g, ""));
     if (!phoneNumber || !phoneNumber.isValid()) {
       return showSingleToast("Invalid phone number for the selected country.");
     }
 
-    // ✅ Strict national number length check
-    const countryCode = phoneNumber.countryCallingCode; // e.g., "91"
+    const countryCode = phoneNumber.countryCallingCode;
     const nationalLen = phoneNumber.nationalNumber.length;
 
     if (countryCode === "91" && nationalLen !== 10) {
       return showSingleToast("Indian contact number must be exactly 10 digits.");
     }
-    // You can add other countries here:
-    // else if(countryCode === "1" && nationalLen !== 10) { ... }
+    if (countryCode === "1" && nationalLen !== 10) {
+      return showSingleToast("US contact number must be exactly 10 digits.");
+    }
 
     if (!form.password.trim()) return showSingleToast("Password is required.");
     if (form.password.length < 6) return showSingleToast("Password must be at least 6 characters long.");
@@ -75,6 +91,15 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     if (loading || !validateForm()) return;
 
     setLoading(true);
+
+    const password = generatePasswordFromUser(form.first_name, form.contact);
+    if (form.password !== password) {
+      showSingleToast("Password does not match the criteria and please click generate password again", "error");
+      setLoading(false);
+      return;
+    }
+    console.log(form.contact);
+    form.password = password;
 
     try {
       await axios.post(
@@ -92,13 +117,13 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-xl mx-auto text-[70%]">
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 p-4 max-h-[60vh] overflow-y-auto"
+        className="space-y-3 p-3 max-h-[70vh] overflow-y-auto"
       >
         {/* First + Last Name */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormInput
             label="First Name"
             name="first_name"
@@ -108,6 +133,8 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             }}
             placeholder="Enter first name"
             required
+            labelClassName="text-xs"
+            inputClassName="text-sm"
           />
           <FormInput
             label="Last Name"
@@ -118,6 +145,8 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             }}
             placeholder="Enter last name"
             required
+            labelClassName="text-xs"
+            inputClassName="text-sm"
           />
         </div>
 
@@ -132,40 +161,70 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           }}
           placeholder="Enter email"
           required
+          labelClassName="text-xs"
+          inputClassName="text-sm"
         />
 
         {/* Contact */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Contact
           </label>
           <PhoneInput
-            country={"in"}
+            country={"us"}
             value={form.contact}
-            onChange={(phone) => setForm((prev) => ({ ...prev, contact: phone }))}
+            onChange={(phone, countryData) =>
+              setForm((prev) => ({
+                ...prev,
+                contact: phone,
+              }))
+            }
             enableSearch
             disableDropdown={false}
             placeholder="Enter phone number"
             containerClass="w-full"
-            inputClass="!w-full !pl-16 !pr-3 !py-2 !border !rounded-md !shadow-sm sm:!text-sm"
-            buttonClass="!absolute !left-0 !h-full !rounded-l-md !pl-3 !pr-3 !bg-white !border-r"
+            inputClass="!w-full !pl-12 !pr-2 !py-1.5 !border !rounded-md !shadow-sm !text-sm"
+            buttonClass="!absolute !left-0 !h-full !rounded-l-md !px-2 !bg-white !border-r"
             dropdownClass="!z-50"
             enableAreaCodes={true}
-            countryCodeEditable={false}
+            countryCodeEditable={true}
           />
         </div>
 
         {/* Password */}
         <FormInput
-          label="Password"
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          placeholder="Create a password"
-          required
-          minLength={6}
+            type="text"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            onFocus={() => {
+              if (!form.password) {
+                const localGenerated = generatePasswordFromUser(form.first_name, form.contact);
+                if (localGenerated) {
+                  setForm((prev) => ({ ...prev, password: localGenerated }));
+                  setGeneratedPassword(localGenerated);
+                }
+              }
+            }}
+            placeholder="Generate or enter a password"
+            minLength={8}
+            labelClassName="text-xs"
+            inputClassName="text-sm"
         />
+
+        <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              const suggestion = generatePasswordFromUser(form.first_name, form.contact);
+              setForm((prev) => ({ ...prev, password: suggestion }));
+              setGeneratedPassword(suggestion);
+              showStatusToast("Password generated from current First Name & Contact.", "info");
+            }}
+          >
+            Generate Password
+        </Button>
 
         {/* Active checkbox */}
         <div className="flex items-center gap-2">
@@ -175,19 +234,19 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             name="is_active"
             checked={form.is_active}
             onChange={handleChange}
-            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+            className="h-3.5 w-3.5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
           />
-          <label htmlFor="is_active_modal" className="text-sm text-gray-700">
+          <label htmlFor="is_active_modal" className="text-xs text-gray-700">
             Active
           </label>
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-4 pt-4 border-t sticky bottom-0 bg-white">
+        <div className="flex gap-3 pt-3 border-t sticky bottom-0 bg-white">
           <Button
             type="submit"
             variant="primary"
-            size="medium"
+            size="small"
             disabled={loading}
             className="flex-1 sm:flex-none"
           >
@@ -196,7 +255,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           <Button
             type="button"
             variant="secondary"
-            size="medium"
+            size="small"
             onClick={onClose}
             disabled={loading}
             className="flex-1 sm:flex-none"

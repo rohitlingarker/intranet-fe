@@ -14,14 +14,15 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
     first_name: "",
     last_name: "",
     mail: "",
-    contact: "",
+    contact: "", // raw phone (no "+")
     password: "",
     is_active: true,
   });
 
   const [loading, setLoading] = useState(false);
-  const isSubmittingRef = useRef(false); // Added ref to immediately block multiple submissions
+  const isSubmittingRef = useRef(false);
 
+  // ✅ Fetch user details
   useEffect(() => {
     if (userId) {
       axios
@@ -29,8 +30,12 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
-          const { password, ...rest } = res.data;
-          setUser((prev) => ({ ...prev, ...rest }));
+          const { password, contact, ...rest } = res.data;
+          setUser((prev) => ({
+            ...prev,
+            ...rest,
+            contact: contact?.replace(/^\+/, "") || "", // store without "+"
+          }));
         })
         .catch((err) => {
           console.error("Failed to fetch user:", err);
@@ -48,9 +53,7 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
     }));
   };
 
-  // --- MODIFIED SECTION 1 of 2 ---
-  // This function now RETURNS an error message string, or null if valid.
-  // It no longer calls the toast function directly.
+  // ✅ Validation
   const validateForm = () => {
     if (!user.first_name.trim()) return "First Name is required.";
     if (!/^[A-Za-z ]*$/.test(user.first_name)) return "First Name must contain only letters and spaces.";
@@ -60,7 +63,8 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
     if (!/^[a-zA-Z0-9@._-]+$/.test(user.mail)) return "Email contains invalid characters.";
     if (!user.contact.trim()) return "Contact number is required.";
 
-    const phoneNumber = parsePhoneNumberFromString("+" + user.contact.replace(/\D/g, ""));
+    // ✅ Always prefix with "+"
+    const phoneNumber = parsePhoneNumberFromString("+" + user.contact);
     if (!phoneNumber || !phoneNumber.isValid()) {
       return "Invalid phone number for the selected country.";
     }
@@ -68,35 +72,37 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
     if (phoneNumber.countryCallingCode === "91" && phoneNumber.nationalNumber.length !== 10) {
       return "Indian contact number must be exactly 10 digits.";
     }
-    
-    // Return null when validation passes
+    if (phoneNumber.countryCallingCode === "1" && phoneNumber.nationalNumber.length !== 10) {
+      return "US contact number must be exactly 10 digits.";
+    }
+
     return null;
   };
 
-  // --- MODIFIED SECTION 2 of 2 ---
+  // ✅ Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Immediate check to prevent multiple submissions
     if (loading || isSubmittingRef.current) return;
-    
-    // Set the ref immediately to block subsequent clicks
     isSubmittingRef.current = true;
 
-    // The validation result is now caught here.
     const validationError = validateForm();
-
-    // If there is an error message, show the toast ONCE and stop.
     if (validationError) {
       showStatusToast(validationError, "error");
-      isSubmittingRef.current = false; // Reset the ref
+      isSubmittingRef.current = false;
       return;
     }
-    
+
     setLoading(true);
 
     try {
       const payload = { ...user };
+
+      // ✅ Normalize phone with "+" prefix
+      if (payload.contact && !payload.contact.startsWith("+")) {
+        payload.contact = `+${payload.contact}`;
+      }
+
       if (!payload.password) delete payload.password;
 
       await axios.put(
@@ -111,7 +117,7 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
       showStatusToast(err.response?.data?.detail || "Failed to update user.", "error");
     } finally {
       setLoading(false);
-      isSubmittingRef.current = false; // Reset the ref
+      isSubmittingRef.current = false;
     }
   };
 
@@ -161,18 +167,22 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
             Contact
           </label>
           <PhoneInput
-            country={"in"}
+            country={"us"} // ✅ default to US
+            onlyCountries={["us", "in", "gb", "ca"]} // ✅ restrict dropdown to main countries
+            countryCodeEditable={false} // ✅ prevent editing +1 or +91 manually
             value={user.contact}
-            onChange={(phone) => setUser((prev) => ({ ...prev, contact: phone }))}
+            onChange={(phone, country) =>
+              setUser((prev) => ({
+                ...prev,
+                contact: phone, // raw without "+"
+              }))
+            }
             enableSearch
-            disableDropdown={false}
             placeholder="Enter phone number"
             containerClass="w-full"
             inputClass="!w-full !pl-16 !pr-3 !py-2 !border !rounded-md !shadow-sm sm:!text-sm"
             buttonClass="!absolute !left-0 !h-full !rounded-l-md !pl-3 !pr-3 !bg-white !border-r"
             dropdownClass="!z-50"
-            enableAreaCodes={true}
-            countryCodeEditable={false}
           />
         </div>
 
