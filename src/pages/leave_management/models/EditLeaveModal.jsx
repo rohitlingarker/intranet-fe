@@ -273,7 +273,7 @@ export default function EditLeaveModal({
       requestDate: initialData.requestDate,
       reason,
       driveLink,
-      isHalfDay: showCustomHalfDay,
+      // isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
     };
