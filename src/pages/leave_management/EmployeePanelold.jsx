@@ -108,7 +108,7 @@ const handleViewChange = (view) => {
                     : "text-gray-700 hover:bg-white"
                 }`}
               >
-                Admin View
+                Manager View
               </button>
             )}
 
