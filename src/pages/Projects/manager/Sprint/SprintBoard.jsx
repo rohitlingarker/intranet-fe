@@ -7,15 +7,21 @@ import CreateSprintModal from './CreateSprintModal';
 import SprintColumn from './SprintColumn';
 import Button from '../../../../components/Button/Button';
 
+
+
 const SprintBoard = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [filter, setFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
+  const token = localStorage.getItem("token");
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers });
       setStories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load stories:', err);
@@ -25,7 +31,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers });
       setSprints(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to load sprints:', err);
@@ -40,7 +46,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId });
+      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId }, { headers });
       await fetchStories();
     } catch (err) {
       console.error('Error assigning story to sprint:', err);
@@ -50,7 +56,7 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,{}, { headers }
       );
       const updatedSprint = response.data;
 
