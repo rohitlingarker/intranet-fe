@@ -24,7 +24,7 @@ export default function UpdateUserRole() {
 
   // modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUser_uuId, setSelectedUser_uuId] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -108,7 +108,7 @@ export default function UpdateUserRole() {
 
   // table headers
   const headers = [
-    "User ID",
+    "S.no",
     <span key="name" className="cursor-pointer" onClick={toggleSort}>
       Name {sortDirection === SORT_DIRECTIONS.ASC ? "▲" : "▼"}
     </span>,
@@ -116,22 +116,22 @@ export default function UpdateUserRole() {
     "Assigned Roles",
     "Actions",
   ];
-  const columns = ["user_id", "name", "mail", "roles", "actions"];
+  const columns = ["Serial no", "name", "mail", "roles", "actions"];
 
   const tableRows = paginatedUsers.map((user) => ({
-    user_id: user.user_id,
+    "Serial no": (users.indexOf(user) + 1).toString(),
     name: user.name,
     mail: user.mail || <span className="text-gray-400 italic">N/A</span>,
     roles:
       user.roles?.length > 0 ? (
         user.roles.join(", ")
       ) : (
-        <span className="text-gray-400">No roles assigned</span>
+        <span className="text-gray-700">General</span>
       ),
     actions: (
       <Button
         onClick={() => {
-          setSelectedUserId(user.user_id);
+          setSelectedUser_uuId(user.user_uuid);
           setIsModalOpen(true);
         }}
         variant="primary"
@@ -142,10 +142,10 @@ export default function UpdateUserRole() {
     ),
   }));
 
-  const handleRolesSaved = (userId, updatedRoleNames) => {
+  const handleRolesSaved = (userUuid, updatedRoleNames) => {
     setUsers((prev) =>
       prev.map((u) =>
-        u.user_id === userId ? { ...u, roles: updatedRoleNames } : u
+        u.user_uuid === userUuid ? { ...u, roles: updatedRoleNames } : u
       )
     );
   };
@@ -192,16 +192,17 @@ export default function UpdateUserRole() {
         />
       )}
 
-      {isModalOpen && selectedUserId && (
+      {isModalOpen && selectedUser_uuId && (
+        console.log("Opening modal for userId:", selectedUser_uuId) ||
         <EditUserRoleModal
-          userId={selectedUserId}
+          user_uuId={selectedUser_uuId}
           onClose={() => {
             setIsModalOpen(false);
-            setSelectedUserId(null);
+            setSelectedUser_uuId(null);
           }}
           axiosInstance={axiosInstance}
           onSaved={(updatedRoleNames) =>
-            handleRolesSaved(selectedUserId, updatedRoleNames)
+            handleRolesSaved(selectedUser_uuId, updatedRoleNames)
           }
         />
       )}
@@ -212,7 +213,7 @@ export default function UpdateUserRole() {
 /* ------------------------------
    Modal component (internal)
    ------------------------------ */
-function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
+function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
   const [user, setUser] = useState(null);
   const [roles, setRoles] = useState([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
@@ -225,16 +226,17 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
   };
 
   useEffect(() => {
-    if (!userId) return;
+    console.log("EditUserRoleModal mounted for userId:", user_uuId);
+    if (!user_uuId) return;
     let mounted = true;
 
     const loadData = async () => {
       setLoading(true);
       try {
         const [userRes, rolesRes, assignedRes] = await Promise.all([
-          axiosInstance.get(`/admin/users/${userId}`, authHeader),
+          axiosInstance.get(`/admin/users/uuid/${user_uuId}`, authHeader),
           axiosInstance.get(`/admin/roles`, authHeader),
-          axiosInstance.get(`/admin/users/${userId}/roles`, authHeader),
+          axiosInstance.get(`/admin/users/uuid/${user_uuId}/roles`, authHeader),
         ]);
         console.log("Fetched user, roles, assigned:", userRes, rolesRes, assignedRes);
 
@@ -247,7 +249,7 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
 
         if (assignedRes.data?.roles && Array.isArray(assignedRes.data.roles)) {
           const roleNameToId = rolesRes.data.reduce((acc, r) => {
-            acc[r.role_name] = r.role_id;
+            acc[r.role_name] = r.role_uuid;
             return acc;
           }, {});
           assignedIds = assignedRes.data.roles
@@ -268,7 +270,7 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
     return () => {
       mounted = false;
     };
-  }, [userId, axiosInstance]);
+  }, [user_uuId, axiosInstance]);
 
   const toggleRole = (roleId) => {
     setSelectedRoleIds((prev) =>
@@ -279,20 +281,22 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
   };
 
   const handleSave = async () => {
-    if (!userId) return;
+    if (!user_uuId) return;
     setSaving(true);
     try {
-      await axiosInstance.put(
-        `/admin/users/${userId}/role`,
+      const response = await axiosInstance.put(
+        `/admin/users/uuid/${user_uuId}/role`,
         { role_ids: selectedRoleIds },
         authHeader
       );
 
       const updatedRoleNames = roles
-        .filter((r) => selectedRoleIds.includes(r.role_id))
+        .filter((r) => selectedRoleIds.includes(r.role_uuid))
         .map((r) => r.role_name);
 
-      showStatusToast("Roles updated successfully!", "success");
+      console.log(response)
+
+      showStatusToast(response?.data?.message || "Roles updated successfully!", "success");
       if (typeof onSaved === "function") onSaved(updatedRoleNames);
       console.log("Updated roles:", updatedRoleNames);
       onClose();
@@ -323,13 +327,13 @@ function EditUserRoleModal({ userId, onClose, axiosInstance, onSaved }) {
             <div className="grid grid-cols-2 gap-3 mb-6 max-h-72 overflow-y-auto">
               {roles.map((role) => (
                 <label
-                  key={role.role_id}
+                  key={role.role_uuid}
                   className="flex items-center gap-3 text-gray-700"
                 >
                   <input
                     type="checkbox"
-                    checked={selectedRoleIds.includes(role.role_id)}
-                    onChange={() => toggleRole(role.role_id)}
+                    checked={selectedRoleIds.includes(role.role_uuid)}
+                    onChange={() => toggleRole(role.role_uuid)}
                     className="accent-blue-600 w-4 h-4"
                   />
                   <span>{role.role_name}</span>

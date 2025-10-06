@@ -9,29 +9,26 @@ import {
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
 import FormInput from "../../../../components/forms/FormInput";
-import { showStatusToast } from "../../../../components/toastfy/toast"; 
+import { showStatusToast } from "../../../../components/toastfy/toast";
 
 const PermissionGroupManagement = ({ roles }) => {
   const [selectedGroupRole, setSelectedGroupRole] = useState(null);
   const [permissionGroupsForRole, setPermissionGroupsForRole] = useState([]);
   const [showGroupSection, setShowGroupSection] = useState(false);
-  const [availablePermissionGroups, setAvailablePermissionGroups] = useState(
-    []
-  );
+  const [availablePermissionGroups, setAvailablePermissionGroups] = useState([]);
   const [groupAction, setGroupAction] = useState("");
   const [groupIdsInput, setGroupIdsInput] = useState("");
   const [groupToDelete, setGroupToDelete] = useState("");
   const [dropdownRole, setDropdownRole] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
- 
-
+  // ---- VIEW GROUPS ----
   const handleViewGroupForRole = async () => {
     if (!selectedGroupRole) return;
     setGroupAction("view");
     setShowGroupSection(true);
     try {
-      const res = await getPermissionGroupsByRole(selectedGroupRole.role_id);
+      const res = await getPermissionGroupsByRole(selectedGroupRole.role_uuid);
       setPermissionGroupsForRole(res.data);
     } catch {
       setPermissionGroupsForRole([]);
@@ -39,12 +36,13 @@ const PermissionGroupManagement = ({ roles }) => {
     }
   };
 
+  // ---- DELETE GROUPS ----
   const handleDeleteGroupForRole = async () => {
     setGroupAction("delete");
     setGroupToDelete("");
     setShowGroupSection(true);
     try {
-      const res = await getPermissionGroupsByRole(selectedGroupRole.role_id);
+      const res = await getPermissionGroupsByRole(selectedGroupRole.role_uuid);
       setPermissionGroupsForRole(res.data);
     } catch {
       setPermissionGroupsForRole([]);
@@ -52,15 +50,14 @@ const PermissionGroupManagement = ({ roles }) => {
     }
   };
 
+  // ---- ADD GROUPS ----
   const handleAddGroupForRole = async () => {
     setGroupAction("add");
     setGroupIdsInput("");
     setSearchTerm("");
     setShowGroupSection(true);
     try {
-      const res = await getAvailablePermissionGroupsForRole(
-        selectedGroupRole.role_id
-      );
+      const res = await getAvailablePermissionGroupsForRole(selectedGroupRole.role_uuid);
       setAvailablePermissionGroups(res.data);
     } catch {
       setAvailablePermissionGroups([]);
@@ -68,37 +65,33 @@ const PermissionGroupManagement = ({ roles }) => {
     }
   };
 
+  // ---- SUBMIT ADD ----
   const submitAddGroupsForRole = async () => {
     if (!groupIdsInput.trim())
-      return showStatusToast("Enter group IDs (comma separated)", "error");
+      return showStatusToast("Enter group UUIDs (comma separated)", "error");
     try {
-      const groupIds = groupIdsInput
-        .split(",")
-        .map((id) => parseInt(id.trim(), 10));
-      await addPermissionGroupsToRole(selectedGroupRole.role_id, groupIds);
+      const group_uuIds = groupIdsInput.split(",").map((id) => id.trim());
+      await addPermissionGroupsToRole(selectedGroupRole.role_uuid, group_uuIds);
       showStatusToast("Groups added successfully", "success");
       setGroupIdsInput("");
       setShowGroupSection(false);
-      const res = await getAvailablePermissionGroupsForRole(
-        selectedGroupRole.role_id
-      );
+      const res = await getAvailablePermissionGroupsForRole(selectedGroupRole.role_uuid);
       setAvailablePermissionGroups(res.data);
     } catch {
       showStatusToast("Failed to add groups", "error");
     }
   };
 
+  // ---- SUBMIT DELETE ----
   const submitDeleteGroupForRole = async () => {
-    if (!groupToDelete.trim()) return showStatusToast("Enter group ID to delete", "error");
+    if (!groupToDelete.trim())
+      return showStatusToast("Enter group UUID to delete", "error");
     try {
-      await removePermissionGroupFromRole(
-        selectedGroupRole.role_id,
-        groupToDelete
-      );
+      await removePermissionGroupFromRole(selectedGroupRole.role_uuid, groupToDelete);
       showStatusToast("Group removed successfully", "success");
       setGroupToDelete("");
       setShowGroupSection(false);
-      const res = await getPermissionGroupsByRole(selectedGroupRole.role_id);
+      const res = await getPermissionGroupsByRole(selectedGroupRole.role_uuid);
       setPermissionGroupsForRole(res.data);
     } catch {
       showStatusToast("Failed to remove group", "error");
@@ -112,6 +105,7 @@ const PermissionGroupManagement = ({ roles }) => {
           Permission Group by Role
         </h3>
 
+        {/* Role Selection */}
         <div className="flex items-center gap-4 mb-4">
           <select
             value={dropdownRole}
@@ -124,11 +118,12 @@ const PermissionGroupManagement = ({ roles }) => {
           >
             <option value="">Select the role</option>
             {roles.map((role) => (
-              <option key={role.role_name} value={role.role_name}>
+              <option key={role.role_uuid} value={role.role_name}>
                 {role.role_name}
               </option>
             ))}
           </select>
+
           <Button
             className="px-6 py-2 bg-blue-900 text-white rounded hover:bg-blue-950 transition-colors font-medium"
             onClick={() => {
@@ -136,7 +131,7 @@ const PermissionGroupManagement = ({ roles }) => {
               if (found) {
                 setSelectedGroupRole(found);
               } else {
-                ("Please select a valid role.");
+                showStatusToast("Please select a valid role.", "error");
               }
             }}
           >
@@ -144,6 +139,7 @@ const PermissionGroupManagement = ({ roles }) => {
           </Button>
         </div>
 
+        {/* Actions for Selected Role */}
         {selectedGroupRole && (
           <div className="flex flex-col gap-1 mb-2">
             <div className="flex justify-around">
@@ -155,7 +151,7 @@ const PermissionGroupManagement = ({ roles }) => {
               </Button>
               <Button
                 onClick={handleDeleteGroupForRole}
-                className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-600 transition-colors font-medium"
+                className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
               >
                 Delete
               </Button>
@@ -167,7 +163,7 @@ const PermissionGroupManagement = ({ roles }) => {
               </Button>
             </div>
 
-            {/* ADD Section with Search */}
+            {/* ADD SECTION */}
             {showGroupSection && groupAction === "add" && (
               <div className="bg-white rounded-lg shadow-md p-4 mt-4">
                 <div className="flex justify-between items-center mb-2">
@@ -189,10 +185,8 @@ const PermissionGroupManagement = ({ roles }) => {
 
                 <div className="mb-4">
                   <SearchInput
-                    placeholder="Search by group name or ID"
-                    onSearch={(value) =>
-                      setSearchTerm(value.trim().toLowerCase())
-                    }
+                    placeholder="Search by group name or UUID"
+                    onSearch={(value) => setSearchTerm(value.trim().toLowerCase())}
                   />
                 </div>
 
@@ -210,14 +204,14 @@ const PermissionGroupManagement = ({ roles }) => {
                         .filter((group) => {
                           if (!searchTerm) return true;
                           const name = group.group_name?.toLowerCase() || "";
-                          const id = String(group.group_id || "");
+                          const uuid = String(group.group_uuid || "");
                           return (
-                            name.includes(searchTerm) || id.includes(searchTerm)
+                            name.includes(searchTerm) || uuid.includes(searchTerm)
                           );
                         })
                         .map((group, index) => (
                           <div
-                            key={group.group_id || index}
+                            key={group.group_uuid || index}
                             className="flex justify-between items-center p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
                           >
                             <div>
@@ -225,23 +219,21 @@ const PermissionGroupManagement = ({ roles }) => {
                                 {group.group_name}
                               </span>
                               <span className="text-sm text-gray-500 ml-2">
-                                (ID: {group.group_id})
+                                (UUID: {group.group_uuid})
                               </span>
                             </div>
                             <Button
                               onClick={() => {
                                 const currentIds = groupIdsInput
-                                  ? groupIdsInput
-                                      .split(",")
-                                      .map((id) => id.trim())
+                                  ? groupIdsInput.split(",").map((id) => id.trim())
                                   : [];
                                 const newIds = [
                                   ...currentIds,
-                                  group.group_id.toString(),
+                                  group.group_uuid.toString(),
                                 ];
                                 setGroupIdsInput(newIds.join(", "));
                               }}
-                              className="px-3 py-0.3 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              className="px-3 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
                             >
                               Add
                             </Button>
@@ -253,12 +245,11 @@ const PermissionGroupManagement = ({ roles }) => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selected Group IDs:
+                    Selected Group UUIDs:
                   </label>
                   <FormInput
-                    // label="Selected Group IDs:"
                     name="groupIds"
-                    placeholder="Enter comma-separated group IDs (e.g., 1,2,3)"
+                    placeholder="Enter comma-separated group UUIDs"
                     value={groupIdsInput}
                     onChange={(e) => setGroupIdsInput(e.target.value)}
                   />
@@ -278,7 +269,7 @@ const PermissionGroupManagement = ({ roles }) => {
               </div>
             )}
 
-            {/* VIEW Section */}
+            {/* VIEW SECTION */}
             {showGroupSection && groupAction === "view" && (
               <div className="bg-white rounded-lg shadow-md p-4 mt-4">
                 <div className="flex justify-between items-center mb-2">
@@ -311,7 +302,7 @@ const PermissionGroupManagement = ({ roles }) => {
               </div>
             )}
 
-            {/* DELETE Section */}
+            {/* DELETE SECTION */}
             {showGroupSection && groupAction === "delete" && (
               <div className="bg-white rounded-lg shadow-md p-4 mt-4">
                 <div className="flex justify-between items-center mb-2">
@@ -342,7 +333,7 @@ const PermissionGroupManagement = ({ roles }) => {
                     <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-2">
                       {permissionGroupsForRole.map((group, index) => (
                         <div
-                          key={group.group_id || index}
+                          key={group.group_uuid || index}
                           className="flex justify-between items-center p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
                         >
                           <div>
@@ -350,14 +341,14 @@ const PermissionGroupManagement = ({ roles }) => {
                               {group.group_name}
                             </span>
                             <span className="text-sm text-gray-500 ml-2">
-                              (ID: {group.group_id})
+                              (UUID: {group.group_uuid})
                             </span>
                           </div>
                           <Button
                             onClick={() =>
-                              setGroupToDelete(group.group_id.toString())
+                              setGroupToDelete(group.group_uuid.toString())
                             }
-                            className="px-2.5 py-0.4 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            className="px-2.5 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
                           >
                             Select
                           </Button>
@@ -369,11 +360,11 @@ const PermissionGroupManagement = ({ roles }) => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Group ID to Delete:
+                    Group UUID to Delete:
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter group ID to delete"
+                    placeholder="Enter group UUID to delete"
                     value={groupToDelete}
                     onChange={(e) => setGroupToDelete(e.target.value)}
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
