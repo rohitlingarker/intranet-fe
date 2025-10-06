@@ -79,10 +79,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     try {
       const payload = {
         managerId,
-        year: selectedYear || Date.now().getFullYear(), // from your year dropdown
-        month: selectedMonth || null, // from your month dropdown
         status: selectedStatus !== "All" ? selectedStatus : null,
-        searchTerm: searchTerm || null,
+        year: selectedYear || new Date().getFullYear(), // from your year dropdown
+        month: selectedMonth || new Date().getMonth(), // from your month dropdown
+        // searchTerm: searchTerm || null,
       };
 
       const res = await axios.post(
