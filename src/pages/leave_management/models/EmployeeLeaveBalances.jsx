@@ -95,18 +95,17 @@ const EmployeeLeaveBalances = () => {
           // performedBy: hrId,
         };
 
-        await axios.put(`${BASE_URL}/api/leave-balance/update`, payload, {
+        const res = await axios.put(`${BASE_URL}/api/leave-balance/update`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        toast.success("Leave balances updated successfully");
+        toast.success(res.data?.message || "Leave balances updated successfully");
         setIsEditModalOpen(false);
         fetchLeaveData();
       } catch (err) {
-        toast.error("Error updating leave balances");
-        console.error(err);
+        toast.error(res.data?.message || "Failed to update leave balances");
       }
     };
 
@@ -173,7 +172,7 @@ const EmployeeLeaveBalances = () => {
         setLeaveTypes(allLeaveTypes);
       }
     } catch (error) {
-      console.error("Error fetching leave balances", error);
+      // console.error("Error fetching leave balances", error);
       toast.error("Failed to fetch leave balances");
     }
   };
