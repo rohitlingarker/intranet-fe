@@ -13,13 +13,13 @@ import {
 } from "lucide-react";
 
 const AccessPointDetails = () => {
-  const { access_id } = useParams();
+  const { access_uuid } = useParams();
   const [ap, setAp] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAccessPoint(access_id).then((res) => setAp(res.data));
-  }, [access_id]);
+    getAccessPoint(access_uuid).then((res) => setAp(res.data));
+  }, [access_uuid]);
 
   if (!ap) {
     return (

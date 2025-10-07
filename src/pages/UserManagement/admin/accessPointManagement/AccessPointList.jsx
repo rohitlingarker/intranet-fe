@@ -47,7 +47,7 @@ const AccessPointList = ({ searchTerm }) => {
     try {
       await deleteAccessPoint(selectedAccessPointId);
       // Update the main list of access points
-      setAps((prev) => prev.filter((ap) => ap.access_id !== selectedAccessPointId));
+      setAps((prev) => prev.filter((ap) => ap.access_uuid !== selectedAccessPointId));
       showStatusToast("Access Point Successfully deleted", "success");
     } catch (err) {
       showStatusToast("Failed to delete access point", "error");
@@ -93,7 +93,7 @@ const AccessPointList = ({ searchTerm }) => {
             {/* Map over the paginated filtered list */}
             {paginatedAps.map(ap => (
               <div
-                key={ap.access_id}
+                key={ap.access_uuid}
                 className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border flex flex-col"
               >
                 {/* ... Card content remains the same ... */}
@@ -123,19 +123,19 @@ const AccessPointList = ({ searchTerm }) => {
                 {/* Action buttons */}
                 <div className="space-y-2 mt-auto">
                   <Button
-                    onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
+                    onClick={() => navigate(`/user-management/access-points/${ap.access_uuid}`)}
                     className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-2 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
                   >
                     <Eye className="w-4 h-4" /> View
                   </Button>
                   <Button
-                    onClick={() => navigate(`/user-management/access-points/edit/${ap.access_id}`)}
+                    onClick={() => navigate(`/user-management/access-points/edit/${ap.access_uuid}`)}
                     className="flex items-center w-full justify-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all shadow"
                   >
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                   <Button
-                    onClick={() => handleDeleteClick(ap.access_id)}
+                    onClick={() => handleDeleteClick(ap.access_uuid)}
                     className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
                   >
                     <Trash2 className="w-4 h-4" /> Delete
