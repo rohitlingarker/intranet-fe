@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
 import { Fonts } from "../../../components/Fonts/Fonts";
-import { toast } from "react-toastify"; 
-import Pagination from "../../../components/Pagination/pagination"; 
+import Pagination from "../../../components/Pagination/pagination"; // <-- Import your Pagination component
 
 const CompOffRequestsTable = ({ requests, onCancel }) => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // 2. Add loading state
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,21 +16,12 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
     setConfirmModalOpen(true);
   };
 
-  // 3. Make the confirmation handler async to await the onCancel prop
-  const confirmCancellation = async () => {
-    if (!selectedRequestId) return;
-
-    setIsLoading(true); // Start loading
-    try {
-      await onCancel(selectedRequestId);
-      toast.success("Request cancelled successfully!"); // Show success message
-    } catch (error) { 
-      toast.error(error.message || "Failed to cancel request."); // Show error message
-    } finally {
-      setIsLoading(false); // Stop loading
-      setConfirmModalOpen(false);
-      setSelectedRequestId(null);
+  const confirmCancellation = () => {
+    if (selectedRequestId) {
+      onCancel(selectedRequestId);
     }
+    setConfirmModalOpen(false);
+    setSelectedRequestId(null);
   };
 
   const cancelModal = () => {
@@ -40,7 +29,7 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
     setSelectedRequestId(null);
   };
 
-  // Filter only pending requests once
+  // Filter only pending requests
   const pendingRequests = requests?.filter((req) => req.status === "PENDING") || [];
 
   // Pagination calculations
@@ -56,21 +45,21 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
             <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                  <th className="p-3 text-center">Start Date</th>
-                  <th className="p-3 text-center">End Date</th>
-                  <th className="p-3 text-center">Days</th>
-                  <th className="p-3 text-center">Status</th>
-                  <th className="p-3 text-center">Actions</th>
+                  <th className="p-3 text-left">Start Date</th>
+                  <th className="p-3 text-left">End Date</th>
+                  <th className="p-3 text-left">Days</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {currentRequests.map((req) => (
-                  <tr key={req.idleaveCompoff} className="border-t border-gray-200 text-sm">
-                    <td className="p-3 text-center">{req.startDate ? new Date(req.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
-                    <td className="p-3 text-center">{req.endDate ? new Date(req.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}</td>
-                    <td className="p-3 text-center">{req.duration}</td>
-                    <td className="p-3 text-center">{req.status}</td>
-                    <td className="p-3 text-center">
+                  <tr key={req.idleaveCompoff} className="border-t border-gray-200">
+                    <td className="p-3 text-left">{req.startDate}</td>
+                    <td className="p-3 text-left">{req.endDate}</td>
+                    <td className="p-3 text-left">{req.duration}</td>
+                    <td className="p-3 text-left">{req.status}</td>
+                    <td className="p-3 text-left">
                       <button
                         onClick={() => handleCancelClick(req.idleaveCompoff)}
                         className="text-red-600 hover:underline text-sm font-medium"
@@ -104,14 +93,13 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
         )}
       </div>
 
-      {/* 4. Pass the loading state to the modal */}
+      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModalOpen}
         title="Cancel Comp-Off Request"
         message="Are you sure you want to cancel this comp-off request?"
         onConfirm={confirmCancellation}
         onCancel={cancelModal}
-        isLoading={isLoading} 
       />
     </div>
   );

@@ -9,24 +9,24 @@ import LeaveSection from "./LeaveSection";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-function countWeekdays(startDateStr, endDateStr) {
-  const start = new Date(startDateStr.split("T")[0] + "T00:00:00");
-  const end = new Date(endDateStr.split("T")[0] + "T00:00:00");
+// function countWeekdays(startDateStr, endDateStr) {
+//   const start = new Date(startDateStr.split("T")[0] + "T00:00:00");
+//   const end = new Date(endDateStr.split("T")[0] + "T00:00:00");
 
-  if (end < start) return 0;
+//   if (end < start) return 0;
 
-  let count = 0;
-  let current = new Date(start);
+//   let count = 0;
+//   let current = new Date(start);
 
-  while (current <= end) {
-    const day = current.getDay();
-    if (day !== 0 && day !== 6) {
-      count++;
-    }
-    current.setDate(current.getDate() + 1);
-  }
-  return count;
-}
+//   while (current <= end) {
+//     const day = current.getDay();
+//     if (day !== 0 && day !== 6) {
+//       count++;
+//     }
+//     current.setDate(current.getDate() + 1);
+//   }
+//   return count;
+// }
 
 const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
@@ -79,10 +79,10 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     try {
       const payload = {
         managerId,
-        year: selectedYear || Date.now().getFullYear(), // from your year dropdown
-        month: selectedMonth || null, // from your month dropdown
         status: selectedStatus !== "All" ? selectedStatus : null,
-        searchTerm: searchTerm || null,
+        year: selectedYear || new Date().getFullYear(), // from your year dropdown
+        month: selectedMonth || new Date().getMonth(), // from your month dropdown
+        // searchTerm: searchTerm || null,
       };
 
       const res = await axios.post(
