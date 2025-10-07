@@ -250,11 +250,11 @@ const AppRoutes = () => {
             element={<AccessPointForm />}
           />
           <Route
-            path="/user-management/access-points/:access_id"
+            path="/user-management/access-points/:access_uuid"
             element={<AccessPointDetails />}
           />
           <Route
-            path="/user-management/access-points/edit/:access_id"
+            path="/user-management/access-points/edit/:access_uuid"
             element={<AccessPointEdit />}
           />
           <Route

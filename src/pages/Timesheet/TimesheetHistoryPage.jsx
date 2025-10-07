@@ -9,11 +9,8 @@ const TimesheetHistoryPage = () => {
   const [loading, setLoading] = useState(true);
 
   const [searchText, setSearchText] = useState("");
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState(""); 
   const [filterStatus, setFilterStatus] = useState("All Status");
-
-
-
   
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -46,7 +43,7 @@ useEffect(() => {
     try {
       setLoading(true);
       const data = await fetchTimesheetHistory(user?.user_id || 1);
-      console.log("Fetched timesheet history:", data);
+     console.log("Fetched timesheet history:", data); 
 
       setEntries(data);
     } catch (err) {
@@ -77,7 +74,10 @@ useEffect(() => {
     });
     // const matchesSearch = []
 
-    const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
+   const matchesDate = filterDate ? timesheet.workDate === filterDate : true; 
+    
+      
+
     const matchesStatus =
       filterStatus === "All Status" || timesheet.status === filterStatus;
 
@@ -138,4 +138,8 @@ useEffect(() => {
 };
 
 export default TimesheetHistoryPage;
+
+
+
+
 

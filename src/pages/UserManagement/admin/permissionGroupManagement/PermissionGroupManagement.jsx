@@ -16,7 +16,7 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
     <div className="border p-4 rounded bg-gray-50 max-h-64 overflow-y-auto space-y-2">
       {permissions.map((perm) => (
         <div
-          key={perm.permission_id}
+          key={perm.permission_uuid}
           className="flex flex-col sm:flex-row justify-between items-start sm:items-center border p-2 rounded"
         >
           <div className="mb-2 sm:mb-0">
@@ -29,7 +29,7 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
                 <Button
                   size="small"
                   variant="primary"
-                  onClick={() => onAdd && onAdd(perm.permission_id)}
+                  onClick={() => onAdd && onAdd(perm.permission_uuid)}
                   type="button"
                   className="w-full sm:w-auto"
                 >
@@ -40,7 +40,7 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
                 <Button
                   size="small"
                   variant="danger"
-                  onClick={() => onDelete && onDelete(perm.permission_id)}
+                  onClick={() => onDelete && onDelete(perm.permission_uuid)}
                   type="button"
                   className="w-full sm:w-auto"
                 >
@@ -172,7 +172,7 @@ export default function PermissionGroupManagement() {
     }
 
     try {
-      await axiosInstance.put(`/admin/groups/${editingGroup.group_id}`, { 
+      await axiosInstance.put(`/admin/groups/${editingGroup.group_uuid}`, { 
         group_name: editGroupName.trim() 
       });
       showUniqueToast("Group updated successfully!", "success");
@@ -186,8 +186,8 @@ export default function PermissionGroupManagement() {
     }
   };
 
-  const handleDeleteClick = (group_id) => {
-    setDeleteGroupId(group_id);
+  const handleDeleteClick = (group_uuid) => {
+    setDeleteGroupId(group_uuid);
     setShowDeleteModal(true);
   };
 
@@ -266,17 +266,17 @@ export default function PermissionGroupManagement() {
     setSearchTrigger(false);
   };
 
-  const handleAddPermissionToGroup = async (permission_id) => {
+  const handleAddPermissionToGroup = async (permission_uuid) => {
     if (!selectedGroupId) {
       return showUniqueToast("Please select a group first.", "warning");
     }
 
-    if (!permission_id) {
+    if (!permission_uuid) {
       return showUniqueToast("Enter the permission", "error");
     }
 
     try {
-      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [permission_id]);
+      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [permission_uuid]);
       showUniqueToast("Permission added successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
     } catch (err) {
@@ -285,18 +285,18 @@ export default function PermissionGroupManagement() {
     }
   };
 
-  const handleRemovePermissionFromGroup = async (permission_id) => {
+  const handleRemovePermissionFromGroup = async (permission_uuid) => {
     if (!selectedGroupId) {
       return showUniqueToast("Please select a group first.", "warning");
     }
 
-    if (!permission_id) {
+    if (!permission_uuid) {
       return showUniqueToast("Enter the permission", "error");
     }
 
     try {
       await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { 
-        data: [permission_id] 
+        data: [permission_uuid] 
       });
       showUniqueToast("Permission removed successfully.", "success");
       fetchGroupPermissions(selectedGroupId);
@@ -307,7 +307,7 @@ export default function PermissionGroupManagement() {
   };
 
   const unassignedPermissions = allPermissions.filter(
-    (perm) => !groupPermissions.some((gp) => gp.permission_id === perm.permission_id)
+    (perm) => !groupPermissions.some((gp) => gp.permission_uuid === perm.permission_uuid)
   );
 
   const filterPermissions = (list) => {
@@ -322,7 +322,7 @@ export default function PermissionGroupManagement() {
   function enrichWithCode(permissionList) {
     return permissionList.map((perm) => {
       if (perm.permission_code) return perm;
-      const found = allPermissions.find((p) => p.permission_id === perm.permission_id);
+      const found = allPermissions.find((p) => p.permission_uuid === perm.permission_uuid);
       return { ...perm, permission_code: found ? found.permission_code : "Unknown code" };
     });
   }
@@ -384,7 +384,7 @@ export default function PermissionGroupManagement() {
             <ul className="space-y-2">
               {currentGroups.map((group) => (
                 <li
-                  key={group?.group_id}
+                  key={group?.group_uuid}
                   className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
                 >
                   <span className="font-medium">{group?.group_name}</span>
@@ -402,7 +402,7 @@ export default function PermissionGroupManagement() {
                       size="small"
                       variant="danger"
                       className="text-sm w-full sm:w-auto"
-                      onClick={() => handleDeleteClick(group?.group_id)}
+                      onClick={() => handleDeleteClick(group?.group_uuid)}
                       type="button"
                     >
                       Delete
@@ -492,7 +492,7 @@ export default function PermissionGroupManagement() {
           >
             <option value="">-- Select Group --</option>
             {groups.map((group) => (
-              <option key={group.group_id} value={group.group_id}>
+              <option key={group.group_uuid} value={group.group_uuid}>
                 {group.group_name}
               </option>
             ))}

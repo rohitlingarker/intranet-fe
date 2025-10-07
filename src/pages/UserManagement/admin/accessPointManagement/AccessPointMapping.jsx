@@ -88,7 +88,7 @@ const AccessPointMapping = () => {
     try {
       await deleteAccessPoint(selectedAccessPointId);
       // Update the main list of access points
-      setAps((prev) => prev.filter((ap) => ap.access_id !== selectedAccessPointId));
+      setAps((prev) => prev.filter((ap) => ap.access_uuid !== selectedAccessPointId));
       showStatusToast("Access Point Successfully deleted", "success");
     } catch (err) {
       showStatusToast("Failed to delete access point", "error");
@@ -127,8 +127,8 @@ const AccessPointMapping = () => {
     setLoading(true);
     try {
       await assignPermissionToAccessPoint(
-        selectedAccessPoint.access_id,
-        selectedPermission.permission_id
+        selectedAccessPoint.access_uuid,
+        selectedPermission.permission_uuid
       );
       showStatusToast('Permission assigned successfully!', 'success');
       setShowModal(false);
@@ -197,7 +197,7 @@ const AccessPointMapping = () => {
               {/* Map over currentCards (which is based on filteredAps) */}
               {currentCards.map((ap) => (
                 <div
-                  key={ap.access_id}
+                  key={ap.access_uuid}
                   className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-all border flex flex-col"
                 >
                   {/* Endpoint path with word wrapping */}
@@ -228,7 +228,7 @@ const AccessPointMapping = () => {
                   {/* Action buttons */}
                   <div className="space-y-2 mt-auto">
                     <Button
-                      onClick={() => navigate(`/user-management/access-points/${ap.access_id}`)}
+                      onClick={() => navigate(`/user-management/access-points/${ap.access_uuid}`)}
                       className="flex items-center w-full justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all shadow"
                     >
                       <Eye className="w-4 h-4" /> View
@@ -241,7 +241,7 @@ const AccessPointMapping = () => {
                       <Plus className="w-4 h-4" /> Add
                     </Button>
                     <Button
-                      onClick={() => handleDeleteClick(ap.access_id)}
+                      onClick={() => handleDeleteClick(ap.access_uuid)}
                       className="flex items-center w-full justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all shadow"
                     >
                       <Trash2 className="w-4 h-4" /> Delete
@@ -402,13 +402,13 @@ const PermissionModal = ({
               ) : (
                 filtered.map((permission) => (
                   <div
-                    key={permission.permission_id}
+                    key={permission.permission_uuid}
                     onClick={() => {
                       setSelectedPermission(permission);
                       setQuery('');
                     }}
                     className={`cursor-pointer px-4 py-3 hover:bg-indigo-50 flex flex-col transition ${
-                      selectedPermission?.permission_id === permission.permission_id
+                      selectedPermission?.permission_uuid === permission.permission_uuid
                         ? 'bg-indigo-100'
                         : ''
                     }`}
