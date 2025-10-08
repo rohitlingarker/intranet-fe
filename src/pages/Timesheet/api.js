@@ -199,3 +199,29 @@ export async function bulkReviewTimesheet(timesheetIds, status, comment) {
     throw err;
   }
 }
+
+export async function filterByRange(startDate, endDate) {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheet/filter?startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to filter timesheet");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    showStatusToast(err.message || "Filter failed", "error");
+    throw err;
+  }
+}
