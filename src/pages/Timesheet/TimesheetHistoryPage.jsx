@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import TimesheetHeader from "./TimesheetHeader";
-import TimesheetFilters from "./TimesheetFilters";
-import {TimesheetTable} from "./TimesheetTable";
-import { fetchTimesheetHistory ,fetchProjectTaskInfo} from "./api";
+import {TimesheetFilters} from "./TimesheetFilters";
+import { TimesheetTable } from "./TimesheetTable";
+import { fetchTimesheetHistory, fetchProjectTaskInfo } from "./api";
 
 const TimesheetHistoryPage = () => {
   const [entries, setEntries] = useState([]);
@@ -12,9 +12,9 @@ const TimesheetHistoryPage = () => {
   const [filterDate, setFilterDate] = useState("");
   const [filterStatus, setFilterStatus] = useState("All Status");
 
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
-
-  
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -33,39 +33,42 @@ const TimesheetHistoryPage = () => {
   // }, []);
 
   // Fetch timesheet history
-useEffect(() => {
+  useEffect(() => {
     fetchProjectTaskInfo().then(setProjectInfo);
   }, []);
 
   const projectIdToName = Object.fromEntries(
     projectInfo.map((p) => [p.projectId, p.project])
   );
-  
-useEffect(() => {
-  const loadTimesheetHistory = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchTimesheetHistory(user?.user_id || 1);
-      console.log("Fetched timesheet history:", data);
 
-      setEntries(data);
-    } catch (err) {
-      console.error("Failed to fetch timesheet history:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const loadTimesheetHistory = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchTimesheetHistory(user?.user_id || 1);
+        console.log("Fetched timesheet history:", data);
 
-  loadTimesheetHistory();
-}, [user]);
+        setEntries(data);
+      } catch (err) {
+        console.error("Failed to fetch timesheet history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    loadTimesheetHistory();
+  }, [user]);
 
   const mapWorkType = (type) => {
     switch (type) {
-      case "WFO": return "Office";
-      case "WFH": return "Home";
-      case "HYBRID": return "Hybrid";
-      default: return type;
+      case "WFO":
+        return "Office";
+      case "WFH":
+        return "Home";
+      case "HYBRID":
+        return "Hybrid";
+      default:
+        return type;
     }
   };
 
@@ -77,7 +80,13 @@ useEffect(() => {
     });
     // const matchesSearch = []
 
-    const matchesDate = filterDate ? timesheet.workDate === filterDate : true;
+    const matchesDate =
+      (!filterStartDate && !filterEndDate) ||
+      ((!filterStartDate ||
+        new Date(timesheet.workDate) >= new Date(filterStartDate)) &&
+        (!filterEndDate ||
+          new Date(timesheet.workDate) <= new Date(filterEndDate)));
+
     const matchesStatus =
       filterStatus === "All Status" || timesheet.status === filterStatus;
 
@@ -98,11 +107,14 @@ useEffect(() => {
         <TimesheetFilters
           searchText={searchText}
           setSearchText={setSearchText}
-          filterDate={filterDate}
-          setFilterDate={setFilterDate}
+          filterStartDate={filterStartDate}
+          setFilterStartDate={setFilterStartDate}
+          filterEndDate={filterEndDate}
+          setFilterEndDate={setFilterEndDate}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
         />
+
         <TimesheetTable
           loading={loading}
           data={paginatedData}
@@ -111,16 +123,21 @@ useEffect(() => {
           setCurrentPage={setCurrentPage}
           mapWorkType={mapWorkType}
           projectInfo={projectInfo}
-          refreshData={()=>{
+          refreshData={() => {
             // Callback to refresh data after save
             setLoading(true);
-            fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/history`,{
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            })
+            fetch(
+              `${
+                import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+              }/api/timesheet/history`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            )
               .then((res) => res.json())
               .then((data) => {
                 setEntries(data);
@@ -138,4 +155,3 @@ useEffect(() => {
 };
 
 export default TimesheetHistoryPage;
-

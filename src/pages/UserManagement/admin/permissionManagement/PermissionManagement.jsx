@@ -123,7 +123,7 @@ export default function PermissionManagement() {
       };
 
       if (mode === "withGroup") {
-        payload.group_id = selectedGroup;
+        payload.group_uuid = selectedGroup;
       }
 
       await axiosInstance.post("/admin/permissions/", payload);
@@ -148,14 +148,14 @@ export default function PermissionManagement() {
     if (!validateDescription(editDescription)) return;
 
     try {
-      await axiosInstance.put(`/admin/permissions/${editingPermission.permission_id}`, {
+      await axiosInstance.put(`/admin/permissions/${editingPermission.permission_uuid}`, {
         permission_code: editCode,
         description: editDescription,
       });
 
       if (mode === "withGroup") {
-        await axiosInstance.put(`/admin/permissions/${editingPermission.permission_id}/group`, {
-          group_id: editGroup,
+        await axiosInstance.put(`/admin/permissions/${editingPermission.permission_uuid}/group`, {
+          group_uuid: editGroup,
         });
       }
 
@@ -177,7 +177,7 @@ export default function PermissionManagement() {
     setEditingPermission(permission);
     setEditCode(permission.permission_code);
     setEditDescription(permission.description || "");
-    setEditGroup(permission.group_id || "");
+    setEditGroup(permission.group_uuid || "");
     setShowModal(true);
   };
 
@@ -298,12 +298,12 @@ export default function PermissionManagement() {
         {mode === "withGroup" && (
           <select
             value={selectedGroup}
-            onChange={(e) => setSelectedGroup(Number(e.target.value))}
+            onChange={(e) => setSelectedGroup(String(e.target.value))}
             className="w-full p-2 border rounded mb-3"
           >
             <option value="">-- Select Permission Group --</option>
             {groups.map((g) => (
-              <option key={g.group_id} value={g.group_id}>
+              <option key={g.group_uuid} value={g.group_uuid}>
                 {g.group_name}
               </option>
             ))}
@@ -326,7 +326,7 @@ export default function PermissionManagement() {
         <ul className="space-y-2">
           {paginatedPermissions.map((perm) => (
             <li
-              key={perm.permission_id}
+              key={perm.permission_uuid}
               className="flex justify-between items-center border-b pb-2"
             >
               <span>
@@ -344,7 +344,7 @@ export default function PermissionManagement() {
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDeleteClick(perm.permission_id)}
+                  onClick={() => handleDeleteClick(perm.permission_uuid)}
                   className="p-2 rounded hover:bg-red-100 text-red-600"
                   title="Delete"
                 >
@@ -389,7 +389,7 @@ export default function PermissionManagement() {
           >
             <option value="">-- Select Permission Group --</option>
             {groups.map((g) => (
-              <option key={g.group_id} value={g.group_id}>
+              <option key={g.group_uuid} value={g.group_uuid}>
                 {g.group_name}
               </option>
             ))}

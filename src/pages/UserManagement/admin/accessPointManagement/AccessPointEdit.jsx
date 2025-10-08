@@ -9,7 +9,7 @@ import Button from "../../../../components/Button/Button";
 import { showStatusToast } from "../../../../components/toastfy/toast"; // ✅ Import toast
 
 const AccessPointEdit = () => {
-  const { access_id } = useParams();
+  const { access_uuid } = useParams();
   const [form, setForm] = useState(null);
   const [modules, setModules] = useState([]);
   const [accessPointData, setAccessPointData] = useState(null);
@@ -23,7 +23,8 @@ const AccessPointEdit = () => {
     });
 
     // Fetch existing access point data
-    getAccessPoint(access_id).then((res) => {
+    getAccessPoint(access_uuid).then((res) => {
+      console.log(access_uuid);
       setAccessPointData(res.data);
       setForm({
         endpoint_path: res.data.endpoint_path,
@@ -32,7 +33,7 @@ const AccessPointEdit = () => {
         is_public: res.data.is_public,
       });
     });
-  }, [access_id]);
+  }, [access_uuid]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -42,7 +43,7 @@ const AccessPointEdit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateAccessPoint(access_id, form);
+      await updateAccessPoint(access_uuid, form);
 
       // ✅ Show success toast
       showStatusToast("Access point updated successfully", "success");
@@ -58,7 +59,7 @@ const AccessPointEdit = () => {
   };
 
   const handleDeletePermission = async () => {
-    if (!accessPointData?.permission_id) return;
+    if (!accessPointData?.permission_uuid) return;
 
     setIsDeleting(true);
     try {
@@ -66,8 +67,8 @@ const AccessPointEdit = () => {
       const response = await fetch(
         `${
           import.meta.env.VITE_USER_MANAGEMENT_URL
-        }/admin/access-points/${access_id}/unmap-permission/${
-          accessPointData.permission_id
+        }/admin/access-points/${access_uuid}/unmap-permission/${
+          accessPointData.permission_uuid
         }`,
         {
           method: "DELETE",
@@ -80,7 +81,7 @@ const AccessPointEdit = () => {
 
       if (response.ok) {
         // Refresh the access point data to reflect the change
-        const updatedData = await getAccessPoint(access_id);
+        const updatedData = await getAccessPoint(access_uuid);
         setAccessPointData(updatedData.data);
 
         // ✅ Show toast on delete success
