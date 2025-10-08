@@ -1,29 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { ClipboardList } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
-const getColumnStyles = (status) => {
-  switch (status) {
-    case "TO_DO":
-    case "IN_PROGRESS":
-    case "DONE":
-      return {
-        header:
-          "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
-        body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
-        container:
-          "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
-      };
-    default:
-      return {
-        header:
-          "bg-gray-300 text-black rounded-t-2xl font-bold text-lg py-3 text-center",
-        body: "bg-gray-100 rounded-b-2xl p-4 flex-1 min-h-[500px]",
-        container:
-          "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
-      };
-  }
+const getColumnStyles = () => {
+  return {
+    header:
+      "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
+    body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
+    container:
+      "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
+  };
 };
 
 const KanbanCard = ({ task }) => {
@@ -42,15 +31,19 @@ const KanbanCard = ({ task }) => {
         isDragging ? "opacity-50" : "opacity-100"
       }`}
     >
-      <p className="text-xs text-indigo-500 uppercase tracking-wide mb-1">Task</p>
-      <p className="font-semibold text-gray-800">{task.title}</p>
-      {task.status === "DONE" && <span className="text-green-600 text-lg">✅</span>}
+      <div className="flex items-center gap-2 mb-1">
+        <ClipboardList className="text-indigo-500 w-4 h-4" />
+        <p className="font-semibold text-gray-800">{task.title}</p>
+      </div>
+      {task.status === "DONE" && (
+        <span className="text-green-600 text-sm font-medium">✅ Completed</span>
+      )}
     </div>
   );
 };
 
 const KanbanColumn = ({ status, tasks, onDrop }) => {
-  const { header, body, container } = getColumnStyles(status);
+  const { header, body, container } = getColumnStyles();
 
   const [{ isOver }, dropRef] = useDrop({
     accept: "TASK",
@@ -81,7 +74,9 @@ const KanbanColumn = ({ status, tasks, onDrop }) => {
 
 const Board = ({ projectId, projectName }) => {
   const [tasks, setTasks] = useState([]);
+  const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentSprint, setCurrentSprint] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -96,24 +91,53 @@ const Board = ({ projectId, projectName }) => {
   };
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchAll = async () => {
+      setLoading(true);
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
-          { headers }
-        );
+        // Fetch stories and tasks concurrently
+        const [storiesRes, tasksRes] = await Promise.all([
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+            { headers }
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
+            { headers }
+          ),
+        ]);
 
-        const normalizedTasks = res.data.map((task) => ({
-          ...task,
-          status:
-            task.status === "TODO"
-              ? "TO_DO"
-              : task.status === "IN_PROGRESS"
-              ? "IN_PROGRESS"
-              : task.status === "DONE"
-              ? "DONE"
-              : "TO_DO",
-        }));
+        const storiesData = storiesRes.data;
+        const tasksData = tasksRes.data;
+
+        setStories(storiesData);
+
+        // Set a default current sprint from the stories (for demo)
+        // You can update this logic to fetch current active sprint from your backend if available
+        const activeSprint =
+          storiesData.find((story) => story.sprintId !== null) || null;
+        if (activeSprint) {
+          setCurrentSprint({ id: activeSprint.sprintId, name: `Sprint ${activeSprint.sprintId}` });
+        }
+
+        // Get IDs of stories assigned to current sprint
+        const sprintStoryIds = storiesData
+          .filter((story) => story.sprintId === (activeSprint ? activeSprint.sprintId : null))
+          .map((story) => story.id);
+
+        // Normalize and filter tasks whose storyId is in sprint stories
+        const normalizedTasks = tasksData
+          .map((task) => ({
+            ...task,
+            status:
+              task.status === "TODO"
+                ? "TO_DO"
+                : task.status === "IN_PROGRESS"
+                ? "IN_PROGRESS"
+                : task.status === "DONE"
+                ? "DONE"
+                : "TO_DO",
+          }))
+          .filter((task) => sprintStoryIds.includes(task.storyId));
 
         setTasks(normalizedTasks);
       } catch (error) {
@@ -123,7 +147,7 @@ const Board = ({ projectId, projectName }) => {
       }
     };
 
-    fetchTasks();
+    fetchAll();
   }, [projectId, token]);
 
   const handleDrop = async (taskId, newStatus) => {
@@ -152,14 +176,26 @@ const Board = ({ projectId, projectName }) => {
     DONE: tasks.filter((t) => t.status === "DONE"),
   };
 
-  if (loading) return <div className="p-6">Loading board...</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner text="Loading sprint board..." />
+      </div>
+    );
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 min-h-screen">
-        <h3 className="text-xl font-semibold mb-6 text-indigo-900">
+        <h3 className="text-xl font-semibold mb-3 text-indigo-900">
           Scrum Board: {projectName}
         </h3>
+        {currentSprint && (
+          <div className="mb-6 flex gap-2 items-center">
+            <span className="bg-indigo-100 text-indigo-900 px-4 py-2 rounded-2xl font-medium text-sm shadow">
+              Current Sprint: {currentSprint.name}
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {["TO_DO", "IN_PROGRESS", "DONE"].map((status) => (
             <KanbanColumn
