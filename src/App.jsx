@@ -175,7 +175,7 @@ useEffect(() => {
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-          <Route path="/timesheetdashboard" element={<DashboardPage />} />
+          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
           <Route path="/timesheet/managerdashboard" element={<ManagerDashboard />} />
