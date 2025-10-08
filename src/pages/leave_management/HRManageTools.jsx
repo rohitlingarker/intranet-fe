@@ -8,6 +8,8 @@ import { Trash } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
 import { toast } from "react-toastify";
 import ConfirmationModal from "./models/ConfirmationModal";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import {motion, AnimatePresence} from 'framer-motion';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -23,7 +25,10 @@ const HRManageTools = ({ employeeId }) => {
   const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] =
     useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
+
 
   const token = localStorage.getItem("token");
 
@@ -31,15 +36,19 @@ const HRManageTools = ({ employeeId }) => {
     fetchLeaveTypes();
   }, []);
 
-  const fetchLeaveTypes = () => {
-    axios
-      .get(`${BASE_URL}/api/leave/get-all-leave-types`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => setLeaveTypes(res.data))
-      .catch((err) => console.error("Failed to fetch leave types", err));
+  const fetchLeaveTypes = async () => {
+    try {
+      setIsLoading(true); // ✅ Show spinner
+      const res = await axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLeaveTypes(res.data);
+    } catch (err) {
+      console.error("Failed to fetch leave types", err);
+      toast.error("Failed to load leave types");
+    } finally {
+      setIsLoading(false); // ✅ Hide spinner after request completes
+    }
   };
 
   const confirmDelete = (leaveTypeId) => {
@@ -90,7 +99,7 @@ const HRManageTools = ({ employeeId }) => {
         >
           Add Employee 
         </button>
-          {" "}
+          {/* {" "} */}
         <button
           onClick={() => {
             setEditLeaveType(null);
@@ -119,71 +128,80 @@ const HRManageTools = ({ employeeId }) => {
             Edit Holidays
         </button>
       </div>
-      <div className="overflow-x-auto border rounded-md max-w-full">
-        <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
-          <thead className="bg-gray-100 text-base">
-            <tr>
-              {tableHeaders.map((header, i) => (
-                <th
-                  key={header}
-                  className={`border px-4 py-3 min-w-[200px] capitalize bg-gray-100 ${
-                    i === 0
-                      ? "sticky left-0 z-20"
-                      : i === 1
-                      ? "sticky left-[200px] z-20"
-                      : ""
-                  }`}
-                >
-                  {header}
-                </th>
-              ))}
-              <th className="border px-4 py-3 min-w-[160px] bg-gray-100 z-20">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaveTypes.length === 0 ? (
+
+      
+
+    {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner /> {/* ✅ Spinner shown while loading */}
+        </div>
+      ) : (
+        <div className="overflow-x-auto border rounded-md max-w-full">
+          <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
+            <thead className="bg-gray-100 text-base">
               <tr>
-                <td
-                  colSpan={tableHeaders.length + 1}
-                  className="text-center py-6 text-gray-500"
-                >
-                  No leave types found.
-                </td>
+                {tableHeaders.map((header, i) => (
+                  <th
+                    key={header}
+                    className={`border px-4 py-3 min-w-[200px] capitalize bg-gray-100 ${
+                      i === 0
+                        ? "sticky left-0 z-20"
+                        : i === 1
+                        ? "sticky left-[200px] z-20"
+                        : ""
+                    }`}
+                  >
+                    {header}
+                  </th>
+                ))}
+                <th className="border px-4 py-3 min-w-[160px] bg-gray-100 z-20">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              leaveTypes.map((lt, index) => (
-                <tr key={index} className="border-t">
-                  {tableHeaders.map((key, i) => (
-                    <td
-                      key={key}
-                      className={`border px-4 py-2 min-w-[200px] bg-white ${
-                        i === 0
-                          ? "sticky left-0 z-10"
-                          : i === 1
-                          ? "sticky left-[200px] z-10"
-                          : ""
-                      }`}
-                    >
-                      {String(lt[key])}
-                    </td>
-                  ))}
-                  <td className="border px-4 py-2 min-w-[160px] bg-white">
-                    <ActionDropdown
-                      onEdit={() => {
-                        setEditLeaveType(lt);
-                        setIsAddLeaveTypeModalOpen(true);
-                      }}
-                      onDelete={() => confirmDelete(lt.leaveTypeId)}
-                    />
+            </thead>
+            <tbody>
+              {leaveTypes.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={tableHeaders.length + 1}
+                    className="text-center py-6 text-gray-500"
+                  >
+                    No leave types found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                leaveTypes.map((lt, index) => (
+                  <tr key={index} className="border-t">
+                    {tableHeaders.map((key, i) => (
+                      <td
+                        key={key}
+                        className={`border px-4 py-2 min-w-[200px] bg-white ${
+                          i === 0
+                            ? "sticky left-0 z-10"
+                            : i === 1
+                            ? "sticky left-[200px] z-10"
+                            : ""
+                        }`}
+                      >
+                        {String(lt[key])}
+                      </td>
+                    ))}
+                    <td className="border px-4 py-2 min-w-[160px] bg-white">
+                      <ActionDropdown
+                        onEdit={() => {
+                          setEditLeaveType(lt);
+                          setIsAddLeaveTypeModalOpen(true);
+                        }}
+                        onDelete={() => confirmDelete(lt.leaveTypeId)}
+                      />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
       <AddEmployeeModal
         isOpen={isAddEmployeeModalOpen}
         onClose={() => setIsAddEmployeeModalOpen(false)}

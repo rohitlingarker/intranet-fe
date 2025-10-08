@@ -6,9 +6,9 @@ import LeaveUsageChart from "./LeaveUsageChart";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-export default function LeaveDashboard({ employeeId }) {
+export default function LeaveDashboard({ employeeId, refreshKey }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const { leaveData, loading } = useLeaveConsumption(employeeId);
+  const { leaveData, loading } = useLeaveConsumption(employeeId, refreshKey);
 
  
   const fetchLeaveTypes = async () => {

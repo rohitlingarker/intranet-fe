@@ -65,7 +65,7 @@ const Sidebar = ({ isCollapsed }) => {
   return (
     <aside
       className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-64"
+        isCollapsed ? "w-20" : "w-60"
       }`}
     >
       {/* Branding */}
