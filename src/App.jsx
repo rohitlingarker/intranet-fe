@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -17,13 +18,14 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 import LoginPage from "./pages/LoginPage";
+import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 // Timesheets
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-
+import DashboardPage from "./pages/Timesheet/DashboardPage";      
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
@@ -34,7 +36,6 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-// import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -66,13 +67,13 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
-
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
+import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 // 🔒 Protected Route Wrapper
@@ -134,8 +135,9 @@ const ProjectManager = () => {
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
+  
+  
+useEffect(() => {
     if (isAuthenticated) {
       const lastPath = localStorage.getItem("lastPath");
       if (lastPath && lastPath !== "/" && lastPath !== "/login") {
@@ -146,6 +148,7 @@ const AppRoutes = () => {
     }
   }, [isAuthenticated, navigate]);
 
+
   return (
     <>
       <Routes>
@@ -155,7 +158,10 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/change-password" element={<InitialPasswordSetup />} />
+        
 
+      
         {/* Protected Routes */}
         <Route
           element={
@@ -169,12 +175,15 @@ const AppRoutes = () => {
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+          <Route path="/timesheetdashboard" element={<DashboardPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
-
+          <Route path="/timesheet/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
 
+
+        
           {/* Projects */}
           {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
@@ -212,6 +221,7 @@ const AppRoutes = () => {
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
+          
           <Route
             path="/user-management/users/create"
             element={<CreateUser />}

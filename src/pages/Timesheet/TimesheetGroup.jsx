@@ -103,21 +103,29 @@ const TimesheetGroup = ({
     setIsConfirmOpen(true);
   };
 
+  const toggleDateChange = (e) => {
+    if (status === "Approved") return; // prevent date change if approved
+    setEditDateIndex((prev) => (prev === null ? 0 : null));
+  };
+
   const handleConfirmDelete = async () => {
     setIsConfirmOpen(false);
     try {
-      const response = await fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/entries`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          timesheetId: timesheetId,
-          entryIds: selectedEntryIds,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to delete entries');
+      const response = await fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/entries`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            timesheetId: timesheetId,
+            entryIds: selectedEntryIds,
+          }),
+        }
+      );
+      if (!response.ok) throw new Error("Failed to delete entries");
       setSelectedEntryIds([]);
       showStatusToast("Entries deleted successfully", "success");
       if (refreshData) await refreshData();
@@ -191,14 +199,36 @@ const TimesheetGroup = ({
   return (
     <div className="mb-6 bg-gray-200 pt-1 rounded-lg shadow-sm border border-gray-200 text-xs">
       <div className="flex justify-between items-center mb-1 mx-4">
-        <div className="text-gray-500 font-semibold cursor-pointer">{formatDate(date)}</div>
+        {/* <div className="text-gray-500 font-semibold cursor-pointer" onClick={toggleDateChange}>{formatDate(date)}</div> */}
+
+        {editDateIndex === timesheetId && emptyTimesheet ? (
+          <input
+            type="date"
+            className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            value={date}
+            onChange={(e) => {
+              setEditDateIndex(null);
+              setDate(e.target.value);
+            }}
+          />
+        ) : (
+          <div
+            onClick={() => setEditDateIndex(timesheetId)}
+            className="text-gray-500 font-semibold cursor-pointer"
+          >
+            {formatDate(date)}
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <span className="font-medium text-gray-700">
             Total hours : {totalHours} hrs
           </span>
           <Tooltip content={formatApproverTooltip(approvers)}>
-            <StatusBadge label={approveStatus ? "Approved" : status} size="sm" />
+            <StatusBadge
+              label={approveStatus ? "Approved" : status}
+              size="sm"
+            />
           </Tooltip>
         </div>
 
@@ -213,9 +243,24 @@ const TimesheetGroup = ({
           </button>
           {menuOpen && (
             <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-10 border">
-              <button onClick={handleAddEntry} className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">Add Entry</button>
-              <button onClick={handleDeleteClick} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100">Delete</button>
-              <button onClick={handleSelect} className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100">Select</button>
+              <button
+                onClick={handleAddEntry}
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Add Entry
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+              >
+                Delete
+              </button>
+              <button
+                onClick={handleSelect}
+                className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100"
+              >
+                Select
+              </button>
             </div>
           )}
         </div>
@@ -240,7 +285,9 @@ const TimesheetGroup = ({
       <ConfirmDialog
         open={isConfirmOpen}
         title="Confirm Delete"
-        message={`Are you sure you want to delete ${selectedEntryIds.length} selected entr${selectedEntryIds.length > 1 ? "ies" : "y"}?`}
+        message={`Are you sure you want to delete ${
+          selectedEntryIds.length
+        } selected entr${selectedEntryIds.length > 1 ? "ies" : "y"}?`}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />

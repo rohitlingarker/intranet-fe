@@ -4,7 +4,7 @@ import axios from "axios";
 import AddEmployeeModal from "./models/AddEmployeeModal";
 import AddLeaveTypeModal from "./models/AddLeaveTypeModal";
 import AddHolidaysModal from "./models/AddHolidaysModal"; // 1. Import the new modal
-import { Trash } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import ActionDropdown from "./models/ActionDropdownHrTools";
 import { toast } from "react-toastify";
 import ConfirmationModal from "./models/ConfirmationModal";
@@ -65,7 +65,7 @@ const HRManageTools = ({ employeeId }) => {
 
   const handleDeleteLeaveType = async (leaveTypeId) => {
     try {
-      await axios.delete(
+      const res = await axios.delete(
         `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,
         {
           headers: {
@@ -73,7 +73,7 @@ const HRManageTools = ({ employeeId }) => {
           },
         }
       );
-      toast.success("Leave type deleted successfully");
+      toast.success(res.data?.message || "Leave type deleted successfully");
       setLeaveTypes((prev) =>
         prev.filter((lt) => lt.leaveTypeId !== leaveTypeId)
       );
@@ -187,13 +187,31 @@ const HRManageTools = ({ employeeId }) => {
                       </td>
                     ))}
                     <td className="border px-4 py-2 min-w-[160px] bg-white">
-                      <ActionDropdown
+                      {/* <ActionDropdown
                         onEdit={() => {
                           setEditLeaveType(lt);
                           setIsAddLeaveTypeModalOpen(true);
                         }}
                         onDelete={() => confirmDelete(lt.leaveTypeId)}
-                      />
+                      /> */}
+                    <div className="flex items-center gap-4">
+                      <button
+                        title="Edit"
+                        onClick={()=> {
+                          setEditLeaveType(lt);
+                          setIsAddLeaveTypeModalOpen(true);
+                        } }
+                        className="text-blue-500 hover:text-blue-800 transition-colors">
+                        <Pencil size={18}></Pencil>
+                      </button>
+                      <button
+                        title="Delete"
+                        onClick={() => confirmDelete(lt.leaveTypeId)}
+                        className="text-red-500 hover:text-red-800 transition-colors"
+                      >
+                        <Trash2 size={18}></Trash2>
+                      </button>
+                    </div>
                     </td>
                   </tr>
                 ))
