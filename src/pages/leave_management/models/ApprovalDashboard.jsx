@@ -124,14 +124,13 @@ const ApprovalDashboard = () => {
 
                 <div className="mt-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label
+                      {/* <label
                         htmlFor={`comment-${request.id}`}
                         className="block text-sm font-medium text-gray-700 mb-1"
                       >
                         Comment (Optional)
-                      </label>
-                      <input
+                      </label> */}
+                      {/* <input
                         id={`comment-${request.id}`}
                         type="text"
                         placeholder="Add an approval comment..."
@@ -144,8 +143,7 @@ const ApprovalDashboard = () => {
                           )
                         }
                         className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
+                      /> */}
                     <div>
                       <label
                         htmlFor={`reason-${request.id}`}

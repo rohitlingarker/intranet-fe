@@ -264,55 +264,55 @@ const ApprovalQueue = ({ actionType, payload }) => {
         </div>
       );
 
-      const OldDetailsTable = () => {
-        if (!Array.isArray(oldArray) || oldArray.length === 0) return null;
-        return (
-          <div className="overflow-x-auto mt-4 border border-gray-200 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Leave Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Leave Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Remaining
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Year
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Accrual
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {oldArray.map((row, idx) => (
-                  <tr key={row.balanceId || idx}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                      {row?.leaveType?.leaveTypeId}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {row?.leaveType?.leaveName}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {row?.remainingLeaves}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {row?.year}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {row?.lastAccrualDate || "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      };
+      // const OldDetailsTable = () => {
+      //   if (!Array.isArray(oldArray) || oldArray.length === 0) return null;
+      //   return (
+      //     <div className="overflow-x-auto mt-4 border border-gray-200 rounded-lg">
+      //       <table className="min-w-full divide-y divide-gray-200">
+      //         <thead className="bg-gray-50">
+      //           <tr>
+      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      //               Leave Type
+      //             </th>
+      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      //               Leave Name
+      //             </th>
+      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      //               Remaining
+      //             </th>
+      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      //               Year
+      //             </th>
+      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      //               Last Accrual
+      //             </th>
+      //           </tr>
+      //         </thead>
+      //         <tbody className="bg-white divide-y divide-gray-200">
+      //           {oldArray.map((row, idx) => (
+      //             <tr key={row.balanceId || idx}>
+      //               <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+      //                 {row?.leaveType?.leaveTypeId}
+      //               </td>
+      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+      //                 {row?.leaveType?.leaveName}
+      //               </td>
+      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+      //                 {row?.remainingLeaves}
+      //               </td>
+      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+      //                 {row?.year}
+      //               </td>
+      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+      //                 {row?.lastAccrualDate || "-"}
+      //               </td>
+      //             </tr>
+      //           ))}
+      //         </tbody>
+      //       </table>
+      //     </div>
+      //   );
+      // };
 
       return (
         <div className="mt-4 space-y-4">

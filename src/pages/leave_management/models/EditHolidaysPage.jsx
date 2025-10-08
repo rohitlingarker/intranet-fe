@@ -12,11 +12,10 @@ const EditHolidaysPage = () => {
   const [holidays, setHolidays] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   
+  // ADDED: State to manage the search input
+  const [searchTerm, setSearchTerm] = useState('');
+
   // State for inline editing
   const [editingHolidayId, setEditingHolidayId] = useState(null);
   const [editedData, setEditedData] = useState({});
@@ -42,13 +41,6 @@ const EditHolidaysPage = () => {
     };
     fetchHolidays();
   }, [token]);
-
-  const handleSuggestionClick = (suggestion) => {
-    setSearchQuery(suggestion);
-    setDebouncedQuery(suggestion);
-    setSuggestions([]);
-    setShowSuggestions(false);
-  };
 
   // Handlers for starting and canceling edits
   const handleEditClick = (holiday) => {
@@ -83,7 +75,6 @@ const EditHolidaysPage = () => {
 
   // Handler for deleting a holiday
   const handleDeleteHoliday = async (holidayId) => {
-    // It's a good practice to confirm deletion
     if (window.confirm('Are you sure you want to delete this holiday?')) {
       try {
         await axios.delete(`${BASE_URL}/api/holidays/delete/${holidayId}`, {
@@ -100,56 +91,40 @@ const EditHolidaysPage = () => {
   if (isLoading) return <div className="p-6">Loading holidays...</div>;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
 
+  // ADDED: Filtering logic before rendering. This is fast and efficient.
+  const filteredHolidays = holidays.filter(holiday => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return (
+      holiday.holidayName.toLowerCase().includes(lowerCaseSearchTerm) ||
+      holiday.type.toLowerCase().includes(lowerCaseSearchTerm) ||
+      (holiday.state || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+      (holiday.country || '').toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  });
+
   return (
     <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Holidays</h1>
-        <button 
+      <button 
           onClick={() => navigate(-1)} // Go back to the previous page
-          className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800  hover:bg-gray-400 rounded-md font-medium"
+          className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800 rounded-md font-medium"
         >
           ← Back
         </button>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-800">Manage Holidays</h1>
       </div>
-      
       {/* Search Bar */}
-        <div className="mb-4 relative w-full max-w-md">
-            <input
-            type="text"
-            placeholder="Search by Employee ID or Name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border px-4 py-2 rounded w-full shadow-sm"
-            onFocus={() => setShowSuggestions(true)}
-            />
+      <div className="mb-4">
+        {/* MODIFIED: Connected the input to state */}
+        <input 
+          type="text" 
+          placeholder="Search by Holiday Name, Type, State or Country..." 
+          className="border rounded p-2 w-1/2"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
 
-            {showSuggestions && suggestions.length > 0 && (
-            <ul className="absolute bg-white border rounded w-full shadow-md mt-1 max-h-48 overflow-y-auto z-20">
-                {suggestions.map((s, i) => (
-                <li
-                    key={i}
-                    onClick={() => handleSuggestionClick(s)}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                >
-                    {s}
-                </li>
-                ))}
-            </ul>
-            )}
-
-            {searchQuery && (
-            <button
-                onClick={() => {
-                setSearchQuery("");
-                setDebouncedQuery("");
-                setSuggestions([]);
-                }}
-                className="absolute right-2 top-2 text-gray-500 hover:text-black"
-            >
-                ✕
-            </button>
-            )}
-        </div>
       <div className="overflow-x-auto border rounded-lg">
         <table className="min-w-full text-sm text-center">
           <thead className="bg-gray-100">
@@ -163,7 +138,8 @@ const EditHolidaysPage = () => {
             </tr>
           </thead>
           <tbody>
-            {holidays.map((holiday) => (
+            {/* MODIFIED: Map over the new filtered array instead of the original one */}
+            {filteredHolidays.map((holiday) => (
               <tr key={holiday.holidayId} className="border-t hover:bg-gray-50">
                 {editingHolidayId === holiday.holidayId ? (
                   // Editing Mode Row
@@ -175,17 +151,18 @@ const EditHolidaysPage = () => {
                       <input type="date" name="holidayDate" value={new Date(editedData.holidayDate).toISOString().split('T')[0]} onChange={handleInputChange} className="border rounded p-1 w-full" />
                     </td>
                     <td className="px-4 py-2">
-                       <select name="type" value={editedData.type} onChange={handleInputChange} className="border rounded p-1 w-full">
+                        <select name="type" value={editedData.type} onChange={handleInputChange} className="border rounded p-1 w-full">
                             <option value="NATIONAL">National</option>
                             <option value="REGIONAL">Regional</option>
                             <option value="OPTIONAL">Optional</option>
                         </select>
                     </td>
                     <td className="px-4 py-2">
-                      <input type="text" name="holidayState" value={editedData.state} onChange={handleInputChange} placeholder={holiday.state || '-'} readOnly className="border rounded p-1 w-full" />
+                      {/* Note: State and Country are often derived from location and shouldn't be user-editable this way */}
+                      <input type="text" name="state" value={editedData.state || ''} onChange={handleInputChange} placeholder="State" className="border rounded p-1 w-full bg-gray-100" readOnly />
                     </td>
                     <td className="px-4 py-2">
-                      <input type="text" name="holidayCountry" value={editedData.country} onChange={handleInputChange} placeholder={holiday.country || '-'} readOnly className="border rounded p-1 w-full" />
+                      <input type="text" name="country" value={editedData.country || ''} onChange={handleInputChange} placeholder="Country" className="border rounded p-1 w-full bg-gray-100" readOnly />
                     </td>
                     <td className="px-4 py-2 flex justify-center gap-2">
                       <button onClick={() => handleSaveHoliday(holiday.holidayId)} className="p-2 text-green-500 hover:text-green-800" title='Save'><Save size={20} /></button>

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../contexts/AuthContext";
-import { showStatusToast } from "../../../components/toastfy/toast"; // ✅ custom toast wrapper
- 
+import { showStatusToast } from "../../../components/toastfy/toast";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css"; // ✅ import styles
+
 // Simple reusable Modal component
 function Modal({ open, title, message, onConfirm, onCancel, loading }) {
   if (!open) return null;
- 
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white rounded-2xl shadow-lg w-96 p-6">
@@ -33,14 +35,14 @@ function Modal({ open, title, message, onConfirm, onCancel, loading }) {
     </div>
   );
 }
- 
+
 export default function EditProfile() {
   const { user } = useAuth();
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
- 
+
   // Load user profile on mount
   useEffect(() => {
     if (user?.email) {
@@ -49,35 +51,32 @@ export default function EditProfile() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
         .then((res) => setForm(res.data))
+
         .catch((err) => {
           console.error("Failed to fetch profile", err);
           showStatusToast("Failed to load profile.", "error");
         });
     }
   }, [user]);
- 
-  // Handle form field changes
+
+  // Handle text changes
   const handleChange = (e) => {
-    if (e.target.name === "contact") {
-      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
-      setForm({ ...form, [e.target.name]: value });
-    } else {
-      setForm({ ...form, [e.target.name]: e.target.value });
-    }
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
- 
-  // Save profile function
+
+  // Save profile
   const doSave = async () => {
-    if (!form.password || form.password.trim() === "") {
-      showStatusToast("Password is required", "error");
-      return;
-    }
- 
+    const payload = { ...form };
+
+    // ❗ If password is blank, remove it from payload (keep existing password)
+  
+
     try {
       setSaving(true);
+      console.log("Payload:", payload);
       const response = await axios.put(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/general_user/profile`,
-        form,
+        payload,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -96,17 +95,17 @@ export default function EditProfile() {
       setShowModal(false);
     }
   };
- 
+
   const handleSave = () => setShowModal(true);
   const handleCancel = () => navigate("/profile");
- 
+
   if (!user) return <p className="text-center mt-10">Loading...</p>;
- 
+
   return (
     <div className="max-w-xl mx-auto p-6">
       <div className="bg-white shadow-md border border-gray-200 rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-blue-700 mb-6">Edit Profile</h2>
- 
+
         <div className="space-y-4">
           {/* First Name */}
           <div>
@@ -116,13 +115,13 @@ export default function EditProfile() {
               name="first_name"
               value={form.first_name || ""}
               onChange={(e) => {
-                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+                if (/^[A-Za-z\s]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your first name"
               className="w-full border px-3 py-2 rounded-md"
             />
           </div>
- 
+
           {/* Last Name */}
           <div>
             <label className="block font-medium mb-1">Last Name</label>
@@ -131,44 +130,47 @@ export default function EditProfile() {
               name="last_name"
               value={form.last_name || ""}
               onChange={(e) => {
-                if (/^[A-Za-z]*$/.test(e.target.value)) handleChange(e);
+                if (/^[A-Za-z\s]*$/.test(e.target.value)) handleChange(e);
               }}
               placeholder="Enter your last name"
               className="w-full border px-3 py-2 rounded-md"
             />
           </div>
- 
-          {/* Contact */}
+
+          {/* Contact with react-phone-input-2 */}
           <div>
             <label className="block font-medium mb-1">Contact</label>
-            <input
-              type="text"
-              name="contact"
+            <PhoneInput
+              country={"in"}
               value={form.contact || ""}
-              onChange={(e) => {
-                if (/^[0-9]*$/.test(e.target.value) && e.target.value.length <= 10) handleChange(e);
+              onChange={(value) => setForm({ ...form, contact: value })}
+              inputClass="!w-full !py-2 !text-base"
+              dropdownClass="custom-phone-dropdown"
+              countryCodeEditable={false}
+              preferredCountries={["us", "in", "gb", "ca"]}
+              enableSearch
+              inputProps={{
+                name: "contact",
+                required: true,
+                autoFocus: false,
               }}
-              placeholder="Enter contact number"
-              className="w-full border px-3 py-2 rounded-md"
-              maxLength={10}
             />
           </div>
- 
-          {/* Password */}
+
+          {/* Password (optional) */}
           <div>
-            <label className="block font-medium mb-1">New Password</label>
+            <label className="block font-medium mb-1">New Password (optional)</label>
             <input
               type="password"
               name="password"
               value={form.password || ""}
               onChange={handleChange}
-              placeholder="Enter new password"
+              placeholder="Leave blank to keep current password"
               className="w-full border px-3 py-2 rounded-md"
-              required
             />
           </div>
- 
-          {/* Action Buttons */}
+
+          {/* Buttons */}
           <div className="flex gap-4 mt-4">
             <button
               type="button"
@@ -189,7 +191,7 @@ export default function EditProfile() {
           </div>
         </div>
       </div>
- 
+
       {/* Confirmation Modal */}
       <Modal
         open={showModal}

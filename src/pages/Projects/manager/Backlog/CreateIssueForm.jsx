@@ -32,8 +32,12 @@ const CreateIssueForm = ({
   const [sprints, setSprints] = useState([]);
 
   const token = localStorage.getItem("token");
-  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
+  const axiosConfig = {
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
+};
   // Prefill form in edit mode
   useEffect(() => {
     if (mode === "edit" && initialData) {
@@ -74,9 +78,9 @@ const CreateIssueForm = ({
   useEffect(() => {
     const pid = formData.projectId;
     if (pid) {
-      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/epics`)
+      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/epics`, axiosConfig)
         .then((res) => setEpics(res.data));
-      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/stories`)
+      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/stories`, axiosConfig)
         .then((res) => setStories(res.data));
     } else {
       setEpics([]);
@@ -147,10 +151,10 @@ const CreateIssueForm = ({
 
     try {
       if (mode === "edit") {
-        await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload);
+        await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload, axiosConfig);
         toast.success(`${issueType} updated successfully`);
       } else {
-        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload);
+        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload, axiosConfig);
         toast.success(`${issueType} created successfully`);
       }
       setTimeout(() => {

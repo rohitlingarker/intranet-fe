@@ -3,7 +3,7 @@ import { X, FileText, Check, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
-import LoadingSpinner from "../../../components/LoadingSpinner"; // Ensure path is correct
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -160,8 +160,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           },
         });
 
-    console.log("Response from backend:", response.data);
-
     if (response.data?.success) {
       toast.success(
         response.data.message || (editData ? "Leave type updated!" : "Leave type added!")
@@ -172,7 +170,6 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       toast.error(response.data?.message || "Something went wrong!");
     }
   } catch (err) {
-    console.error("Save error:", err);
     toast.error(err.response?.data?.message || err.message || "Failed to submit leave type");
   } finally {
     setSubmitting(false);

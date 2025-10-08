@@ -51,7 +51,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     try {
       if (editingRole) {
         await axios.put(
-          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${editingRole.role_id}`,
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/uuid/${editingRole.role_uuid}`,
           { role_name: newRole },
           authHeader
         );
@@ -80,14 +80,14 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     if (!roleToDelete) return;
     try {
       await axios.delete(
-        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/${roleToDelete}`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/roles/uuid/${roleToDelete}`,
         authHeader
       );
       toast.success("Role deleted successfully!", { toastId: "role-delete" });
       fetchRoles();
     } catch (err) {
-      console.error("Failed to delete role:", err);
-      toast.error("Failed to delete role", { toastId: "role-delete-error" });
+      // console.error(err?.response?.data?.detail || "Failed to delete role:", err);
+      toast.error(err?.response?.data?.detail || "Failed to delete role", { toastId: "role-delete-error" });
     } finally {
       setRoleToDelete(null);
       setIsDeleteModalOpen(false); // ✅ Close delete modal
@@ -100,8 +100,8 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
     setIsEditModalOpen(true); // ✅ Open edit modal
   };
 
-  const handleDeleteWithConfirm = (role_id) => {
-    setRoleToDelete(role_id);
+  const handleDeleteWithConfirm = (role_uuid) => {
+    setRoleToDelete(role_uuid);
     setIsDeleteModalOpen(true); // ✅ Open delete modal
   };
 
@@ -144,7 +144,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
           <ul className="space-y-3">
             {roles.map((role) => (
               <li
-                key={role.role_id}
+                key={role.role_uuid}
                 className="flex justify-between items-center p-3 border rounded-md hover:shadow-sm bg-gray-50"
               >
                 <span className="text-gray-800 font-medium">{role.role_name}</span>
@@ -156,7 +156,7 @@ const RoleForm = ({ roles, setRoles, onRoleUpdate }) => {
                     <Pencil size={18} />
                   </button>
                   <button
-                    onClick={() => handleDeleteWithConfirm(role.role_id)}
+                    onClick={() => handleDeleteWithConfirm(role.role_uuid)}
                     className="text-red-600 hover:text-red-800"
                   >
                     <Trash2 size={18} />

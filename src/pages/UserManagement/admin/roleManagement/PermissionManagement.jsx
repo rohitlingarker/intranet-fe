@@ -21,7 +21,7 @@ const PermissionManagement = ({ roles }) => {
     setShowRoleList(false);
     setSelectedRole(role);
     try {
-      const res = await getPermissionsByRole(role.role_id);
+      const res = await getPermissionsByRole(role.role_uuid);
       setRolePermissions(res.data);
       setShowPermissions(true);
       setCurrentPage(1); // ✅ Reset to first page when role changes
@@ -66,7 +66,7 @@ const PermissionManagement = ({ roles }) => {
               <ul className="space-y-2">
                 {roles.map((role) => (
                   <li
-                    key={role.role_id}
+                    key={role.role_uuid}
                     className="flex justify-between items-center p-3 border rounded-md bg-gray-50 cursor-pointer hover:bg-blue-100"
                     onClick={() => handleRoleSelect(role)}
                   >
