@@ -1,53 +1,69 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LeaveDashboard from "../charts/LeaveDashboard";
-import ProjectMembersOnLeaveDemo from "./ProjectMembersOnLeaveDemo";
 import ProjectMembersOnLeave from "./ProjectMembersOnLeave";
 
 export default function LeaveSection({ employeeId, leaveId }) {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "projectMembers"
-  console.log("Employee ID in LeaveSection:", employeeId);
-    console.log("Leave ID in LeaveSection:", leaveId);
 
   return (
     <div className="w-full">
-      {/* Toggle tabs with sliding underline */}
-      <div className="relative flex space-x-6 mb-6 border-b border-gray-200">
+      {/* Tab container */}
+      <div className="flex space-x-6 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`pb-2 font-medium transition-colors ${
-            activeTab === "dashboard"
-              ? "text-indigo-600"
-              : "text-gray-600 hover:text-gray-900"
-          }`}
+          // ✨ CHANGE: Added 'relative' positioning
+          className="relative pb-2 font-medium transition-colors focus:outline-none"
         >
-          Leave Balance
+          {/* Change text color based on active state */}
+          <span
+            className={
+              activeTab === "dashboard"
+                ? "text-indigo-600"
+                : "text-gray-600 hover:text-gray-900"
+            }
+          >
+            Leave Balance
+          </span>
+
+          {/* ✨ CHANGE: Conditional underline with layoutId */}
+          {activeTab === "dashboard" && (
+            <motion.div
+              className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-indigo-600"
+              layoutId="underline"
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            />
+          )}
         </button>
+
         <button
           onClick={() => setActiveTab("projectMembers")}
-          className={`pb-2 font-medium transition-colors ${
-            activeTab === "projectMembers"
-              ? "text-indigo-600"
-              : "text-gray-600 hover:text-gray-900"
-          }`}
+          // ✨ CHANGE: Added 'relative' positioning
+          className="relative pb-2 font-medium transition-colors focus:outline-none"
         >
-          Team Members on Leave
+          {/* Change text color based on active state */}
+          <span
+            className={
+              activeTab === "projectMembers"
+                ? "text-indigo-600"
+                : "text-gray-600 hover:text-gray-900"
+            }
+          >
+            Team Members on Leave
+          </span>
+          
+          {/* ✨ CHANGE: Conditional underline with layoutId */}
+          {activeTab === "projectMembers" && (
+            <motion.div
+              className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-indigo-600"
+              layoutId="underline"
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            />
+          )}
         </button>
-
-        {/* Sliding underline */}
-        <motion.div
-          layoutId="underline"
-          className="absolute bottom-0 h-[2px] bg-indigo-600 rounded-full"
-          initial={false}
-          animate={{
-            left: activeTab === "dashboard" ? "0%" : "calc(50% + 0.75rem)",
-            width: activeTab === "dashboard" ? "120px" : "190px", // Adjust to match button widths
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        />
       </div>
 
-      {/* Animated content */}
+      {/* Animated content (no changes here) */}
       <div className="mt-4 relative min-h-[400px]">
         <AnimatePresence mode="wait">
           {activeTab === "dashboard" && (
@@ -72,9 +88,7 @@ export default function LeaveSection({ employeeId, leaveId }) {
               transition={{ duration: 0.3 }}
               className="absolute w-full"
             >
-              {/* <ProjectMembersOnLeaveDemo employeeId={employeeId} /> */}
-                <ProjectMembersOnLeave employeeId={employeeId} leaveId={leaveId} />
-                {/* <ProjectMembersOnLeaveDemo /> */}
+              <ProjectMembersOnLeave employeeId={employeeId} leaveId={leaveId} />
             </motion.div>
           )}
         </AnimatePresence>
