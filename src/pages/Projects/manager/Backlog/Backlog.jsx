@@ -1,9 +1,7 @@
-// Backlog.jsx
 import React, { useEffect, useState } from "react";
 import CreateSprint from "./sprint";
 import { Plus } from "lucide-react";
 import axios from "axios";
-
 import CreateIssueForm from "./CreateIssueForm";
 import StoryCard from "../Sprint/StoryCard";
 import SprintColumn from "../Sprint/SprintColumn";
@@ -18,6 +16,9 @@ const Backlog = ({ projectId, projectName }) => {
   const [sprints, setSprints] = useState([]);
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [projects, setProjects] = useState([]);
+
+  // new state for search
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
@@ -80,6 +81,15 @@ const Backlog = ({ projectId, projectName }) => {
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
+  // Apply search logic
+  const filteredStories = stories.filter((story) =>
+    story.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredNoEpicStories = noEpicStories.filter((story) =>
+    story.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto mt-6 px-4 space-y-6">
@@ -95,6 +105,17 @@ const Backlog = ({ projectId, projectName }) => {
               <Plus size={18} /> Create Issue
             </Button>
           </div>
+        </div>
+
+        {/* 🔍 Search Bar */}
+        <div className="bg-white border p-4 rounded-lg shadow-sm">
+          <input
+            type="text"
+            placeholder="Search stories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
 
         {showIssueForm && selectedProject && (
@@ -113,12 +134,13 @@ const Backlog = ({ projectId, projectName }) => {
 
         <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
           <h2 className="text-base font-medium text-indigo-900 mb-3">Backlog Stories</h2>
-          {noEpicStories.length === 0 ? (
+          {filteredNoEpicStories.length === 0 ? (
             <p className="text-gray-400 italic">No unassigned stories</p>
           ) : (
             <div className="space-y-2">
-              {noEpicStories.map((story) => (
-                <StoryCard key={story.id} story={story} />
+              {filteredNoEpicStories.map((story) => (
+                // 🟢 Hardcoded status as BACKLOG
+                <StoryCard key={story.id} story={{ ...story, status: "BACKLOG" }} />
               ))}
             </div>
           )}
@@ -131,7 +153,7 @@ const Backlog = ({ projectId, projectName }) => {
               <SprintColumn
                 key={sprint.id}
                 sprint={sprint}
-                stories={stories.filter((s) => s.sprintId === sprint.id)}
+                stories={filteredStories.filter((s) => s.sprintId === sprint.id)}
                 onDropStory={handleDropStory}
                 onChangeStatus={() => {}}
               />
