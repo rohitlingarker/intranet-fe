@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 import LoginPage from "./pages/LoginPage";
+import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
@@ -135,16 +136,7 @@ const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      const lastPath = localStorage.getItem("lastPath");
-      if (lastPath && lastPath !== "/" && lastPath !== "/login") {
-        navigate(lastPath, { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
-    }
-  }, [isAuthenticated, navigate]);
+
 
   return (
     <>
@@ -155,6 +147,9 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/change-password" element={<InitialPasswordSetup />} />
+        
+
 
         {/* Protected Routes */}
         <Route
@@ -212,6 +207,7 @@ const AppRoutes = () => {
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
+          
           <Route
             path="/user-management/users/create"
             element={<CreateUser />}
