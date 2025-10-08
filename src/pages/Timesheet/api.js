@@ -255,3 +255,29 @@ export async function filterByRange(startDate, endDate) {
     throw err;
   }
 }
+
+export async function getManagerDashboardData(startDate, endDate) {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/manager/summary?startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to fetch manager dashboard data");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    showStatusToast(err.message || "Failed to fetch manager dashboard data", "error");
+    throw err;
+  }
+}

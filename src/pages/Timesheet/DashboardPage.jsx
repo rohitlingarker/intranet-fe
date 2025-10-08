@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import Button from "../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
-import {fetchDashboardSummary} from "./api";
+// import {fetchDashboardSummary} from "./api";
 
 // Mock timesheet data
 const timesheetData = [
