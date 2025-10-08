@@ -85,18 +85,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
-  // if (allowedRoles && allowedRoles.length > 0) {
-  //   const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
-  //   console.log("ProtectedRoute check:", {
-  //     isAuthenticated,
-  //     user,
-  //     allowedRoles,
-  //     match: user?.roles?.some((role) => allowedRoles.includes(role)),
-  //   });
-  //   if (!hasRole) {
-  //     return <Navigate to="/unauthorized" replace />;
-  //   }
-  // }
+  if (allowedRoles && allowedRoles.length > 0) {
+    const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
+    console.log("ProtectedRoute check:", {
+      isAuthenticated,
+      user,
+      allowedRoles,
+      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+    });
+    if (!hasRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
   return <>{children}</>;
 };
 
@@ -391,7 +391,7 @@ useEffect(() => {
           <Route
             path="/leave-management"
             element={
-              <ProtectedRoute allowedRoles={["General", "HR", "Manager"]}>
+              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
                 <EmployeePanel />
               </ProtectedRoute>
             }
@@ -429,6 +429,14 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+          {/* <Route
+            path={`/hr-manager`}
+            element={
+              <ProtectedRoute allowedRoles={["Hr-Manager"]}>
+                <HRAdminPanel/>
+              </ProtectedRoute>
+            }
+          /> */}
         </Route>
 
         <Route path="/unauthorized" element={<Unauthorized />} />
