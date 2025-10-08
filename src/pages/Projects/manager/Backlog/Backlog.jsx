@@ -11,7 +11,6 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Button from "../../../../components/Button/Button";
 
-
 const Backlog = ({ projectId, projectName }) => {
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintForm, setShowSprintForm] = useState(false);
@@ -100,6 +99,10 @@ const Backlog = ({ projectId, projectName }) => {
     });
   };
 
+  // ✅ Define filtered lists (in case you want filtering later)
+  const filteredNoEpicStories = noEpicStories || [];
+  const filteredStories = stories || [];
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto mt-6 px-4 space-y-6">
@@ -152,7 +155,7 @@ const Backlog = ({ projectId, projectName }) => {
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Backlog Stories
           </h2>
-          {noEpicStories.length === 0 ? (
+          {filteredNoEpicStories.length === 0 ? (
             <p className="text-gray-400 italic">No unassigned stories</p>
           ) : (
             <div className="space-y-2">
