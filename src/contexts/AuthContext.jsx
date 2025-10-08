@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
 import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
 };
 
@@ -16,15 +23,11 @@ export const AuthProvider = ({ children }) => {
   const loadUser = (token) => {
     try {
       const decoded = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      if (decoded.exp && decoded.exp < currentTime) {
-        logout();
-        return;
-      }
       setUser(decoded);
       setIsAuthenticated(true);
     } catch {
-      logout();
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
@@ -41,7 +44,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) loadUser(token);
+    if (token) {
+      loadUser(token);
+    }
   }, []);
 
   return (

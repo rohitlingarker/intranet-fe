@@ -12,8 +12,6 @@ try {
   intranetLogo = null;
 }
 
-const useQuery = () => new URLSearchParams(useLocation().search);
-
 export default function LoginPage() {
   const [email, setMail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,10 +19,18 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const query = useQuery();
-
   const calledOnce = useRef(false);
 
+  const handlePostLoginRedirect = (user, redirectPath) => {
+    // Priority: first-login > redirect from backend > lastPath > default
+    const lastPath = localStorage.getItem("lastPath");
+    if (user.isFirstLogin) return navigate("/update-password", { replace: true });
+    if (redirectPath) return navigate(redirectPath, { replace: true });
+    if (lastPath && lastPath !== "/" && lastPath !== "/login") return navigate(lastPath, { replace: true });
+    return navigate("/dashboard", { replace: true });
+  };
+
+  // OAuth callback
   useEffect(() => {
     if (calledOnce.current) return;
 
@@ -34,7 +40,7 @@ export default function LoginPage() {
 
     if (error) {
       showStatusToast(`Login error: ${error}`, "error");
-      navigate("/login", { replace: true });
+      navigate("/", { replace: true });
       return;
     }
     if (!code) return;
@@ -47,22 +53,19 @@ export default function LoginPage() {
         const response = await axios.get(
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
         );
-        const { access_token, redirect: redirectPath } = response.data;
+        const { access_token, user, redirect: redirectPath } = response.data;
 
         login(access_token);
-        localStorage.setItem("user", JSON.stringify({ access_token }));
+        localStorage.setItem("user", JSON.stringify({ access_token, user }));
         window.history.replaceState({}, document.title, window.location.pathname);
-        navigate(redirectPath || "/home", { replace: true });
+        handlePostLoginRedirect(user, redirectPath);
       } catch (err) {
         const errDetail =
           err.response?.data?.error_description ||
           err.response?.data?.detail ||
           err.message;
-        console.error("OAuth login failed:", err);
         showStatusToast("OAuth login failed: " + errDetail, "error");
-
         window.history.replaceState({}, document.title, window.location.pathname);
-        navigate("/", { replace: true });
       } finally {
         setLoading(false);
       }
@@ -84,10 +87,11 @@ export default function LoginPage() {
         email,
         password,
       });
-      const token = res.data.access_token;
+      const { access_token, user, redirect } = res.data;
 
-      login(token);
-      navigate(res.data.redirect || "/home");
+      login(access_token);
+      localStorage.setItem("user", JSON.stringify({ access_token, user }));
+      handlePostLoginRedirect(user, redirect);
     } catch (err) {
       showStatusToast("Login failed: " + (err.response?.data?.detail || err.message), "error");
     } finally {
@@ -137,7 +141,7 @@ export default function LoginPage() {
           <input
             type="email"
             placeholder="Email address"
-            value={email || ""}
+            value={email}
             onChange={(e) => setMail(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
           />
