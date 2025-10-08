@@ -96,8 +96,18 @@ const EntriesTable = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "billable" && ((addingNewEntry && addData.projectId < 0) || (!addingNewEntry && editData.projectId < 0))) {
+      return;
+    }
+
     if (addingNewEntry) setAddData((prev) => ({ ...prev, [name]: value }));
     else setEditData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "projectId" && value < 0){
+      if (addingNewEntry) setAddData((prev) => ({ ...prev, isBillable: "No"}));
+      else setEditData((prev) => ({ ...prev, isBillable: "No"}));
+    }
   };
 
   // ←──────── NEW: handler for add-row inputs ────────→
