@@ -10,14 +10,14 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-
+ 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Leave Management", href: "/leave-management", icon: PlaneTakeoff },
-  { name: "Timesheets", href: "/timesheets", icon: Clock },
+  { name: "Timesheets", href: "/timesheets/dashboard", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
 ];
-
+ 
 const userManagementSubmenu = [
   { label: "User Manage", to: "/user-management/users" },
   { label: "Role Manage", to: "/user-management/roles" },
@@ -25,7 +25,7 @@ const userManagementSubmenu = [
   { label: "Group Manage", to: "/user-management/groups" },
   { label: "Access Point Manage", to: "/user-management/access-points" },
 ];
-
+ 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const isUserManagementActive =
@@ -35,13 +35,13 @@ const Sidebar = ({ isCollapsed }) => {
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
   const isManager = user?.roles?.includes("Manager");
   const isDeveloper = user?.roles?.includes("Developer");
-
+ 
   // State and Refs for the hover-based submenu
   const [hovered, setHovered] = useState(false);
   const [submenuTop, setSubmenuTop] = useState(0);
   const userManagementRef = useRef(null);
   const hoverTimeout = useRef(null);
-
+ 
   const handleMouseEnter = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     if (userManagementRef.current) {
@@ -50,24 +50,24 @@ const Sidebar = ({ isCollapsed }) => {
     }
     setHovered(true);
   };
-
+ 
   const handleMouseLeave = () => {
     hoverTimeout.current = setTimeout(() => {
       setHovered(false);
     }, 200);
   };
-
+ 
   // Close submenu on route change
   useEffect(() => {
     setHovered(false);
   }, [location.pathname]);
-
+ 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-    >
+  className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
+    isCollapsed ? "w-20" : "w-64"
+  } border-r border-[#0f1a3a]`}
+>
       {/* Branding */}
       <div className="p-6 border-b border-[#0f1a3a] flex items-center gap-3">
         <img src="logo.png" alt="Logo" className="h-10 w-10 shrink-0" />
@@ -79,7 +79,7 @@ const Sidebar = ({ isCollapsed }) => {
           </div>
         )}
       </div>
-
+ 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-hide">
         <style jsx>{`
@@ -91,7 +91,7 @@ const Sidebar = ({ isCollapsed }) => {
             scrollbar-width: none;
           }
         `}</style>
-        
+       
         <ul className="space-y-1">
           {/* Dashboard */}
           <li>
@@ -109,7 +109,7 @@ const Sidebar = ({ isCollapsed }) => {
               {!isCollapsed && <span>Dashboard</span>}
             </Link>
           </li>
-
+ 
           {/* User Management */}
           {isAdmin && (
             <li
@@ -139,7 +139,7 @@ const Sidebar = ({ isCollapsed }) => {
                   </>
                 )}
               </div>
-
+ 
               {/* Unified Submenu for both Collapsed and Expanded states */}
               {hovered && (
                 <ul
@@ -171,15 +171,15 @@ const Sidebar = ({ isCollapsed }) => {
               )}
             </li>
           )}
-
+ 
           {/* Projects */}
           <li>
             <Link
               to={
-                isAdmin 
-                  ? "/projects/admin" 
-                  : isManager 
-                  ? "/projects/manager" 
+                isAdmin
+                  ? "/projects/admin"
+                  : isManager
+                  ? "/projects/manager"
                   : "/projects/developer"
               }
               // Changed font size from text-sm to text-xs
@@ -194,7 +194,7 @@ const Sidebar = ({ isCollapsed }) => {
               {!isCollapsed && <span>Projects</span>}
             </Link>
           </li>
-
+ 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
             const isActive = location.pathname === item.href;
@@ -221,5 +221,5 @@ const Sidebar = ({ isCollapsed }) => {
     </aside>
   );
 };
-
+ 
 export default Sidebar;

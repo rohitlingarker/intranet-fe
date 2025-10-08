@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -25,8 +25,10 @@ const monthsOrder = [
   "Dec",
 ];
 
-const MonthlyStats = ({ employeeId }) => {
-  const { leaveData, loading, error } = useLeaveData(employeeId);
+const MonthlyStats = ({ employeeId, refreshKey }) => {
+  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey);
+
+  // useEffect(() => {}, [leaveData, refreshKey]);
 
   const data = useMemo(() => {
     const monthlyCounts = {};

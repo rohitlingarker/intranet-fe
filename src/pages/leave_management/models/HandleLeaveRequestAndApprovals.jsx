@@ -6,6 +6,7 @@ import LeaveDashboard from "../charts/LeaveDashboard";
 import { toast } from "react-toastify";
 import ManagerEditLeaveRequest from "./ManagerEditLeaveRequest";
 import LeaveSection from "./LeaveSection";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -32,7 +33,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [allLeaveTypes, setAllLeaveTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("PENDING");
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [confirmation, setConfirmation] = useState(null); // { action, leaveId }
   const [loading, setLoading] = useState(false);
@@ -76,12 +77,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus]); // selectedStatus (can be added)
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const payload = {
         managerId,
         status: selectedStatus !== "All" ? selectedStatus : null,
-        year: selectedYear || new Date().getFullYear(), // from your year dropdown
-        month: selectedMonth || new Date().getMonth(), // from your month dropdown
+        year: selectedYear || null, // from your year dropdown
+        month: selectedMonth || null, // from your month dropdown
         // searchTerm: searchTerm || null,
       };
 
@@ -459,7 +461,7 @@ const handleDecision = async (action, leaveId, commentParam) => {
             {selectedRequests.length > 0 && (
               <tr>
                 <th
-                  colSpan={12}
+                  colSpan={13}
                   className="bg-indigo-100 text-indigo-700 px-6 py-2 text-left rounded-t-lg"
                 >
                   <div className="flex items-center gap-4">
@@ -575,235 +577,240 @@ const handleDecision = async (action, leaveId, commentParam) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 text-center">
-            {paginatedRequests.map((request) => {
-              console.log(request);
-              const typeObj =
-                allLeaveTypes.find(
-                  (t) => t.leaveName === request.leaveType.leaveName
-                ) || request.leaveType;
-              return (
-                <tr
-                  key={request.leaveId}
-                  className="hover:bg-gray-50 transition-colors text-xs"
-                >
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedRequests.includes(request.leaveId)}
-                      onChange={(e) =>
-                        handleSelectRequest(request.leaveId, e.target.checked)
-                      }
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      disabled={["approved", "rejected", "cancelled"].includes(
-                        request.status.toLowerCase()
-                      )}
-                    />
-                  </td>
-                  <td className="cursor-pointer text-blue-600 hover:underline">
-                    <button
-                      onClick={() =>
-                        setLeaveBalaceModel({
-                          employeeId: request.employee.employeeId,
-                          employeeName: request.employee.fullName,
-                          leaveId: request.leaveId,
-                        })
-                      }
-                    >
-                      {request.employee.fullName}
-                      <div className="text-gray-500">
-                        {request.employee.jobTitle}
-                      </div>
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.startDate
-                          ? new Date(request.startDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )
-                          : "-"}
-                        {/* {request.startDate !== request.endDate
-                          ? ` to ${request.endDate}`
-                          : ""} */}
-                      </div>
-                      {/* <div className="text-gray-500">
-                        {request.daysRequested}{" "}
-                        {request.daysRequested === 1 ? "Day" : "Days"}
-                      </div> */}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.endDate
-                          ? new Date(request.endDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )
-                          : "-"}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.daysRequested}
-                      </div>
-                      {/* <div className="font-medium text-gray-900">
-                        {request.requestDate}
-                      </div>
-                      <div className="text-gray-500">
-                        {request.daysRequested}{" "}
-                        {request.daysRequested <= 1 ? "Day" : "Days"}
-                      </div> */}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">
-                      {request.requestDate
-                        ? new Date(request.requestDate).toLocaleDateString(
-                            "en-US",
-                            { month: "short", day: "numeric", year: "numeric" }
-                          )
-                        : "-"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.leaveType.leaveName}
-                      </div>
-                      {/* <div className="text-gray-500">
-                        Requested on {request.requestDate}
-                      </div> */}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-gray-900 text-left">
-                      <LeaveReasonCell reason={request.reason} />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                        request.status
-                      )}`}
-                    >
-                      {request.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {request.approvedBy ? request.approvedBy.fullName : "—"}
-                      </div>
-                      {request.managerComment && (
-                        <div className="text-gray-500 mt-1">
-                          {request.managerComment}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
-                    {request.driveLink && request.driveLink.trim() && (
-                      <a
-                        href={request.driveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-900"
+            {/* ✨ START: Conditional Rendering Logic ✨ */}
+            {loading ? (
+              // State 1: Show spinner while loading
+              <tr>
+                <td colSpan="13" className="py-8">
+                  <LoadingSpinner text="Loading..." />
+                </td>
+              </tr>
+            ) : adminLeaveRequests.length === 0 ? (
+              // State 2: Show message if no data is available
+              <tr>
+                <td colSpan="13" className="text-center text-gray-500 py-12">
+                  No leaves to be displayed.
+                </td>
+              </tr>
+            ) : (
+              // State 3: Render the data rows if data exists
+              paginatedRequests.map((request) => {
+                const typeObj =
+                  allLeaveTypes.find(
+                    (t) => t.leaveName === request.leaveType.leaveName
+                  ) || request.leaveType;
+                return (
+                  <tr
+                    key={request.leaveId}
+                    className="hover:bg-gray-50 transition-colors text-xs"
+                  >
+                    {/* Your existing <td> elements go here, no changes needed inside the map */}
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedRequests.includes(request.leaveId)}
+                        onChange={(e) =>
+                          handleSelectRequest(request.leaveId, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        disabled={["approved", "rejected", "cancelled"].includes(
+                          request.status.toLowerCase()
+                        )}
+                      />
+                    </td>
+                    <td className="cursor-pointer text-blue-600 hover:underline">
+                      <button
+                        onClick={() =>
+                          setLeaveBalaceModel({
+                            employeeId: request.employee.employeeId,
+                            employeeName: request.employee.fullName,
+                            leaveId: request.leaveId,
+                          })
+                        }
                       >
-                        View Documents
-                      </a>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {request.status.toLowerCase() === "pending" && (
-                        <>
-                          <button
-                            className="p-1 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={() =>
-                              setConfirmation({
-                                action: "approve",
-                                leaveId: request.leaveId,
-                              })
-                            }
-                            aria-label="Approve Request"
-                            disabled={loading}
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            className="p-1 text-red-600 hover:text-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={() =>
-                              setConfirmation({
-                                action: "reject",
-                                leaveId: request.leaveId,
-                              })
-                            }
-                            aria-label="Reject Request"
-                            disabled={loading}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            onClick={() => setEditingRequest(request)}
-                            aria-label="Edit Request"
-                            disabled={loading}
-                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-
-                      {/* ✅ Cancel option for approved leaves */}
-                      {request.status.toLowerCase() === "approved" && (
-                        <button
-                          className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={() =>
-                            setConfirmation({
-                              action: "cancel",
-                              leaveId: request.leaveId,
-                            })
-                          }
-                          aria-label="Cancel Approved Leave"
-                          disabled={loading}
+                        {request.employee.fullName}
+                        <div className="text-gray-500">
+                          {request.employee.jobTitle}
+                        </div>
+                      </button>
+                    </td>
+                    {/* ... other <td> cells for your data ... */}
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {request.startDate
+                            ? new Date(request.startDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )
+                            : "-"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {request.endDate
+                            ? new Date(request.endDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )
+                            : "-"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {request.daysRequested}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">
+                        {request.requestDate
+                          ? new Date(request.requestDate).toLocaleDateString(
+                              "en-US",
+                              { month: "short", day: "numeric", year: "numeric" }
+                            )
+                          : "-"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {request.leaveType.leaveName}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-gray-900 text-left">
+                        <LeaveReasonCell reason={request.reason} />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {request.approvedBy ? request.approvedBy.fullName : "—"}
+                        </div>
+                        {request.managerComment && (
+                          <div className="text-gray-500 mt-1">
+                            {request.managerComment}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
+                      {request.driveLink && request.driveLink.trim() && (
+                        <a
+                          href={request.driveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
-                          <XCircle className="w-6 h-6" />{" "}
-                          {/* You can use another icon if preferred */}
-                        </button>
+                          View Documents
+                        </a>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {request.status.toLowerCase() === "pending" && (
+                          <>
+                            <button
+                              title="Approve"
+                              className="p-1 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() =>
+                                setConfirmation({
+                                  action: "approve",
+                                  leaveId: request.leaveId,
+                                })
+                              }
+                              aria-label="Approve Request"
+                              disabled={loading}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              title="Reject"
+                              className="p-1 text-red-600 hover:text-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() =>
+                                setConfirmation({
+                                  action: "reject",
+                                  leaveId: request.leaveId,
+                                })
+                              }
+                              aria-label="Reject Request"
+                              disabled={loading}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              title="Edit"
+                              onClick={() => setEditingRequest(request)}
+                              aria-label="Edit Request"
+                              disabled={loading}
+                              className="p-1 text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {request.status.toLowerCase() === "approved" && (
+                          <button
+                            title="Cancel Approved Leave"
+                            className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() =>
+                              setConfirmation({
+                                action: "cancel",
+                                leaveId: request.leaveId,
+                              })
+                            }
+                            aria-label="Cancel Approved Leave"
+                            disabled={loading}
+                          >
+                            <XCircle className="w-6 h-6" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+            {/* ✨ END: Conditional Rendering Logic ✨ */}
           </tbody>
         </table>
-
-        <div className="mb-4">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-            onNext={() =>
-              setCurrentPage((page) => Math.min(page + 1, totalPages))
-            }
-          />
-        </div>
+        {totalPages > 1 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              onNext={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+            />
+          </div>
+        )}
 
         {/* NEW: Render the Edit Modal */}
         {editingRequest && (
@@ -817,7 +824,7 @@ const handleDecision = async (action, leaveId, commentParam) => {
 
         {leaveBalanceModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[100vh] overflow-y-auto p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">
                   Analysis for - {leaveBalanceModal.employeeName}
@@ -905,11 +912,11 @@ const handleDecision = async (action, leaveId, commentParam) => {
           </div>
         )}
 
-        {loading && (
+        {/* {loading && (
           <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

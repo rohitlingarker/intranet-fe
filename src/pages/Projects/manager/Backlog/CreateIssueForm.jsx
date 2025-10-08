@@ -160,10 +160,10 @@ const CreateIssueForm = ({
 
     try {
       if (mode === "edit") {
-        await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload);
+        await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}/${formData.id}`, payload, axiosConfig);
         toast.success(`${issueType} updated successfully`);
       } else {
-        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload);
+        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload, axiosConfig);
         toast.success(`${issueType} created successfully`);
       }
       setTimeout(() => {

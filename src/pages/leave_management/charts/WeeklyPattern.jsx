@@ -12,8 +12,9 @@ import useLeaveData from "../hooks/useLeaveData";
 
 const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const WeeklyPattern = ({ employeeId }) => {
-  const { leaveData, loading, error } = useLeaveData(employeeId);
+const WeeklyPattern = ({ employeeId, refreshKey }) => {
+  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey);
+  
 
   const data = useMemo(() => {
     const counts = [0, 0, 0, 0, 0, 0, 0]; // Mon–Sun

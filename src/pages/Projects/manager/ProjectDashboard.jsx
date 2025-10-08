@@ -87,6 +87,7 @@ const ProjectDashboard = () => {
             Authorization: `Bearer ${token}`,
           },
         }
+        
       );
       setDashboardData(res.data);
     } catch (err) {
@@ -127,7 +128,7 @@ const ProjectDashboard = () => {
 <h1 className="text-3xl font-bold">Project Dashboard</h1>
 <div className="flex gap-3">
 <Button onClick={() => navigate("/projects/list")} variant="secondary">
-            View Project List
+             Project List
 </Button>
 <Button
             onClick={() => navigate("/projects/performance")}

@@ -11,6 +11,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Button from "../../../../components/Button/Button";
 
+
 const Backlog = ({ projectId, projectName }) => {
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintForm, setShowSprintForm] = useState(false);
@@ -155,8 +156,9 @@ const Backlog = ({ projectId, projectName }) => {
             <p className="text-gray-400 italic">No unassigned stories</p>
           ) : (
             <div className="space-y-2">
-              {noEpicStories.map((story) => (
-                <StoryCard key={story.id} story={story} />
+              {filteredNoEpicStories.map((story) => (
+                // 🟢 Hardcoded status as BACKLOG
+                <StoryCard key={story.id} story={{ ...story, status: "BACKLOG" }} />
               ))}
             </div>
           )}
@@ -172,7 +174,7 @@ const Backlog = ({ projectId, projectName }) => {
               <SprintColumn
                 key={sprint.id}
                 sprint={sprint}
-                stories={stories.filter((s) => s.sprintId === sprint.id)}
+                stories={filteredStories.filter((s) => s.sprintId === sprint.id)}
                 onDropStory={handleDropStory}
                 onChangeStatus={() => {}}
               />

@@ -393,7 +393,7 @@ const ProjectList = () => {
                           size="small"
                           onClick={() => navigate(`/projects/${project.id}`)}
                         >
-                          Go to Project Tabs
+                          Project Workspace
                         </Button>
                       </div>
                     </div>
