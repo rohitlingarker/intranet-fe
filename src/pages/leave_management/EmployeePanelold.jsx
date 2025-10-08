@@ -172,6 +172,7 @@ const handleViewChange = (view) => {
           <RequestLeaveModal
             isOpen={isRequestLeaveModalOpen}
             onClose={() => setIsRequestLeaveModalOpen(false)}
+            // onLeaveRequestSuccess={handleLeaveRequestSuccess}
             employeeId={employeeId}
           />
         </>
