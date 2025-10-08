@@ -135,7 +135,18 @@ const ProjectManager = () => {
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
+  
+  
+useEffect(() => {
+    if (isAuthenticated) {
+      const lastPath = localStorage.getItem("lastPath");
+      if (lastPath && lastPath !== "/" && lastPath !== "/login") {
+        navigate(lastPath, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [isAuthenticated, navigate]);
 
 
   return (
