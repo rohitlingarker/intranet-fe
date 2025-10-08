@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
 const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#ec4899', '#10b981', '#f59e0b'];
 
@@ -8,11 +9,13 @@ const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedItems, setExpandedItems] = useState({});
+  const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     const fetchAll = async () => {
+      setLoading(true); // Start loading
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [epicRes, storyRes, taskRes] = await Promise.all([
@@ -38,6 +41,8 @@ const Summary = ({ projectId, projectName }) => {
         setEpics(enrichedEpics);
       } catch (err) {
         console.error('Failed to fetch data:', err);
+      } finally {
+        setLoading(false); // Always stop loading
       }
     };
 
@@ -88,6 +93,14 @@ const Summary = ({ projectId, projectName }) => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <LoadingSpinner text="Fetching data..." />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

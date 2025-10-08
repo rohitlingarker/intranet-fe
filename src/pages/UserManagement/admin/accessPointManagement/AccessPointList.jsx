@@ -84,7 +84,7 @@ const AccessPointList = ({ searchTerm }) => {
         <div className="text-center text-gray-500 mt-20">
           {searchTerm 
             ? `No access points found matching "${searchTerm}".`
-            : "No access points found."
+            : "Loading..."
           }
         </div>
       ) : (
