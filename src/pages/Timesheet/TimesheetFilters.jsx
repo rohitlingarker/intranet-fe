@@ -1,13 +1,24 @@
+import React from "react";
 
- import React from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 const TimesheetFilters = ({
   searchText,
   setSearchText,
-  filterDate,
-  setFilterDate,
+  filterStartDate,
+  setFilterStartDate,
+  filterEndDate,
+  setFilterEndDate,
   filterStatus,
   setFilterStatus,
 }) => {
+  const handleDateChange = (update) => {
+    const [start, end] = update;
+    setFilterStartDate(start ? start.toLocaleDateString("en-CA") : "");
+    setFilterEndDate(end ? end.toLocaleDateString("en-CA") : "");
+  };
+
   return (
     <div
       style={{
@@ -36,7 +47,7 @@ const TimesheetFilters = ({
           background: "#f9fafb",
         }}
       />
-      <input
+      {/* <input
         type="date"
         value={filterDate}
         onChange={(e) => setFilterDate(e.target.value)}
@@ -47,7 +58,64 @@ const TimesheetFilters = ({
           fontSize: 15,
           background: "#f9fafb",
         }}
-      />
+      /> */}
+
+      {/* <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          type="date"
+          value={filterStartDate}
+          onChange={(e) => setFilterStartDate(e.target.value)}
+          style={{
+            border: "1px solid #d0d6de",
+            borderRadius: 4,
+            padding: "8px 10px",
+            fontSize: 15,
+            background: "#f9fafb",
+          }}
+        />
+        <span style={{ fontSize: 14, color: "#555" }}>to</span>
+        <input
+          type="date"
+          value={filterEndDate}
+          onChange={(e) => setFilterEndDate(e.target.value)}
+          style={{
+            border: "1px solid #d0d6de",
+            borderRadius: 4,
+            padding: "8px 10px",
+            fontSize: 15,
+            background: "#f9fafb",
+          }}
+        />
+      </div> */}
+
+      {/* 📅 Date Range Picker */}
+      <div
+        style={{
+          border: "1px solid #d0d6de",
+          borderRadius: 4,
+          background: "#f9fafb",
+          padding: "2px 6px",
+        }}
+      >
+        <DatePicker
+          selectsRange
+          startDate={filterStartDate ? new Date(filterStartDate) : null}
+          endDate={filterEndDate ? new Date(filterEndDate) : null}
+          onChange={handleDateChange}
+          isClearable
+          placeholderText="Select date range"
+          dateFormat="yyyy-MM-dd"
+          className="date-range-input"
+          wrapperClassName="date-range-wrapper"
+          style={{
+            border: "none",
+            fontSize: 15,
+            background: "transparent",
+            outline: "none",
+          }}
+        />
+      </div>
+
       <select
         value={filterStatus}
         onChange={(e) => setFilterStatus(e.target.value)}
@@ -68,4 +136,4 @@ const TimesheetFilters = ({
   );
 };
 
-export default TimesheetFilters;
+export { TimesheetFilters };

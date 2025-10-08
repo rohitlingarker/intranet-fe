@@ -199,3 +199,85 @@ export async function bulkReviewTimesheet(timesheetIds, status, comment) {
     throw err;
   }
 }
+
+// Dashboard Summary API
+// export async function fetchDashboardSummary(startDate, endDate) {
+//   try {
+//     const response = await fetch(`${apiEndpoint}/api/dashboard/summary`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${localStorage.getItem("token")}`,
+//       },
+//       body: JSON.stringify({ startDate, endDate }),
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.text();
+//       throw new Error(errorData || `Error ${response.status}: ${response.statusText}`);
+//     }
+
+//     const data = await response.json();
+//     return data;
+//   } catch (error) {
+//     showStatusToast({
+//       type: "error",
+//       message: "Failed to fetch dashboard summary. Please try again.",
+//     });
+//     console.error("Fetch dashboard summary error:", error);
+//     return null; // Return null so calling code can check for loading/error
+//   }
+// }
+
+
+export async function filterByRange(startDate, endDate) {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/timesheet/filter?startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to filter timesheet");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    showStatusToast(err.message || "Filter failed", "error");
+    throw err;
+  }
+}
+
+export async function getManagerDashboardData(startDate, endDate) {
+  try {
+    const res = await fetch(
+      `${apiEndpoint}/api/manager/summary?startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to fetch manager dashboard data");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    showStatusToast(err.message || "Failed to fetch manager dashboard data", "error");
+    throw err;
+  }
+}
