@@ -41,6 +41,7 @@ import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
+import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -191,6 +192,7 @@ const AppRoutes = () => {
           <Route path="/projects/" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
+          <Route path="/projects/:projectId/issuetracker" element={<IssueTracker />} />
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}
