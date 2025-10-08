@@ -55,6 +55,40 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
   );
 }
 
+// PermissionChips Component - displays selected permissions as chips with remove button
+function PermissionChips({ permissions, onRemove, variant = "add" }) {
+  if (permissions.length === 0) {
+    return <div className="text-gray-500 p-2">No permissions selected.</div>;
+  }
+
+  const chipColor = variant === "add" 
+    ? "bg-blue-100 text-blue-800 border-blue-300" 
+    : "bg-red-100 text-red-800 border-red-300";
+
+  return (
+    <div className="border p-4 rounded bg-gray-50 max-h-64 overflow-y-auto">
+      <div className="flex flex-wrap gap-2">
+        {permissions.map((perm) => (
+          <div
+            key={perm.permission_uuid}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${chipColor} text-sm font-medium`}
+          >
+            <span>{perm.permission_code}</span>
+            <button
+              onClick={() => onRemove(perm.permission_uuid)}
+              className="hover:opacity-70 transition-opacity font-bold"
+              type="button"
+              aria-label="Remove permission"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PermissionGroupManagement() {
   const [groups, setGroups] = useState([]);
   const [newGroupName, setNewGroupName] = useState("");
@@ -69,6 +103,10 @@ export default function PermissionGroupManagement() {
   const [showViewList, setShowViewList] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTrigger, setSearchTrigger] = useState(false);
+
+  // New state for selected permissions to add/remove
+  const [selectedToAdd, setSelectedToAdd] = useState([]);
+  const [selectedToRemove, setSelectedToRemove] = useState([]);
 
   // New state for group search and pagination
   const [groupSearchTerm, setGroupSearchTerm] = useState("");
@@ -213,6 +251,8 @@ export default function PermissionGroupManagement() {
       setShowViewList(false);
       setSearchTerm("");
       setSearchTrigger(false);
+      setSelectedToAdd([]);
+      setSelectedToRemove([]);
       return;
     }
     setSelectedGroupId(groupId);
@@ -222,6 +262,8 @@ export default function PermissionGroupManagement() {
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
+    setSelectedToAdd([]);
+    setSelectedToRemove([]);
     await fetchGroupPermissions(groupId);
   };
 
@@ -234,6 +276,8 @@ export default function PermissionGroupManagement() {
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
+    setSelectedToAdd([]);
+    setSelectedToRemove([]);
   };
 
   const handleDeleteClickPermission = () => {
@@ -245,6 +289,8 @@ export default function PermissionGroupManagement() {
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
+    setSelectedToAdd([]);
+    setSelectedToRemove([]);
   };
 
   const handleViewClick = () => {
@@ -254,6 +300,8 @@ export default function PermissionGroupManagement() {
     setShowViewList(true);
     setShowPermissionList(false);
     setShowDeleteList(false);
+    setSelectedToAdd([]);
+    setSelectedToRemove([]);
   };
 
   const handleCloseActions = () => {
@@ -264,45 +312,74 @@ export default function PermissionGroupManagement() {
     setSelectedGroupId("");
     setSearchTerm("");
     setSearchTrigger(false);
+    setSelectedToAdd([]);
+    setSelectedToRemove([]);
   };
 
-  const handleAddPermissionToGroup = async (permission_uuid) => {
-    if (!selectedGroupId) {
-      return showUniqueToast("Please select a group first.", "warning");
+  // Add permission to selected list (for adding to group)
+  const handleSelectToAdd = (permission_uuid) => {
+    const perm = allPermissions.find(p => p.permission_uuid === permission_uuid);
+    if (perm && !selectedToAdd.some(p => p.permission_uuid === permission_uuid)) {
+      setSelectedToAdd([...selectedToAdd, perm]);
     }
+  };
 
-    if (!permission_uuid) {
-      return showUniqueToast("Enter the permission", "error");
+  // Remove permission from selected list (for adding to group)
+  const handleUnselectToAdd = (permission_uuid) => {
+    setSelectedToAdd(selectedToAdd.filter(p => p.permission_uuid !== permission_uuid));
+  };
+
+  // Add permission to selected list (for removing from group)
+  const handleSelectToRemove = (permission_uuid) => {
+    const perm = groupPermissions.find(p => p.permission_uuid === permission_uuid);
+    if (perm) {
+      const enrichedPerm = enrichWithCode([perm])[0];
+      if (!selectedToRemove.some(p => p.permission_uuid === permission_uuid)) {
+        setSelectedToRemove([...selectedToRemove, enrichedPerm]);
+      }
+    }
+  };
+
+  // Remove permission from selected list (for removing from group)
+  const handleUnselectToRemove = (permission_uuid) => {
+    setSelectedToRemove(selectedToRemove.filter(p => p.permission_uuid !== permission_uuid));
+  };
+
+  // Bulk add permissions to group
+  const handleBulkAddPermissions = async () => {
+    if (selectedToAdd.length === 0) {
+      return showUniqueToast("No permissions selected to add.", "warning");
     }
 
     try {
-      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, [permission_uuid]);
-      showUniqueToast("Permission added successfully.", "success");
-      fetchGroupPermissions(selectedGroupId);
+      const permissionIds = selectedToAdd.map(p => p.permission_uuid);
+      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, permissionIds);
+      showUniqueToast(`${selectedToAdd.length} permission(s) added successfully.`, "success");
+      setSelectedToAdd([]);
+      await fetchGroupPermissions(selectedGroupId);
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast("Failed to add permission: " + errorMessage, "error");
+      showUniqueToast("Failed to add permissions: " + errorMessage, "error");
     }
   };
 
-  const handleRemovePermissionFromGroup = async (permission_uuid) => {
-    if (!selectedGroupId) {
-      return showUniqueToast("Please select a group first.", "warning");
-    }
-
-    if (!permission_uuid) {
-      return showUniqueToast("Enter the permission", "error");
+  // Bulk remove permissions from group
+  const handleBulkRemovePermissions = async () => {
+    if (selectedToRemove.length === 0) {
+      return showUniqueToast("No permissions selected to remove.", "warning");
     }
 
     try {
+      const permissionIds = selectedToRemove.map(p => p.permission_uuid);
       await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { 
-        data: [permission_uuid] 
+        data: permissionIds 
       });
-      showUniqueToast("Permission removed successfully.", "success");
-      fetchGroupPermissions(selectedGroupId);
+      showUniqueToast(`${selectedToRemove.length} permission(s) removed successfully.`, "success");
+      setSelectedToRemove([]);
+      await fetchGroupPermissions(selectedGroupId);
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast("Failed to remove permission: " + errorMessage, "error");
+      showUniqueToast("Failed to remove permissions: " + errorMessage, "error");
     }
   };
 
@@ -326,6 +403,16 @@ export default function PermissionGroupManagement() {
       return { ...perm, permission_code: found ? found.permission_code : "Unknown code" };
     });
   }
+
+  // Filter available permissions to exclude already selected ones
+  const availableToAdd = filterPermissions(unassignedPermissions).filter(
+    perm => !selectedToAdd.some(s => s.permission_uuid === perm.permission_uuid)
+  );
+
+  // Filter group permissions to exclude already selected ones
+  const availableToRemove = filterPermissions(enrichWithCode(groupPermissions)).filter(
+    perm => !selectedToRemove.some(s => s.permission_uuid === perm.permission_uuid)
+  );
 
   // Filter groups based on search term
   const filteredGroups = groups.filter(group =>
@@ -544,11 +631,32 @@ export default function PermissionGroupManagement() {
               <div>
                 <h5 className="text-md font-medium mb-2">Available Permissions to Add:</h5>
                 <PermissionList
-                  permissions={filterPermissions(unassignedPermissions)}
+                  permissions={availableToAdd}
                   showAdd={true}
                   showDelete={false}
-                  onAdd={handleAddPermissionToGroup}
+                  onAdd={handleSelectToAdd}
                 />
+                
+                {selectedToAdd.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
+                    <PermissionChips 
+                      permissions={selectedToAdd}
+                      onRemove={handleUnselectToAdd}
+                      variant="add"
+                    />
+                    <div className="mt-4">
+                      <Button 
+                        size="medium" 
+                        variant="primary" 
+                        onClick={handleBulkAddPermissions}
+                        type="button"
+                      >
+                        Confirm Add ({selectedToAdd.length})
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -557,11 +665,32 @@ export default function PermissionGroupManagement() {
               <div>
                 <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
                 <PermissionList
-                  permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                  permissions={availableToRemove}
                   showAdd={false}
                   showDelete={true}
-                  onDelete={handleRemovePermissionFromGroup}
+                  onDelete={handleSelectToRemove}
                 />
+                
+                {selectedToRemove.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
+                    <PermissionChips 
+                      permissions={selectedToRemove}
+                      onRemove={handleUnselectToRemove}
+                      variant="remove"
+                    />
+                    <div className="mt-4">
+                      <Button 
+                        size="medium" 
+                        variant="danger" 
+                        onClick={handleBulkRemovePermissions}
+                        type="button"
+                      >
+                        Confirm Remove ({selectedToRemove.length})
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

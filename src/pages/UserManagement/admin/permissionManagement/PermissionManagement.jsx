@@ -298,7 +298,7 @@ export default function PermissionManagement() {
         {mode === "withGroup" && (
           <select
             value={selectedGroup}
-            onChange={(e) => setSelectedGroup(Number(e.target.value))}
+            onChange={(e) => setSelectedGroup(String(e.target.value))}
             className="w-full p-2 border rounded mb-3"
           >
             <option value="">-- Select Permission Group --</option>
