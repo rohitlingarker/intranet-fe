@@ -11,7 +11,7 @@ import {
 
 import { getManagerDashboardData } from "../Timesheet/api";
 
-const ManagerDashboard = () => {
+const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +107,7 @@ const ManagerDashboard = () => {
         {/* Right: Productivity Trend */}
         <div className="bg-white shadow-lg rounded-2xl p-5 flex-1">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">
-            Weekly Productivity Trend
+            Weekly hours logged by team
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
@@ -123,36 +123,29 @@ const ManagerDashboard = () => {
               />
               <Legend />
               <Line type="monotone" dataKey="hours" stroke="#4F46E5" strokeWidth={3} />
-              {/* <Line
-                type="monotone"
-                dataKey="utilization"
-                stroke="#16A34A"
-                strokeWidth={3}
-              /> */}
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-
-      {/* Bottom Section: Missing Timesheets + Pending Approvals side by side */}
+      {/* Bottom Section: Missing Timesheets + Pending Approvals side by side
        <div className="flex flex-col lg:flex-row gap-6">
       {/* Left: Missing Timesheets */}
       <div className="bg-white shadow-lg rounded-2xl p-8 flex-1">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-700">
-            Today Missing Timesheets
+            Yesterday Missing Timesheets
           </h2>
           <button className="bg-orange-400 hover:bg-orange-400 text-white px-4 py-2 rounded-lg shadow">
-            Remaind
+            Remind
           </button>          
         </div>
         {stats.missingTimesheets.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-600">
+          <ul className="list-disc list-inside text-gray-600 overflow-y-scroll max-h-30">
             {stats.missingTimesheets.map((user, idx) => (
               <li key={idx}>
-                <span className="font-medium">{user.fullName}</span>{" "}
-                <span className="text-sm text-gray-500">({user.email})</span>
+                <span title={user.email} className="font-medium">{user.fullName} - {user.email}</span>
+                {/* <span className="text-sm text-gray-500">({user.email})</span> */}
               </li>
             ))}
           </ul>
@@ -160,25 +153,19 @@ const ManagerDashboard = () => {
           <p className="text-gray-500 text-sm">No missing timesheets today 🎉</p>
         )}
       </div>
-
   {/* Right: Pending Approvals */}
-  <div className="bg-white shadow-lg items-center rounded-2xl p-8 flex-1">
+   <div className="bg-white shadow-lg items-center rounded-2xl p-8 flex-1"> 
     <div className="flex justify-between items-center mb-4 ">
       <h2 className="text-lg font-semibold text-gray-700 ">
         Pending Approvals
       </h2>
       <button 
-       onClick={() => {
-        // Filter and show only pending timesheets from missingTimesheets list
-        const pendingUsers = stats.missingTimesheets.filter((u) => u.status === "PENDING");
-        if (pendingUsers.length === 0) {
-          alert("No pending timesheets found!");
-        } else {
-          alert(
-            pendingUsers.map((u) => `${u.fullName} (${u.email})`).join("\n")
-          );
-        }
+       onClick={()=>{
+        setStatusFilter("Pending")
+        handleScroll()
       }}
+
+
       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
         View
       </button>
@@ -189,7 +176,6 @@ const ManagerDashboard = () => {
             </p>
       </span>
     </div>
-
       {/* Missing Timesheets */}
       {/* <div className="bg-white shadow-lg rounded-2xl p-4">
         <div className="flex justify-between items-center mb-4">
@@ -228,7 +214,7 @@ const ManagerDashboard = () => {
         </div>
       </div> */}
     </div>
-    </div>
+    
   );
 };
 
