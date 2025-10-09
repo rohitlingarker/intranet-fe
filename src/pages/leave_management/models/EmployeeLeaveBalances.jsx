@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
 import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem("token");
@@ -18,6 +19,8 @@ const EmployeeLeaveBalances = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,56 +61,62 @@ const EmployeeLeaveBalances = () => {
     fetchSuggestions();
   }, [searchQuery]);
 
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      const gender = selectedEmployee?.employeeGender?.toLowerCase();
 
-    const handleSubmit = async () => {
-      try {
-        const gender = selectedEmployee?.employeeGender?.toLowerCase();
+      const filteredBalances = leaveTypes
+        .filter(({ leaveTypeName }) => {
+          const lowerName = leaveTypeName.toLowerCase();
+          const isMaternity = lowerName.includes("maternity");
+          const isPaternity = lowerName.includes("paternity");
 
-        const filteredBalances = leaveTypes
-          .filter(({ leaveTypeName }) => {
-            const lowerName = leaveTypeName.toLowerCase();
-            const isMaternity = lowerName.includes("maternity");
-            const isPaternity = lowerName.includes("paternity");
+          // ❌ Exclude maternity for males, paternity for females, or if gender unknown
+          if (
+            (isMaternity && gender === "male") ||
+            (isPaternity && gender === "female") ||
+            ((isMaternity || isPaternity) && !gender)
+          ) {
+            return false;
+          }
 
-            // ❌ Exclude maternity for males, paternity for females, or if gender unknown
-            if (
-              (isMaternity && gender === "male") ||
-              (isPaternity && gender === "female") ||
-              ((isMaternity || isPaternity) && !gender)
-            ) {
-              return false;
-            }
+          return true;
+        })
+        .map(({ leaveTypeName, leaveTypeId }) => ({
+          leaveTypeId,
+          remainingLeaves:
+            selectedEmployee.balances[leaveTypeName]?.remainingLeaves ?? 0,
+          year:
+            selectedEmployee.balances[leaveTypeName]?.year ??
+            new Date().getFullYear(),
+        }));
 
-            return true;
-          })
-          .map(({ leaveTypeName, leaveTypeId }) => ({
-            leaveTypeId,
-            remainingLeaves:
-              selectedEmployee.balances[leaveTypeName]?.remainingLeaves ?? 0,
-            year:
-              selectedEmployee.balances[leaveTypeName]?.year ??
-              new Date().getFullYear(),
-          }));
+      const payload = {
+        employeeId: selectedEmployee.employeeId,
+        balances: filteredBalances,
+        // performedBy: hrId,
+      };
 
-        const payload = {
-          employeeId: selectedEmployee.employeeId,
-          balances: filteredBalances,
-          // performedBy: hrId,
-        };
-
-        const res = await axios.put(`${BASE_URL}/api/leave-balance/update`, payload, {
+      const res = await axios.put(
+        `${BASE_URL}/api/leave-balance/update`,
+        payload,
+        {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        });
+        }
+      );
 
-        toast.success(res.data?.message || "Leave balances updated successfully");
-        setIsEditModalOpen(false);
-        fetchLeaveData();
-      } catch (err) {
-        toast.error(res.data?.message || "Failed to update leave balances");
-      }
-    };
+      toast.success(res.data?.message || "Leave balances updated successfully");
+      setIsEditModalOpen(false);
+      fetchLeaveData();
+    } catch (err) {
+      toast.error(res.data?.message || "Failed to update leave balances");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleEdit = (employee) => {
     setSelectedEmployee({ ...employee });
@@ -116,6 +125,7 @@ const EmployeeLeaveBalances = () => {
 
   const fetchLeaveData = async (query = "") => {
     try {
+      setIsLoading(true);
       const url =
         query === ""
           ? `${BASE_URL}/api/leave-balance/all-leave-balances`
@@ -174,6 +184,8 @@ const EmployeeLeaveBalances = () => {
     } catch (error) {
       // console.error("Error fetching leave balances", error);
       toast.error("Failed to fetch leave balances");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -196,12 +208,19 @@ const EmployeeLeaveBalances = () => {
 
   return (
     <div className="p-6 overflow-auto">
+      {/* 🔹 Loading Spinner Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/70 flex justify-center items-center z-50">
+          <LoadingSpinner text="Loading Leave Balances" />
+        </div>
+      )}
+
       {/* 🔹 Back Button */}
       <button
         onClick={() => navigate(-1)} // go to previous page
         className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800  hover:bg-gray-400 rounded-md font-medium"
       >
-        ← Back 
+        ← Back
       </button>
 
       <h2 className="text-2xl font-bold mb-6">Employee Leave Balances</h2>
@@ -308,9 +327,24 @@ const EmployeeLeaveBalances = () => {
         />
       )}
 
+      {/* 🔹 Spinner during submit (modal) */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <LoadingSpinner />
+        </div>
+      )}
+
       {isEditModalOpen && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          {/* Spinner Overlay */}
+          {isSubmitting && (
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent border-white"></div>
+            </div>
+          )}
+
+          {/* Modal Content */}
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
             <h3 className="text-xl font-bold mb-6">
               Edit Leave Balances – {selectedEmployee.employeeName}
             </h3>
@@ -381,15 +415,17 @@ const EmployeeLeaveBalances = () => {
             <div className="mt-8 flex justify-end gap-4">
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="bg-gray-500 text-white px-5 py-2 rounded hover:bg-gray-600"
+                disabled={isSubmitting}
+                className="bg-gray-500 text-white px-5 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                disabled={isSubmitting}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                Submit
+                {isSubmitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           </div>

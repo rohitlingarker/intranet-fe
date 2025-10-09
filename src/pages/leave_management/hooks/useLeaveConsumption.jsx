@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const useLeaveConsumption = (employeeId) => {
+const useLeaveConsumption = (employeeId, refreshKey) => {
 
   const token = localStorage.getItem('token');
   // console.log("Fetching leave consumption for employee:", employeeId);
@@ -28,7 +28,7 @@ const useLeaveConsumption = (employeeId) => {
         toast.error("Failed to fetch leave data");
         setLoading(false);
       });
-  }, [employeeId]);
+  }, [employeeId, refreshKey]);
 
   return { leaveData, loading };
 };

@@ -89,8 +89,8 @@ const ApprovalQueue = ({ actionType, payload }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {rows.map(({ k, b, a }) => (
-              <tr key={k}>
+            {rows.map(({ k, b, a, changed }) => (
+              <tr key={k} className={changed ? "bg-yellow-50" : ""}>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
                   {formatKey(k)}
                 </td>
@@ -245,10 +245,10 @@ const ApprovalQueue = ({ actionType, payload }) => {
                   Leave Type
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Old Remaining
+                  Old Record
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  New Remaining
+                  New Record
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Year

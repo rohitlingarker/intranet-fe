@@ -417,6 +417,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       });
       setSuccess("Leave request submitted!");
       onSuccess?.();
+      
       setTimeout(() => {
         // setStartDate("");
         // setEndDate("");

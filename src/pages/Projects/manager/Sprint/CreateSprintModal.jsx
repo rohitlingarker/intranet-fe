@@ -17,31 +17,30 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
   });
   const token = localStorage.getItem("token");
 
-  const [projects, setProjects] = useState([]);
+  const [projectName, setProjectName] = useState("");
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchProject = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        const content = Array.isArray(response.data.content)
-          ? response.data.content
-          : response.data;
-        setProjects(content);
+        setProjectName(response.data.name || "Unknown Project");
       } catch (error) {
-        toast.error("Error fetching projects list.", {
+        toast.error("Error fetching project details.", {
           position: "top-right",
           autoClose: 3000,
         });
-        console.error("Error fetching projects:", error);
+        console.error("Error fetching project:", error);
       }
     };
-    fetchProjects();
-  }, []);
+    if (projectId) {
+      fetchProject();
+    }
+  }, [projectId, token]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,7 +55,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
 
     const payload = {
       name: formData.name,
-      goal: formData.goal || null, // optional
+      goal: formData.goal || null,
       startDate: toLocalDateTime(formData.startDate),
       endDate: toLocalDateTime(formData.endDate),
       status: formData.status,
@@ -66,9 +65,9 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`,
-        payload, 
+        payload,
         {
-          headers: { Authorization: `Bearer ${token}` }, 
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -88,7 +87,6 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
         projectId: projectId.toString(),
       });
 
-      // Wait for toast to be visible before closing modal
       setTimeout(() => {
         onClose();
       }, 500);
@@ -177,9 +175,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
           </div>
 
           <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Status
-            </label>
+            <label className="block font-medium text-gray-700 mb-1">Status</label>
             <select
               name="status"
               value={formData.status}
@@ -192,24 +188,17 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
             </select>
           </div>
 
+          {/* Project field (read-only) */}
           <div>
             <label className="block font-medium text-gray-700 mb-1">
-              Project <span className="text-red-500">*</span>
+              Project
             </label>
-            <select
-              name="projectId"
-              value={formData.projectId}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- Select a Project --</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={projectName}
+              disabled
+              className="w-full border border-gray-300 p-2 rounded-md bg-gray-100 text-gray-600"
+            />
           </div>
 
           <div className="text-center">

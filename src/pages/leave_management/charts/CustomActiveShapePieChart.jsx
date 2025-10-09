@@ -75,7 +75,7 @@ const renderActiveShape = (props) => {
   );
 };
 
-const CustomActiveShapePieChart = ({ employeeId }) => {
+const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
   const [data, setData] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -110,7 +110,7 @@ const CustomActiveShapePieChart = ({ employeeId }) => {
     };
 
     fetchLeaves();
-  }, [employeeId]);
+  }, [employeeId, refreshKey]);
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);

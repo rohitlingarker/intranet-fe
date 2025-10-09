@@ -43,7 +43,7 @@ const CompOffRequestModal = ({ onSubmit, onClose, loading }) => {
       dates: {
         start: formatDate(startDate),
         end: formatDate(endDate || startDate),
-        isHalf: isHalfDay,
+        // isHalf: isHalfDay,
       },
       note,
       numberOfDays: calculateDays(),

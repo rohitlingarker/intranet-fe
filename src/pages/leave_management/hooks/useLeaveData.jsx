@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const useLeaveData = (employeeId) => {
+const useLeaveData = (employeeId, refreshKey) => {
   const [leaveData, setLeaveData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,7 +39,7 @@ const useLeaveData = (employeeId) => {
     if (employeeId) {
       fetchLeaveData();
     }
-  }, [employeeId]);
+  }, [employeeId, refreshKey]);
   return { leaveData, loading, error };
 };
 export default useLeaveData;
