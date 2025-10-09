@@ -44,6 +44,7 @@ import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
 import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
+import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -243,7 +244,7 @@ useEffect(() => {
             element={<UserProjectTabs />}
           />
           
-
+           <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
