@@ -108,7 +108,7 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Missing Timesheets */}
-      <div className="bg-white shadow-lg rounded-2xl p-6">
+      {/* <div className="bg-white shadow-lg rounded-2xl p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-700">
             Missing Timesheets
@@ -122,10 +122,10 @@ const ManagerDashboard = () => {
             <li key={idx}>{user}</li>
           ))}
         </ul>
-      </div>
+      </div> */}
 
       {/* Pending Approvals with total entries */}
-      <div className="bg-white shadow-lg rounded-2xl p-6">
+      {/* <div className="bg-white shadow-lg rounded-2xl p-6">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-700 inline-block">
@@ -144,7 +144,7 @@ const ManagerDashboard = () => {
             <li key={idx}>{item}</li>
           ))}
         </ul>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import ManagerApprovalTable from "./ManagerApprovalTable";
 import Button from "../../../components/Button/Button"; // ✅ Using your existing Button component
 import { useNavigate } from "react-router-dom"; // For navigation
+import ManagerDashboard from "../ManagerDashboard";
 
 const ManagerApprovalPage = () => {
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,7 @@ const ManagerApprovalPage = () => {
           </Button>
         </div>
       </div>
-
+      <ManagerDashboard />
       <ManagerApprovalTable
         loading={loading}
         data={data}
