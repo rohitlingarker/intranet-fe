@@ -24,7 +24,8 @@ import Calendar from "./pages/Calendar";
 // Timesheets
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-
+import DashboardPage from "./pages/Timesheet/DashboardPage";  
+import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
@@ -201,6 +202,8 @@ useEffect(() => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
+          <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
