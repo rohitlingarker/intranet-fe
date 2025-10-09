@@ -48,7 +48,7 @@ const Lists = ({ projectId }) => {
         
         axiosInstance.get(`/api/projects/${projectId}/stories`),
         axiosInstance.get(`/api/projects/${projectId}/tasks`),
-        axiosInstance.get(`/api/stories/no-epic`),
+        axiosInstance.get(`/api/stories/no-epic`, { params: { projectId } }), // Pass projectId as query param
       ]);
 
       const enrichedStories = storyRes.data.map((story) => ({

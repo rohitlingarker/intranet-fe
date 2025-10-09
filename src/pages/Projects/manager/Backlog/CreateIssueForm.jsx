@@ -48,23 +48,23 @@ const CreateIssueForm = ({
         assigneeId: initialData.assigneeId || (initialMemberIds[0] || null),
       });
     }
-  }, [mode, initialData, initialProjectId, initialOwnerId, initialMemberIds]);
+  }, [mode]);
 
   // Fetch projects, users, sprints
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsRes, usersRes, sprintsRes] = await Promise.all([
+        const [projectsRes, usersRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
+          //axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
         ]);
         // console.log({usersRes});
         
 
         setProjects(projectsRes.data.content || projectsRes.data || []);
         setUsers(usersRes.data.content || usersRes.data || []);
-        setSprints(sprintsRes.data.content || sprintsRes.data || []);
+        //setSprints(sprintsRes.data.content || sprintsRes.data || []);
       } catch (err) {
         console.error("Failed to load initial data", err);
         toast.error("Failed to load projects, users, or sprints");
@@ -82,9 +82,12 @@ const CreateIssueForm = ({
         .then((res) => setEpics(res.data));
       axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/stories`, axiosConfig)
         .then((res) => setStories(res.data));
+      axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/sprints`, axiosConfig)
+        .then((res) => setSprints(res.data));
     } else {
       setEpics([]);
       setStories([]);
+      setSprints([]);
     }
   }, [formData.projectId]);
 
