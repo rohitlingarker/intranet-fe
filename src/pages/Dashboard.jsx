@@ -45,7 +45,7 @@ if (isDeveloper) {
       title: 'Timesheets',
       description: 'Track time and generate reports',
       icon: Clock,
-      href: '/timesheets/dashboard',
+      href: '/timesheets',
       color: 'bg-[#ff3d72]',
       stats: 'Today: 6.5 hours'
     },
