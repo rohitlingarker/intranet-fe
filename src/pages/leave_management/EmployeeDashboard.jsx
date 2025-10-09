@@ -17,6 +17,7 @@ const EmployeeDashboard = ({ employeeId }) => {
   const [isRequestLeaveModalOpen, setIsRequestLeaveModalOpen] = useState(false);
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshKeys, setrefreshKeys] = useState(false);
   const compOffPageRef = useRef();
 
   const handleCompOffSubmit = async (modalData) => {
@@ -39,7 +40,7 @@ const EmployeeDashboard = ({ employeeId }) => {
       </div>
       <h2 className="text-xl font-semibold m-4">Pending Leave Requests</h2>
       <div className="bg-white rounded-lg shadow p-6 mb-6 w-full">
-        <PendingLeaveRequests employeeId={employeeId} />
+        <PendingLeaveRequests employeeId={employeeId} refreshKey={refreshKeys} />
       </div>
 
       <h2 className="text-xl font-semibold m-4">Pending Comp-Off Requests</h2>
@@ -56,13 +57,13 @@ const EmployeeDashboard = ({ employeeId }) => {
 
       <h2 className="text-xl font-semibold m-4">My Leave Stats</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <WeeklyPattern employeeId={employeeId} />
-        <CustomActiveShapePieChart employeeId={employeeId} />
-        <MonthlyStats employeeId={employeeId} />
+        <WeeklyPattern employeeId={employeeId} refreshKey={refreshKeys} />
+        <CustomActiveShapePieChart employeeId={employeeId} refreshKey={refreshKeys} />
+        <MonthlyStats employeeId={employeeId} refreshKey={refreshKeys} />
       </div>
 
       <h2 className="text-xl font-semibold m-4">Leave Balances</h2>
-      <LeaveDashboard employeeId={employeeId} />
+      <LeaveDashboard employeeId={employeeId} refreshKey={refreshKeys}  />
 
       <h2 className="text-xl font-semibold m-4">Leave History</h2>
       <LeaveHistory employeeId={employeeId} />
@@ -71,6 +72,7 @@ const EmployeeDashboard = ({ employeeId }) => {
         isOpen={isRequestLeaveModalOpen}
         onClose={() => setIsRequestLeaveModalOpen(false)}
         employeeId={employeeId}
+        onSuccess={() => setrefreshKeys((prev)=>!prev)} // Trigger refresh of pending leaves
       />
     </>
   );

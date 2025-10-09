@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -9,6 +9,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+
+import { getManagerDashboardData } from "./api";
 
 const ManagerDashboard = () => {
   // Mock Data
@@ -30,6 +32,16 @@ const ManagerDashboard = () => {
     { day: "Sat", hours: 6, utilization: 70 },
     { day: "Sun", hours: 5, utilization: 65 },
   ];
+  // const [stats, setStats] = useState({});
+  // const [weeklyData, setWeeklyData] = useState([]);
+
+  // useEffect(() => {
+  //   getManagerDashboardData().then((data) => {
+  //     setStats(data.stats);
+  //     setWeeklyData(data.weeklyData);
+  //   });
+  // }, []);
+
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">

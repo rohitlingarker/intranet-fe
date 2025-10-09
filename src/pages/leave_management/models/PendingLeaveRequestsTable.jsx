@@ -147,8 +147,8 @@ const PendingLeaveRequestsTable = ({
           leaveBalances={leaveBalances}
           onSuccess={handleUpdateSuccess}
           employeeId={employeeId}
-        />
-      )}
+          />
+        )}
 
       {cancelId && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">

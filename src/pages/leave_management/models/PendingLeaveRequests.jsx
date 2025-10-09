@@ -73,7 +73,7 @@ const fetchData = async (
   }
 };
  
-const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
+const PendingLeaveRequests = ({ refreshKey }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState({});
@@ -81,7 +81,7 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
  
-  const [refreshKey, setRefreshKey] = useState(0);
+  // const [refreshKey, setRefreshKey] = useState(0);
  
   const employeeId = useAuth()?.user?.user_id;
  

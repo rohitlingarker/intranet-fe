@@ -42,6 +42,7 @@ import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
+import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -84,18 +85,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
-  // if (allowedRoles && allowedRoles.length > 0) {
-  //   const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
-  //   console.log("ProtectedRoute check:", {
-  //     isAuthenticated,
-  //     user,
-  //     allowedRoles,
-  //     match: user?.roles?.some((role) => allowedRoles.includes(role)),
-  //   });
-  //   if (!hasRole) {
-  //     return <Navigate to="/unauthorized" replace />;
-  //   }
-  // }
+  if (allowedRoles && allowedRoles.length > 0) {
+    const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
+    console.log("ProtectedRoute check:", {
+      isAuthenticated,
+      user,
+      allowedRoles,
+      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+    });
+    if (!hasRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
   return <>{children}</>;
 };
 
@@ -221,6 +222,7 @@ useEffect(() => {
           <Route path="/projects/" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
+          <Route path="/projects/:projectId/issuetracker" element={<IssueTracker />} />
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}
@@ -410,7 +412,7 @@ useEffect(() => {
           <Route
             path="/leave-management"
             element={
-              <ProtectedRoute allowedRoles={["General", "HR", "Manager"]}>
+              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
                 <EmployeePanel />
               </ProtectedRoute>
             }
@@ -448,6 +450,14 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+          {/* <Route
+            path={`/hr-manager`}
+            element={
+              <ProtectedRoute allowedRoles={["Hr-Manager"]}>
+                <HRAdminPanel/>
+              </ProtectedRoute>
+            }
+          /> */}
         </Route>
 
         <Route path="/unauthorized" element={<Unauthorized />} />
