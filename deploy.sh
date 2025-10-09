@@ -7,6 +7,7 @@ BUILD_DIR="./dist"
 DEST_DIR="/home/pavesadmin/timesheet-app"
 SERVER_USER="pavesadmin"
 SERVER_IP="192.168.2.120"
+BRANCH="main"
 
 echo "📥 Fetching latest code..."
 git fetch origin
