@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="frontend"
+APP_NAME="intranet-fe"
 BUILD_DIR="./dist"
 DEST_DIR="/var/www/$APP_NAME/html"
 TMP_DIR="/tmp/${APP_NAME}_deploy"
