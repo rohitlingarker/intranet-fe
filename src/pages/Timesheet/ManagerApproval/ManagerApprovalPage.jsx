@@ -4,6 +4,7 @@ import ManagerApprovalTable from "./ManagerApprovalTable";
 import Button from "../../../components/Button/Button"; // ✅ Using your existing Button component
 import { useNavigate } from "react-router-dom"; // For navigation
 import ManagerDashboard from "../ManagerDashboard";
+import TimesheetHeader from "../TimesheetHeader";
 
 const ManagerApprovalPage = () => {
   const [loading, setLoading] = useState(true);
@@ -103,27 +104,7 @@ const ManagerApprovalPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Timesheet Approvals
-        </h1>
-        <div className="flex gap-4">
-          <Button
-            variant="primary"
-            size="medium"
-            onClick={() => navigate("/timesheets")}
-          >
-            My Timesheets
-          </Button>
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={() => navigate("/managerapproval")}
-          >
-            My Approvals
-          </Button>
-        </div>
-      </div>
+      <TimesheetHeader/>
       <ManagerDashboard />
       <ManagerApprovalTable
         loading={loading}

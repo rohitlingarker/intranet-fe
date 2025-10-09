@@ -18,6 +18,7 @@ import Button from "../../components/Button/Button";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardSummary } from "./api";
+import TimesheetHeader from "./TimesheetHeader";
 
 // Mock timesheet data
 const timesheetData = [
@@ -232,6 +233,7 @@ const DashboardPage = () => {
           View Entries
         </Button>
       </div> */}
+      <TimesheetHeader/>
       <div className="px-6 pt-8 pb-2 bg-gray-50 font-sans text-base">
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-2">

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import DayTrackModal from "./DayTrackModal"; 
 import Button from "../../components/Button/Button";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const TimesheetHeader = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,7 +20,13 @@ const TimesheetHeader = () => {
     >
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Timesheet Dashboard
+          <Link to="/timesheets/dashboard">
+            {
+              window.location.pathname === "/timesheets/dashboard"
+                ? "Dashboard"
+                : "Timesheets"
+            }
+          </Link>
         </h1>
         <p className="text-gray-600">
           Track and manage timesheets, projects, and productivity
