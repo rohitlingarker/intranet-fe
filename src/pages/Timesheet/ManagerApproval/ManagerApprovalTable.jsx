@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 
-const ManagerApprovalTable = () => {
+const ManagerApprovalTable = ({statusFilter,setStatusFilter,ref}) => {
   const [timesheets, setTimesheets] = useState([]);
   const [projectMap, setProjectMap] = useState({});
   const [taskMap, setTaskMap] = useState({});
@@ -17,7 +17,7 @@ const ManagerApprovalTable = () => {
   const [showCommentBox, setShowCommentBox] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  // const [statusFilter, setStatusFilter] = useState("All");
   const [selectedUser, setSelectedUser] = useState("All");
   const [selectedTimesheets, setSelectedTimesheets] = useState([]);
   const [bulkMode, setBulkMode] = useState(""); // "", "approve", "reject"
@@ -293,7 +293,7 @@ const ManagerApprovalTable = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={ref}>
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center bg-white p-4 rounded-lg shadow">
         <input
