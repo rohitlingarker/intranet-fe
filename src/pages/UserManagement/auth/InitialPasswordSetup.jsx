@@ -195,20 +195,20 @@ export default function InitialPasswordSetup() {
 
         {/* Step 7: Password setup (only after OTP verified) */}
         {otpVerified && (
-          <div className="w-full space-y-4 mt-4">
+          <div className="w-full space-y-2 mt-2">
             <input
               type="password"
               placeholder="New Password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+              className="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
             />
             <input
               type="password"
               placeholder="Confirm New Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+              className="w-full px-3 py-1.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
             />
 
             {/* ✅ Password Rules */}

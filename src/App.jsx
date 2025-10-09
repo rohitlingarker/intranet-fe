@@ -21,6 +21,8 @@ import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 // Timesheets
+
+import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
 
@@ -134,8 +136,9 @@ const ProjectManager = () => {
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
+  
+  
+useEffect(() => {
     if (isAuthenticated) {
       const lastPath = localStorage.getItem("lastPath");
       if (lastPath && lastPath !== "/" && lastPath !== "/login") {
@@ -155,6 +158,7 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/change-password" element={<InitialPasswordSetup />} />
 
         {/* Protected Routes */}
         <Route
@@ -441,6 +445,7 @@ function App() {
     <>
       <ToastContainer position="top-right" autoClose={3000} />
       <Router>
+        <></>
         <AuthProvider>
           <NotificationProvider>
             <div className="min-h-screen bg-gray-50">
