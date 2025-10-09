@@ -115,7 +115,6 @@ const ManagerApprovalPage = () => {
       
       <TimesheetHeader/>
       <ManagerDashboard setStatusFilter={setStatusFilter} handleScroll={handleScroll}/>
-      <ManagerDashboard />
       <ManagerApprovalTable
         loading={loading}
         data={data}
