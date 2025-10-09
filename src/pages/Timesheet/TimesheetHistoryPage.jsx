@@ -3,6 +3,7 @@ import TimesheetHeader from "./TimesheetHeader";
 import {TimesheetFilters} from "./TimesheetFilters";
 import { TimesheetTable } from "./TimesheetTable";
 import { fetchTimesheetHistory, fetchProjectTaskInfo } from "./api";
+import DashboardPage from "./DashboardPage";
 
 const TimesheetHistoryPage = () => {
   const [entries, setEntries] = useState([]);
@@ -104,6 +105,7 @@ const TimesheetHistoryPage = () => {
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f9fb" }}>
       <main style={{ flex: 1, padding: 36 }}>
         <TimesheetHeader />
+        {/*<DashboardPage />*/}
         <TimesheetFilters
           searchText={searchText}
           setSearchText={setSearchText}

@@ -4,16 +4,16 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { FaBuilding, FaMicrosoft } from "react-icons/fa";
 import { showStatusToast } from "../components/toastfy/toast";
-
+ 
 let intranetLogo;
 try {
   intranetLogo = require("../../assets/intranet-logo.png");
 } catch (e) {
   intranetLogo = null;
 }
-
+ 
 const useQuery = () => new URLSearchParams(useLocation().search);
-
+ 
 export default function LoginPage() {
   const [email, setMail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,25 +22,25 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const query = useQuery();
-
+ 
   const calledOnce = useRef(false);
-
+ 
   useEffect(() => {
     if (calledOnce.current) return;
-
+ 
     const params = new URLSearchParams(location.search);
     const code = params.get("code");
     const error = params.get("error");
-
+ 
     if (error) {
       showStatusToast(`Login error: ${error}`, "error");
       navigate("/login", { replace: true });
       return;
     }
     if (!code) return;
-
+ 
     calledOnce.current = true;
-
+ 
     const doLogin = async () => {
       setLoading(true);
       try {
@@ -48,11 +48,12 @@ export default function LoginPage() {
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
         );
         const { access_token, redirect: redirectPath } = response.data;
-
+ 
+        navigate(redirectPath || "/dashboard", { replace: true });
         login(access_token);
         localStorage.setItem("user", JSON.stringify({ access_token }));
         window.history.replaceState({}, document.title, window.location.pathname);
-        navigate(redirectPath || "/home", { replace: true });
+       
       } catch (err) {
         const errDetail =
           err.response?.data?.error_description ||
@@ -60,45 +61,50 @@ export default function LoginPage() {
           err.message;
         console.error("OAuth login failed:", err);
         showStatusToast("OAuth login failed: " + errDetail, "error");
-
+ 
         window.history.replaceState({}, document.title, window.location.pathname);
         navigate("/", { replace: true });
       } finally {
         setLoading(false);
       }
     };
-
+ 
     doLogin();
   }, [location.search, login, navigate]);
-
+ 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       showStatusToast("Please enter both email and password.", "error");
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
       const res = await axios.post(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/login`, {
         email,
         password,
       });
       const token = res.data.access_token;
+ 
+      navigate(res?.data?.redirect || "/dashboard", { replace: true });
 
+      setTimeout(() => {
       login(token);
-      navigate(res.data.redirect || "/home");
+      }, 1000);
+     
+ 
     } catch (err) {
       showStatusToast("Login failed: " + (err.response?.data?.detail || err.message), "error");
     } finally {
       setLoading(false);
     }
   };
-
+ 
   const handleMicrosoftLogin = () => {
     window.location.href = `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/ms-login`;
   };
-
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#101a36]">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 flex flex-col items-center">
@@ -133,7 +139,7 @@ export default function LoginPage() {
               <div className="flex-grow border-t border-gray-300" />
             </div>
           </div>
-
+ 
           <input
             type="email"
             placeholder="Email address"

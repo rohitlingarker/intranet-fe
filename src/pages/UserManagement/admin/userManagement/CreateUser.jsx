@@ -179,15 +179,17 @@ export default function CreateUserForm({ onSuccess, onClose }) {
                 contact: phone,
               }))
             }
-            enableSearch
+            enableSearch={true}
             disableDropdown={false}
             placeholder="Enter phone number"
             containerClass="w-full"
-            inputClass="!w-full !pl-12 !pr-2 !py-1.5 !border !rounded-md !shadow-sm !text-sm"
-            buttonClass="!absolute !left-0 !h-full !rounded-l-md !px-2 !bg-white !border-r"
+            inputClass="!w-full !pl-11 !pr-2 !py-1.5 !border !rounded-md !shadow-sm !text-sm"
+            buttonClass="!border-0 !bg-transparent !px-2 !absolute !left-0"
             dropdownClass="!z-50"
             enableAreaCodes={true}
-            countryCodeEditable={true}
+            countryCodeEditable={false}
+            disableCountryCode={false}
+            masks={{us: '(...) ...-....', in: '..........'}}
           />
         </div>
 
