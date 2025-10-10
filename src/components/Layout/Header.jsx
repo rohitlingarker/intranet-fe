@@ -13,9 +13,9 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const role = user?.roles?.join(", ") || "User";
 
   const iconVariants = {
-    hidden: { rotate: -180, opacity: 0, scale: 0.5 },
+    hidden: { rotate: -15, opacity: 1, scale: 0.5 },
     visible: { rotate: 0, opacity: 1, scale: 1, transition: { duration: 0.25 } },
-    exit: { rotate: 180, opacity: 0, scale: 0.5, transition: { duration: 0.25 } },
+    exit: { rotate: 15, opacity: 1, scale: 0.5, transition: { duration: 0.25 } },
   };
  
   return (

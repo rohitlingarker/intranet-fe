@@ -3,7 +3,6 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { PencilIcon } from "lucide-react";
 import EditLeaveModal from "./EditLeaveModal";
-
 const token = localStorage.getItem('token');
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -62,7 +61,7 @@ const PendingLeaveRequestsTable = ({
       );
 
       toast.success("Leave cancelled successfully");
-      refreshData(); // Instead of filtering, just tell the parent to refresh.
+      refreshData(); 
 
     } catch (err) {
       toast.error(err?.response?.data?.message || "Cancel failed");
@@ -160,6 +159,7 @@ const PendingLeaveRequestsTable = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setCancelId(null)}
+                disabled={loading}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded"
               >
                 No
