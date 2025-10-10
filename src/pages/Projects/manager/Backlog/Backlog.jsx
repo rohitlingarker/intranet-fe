@@ -38,6 +38,7 @@ const Backlog = ({ projectId, projectName }) => {
       .catch((err) => console.error("Failed to fetch projects", err));
   };
 
+
   const fetchStories = () => {
     axios
       .get(
@@ -50,9 +51,7 @@ const Backlog = ({ projectId, projectName }) => {
 
   const fetchNoEpicStories = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, {
-        headers,
-      })
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, { params: { projectId }, headers })
       .then((res) => setNoEpicStories(res.data))
       .catch((err) => console.error("Failed to fetch no epic stories", err));
   };

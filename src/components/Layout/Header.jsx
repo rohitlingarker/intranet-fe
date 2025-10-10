@@ -3,21 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { Bell, LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
- 
+
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
- 
+
   const name = user?.name || user?.email || "User";
   const firstName = name.split(" ")[0];
   const role = user?.roles?.join(", ") || "User";
 
   const iconVariants = {
     hidden: { rotate: -15, opacity: 1, scale: 0.5 },
-    visible: { rotate: 0, opacity: 1, scale: 1, transition: { duration: 0.25 } },
-    exit: { rotate: 15, opacity: 1, scale: 0.5, transition: { duration: 0.25 } },
+    visible: {
+      rotate: 0,
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.25 },
+    },
+    exit: {
+      rotate: 15,
+      opacity: 1,
+      scale: 0.5,
+      transition: { duration: 0.25 },
+    },
   };
- 
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-40">
       <div className="flex items-center justify-between">
@@ -26,7 +36,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           {/* Sidebar toggle button */}
           <button
             onClick={onToggleSidebar}
-            className="hidden lg:flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors"
             title="Toggle Sidebar"
           >
             <AnimatePresence mode="wait" initial={true}>
@@ -53,7 +63,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               )}
             </AnimatePresence>
           </button>
- 
+
           <div>
             <h2 className="text-1.5xl font-bold text-gray-900">
               Welcome back, {firstName}
@@ -63,14 +73,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             </p>
           </div>
         </div>
- 
+
         {/* Right Section */}
         <div className="flex items-center space-x-4">
           <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
             <Bell className="h-5 w-5" />
             <span className="absolute top-1 right-1 h-2 w-2 bg-[#ff3d72] rounded-full"></span>
           </button>
- 
+
           <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
             <div
               className="flex items-center space-x-3 cursor-pointer"
@@ -84,7 +94,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                 <p className="text-xs text-gray-600">{role}</p>
               </div>
             </div>
- 
+
             <button
               onClick={() => {
                 logout();
@@ -101,5 +111,5 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     </header>
   );
 };
- 
+
 export default Header;

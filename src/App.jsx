@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -25,7 +24,8 @@ import Calendar from "./pages/Calendar";
 // Timesheets
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-import DashboardPage from "./pages/Timesheet/DashboardPage";      
+import DashboardPage from "./pages/Timesheet/DashboardPage";  
+import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
@@ -36,6 +36,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
+// import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -43,6 +44,7 @@ import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
 import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
+import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -68,37 +70,62 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
+
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
-import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
-// 🔒 Protected Route Wrapper
+import { showStatusToast } from "./components/toastfy/toast";
+
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user } = useAuth();
-  console.log(user);
+  const { isAuthenticated, user,logout } = useAuth();
+  const location = useLocation();
+  const isfirsttlogin = localStorage.getItem("isfirsttlogin");
+
+  console.log("isfirsttlogin:", isfirsttlogin);
+
+ 
+
+  // ✅ Redirect if first login
+  if (isfirsttlogin === "true") {
+    logout();
+    localStorage.setItem("isfirsttlogin", true);
+    showStatusToast("Please change your password first.");
+    return <Navigate to="/" replace />;
+
+  }
+
+  // ✅ If not authenticated, go to login
   if (!isAuthenticated) {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
+  // ✅ Role-based restriction check
   if (allowedRoles && allowedRoles.length > 0) {
     const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
     console.log("ProtectedRoute check:", {
       isAuthenticated,
       user,
       allowedRoles,
-      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+      match: hasRole,
     });
+
     if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }
   }
+
+  // ✅ Default: render protected content
   return <>{children}</>;
 };
+
+
+
 
 // ✅ Save last path on every navigation
 const SaveLastPath = () => {
@@ -134,20 +161,44 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated,logout} = useAuth();
   const navigate = useNavigate();
   
   
 useEffect(() => {
-    if (isAuthenticated) {
-      const lastPath = localStorage.getItem("lastPath");
-      if (lastPath && lastPath !== "/" && lastPath !== "/login") {
-        navigate(lastPath, { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+
+  if (isAuthenticated) {
+
+    const lastPath = localStorage.getItem("lastPath");
+ 
+    // Special case first
+
+    if (lastPath === "/change-password") {
+
+      navigate("/change-password", { replace: true });
+    } 
+
+    // Other valid last paths
+
+    else if (lastPath && lastPath !== "/" && lastPath !== "/login") {
+
+      navigate(lastPath, { replace: true });
+
+    } 
+
+    // Default fallback
+
+    else {
+
+      navigate("/", { replace: true });
+
     }
-  }, [isAuthenticated, navigate]);
+
+  }
+
+}, [isAuthenticated, navigate]);
+
+ 
 
 
   return (
@@ -159,10 +210,7 @@ useEffect(() => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/change-password" element={<InitialPasswordSetup />} />
-        
-
-      
+        <Route path="/change-password" element={<InitialPasswordSetup />}/>
         {/* Protected Routes */}
         <Route
           element={
@@ -176,15 +224,14 @@ useEffect(() => {
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
+          <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
-          <Route path="/timesheet/managerdashboard" element={<ManagerDashboard />} />
+
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
 
-
-        
           {/* Projects */}
           {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
@@ -219,7 +266,7 @@ useEffect(() => {
             element={<UserProjectTabs />}
           />
           
-
+           <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />

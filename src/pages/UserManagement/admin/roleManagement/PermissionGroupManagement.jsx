@@ -90,25 +90,34 @@ const PermissionGroupManagement = ({ roles }) => {
   };
 
   const submitDeleteGroupsForRole = async () => {
-    if (!selectedGroupUUIDs.length) return showStatusToast("Select group(s) to delete", "error");
+    if (!selectedGroupUUIDs.length) return showStatusToast("Select a group to delete", "error");
     try {
       for (const uuid of selectedGroupUUIDs) {
         await removePermissionGroupFromRole(selectedGroupRole.role_uuid, uuid);
       }
-      showStatusToast("Groups removed successfully", "success");
+      showStatusToast("Group removed successfully", "success");
       setSelectedGroupNames([]);
       setSelectedGroupUUIDs([]);
       setShowGroupSection(false);
     } catch {
-      showStatusToast("Failed to remove groups", "error");
+      showStatusToast("Failed to remove group", "error");
     }
   };
 
+  // ✅ UPDATED LOGIC HERE
   const handleSelectGroup = (group) => {
     const uuidStr = group.group_uuid.toString();
-    if (!selectedGroupUUIDs.includes(uuidStr)) {
-      setSelectedGroupUUIDs((prev) => [...prev, uuidStr]);
-      setSelectedGroupNames((prev) => [...prev, group.group_name]);
+
+    if (groupAction === "delete") {
+      // Allow only one selection at a time for delete
+      setSelectedGroupUUIDs([uuidStr]);
+      setSelectedGroupNames([group.group_name]);
+    } else {
+      // Multiple selections allowed for add
+      if (!selectedGroupUUIDs.includes(uuidStr)) {
+        setSelectedGroupUUIDs((prev) => [...prev, uuidStr]);
+        setSelectedGroupNames((prev) => [...prev, group.group_name]);
+      }
     }
   };
 
@@ -143,9 +152,24 @@ const PermissionGroupManagement = ({ roles }) => {
         {selectedGroupRole && (
           <div className="flex flex-col gap-1 mb-2">
             <div className="flex justify-around items-center mb-4">
-              <Button onClick={handleAddGroupForRole} className="px-3 py-2 bg-blue-900 text-white rounded hover:bg-blue-950 transition-colors font-medium">Add</Button>
-              <Button onClick={handleDeleteGroupForRole} className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium">Delete</Button>
-              <Button onClick={handleViewGroupForRole} className="px-3 py-2 bg-pink-900 text-white rounded hover:bg-pink-950 transition-colors font-medium">View</Button>
+              <Button
+                onClick={handleAddGroupForRole}
+                className="px-3 py-2 bg-blue-900 text-white rounded hover:bg-blue-950 transition-colors font-medium"
+              >
+                Add
+              </Button>
+              <Button
+                onClick={handleDeleteGroupForRole}
+                className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </Button>
+              <Button
+                onClick={handleViewGroupForRole}
+                className="px-3 py-2 bg-pink-900 text-white rounded hover:bg-pink-950 transition-colors font-medium"
+              >
+                View
+              </Button>
             </div>
 
             {/* ADD / DELETE SECTION */}
@@ -218,9 +242,17 @@ const PermissionGroupManagement = ({ roles }) => {
                   ) : (
                     <div className="flex flex-wrap gap-2 border border-gray-300 rounded p-2 min-h-[44px]">
                       {selectedGroupNames.map((name, index) => (
-                        <div key={index} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+                        <div
+                          key={index}
+                          className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm"
+                        >
                           <span>{name}</span>
-                          <button onClick={() => handleRemoveGroup(name)} className="ml-2 text-blue-600 hover:text-red-600 font-bold focus:outline-none">×</button>
+                          <button
+                            onClick={() => handleRemoveGroup(name)}
+                            className="ml-2 text-blue-600 hover:text-red-600 font-bold focus:outline-none"
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -232,11 +264,13 @@ const PermissionGroupManagement = ({ roles }) => {
                   disabled={!selectedGroupUUIDs.length}
                   className={`px-6 py-2 text-white rounded transition-colors font-medium ${
                     selectedGroupUUIDs.length
-                      ? groupAction === "add" ? "bg-blue-900 hover:bg-blue-950" : "bg-red-600 hover:bg-red-700"
+                      ? groupAction === "add"
+                        ? "bg-blue-900 hover:bg-blue-950"
+                        : "bg-red-600 hover:bg-red-700"
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {groupAction === "add" ? "Add Groups" : "Remove Groups"}
+                  {groupAction === "add" ? "Add Groups" : "Remove Group"}
                 </Button>
               </div>
             )}
@@ -260,7 +294,10 @@ const PermissionGroupManagement = ({ roles }) => {
                 ) : (
                   <ul className="space-y-1">
                     {permissionGroupsForRole.map((group, idx) => (
-                      <li key={idx} className="p-2 border rounded bg-gray-50 font-medium text-gray-800">
+                      <li
+                        key={idx}
+                        className="p-2 border rounded bg-gray-50 font-medium text-gray-800"
+                      >
                         {group.group_name || group.name}
                       </li>
                     ))}
