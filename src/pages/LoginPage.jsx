@@ -24,6 +24,13 @@ export default function LoginPage() {
   const query = useQuery();
  
   const calledOnce = useRef(false);
+
+  useEffect(() => { 
+    if (localStorage.getItem("isfirsttlogin")){
+       showStatusToast("Please change your password first.");
+       localStorage.removeItem("isfirsttlogin")
+    }
+  }, []);
  
   useEffect(() => {
     if (calledOnce.current) return;
@@ -50,7 +57,11 @@ export default function LoginPage() {
         const { access_token, redirect: redirectPath } = response.data;
  
         navigate(redirectPath || "/dashboard", { replace: true });
-        login(access_token);
+        if (redirectPath === "/change-password"){
+          login(access_token,true);
+        } else{
+          login(access_token,false);
+        }
         localStorage.setItem("user", JSON.stringify({ access_token }));
         window.history.replaceState({}, document.title, window.location.pathname);
        
@@ -89,9 +100,12 @@ export default function LoginPage() {
  
       navigate(res?.data?.redirect || "/dashboard", { replace: true });
 
-      setTimeout(() => {
-      login(token);
-      }, 1000);
+      const redirectPath = res?.data?.redirect || "/dashboard";
+      if (redirectPath === "/change-password"){
+          login(token,true);
+        } else{
+          login(token,false);
+        }
      
  
     } catch (err) {

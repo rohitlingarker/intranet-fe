@@ -5,7 +5,6 @@ import FormInput from "../../../../components/forms/FormInput";
 import Button from "../../../../components/Button/Button";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 export default function CreateUserForm({ onSuccess, onClose }) {
   const token = localStorage.getItem("token");
@@ -20,33 +19,8 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   });
 
   const [generatedPassword, setGeneratedPassword] = useState("");
-
-  const generatePasswordFromUser = (firstName, mobile) => {
-    if (!firstName.trim()) return showSingleToast("First Name is required.");
-    if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
-    const namePart = (firstName || "").slice(0, 4);
-    const digits = String(mobile || "").replace(/\D/g, "");
-    const mobilePart = digits.slice(-4);
-    let base = `${namePart}@${mobilePart}`;
-    // Enforce backend rules: ≥8 chars, upper, lower, digit, special
-    if (!/[A-Z]/.test(base)) base = base.replace(/^[a-z]/, (c) => c.toUpperCase()) || `T${base}`;
-    if (!/[a-z]/.test(base)) base += "a";
-    if (!/\d/.test(base)) base += "1";
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(base)) base += "!";
-    while (base.length < 8) base += "0";
-    return base;
-  };
-
   const [loading, setLoading] = useState(false);
   const [toastActive, setToastActive] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
 
   const showSingleToast = (message, type = "error") => {
     if (!toastActive) {
@@ -56,32 +30,51 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     }
   };
 
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const generatePasswordFromUser = (firstName, mobile) => {
+    if (!firstName.trim()) return showSingleToast("First Name is required.");
+    if (!/^[A-Za-z ]*$/.test(form.first_name))
+      return showSingleToast("First Name must contain only letters and spaces.");
+
+    const namePart = (firstName || "").slice(0, 4);
+    const digits = String(mobile || "").replace(/\D/g, "");
+    const mobilePart = digits.slice(-4);
+
+    let base = `${namePart}@${mobilePart}`;
+    if (!/[A-Z]/.test(base))
+      base = base.replace(/^[a-z]/, (c) => c.toUpperCase()) || `T${base}`;
+    if (!/[a-z]/.test(base)) base += "a";
+    if (!/\d/.test(base)) base += "1";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(base)) base += "!";
+    while (base.length < 8) base += "0";
+    return base;
+  };
+
   const validateForm = () => {
     if (!form.first_name.trim()) return showSingleToast("First Name is required.");
-    if (!/^[A-Za-z ]*$/.test(form.first_name)) return showSingleToast("First Name must contain only letters and spaces.");
+    if (!/^[A-Za-z ]*$/.test(form.first_name))
+      return showSingleToast("First Name must contain only letters and spaces.");
     if (!form.last_name.trim()) return showSingleToast("Last Name is required.");
-    if (!/^[A-Za-z ]*$/.test(form.last_name)) return showSingleToast("Last Name must contain only letters and spaces.");
+    if (!/^[A-Za-z ]*$/.test(form.last_name))
+      return showSingleToast("Last Name must contain only letters and spaces.");
     if (!form.mail.trim()) return showSingleToast("Email is required.");
-    if (!/^[a-zA-Z0-9@._-]+$/.test(form.mail)) return showSingleToast("Email contains invalid characters.");
+    if (!/^[a-zA-Z0-9@._-]+$/.test(form.mail))
+      return showSingleToast("Email contains invalid characters.");
     if (!form.contact.trim()) return showSingleToast("Contact number is required.");
 
-    const phoneNumber = parsePhoneNumberFromString("+" + form.contact.replace(/\D/g, ""));
-    if (!phoneNumber || !phoneNumber.isValid()) {
-      return showSingleToast("Invalid phone number for the selected country.");
-    }
-
-    const countryCode = phoneNumber.countryCallingCode;
-    const nationalLen = phoneNumber.nationalNumber.length;
-
-    if (countryCode === "91" && nationalLen !== 10) {
-      return showSingleToast("Indian contact number must be exactly 10 digits.");
-    }
-    if (countryCode === "1" && nationalLen !== 10) {
-      return showSingleToast("US contact number must be exactly 10 digits.");
-    }
+    const digitsOnly = form.contact.replace(/\D/g, "");
+    if (digitsOnly.length < 8) return showSingleToast("Phone number seems too short.");
 
     if (!form.password.trim()) return showSingleToast("Password is required.");
-    if (form.password.length < 6) return showSingleToast("Password must be at least 6 characters long.");
+    if (form.password.length < 6)
+      return showSingleToast("Password must be at least 6 characters long.");
 
     return true;
   };
@@ -89,17 +82,17 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading || !validateForm()) return;
-
     setLoading(true);
 
     const password = generatePasswordFromUser(form.first_name, form.contact);
     if (form.password !== password) {
-      showSingleToast("Password does not match the criteria and please click generate password again", "error");
+      showSingleToast(
+        "Password does not match the criteria and please click generate password again",
+        "error"
+      );
       setLoading(false);
       return;
     }
-    console.log(form.contact);
-    form.password = password;
 
     try {
       await axios.post(
@@ -110,7 +103,10 @@ export default function CreateUserForm({ onSuccess, onClose }) {
       onSuccess();
     } catch (err) {
       console.error("User creation failed:", err);
-      showSingleToast(err?.response?.data?.detail || "Failed to create user.", "error");
+      showSingleToast(
+        err?.response?.data?.detail || "Failed to create user.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -171,61 +167,85 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             Contact
           </label>
           <PhoneInput
-            country={"us"}
+            country={"us"} // default country
             value={form.contact}
-            onChange={(phone, countryData) =>
-              setForm((prev) => ({
-                ...prev,
-                contact: phone,
-              }))
+            onChange={(phone) =>
+              setForm((prev) => ({ ...prev, contact: phone }))
             }
-            enableSearch={true}
-            disableDropdown={false}
-            placeholder="Enter phone number"
-            containerClass="w-full"
-            inputClass="!w-full !pl-11 !pr-2 !py-1.5 !border !rounded-md !shadow-sm !text-sm"
-            buttonClass="!border-0 !bg-transparent !px-2 !absolute !left-0"
-            dropdownClass="!z-50"
-            enableAreaCodes={true}
             countryCodeEditable={false}
-            disableCountryCode={false}
-            masks={{us: '(...) ...-....', in: '..........'}}
+            placeholder="Enter phone number"
+            enableSearch={true} // searchable dropdown
+            inputStyle={{
+              width: "100%",
+              padding: "6px 10px 6px 40px",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "0.875rem",
+              boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+              backgroundColor: "white",
+            }}
+            buttonStyle={{
+              // border: "1px solid",
+              // borderRadius: "6px",
+              // marginRight: "0px",
+              backgroundColor: "white",
+              display: "flex",
+              alignItems: "center", // ✅ ensures flag & code are side by side
+            }}
+            dropdownStyle={{
+              maxHeight: "250px",
+              overflowY: "auto",
+            }}
+            containerStyle={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-between",
+            }}
           />
         </div>
 
         {/* Password */}
         <FormInput
-            type="text"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            onFocus={() => {
-              if (!form.password) {
-                const localGenerated = generatePasswordFromUser(form.first_name, form.contact);
-                if (localGenerated) {
-                  setForm((prev) => ({ ...prev, password: localGenerated }));
-                  setGeneratedPassword(localGenerated);
-                }
+          type="text"
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          onFocus={() => {
+            if (!form.password) {
+              const localGenerated = generatePasswordFromUser(
+                form.first_name,
+                form.contact
+              );
+              if (localGenerated) {
+                setForm((prev) => ({ ...prev, password: localGenerated }));
+                setGeneratedPassword(localGenerated);
               }
-            }}
-            placeholder="Generate or enter a password"
-            minLength={8}
-            labelClassName="text-xs"
-            inputClassName="text-sm"
+            }
+          }}
+          placeholder="Generate or enter a password"
+          minLength={8}
+          labelClassName="text-xs"
+          inputClassName="text-sm"
         />
 
         <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            onClick={() => {
-              const suggestion = generatePasswordFromUser(form.first_name, form.contact);
-              setForm((prev) => ({ ...prev, password: suggestion }));
-              setGeneratedPassword(suggestion);
-              showStatusToast("Password generated from current First Name & Contact.", "info");
-            }}
-          >
-            Generate Password
+          type="button"
+          variant="secondary"
+          size="small"
+          onClick={() => {
+            const suggestion = generatePasswordFromUser(
+              form.first_name,
+              form.contact
+            );
+            setForm((prev) => ({ ...prev, password: suggestion }));
+            setGeneratedPassword(suggestion);
+            showStatusToast(
+              "Password generated from current First Name & Contact.",
+              "info"
+            );
+          }}
+        >
+          Generate Password
         </Button>
 
         {/* Active checkbox */}
