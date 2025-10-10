@@ -79,28 +79,52 @@ import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
-// 🔒 Protected Route Wrapper
+import { showStatusToast } from "./components/toastfy/toast";
+
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user } = useAuth();
-  console.log(user);
+  const { isAuthenticated, user,logout } = useAuth();
+  const location = useLocation();
+  const isfirsttlogin = localStorage.getItem("isfirsttlogin");
+
+  console.log("isfirsttlogin:", isfirsttlogin);
+
+ 
+
+  // ✅ Redirect if first login
+  if (isfirsttlogin === "true") {
+    logout();
+    showStatusToast("Please change your password first.");
+    return <Navigate to="/" replace />;
+
+  }
+
+  // ✅ If not authenticated, go to login
   if (!isAuthenticated) {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
+  // ✅ Role-based restriction check
   if (allowedRoles && allowedRoles.length > 0) {
     const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
     console.log("ProtectedRoute check:", {
       isAuthenticated,
       user,
       allowedRoles,
-      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+      match: hasRole,
     });
+
     if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }
   }
+
+  // ✅ Default: render protected content
   return <>{children}</>;
 };
+
+
+
 
 // ✅ Save last path on every navigation
 const SaveLastPath = () => {
@@ -136,7 +160,7 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated,logout } = useAuth();
+  const { isAuthenticated,logout} = useAuth();
   const navigate = useNavigate();
   
   
@@ -185,10 +209,7 @@ useEffect(() => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/change-password" element={<InitialPasswordSetup />} />
-        
-
-
+        <Route path="/change-password" element={<InitialPasswordSetup />}/>
         {/* Protected Routes */}
         <Route
           element={
