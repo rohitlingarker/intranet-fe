@@ -120,13 +120,15 @@ export default function PermissionManagement() {
       const payload = {
         permission_code: newPermission,
         description,
+        ...(mode === "withGroup" && { group_uuid: selectedGroup }),
       };
-
-      if (mode === "withGroup") {
-        payload.group_uuid = selectedGroup;
-      }
-
-      await axiosInstance.post("/admin/permissions/", payload);
+ 
+      const endpoint = mode === "withGroup"
+        ? "/admin/permissions/group"  
+        : "/admin/permissions/";      
+ 
+      await axiosInstance.post(endpoint, payload);
+ 
       showSingleToast("Permission created successfully!", "success");
 
       resetForm();
