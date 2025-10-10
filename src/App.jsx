@@ -94,6 +94,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   // ✅ Redirect if first login
   if (isfirsttlogin === "true") {
     logout();
+    localStorage.setItem("isfirsttlogin", true);
     showStatusToast("Please change your password first.");
     return <Navigate to="/" replace />;
 

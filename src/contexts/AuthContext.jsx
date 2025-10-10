@@ -48,10 +48,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    // if (localStorage.getItem("isfirsttlogin")){
-    //   localStorage.removeItem("isfirsttlogin");
-    //   setIsfirsttlogin(false);
-    // }
+    if (localStorage.getItem("isfirsttlogin")){
+      localStorage.removeItem("isfirsttlogin");
+      setIsfirsttlogin(false);
+    }
     setUser(null);
     setIsAuthenticated(false);
   };
