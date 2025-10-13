@@ -521,9 +521,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
           <div className="text-center space-y-1">
-            {/* <span className="inline-flex items-center px-2 py-1 rounded-md text-lg font-semibold bg-indigo-100 text-indigo-700">
-              {weekdays} day{weekdays !== 1 ? "s" : ""}
-            </span> */}
             <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-md border border-indigo-200 shadow-sm">
               {weekdays} {weekdays === 1 ? "day" : "days"}
             </span>
