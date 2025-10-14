@@ -87,7 +87,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
     const password = generatePasswordFromUser(form.first_name, form.contact);
     if (form.password !== password) {
       showSingleToast(
-        "Password does not match the criteria and please click generate password again",
+        "Password does not match the criteria. Please click 'Generate' again.",
         "error"
       );
       setLoading(false);
@@ -113,10 +113,11 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto text-[70%]">
+    <div className="flex flex-col max-h-[80vh] bg-white rounded-md">
+      {/* Scrollable form area */}
       <form
         onSubmit={handleSubmit}
-        className="space-y-3 p-3 max-h-[70vh] overflow-y-auto"
+        className="flex-grow overflow-y-auto p-4 space-y-3"
       >
         {/* First + Last Name */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -167,89 +168,85 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             Contact
           </label>
           <PhoneInput
-            country={"us"} // default country
+            country={"us"}
             value={form.contact}
             onChange={(phone) =>
               setForm((prev) => ({ ...prev, contact: phone }))
             }
             countryCodeEditable={false}
             placeholder="Enter phone number"
-            enableSearch={true} // searchable dropdown
+            enableSearch={true}
             inputStyle={{
               width: "100%",
               padding: "6px 10px 6px 40px",
               border: "1px solid #d1d5db",
               borderRadius: "6px",
               fontSize: "0.875rem",
-              boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
               backgroundColor: "white",
             }}
             buttonStyle={{
-              // border: "1px solid",
-              // borderRadius: "6px",
-              // marginRight: "0px",
               backgroundColor: "white",
               display: "flex",
-              alignItems: "center", // ✅ ensures flag & code are side by side
+              alignItems: "center",
             }}
             dropdownStyle={{
               maxHeight: "250px",
               overflowY: "auto",
             }}
-            containerStyle={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-between",
-            }}
           />
         </div>
 
-        {/* Password */}
-        <FormInput
-          type="text"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          onFocus={() => {
-            if (!form.password) {
-              const localGenerated = generatePasswordFromUser(
+        {/* Password + Generate */}
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <FormInput
+              type="text"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              onFocus={() => {
+                if (!form.password) {
+                  const localGenerated = generatePasswordFromUser(
+                    form.first_name,
+                    form.contact
+                  );
+                  if (localGenerated) {
+                    setForm((prev) => ({ ...prev, password: localGenerated }));
+                    setGeneratedPassword(localGenerated);
+                  }
+                }
+              }}
+              placeholder="Generate or enter a password"
+              minLength={8}
+              labelClassName="text-xs"
+              inputClassName="text-sm"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              const suggestion = generatePasswordFromUser(
                 form.first_name,
                 form.contact
               );
-              if (localGenerated) {
-                setForm((prev) => ({ ...prev, password: localGenerated }));
-                setGeneratedPassword(localGenerated);
-              }
-            }
-          }}
-          placeholder="Generate or enter a password"
-          minLength={8}
-          labelClassName="text-xs"
-          inputClassName="text-sm"
-        />
-
-        <Button
-          type="button"
-          variant="secondary"
-          size="small"
-          onClick={() => {
-            const suggestion = generatePasswordFromUser(
-              form.first_name,
-              form.contact
-            );
-            setForm((prev) => ({ ...prev, password: suggestion }));
-            setGeneratedPassword(suggestion);
-            showStatusToast(
-              "Password generated from current First Name & Contact.",
-              "info"
-            );
-          }}
-        >
-          Generate Password
-        </Button>
+              setForm((prev) => ({ ...prev, password: suggestion }));
+              setGeneratedPassword(suggestion);
+              showStatusToast(
+                "Password generated from current First Name & Contact.",
+                "info"
+              );
+            }}
+            className="whitespace-nowrap h-[34px]"
+          >
+            Generate
+          </Button>
+        </div>
 
         {/* Active checkbox */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-1">
           <input
             type="checkbox"
             id="is_active_modal"
@@ -262,30 +259,32 @@ export default function CreateUserForm({ onSuccess, onClose }) {
             Active
           </label>
         </div>
-
-        {/* Buttons */}
-        <div className="flex gap-3 pt-3 border-t sticky bottom-0 bg-white">
-          <Button
-            type="submit"
-            variant="primary"
-            size="small"
-            disabled={loading}
-            className="flex-1 sm:flex-none"
-          >
-            {loading ? "Creating..." : "Create User"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 sm:flex-none"
-          >
-            Cancel
-          </Button>
-        </div>
       </form>
+
+      {/* Fixed Footer (does not scroll) */}
+      <div className="flex justify-end gap-3 p-3 border-t bg-gray-50 sticky bottom-0">
+        <Button
+          type="submit"
+          variant="primary"
+          size="small"
+          disabled={loading}
+          className="px-4"
+          onClick={handleSubmit}
+        >
+          {loading ? "Creating..." : "Create User"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="small"
+          onClick={onClose}
+          disabled={loading}
+          className="px-4"
+        >
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }
