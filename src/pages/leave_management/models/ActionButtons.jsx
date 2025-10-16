@@ -1,23 +1,24 @@
 import React from "react";
 import Button from "../../../components/Button/Button";
 import { Fonts } from "../../../components/Fonts/Fonts";
+import { te } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 const ActionButtons = ({ onRequestLeave, onRequestCompOff }) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
+    <div className="flex  text-xs flex-col sm:flex-row gap-2">
       <Button
         onClick={onRequestLeave}
         variant="primary"
         size="small"
+        // className="w-full sm:w-auto text-xs"
       >
         Request Leave
       </Button>
 
-      <Button
-        onClick={onRequestCompOff}
-        variant="secondary"
-        size="small"
-      >
+      <Button onClick={onRequestCompOff} variant="secondary" size="small">
         Request Credit for Compensatory Off
       </Button>
 

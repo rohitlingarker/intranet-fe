@@ -65,7 +65,7 @@ const LeaveHistory = () => {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setLeaveTypes(res.data); 
+        setLeaveTypes(res.data);
       } catch (err) {
         toast.error("Failed to load leave type details.");
       }
@@ -227,82 +227,97 @@ const LeaveHistory = () => {
   return (
     <div className="w-6xl mx-auto h-auto px-6 py-8 bg-white rounded-lg shadow-md">
       {/* 🔹 Filters should always be visible */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        <input
-          type="text"
-          className="border px-3 py-2 rounded-md w-full sm:w-1/3"
-          placeholder="Search by employee, type, reason…"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        {/* Search Input - Slightly Wider */}
+        <div className="flex-1 min-w-[220px]">
+          <input
+            type="text"
+            className="border border-gray-300 px-3 py-2.5 rounded-lg text-sm w-full h-10 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder-gray-400"
+            placeholder="Search by employee, type, or reason…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-        <select
-          className="border px-3 py-2 rounded-md"
-          value={filterLeaveType}
-          onChange={(e) => setFilterLeaveType(e.target.value)}
-        >
-          <option value="All">All Leave Types</option>
-          {leaveTypeOptions.map((type) => (
-            <option
-              key={type.leaveTypeId || type.id || type.leaveName}
-              value={type.leaveName}
-            >
-              {getLeaveLabel(type.leaveName)}
-            </option>
-          ))}
-        </select>
+        {/* Leave Type Dropdown */}
+        <div className="w-[160px]">
+          <select
+            className="border border-gray-300 px-3 py-2.5 rounded-lg text-sm w-full h-10 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+            value={filterLeaveType}
+            onChange={(e) => setFilterLeaveType(e.target.value)}
+          >
+            <option value="All">All Leave Types</option>
+            {leaveTypeOptions.map((type) => (
+              <option
+                key={type.leaveTypeId || type.id || type.leaveName}
+                value={type.leaveName}
+              >
+                {getLeaveLabel(type.leaveName)}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          className="border px-3 py-2 rounded-md"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="All">All Statuses</option>
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
+        {/* Status Dropdown */}
+        <div className="w-[140px]">
+          <select
+            className="border border-gray-300 px-3 py-2.5 rounded-lg text-sm w-full h-10 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="All">All Statuses</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg"
-        >
-          <option value="">All Years</option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+        {/* Year Dropdown */}
+        <div className="w-[120px]">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="border border-gray-300 px-3 py-2.5 rounded-lg text-sm w-full h-10 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+          >
+            <option value="">All Years</option>
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg"
-        >
-          <option value="">All Months</option>
-          {[
-            { value: 1, label: "January" },
-            { value: 2, label: "February" },
-            { value: 3, label: "March" },
-            { value: 4, label: "April" },
-            { value: 5, label: "May" },
-            { value: 6, label: "June" },
-            { value: 7, label: "July" },
-            { value: 8, label: "August" },
-            { value: 9, label: "September" },
-            { value: 10, label: "October" },
-            { value: 11, label: "November" },
-            { value: 12, label: "December" },
-          ].map((month) => (
-            <option key={month.value} value={month.value}>
-              {month.label}
-            </option>
-          ))}
-        </select>
+        {/* Month Dropdown */}
+        <div className="w-[150px]">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="border border-gray-300 px-3 py-2.5 rounded-lg text-sm w-full h-10 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+          >
+            <option value="">All Months</option>
+            {[
+              "January",
+              "February",
+              "March",
+              "April",
+              "May",
+              "June",
+              "July",
+              "August",
+              "September",
+              "October",
+              "November",
+              "December",
+            ].map((month, index) => (
+              <option key={index + 1} value={index + 1}>
+                {month}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* 🔹 Table or No Data */}
@@ -338,11 +353,21 @@ const LeaveHistory = () => {
                     {leave.employee?.fullName || "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs">
-                    {leave.startDate ? new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "-"}
+                    {leave.startDate
+                      ? new Date(leave.startDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.endDate
-                      ? new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      ? new Date(leave.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
                       : "-"}
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs text-center">

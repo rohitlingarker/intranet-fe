@@ -1,89 +1,141 @@
-import React, { forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import axios from "axios";
-import CompOffRequestsTable from "./CompOffRequestsTable";
-import { useNotification } from "../../../contexts/NotificationContext";
 import { toast } from "react-toastify";
+import CompOffRequestsTable from "./CompOffRequestsTable";
+import CompOffRequestModal from "./CompOffRequestModal";
+import LoadingSpinner from "../../../components/LoadingSpinner"; // your spinner component
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const CompOffPage = forwardRef(({ employeeId }, ref) => {
-  const [requests, setRequests] = useState([]);
-  const token = localStorage.getItem('token');
-  const { showNotification } = useNotification();
+const CompOffPage = forwardRef(
+  ({ employeeId, onPendingRequestsChange, refreshKey }, ref) => {
+    const [requests, setRequests] = useState([]);
+    const [pendingRequests, setPendingRequests] = useState([]);
+    const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-  const fetchRequests = async () => {
-    try {
-      const res = await axios.get(
-        `${BASE_URL}/api/compoff/employee/${employeeId}`,
-        { withCredentials: true,
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+    const token = localStorage.getItem("token");
+
+    useImperativeHandle(ref, () => ({
+      handleCompOffSubmit,
+      refreshRequests: fetchRequests, // ✅ optional: parent can manually trigger
+    }));
+
+    const fetchRequests = async () => {
+      try {
+        setIsLoading(true);
+        const res = await axios.get(
+          `${BASE_URL}/api/compoff/employee/${employeeId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (res.data.success) {
+          const allRequests = res.data.data || [];
+          const pending = allRequests.filter((r) => r.status === "PENDING");
+
+          setRequests(allRequests);
+          setPendingRequests([...pending]); // ✅ ensure new array
+          if (onPendingRequestsChange) onPendingRequestsChange([...pending]); // ✅ notify parent
         }
-      );
-      if (res.data.success) {
-        setRequests(res.data.data);
+      } catch (err) {
+        toast.error("Failed to fetch comp-off requests");
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      toast.error("Failed to fetch comp-off requests");
-    }
-  };
+    };
 
-  const handleCompOffSubmit = async (modalData) => {
-    // The parent component will now control the loading state
-    const { dates, note, numberOfDays } = modalData;
-    try {
-      await axios.post(
-        `${BASE_URL}/api/compoff/request`,
-        {
-          employeeId,
-          startDate: dates.start,
-          endDate: dates.end,
-          isHalf: dates.isHalf,
-          note,
-          duration: numberOfDays,
-        },
-        { withCredentials: true, headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success("Request submitted!");
-      fetchRequests(); // Re-fetch the data to update the table
-      return true; // Indicate success
-    } catch (e) {
-      toast.error(e.response?.data?.message || "Failed to submit request");
-      return false; // Indicate failure
-    }
-  };
+    useEffect(() => {
+      if (employeeId) fetchRequests();
+    }, [employeeId, refreshKey]); // ✅ refetch when refreshKey changes
 
-  useImperativeHandle(ref, () => ({
-    handleCompOffSubmit,
-  }));
+    // Handle new comp-off request
+    const handleCompOffSubmit = async (payload) => {
+      try {
+        setIsLoading(true);
+        payload = { ...payload, employeeId }; // add employeeId
+        const res = await axios.post(
+          `${BASE_URL}/api/compoff/request`,
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-  useEffect(() => {
-    if (employeeId) fetchRequests();
-  }, [employeeId]);
+        if (res.data.success) {
+          toast.success("Comp-Off request submitted successfully!");
+          await fetchRequests(); // refresh list
+          return true;
+        } else {
+          toast.error(res.data.message || "Failed to submit comp-off request.");
+          return false;
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Something went wrong while submitting.");
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const cancelRequest = async (requestId) => {
-    try {
-      await axios.put(
-        `${BASE_URL}/api/compoff/employee/cancel/${requestId}`,
-        {},
-        { withCredentials: true, headers: { 
-          "Cache-Control": "no-store",
-          Authorization: `Bearer ${token}`
-         } }
-      );
-      fetchRequests();
-    } catch {
-      toast.error("Failed to cancel request");
-    }
-  };
+    return (
+      <div>
+        {isLoading && <LoadingSpinner />}
 
-  return (
-    <div>
-      <CompOffRequestsTable requests={requests} onCancel={cancelRequest} />
-      {/* Pass `loading` to modal when you render it */}
-    </div>
-  );
-});
+        {/* Only show table if there are pending requests */}
+        {pendingRequests.length > 0 && !isLoading && (
+          <>
+            <h2 className="m-4 text-sl font-semibold mb-4">
+              Pending Comp-Off Requests
+            </h2>
+            <CompOffRequestsTable
+              key={pendingRequests.map((r) => r.idleaveCompoff).join(",")}
+              requests={pendingRequests}
+              onCancel={async (id) => {
+                try {
+                  await axios.put(
+                    `${BASE_URL}/api/compoff/employee/cancel/${id}`,
+                    {},
+                    {
+                      headers: { Authorization: `Bearer ${token}` },
+                    }
+                  );
+                  toast.success("Comp-Off request cancelled!");
+                  await fetchRequests(); // ✅ awaited
+                } catch {
+                  toast.error("Failed to cancel request");
+                }
+              }}
+            />
+          </>
+        )}
+
+        {/* Button to open modal */}
+        {/* <div className="mt-4">
+        <button
+          onClick={() => setIsCompOffModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Request Comp-Off
+        </button>
+      </div> */}
+
+        {/* Modal */}
+        {/* {isCompOffModalOpen && (
+        <CompOffRequestModal
+          loading={isLoading}
+          onSubmit={handleCompOffSubmit}
+          onClose={() => setIsCompOffModalOpen(false)}
+        />
+      )} */}
+      </div>
+    );
+  }
+);
 
 export default CompOffPage;

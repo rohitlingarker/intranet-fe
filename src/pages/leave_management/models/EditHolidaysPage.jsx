@@ -1,28 +1,32 @@
 // src/pages/EditHolidaysPage.jsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { Edit, Trash, Save, XCircle } from 'lucide-react';
-import LoadingSpinner from '../../../components/LoadingSpinner';
-import ConfirmationModal from './ConfirmationModal';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Edit, Trash, Save, XCircle } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import ConfirmationModal from "./ConfirmationModal";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const EditHolidaysPage = () => {
   const [holidays, setHolidays] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editingHolidayId, setEditingHolidayId] = useState(null);
   const [editedData, setEditedData] = useState({});
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-  const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] = useState(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
+    useState(false);
+  const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] =
+    useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
 
   // Fetch all holidays
   useEffect(() => {
@@ -34,8 +38,8 @@ const EditHolidaysPage = () => {
         });
         setHolidays(response.data);
       } catch (err) {
-        setError('Failed to fetch holidays. Please try again later.');
-        toast.error('Failed to fetch holidays.');
+        setError("Failed to fetch holidays. Please try again later.");
+        toast.error("Failed to fetch holidays.");
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -66,13 +70,13 @@ const EditHolidaysPage = () => {
       await axios.put(`${BASE_URL}/api/holidays/update`, editedData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success('Holiday updated successfully!');
+      toast.success("Holiday updated successfully!");
       setHolidays((holidays) =>
         holidays.map((h) => (h.holidayId === holidayId ? editedData : h))
       );
       handleCancelEdit();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update holiday.');
+      toast.error(err.response?.data?.message || "Failed to update holiday.");
     } finally {
       setIsLoading(false);
     }
@@ -84,21 +88,21 @@ const EditHolidaysPage = () => {
   };
 
   const handleDeleteHoliday = async (holidayId) => {
-      try {
-        setIsLoading(true);
-        await axios.delete(`${BASE_URL}/api/holidays/delete/${holidayId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success('Holiday deleted successfully!');
-        setHolidays((holidays) =>
-          holidays.filter((h) => h.holidayId !== holidayId)
-        );
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to delete holiday.');
-      } finally {
-        setIsLoading(false);
-        setIsDeleteConfirmationOpen(false);
-      }
+    try {
+      setIsLoading(true);
+      await axios.delete(`${BASE_URL}/api/holidays/delete/${holidayId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Holiday deleted successfully!");
+      setHolidays((holidays) =>
+        holidays.filter((h) => h.holidayId !== holidayId)
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete holiday.");
+    } finally {
+      setIsLoading(false);
+      setIsDeleteConfirmationOpen(false);
+    }
   };
 
   const filteredHolidays = holidays.filter((holiday) => {
@@ -106,8 +110,8 @@ const EditHolidaysPage = () => {
     return (
       holiday.holidayName.toLowerCase().includes(lowerSearch) ||
       holiday.type.toLowerCase().includes(lowerSearch) ||
-      (holiday.state || '').toLowerCase().includes(lowerSearch) ||
-      (holiday.country || '').toLowerCase().includes(lowerSearch)
+      (holiday.state || "").toLowerCase().includes(lowerSearch) ||
+      (holiday.country || "").toLowerCase().includes(lowerSearch)
     );
   });
 
@@ -116,23 +120,27 @@ const EditHolidaysPage = () => {
       {/* 🔹 Full-Screen Loading Spinner Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex justify-center items-center z-[9999] animate-fadeIn">
-          <LoadingSpinner text='Please wait'/>
+          <LoadingSpinner text="Please wait" />
         </div>
       )}
 
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800 rounded-md font-medium"
-      >
-        ← Back
-      </button>
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Holidays</h1>
+      <div className="flex items-center justify-between px-6 mb-4 ">
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">Manage Holidays</h1>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate(-1)} // go back to previous page
+          className="flex items-center text-blue-700 font-medium hover:text-blue-900 transition-colors whitespace-nowrap"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </motion.button>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-4 w-full flex justify-start items-center space-x-2 h-9">
         <input
           type="text"
           placeholder="Search by Holiday Name, Type, State or Country..."
@@ -145,7 +153,7 @@ const EditHolidaysPage = () => {
       {/* Holidays Table */}
       <div className="overflow-x-auto border rounded-lg">
         <table className="min-w-full text-sm text-center">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-sm font-bolder">
             <tr>
               <th className="px-4 py-3 font-heading">Holiday Name</th>
               <th className="px-4 py-3 font-heading">Date</th>
@@ -155,7 +163,7 @@ const EditHolidaysPage = () => {
               <th className="px-4 py-3 font-heading">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-xs">
             {filteredHolidays.map((holiday) => (
               <tr key={holiday.holidayId} className="border-t hover:bg-gray-50">
                 {editingHolidayId === holiday.holidayId ? (
@@ -176,7 +184,7 @@ const EditHolidaysPage = () => {
                         value={
                           new Date(editedData.holidayDate)
                             .toISOString()
-                            .split('T')[0]
+                            .split("T")[0]
                         }
                         onChange={handleInputChange}
                         className="border rounded p-1 w-full"
@@ -198,7 +206,7 @@ const EditHolidaysPage = () => {
                       <input
                         type="text"
                         name="state"
-                        value={editedData.state || ''}
+                        value={editedData.state || ""}
                         onChange={handleInputChange}
                         placeholder="State"
                         className="border rounded p-1 w-full bg-gray-100"
@@ -209,7 +217,7 @@ const EditHolidaysPage = () => {
                       <input
                         type="text"
                         name="country"
-                        value={editedData.country || ''}
+                        value={editedData.country || ""}
                         onChange={handleInputChange}
                         placeholder="Country"
                         className="border rounded p-1 w-full bg-gray-100"
@@ -238,16 +246,16 @@ const EditHolidaysPage = () => {
                     <td className="px-4 py-2">{holiday.holidayName}</td>
                     <td className="px-4 py-2">
                       {new Date(holiday.holidayDate).toLocaleDateString(
-                        'en-US',
-                        { month: 'short', day: 'numeric', year: 'numeric' }
+                        "en-US",
+                        { month: "short", day: "numeric", year: "numeric" }
                       )}
                     </td>
                     <td className="px-4 py-2">{holiday.type}</td>
                     <td className="px-4 py-2">
-                      {holiday.state ? holiday.state : '-'}
+                      {holiday.state ? holiday.state : "-"}
                     </td>
                     <td className="px-4 py-2">
-                      {holiday.country ? holiday.country : '-'}
+                      {holiday.country ? holiday.country : "-"}
                     </td>
                     <td className="px-4 py-2 flex justify-center gap-2">
                       <button
@@ -258,7 +266,9 @@ const EditHolidaysPage = () => {
                         <Edit size={20} />
                       </button>
                       <button
-                        onClick={() => handleDeleteConfirmation(holiday.holidayId)}
+                        onClick={() =>
+                          handleDeleteConfirmation(holiday.holidayId)
+                        }
                         className="p-2 text-red-600 hover:text-red-800"
                         title="Delete"
                       >

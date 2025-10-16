@@ -87,7 +87,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
   return (
     <>
       {/* Top grid for normal leaves */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* ✨ CHANGED: Map over the new 'sortedMainLeaves' array */}
         {sortedMainLeaves.map((leave) => {
           const displayName = getDisplayName(leave.leaveType.leaveName);

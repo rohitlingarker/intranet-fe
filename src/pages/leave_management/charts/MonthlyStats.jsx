@@ -48,7 +48,7 @@ const MonthlyStats = ({ employeeId, refreshKey }) => {
   return (
     <div className="w-full bg-white rounded-lg shadow p-4 sm:p-5 hover:shadow-lg transition-all duration-300">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+        <h3 className="text-sm font-semibold text-gray-800">
           Monthly Leave Days
         </h3>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
