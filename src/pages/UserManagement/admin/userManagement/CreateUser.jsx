@@ -4,8 +4,7 @@ import { showStatusToast } from "../../../../components/toastfy/toast";
 import FormInput from "../../../../components/forms/FormInput";
 import Button from "../../../../components/Button/Button";
 import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
-
+import "react-phone-input-2/lib/style.css"
 export default function CreateUserForm({ onSuccess, onClose }) {
   const token = localStorage.getItem("token");
 
@@ -262,7 +261,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
       </form>
 
       {/* Fixed Footer (does not scroll) */}
-      <div className="flex justify-end gap-3 p-3 border-t bg-gray-50 sticky bottom-0">
+      <div className="flex justify-start gap-3 p-3 border-t bg-gray-50 sticky bottom-0">
         <Button
           type="submit"
           variant="primary"
