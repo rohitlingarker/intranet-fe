@@ -6,6 +6,7 @@ import { showStatusToast } from "../../../../components/toastfy/toast";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function EditUserForm({ userId, onSuccess, onClose }) {
   const token = localStorage.getItem("token");
