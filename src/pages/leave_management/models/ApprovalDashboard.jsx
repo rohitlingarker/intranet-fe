@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { approvalService } from "../services/approvalService";
 import { toast } from "react-toastify";
 import ApprovalQueue from "./ApprovalQueue";
-import { ChevronRight } from "lucide-react"; // ✨ 1. Import an icon for the toggle
+import { ChevronRight } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import clearingDesk from "../../../components/icons/clearing-desk_emmv.svg"
 
 const ApprovalDashboard = () => {
   const [requests, setRequests] = useState([]);
@@ -93,11 +95,12 @@ const ApprovalDashboard = () => {
 
       {isLoading ? (
         <div className="text-center p-10 bg-white rounded-lg shadow">
-          <p className="text-gray-600">Loading approvals...</p>
+          <LoadingSpinner text="Loading Approvals..." />
         </div>
       ) : requests.length === 0 ? (
-        <div className="text-center p-10 bg-white rounded-lg shadow">
-          <p className="text-gray-500">No pending approvals. Great job! 👍</p>
+        <div className="flex flex-col justify-center items-center p-8 bg-white rounded-lg">
+          <img src={clearingDesk} alt="Np Pending Approvals" className="w-60" />
+          <p className="text-gray-500 mt-2 text-sm`">No Pending Approvals.</p>
         </div>
       ) : (
         <div className="space-y-4"> {/* Adjusted spacing */}
