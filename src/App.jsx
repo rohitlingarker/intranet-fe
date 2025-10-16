@@ -77,6 +77,7 @@ import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
+import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -476,17 +477,16 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
-          {/* <Route
-            path={`/hr-manager`}
+          <Route 
+            path={`/leave-details/:employeeId/:leaveName`}
             element={
-              <ProtectedRoute allowedRoles={["Hr-Manager"]}>
-                <HRAdminPanel/>
+              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
+                <LeaveDetailsPage />
               </ProtectedRoute>
             }
-          /> */}
+          />
         </Route>
-
-        <Route path="/unauthorized" element={<Unauthorized />} />
+        {/* <Route path="/unauthorized" element={<Unauthorized />} /> */}
       </Routes>
       <SaveLastPath />
 {/* <<<<<<<<< Temporary merge branch 1
@@ -494,9 +494,9 @@ useEffect(() => {
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes> */}
 {/* ========= */}
-      <Routes>
+      {/* <Routes>
         <Route path="/unauthorized" element={<Unauthorized />} />
-      </Routes>
+      </Routes> */}
 {/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
