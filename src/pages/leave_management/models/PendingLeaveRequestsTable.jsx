@@ -3,12 +3,8 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { PencilIcon } from "lucide-react";
 import EditLeaveModal from "./EditLeaveModal";
-<<<<<<< HEAD
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import ConfirmationModal from "./ConfirmationModal";
-
-=======
->>>>>>> ba18edb0f60545ad40cb598245f83df9a01cbcec
 const token = localStorage.getItem('token');
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
