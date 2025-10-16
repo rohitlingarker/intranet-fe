@@ -5,7 +5,6 @@ import ApprovalQueue from "./ApprovalQueue";
 import { ChevronRight } from "lucide-react";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import clearingDesk from "../../../components/icons/clearing-desk_emmv.svg"
-import LoadingSpinner from "../../../components/LoadingSpinner";
 import ConfirmationModal from "./ConfirmationModal";
 import { set } from "date-fns";
 
