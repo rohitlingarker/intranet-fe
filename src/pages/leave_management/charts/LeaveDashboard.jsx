@@ -75,7 +75,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
   return (
     <>
       {/* Top grid for normal leaves */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* ✨ CHANGED: Map over the new 'sortedMainLeaves' array */}
         {sortedMainLeaves.map((leave) => {
           const displayName = getDisplayName(leave.leaveType.leaveName);
@@ -86,7 +86,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
               className="bg-white p-6 rounded-lg shadow-sm"
             >
               <div className="flex items-center w-full justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">{displayName}</h3>
+                <h3 className="font-semibold text-sm text-gray-900">{displayName}</h3>
                 <button className="text-indigo-600 text-xs hover:text-indigo-800 transition-colors">
                   View details
                 </button>

@@ -118,7 +118,7 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
 
   return (
     <div className="bg-white rounded-lg p-6 shadow h-42 w-full">
-      <h3 className="font-semibold text-gray-800 mb-4">Leave Usage by Type</h3>
+      <h3 className="font-semibold text-gray-800 mb-4 text-sm">Leave Usage by Type</h3>
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="90%">
           <PieChart>

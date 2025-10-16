@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
 import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import { ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem("token");
@@ -25,6 +27,35 @@ const EmployeeLeaveBalances = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [wrapperRef]);
+
+  // 🔹 Hide suggestions when pressing Escape
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setShowSuggestions]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -215,18 +246,24 @@ const EmployeeLeaveBalances = () => {
         </div>
       )}
 
-      {/* 🔹 Back Button */}
-      <button
-        onClick={() => navigate(-1)} // go to previous page
-        className="mb-4 px-4 py-2 bg-indigo-900 text-white hover:bg-indigo-800  hover:bg-gray-400 rounded-md font-medium"
-      >
-        ← Back
-      </button>
-
-      <h2 className="text-2xl font-bold mb-6">Employee Leave Balances</h2>
+      {/* backbutton and title */}
+      <div className="flex items-center justify-between px-6 mb-4 ">
+        <h2 className="text-xl font-bold text-gray-800">
+          Employee Leave Balances
+        </h2>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate(-1)} // go back to previous page
+          className="flex items-center text-blue-700 font-medium hover:text-blue-900 transition-colors whitespace-nowrap"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </motion.button>
+      </div>
 
       {/* Search Bar */}
-      <div className="mb-4 relative w-full max-w-md">
+      <div ref={wrapperRef} className="mb-4 relative h-9 w-full max-w-md">
         <input
           type="text"
           placeholder="Search by Employee ID or Name..."
@@ -267,7 +304,7 @@ const EmployeeLeaveBalances = () => {
       {/* Table */}
       <div className="overflow-x-auto border rounded-md">
         <table className="min-w-max text-sm text-left border-collapse relative">
-          <thead className="bg-gray-100 text-base">
+          <thead className="bg-gray-100">
             <tr>
               <th className="border px-6 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px]">
                 Employee Id
@@ -283,10 +320,12 @@ const EmployeeLeaveBalances = () => {
                   {leaveTypeName}
                 </th>
               ))}
-              <th className="border px-4 py-2">Actions</th>
+              <th className="border px-4 py-2 sticky right-0 bg-gray-100 z-10">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody className="text-sm">
+          <tbody className="text-xs">
             {paginatedData.map((emp) => (
               <tr key={emp.employeeId}>
                 <td className="border px-6 py-2 sticky left-0 bg-white z-10 font-medium min-w-[200px]">
@@ -303,7 +342,7 @@ const EmployeeLeaveBalances = () => {
                     {emp.balances[leaveTypeName]?.remainingLeaves ?? "-"}
                   </td>
                 ))}
-                <td className="border px-4 py-2 text-center">
+                <td className="border px-4 py-2 text-center sticky right-0 bg-white z-10">
                   <button
                     onClick={() => handleEdit(emp)}
                     className="text-blue-600 underline hover:text-blue-800"

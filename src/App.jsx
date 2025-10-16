@@ -74,6 +74,7 @@ import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeave
 import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
 import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
+import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 // 🔒 Protected Route Wrapper
@@ -427,8 +428,12 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+          <Route path="/leave-policy" element={
+          <ProtectedRoute>
+            <LeavePolicy />
+          </ProtectedRoute>
+        } />
         </Route>
-
         <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes>
       <SaveLastPath />
