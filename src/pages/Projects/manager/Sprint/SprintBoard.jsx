@@ -6,8 +6,8 @@ import StoryCard from './StoryCard';
 import CreateSprintModal from './CreateSprintModal';
 import SprintColumn from './SprintColumn';
 import Button from '../../../../components/Button/Button';
-
-
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SprintBoard = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
@@ -56,7 +56,9 @@ const SprintBoard = ({ projectId, projectName }) => {
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,{}, { headers }
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
+        {},
+        { headers }
       );
       const updatedSprint = response.data;
 
@@ -67,6 +69,21 @@ const SprintBoard = ({ projectId, projectName }) => {
       await fetchStories();
     } catch (error) {
       console.error(`Failed to ${action} sprint:`, error);
+
+      // Show toast if sprint cannot be completed
+      const message =
+        error.response?.data?.message ||
+        "Cannot complete sprint. Some stories or tasks are not done.";
+
+      toast.error(message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     }
   };
 
@@ -76,6 +93,7 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
+      <ToastContainer />
       <div className="p-6 space-y-6">
         {/* Page Header */}
         <div className="flex justify-between items-center">

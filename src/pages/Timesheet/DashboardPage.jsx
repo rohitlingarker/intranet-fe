@@ -18,6 +18,7 @@ import Button from "../../components/Button/Button";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardSummary } from "./api";
+import TimesheetHeader from "./TimesheetHeader";
 
 // Mock timesheet data
 const timesheetData = [
@@ -162,27 +163,25 @@ const DashboardPage = () => {
       );
 
       setBillableData([
-        { name: "Billable", value: dashboardSummary.billableActivity?.billableLogs || 0 },
-        { name: "Non-Billable", value: dashboardSummary.billableActivity?.nonBillableLogs || 0 },
+        {
+          name: "Billable",
+          value: dashboardSummary.billableActivity?.billableLogs || 0,
+        },
+        {
+          name: "Non-Billable",
+          value: dashboardSummary.billableActivity?.nonBillableLogs || 0,
+        },
       ]);
     }
   }, [dashboardSummary]);
 
   // KPI Calculations
   const totalHours = timesheetData.reduce((s, e) => s + (e.hours || 0), 0);
-  const avgHours = timesheetData.length
-    ? (totalHours / timesheetData.length).toFixed(1)
-    : 0;
-  const tasksCompleted = timesheetData.filter(
-    (t) => t.status === "Approved"
-  ).length;
-  const pendingApprovals = timesheetData.filter(
-    (t) => t.status === "Pending"
-  ).length;
+
   const billableHours = timesheetData
     .filter((t) => t.billable)
     .reduce((s, e) => s + e.hours, 0);
-  const nonBillableHours = totalHours - billableHours;
+
   const billablePercent =
     totalHours > 0 ? ((billableHours / totalHours) * 100).toFixed(0) : 0;
 
@@ -216,16 +215,16 @@ const DashboardPage = () => {
   // }));
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between mb-2">
+    <div className="p-6 space-y-6 bg-gray-50">
+      {/* <div className="flex justify-between mb-2">
         <h1>
           <span className="text-3xl font-bold text-gray-900 mr-4">
             Timesheet Dashboard
           </span>
         </h1>
-        {/* <button className="bg-blue-900 hover:bg-blue-900 text-white px-4 py-2 rounded-lg shadow font-semibold">
+        <button className="bg-blue-900 hover:bg-blue-900 text-white px-4 py-2 rounded-lg shadow font-semibold">
         View Entries
-      </button> */}
+      </button>
         <Button
           variant="primary"
           size="medium"
@@ -233,58 +232,65 @@ const DashboardPage = () => {
         >
           View Entries
         </Button>
-      </div>
-      <div className="p-8 bg-gray-50 min-h-screen font-sans text-base">
+      </div> */}
+      <TimesheetHeader/>
+      <div className="px-6 pt-8 pb-2 bg-gray-50 font-sans text-base">
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-2">
           <Card>
-            <CardContent className="flex flex-col items-center">
-              <div className="text-md font-semibold mb-2">
+            <CardContent className="flex flex-col items-center ">
+              <div className="text-md text-center font-semibold mb-2">
                 Total hours logged
               </div>
               <div className="text-3xl font-black text-blue-700">
-                {dashboardSummary.totalHours || 0}
+                {dashboardSummary?.totalHours || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center">
-              <div className="text-md font-semibold mb-2">Billable %</div>
+            <CardContent className="flex flex-col items-center ">
+              <div className="text-md text-center font-semibold mb-2">
+                Billable %
+              </div>
               <div className="text-3xl font-black text-green-600">
-                {dashboardSummary.billablePercentage || 0}%
+                {dashboardSummary?.billablePercentage || 0}%
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center">
-              <div className="text-md font-semibold mb-2">Tasks worked</div>
+            <CardContent className="flex flex-col items-center ">
+              <div className="text-md text-center font-semibold mb-2">
+                Tasks worked
+              </div>
               <div className="text-3xl font-black text-emerald-700">
-                {dashboardSummary.totalTasks || 0}
+                {dashboardSummary?.totalTasks || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center">
-              <div className="text-md font-semibold mb-2">Pending Approval</div>
+            <CardContent className="flex flex-col items-center ">
+              <div className="text-md text-center font-semibold mb-2">
+                Pending Approval
+              </div>
               <div className="text-3xl font-black text-orange-500">
-                {dashboardSummary.timesheetSummary?.pending || 0}
+                {dashboardSummary?.timesheetSummary?.pending || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center">
+            <CardContent className="flex flex-col text-center items-center ">
               <div className="text-md font-semibold mb-2">
                 Average Hours per day
               </div>
               <div className="text-3xl font-black text-indigo-600">
-                {dashboardSummary.averageHoursPerDay || 0}
+                {dashboardSummary?.averageHoursPerDay || 0}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Chart Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2">
           <Card>
             <CardContent>
               <h3 className="text-lg font-semibold mb-3">Hours per day</h3>

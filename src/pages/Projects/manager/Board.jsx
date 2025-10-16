@@ -77,6 +77,7 @@ const Board = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSprint, setCurrentSprint] = useState(null);
+  const [sprints, setSprints] = useState([]);
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -95,7 +96,7 @@ const Board = ({ projectId, projectName }) => {
       setLoading(true);
       try {
         // Fetch stories and tasks concurrently
-        const [storiesRes, tasksRes] = await Promise.all([
+        const [storiesRes, tasksRes, sprintsRes] = await Promise.all([
           axios.get(
             `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
             { headers }
@@ -104,20 +105,26 @@ const Board = ({ projectId, projectName }) => {
             `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
             { headers }
           ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+            { headers }
+          ),
         ]);
 
         const storiesData = storiesRes.data;
         const tasksData = tasksRes.data;
-
+        const sprintsData = sprintsRes.data;
+        setSprints(sprintsData);
         setStories(storiesData);
 
-        // Set a default current sprint from the stories (for demo)
-        // You can update this logic to fetch current active sprint from your backend if available
-        const activeSprint =
-          storiesData.find((story) => story.sprintId !== null) || null;
+        const activeSprint = sprintsData.find((sprint) => sprint.status === "ACTIVE") || null;
+
         if (activeSprint) {
-          setCurrentSprint({ id: activeSprint.sprintId, name: `Sprint ${activeSprint.sprintId}` });
+          setCurrentSprint({ id: activeSprint.id, name: activeSprint.name || `Sprint ${activeSprint.id}` });
+        } else {
+          setCurrentSprint(null); // No active sprint
         }
+
 
         // Get IDs of stories assigned to current sprint
         const sprintStoryIds = storiesData

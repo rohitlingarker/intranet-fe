@@ -11,6 +11,7 @@ import CreateUserForm from "./CreateUser";
 import EditUserForm from "./EditUser";
 import { Pencil, UserX } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js"; // ✅ Import libphonenumber-js
+import { BulkUserUpload } from "./BulkUser";
  
 const SORT_DIRECTIONS = {
   ASC: "asc",
@@ -32,6 +33,7 @@ export default function UsersTable() {
   const [selectedUseruuId, setSelectedUseruuId] = useState(null);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [userBulkUploadModalOpen, setUserBulkUploadModalOpen] = useState(false);
  
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -230,6 +232,14 @@ export default function UsersTable() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-2xl font-semibold text-gray-800 ">Users</h2>
         <div className="space-x-3 flex flex-wrap gap-2">
+
+          <Button
+            onClick={() => setUserBulkUploadModalOpen(true)}
+            variant="primary"
+            size="medium"
+          >
+            + Add User Bulk
+          </Button>
           <Button
             onClick={() => setCreateModalOpen(true)}
             variant="primary"
@@ -278,13 +288,27 @@ export default function UsersTable() {
         onClose={() => setCreateModalOpen(false)}
         title="Create New User"
         subtitle="Fill out the form to add a new user to the system."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-y-auto "
       >
         <CreateUserForm
           onSuccess={handleUserCreated}
           onClose={() => setCreateModalOpen(false)}
         />
       </Modal>
+
+      <Modal
+        isOpen={userBulkUploadModalOpen}
+        onClose={() => setUserBulkUploadModalOpen(false)}
+        title="Bulk Upload Users"
+        subtitle="Excel should contain 4 columns: first_name, last_name, mail, and contact (as headers)."
+        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+      >
+        {/* Bulk upload form/component goes here */}
+        <BulkUserUpload onClose={() => setUserBulkUploadModalOpen(false)} onSuccess={fetchUsers} />
+
+      </Modal>
+
+      
  
       {/* Edit Modal */}
       <Modal
@@ -292,7 +316,7 @@ export default function UsersTable() {
         onClose={handleEditClose}
         title="Edit User"
         subtitle="Update the user information below."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-y-auto"
       >
         {selectedUseruuId && (
           <EditUserForm

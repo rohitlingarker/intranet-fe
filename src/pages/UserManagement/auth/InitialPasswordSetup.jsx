@@ -15,7 +15,7 @@ try {
 export default function InitialPasswordSetup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user,logout } = useAuth();
   const email = user?.email;
 
   const [otp, setOtp] = useState("");
@@ -124,6 +124,8 @@ export default function InitialPasswordSetup() {
       );
 
       showStatusToast("Password set successfully! Please login again.", "success");
+      logout();
+      
       navigate("/");
     } catch (err) {
       console.error("Set Password Error:", err);
@@ -253,7 +255,9 @@ export default function InitialPasswordSetup() {
 
         <div className="mt-6 text-sm text-gray-600">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {navigate("/")
+              logout();
+            }}
             className="hover:underline hover:text-blue-600"
           >
             Back to Login

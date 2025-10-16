@@ -1,7 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { showStatusToast } from "../../../components/toastfy/toast";
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -9,6 +11,7 @@ export default function ForgotPassword() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const isEmailValid = (value) => /\S+@\S+\.\S+/.test(value);
@@ -54,16 +57,10 @@ export default function ForgotPassword() {
     }
     setResetting(true);
     try {
-      console.log("Sending payload:", {
-        email: email.trim(),
-        otp: otp.trim(),
-        new_password: newPassword,
-      });
-
       await axios.post(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/forgot-password`,
         {
-          email: email.trim(), // or "email" if your backend expects that
+          email: email.trim(),
           otp: otp.trim(),
           new_password: newPassword,
         }
@@ -116,13 +113,29 @@ export default function ForgotPassword() {
                 onChange={(e) => setOtp(e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
-                type="password"
-                placeholder="New Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+
+              {/* Password input with single toggle icon */}
+              <div className="relative w-full">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 pr-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 
+                             bg-white text-gray-800 appearance-none
+                             [&::-ms-reveal]:hidden [&::-ms-clear]:hidden
+                             [&::-webkit-credentials-auto-fill-button]:hidden
+                             [&::-webkit-textfield-decoration-container]:hidden"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                </button>
+              </div>
             </>
           )}
 
@@ -132,6 +145,14 @@ export default function ForgotPassword() {
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
             {resetting ? "Resetting..." : "Reset Password"}
+          </button>
+
+          {/* Back Button */}
+          <button
+            onClick={() => navigate("/")}
+            className="w-full mt-2 border border-blue-500 text-blue-600 py-2 rounded-lg hover:bg-blue-50 transition"
+          >
+            ← Back
           </button>
         </div>
       </div>
