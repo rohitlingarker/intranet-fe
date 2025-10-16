@@ -77,12 +77,9 @@ import HRManageTools from "./pages/leave_management/HRManageTools";
 import EmployeeLeaveBalances from "./pages/leave_management/models/EmployeeLeaveBalances";
 import Unauthorized from "./pages/leave_management/Unauthorized";
 import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
-<<<<<<< HEAD
-import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
+// import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
-=======
 import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
->>>>>>> ba18edb0f60545ad40cb598245f83df9a01cbcec
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -482,15 +479,12 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
-<<<<<<< HEAD
           <Route path="/leave-policy" element={
           <ProtectedRoute>
             <LeavePolicy />
           </ProtectedRoute>
         } />
-        </Route>
         <Route path="/unauthorized" element={<Unauthorized />} />
-=======
           <Route 
             path={`/leave-details/:employeeId/:leaveName`}
             element={
@@ -501,7 +495,6 @@ useEffect(() => {
           />
         </Route>
         {/* <Route path="/unauthorized" element={<Unauthorized />} /> */}
->>>>>>> ba18edb0f60545ad40cb598245f83df9a01cbcec
       </Routes>
       <SaveLastPath />
 {/* <<<<<<<<< Temporary merge branch 1
