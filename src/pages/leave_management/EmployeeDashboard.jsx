@@ -216,9 +216,9 @@ const EmployeeDashboard = ({ employeeId }) => {
         <LeaveTypeCardExample />
       </div> */}
 
-      <div>
+      {/* <div>
         <UpcomingHolidays />
-      </div>
+      </div> */}
     </>
   );
 };
