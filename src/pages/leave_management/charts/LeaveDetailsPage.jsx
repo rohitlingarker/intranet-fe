@@ -239,9 +239,9 @@ export default function LeaveDetailsPage() {
             ) : (
               // Display this message if there are no leave requests at all
               <div className="flex flex-col justify-center items-center p-8 bg-white rounded-lg border">
-                <img src={beachDay} alt="No Leave History" className="w-60"/>
+                <img src={beachDay} alt="No Leave History" className="w-40"/>
                 <p className="text-gray-500 mt-5">
-                  No leave requests found for {displayName} in {new Date().getFullYear()}.
+                  No requests found for {displayName} in {new Date().getFullYear()}.
                 </p>
               </div>
             )}

@@ -8,8 +8,13 @@ import {
 } from "recharts";
 import { useState } from "react";
 
-// Color palette: Red for Used, Gray for Remaining
-const COLORS = ["#ef4444", "#e5e7eb"];
+const COLOR_PALETTES = {
+  EARNED_LEAVE: ["#86efac", "#22c55e"], 
+  SICK_LEAVE: ["#fca5a5", "#ef4444"],   
+  COMPOFF_LEAVE: ["#93c5fd", "#3b82f6"], 
+  UNPAID_LEAVE: ["#a8a29e", "#e7e5e4"], 
+  DEFAULT: ["#d1d5db", "#6b7280"],
+};
 
 // Custom Active Shape Slice
 const renderActiveShape = (props) => {
@@ -61,12 +66,11 @@ const renderActiveShape = (props) => {
 };
 
 export default function LeaveUsageChart({ leave }) {
-  console.log("leave", leave)
   const { accruedLeaves, usedLeaves, leaveType, remainingLeaves } = leave;
   const [activeIndex, setActiveIndex] = useState(null);
-  console.log("leave in leave car", leave)
-
+  const leaveName = leaveType?.leaveName;
   const isUnpaid = leaveType?.leaveName === "UNPAID_LEAVE";
+  const colors = COLOR_PALETTES[leaveName] || COLOR_PALETTES.DEFAULT;
 
   const remaining = Math.max(remainingLeaves, 0);
 
@@ -105,7 +109,7 @@ export default function LeaveUsageChart({ leave }) {
               isAnimationActive={true}
             >
               {chartData.map((_, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Cell key={index} fill={colors[index % colors.length]} />
               ))}
             </Pie>
             <Tooltip
