@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
+import { useAuth } from "../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -11,11 +12,14 @@ const AdminPanel = ({ employeeId }) => {
   // const [selectedRequests, setSelectedRequests] = useState([]);
   // const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [resultMsg, setResultMsg] = useState(null);
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
+  console.log("permissions", permissions);
 
   // const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
   // const isManager = user?.role?.toLowerCase() === "manager";
-  
+
   // const employee = useAuth();
   // console.log("useAuth", employee);
   // leave history and admin requests
@@ -29,10 +33,17 @@ const AdminPanel = ({ employeeId }) => {
 
   useEffect(() => {
     axios
-      .post(`${BASE_URL}/api/leave-requests/manager/history`, {
-        managerId: employeeId},{headers:{
-          Authorization: `Bearer ${token}`
-        }})
+      .post(
+        `${BASE_URL}/api/leave-requests/manager/history`,
+        {
+          managerId: employeeId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
       .then((res) => {
         const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
         // setAdminLeaveRequests(arr.map(toLeaveRequest));
@@ -150,7 +161,10 @@ const AdminPanel = ({ employeeId }) => {
       </div> */}
 
       {/* Comp-Off Balance Requests Section */}
-      <CompOffBalanceRequests managerId={employeeId} />
+      {permissions.includes("See_CompOffBalanceRequest") && (
+        <CompOffBalanceRequests managerId={employeeId} />
+      )}
+      {/* <CompOffBalanceRequests managerId={employeeId} /> */}
 
       {/* Search and Filter Section */}
       <HandleLeaveRequestAndApprovals employeeId={employeeId} />
