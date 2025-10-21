@@ -128,7 +128,7 @@ const ApprovalDashboard = () => {
         </div>
       ) : requests.length === 0 ? (
         <div className="flex flex-col justify-center items-center p-8 bg-white rounded-lg">
-          <img src={clearingDesk} alt="Np Pending Approvals" className="w-60" />
+          <img src={clearingDesk} alt="Np Pending Approvals" className="w-40" />
           <p className="text-gray-500 mt-2 text-sm`">No Pending Approvals.</p>
         </div>
       ) : (

@@ -88,9 +88,10 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
     <>
       {/* Top grid for normal leaves */}
       <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {/* ✨ CHANGED: Map over the new 'sortedMainLeaves' array */}
         {sortedMainLeaves.map((leave) => {
           const displayName = getDisplayName(leave.leaveType.leaveName);
+          const isCompOff = leave.leaveType.leaveName === 'COMPENSATORY_LEAVE';
+          const isUnpaid = leave.leaveType.leaveName === 'UNPAID_LEAVE';
 
           return (
             <div
@@ -122,14 +123,26 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
                   </span>
                   <span>{leave.usedLeaves} days</span>
                 </div>
+                {!isCompOff && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">ACCRUED SO FAR</span>
+                  {!isUnpaid && (
+                    <span className="text-gray-500">ACCRUED SO FAR</span>
+                  )}
                   <span className="text-gray-500">ANNUAL QUOTA</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>{leave.accruedLeaves} days</span>
-                  <span>{leave.totalLeaves || "-"} days</span>
-                </div>
+                )}
+                {!isCompOff && (
+                  <div className="flex justify-between text-sm">
+                    {!isUnpaid && (
+                      <span>{leave.accruedLeaves} days</span>
+                    )}
+                    {isUnpaid 
+                    ? "∞ Days" : 
+                    (
+                      <span>{leave.totalLeaves || "-"} days</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

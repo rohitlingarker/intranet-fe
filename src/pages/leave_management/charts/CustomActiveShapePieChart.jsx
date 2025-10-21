@@ -135,19 +135,18 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
             >
               {data.map((entry, index) => {
                 let fillColor;
-                console.log("Entry:", entry);
                 switch (entry.name?.toLowerCase()) {
                   case "earned_leave":
-                    fillColor = "#192E5B";
+                    fillColor = "#22c55e";
                     break;
                   case "sick_leave":
-                    fillColor = "#c9183c";
+                    fillColor = "#ef4444";
                     break;
                   case "compensatory_leave":
-                    fillColor = "#72A2C0";
+                    fillColor = "#3b82f6";
                     break;
                   case "unpaid_leave":
-                    fillColor = "#00743F";
+                    fillColor = "#e7e5e4";
                     break;
                   case "maternity_leave":
                     fillColor = "#ff5883";
