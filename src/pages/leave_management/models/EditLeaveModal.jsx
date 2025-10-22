@@ -10,7 +10,6 @@ import { useAuth } from "../../../contexts/AuthContext";
 import DateRangePicker from "./DateRangePicker";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem("token");
 
 // --- Helper 1: Maps leave balances to dropdown options (Unchanged) ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
@@ -228,14 +227,14 @@ export default function EditLeaveModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const [holidays, setHolidays] = useState([]); // <-- Step 2: Add state for holidays
+  const [holidays, setHolidays] = useState([]);
   const [showCustomHalfDay, setShowCustomHalfDay] = useState(false);
   const [halfDayConfig, setHalfDayConfig] = useState({
     start: "none",
     end: "none",
   });
   const { user } = useAuth();
-  const { locked, lockedBy, lockMessage } = useRecordLock({
+  const { locked, lockedBy, lockMessage, manualReleaseLock } = useRecordLock({
     tableName: "leave_request",
     recordId: initialData?.leaveId,
     user: user?.name,
@@ -248,7 +247,7 @@ export default function EditLeaveModal({
     const fetchLeaveTypes = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setLeaveTypes(res.data);
       } catch (err) {
@@ -261,7 +260,7 @@ export default function EditLeaveModal({
       try {
         const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
           params: { state: "All", country: "India" }, // Adjust params if needed
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const holidayDates = res.data.map(
           (holiday) => new Date(holiday.holidayDate + "T00:00:00")
@@ -275,7 +274,7 @@ export default function EditLeaveModal({
 
     fetchLeaveTypes();
     fetchHolidays();
-  }, [isOpen, token, initialData]);
+  }, [isOpen, initialData]);
 
   // Populate form with initial data
   useEffect(() => {
@@ -360,6 +359,14 @@ export default function EditLeaveModal({
     setEndDate(dateString);
   };
 
+  const handleClose = async () => {
+    // This is the crucial part.
+    // We wait for the lock to be released...
+    await manualReleaseLock();
+    // ...and *then* we call the original onClose prop to hide the modal.
+    onClose();
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     setError("");
@@ -385,11 +392,12 @@ export default function EditLeaveModal({
         `${BASE_URL}/api/leave-requests/employee/update`,
         payload,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
       toast.success("Leave request updated successfully");
       if (onSuccess) onSuccess(data);
+      handleClose();
       onClose();
     } catch (err) {
       setError(
@@ -407,7 +415,7 @@ export default function EditLeaveModal({
     <div
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
       aria-modal="true"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 sm:mx-4 max-h-[90vh] border border-gray-100 relative overflow-y-auto ${isLockedByOther ? 'overflow-y-hidden' : 'overflow-y-auto' }`}> 
         {isLockedByOther && (
@@ -431,7 +439,7 @@ export default function EditLeaveModal({
               Edit Leave Request
             </h2>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               type="button"
               aria-label="Close"
@@ -604,7 +612,7 @@ export default function EditLeaveModal({
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
             >
               Cancel

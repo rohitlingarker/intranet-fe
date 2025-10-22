@@ -4,6 +4,7 @@ import Pagination from "../../../components/Pagination/pagination";
 import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -12,8 +13,8 @@ const LeaveHistory = () => {
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedYear, setSelectedYear] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
@@ -21,7 +22,7 @@ const LeaveHistory = () => {
   const employeeId = useAuth()?.user?.user_id;
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("APPROVED");
   const [currentPage, setCurrentPage] = useState(1);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const itemsPerPage = 8;
@@ -211,7 +212,7 @@ const LeaveHistory = () => {
   if (loading) {
     return (
       <div className="text-center py-10 text-gray-600 text-lg">
-        Loading leave history...
+        <LoadingSpinner text="Loading leave history..."/>
       </div>
     );
   }
@@ -399,17 +400,18 @@ const LeaveHistory = () => {
               ))}
             </tbody>
           </table>
-
-          <div className="mb-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-              onNext={() =>
-                setCurrentPage((page) => Math.min(page + 1, totalPages))
-              }
-            />
-          </div>
+          {totalPages > 1 && ( 
+            <div className="mb-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                onNext={() =>
+                  setCurrentPage((page) => Math.min(page + 1, totalPages))
+                }
+              />
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex h-40 items-center justify-center">

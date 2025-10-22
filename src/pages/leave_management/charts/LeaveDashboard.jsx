@@ -4,6 +4,7 @@ import {toast} from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import useLeaveConsumption from "../hooks/useLeaveConsumption";
 import LeaveUsageChart from "./LeaveUsageChart";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -73,7 +74,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
     return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
   }, [leaveData, leaveTypes, getDisplayName]);
 
-  if (loading) return <p className="text-center">Loading leave data...</p>;
+  if (loading) return <p className="text-center"><LoadingSpinner text="Loading Balances..."/></p>;
 
   const handleViewDetails = (leave, displayName) => {
     navigate(`/leave-details/${employeeId}/${leave.leaveType.leaveName}`, {
@@ -118,9 +119,11 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
                   <span className="text-gray-500">CONSUMED</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>
-                    {Math.max(leave.remainingLeaves, 0)} days
-                  </span>
+                  {isUnpaid ? "∞ Days" : (
+                    <span>
+                      {Math.max(leave.remainingLeaves, 0)} days
+                    </span>
+                  )}
                   <span>{leave.usedLeaves} days</span>
                 </div>
                 {!isCompOff && (
@@ -128,7 +131,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
                   {!isUnpaid && (
                     <span className="text-gray-500">ACCRUED SO FAR</span>
                   )}
-                  <span className="text-gray-500">ANNUAL QUOTA</span>
+                  <span className="text-gray-500 text-right">ANNUAL QUOTA</span>
                 </div>
                 )}
                 {!isCompOff && (
