@@ -2,7 +2,7 @@ import { useState } from "react";
 import Button from "../../../../components/Button/Button";
 import axios from "axios";
 import FileUpload from "../../../../components/forms/FileUpload";
-import { toast } from "react-toastify"; // for controlling loading toast directly
+import { toast } from "react-toastify";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
 const BulkUserUpload = ({ onClose, onSuccess }) => {
@@ -27,8 +27,6 @@ const BulkUserUpload = ({ onClose, onSuccess }) => {
     let toastId;
     try {
       setIsUploading(true);
-
-      // Show persistent loading toast
       toastId = toast("Uploading file and reading data...");
 
       const response = await axios.post(
@@ -44,7 +42,6 @@ const BulkUserUpload = ({ onClose, onSuccess }) => {
 
       const { created_count, failed_count } = response.data;
 
-      // Update the same toast based on result
       if (failed_count === 0) {
         toast.update(toastId, {
           render: `✅ ${created_count} users created successfully.`,
@@ -95,28 +92,29 @@ const BulkUserUpload = ({ onClose, onSuccess }) => {
           </p>
         )}
 
-        <Button
-          type="button"
-          variant="primary"
-          size="small"
-          onClick={handleSubmit}
-          className="flex-1 sm:flex-none"
-          disabled={isUploading}
-        >
-          {isUploading ? "Uploading..." : "Upload"}
-        </Button>
-      </form>
+        <div className="flex justify-between gap-3">
+          <Button
+            type="submit"
+            variant="primary"
+            size="small"
+            disabled={isUploading}
+            className="w-1/2"
+          >
+            {isUploading ? "Uploading..." : "Upload"}
+          </Button>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="small"
-        onClick={onClose}
-        className="flex-1 sm:flex-none"
-        disabled={isUploading}
-      >
-        Cancel
-      </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            onClick={onClose}
+            disabled={isUploading}
+            className="w-1/2"
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };

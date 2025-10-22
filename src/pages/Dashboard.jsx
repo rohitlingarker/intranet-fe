@@ -1,76 +1,211 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Users, FolderKanban, PlaneTakeoff, Clock, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Users,
+  FolderKanban,
+  PlaneTakeoff,
+  Clock,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+
 const Dashboard = () => {
   const { user } = useAuth();
-    const isAdmin =
-      user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
-    const isManager = user?.roles?.includes("Manager");
-    const isDeveloper = user?.roles?.includes("Developer");
-    let projectHref = "/projects";
-if (isDeveloper) {
-  projectHref = "/projects/developer";
-} else if (isManager) {
-  projectHref = "/projects/manager";
-} else if (isAdmin) {
-  projectHref = "/projects/admin"; // or "/projects/admin" if you want a separate admin route
-}
+  const [employeeCount, setEmployeeCount] = useState(null);
+  const [activeEmployeeCount, setActiveEmployeeCount] = useState(null);
+
+  const roles = user?.roles || [];
+  const isAdminOrSuperAdmin =
+    roles.includes("Super Admin") || roles.includes("Admin");
+  const isDeveloper = roles.includes("Developer");
+  const isManager = roles.includes("Manager");
+
+  // ✅ Fetch total employees
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const fetchEmployeeCount = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/count`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setEmployeeCount(res.data.user_count);
+      } catch (error) {
+        console.error("Error fetching employee count:", error);
+      }
+    };
+    fetchEmployeeCount();
+  }, []);
+
+  // ✅ Fetch active employees
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const fetchActiveEmployees = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/active-count`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setActiveEmployeeCount(res.data.active_user_count);
+      } catch (error) {
+        console.error("Error fetching active employee count:", error);
+      }
+    };
+    fetchActiveEmployees();
+  }, []);
+
+  // fetch projects count
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const fetchProjectsCount = async () => {
+      try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/count`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
+      setProjectsCount(data.length);
+      } catch (error) {
+        console.error("Error fetching projects count:", error);
+      }
+    };
+    fetchProjectsCount();
+  }, []);
+
+  // ✅ Determine project route
+  let projectHref = "/projects";
+  if (isDeveloper) projectHref = "/projects/developer";
+  else if (isManager) projectHref = "/projects/manager";
+  else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
+
+  // ✅ Quick Stats — conditionally show based on role
+  const quickStats = isAdminOrSuperAdmin
+    ? [
+        {
+          label: "Total Employees",
+          value: employeeCount ?? "—",
+          change: "+12",
+          icon: Users,
+          positive: true,
+        },
+        {
+          label: "Active Employees",
+          value: activeEmployeeCount ?? "—",
+          change: "+10",
+          icon: Users,
+          positive: true,
+        },
+      ]
+    : [
+        {
+          label: "Total Employees",
+          value: employeeCount ?? "—",
+          change: "+12",
+          icon: Users,
+          positive: true,
+        },
+        {
+          label: "Active Projects",
+          value: projectsCount ?? "—",
+          change: "+2",
+          icon: FolderKanban,
+          positive: true,
+        },
+        {
+          label: "Pending Approvals",
+          value: "8",
+          change: "-3",
+          icon: AlertCircle,
+          positive: false,
+        },
+        {
+          label: "Completed Tasks",
+          value: "89%",
+          change: "+5%",
+          icon: CheckCircle,
+          positive: true,
+        },
+      ];
+
+  // ✅ Module cards remain same for all roles
   const moduleCards = [
     {
-      title: 'User Management ',
-      description: 'Manage employees, roles, and permissions',
+      title: "User Management",
+      description: "Manage employees, roles, and permissions",
       icon: Users,
-      href: '/user-management/users',
-      color: 'bg-[#263383]',
-      stats: '245 active users'
+      href: "/user-management/users",
+      color: "bg-[#263383]",
+      stats: "245 active users",
     },
     {
       title: "Project Management",
-  description: "Track projects, deadlines, and team progress",
-  icon: FolderKanban,
-  href: projectHref,
-  color: "bg-[#3548b6]",
-  stats: "12 active projects"
+      description: "Track projects, deadlines, and team progress",
+      icon: FolderKanban,
+      href: projectHref,
+      color: "bg-[#3548b6]",
+      stats: projectsCount ? `${projectsCount} projects` : "Loading...",
     },
     {
-      title: 'Leave Management',
-      description: 'Handle leave requests and approvals',
+      title: "Leave Management",
+      description: "Handle leave requests and approvals",
       icon: PlaneTakeoff,
-      href: '/leave-management',
-      color: 'bg-[#b22a4f]',
-      stats: '8 pending requests'
+      href: "/leave-management",
+      color: "bg-[#b22a4f]",
+      stats: "8 pending requests",
     },
     {
-      title: 'Timesheets',
-      description: 'Track time and generate reports',
+      title: "Timesheets",
+      description: "Track time and generate reports",
       icon: Clock,
-      href: '/timesheets',
-      color: 'bg-[#ff3d72]',
-      stats: 'Today: 6.5 hours'
+      href: "/timesheets",
+      color: "bg-[#ff3d72]",
+      stats: "Today: 6.5 hours",
     },
     {
-      title: 'Calendar',
-      description: 'View events, meetings, and deadlines',
+      title: "Calendar",
+      description: "View events, meetings, and deadlines",
       icon: Calendar,
-      href: '/calendar',
-      color: 'bg-[#d23369]',
-      stats: '5 events today'
-    }
-  ];
-
-  const quickStats = [
-    { label: 'Total Employees', value: '245', change: '+12', icon: Users, positive: true },
-    { label: 'Active Projects', value: '12', change: '+2', icon: FolderKanban, positive: true },
-    { label: 'Pending Approvals', value: '8', change: '-3', icon: AlertCircle, positive: false },
-    { label: 'Completed Tasks', value: '89%', change: '+5%', icon: CheckCircle, positive: true }
+      href: "/calendar",
+      color: "bg-[#d23369]",
+      stats: "5 events today",
+    },
   ];
 
   const recentActivity = [
-    { action: 'New user registration', user: 'Sarah Johnson', time: '2 hours ago', type: 'user' },
-    { action: 'Project deadline updated', user: 'Mike Chen', time: '4 hours ago', type: 'project' },
-    { action: 'Leave request approved', user: 'Emily Davis', time: '6 hours ago', type: 'leave' },
-    { action: 'Timesheet submitted', user: 'David Wilson', time: '1 day ago', type: 'timesheet' }
+    {
+      action: "New user registration",
+      user: "Sarah Johnson",
+      time: "2 hours ago",
+      type: "user",
+    },
+    {
+      action: "Project deadline updated",
+      user: "Mike Chen",
+      time: "4 hours ago",
+      type: "project",
+    },
+    {
+      action: "Leave request approved",
+      user: "Emily Davis",
+      time: "6 hours ago",
+      type: "leave",
+    },
+    {
+      action: "Timesheet submitted",
+      user: "David Wilson",
+      time: "1 day ago",
+      type: "timesheet",
+    },
   ];
 
   return (
@@ -78,14 +213,29 @@ if (isDeveloper) {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <div
+            key={index}
+            className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {stat.label}
+                </p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stat.value}
+                </p>
                 <div className="flex items-center mt-1">
-                  <TrendingUp className={`h-4 w-4 ${stat.positive ? 'text-green-500' : 'text-red-500'}`} />
-                  <span className={`text-sm ml-1 ${stat.positive ? 'text-green-600' : 'text-red-600'}`}>
+                  <TrendingUp
+                    className={`h-4 w-4 ${
+                      stat.positive ? "text-green-500" : "text-red-500"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm ml-1 ${
+                      stat.positive ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
                     {stat.change}
                   </span>
                 </div>
@@ -98,10 +248,13 @@ if (isDeveloper) {
         ))}
       </div>
 
+      {/* Modules & Activities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Module Cards */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Access  swwsw</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Quick Access
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {moduleCards.map((card, index) => (
               <Link
@@ -110,15 +263,21 @@ if (isDeveloper) {
                 className="group bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-[#263383]"
               >
                 <div className="flex items-start space-x-4">
-                  <div className={`p-3 rounded-lg ${card.color} group-hover:scale-105 transition-transform`}>
+                  <div
+                    className={`p-3 rounded-lg ${card.color} group-hover:scale-105 transition-transform`}
+                  >
                     <card.icon className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-gray-900 group-hover:text-[#263383] transition-colors">
                       {card.title}
                     </h4>
-                    <p className="text-gray-600 text-sm mt-1">{card.description}</p>
-                    <p className="text-xs text-gray-500 mt-2 font-medium">{card.stats}</p>
+                    <p className="text-gray-600 text-sm mt-1">
+                      {card.description}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2 font-medium">
+                      {card.stats}
+                    </p>
                   </div>
                 </div>
               </Link>
@@ -126,20 +285,27 @@ if (isDeveloper) {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Right Side Panel */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h3>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-4 space-y-4">
               {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0 last:pb-0"
+                >
                   <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
                     <div className="h-2 w-2 bg-[#ff3d72] rounded-full"></div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900">{activity.action}</p>
                     <p className="text-xs text-gray-600">by {activity.user}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {activity.time}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -148,7 +314,9 @@ if (isDeveloper) {
 
           {/* Announcements */}
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h4 className="font-semibold text-gray-900 mb-3">System Announcements</h4>
+            <h4 className="font-semibold text-gray-900 mb-3">
+              System Announcements
+            </h4>
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
