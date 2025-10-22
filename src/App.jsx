@@ -45,6 +45,7 @@ import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
 import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
+import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusReportWrapper";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -223,7 +224,7 @@ useEffect(() => {
             }
           />
 
-          <Route path="/projects/" element={<ProjectManager />} />
+          <Route path="/projects" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
           <Route path="/projects/:projectId/issuetracker" element={<IssueTracker />} />
@@ -245,6 +246,8 @@ useEffect(() => {
           />
           
            <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
+
+          <Route path="/projects/:projectId/status-report" element={<ProjectStatusReportWrapper />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
