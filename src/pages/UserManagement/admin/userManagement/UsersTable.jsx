@@ -288,7 +288,7 @@ export default function UsersTable() {
         onClose={() => setCreateModalOpen(false)}
         title="Create New User"
         subtitle="Fill out the form to add a new user to the system."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-y-auto "
       >
         <CreateUserForm
           onSuccess={handleUserCreated}
@@ -316,7 +316,7 @@ export default function UsersTable() {
         onClose={handleEditClose}
         title="Edit User"
         subtitle="Update the user information below."
-        className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
+        className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-y-auto"
       >
         {selectedUseruuId && (
           <EditUserForm

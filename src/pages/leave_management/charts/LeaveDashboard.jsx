@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
-import toast from "react-hot-toast";
+import {toast} from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import useLeaveConsumption from "../hooks/useLeaveConsumption";
 import LeaveUsageChart from "./LeaveUsageChart";
 
@@ -9,6 +10,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 export default function LeaveDashboard({ employeeId, refreshKey }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const { leaveData, loading } = useLeaveConsumption(employeeId, refreshKey);
+  const navigate = useNavigate();
 
   const fetchLeaveTypes = async () => {
     try {
@@ -26,59 +28,70 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
   useEffect(() => {
     fetchLeaveTypes();
   }, []);
+  
+  const getDisplayName = useCallback((leaveName) => {
+    const matchingType = leaveTypes.find((type) => type.name === leaveName);
+    return matchingType ? matchingType.label : leaveName;
+  }, [leaveTypes]);
+  
+  const { sortedMainLeaves, specialLeaves, allLeaveTypesForNav } = useMemo(() => {
+  // Wait until both data sources are available before doing anything.
+    if (leaveData.length === 0 || leaveTypes.length === 0) {
+      return { sortedMainLeaves: [], specialLeaves: [], allLeaveTypesForNav: [] };
+    }
+
+    const mainLeaves = leaveData.filter((leave) => {
+      const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
+      return !name.includes("paternity") && !name.includes("maternity");
+    });
+
+    const specialLeaves = leaveData.filter((leave) => {
+      const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
+      return name.includes("paternity") || name.includes("maternity");
+    });
+
+    const desiredOrder = [
+      "Earned Leave",
+      "Sick Leave",
+      "Unpaid Leave",
+      "CompOff Leave",
+    ];
+
+    const sortedMainLeaves = [...mainLeaves].sort((a, b) => {
+      const nameA = getDisplayName(a.leaveType.leaveName);
+      const nameB = getDisplayName(b.leaveType.leaveName);
+      const indexA = desiredOrder.indexOf(nameA);
+      const indexB = desiredOrder.indexOf(nameB);
+      return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+    });
+    
+    const allLeaveTypesForNav = [...sortedMainLeaves, ...specialLeaves].map((leave) => ({
+      name: leave.leaveType.leaveName,
+      label: getDisplayName(leave.leaveType.leaveName),
+    }));
+
+    return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
+  }, [leaveData, leaveTypes, getDisplayName]);
 
   if (loading) return <p className="text-center">Loading leave data...</p>;
 
-  const getDisplayName = (leaveName) => {
-    const matchingType = leaveTypes.find((type) => type.name === leaveName);
-    return matchingType ? matchingType.label : leaveName;
+  const handleViewDetails = (leave, displayName) => {
+    navigate(`/leave-details/${employeeId}/${leave.leaveType.leaveName}`, {
+      state: {
+        leaveTypeName: displayName,
+        allLeaveTypes: allLeaveTypesForNav,
+      },
+    });
   };
-
-  // Separate data
-  const mainLeaves = leaveData.filter((leave) => {
-    const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
-    return !name.includes("paternity") && !name.includes("maternity");
-  });
-
-  const specialLeaves = leaveData.filter((leave) => {
-    const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
-    return name.includes("paternity") || name.includes("maternity");
-  });
-
-  // --- ✨ NEW: Logic to sort the main leave types ---
-  // Define the desired display order.
-  const desiredOrder = [
-    "Earned Leave",
-    "Sick Leave",
-    "Unpaid Leave",
-    "CompOff Leave",
-  ];
-
-  // Sort the 'mainLeaves' array based on the 'desiredOrder'.
-  const sortedMainLeaves = [...mainLeaves].sort((a, b) => {
-    const nameA = getDisplayName(a.leaveType.leaveName);
-    const nameB = getDisplayName(b.leaveType.leaveName);
-
-    const indexA = desiredOrder.indexOf(nameA);
-    const indexB = desiredOrder.indexOf(nameB);
-
-    // If a leave type is not in our desiredOrder array, move it to the end.
-    const rankA = indexA === -1 ? Infinity : indexA;
-    const rankB = indexB === -1 ? Infinity : indexB;
-
-    return rankA - rankB;
-  });
-  // --- End of new logic ---
-
-  console.log("data", leaveData);
 
   return (
     <>
       {/* Top grid for normal leaves */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {/* ✨ CHANGED: Map over the new 'sortedMainLeaves' array */}
+      <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {sortedMainLeaves.map((leave) => {
           const displayName = getDisplayName(leave.leaveType.leaveName);
+          const isCompOff = leave.leaveType.leaveName === 'COMPENSATORY_LEAVE';
+          const isUnpaid = leave.leaveType.leaveName === 'UNPAID_LEAVE';
 
           return (
             <div
@@ -87,7 +100,10 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
             >
               <div className="flex items-center w-full justify-between mb-3">
                 <h3 className="font-semibold text-gray-900">{displayName}</h3>
-                <button className="text-indigo-600 text-xs hover:text-indigo-800 transition-colors">
+                <button 
+                  onClick={()=> handleViewDetails(leave, displayName)}
+                  className="text-indigo-600 text-xs hover:text-indigo-800 transition-colors"
+                >
                   View details
                 </button>
               </div>
@@ -107,14 +123,26 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
                   </span>
                   <span>{leave.usedLeaves} days</span>
                 </div>
+                {!isCompOff && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">ACCRUED SO FAR</span>
+                  {!isUnpaid && (
+                    <span className="text-gray-500">ACCRUED SO FAR</span>
+                  )}
                   <span className="text-gray-500">ANNUAL QUOTA</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>{leave.accruedLeaves} days</span>
-                  <span>{leave.totalLeaves || "-"} days</span>
-                </div>
+                )}
+                {!isCompOff && (
+                  <div className="flex justify-between text-sm">
+                    {!isUnpaid && (
+                      <span>{leave.accruedLeaves} days</span>
+                    )}
+                    {isUnpaid 
+                    ? "∞ Days" : 
+                    (
+                      <span>{leave.totalLeaves || "-"} days</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
