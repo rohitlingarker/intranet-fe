@@ -93,7 +93,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
                 <th className="p-3 text-center uppercase">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-blue-100">
+            <tbody className="bg-white divide-y divide-blue-100 text-center">
               {pendingCompOffs.map((req) => (
                 <tr key={req.idleaveCompoff} className="hover:bg-blue-50 transition-colors text-xs">
                   <td className="p-3">{req.employeeName}</td>
@@ -106,7 +106,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
                   </td>
                   <td className="p-3">{req.note}</td>
                   <td className="p-3 capitalize">{req.status}</td>
-                  <td className="p-3 flex gap-2">
+                  <td className="p-3 flex justify-center gap-2">
                     <button
                       onClick={() => handleApprove(req.idleaveCompoff)}
                       className="p-1 pr-2 text-green-600 hover:text-green-800 transition-colors"

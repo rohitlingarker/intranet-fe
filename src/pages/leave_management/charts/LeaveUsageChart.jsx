@@ -92,7 +92,7 @@ export default function LeaveUsageChart({ leave }) {
 
   return (
     <div className="w-full h-[250px] sm:h-[220px]">
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full" onMouseLeave={onPieLeave}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -104,8 +104,9 @@ export default function LeaveUsageChart({ leave }) {
               dataKey="value"
               activeIndex={activeIndex}
               activeShape={renderActiveShape}
-              onMouseOverCapture={onPieEnter}
-              onMouseOutCapture={onPieLeave}
+              onMouseEnter={onPieEnter}
+              // onMouseOverCapture={onPieEnter}
+              // onMouseOutCapture={onPieLeave}
               isAnimationActive={true}
             >
               {chartData.map((_, index) => (
@@ -119,6 +120,9 @@ export default function LeaveUsageChart({ leave }) {
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",
                 fontSize: "13px",
+              }}
+              wrapperStyle={{
+                transform : "translateY(45px) translateX(55%)",
               }}
             />
           </PieChart>
@@ -135,4 +139,3 @@ export default function LeaveUsageChart({ leave }) {
     </div>
   );
 }
-

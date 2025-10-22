@@ -71,7 +71,7 @@
 //   return { locked, lockedBy, acquireLock, releaseLockOnUnmount, refreshLockStatus };
 // };
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { lockRecord, releaseLock } from "../services/recordLockService";
 
 export const useRecordLock = ({ tableName, recordId, user }) => {
@@ -89,11 +89,12 @@ export const useRecordLock = ({ tableName, recordId, user }) => {
         if (res.success) {
           setLocked(true);
           setLockedBy(user);
-          setLockMessage(res.data.message);
+          setLockMessage(res.message);
           isLockOwner.current = true;
         } else {
           setLocked(true);
           setLockedBy(res.lockedBy || "another user");
+          setLockMessage(res.message || "This record is locked by another user.");
           isLockOwner.current = false;
         }
       };
@@ -123,6 +124,16 @@ export const useRecordLock = ({ tableName, recordId, user }) => {
       releaseLockOnUnmount();
     };
   }, [tableName, recordId, user]);
+  
+  const manualReleaseLock = useCallback(async () => {
+    if (isLockOwner.current) {
+      await releaseLock({ tableName, recordId, lockedBy: user });
+      isLockOwner.current = false;
+      setLocked(false);
+      setLockedBy(null);
+      setLockMessage(null);
+    }
+  }, [tableName, recordId, user]);
 
-  return { locked, lockedBy, lockMessage };
+  return { locked, lockedBy, lockMessage, manualReleaseLock };
 };

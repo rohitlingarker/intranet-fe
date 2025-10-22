@@ -66,8 +66,16 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
                 key={req.idleaveCompoff}
                 className="border-t border-gray-200 text-xs text-center justify-center"
               >
-                <td className="p-3">{req.startDate}</td>
-                <td className="p-3">{req.endDate}</td>
+                <td className="p-3">{new Date(req.startDate).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}</td>
+                <td className="p-3">{new Date(req.endDate).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}</td>
                 <td className="p-3">{req.duration}</td>
                 <td className="p-3">{req.status}</td>
                 <td className="p-3">

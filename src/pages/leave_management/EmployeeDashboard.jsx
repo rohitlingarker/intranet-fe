@@ -134,9 +134,9 @@ const EmployeeDashboard = ({ employeeId }) => {
         </button>
       </div>
       <h2 className="text-small font-semibold m-4">Pending Leave Requests</h2>
-      <div className="flex gap-4 ">
+      <div className="flex gap-4 flex-col md:flex-row">
         {/* Pending Leave Requests */}
-        <div className="flex-1 bg-white p-6 rounded-lg shadow-sm w-[65%]">
+        <div className="bg-white p-6 rounded-lg shadow-sm md:w-full lg:w-[65%]">
           <PendingLeaveRequests
             employeeId={employeeId}
             refreshKey={refreshKeys}
@@ -144,7 +144,7 @@ const EmployeeDashboard = ({ employeeId }) => {
         </div>
 
         {/* Upcoming Holidays */}
-        <div className="w-[35%]">
+        <div className="md:w-full lg:w-[35%]">
           <UpcomingHolidays />
         </div>
       </div>

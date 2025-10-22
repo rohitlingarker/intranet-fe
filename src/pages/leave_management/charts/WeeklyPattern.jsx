@@ -62,7 +62,7 @@ const WeeklyPattern = ({ employeeId, refreshKey }) => {
         <h3 className="text-sm  font-semibold text-gray-800">
           Weekly Leave Pattern
         </h3>
-        <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+        <span className="text-xs sm:text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
             year: "numeric",

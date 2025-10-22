@@ -98,7 +98,6 @@ const HRManageTools = ({ employeeId }) => {
         >
           Add Employee
         </button>
-        {/* {" "} */}
         <button
           onClick={() => {
             setEditLeaveType(null);
@@ -129,7 +128,7 @@ const HRManageTools = ({ employeeId }) => {
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
-          <LoadingSpinner /> {/* ✅ Spinner shown while loading */}
+          <LoadingSpinner />
         </div>
       ) : (
         <div className="overflow-x-auto border rounded-md max-w-full">
