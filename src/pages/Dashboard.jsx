@@ -16,6 +16,7 @@ import axios from "axios";
 const Dashboard = () => {
   const { user } = useAuth();
   const [employeeCount, setEmployeeCount] = useState(null);
+  const [projectsCount, setProjectsCount] = useState(null);
   const [activeEmployeeCount, setActiveEmployeeCount] = useState(null);
 
   const roles = user?.roles || [];
