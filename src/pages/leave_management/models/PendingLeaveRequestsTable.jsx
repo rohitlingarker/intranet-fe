@@ -57,10 +57,9 @@ const PendingLeaveRequestsTable = ({
       const empId = leaveToCancel.employee?.employeeId || employeeId;
 
       await axios.put(
-        `${BASE_URL}/api/leave-requests/${cancelId}/cancel`,
-        null,
+        `${BASE_URL}/api/leave-requests/${cancelId}/cancel/${empId}`, 
+        null,       
         {
-          params: { employeeId: empId },
           headers: { 
             "Cache-Control": "no-store", 
             Authorization: `Bearer ${token}`

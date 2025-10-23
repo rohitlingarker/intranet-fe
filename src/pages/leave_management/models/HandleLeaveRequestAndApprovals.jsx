@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import ManagerEditLeaveRequest from "./ManagerEditLeaveRequest";
 import LeaveSection from "./LeaveSection";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -48,7 +49,12 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
 
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
   const managerId = employeeId;
+  const canApprove = permissions.includes("Approve_LeaveRequest");
+  const canReject = permissions.includes("Reject_LeaveRequest");
+  const canEdit = permissions.includes("Edit_LeaveRequest");
 
   // const toLeaveRequest = (raw) => ({
   //   leaveId: raw.leaveId,
@@ -232,52 +238,51 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   };
 
   // Approve or Reject single leave, use comment from param or store
-const handleDecision = async (action, leaveId, commentParam) => {
-  const comment = commentParam ?? (comments[leaveId] || "");
+  const handleDecision = async (action, leaveId, commentParam) => {
+    const comment = commentParam ?? (comments[leaveId] || "");
 
-  if ((action === "reject" || action === "cancel") && !comment) {
-    toast.error(
-      action === "reject"
-        ? "Manager comment required to reject."
-        : "Reason required to cancel approved leave."
-    );
-    return;
-  }
-  console.log("handleDecision", { action, leaveId, comment, managerId });
-  setLoading(true);
-  try {
-    await axios.put(
-      `${BASE_URL}/api/leave-requests/${action}`,
-      {
-        managerId,
-        leaveId,
-        comment,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    if ((action === "reject" || action === "cancel") && !comment) {
+      toast.error(
+        action === "reject"
+          ? "Manager comment required to reject."
+          : "Reason required to cancel approved leave."
+      );
+      return;
+    }
+    console.log("handleDecision", { action, leaveId, comment, managerId });
+    setLoading(true);
+    try {
+      await axios.put(
+        `${BASE_URL}/api/leave-requests/${action}`,
+        {
+          managerId,
+          leaveId,
+          comment,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    toast.success(
-      action === "reject"
-        ? "Leave rejected successfully."
-        : action === "cancel"
-        ? "Leave cancelled successfully."
-        : "Leave approved successfully."
-    );
+      toast.success(
+        action === "reject"
+          ? "Leave rejected successfully."
+          : action === "cancel"
+          ? "Leave cancelled successfully."
+          : "Leave approved successfully."
+      );
 
-    setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
-    await fetchData();
-    setConfirmation(null);
-  } catch {
-    toast.error("Something went wrong. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
+      await fetchData();
+      setConfirmation(null);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Update leave (for ActionDropdown editing)
   const handleLeaveUpdate = async (leaveId, updatedData) => {
@@ -451,18 +456,46 @@ const handleDecision = async (action, leaveId, commentParam) => {
                     <span className="font-semibold">
                       {selectedRequests.length} selected
                     </span>
+
+                    {/* ✅ Accept All */}
                     <button
-                      onClick={handleAcceptAll}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-md transition"
+                      onClick={canApprove ? handleAcceptAll : undefined}
+                      disabled={!canApprove || selectedRequests.length === 0}
+                      title={
+                        canApprove
+                          ? "Approve all selected leave requests"
+                          : "You don’t have permission to approve requests"
+                      }
+                      className={`px-3 py-1 rounded-md transition
+      ${
+        canApprove
+          ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+      }`}
                     >
                       Accept All
                     </button>
+
+                    {/* ❌ Reject All */}
                     <button
-                      onClick={handleRejectAll}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md transition"
+                      onClick={canReject ? handleRejectAll : undefined}
+                      disabled={!canReject || selectedRequests.length === 0}
+                      title={
+                        canReject
+                          ? "Reject all selected leave requests"
+                          : "You don’t have permission to reject requests"
+                      }
+                      className={`px-3 py-1 rounded-md transition
+                      ${
+                        canReject
+                          ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
                     >
                       Reject All
                     </button>
+
+                    {/* 🧹 Clear Selection */}
                     <button
                       onClick={() => setSelectedRequests([])}
                       className="ml-auto px-2 py-1 text-indigo-600 hover:text-indigo-900 font-semibold transition"
@@ -596,9 +629,11 @@ const handleDecision = async (action, leaveId, commentParam) => {
                           handleSelectRequest(request.leaveId, e.target.checked)
                         }
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        disabled={["approved", "rejected", "cancelled"].includes(
-                          request.status.toLowerCase()
-                        )}
+                        disabled={[
+                          "approved",
+                          "rejected",
+                          "cancelled",
+                        ].includes(request.status.toLowerCase())}
                       />
                     </td>
                     <td className="cursor-pointer text-blue-600 hover:underline sticky left-[4.5%] z-10 bg-white">
@@ -662,7 +697,11 @@ const handleDecision = async (action, leaveId, commentParam) => {
                         {request.requestDate
                           ? new Date(request.requestDate).toLocaleDateString(
                               "en-US",
-                              { month: "short", day: "numeric", year: "numeric" }
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
                             )
                           : "-"}
                       </div>
@@ -691,7 +730,9 @@ const handleDecision = async (action, leaveId, commentParam) => {
                     <td className="px-6 py-4 text-gray-500">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {request.approvedBy ? request.approvedBy.fullName : "—"}
+                          {request.approvedBy
+                            ? request.approvedBy.fullName
+                            : "—"}
                         </div>
                         {request.managerComment && (
                           <div className="text-gray-500 mt-1">
@@ -716,42 +757,73 @@ const handleDecision = async (action, leaveId, commentParam) => {
                       <div className="flex items-center gap-2">
                         {request.status.toLowerCase() === "pending" && (
                           <>
+                            {/* ✅ Approve Button */}
                             <button
-                              title="Approve"
-                              className="p-1 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={
+                                canApprove
+                                  ? "Approve"
+                                  : "You don't have permission to approve this request"
+                              }
+                              className={`p-1 transition-colors ${
+                                canApprove
+                                  ? "text-green-600 hover:text-green-800"
+                                  : "text-gray-400 cursor-not-allowed"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
                               onClick={() =>
+                                canApprove &&
                                 setConfirmation({
                                   action: "approve",
                                   leaveId: request.leaveId,
                                 })
                               }
                               aria-label="Approve Request"
-                              disabled={loading}
+                              disabled={loading || !canApprove}
                             >
                               <Check className="w-4 h-4" />
                             </button>
 
+                            {/* ❌ Reject Button */}
                             <button
-                              title="Reject"
-                              className="p-1 text-red-600 hover:text-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={
+                                canReject
+                                  ? "Reject"
+                                  : "You don't have permission to reject this request"
+                              }
+                              className={`p-1 transition-colors ${
+                                canReject
+                                  ? "text-red-600 hover:text-red-800"
+                                  : "text-gray-400 cursor-not-allowed"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
                               onClick={() =>
+                                canReject &&
                                 setConfirmation({
                                   action: "reject",
                                   leaveId: request.leaveId,
                                 })
                               }
                               aria-label="Reject Request"
-                              disabled={loading}
+                              disabled={loading || !canReject}
                             >
                               <X className="w-4 h-4" />
                             </button>
 
+                            {/* ✏️ Edit Button */}
                             <button
-                              title="Edit"
-                              onClick={() => setEditingRequest(request)}
+                              title={
+                                canEdit
+                                  ? "Edit"
+                                  : "You don't have permission to edit this request"
+                              }
+                              onClick={() =>
+                                canEdit && setEditingRequest(request)
+                              }
                               aria-label="Edit Request"
-                              disabled={loading}
-                              className="p-1 text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={loading || !canEdit}
+                              className={`p-1 transition-colors ${
+                                canEdit
+                                  ? "text-blue-600 hover:text-blue-800"
+                                  : "text-gray-400 cursor-not-allowed"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
