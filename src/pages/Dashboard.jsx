@@ -18,6 +18,9 @@ const Dashboard = () => {
   const [employeeCount, setEmployeeCount] = useState(null);
   const [projectsCount, setProjectsCount] = useState(null);
   const [activeEmployeeCount, setActiveEmployeeCount] = useState(null);
+  const [taskCount, setTaskCount] = useState(null);
+
+  // ✅ Determine user roles
 
   const roles = user?.roles || [];
   const isAdminOrSuperAdmin =
@@ -77,16 +80,41 @@ const Dashboard = () => {
         );
 
         // Directly use the count from API
-        const count = res.data?.count ?? 0;
+        const count = res.data ?? 0;
         setProjectsCount(count);
+        console.log("Projects count fetched:", count);
       } catch (error) {
-        console.error("Error fetching projects count:", error);
+        //console.error("Error fetching projects count:", error);
       }
     };
 
     fetchProjectsCount();
   }, []);
 
+  // fetch tasks count
+  useEffect(() => {
+    const token = localStorage.getItem("token");  
+
+    const fetchTasksCount = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/status/done/count`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // Directly use the count from API
+        const count = res.data ?? 0;
+        setTaskCount(count);
+        console.log("Tasks count fetched:", count);
+      } catch (error) {
+        //console.error("Error fetching tasks count:", error);
+      }
+    };
+
+    fetchTasksCount();
+  }, []);
 
   // ✅ Determine project route
   let projectHref = "/projects";
@@ -136,7 +164,7 @@ const Dashboard = () => {
         },
         {
           label: "Completed Tasks",
-          value: "89%",
+          value: taskCount ?? "—",
           change: "+5%",
           icon: CheckCircle,
           positive: true,
