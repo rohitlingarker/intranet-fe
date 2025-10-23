@@ -503,11 +503,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                           : "You don’t have permission to reject requests"
                       }
                       className={`px-3 py-1 rounded-md transition
-      ${
-        canReject
-          ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-      }`}
+                      ${
+                        canReject
+                          ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
                     >
                       Reject All
                     </button>
