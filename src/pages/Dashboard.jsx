@@ -66,22 +66,27 @@ const Dashboard = () => {
   // fetch projects count
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     const fetchProjectsCount = async () => {
       try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/count`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setProjectsCount(data.length);
+        const res = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/count`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // Directly use the count from API
+        const count = res.data?.count ?? 0;
+        setProjectsCount(count);
       } catch (error) {
         console.error("Error fetching projects count:", error);
       }
     };
+
     fetchProjectsCount();
   }, []);
+
 
   // ✅ Determine project route
   let projectHref = "/projects";
