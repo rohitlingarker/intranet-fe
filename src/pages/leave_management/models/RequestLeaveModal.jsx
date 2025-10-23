@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import DateRangePicker from "./DateRangePicker";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem("token");
+// const token = localStorage.getItem("token");
 
 // -- Helper: Massage leaves to dropdown options --
 function mapLeaveBalancesToDropdown(balances) {
@@ -19,7 +19,7 @@ function mapLeaveBalancesToDropdown(balances) {
     try {
       const res = await axios.get(`${BASE_URL}/api/leave/types`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       setLeaveTypes(res.data);
@@ -299,7 +299,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     setLoadingBalances(true);
     axios
       .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((response) => {
         setBalances(response.data);
@@ -314,7 +314,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
         // Replace with your actual holiday API endpoint
         const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
           params: { state: "All", country: "India" },
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
         // Map the JSON response to an array of Date objects
@@ -413,7 +413,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
 
     try {
       await axios.post(`${BASE_URL}/api/leave-requests/apply`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setSuccess("Leave request submitted!");
       onSuccess?.();
@@ -521,9 +521,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
           <div className="text-center space-y-1">
-            {/* <span className="inline-flex items-center px-2 py-1 rounded-md text-lg font-semibold bg-indigo-100 text-indigo-700">
-              {weekdays} day{weekdays !== 1 ? "s" : ""}
-            </span> */}
             <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-md border border-indigo-200 shadow-sm">
               {weekdays} {weekdays === 1 ? "day" : "days"}
             </span>

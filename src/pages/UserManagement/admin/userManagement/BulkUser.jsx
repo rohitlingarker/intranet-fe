@@ -2,66 +2,76 @@ import { useState } from "react";
 import Button from "../../../../components/Button/Button";
 import axios from "axios";
 import FileUpload from "../../../../components/forms/FileUpload";
+import { toast } from "react-toastify";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
-const BulkUserUpload = ({onClose,onSuccess}) => {
+const BulkUserUpload = ({ onClose, onSuccess }) => {
   const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!file) {
-    showStatusToast("Please select a file before submitting.", "error");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    showStatusToast("Uploading file, please wait...", "info");
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/multiple-users`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    const { created_count, failed_count } = response.data;
-
-    if (failed_count === 0) {
-      showStatusToast(
-        `${created_count} users created successfully.`,
-        "success"
-      );
-    } else {
-      showStatusToast(
-        `${created_count} users created, ${failed_count} failed.`,
-        "warning"
-      );
+    if (!file) {
+      showStatusToast("Please select a file before submitting.", "error");
+      return;
     }
 
-    setFile(null);
-    if (typeof onSuccess === "function") onSuccess();
+    const formData = new FormData();
+    formData.append("file", file);
 
-  } catch (error) {
-    console.error(error);
-    showStatusToast(
-      `Upload failed: ${error.response?.data?.detail || error.message}`,
-      "error"
-    );
-  }
-};
+    let toastId;
+    try {
+      setIsUploading(true);
+      toastId = toast("Uploading file and reading data...");
 
+      const response = await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/multiple-users`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const { created_count, failed_count } = response.data;
+
+      if (failed_count === 0) {
+        toast.update(toastId, {
+          render: `✅ ${created_count} users created successfully.`,
+          type: "success",
+          isLoading: false,
+          autoClose: 4000,
+        });
+      } else {
+        toast.update(toastId, {
+          render: `⚠️ ${created_count} users created, ${failed_count} failed.`,
+          type: "warning",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
+
+      setFile(null);
+      if (typeof onSuccess === "function") onSuccess();
+    } catch (error) {
+      console.error(error);
+      toast.update(toastId, {
+        render: `❌ Upload failed: ${error.response?.data?.detail || error.message}`,
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-md space-y-4">
@@ -82,28 +92,31 @@ const BulkUserUpload = ({onClose,onSuccess}) => {
           </p>
         )}
 
-        {/* <Button type="submit" label="Upload" /> */}
-        <Button
-            type="button"
+        <div className="flex justify-between gap-3">
+          <Button
+            type="submit"
             variant="primary"
             size="small"
-            onClick={handleSubmit}
-            className="flex-1 sm:flex-none"
+            disabled={isUploading}
+            className="w-1/2"
           >
-            Upload
+            {isUploading ? "Uploading..." : "Upload"}
           </Button>
-      </form>
-      <Button
+
+          <Button
             type="button"
             variant="secondary"
             size="small"
             onClick={onClose}
-            className="flex-1 sm:flex-none"
+            disabled={isUploading}
+            className="w-1/2"
           >
             Cancel
           </Button>
+        </div>
+      </form>
     </div>
   );
 };
 
-export  {BulkUserUpload};
+export { BulkUserUpload };

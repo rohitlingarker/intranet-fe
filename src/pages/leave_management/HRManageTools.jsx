@@ -9,7 +9,7 @@ import ActionDropdown from "./models/ActionDropdownHrTools";
 import { toast } from "react-toastify";
 import ConfirmationModal from "./models/ConfirmationModal";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import {motion, AnimatePresence} from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -28,7 +28,6 @@ const HRManageTools = ({ employeeId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
-
 
   const token = localStorage.getItem("token");
 
@@ -88,18 +87,17 @@ const HRManageTools = ({ employeeId }) => {
 
   return (
     <div className="space-y-6 py-6 px-6">
-      <h1 className="text-2xl font-bold text-gray-800">HR Tools</h1>{" "}
+      <h1 className="text-xl font-bold text-gray-800">HR Tools</h1>{" "}
       <p className="text-gray-600 mb-2">
         Manage employees, leave types, and holidays.
       </p>
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row gap-4 mb-4 text-sm">
         <button
           onClick={() => setIsAddEmployeeModalOpen(true)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
         >
-          Add Employee 
+          Add Employee
         </button>
-          {/* {" "} */}
         <button
           onClick={() => {
             setEditLeaveType(null);
@@ -107,13 +105,13 @@ const HRManageTools = ({ employeeId }) => {
           }}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-        Add Leave Type
+          Add Leave Type
         </button>
         <button
           onClick={() => navigate(`/employee-leave-balance`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Edit Leave Balance
+        >
+          Edit Leave Balance
         </button>
         <button
           onClick={() => setIsAddHolidaysModalOpen(true)}
@@ -124,26 +122,23 @@ const HRManageTools = ({ employeeId }) => {
         <button
           onClick={() => navigate(`/edit-holidays`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Edit Holidays
+        >
+          Edit Holidays
         </button>
       </div>
-
-      
-
-    {isLoading ? (
+      {isLoading ? (
         <div className="flex justify-center items-center py-12">
-          <LoadingSpinner /> {/* ✅ Spinner shown while loading */}
+          <LoadingSpinner />
         </div>
       ) : (
         <div className="overflow-x-auto border rounded-md max-w-full">
           <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
-            <thead className="bg-gray-100 text-base">
+            <thead className="bg-gray-100">
               <tr>
                 {tableHeaders.map((header, i) => (
                   <th
                     key={header}
-                    className={`border px-4 py-3 min-w-[200px] capitalize bg-gray-100 ${
+                    className={`border px-4 py-3 min-w-[100px] capitalize bg-gray-100 ${
                       i === 0
                         ? "sticky left-0 z-20"
                         : i === 1
@@ -154,12 +149,12 @@ const HRManageTools = ({ employeeId }) => {
                     {header}
                   </th>
                 ))}
-                <th className="border px-4 py-3 min-w-[160px] bg-gray-100 z-20">
+                <th className="border px-3 py-2 min-w-[100px] sticky right-0 bg-gray-100 z-20">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-xs">
               {leaveTypes.length === 0 ? (
                 <tr>
                   <td
@@ -186,7 +181,7 @@ const HRManageTools = ({ employeeId }) => {
                         {String(lt[key])}
                       </td>
                     ))}
-                    <td className="border px-4 py-2 min-w-[160px] bg-white">
+                    <td className="border px-3 py-2 min-w-[100px] sticky right-0 bg-white">
                       {/* <ActionDropdown
                         onEdit={() => {
                           setEditLeaveType(lt);
@@ -194,24 +189,25 @@ const HRManageTools = ({ employeeId }) => {
                         }}
                         onDelete={() => confirmDelete(lt.leaveTypeId)}
                       /> */}
-                    <div className="flex items-center gap-4">
-                      <button
-                        title="Edit"
-                        onClick={()=> {
-                          setEditLeaveType(lt);
-                          setIsAddLeaveTypeModalOpen(true);
-                        } }
-                        className="text-blue-500 hover:text-blue-800 transition-colors">
-                        <Pencil size={18}></Pencil>
-                      </button>
-                      <button
-                        title="Delete"
-                        onClick={() => confirmDelete(lt.leaveTypeId)}
-                        className="text-red-500 hover:text-red-800 transition-colors"
-                      >
-                        <Trash2 size={18}></Trash2>
-                      </button>
-                    </div>
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          title="Edit"
+                          onClick={() => {
+                            setEditLeaveType(lt);
+                            setIsAddLeaveTypeModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-800 transition-colors"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          title="Delete"
+                          onClick={() => confirmDelete(lt.leaveTypeId)}
+                          className="text-red-500 hover:text-red-800 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

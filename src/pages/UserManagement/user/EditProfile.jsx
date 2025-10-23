@@ -4,7 +4,8 @@ import axios from "axios";
 import { useAuth } from "../../../contexts/AuthContext";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css"; // ✅ import styles
+import "react-phone-input-2/lib/style.css";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 // Simple reusable Modal component
 function Modal({ open, title, message, onConfirm, onCancel, loading }) {
@@ -41,6 +42,7 @@ export default function EditProfile() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   // Load user profile on mount
@@ -51,7 +53,6 @@ export default function EditProfile() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
         .then((res) => setForm(res.data))
-
         .catch((err) => {
           console.error("Failed to fetch profile", err);
           showStatusToast("Failed to load profile.", "error");
@@ -67,9 +68,6 @@ export default function EditProfile() {
   // Save profile
   const doSave = async () => {
     const payload = { ...form };
-
-    // ❗ If password is blank, remove it from payload (keep existing password)
-  
 
     try {
       setSaving(true);
@@ -159,15 +157,32 @@ export default function EditProfile() {
 
           {/* Password (optional) */}
           <div>
-            <label className="block font-medium mb-1">New Password (optional)</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password || ""}
-              onChange={handleChange}
-              placeholder="Leave blank to keep current password"
-              className="w-full border px-3 py-2 rounded-md"
-            />
+            <label className="block font-medium mb-1">
+              New Password (optional)
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password || ""}
+                onChange={handleChange}
+                placeholder="Leave blank to keep current password"
+                className="w-full border px-3 py-2 pr-10 rounded-md appearance-none
+                           focus:outline-none focus:ring-2 focus:ring-blue-500
+                           [&::-ms-reveal]:hidden [&::-ms-clear]:hidden
+                           [&::-webkit-credentials-auto-fill-button]:hidden
+                           [&::-webkit-textfield-decoration-container]:hidden"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
+            </div>
           </div>
 
           {/* Buttons */}

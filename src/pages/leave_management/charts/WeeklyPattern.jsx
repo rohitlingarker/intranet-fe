@@ -59,10 +59,10 @@ const WeeklyPattern = ({ employeeId, refreshKey }) => {
     <div className="w-full bg-white rounded-lg shadow p-4 sm:p-5 hover:shadow-lg transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800">
+        <h3 className="text-sm  font-semibold text-gray-800">
           Weekly Leave Pattern
         </h3>
-        <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+        <span className="text-xs sm:text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
             year: "numeric",

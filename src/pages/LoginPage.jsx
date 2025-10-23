@@ -3,57 +3,72 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { FaBuilding, FaMicrosoft } from "react-icons/fa";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { showStatusToast } from "../components/toastfy/toast";
- 
+
 let intranetLogo;
 try {
   intranetLogo = require("../../assets/intranet-logo.png");
 } catch (e) {
   intranetLogo = null;
 }
- 
+
 const useQuery = () => new URLSearchParams(useLocation().search);
- 
+
 export default function LoginPage() {
   const [email, setMail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const query = useQuery();
- 
+
   const calledOnce = useRef(false);
- 
+
+  useEffect(() => {
+    if (localStorage.getItem("isfirsttlogin")) {
+      showStatusToast("Please change your password first.");
+      localStorage.removeItem("isfirsttlogin");
+    }
+  }, []);
+
   useEffect(() => {
     if (calledOnce.current) return;
- 
+
     const params = new URLSearchParams(location.search);
     const code = params.get("code");
     const error = params.get("error");
- 
+
     if (error) {
       showStatusToast(`Login error: ${error}`, "error");
       navigate("/login", { replace: true });
       return;
     }
     if (!code) return;
- 
+
     calledOnce.current = true;
- 
+
     const doLogin = async () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(code)}`
+          `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/callback?code=${encodeURIComponent(
+            code
+          )}`
         );
         const { access_token, redirect: redirectPath } = response.data;
- 
+
         navigate(redirectPath || "/dashboard", { replace: true });
-        login(access_token);
+        if (redirectPath === "/change-password") {
+          login(access_token, true);
+        } else {
+          login(access_token, false);
+        }
         localStorage.setItem("user", JSON.stringify({ access_token }));
         window.history.replaceState({}, document.title, window.location.pathname);
-       
       } catch (err) {
         const errDetail =
           err.response?.data?.error_description ||
@@ -61,50 +76,57 @@ export default function LoginPage() {
           err.message;
         console.error("OAuth login failed:", err);
         showStatusToast("OAuth login failed: " + errDetail, "error");
- 
+
         window.history.replaceState({}, document.title, window.location.pathname);
         navigate("/", { replace: true });
       } finally {
         setLoading(false);
       }
     };
- 
+
     doLogin();
   }, [location.search, login, navigate]);
- 
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       showStatusToast("Please enter both email and password.", "error");
       return;
     }
- 
+
     setLoading(true);
- 
+
     try {
-      const res = await axios.post(`${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/login`, {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/login`,
+        {
+          email,
+          password,
+        }
+      );
       const token = res.data.access_token;
- 
+
       navigate(res?.data?.redirect || "/dashboard", { replace: true });
 
-      setTimeout(() => {
-      login(token);
-      }, 1000);
-     
- 
+      const redirectPath = res?.data?.redirect || "/dashboard";
+      if (redirectPath === "/change-password") {
+        login(token, true);
+      } else {
+        login(token, false);
+      }
     } catch (err) {
-      showStatusToast("Login failed: " + (err.response?.data?.detail || err.message), "error");
+      showStatusToast(
+        "Login failed: " + (err.response?.data?.detail || err.message),
+        "error"
+      );
     } finally {
       setLoading(false);
     }
   };
- 
+
   const handleMicrosoftLogin = () => {
     window.location.href = `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/ms-login`;
   };
- 
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#101a36]">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 flex flex-col items-center">
@@ -139,7 +161,7 @@ export default function LoginPage() {
               <div className="flex-grow border-t border-gray-300" />
             </div>
           </div>
- 
+
           <input
             type="email"
             placeholder="Email address"
@@ -147,13 +169,35 @@ export default function LoginPage() {
             onChange={(e) => setMail(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
-          />
+
+{/* Password Input with View/Hide Toggle */}
+<div className="relative w-full">
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    className="w-full px-4 py-2 pr-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50 text-gray-800
+               [&::-ms-reveal]:hidden [&::-ms-clear]:hidden 
+               [&::-webkit-credentials-auto-fill-button]:hidden 
+               [&::-webkit-textfield-decoration-container]:hidden 
+               appearance-none"
+    autoComplete="new-password"
+  />
+
+  <button
+    type="button"
+    onClick={() => setShowPassword(!showPassword)}
+    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+    tabIndex={-1}
+  >
+    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+  </button>
+</div>
+
+
+
+
           <button
             onClick={handleLogin}
             disabled={loading}
