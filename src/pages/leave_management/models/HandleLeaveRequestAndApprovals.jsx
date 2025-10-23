@@ -40,8 +40,8 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState({}); // manager comments keyed by leaveId
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedYear, setSelectedYear] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth()+1));
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
   const token = localStorage.getItem("token");
   const [editingRequest, setEditingRequest] = useState(null);
@@ -151,21 +151,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     );
   };
 
-  // for the leaveBalaceDashBoard
-  // const handleOpenDetails = (request) => {
-  //   setSelectedRequestDetails(request);
-  // };
-
-  // const filteredAdminRequests = adminLeaveRequests.filter((req) => {
-  //   const matchesSearch =
-  //     req.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     req.leaveType.leaveName.toLowerCase().includes(searchTerm.toLowerCase());
-  //   const matchesStatus =
-  //     selectedStatus === "All" ||
-  //     req.status.toLowerCase() === selectedStatus.toLowerCase();
-  //   return matchesSearch && matchesStatus;
-  // });
-
   const totalPages = Math.ceil(adminLeaveRequests.length / itemsPerPage);
   const paginatedRequests = adminLeaveRequests.slice(
     (currentPage - 1) * itemsPerPage,
@@ -235,7 +220,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         {
           managerId,
           leaveIds: selectedRequests,
-          // comments: selectedRequests.reduce((res, id) => ({ ...res, [id]: comments[id] || "" }), {})
         },
         {
           headers: {
@@ -459,17 +443,16 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
           </div>
         </div>
       </div>
-
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
-          <thead className="bg-gray-50 border-b border-gray-200 relative">
+        <table className="w-full rounded-lg shadow-sm">
+          <thead className="bg-gray-50 border-gray-200 relative">
             {selectedRequests.length > 0 && (
               <tr>
                 <th
-                  colSpan={13}
-                  className="bg-indigo-100 text-indigo-700 px-6 py-2 text-left rounded-t-lg"
+                  colSpan={12}
+                  className="sticky left-0 z-10 p-0 bg-gray-50 text-left"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-1/2 bg-indigo-100 text-indigo-700 px-6 py-2 rounded-t-lg">
                     <span className="font-semibold">
                       {selectedRequests.length} selected
                     </span>
@@ -526,7 +509,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               <th
-                className="px-4 py-3 text-center text-xs uppercase"
+                className="px-4 py-3 text-center text-xs uppercase sticky left-0 z-20 bg-blue-900"
                 style={{ width: "4%" }}
               >
                 <input
@@ -542,7 +525,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                 />
               </th>
               <th
-                className="px-4 py-3 text-center text-xs uppercase"
+                className="px-4 py-3 text-center text-xs uppercase sticky left-[4.5%] z-20 bg-blue-900"
                 style={{ width: "12%" }}
               >
                 Employee
@@ -602,7 +585,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                 Documents
               </th>
               <th
-                className="px-4 py-3 text-center text-xs uppercase"
+                className="px-4 py-3 text-center text-xs uppercase sticky right-0 z-20 bg-indigo-900"
                 style={{ width: "8%" }}
               >
                 Actions
@@ -638,7 +621,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     className="hover:bg-gray-50 transition-colors text-xs"
                   >
                     {/* Your existing <td> elements go here, no changes needed inside the map */}
-                    <td>
+                    <td className="sticky left-0 z-10 bg-white">
                       <input
                         type="checkbox"
                         checked={selectedRequests.includes(request.leaveId)}
@@ -653,7 +636,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         ].includes(request.status.toLowerCase())}
                       />
                     </td>
-                    <td className="cursor-pointer text-blue-600 hover:underline">
+                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[4.5%] z-10 bg-white">
                       <button
                         onClick={() =>
                           setLeaveBalaceModel({
@@ -770,7 +753,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         </a>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 sticky right-0 z-10 bg-white">
                       <div className="flex items-center gap-2">
                         {request.status.toLowerCase() === "pending" && (
                           <>
@@ -983,12 +966,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             </div>
           </div>
         )}
-
-        {/* {loading && (
-          <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )} */}
       </div>
     </div>
   );

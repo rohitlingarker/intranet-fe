@@ -53,7 +53,7 @@ const ViewSheet = () => {
     <div className="max-w-5xl mx-auto mt-8 px-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent capitalize">
+        <h1 className="text-3xl font-bold text-indigo-800 capitalize">
           {type} Details
         </h1>
         <Button

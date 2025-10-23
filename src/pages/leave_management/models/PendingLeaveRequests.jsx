@@ -115,11 +115,13 @@ const PendingLeaveRequests = ({ refreshKey }) => {
       ) : error ? (
         <p className="text-red-500">{error}</p>
       ) : pendingLeaves.length === 0 ? (
-        <div className="flex py-4 items-center">
-          <div className="text-black-600 text-3xl">🎉</div>
-          <div className="text-black-600 pl-4">
-            <h2 className={Fonts.heading4}>Cheers! No pending leave requests.</h2>
-            <p className={Fonts.caption}>Request leave on the above!</p>
+        <div className="flex items-center justify-center h-32">
+          <div className="text-3xl leading-none">🎉</div>
+          <div className="pl-4 leading-snug">
+            <h2 className="text-xl font-semibold">
+              Cheers! No pending leave requests.
+            </h2>
+            <p className="text-sm text-gray-600">Request leave on the above!</p>
           </div>
         </div>
       ) : (

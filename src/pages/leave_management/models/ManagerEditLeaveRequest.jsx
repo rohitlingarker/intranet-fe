@@ -12,7 +12,6 @@ import { useRecordLock } from "../hooks/useRecordLock";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem("token");
 
 // --- Helper 1: Maps leave balances to dropdown options with user-friendly labels ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
@@ -254,7 +253,7 @@ export default function ManagerEditLeaveRequest({
     end: "none",
   });
   const { user } = useAuth();
-  const { locked, lockedBy, lockMessage } = useRecordLock({
+  const { locked, lockedBy, lockMessage, manualReleaseLock } = useRecordLock({
     tableName: "leave_request",
     recordId: requestDetails?.leaveId,
     user: user?.name,
@@ -291,14 +290,14 @@ export default function ManagerEditLeaveRequest({
           const [balancesRes, typesRes, holidays] = await Promise.all([
             axios.get(
               `${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             ),
             axios.get(`${BASE_URL}/api/leave/types`, {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             }),
             axios.get(`${BASE_URL}/api/holidays/by-location`, {
               params: { state: "All", country: "India" },
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             }),
           ]);
           if (isMounted) {
@@ -358,6 +357,14 @@ export default function ManagerEditLeaveRequest({
     setEndDate(dateString);
   };
 
+  const handleClose = async () => {
+    // This is the crucial part.
+    // We wait for the lock to be released...
+    await manualReleaseLock();
+    // ...and *then* we call the original onClose prop to hide the modal.
+    onClose();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
@@ -369,7 +376,7 @@ export default function ManagerEditLeaveRequest({
       endDate,
       daysRequested: weekdays,
       managerComment,
-      isHalfDay: showCustomHalfDay,
+      // isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
     };
@@ -402,7 +409,7 @@ export default function ManagerEditLeaveRequest({
             Edit Leave Request
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 rounded-full hover:bg-gray-200"
           >
             <X className="w-5 h-5 text-gray-600" />
@@ -444,14 +451,6 @@ export default function ManagerEditLeaveRequest({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700">Start Date</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"/>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">End Date</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required min={startDate} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"/>
-            </div> */}
             <DateRangePicker
               label="Start Date"
               defaultDate={startDate ? new Date(startDate + "T00:00:00") : null}
@@ -578,7 +577,7 @@ export default function ManagerEditLeaveRequest({
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
             >
               Cancel

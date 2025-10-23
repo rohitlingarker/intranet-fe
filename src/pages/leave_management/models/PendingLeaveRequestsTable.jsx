@@ -119,8 +119,16 @@ const PendingLeaveRequestsTable = ({
             {pendingLeaves.map((leave) => (
               <tr key={leave.leaveId} className="border-t text-xs">
                 <td className="p-3 text-center">{getLabelFromName(leave.leaveType?.leaveName)}</td>
-                <td className="p-3 text-center">{leave.startDate}</td>
-                <td className="p-3 text-center">{leave.endDate}</td>
+                <td className="p-3 text-center">{new Date(leave.startDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}</td>
+                <td className="p-3 text-center">{new Date(leave.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}</td>
                 <td className="p-3 text-center">{leave.daysRequested}</td>
                 <td className="p-3 text-center">{leave.reason || "-"}</td>
                 <td className="p-3 text-center">
