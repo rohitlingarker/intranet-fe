@@ -41,7 +41,6 @@ const TimesheetTable = ({
       <NewTimesheetModal
         isOpen={showNewTimesheetModal}
         onClose={() => setShowNewTimesheetModal(false)}
-        projectInfo={projectInfo}
         refreshData={refreshData}
         onSuccess={() => {
           setShowNewTimesheetModal(false);

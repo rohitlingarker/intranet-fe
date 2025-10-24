@@ -16,12 +16,7 @@ import Button from "../../components/Button/Button";
 import { showStatusToast } from "../../components/toastfy/toast";
 import { addEntryToTimesheet } from "./api";
 
-const NewTimesheetModal = ({
-  isOpen,
-  onClose,
-  refreshData,
-  onSuccess,
-}) => {
+const NewTimesheetModal = ({ isOpen, onClose, refreshData, onSuccess }) => {
   const [workDate, setWorkDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -244,7 +239,7 @@ const NewTimesheetModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-6">
           <div className="flex items-center justify-between">
@@ -260,241 +255,255 @@ const NewTimesheetModal = ({
             </button>
           </div>
         </div>
-
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Date Selection */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-2 mb-3">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              <h3 className="text-lg font-semibold text-gray-800">Work Date</h3>
-            </div>
-            <div className="max-w-xs">
-              <FormDatePicker
-                name="workDate"
-                value={workDate}
-                onChange={(e) => setWorkDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Add New Entry Form */}
-          <div className="mb-6 p-6 bg-white border-2 border-dashed border-blue-300 rounded-lg">
-            <div className="flex items-center space-x-2 mb-4">
-              <Plus className="h-5 w-5 text-blue-500" />
-              <h3 className="text-lg font-semibold text-gray-800">
-                Add New Entry
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Project Selection */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <FileText className="h-4 w-4" />
-                  <span>Project *</span>
-                </label>
-                <FormSelect
-                  name="projectId"
-                  value={currentEntry.projectId}
-                  options={projectOptions}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Task Selection */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <FileText className="h-4 w-4" />
-                  <span>Task *</span>
-                </label>
-                <FormSelect
-                  name="taskId"
-                  value={currentEntry.taskId}
-                  options={getTaskOptions(currentEntry.projectId)}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Work Location */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <MapPin className="h-4 w-4" />
-                  <span>Work Location</span>
-                </label>
-                <FormSelect
-                  name="workType"
-                  value={currentEntry.workType}
-                  options={workTypeOptions}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Start Time */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <Clock className="h-4 w-4" />
-                  <span>Start Time *</span>
-                </label>
-                <FormTime
-                  name="fromTime"
-                  value={currentEntry.fromTime}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* End Time */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <Clock className="h-4 w-4" />
-                  <span>End Time *</span>
-                </label>
-                <FormTime
-                  name="toTime"
-                  value={currentEntry.toTime}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Billable */}
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                  <DollarSign className="h-4 w-4" />
-                  <span>Billable</span>
-                </label>
-                <FormSelect
-                  name="isBillable"
-                  value={currentEntry.isBillable}
-                  options={billableOptions}
-                  onChange={handleInputChange}
-                />
+        {/* Main Content: make this flex-1 and only this div scrollable */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading project information...</p>
               </div>
             </div>
-
-            {/* Description */}
-            <div className="mt-4 space-y-2">
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                <FileText className="h-4 w-4" />
-                <span>Description *</span>
-              </label>
-              <FormInput
-                name="description"
-                value={currentEntry.description}
-                onChange={handleInputChange}
-                placeholder="Enter work description..."
-              />
-            </div>
-
-            {/* Add Entry Button */}
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={handleAddEntry}
-                disabled={!isValid(currentEntry)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Entry</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Entries List */}
-          {entries.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Added Entries ({entries.length})
-                </h3>
-                <div className="text-lg font-semibold text-blue-600">
-                  Total Hours: {calculateTotalHours().toFixed(2)} hrs
+          ) : (
+            <>
+              {/* Date Selection */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Work Date
+                  </h3>
+                </div>
+                <div className="max-w-xs">
+                  <FormDatePicker
+                    name="workDate"
+                    value={workDate}
+                    onChange={(e) => setWorkDate(e.target.value)}
+                  />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {entries.map((entry, index) => {
-                  const start = new Date(entry.fromTime);
-                  const end = new Date(entry.toTime);
-                  const hours = (end - start) / (1000 * 60 * 60);
-                  const project = projectInfo?.find(
-                    (p) => p.projectId === entry.projectId
-                  );
-                  const task = project?.tasks?.find(
-                    (t) => t.taskId === entry.taskId
-                  );
+              {/* Add New Entry Form */}
+              <div className="mb-6 p-6 bg-white border-2 border-dashed border-blue-300 rounded-lg">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Plus className="h-5 w-5 text-blue-500" />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Add New Entry
+                  </h3>
+                </div>
 
-                  return (
-                    <div
-                      key={index}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600">
-                                Project:
-                              </span>
-                              <p className="text-gray-800">
-                                {project?.project || "N/A"}
-                              </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Project Selection */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <FileText className="h-4 w-4" />
+                      <span>Project *</span>
+                    </label>
+                    <FormSelect
+                      name="projectId"
+                      value={currentEntry.projectId}
+                      options={projectOptions}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* Task Selection */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <FileText className="h-4 w-4" />
+                      <span>Task *</span>
+                    </label>
+                    <FormSelect
+                      name="taskId"
+                      value={currentEntry.taskId}
+                      options={getTaskOptions(currentEntry.projectId)}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* Work Location */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <MapPin className="h-4 w-4" />
+                      <span>Work Location</span>
+                    </label>
+                    <FormSelect
+                      name="workType"
+                      value={currentEntry.workType}
+                      options={workTypeOptions}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* Start Time */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <Clock className="h-4 w-4" />
+                      <span>Start Time *</span>
+                    </label>
+                    <FormTime
+                      name="fromTime"
+                      value={currentEntry.fromTime}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* End Time */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <Clock className="h-4 w-4" />
+                      <span>End Time *</span>
+                    </label>
+                    <FormTime
+                      name="toTime"
+                      value={currentEntry.toTime}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* Billable */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <DollarSign className="h-4 w-4" />
+                      <span>Billable</span>
+                    </label>
+                    <FormSelect
+                      name="isBillable"
+                      value={currentEntry.isBillable}
+                      options={billableOptions}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="mt-4 space-y-2">
+                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                    <FileText className="h-4 w-4" />
+                    <span>Description *</span>
+                  </label>
+                  <FormInput
+                    name="description"
+                    value={currentEntry.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter work description..."
+                  />
+                </div>
+
+                {/* Add Entry Button */}
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    onClick={handleAddEntry}
+                    disabled={!isValid(currentEntry)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Entry</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Entries List */}
+              {entries.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Added Entries ({entries.length})
+                    </h3>
+                    <div className="text-lg font-semibold text-blue-600">
+                      Total Hours: {calculateTotalHours().toFixed(2)} hrs
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {entries.map((entry, index) => {
+                      const start = new Date(entry.fromTime);
+                      const end = new Date(entry.toTime);
+                      const hours = (end - start) / (1000 * 60 * 60);
+                      const project = projectInfo?.find(
+                        (p) => p.projectId === entry.projectId
+                      );
+                      const task = project?.tasks?.find(
+                        (t) => t.taskId === entry.taskId
+                      );
+
+                      return (
+                        <div
+                          key={index}
+                          className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <span className="font-medium text-gray-600">
+                                    Project:
+                                  </span>
+                                  <p className="text-gray-800">
+                                    {project?.project || "N/A"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">
+                                    Task:
+                                  </span>
+                                  <p className="text-gray-800">
+                                    {task?.task || "N/A"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">
+                                    Time:
+                                  </span>
+                                  <p className="text-gray-800">
+                                    {start.toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}{" "}
+                                    -{" "}
+                                    {end.toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">
+                                    Hours:
+                                  </span>
+                                  <p className="text-gray-800 font-semibold">
+                                    {hours.toFixed(2)} hrs
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-2">
+                                <span className="font-medium text-gray-600">
+                                  Description:
+                                </span>
+                                <p className="text-gray-800">
+                                  {entry.description}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <span className="font-medium text-gray-600">
-                                Task:
-                              </span>
-                              <p className="text-gray-800">
-                                {task?.taskName || task?.task || "N/A"}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">
-                                Time:
-                              </span>
-                              <p className="text-gray-800">
-                                {start.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })}{" "}
-                                -{" "}
-                                {end.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">
-                                Hours:
-                              </span>
-                              <p className="text-gray-800 font-semibold">
-                                {hours.toFixed(2)} hrs
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <span className="font-medium text-gray-600">
-                              Description:
-                            </span>
-                            <p className="text-gray-800">{entry.description}</p>
+                            <button
+                              onClick={() => handleRemoveEntry(index)}
+                              className="ml-4 text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleRemoveEntry(index)}
-                          className="ml-4 text-red-500 hover:text-red-700 transition-colors"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
-
-        {/* Footer */}
+        {/* Sticky Footer */}
         <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
           <div className="text-sm text-gray-600">
             {entries.length > 0 && (
