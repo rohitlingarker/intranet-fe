@@ -213,13 +213,13 @@ export default function LoginPage() {
           </button>
         </div>
         <div className="flex justify-between mt-6 text-sm text-gray-600 w-full">
-          <button
+          {/* <button
             onClick={() => navigate("/register")}
             className="hover:underline hover:text-blue-600"
             type="button"
-          >
-            Create Account
-          </button>
+          > */}
+            {/* Create Account
+          </button> */}
           <button
             onClick={() => navigate("/reset-password")}
             className="hover:underline hover:text-blue-600"
