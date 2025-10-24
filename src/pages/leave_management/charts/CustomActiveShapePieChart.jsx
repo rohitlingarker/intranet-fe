@@ -8,6 +8,7 @@ import {
   Cell,
   Tooltip,
 } from "recharts";
+import { toast } from "react-toastify";
 
 // Color palette
 const COLORS = [
@@ -78,10 +79,12 @@ const renderActiveShape = (props) => {
 const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
   const [data, setData] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(
           `${BASE_URL}/api/leave-requests/employee/${employeeId}`,{
             headers:{
@@ -106,7 +109,11 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
         setData(chartData);
       } catch (error) {
         console.error("Error fetching leave data:", error);
+        toast.error(error?.message || "Failed to fetch Leave Data");
+      } finally {
+        setLoading(false);
       }
+
     };
 
     fetchLeaves();
@@ -117,74 +124,87 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow h-42 w-full">
-      <h3 className="font-semibold text-gray-800 mb-4">Leave Usage by Type</h3>
-      {data.length > 0 ? (
-        <ResponsiveContainer width="100%" height="90%">
-          <PieChart>
-            <Pie
-              activeIndex={activeIndex}
-              activeShape={renderActiveShape}
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={70}
-              dataKey="value"
-              onMouseEnter={onPieEnter}
-            >
-              {data.map((entry, index) => {
-                let fillColor;
-                console.log("Entry:", entry);
-                switch (entry.name?.toLowerCase()) {
-                  case "earned_leave":
-                    fillColor = "#192E5B";
-                    break;
-                  case "sick_leave":
-                    fillColor = "#c9183c";
-                    break;
-                  case "compensatory_leave":
-                    fillColor = "#72A2C0";
-                    break;
-                  case "unpaid_leave":
-                    fillColor = "#00743F";
-                    break;
-                  case "maternity_leave":
-                    fillColor = "#ff5883";
-                    break;
-                  case "paternity_leave":
-                    fillColor = "#F25117";
-                    break;
-                  default:
-                    fillColor = COLORS[index % COLORS.length];
-                }
+    <div className="w-full bg-white rounded-lg shadow p-4 sm:p-5 hover:shadow-lg transition-all duration-300">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-800">
+          Leave Usage By Type
+        </h3>
+        <span className="text-xs sm:text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+          {new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+          })}
+        </span>
+      </div>
+      { loading ? (
+        <p className="text-sm text-gray-500 animate-pulse">Loading...</p>
+      ) : data.length > 0 ? (
+        <div className="w-full flex justify-center items-center">
+          <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 180 : 220}>
+            <PieChart>
+              <Pie
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={70}
+                dataKey="value"
+                onMouseEnter={onPieEnter}
+              >
+                {data.map((entry, index) => {
+                  let fillColor;
+                  switch (entry.name?.toLowerCase()) {
+                    case "earned_leave":
+                      fillColor = "#22c55e";
+                      break;
+                    case "sick_leave":
+                      fillColor = "#ef4444";
+                      break;
+                    case "compensatory_leave":
+                      fillColor = "#3b82f6";
+                      break;
+                    case "unpaid_leave":
+                      fillColor = "#e7e5e4";
+                      break;
+                    case "maternity_leave":
+                      fillColor = "#ff5883";
+                      break;
+                    case "paternity_leave":
+                      fillColor = "#F25117";
+                      break;
+                    default:
+                      fillColor = COLORS[index % COLORS.length];
+                  }
 
-                return <Cell key={`cell-${index}`} fill={fillColor} />;
-              })}
-            </Pie>
+                  return <Cell key={`cell-${index}`} fill={fillColor} />;
+                })}
+              </Pie>
 
-            {/* ✅ Tooltip shows leave type and days */}
-            <Tooltip
-              formatter={(value, name, props) => [`${value} days`, name]}
-              contentStyle={{
-                backgroundColor: "#fff",
-                border: "1px solid #ccc",
-                fontSize: "13px",
-              }}
-            />
+              {/* ✅ Tooltip shows leave type and days */}
+              <Tooltip
+                formatter={(value, name, props) => [`${value} days`, name]}
+                contentStyle={{
+                  backgroundColor: "#fff",
+                  border: "1px solid #ccc",
+                  fontSize: "13px",
+                }}
+              />
 
-            Center label inside pie
-            <text
-              x="50%"
-              y="50%"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="text-sm fill-gray-700 font-semibold"
-            >
-              Leave Usage
-            </text>
-          </PieChart>
-        </ResponsiveContainer>
+              Center label inside pie
+              <text
+                x="50%"
+                y="50%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-sm fill-gray-700 font-semibold"
+              >
+                Leave Usage
+              </text>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       ) : (
         <p className="text-sm text-gray-400">
           No approved leave data to show.

@@ -8,8 +8,13 @@ import {
 } from "recharts";
 import { useState } from "react";
 
-// Color palette: Red for Used, Gray for Remaining
-const COLORS = ["#ef4444", "#e5e7eb"];
+const COLOR_PALETTES = {
+  EARNED_LEAVE: ["#86efac", "#22c55e"], 
+  SICK_LEAVE: ["#fca5a5", "#ef4444"],   
+  COMPOFF_LEAVE: ["#93c5fd", "#3b82f6"], 
+  UNPAID_LEAVE: ["#a8a29e", "#e7e5e4"], 
+  DEFAULT: ["#d1d5db", "#6b7280"],
+};
 
 // Custom Active Shape Slice
 const renderActiveShape = (props) => {
@@ -61,12 +66,11 @@ const renderActiveShape = (props) => {
 };
 
 export default function LeaveUsageChart({ leave }) {
-  console.log("leave", leave)
   const { accruedLeaves, usedLeaves, leaveType, remainingLeaves } = leave;
   const [activeIndex, setActiveIndex] = useState(null);
-  console.log("leave in leave car", leave)
-
+  const leaveName = leaveType?.leaveName;
   const isUnpaid = leaveType?.leaveName === "UNPAID_LEAVE";
+  const colors = COLOR_PALETTES[leaveName] || COLOR_PALETTES.DEFAULT;
 
   const remaining = Math.max(remainingLeaves, 0);
 
@@ -88,7 +92,7 @@ export default function LeaveUsageChart({ leave }) {
 
   return (
     <div className="w-full h-[250px] sm:h-[220px]">
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full" onMouseLeave={onPieLeave}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -100,12 +104,13 @@ export default function LeaveUsageChart({ leave }) {
               dataKey="value"
               activeIndex={activeIndex}
               activeShape={renderActiveShape}
-              onMouseOverCapture={onPieEnter}
-              onMouseOutCapture={onPieLeave}
+              onMouseEnter={onPieEnter}
+              // onMouseOverCapture={onPieEnter}
+              // onMouseOutCapture={onPieLeave}
               isAnimationActive={true}
             >
               {chartData.map((_, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Cell key={index} fill={colors[index % colors.length]} />
               ))}
             </Pie>
             <Tooltip
@@ -115,6 +120,9 @@ export default function LeaveUsageChart({ leave }) {
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",
                 fontSize: "13px",
+              }}
+              wrapperStyle={{
+                transform : "translateY(45px) translateX(55%)",
               }}
             />
           </PieChart>
@@ -131,4 +139,3 @@ export default function LeaveUsageChart({ leave }) {
     </div>
   );
 }
-

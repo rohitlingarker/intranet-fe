@@ -6,7 +6,7 @@ import Summary from "./Summary";
 import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
-import Lists from "./lists";
+import Lists from "./ProjectStatusReport";
 
 import Navbar from "../../../components/Navbar/Navbar";
 
@@ -25,6 +25,13 @@ const ProjectTabs = () => {
   };
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
+
+  useEffect(() => {
+  if (selectedTab === "lists") {
+    navigate(`/projects/${projectId}/status-report`, { replace: true });
+  }
+}, [selectedTab, navigate, projectId]);
+
 
   useEffect(() => {
     if (projectId && token) {

@@ -1,5 +1,3 @@
-// This is the complete and correct code for your "DateRangePicker.js" file.
-
 import React, { useState, useRef, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";

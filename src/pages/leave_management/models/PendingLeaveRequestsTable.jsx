@@ -3,7 +3,8 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { PencilIcon } from "lucide-react";
 import EditLeaveModal from "./EditLeaveModal";
-
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import ConfirmationModal from "./ConfirmationModal";
 const token = localStorage.getItem('token');
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -26,6 +27,8 @@ const PendingLeaveRequestsTable = ({
   const [currentLeaveToEdit, setCurrentLeaveToEdit] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cancelId, setCancelId] = useState(null);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
   const handleEdit = (leave) => {
     setCurrentLeaveToEdit(leave);
@@ -35,6 +38,11 @@ const PendingLeaveRequestsTable = ({
   // When the modal succeeds, just call the refresh function from the parent.
   const handleUpdateSuccess = () => {
     refreshData();
+  };
+
+  const handleCancel = (leaveId) => {
+    setCancelId(leaveId);
+    setIsConfirmationOpen(true);
   };
 
   const confirmCancel = async () => {
@@ -49,10 +57,9 @@ const PendingLeaveRequestsTable = ({
       const empId = leaveToCancel.employee?.employeeId || employeeId;
 
       await axios.put(
-        `${BASE_URL}/api/leave-requests/${cancelId}/cancel`,
-        null,
+        `${BASE_URL}/api/leave-requests/${cancelId}/cancel/${empId}`, 
+        null,       
         {
-          params: { employeeId: empId },
           headers: { 
             "Cache-Control": "no-store", 
             Authorization: `Bearer ${token}`
@@ -62,7 +69,7 @@ const PendingLeaveRequestsTable = ({
       );
 
       toast.success("Leave cancelled successfully");
-      refreshData(); // Instead of filtering, just tell the parent to refresh.
+      refreshData(); 
 
     } catch (err) {
       toast.error(err?.response?.data?.message || "Cancel failed");
@@ -94,37 +101,45 @@ const PendingLeaveRequestsTable = ({
   };
 
   return (
-    <div className="overflow-x-auto w-full px-4">
+    <div className="overflow-x-auto w-[100%]">
       <div className="w-full max-w-screen-xl mx-auto">
-        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm ">
           <thead>
-            <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-              <th className="p-3 text-left">Leave Type</th>
-              <th className="p-3 text-left">Start Date</th>
-              <th className="p-3 text-left">End Date</th>
-              <th className="p-3 text-left">Days</th>
-              <th className="p-3 text-left">Reason</th>
-              <th className="p-3 text-left">Actions</th>
+            <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-xs border-gray-100">
+              <th className="p-3">Leave Type</th>
+              <th className="p-3">Start Date</th>
+              <th className="p-3">End Date</th>
+              <th className="p-3">Days</th>
+              <th className="p-3">Reason</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {/* The component now just maps over the leaves it was given. */}
             {pendingLeaves.map((leave) => (
-              <tr key={leave.leaveId} className="border-t">
-                <td className="p-3">{getLabelFromName(leave.leaveType?.leaveName)}</td>
-                <td className="p-3">{leave.startDate}</td>
-                <td className="p-3">{leave.endDate}</td>
+              <tr key={leave.leaveId} className="border-t text-xs">
+                <td className="p-3 text-center">{getLabelFromName(leave.leaveType?.leaveName)}</td>
+                <td className="p-3 text-center">{new Date(leave.startDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}</td>
+                <td className="p-3 text-center">{new Date(leave.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}</td>
                 <td className="p-3 text-center">{leave.daysRequested}</td>
-                <td className="p-3">{leave.reason || "-"}</td>
-                <td className="p-3">
-                  <div className="flex items-center space-x-2">
+                <td className="p-3 text-center">{leave.reason || "-"}</td>
+                <td className="p-3 text-center">
+                  <div className="flex items-center space-x-4 justify-center">
                     <PencilIcon
                       className="cursor-pointer text-blue-700 w-4 h-4"
                       onClick={() => handleEdit(leave)}
                     />
                     <button
                       className="text-red-500 hover:underline"
-                      onClick={() => setCancelId(leave.leaveId)}
+                      onClick={() => handleCancel(leave.leaveId)}
                     >
                       Cancel
                     </button>
@@ -150,31 +165,15 @@ const PendingLeaveRequestsTable = ({
           />
         )}
 
-      {cancelId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-sm">
-            <h2 className="text-lg font-semibold mb-2">Cancel Leave Request</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to cancel this leave request?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setCancelId(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded"
-              >
-                No
-              </button>
-              <button
-                onClick={confirmCancel}
-                className="px-4 py-2 bg-red-600 text-white rounded"
-                disabled={loading}
-              >
-                {loading ? "Cancelling..." : "Yes, Cancel"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={cancelId}
+        title="Cancel Leave Request"
+        message="Are you sure you want to cancel this leave request?"
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelId(null)}
+        isLoading={loading}
+        confirmText="Confirm"
+      />
     </div>
   );
 };

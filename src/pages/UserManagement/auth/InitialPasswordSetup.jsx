@@ -255,7 +255,9 @@ export default function InitialPasswordSetup() {
 
         <div className="mt-6 text-sm text-gray-600">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {navigate("/")
+              logout();
+            }}
             className="hover:underline hover:text-blue-600"
           >
             Back to Login
