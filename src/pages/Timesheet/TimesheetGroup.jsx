@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import StatusBadge from "../../components/status/statusbadge";
 import EntriesTable from "./EntriesTable";
+import NewTimesheetModal from "./NewTimesheetModal";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
@@ -70,9 +71,45 @@ const getMonthName = (date) => {
 const calculateTotalHours = (entries) => {
   let totalMinutes = 0;
   entries.forEach((entry) => {
-    const start = new Date(entry.fromTime);
-    const end = new Date(entry.toTime);
-    totalMinutes += (end - start) / (1000 * 60);
+    try {
+      let start, end;
+
+      // Handle time-only strings (HH:MM:SS or HH:MM:SS.mmm)
+      if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(entry.fromTime)) {
+        const [startHours, startMinutes, startSeconds] =
+          entry.fromTime.split(":");
+        start = new Date(
+          0,
+          0,
+          0,
+          parseInt(startHours),
+          parseInt(startMinutes),
+          parseInt(startSeconds.split(".")[0])
+        );
+      } else {
+        start = new Date(entry.fromTime);
+      }
+
+      if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(entry.toTime)) {
+        const [endHours, endMinutes, endSeconds] = entry.toTime.split(":");
+        end = new Date(
+          0,
+          0,
+          0,
+          parseInt(endHours),
+          parseInt(endMinutes),
+          parseInt(endSeconds.split(".")[0])
+        );
+      } else {
+        end = new Date(entry.toTime);
+      }
+
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        totalMinutes += (end - start) / (1000 * 60);
+      }
+    } catch (error) {
+      console.error("Error calculating hours for entry:", entry, error);
+    }
   });
   return (totalMinutes / 60).toFixed(2);
 };
@@ -85,10 +122,9 @@ const TimesheetGroup = ({
   status,
   mapWorkType,
   emptyTimesheet,
-  addingNewTimesheet,
-  setAddingNewTimesheet,
   refreshData,
   projectInfo,
+  getWeeklyStatusColor,
   approvers = [
     { approverName: "Dummy Approver1", status: "Pending" },
     { approverName: "Dummy Approver2", status: "Approved" },
@@ -106,6 +142,7 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [addingNewEntry, setAddingNewEntry] = useState(false);
+  const [showNewTimesheetModal, setShowNewTimesheetModal] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
   );
@@ -142,7 +179,7 @@ const TimesheetGroup = ({
 
   const handleAddEntry = () => {
     setMenuOpen(false);
-    setAddingNewEntry(!addingNewEntry);
+    setShowNewTimesheetModal(true);
   };
 
   const handleDeleteClick = () => {
@@ -232,6 +269,40 @@ const TimesheetGroup = ({
   const monthName = isWeeklyFormat ? weekData.monthName : null;
   const year = isWeeklyFormat ? weekData.year : null;
 
+  // Custom status badge with correct colors
+  const CustomStatusBadge = ({ label, size = "sm" }) => {
+    const getStatusColor = (status) => {
+      switch (status) {
+        case "Draft":
+        case "Submitted":
+          return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        case "Approved":
+        case "Partially Approved":
+          return "bg-green-100 text-green-800 border-green-300";
+        case "Rejected":
+          return "bg-red-100 text-red-800 border-red-300";
+        default:
+          return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      }
+    };
+
+    const sizeStyles = {
+      sm: "text-xs px-2 py-0.5",
+      md: "text-sm px-3 py-1",
+      lg: "text-base px-4 py-1.5",
+    };
+
+    return (
+      <span
+        className={`inline-block rounded-full font-medium border ${getStatusColor(
+          label
+        )} ${sizeStyles[size]}`}
+      >
+        {label}
+      </span>
+    );
+  };
+
   const formatApproverTooltip = (approvers) => {
     if (!approvers || approvers.length === 0) {
       return <p className="text-gray-400">No approver data</p>;
@@ -285,9 +356,15 @@ const TimesheetGroup = ({
   // Determine border color based on status
   const getBorderColor = () => {
     if (isWeeklyFormat) {
-      if (currentStatus === "Approved") return "border-blue-500";
+      if (
+        currentStatus === "Approved" ||
+        currentStatus === "Partially Approved"
+      )
+        return "border-green-500";
       if (currentStatus === "Rejected") return "border-red-500";
-      return "border-yellow-500";
+      if (currentStatus === "Draft" || currentStatus === "Submitted")
+        return "border-yellow-500";
+      return "border-gray-500";
     }
     return "border-gray-300";
   };
@@ -295,9 +372,15 @@ const TimesheetGroup = ({
   // Determine background color for week header based on status
   const getWeekHeaderBgColor = () => {
     if (isWeeklyFormat) {
-      if (currentStatus === "Approved") return "bg-green-50 border-b-green-200";
+      if (
+        currentStatus === "Approved" ||
+        currentStatus === "Partially Approved"
+      )
+        return "bg-green-50 border-b-green-200";
       if (currentStatus === "Rejected") return "bg-red-50 border-b-red-200";
-      return "bg-yellow-50 border-b-yellow-200";
+      if (currentStatus === "Draft" || currentStatus === "Submitted")
+        return "bg-yellow-50 border-b-yellow-200";
+      return "bg-gray-50 border-b-gray-200";
     }
     return "bg-blue-50 border-b-blue-200";
   };
@@ -305,9 +388,15 @@ const TimesheetGroup = ({
   // Determine week badge color based on status
   const getWeekBadgeColor = () => {
     if (isWeeklyFormat) {
-      if (currentStatus === "Approved") return "bg-green-600";
+      if (
+        currentStatus === "Approved" ||
+        currentStatus === "Partially Approved"
+      )
+        return "bg-green-600";
       if (currentStatus === "Rejected") return "bg-red-600";
-      return "bg-yellow-600";
+      if (currentStatus === "Draft" || currentStatus === "Submitted")
+        return "bg-yellow-600";
+      return "bg-gray-600";
     }
     return "bg-blue-600";
   };
@@ -315,9 +404,15 @@ const TimesheetGroup = ({
   // Determine total hours text color based on status
   const getTotalHoursColor = () => {
     if (isWeeklyFormat) {
-      if (currentStatus === "Approved") return "text-green-700";
+      if (
+        currentStatus === "Approved" ||
+        currentStatus === "Partially Approved"
+      )
+        return "text-green-700";
       if (currentStatus === "Rejected") return "text-red-700";
-      return "text-yellow-700";
+      if (currentStatus === "Draft" || currentStatus === "Submitted")
+        return "text-yellow-700";
+      return "text-gray-700";
     }
     return "text-blue-700";
   };
@@ -374,12 +469,7 @@ const TimesheetGroup = ({
                 </div>
                 <div className="text-xs text-gray-500">Total Hours</div>
               </div>
-              <Tooltip content={formatApproverTooltip(approvers)}>
-                <StatusBadge
-                  label={approveStatus ? "Approved" : currentStatus}
-                  size="md"
-                />
-              </Tooltip>
+              <CustomStatusBadge label={currentStatus} size="md" />
             </div>
           </div>
         </div>
@@ -408,16 +498,11 @@ const TimesheetGroup = ({
               </div>
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="font-medium text-gray-700">
                 Total hours : {totalHours} hrs
               </span>
-              <Tooltip content={formatApproverTooltip(approvers)}>
-                <StatusBadge
-                  label={approveStatus ? "Approved" : currentStatus}
-                  size="sm"
-                />
-              </Tooltip>
+              <CustomStatusBadge label={currentStatus} size="sm" />
             </div>
           </>
         )}
@@ -479,8 +564,8 @@ const TimesheetGroup = ({
                       {calculateTotalHours(timesheet.entries)} hrs
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge label={timesheet.status} size="sm" />
+                  <div className="flex items-center gap-1">
+                    <CustomStatusBadge label={timesheet.status} size="sm" />
                     {timesheet.actionStatus &&
                       timesheet.actionStatus.length > 0 && (
                         <Tooltip
@@ -573,7 +658,6 @@ const TimesheetGroup = ({
                     mapWorkType={mapWorkType}
                     addingNewEntry={addingNewEntry}
                     setAddingNewEntry={setAddingNewEntry}
-                    setAddingNewTimesheet={setAddingNewTimesheet}
                     refreshData={refreshData}
                     projectInfo={projectInfo}
                     selectionMode={showSelectionCheckboxes}
@@ -593,7 +677,6 @@ const TimesheetGroup = ({
           mapWorkType={mapWorkType}
           addingNewEntry={addingNewEntry}
           setAddingNewEntry={setAddingNewEntry}
-          setAddingNewTimesheet={setAddingNewTimesheet}
           refreshData={refreshData}
           projectInfo={projectInfo}
           selectionMode={showSelectionCheckboxes}
@@ -608,6 +691,17 @@ const TimesheetGroup = ({
         } selected entr${selectedEntryIds.length > 1 ? "ies" : "y"}?`}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <NewTimesheetModal
+        isOpen={showNewTimesheetModal}
+        onClose={() => setShowNewTimesheetModal(false)}
+        projectInfo={projectInfo}
+        refreshData={refreshData}
+        onSuccess={() => {
+          setShowNewTimesheetModal(false);
+          refreshData();
+        }}
       />
     </div>
   );

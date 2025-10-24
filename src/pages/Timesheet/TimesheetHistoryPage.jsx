@@ -21,6 +21,10 @@ const TimesheetHistoryPage = () => {
 
   const [user, setUser] = useState(null);
   const [projectInfo, setProjectInfo] = useState([]);
+  const [projectTaskMap, setProjectTaskMap] = useState({
+    projects: {},
+    tasks: {},
+  });
 
   // Function to get the start of the week (Monday) for a given date
   const getWeekStart = (date) => {
@@ -54,103 +58,158 @@ const TimesheetHistoryPage = () => {
     return `${startStr} - ${endStr}`;
   };
 
-  // Function to group entries by week
-  const groupEntriesByWeek = (entries) => {
-    const weekGroups = {};
+  // Function to map API response to our expected format
+  const mapApiResponseToEntries = (apiResponse, projectTaskMapping) => {
+    if (!apiResponse || !apiResponse.weeklySummary) {
+      return [];
+    }
 
-    entries.forEach((timesheet) => {
-      const workDate = new Date(timesheet.workDate);
-      const weekStart = getWeekStart(workDate);
-      const weekKey = weekStart.toISOString().split("T")[0];
-
-      if (!weekGroups[weekKey]) {
-        weekGroups[weekKey] = {
-          weekStart: weekStart.toISOString().split("T")[0],
-          weekEnd: getWeekEnd(workDate).toISOString().split("T")[0],
-          weekRange: formatWeekRange(weekStart, getWeekEnd(workDate)),
-          timesheets: [],
-          totalHours: 0,
-          status: "Pending", // Default status, will be calculated based on individual timesheets
-          actionStatus: [],
-          weekNumber: getWeekNumber(weekStart),
-          monthName: new Date(weekStart).toLocaleDateString("en-US", {
-            month: "long",
-          }),
-          year: new Date(weekStart).getFullYear(),
-        };
-      }
-
-      weekGroups[weekKey].timesheets.push(timesheet);
-      weekGroups[weekKey].totalHours += parseFloat(
-        calculateTotalHours(timesheet.entries)
-      );
-
-      // Update status based on individual timesheet statuses
-      if (timesheet.status === "Approved") {
-        weekGroups[weekKey].status = "Approved";
-      } else if (timesheet.status === "Rejected") {
-        weekGroups[weekKey].status = "Rejected";
-      } else if (
-        weekGroups[weekKey].status !== "Approved" &&
-        weekGroups[weekKey].status !== "Rejected"
-      ) {
-        weekGroups[weekKey].status = "Pending";
-      }
-
-      // Merge action status from individual timesheets
-      if (timesheet.actionStatus) {
-        weekGroups[weekKey].actionStatus = [
-          ...weekGroups[weekKey].actionStatus,
-          ...timesheet.actionStatus,
-        ];
-      }
-    });
-
-    // Convert to array and sort by week start date (newest first)
-    const sortedWeeks = Object.values(weekGroups).sort(
-      (a, b) => new Date(b.weekStart) - new Date(a.weekStart)
-    );
-
-    // Calculate week-to-week differences
-    return sortedWeeks.map((week, index) => {
-      const previousWeek = sortedWeeks[index + 1];
-      let hoursDifference = 0;
-      let differenceType = "neutral"; // "increase", "decrease", "neutral"
-
-      if (previousWeek) {
-        hoursDifference = week.totalHours - previousWeek.totalHours;
-        if (hoursDifference > 0) {
-          differenceType = "increase";
-        } else if (hoursDifference < 0) {
-          differenceType = "decrease";
-        }
-      }
-
-      return {
-        ...week,
-        hoursDifference: Math.abs(hoursDifference),
-        differenceType,
-        isFirstWeek: index === 0,
-        isLastWeek: index === sortedWeeks.length - 1,
+    return apiResponse.weeklySummary.map((week) => {
+      // Map the week data to our expected format
+      const weekGroup = {
+        weekStart: week.startDate,
+        weekEnd: week.endDate,
+        weekRange: formatWeekRange(week.startDate, week.endDate),
+        timesheets: week.timesheets || [],
+        totalHours: week.totalHours || 0,
+        status: mapWeeklyStatus(week.weeklyStatus),
+        actionStatus: [], // Will be populated from individual timesheets
+        weekNumber: week.weekId, // Map weekId to weekNumber
+        monthName: new Date(week.startDate).toLocaleDateString("en-US", {
+          month: "long",
+        }),
+        year: new Date(week.startDate).getFullYear(),
       };
+
+      // Process individual timesheets and merge action status
+      if (week.timesheets && week.timesheets.length > 0) {
+        week.timesheets.forEach((timesheet) => {
+          // Map entry field names to match expected format and add project/task names
+          if (timesheet.entries) {
+            timesheet.entries = timesheet.entries.map((entry) => ({
+              ...entry,
+              timesheetEntryId:
+                entry.timesheetEntryid || entry.timesheetEntryId, // Handle both field names
+              workType: entry.workLocation || entry.workType, // Map workLocation to workType
+              // Add project and task names for display using the passed mapping
+              projectName:
+                projectTaskMapping.projects[entry.projectId] ||
+                `Project-${entry.projectId}`,
+              taskName:
+                projectTaskMapping.tasks[entry.taskId] ||
+                `Task-${entry.taskId}`,
+            }));
+          }
+
+          // Merge action status from individual timesheets
+          if (timesheet.actionStatus) {
+            weekGroup.actionStatus = [
+              ...weekGroup.actionStatus,
+              ...timesheet.actionStatus,
+            ];
+          }
+        });
+      }
+
+      return weekGroup;
     });
   };
 
-  // Function to get week number of the year
-  const getWeekNumber = (date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-    const week1 = new Date(d.getFullYear(), 0, 4);
-    return (
-      1 +
-      Math.round(
-        ((d.getTime() - week1.getTime()) / 86400000 -
-          3 +
-          ((week1.getDay() + 6) % 7)) /
-          7
-      )
-    );
+  // Function to map weekly status to our expected format
+  const mapWeeklyStatus = (weeklyStatus) => {
+    switch (weeklyStatus) {
+      case "DRAFT":
+        return "Draft";
+      case "SUBMITTED":
+        return "Submitted";
+      case "DRAFT/SUBMITTED":
+        return "Submitted"; // Treat mixed status as Submitted
+      case "APPROVED":
+        return "Approved";
+      case "REJECTED":
+        return "Rejected";
+      case "PARTIALLY_APPROVED":
+        return "Partially Approved";
+      case "No Timesheets":
+        return "No Timesheets";
+      default:
+        return "Draft";
+    }
+  };
+
+  // Function to get status color for weekly status badge
+  const getWeeklyStatusColor = (status) => {
+    switch (status) {
+      case "Draft":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "Submitted":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "Approved":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "Rejected":
+        return "bg-red-100 text-red-800 border-red-300";
+      case "Partially Approved":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "No Timesheets":
+        return "bg-gray-100 text-gray-600 border-gray-200";
+      default:
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+    }
+  };
+
+  // Function to fetch and store project/task information
+  const fetchAndStoreProjectTaskInfo = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/project-info/all`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Fetched project/task info:", data);
+
+      // Create mapping objects for quick lookup
+      const projectsMap = {};
+      const tasksMap = {};
+
+      data.forEach((project) => {
+        // Map project ID to project name
+        projectsMap[project.projectId] = project.project;
+
+        // Map task IDs to task names
+        if (project.tasks && project.tasks.length > 0) {
+          project.tasks.forEach((task) => {
+            tasksMap[task.taskId] = task.task;
+          });
+        }
+      });
+
+      // Store the mapping
+      const mappingData = {
+        projects: projectsMap,
+        tasks: tasksMap,
+      };
+
+      setProjectTaskMap(mappingData);
+
+      // Also store the original data for compatibility
+      setProjectInfo(data);
+
+      return mappingData;
+    } catch (error) {
+      console.error("Error fetching project/task info:", error);
+      return [];
+    }
   };
 
   // Function to calculate total hours for entries
@@ -175,25 +234,51 @@ const TimesheetHistoryPage = () => {
   //     .catch((err) => console.error("Error fetching user:", err));
   // }, []);
 
-  // Fetch timesheet history
-  useEffect(() => {
-    fetchProjectTaskInfo().then(setProjectInfo);
-  }, []);
-
   const projectIdToName = Object.fromEntries(
-    projectInfo.map((p) => [p.projectId, p.project])
+    projectInfo.map((p) => [p.projectId, p.projectName])
   );
 
   useEffect(() => {
     const loadTimesheetHistory = async () => {
       try {
         setLoading(true);
+
+        // First, fetch and store project/task information
+        const projectTaskMapping = await fetchAndStoreProjectTaskInfo();
+        console.log("Project/Task mapping:", projectTaskMapping);
+
+        // Then fetch timesheet history
         const data = await fetchTimesheetHistory(user?.user_id || 1);
         console.log("Fetched timesheet history:", data);
 
-        // Group entries by week
-        const weeklyEntries = groupEntriesByWeek(data);
-        setEntries(weeklyEntries);
+        // Map API response to our expected format using the mapping data
+        const weeklyEntries = mapApiResponseToEntries(data, projectTaskMapping);
+
+        // Calculate week-to-week differences
+        const entriesWithDifferences = weeklyEntries.map((week, index) => {
+          const previousWeek = weeklyEntries[index + 1];
+          let hoursDifference = 0;
+          let differenceType = "neutral"; // "increase", "decrease", "neutral"
+
+          if (previousWeek) {
+            hoursDifference = week.totalHours - previousWeek.totalHours;
+            if (hoursDifference > 0) {
+              differenceType = "increase";
+            } else if (hoursDifference < 0) {
+              differenceType = "decrease";
+            }
+          }
+
+          return {
+            ...week,
+            hoursDifference: Math.abs(hoursDifference),
+            differenceType,
+            isFirstWeek: index === 0,
+            isLastWeek: index === weeklyEntries.length - 1,
+          };
+        });
+
+        setEntries(entriesWithDifferences);
       } catch (err) {
         console.error("Failed to fetch timesheet history:", err);
       } finally {
@@ -221,7 +306,9 @@ const TimesheetHistoryPage = () => {
   const filteredEntries = entries.filter((weekGroup) => {
     const matchesSearch = weekGroup.timesheets.some((timesheet) => {
       return timesheet.entries.some((entry) => {
-        const projectName = projectIdToName[entry.projectId] || "";
+        // Use the mapped project name instead of looking up by ID
+        const projectName =
+          entry.projectName || projectIdToName[entry.projectId] || "";
         return projectName.toLowerCase().includes(searchText.toLowerCase());
       });
     });
@@ -270,32 +357,68 @@ const TimesheetHistoryPage = () => {
           setCurrentPage={setCurrentPage}
           mapWorkType={mapWorkType}
           projectInfo={projectInfo}
-          refreshData={() => {
+          getWeeklyStatusColor={getWeeklyStatusColor}
+          refreshData={async () => {
             // Callback to refresh data after save
             setLoading(true);
-            fetch(
-              `${
-                import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-              }/api/timesheet/history`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-              }
-            )
-              .then((res) => res.json())
-              .then((data) => {
-                // Group entries by week
-                const weeklyEntries = groupEntriesByWeek(data);
-                setEntries(weeklyEntries);
-                setLoading(false);
-              })
-              .catch((err) => {
-                console.error("Failed to fetch timesheets:", err);
-                setLoading(false);
-              });
+            try {
+              // First, fetch and store project/task information
+              const projectTaskMapping = await fetchAndStoreProjectTaskInfo();
+
+              // Then fetch timesheet history
+              const response = await fetch(
+                `${
+                  import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+                }/api/timesheet/history`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                  },
+                }
+              );
+
+              const data = await response.json();
+
+              // Map API response to our expected format using the mapping data
+              const weeklyEntries = mapApiResponseToEntries(
+                data,
+                projectTaskMapping
+              );
+
+              // Calculate week-to-week differences
+              const entriesWithDifferences = weeklyEntries.map(
+                (week, index) => {
+                  const previousWeek = weeklyEntries[index + 1];
+                  let hoursDifference = 0;
+                  let differenceType = "neutral";
+
+                  if (previousWeek) {
+                    hoursDifference = week.totalHours - previousWeek.totalHours;
+                    if (hoursDifference > 0) {
+                      differenceType = "increase";
+                    } else if (hoursDifference < 0) {
+                      differenceType = "decrease";
+                    }
+                  }
+
+                  return {
+                    ...week,
+                    hoursDifference: Math.abs(hoursDifference),
+                    differenceType,
+                    isFirstWeek: index === 0,
+                    isLastWeek: index === weeklyEntries.length - 1,
+                  };
+                }
+              );
+
+              setEntries(entriesWithDifferences);
+            } catch (err) {
+              console.error("Failed to fetch timesheets:", err);
+            } finally {
+              setLoading(false);
+            }
           }}
         />
       </main>
