@@ -31,7 +31,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (token) => {
+  const login = (token,isfirsttlogin = false) => {
+    if(isfirsttlogin){
+      localStorage.setItem("lastPath", "/change-password");
+    }else{
+      localStorage.setItem("lastPath", "/dashboard");
+    }
     localStorage.setItem("token", token);
     loadUser(token);
   };

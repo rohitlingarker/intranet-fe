@@ -25,7 +25,8 @@ import Calendar from "./pages/Calendar";
 import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-
+import DashboardPage from "./pages/Timesheet/DashboardPage";  
+import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
 
 // ✅ Project Management
@@ -43,6 +44,8 @@ import ProjectList from "./pages/Projects/manager/ProjectList";
 import UserProjectList from "./pages/Projects/User/UserProjectList";
 import EmployeePerformance from "./pages/Projects/manager/EmployeePerformance";
 import Userprofile from "./pages/Projects/User/Userprofile";
+import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
+import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -85,18 +88,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
   }
 
-  // if (allowedRoles && allowedRoles.length > 0) {
-  //   const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
-  //   console.log("ProtectedRoute check:", {
-  //     isAuthenticated,
-  //     user,
-  //     allowedRoles,
-  //     match: user?.roles?.some((role) => allowedRoles.includes(role)),
-  //   });
-  //   if (!hasRole) {
-  //     return <Navigate to="/unauthorized" replace />;
-  //   }
-  // }
+  if (allowedRoles && allowedRoles.length > 0) {
+    const hasRole = user?.roles?.some((role) => allowedRoles.includes(role));
+    console.log("ProtectedRoute check:", {
+      isAuthenticated,
+      user,
+      allowedRoles,
+      match: user?.roles?.some((role) => allowedRoles.includes(role)),
+    });
+    if (!hasRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
   return <>{children}</>;
 };
 
@@ -134,20 +137,44 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated,logout } = useAuth();
   const navigate = useNavigate();
   
   
 useEffect(() => {
-    if (isAuthenticated) {
-      const lastPath = localStorage.getItem("lastPath");
-      if (lastPath && lastPath !== "/" && lastPath !== "/login") {
-        navigate(lastPath, { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+
+  if (isAuthenticated) {
+
+    const lastPath = localStorage.getItem("lastPath");
+ 
+    // Special case first
+
+    if (lastPath === "/change-password") {
+
+      navigate("/change-password", { replace: true });
+    } 
+
+    // Other valid last paths
+
+    else if (lastPath && lastPath !== "/" && lastPath !== "/login") {
+
+      navigate(lastPath, { replace: true });
+
+    } 
+
+    // Default fallback
+
+    else {
+
+      navigate("/", { replace: true });
+
     }
-  }, [isAuthenticated, navigate]);
+
+  }
+
+}, [isAuthenticated, navigate]);
+
+ 
 
   return (
     <>
@@ -174,6 +201,8 @@ useEffect(() => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
+          <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
@@ -195,6 +224,7 @@ useEffect(() => {
           <Route path="/projects/" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
+          <Route path="/projects/:projectId/issuetracker" element={<IssueTracker />} />
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}
@@ -212,7 +242,7 @@ useEffect(() => {
             element={<UserProjectTabs />}
           />
           
-
+           <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
@@ -383,7 +413,7 @@ useEffect(() => {
           <Route
             path="/leave-management"
             element={
-              <ProtectedRoute allowedRoles={["General", "HR", "Manager"]}>
+              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
                 <EmployeePanel />
               </ProtectedRoute>
             }
@@ -421,6 +451,14 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+          {/* <Route
+            path={`/hr-manager`}
+            element={
+              <ProtectedRoute allowedRoles={["Hr-Manager"]}>
+                <HRAdminPanel/>
+              </ProtectedRoute>
+            }
+          /> */}
         </Route>
 
         <Route path="/unauthorized" element={<Unauthorized />} />
