@@ -1,6 +1,6 @@
 import React from "react";
 import Pagination from "../../components/Pagination/pagination";
-import {TimesheetGroup} from "./TimesheetGroup";
+import { TimesheetGroup } from "./TimesheetGroup";
 import Button from "../../components/Button/Button";
 import { useState } from "react";
 
@@ -27,26 +27,26 @@ const TimesheetTable = ({
       }}
     >
       <Button
-            size="small"
-            variant="primary"
-            className="mb-4"
-            onClick={() => setAddingNewTimesheet(!addingNewTimesheet)}
-          >
-            + New Timesheet
-          </Button>
-          {addingNewTimesheet && (
-            <TimesheetGroup
-            emptyTimesheet={true}
-              workDate={new Date().toISOString().split("T")[0]}
-              entries={[]}
-              status="Pending"
-              mapWorkType={mapWorkType}
-              refreshData={refreshData}
-              addingNewTimesheet={addingNewTimesheet}
-              setAddingNewTimesheet={setAddingNewTimesheet}
-              projectInfo={projectInfo}
-            />
-          )}
+        size="small"
+        variant="primary"
+        className="mb-4"
+        onClick={() => setAddingNewTimesheet(!addingNewTimesheet)}
+      >
+        + New Timesheet
+      </Button>
+      {addingNewTimesheet && (
+        <TimesheetGroup
+          emptyTimesheet={true}
+          workDate={new Date().toISOString().split("T")[0]}
+          entries={[]}
+          status="Pending"
+          mapWorkType={mapWorkType}
+          refreshData={refreshData}
+          addingNewTimesheet={addingNewTimesheet}
+          setAddingNewTimesheet={setAddingNewTimesheet}
+          projectInfo={projectInfo}
+        />
+      )}
       {loading ? (
         <div className="text-center text-gray-500">
           Loading timesheet entries...
@@ -57,19 +57,16 @@ const TimesheetTable = ({
         </div>
       ) : (
         <>
-          {data.map((row) => (
+          {data.map((weekGroup) => (
             <TimesheetGroup
-              timesheetId={row.timesheetId}
-              key={row.timesheetId}
-              workDate={row.workDate}
-              entries={row.entries}
-              status={row.status}
+              weekGroup={weekGroup}
+              key={weekGroup.weekStart}
               mapWorkType={mapWorkType}
               refreshData={refreshData}
               addingNewTimesheet={addingNewTimesheet}
               setAddingNewTimesheet={setAddingNewTimesheet}
               projectInfo={projectInfo}
-              approvers={row.actionStatus}
+              approvers={weekGroup.actionStatus}
             />
           ))}
 
@@ -87,4 +84,4 @@ const TimesheetTable = ({
   );
 };
 
-export {TimesheetTable};
+export { TimesheetTable };

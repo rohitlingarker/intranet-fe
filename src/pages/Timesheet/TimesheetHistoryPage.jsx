@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import TimesheetHeader from "./TimesheetHeader";
-import {TimesheetFilters} from "./TimesheetFilters";
+import { TimesheetFilters } from "./TimesheetFilters";
 import { TimesheetTable } from "./TimesheetTable";
 import { fetchTimesheetHistory, fetchProjectTaskInfo } from "./api";
 import DashboardPage from "./DashboardPage";
@@ -21,6 +21,148 @@ const TimesheetHistoryPage = () => {
 
   const [user, setUser] = useState(null);
   const [projectInfo, setProjectInfo] = useState([]);
+
+  // Function to get the start of the week (Monday) for a given date
+  const getWeekStart = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(d.setDate(diff));
+  };
+
+  // Function to get the end of the week (Sunday) for a given date
+  const getWeekEnd = (date) => {
+    const weekStart = getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return weekEnd;
+  };
+
+  // Function to format week range
+  const formatWeekRange = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const startStr = start.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+    });
+    const endStr = end.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    return `${startStr} - ${endStr}`;
+  };
+
+  // Function to group entries by week
+  const groupEntriesByWeek = (entries) => {
+    const weekGroups = {};
+
+    entries.forEach((timesheet) => {
+      const workDate = new Date(timesheet.workDate);
+      const weekStart = getWeekStart(workDate);
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      if (!weekGroups[weekKey]) {
+        weekGroups[weekKey] = {
+          weekStart: weekStart.toISOString().split("T")[0],
+          weekEnd: getWeekEnd(workDate).toISOString().split("T")[0],
+          weekRange: formatWeekRange(weekStart, getWeekEnd(workDate)),
+          timesheets: [],
+          totalHours: 0,
+          status: "Pending", // Default status, will be calculated based on individual timesheets
+          actionStatus: [],
+          weekNumber: getWeekNumber(weekStart),
+          monthName: new Date(weekStart).toLocaleDateString("en-US", {
+            month: "long",
+          }),
+          year: new Date(weekStart).getFullYear(),
+        };
+      }
+
+      weekGroups[weekKey].timesheets.push(timesheet);
+      weekGroups[weekKey].totalHours += parseFloat(
+        calculateTotalHours(timesheet.entries)
+      );
+
+      // Update status based on individual timesheet statuses
+      if (timesheet.status === "Approved") {
+        weekGroups[weekKey].status = "Approved";
+      } else if (timesheet.status === "Rejected") {
+        weekGroups[weekKey].status = "Rejected";
+      } else if (
+        weekGroups[weekKey].status !== "Approved" &&
+        weekGroups[weekKey].status !== "Rejected"
+      ) {
+        weekGroups[weekKey].status = "Pending";
+      }
+
+      // Merge action status from individual timesheets
+      if (timesheet.actionStatus) {
+        weekGroups[weekKey].actionStatus = [
+          ...weekGroups[weekKey].actionStatus,
+          ...timesheet.actionStatus,
+        ];
+      }
+    });
+
+    // Convert to array and sort by week start date (newest first)
+    const sortedWeeks = Object.values(weekGroups).sort(
+      (a, b) => new Date(b.weekStart) - new Date(a.weekStart)
+    );
+
+    // Calculate week-to-week differences
+    return sortedWeeks.map((week, index) => {
+      const previousWeek = sortedWeeks[index + 1];
+      let hoursDifference = 0;
+      let differenceType = "neutral"; // "increase", "decrease", "neutral"
+
+      if (previousWeek) {
+        hoursDifference = week.totalHours - previousWeek.totalHours;
+        if (hoursDifference > 0) {
+          differenceType = "increase";
+        } else if (hoursDifference < 0) {
+          differenceType = "decrease";
+        }
+      }
+
+      return {
+        ...week,
+        hoursDifference: Math.abs(hoursDifference),
+        differenceType,
+        isFirstWeek: index === 0,
+        isLastWeek: index === sortedWeeks.length - 1,
+      };
+    });
+  };
+
+  // Function to get week number of the year
+  const getWeekNumber = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const week1 = new Date(d.getFullYear(), 0, 4);
+    return (
+      1 +
+      Math.round(
+        ((d.getTime() - week1.getTime()) / 86400000 -
+          3 +
+          ((week1.getDay() + 6) % 7)) /
+          7
+      )
+    );
+  };
+
+  // Function to calculate total hours for entries
+  const calculateTotalHours = (entries) => {
+    let totalMinutes = 0;
+    entries.forEach((entry) => {
+      const start = new Date(entry.fromTime);
+      const end = new Date(entry.toTime);
+      totalMinutes += (end - start) / (1000 * 60);
+    });
+    return (totalMinutes / 60).toFixed(2);
+  };
 
   // Fetch user info
   // useEffect(() => {
@@ -49,7 +191,9 @@ const TimesheetHistoryPage = () => {
         const data = await fetchTimesheetHistory(user?.user_id || 1);
         console.log("Fetched timesheet history:", data);
 
-        setEntries(data);
+        // Group entries by week
+        const weeklyEntries = groupEntriesByWeek(data);
+        setEntries(weeklyEntries);
       } catch (err) {
         console.error("Failed to fetch timesheet history:", err);
       } finally {
@@ -74,22 +218,23 @@ const TimesheetHistoryPage = () => {
   };
 
   // Filter entries
-  const filteredEntries = entries.filter((timesheet) => {
-    const matchesSearch = timesheet.entries.some((entry) => {
-      const projectName = projectIdToName[entry.projectId] || "";
-      return projectName.toLowerCase().includes(searchText.toLowerCase());
+  const filteredEntries = entries.filter((weekGroup) => {
+    const matchesSearch = weekGroup.timesheets.some((timesheet) => {
+      return timesheet.entries.some((entry) => {
+        const projectName = projectIdToName[entry.projectId] || "";
+        return projectName.toLowerCase().includes(searchText.toLowerCase());
+      });
     });
-    // const matchesSearch = []
 
     const matchesDate =
       (!filterStartDate && !filterEndDate) ||
       ((!filterStartDate ||
-        new Date(timesheet.workDate) >= new Date(filterStartDate)) &&
+        new Date(weekGroup.weekStart) >= new Date(filterStartDate)) &&
         (!filterEndDate ||
-          new Date(timesheet.workDate) <= new Date(filterEndDate)));
+          new Date(weekGroup.weekEnd) <= new Date(filterEndDate)));
 
     const matchesStatus =
-      filterStatus === "All Status" || timesheet.status === filterStatus;
+      filterStatus === "All Status" || weekGroup.status === filterStatus;
 
     return matchesSearch && matchesDate && matchesStatus;
   });
@@ -142,7 +287,9 @@ const TimesheetHistoryPage = () => {
             )
               .then((res) => res.json())
               .then((data) => {
-                setEntries(data);
+                // Group entries by week
+                const weeklyEntries = groupEntriesByWeek(data);
+                setEntries(weeklyEntries);
                 setLoading(false);
               })
               .catch((err) => {
