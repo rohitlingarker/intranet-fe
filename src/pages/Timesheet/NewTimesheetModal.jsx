@@ -218,17 +218,45 @@ const NewTimesheetModal = ({ isOpen, onClose, refreshData, onSuccess }) => {
 
     setIsSubmitting(true);
     try {
-      // Create a temporary timesheet ID for new timesheets
-      const tempTimesheetId = `new-${Date.now()}`;
+      const payload = entries.map((entry) => ({
+        projectId: entry.projectId,
+        taskId: entry.taskId,
+        description: entry.description,
+        workLocation: entry.workType,
+        fromTime: entry.fromTime,
+        toTime: entry.toTime,
+        otherDescription: "string",
+      }));
 
-      await addEntryToTimesheet(tempTimesheetId, workDate, entries);
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/timesheet/create?workDate=${workDate}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        let message = "Failed to submit timesheet";
+        try {
+          message = await response.text();
+        } catch {}
+        showStatusToast(message || "Failed to submit timesheet", "error");
+        setIsSubmitting(false);
+        return;
+      }
 
       showStatusToast("Timesheet submitted successfully!", "success");
       onSuccess?.();
       refreshData?.();
       onClose();
     } catch (error) {
-      console.error("Error submitting timesheet:", error);
       showStatusToast("Failed to submit timesheet", "error");
     } finally {
       setIsSubmitting(false);

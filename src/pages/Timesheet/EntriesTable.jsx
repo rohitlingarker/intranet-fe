@@ -7,6 +7,18 @@ import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 import Button from "../../components/Button/Button";
 
+// safely render '01:30' or '16:30:00' as '01:30' or '16:30'
+const prettyTime = (time) => {
+  if (!time) return "";
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 const EntriesTable = ({
   entries,
   mapWorkType,
@@ -400,18 +412,8 @@ const EntriesTable = ({
                 <td className="px-4 py-2">
                   {entry.taskName || taskIdToName[entry.taskId] || "N/A"}
                 </td>
-                <td className="px-4 py-2">
-                  {parseToLocalTime(entry.fromTime)?.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
-                <td className="px-4 py-2">
-                  {parseToLocalTime(entry.toTime)?.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
+                <td className="px-4 py-2">{prettyTime(entry.fromTime)}</td>
+                <td className="px-4 py-2">{prettyTime(entry.toTime)}</td>
                 <td className="px-4 py-2">{mapWorkType(entry.workType)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
