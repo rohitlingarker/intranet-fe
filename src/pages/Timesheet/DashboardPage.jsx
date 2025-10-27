@@ -336,7 +336,7 @@ const DashboardPage = () => {
           <Card>
             <CardContent>
               <h3 className="text-lg font-semibold mb-3">
-                Billable vs Non Billable
+                Billable vs Non Billable Tasks
               </h3>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
