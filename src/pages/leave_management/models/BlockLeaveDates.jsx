@@ -217,20 +217,6 @@ const MultiSelect = ({
   );
 };
 
-const mockProjects = [
-  { id: "P-101", name: "Employee Portal Revamp" },
-  { id: "P-102", name: "Fintech Wallet App" },
-  { id: "P-103", name: "AI Chatbot Integration" },
-  { id: "P-104", name: "Cloud Migration Initiative" },
-  { id: "P-105", name: "Fraud Detection System" },
-];
-const mockMembers = [
-  { id: "E-1001", name: "Alice Smith", email: "alice@example.dev" },
-  { id: "E-1002", name: "Bob Johnson", email: "bob@example.dev" },
-  { id: "E-1003", name: "Charlie Brown", email: "charlie@example.dev" },
-  { id: "E-1004", name: "David Lee", email: "david@example.dev" },
-  { id: "E-1005", name: "Eve Davis", email: "eve@example.dev" },
-];
 export default function BlockLeaveDates() {
   // Simulated auth context
 //   const employeeId = "14";
@@ -261,16 +247,13 @@ export default function BlockLeaveDates() {
         setLoading(true);
         // Replace with your endpoints
         const [projRes, ltRes, ltIdsRes] = await Promise.all([
-          axios.get(`${PMS_BASE_URL}/api/manager/${employeeId}/projects`,
+          axios.get(`${PMS_BASE_URL}/api/projects/owner/${employeeId}`,
             {
                 headers: {
                     Authorization:`Bearer ${localStorage.getItem("token")}`,
                 }
             }
-          ).catch((err) => {
-            toast.info("Using Mock Projects Data due to Internal Server Error");
-            return { data: mockProjects };
-        }),
+          ),
           axios.get(`${BASE_URL}/api/leave/types`,
             {
                 headers: {
@@ -286,7 +269,6 @@ export default function BlockLeaveDates() {
             }
           ),
         ]);
-        console.log("Leave types response:", ltRes);
         const projJson = projRes.data || [];
         const ltJson = ltRes.data || [];
         const ltIdsJson = ltIdsRes.data || [];
@@ -304,8 +286,7 @@ export default function BlockLeaveDates() {
         setProjects(projJson);
         setLeaveTypes(mergedLeaveTypes);
       } catch (e) {
-        console.error(e);
-        // toast.error(e.message ||"Failed to fetch initial data");
+        toast.error(e.message ||"Failed to fetch initial data");
       } finally {
         if (active) setLoading(false);
       }
@@ -347,16 +328,11 @@ export default function BlockLeaveDates() {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 }
             }
-        )
-        .catch((err) => {
-          toast.info("Using Mock Members Data due to Internal Server Error");
-          return { data: mockMembers };
-        });
+        );
         const json = await res.data;
         if (!active) return;
         setMembers((json || []).map((m) => ({ value: m.id, label: `${m.name}` })));
       } catch (e) {
-        console.error(e);
         toast.error(e.message || "Failed to fetch project members");
       }
     };
@@ -383,14 +359,14 @@ export default function BlockLeaveDates() {
       const payload = {
         projectId,
         members: blockAllMembers ? members.map(m => m.value) : selectedMembers,
-        leaveTypes: selectedLeaveTypes,
+        leaveTypeIds: selectedLeaveTypes,
         startDate,
         endDate,
         managerId: employeeId,
         reason: "Blocked by manager",
         year: new Date().getFullYear(),
       };
-      const res = await axios.put("/api/leave-blocks",
+      const res = await axios.post(`${BASE_URL}/api/leave-block/block`,
         payload,
         {
             headers: {
@@ -666,7 +642,7 @@ export default function BlockLeaveDates() {
                 <div className="flex items-start justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Project</span>
                   <span className=" ">
-                    {projectOptions.find((p) => p.value === projectId)?.label || "—"}
+                    {projectOptions.find((p) => p.value.toString() === projectId)?.label|| "—"}
                   </span>
                 </div>
                 <div className="flex items-start justify-between">
@@ -694,7 +670,15 @@ export default function BlockLeaveDates() {
                 <div className="flex items-start justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Dates</span>
                   <span className=" ">
-                    {startDate && endDate ? `${startDate} → ${endDate}` : "—"}
+                    {startDate && endDate ? `${new Date(startDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })} → ${new Date(endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}` : "—"}
                   </span>
                 </div>
               </div>

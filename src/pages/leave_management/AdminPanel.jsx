@@ -108,9 +108,12 @@ const AdminPanel = ({ employeeId }) => {
           </h1>
           <p className="text-gray-600">Handle leave requests and approvals</p>
         </div>
-        <div>
+        <div className="flex gap-4">
           <Button onClick={() => navigate(`/block-leave-dates/${employeeId}`)} variant="secondary" size="medium">
             Block Leave Dates
+          </Button>
+          <Button variant="primary" size="medium" >
+            Edit Leave Block
           </Button>
         </div>
       </div>
