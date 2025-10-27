@@ -98,29 +98,7 @@ export const AuthProvider = ({ children }) => {
       isLoggingOut.current = false;
     }, 2000);
   };
-
-  // ✅ Axios interceptor for detecting unauthorized/tampered tokens
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (
-          error.response &&
-          (error.response.status === 401 || error.response.status === 403)
-        ) {
-          // ✅ Show toast & logout once only
-          if (!isLoggingOut.current) {
-            showStatusToast("Session invalid or unauthorized. Logging out...");
-            logout(true);
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
-  }, []);
+  
 
   // ✅ Check and auto logout when token expires
   useEffect(() => {
@@ -149,8 +127,13 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } catch (err) {
-      showStatusToast("Invalid token detected. Please login again.");
-      logout(true);
+      if(err.response?.status === 401){
+        showStatusToast("Token tampered", "error");
+        logout();
+      }else {
+        showStatusToast("Invalid token detected. Please login again.");
+        logout(true);
+      }
     }
   }, [navigate]);
 

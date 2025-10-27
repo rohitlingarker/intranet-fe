@@ -10,8 +10,9 @@ import {
 } from "recharts";
 
 import { getManagerDashboardData } from "../Timesheet/api";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
-const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
+const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,11 +58,7 @@ const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="p-6 text-center text-gray-600">
-        Loading manager dashboard...
-      </div>
-    );
+    return <LoadingSpinner text="Loading manager dashboard..." />;
   }
 
   if (!stats) {
@@ -113,16 +110,25 @@ const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
             <LineChart
               data={weeklyData}
               margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-            > 
+            >
               <XAxis dataKey="day" stroke="#b0b6c1" />
               <YAxis stroke="#b0b6c1" />
               <Tooltip
-                contentStyle={{ background: "#23272f", border: "none", color: "#fff" }}
+                contentStyle={{
+                  background: "#23272f",
+                  border: "none",
+                  color: "#fff",
+                }}
                 labelStyle={{ color: "#fff" }}
                 itemStyle={{ color: "#38bdf8" }}
               />
               <Legend />
-              <Line type="monotone" dataKey="hours" stroke="#4F46E5" strokeWidth={3} />
+              <Line
+                type="monotone"
+                dataKey="hours"
+                stroke="#4F46E5"
+                strokeWidth={3}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -138,44 +144,47 @@ const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
           </h2>
           <button className="bg-orange-400 hover:bg-orange-400 text-white px-4 py-2 rounded-lg shadow">
             Remind
-          </button>          
+          </button>
         </div>
         {stats.missingTimesheets.length > 0 ? (
           <ul className="list-disc list-inside text-gray-600 overflow-y-scroll max-h-30">
             {stats.missingTimesheets.map((user, idx) => (
               <li key={idx}>
-                <span title={user.email} className="font-medium">{user.fullName} - {user.email}</span>
+                <span title={user.email} className="font-medium">
+                  {user.fullName} - {user.email}
+                </span>
                 {/* <span className="text-sm text-gray-500">({user.email})</span> */}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500 text-sm">No missing timesheets today 🎉</p>
+          <p className="text-gray-500 text-sm">
+            No missing timesheets today 🎉
+          </p>
         )}
       </div>
-  {/* Right: Pending Approvals */}
-   <div className="bg-white shadow-lg items-center rounded-2xl p-8 flex-1"> 
-    <div className="flex justify-between items-center mb-4 ">
-      <h2 className="text-lg font-semibold text-gray-700 ">
-        Pending Approvals
-      </h2>
-      <button 
-       onClick={()=>{
-        setStatusFilter("Pending")
-        handleScroll()
-      }}
-
-
-      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
-        View
-      </button>
-    </div>
-    <span >
-      <p className=" justify-center text-2xl font-bold text-blue-800 mt-4">
-              {stats.pending}  Entries
-            </p>
-      </span>
-    </div>
+      {/* Right: Pending Approvals */}
+      <div className="bg-white shadow-lg items-center rounded-2xl p-8 flex-1">
+        <div className="flex justify-between items-center mb-4 ">
+          <h2 className="text-lg font-semibold text-gray-700 ">
+            Pending Approvals
+          </h2>
+          <button
+            onClick={() => {
+              setStatusFilter("Pending");
+              handleScroll();
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow"
+          >
+            View
+          </button>
+        </div>
+        <span>
+          <p className=" justify-center text-2xl font-bold text-blue-800 mt-4">
+            {stats.pending} Entries
+          </p>
+        </span>
+      </div>
       {/* Missing Timesheets */}
       {/* <div className="bg-white shadow-lg rounded-2xl p-4">
         <div className="flex justify-between items-center mb-4">
@@ -214,7 +223,6 @@ const ManagerDashboard = ({setStatusFilter,handleScroll}) => {
         </div>
       </div> */}
     </div>
-    
   );
 };
 
