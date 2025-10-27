@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { bulkReviewTimesheet, reviewTimesheet } from "../api";
 import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 import { Check, X, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -451,9 +452,7 @@ const ManagerApprovalTable = ({ statusFilter, setStatusFilter, ref }) => {
 
       {/* Timesheet List */}
       {loading ? (
-        <div className="text-center text-gray-600">
-          Loading TimeSheet Approvals...
-        </div>
+        <LoadingSpinner text="Loading timesheet approvals..." />
       ) : paginatedTimesheets.length === 0 ? (
         <div className="text-center text-gray-600">No timesheets found.</div>
       ) : (

@@ -13,6 +13,7 @@ import FormSelect from "../../components/forms/FormSelect";
 import FormTime from "../../components/forms/FormTime";
 import FormDatePicker from "../../components/forms/FormDatePicker";
 import Button from "../../components/Button/Button";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { showStatusToast } from "../../components/toastfy/toast";
 import { addEntryToTimesheet } from "./api";
 
@@ -287,10 +288,7 @@ const NewTimesheetModal = ({ isOpen, onClose, refreshData, onSuccess }) => {
         <div className="flex-1 p-6 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading project information...</p>
-              </div>
+              <LoadingSpinner text="Loading project information..." />
             </div>
           ) : (
             <>

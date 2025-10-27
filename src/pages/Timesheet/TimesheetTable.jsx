@@ -3,6 +3,7 @@ import Pagination from "../../components/Pagination/pagination";
 import { TimesheetGroup } from "./TimesheetGroup";
 import NewTimesheetModal from "./NewTimesheetModal";
 import Button from "../../components/Button/Button";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useState } from "react";
 
 const TimesheetTable = ({
@@ -48,9 +49,7 @@ const TimesheetTable = ({
         }}
       />
       {loading ? (
-        <div className="text-center text-gray-500">
-          Loading timesheet entries...
-        </div>
+        <LoadingSpinner text="Loading timesheet entries..." />
       ) : data.length === 0 ? (
         <div className="text-center text-gray-500">
           No timesheet entries found.

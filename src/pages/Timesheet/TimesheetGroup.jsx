@@ -5,6 +5,7 @@ import NewTimesheetModal from "./NewTimesheetModal";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
+import { submitWeeklyTimesheet } from "./api";
 
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
   if (!open) return null;
@@ -152,9 +153,75 @@ const TimesheetGroup = ({
   const [showSelectionCheckboxes, setShowSelectionCheckboxes] = useState(false);
   const menuRef = useRef(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
 
   // Create individual refs for each timesheet menu
   const menuRefs = useRef({});
+
+  // Check if submit button should be disabled
+  const isSubmitDisabled = () => {
+    if (!isWeeklyFormat || !weekData) return true;
+
+    const weeklyStatus = weekData.status?.toUpperCase();
+
+    // Disabled if already approved or partially approved
+    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY_APPROVED") {
+      return true;
+    }
+
+    // For SUBMITTED status, check if all timesheets are not DRAFT
+    if (weeklyStatus === "SUBMITTED") {
+      // Check if all timesheets are submitted (not DRAFT)
+      const allSubmitted = weekData.timesheets.every(
+        (ts) => ts.status?.toUpperCase() !== "DRAFT"
+      );
+      return allSubmitted;
+    }
+
+    return false; // Enabled for DRAFT or other statuses
+  };
+
+  // Get the button text based on status
+  const getSubmitButtonText = () => {
+    if (!isWeeklyFormat || !weekData) return "SUBMIT WEEK";
+
+    const weeklyStatus = weekData.status?.toUpperCase();
+
+    if (weeklyStatus === "APPROVED") {
+      return "Week Already Approved";
+    }
+    if (weeklyStatus === "PARTIALLY_APPROVED") {
+      return "Week Partially Approved";
+    }
+    if (weeklyStatus === "SUBMITTED") {
+      return "Week Already Submitted";
+    }
+
+    return "SUBMIT WEEK";
+  };
+
+  // Handle weekly submission
+  const handleSubmitWeek = async () => {
+    if (!isWeeklyFormat) return;
+
+    // Get all timesheet IDs for the week
+    const timesheetIds = weekData.timesheets.map((ts) => ts.timesheetId);
+
+    if (timesheetIds.length === 0) {
+      showStatusToast("No timesheets to submit", "error");
+      return;
+    }
+
+    try {
+      setIsSubmittingWeek(true);
+      await submitWeeklyTimesheet(timesheetIds);
+      if (refreshData) await refreshData();
+    } catch (error) {
+      console.error("Failed to submit weekly timesheet:", error);
+    } finally {
+      setIsSubmittingWeek(false);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -693,6 +760,29 @@ const TimesheetGroup = ({
                 </div>
               </div>
             ))}
+
+          {/* Submit Week Button */}
+          {isWeeklyFormat && weekData && (
+            <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
+              <button
+                onClick={handleSubmitWeek}
+                disabled={isSubmittingWeek || isSubmitDisabled()}
+                className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-colors ${
+                  isSubmitDisabled()
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : isSubmittingWeek
+                    ? "bg-blue-400 text-white cursor-wait"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+                }`}
+              >
+                {isSubmittingWeek
+                  ? "Submitting..."
+                  : isSubmitDisabled()
+                  ? getSubmitButtonText()
+                  : "SUBMIT WEEK"}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <EntriesTable
