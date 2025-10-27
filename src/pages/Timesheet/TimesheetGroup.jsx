@@ -192,7 +192,7 @@ const TimesheetGroup = ({
   };
 
   const toggleDateChange = (e) => {
-    if (status === "Approved") return; // prevent date change if approved
+    if (status?.toLowerCase() === "approved") return; // prevent date change if approved
     setEditDateIndex((prev) => (prev === null ? 0 : null));
   };
 
@@ -258,7 +258,9 @@ const TimesheetGroup = ({
     setSelectedEntryIds([]); // clear previous selection
   };
 
-  const approveStatus = approvers.every((a) => a.status === "Approved");
+  const approveStatus = approvers.every(
+    (a) => a.status?.toUpperCase() === "APPROVED"
+  );
 
   // Get current status and date display
   const currentStatus = isWeeklyFormat ? weekData.status : status;
@@ -272,17 +274,17 @@ const TimesheetGroup = ({
   // Custom status badge with correct colors
   const CustomStatusBadge = ({ label, size = "sm" }) => {
     const getStatusColor = (status) => {
-      switch (status) {
-        case "Draft":
-        case "Submitted":
+      switch (status?.toLowerCase()) {
+        case "draft":
+        case "submitted":
           return "bg-yellow-100 text-yellow-800 border-yellow-300";
-        case "Approved":
-        case "Partially Approved":
+        case "approved":
+        case "partially approved":
           return "bg-green-100 text-green-800 border-green-300";
-        case "Rejected":
+        case "rejected":
           return "bg-red-100 text-red-800 border-red-300";
         default:
-          return "bg-yellow-100 text-yellow-800 border-yellow-300";
+          return "bg-gray-100 text-gray-800 border-gray-300";
       }
     };
 
@@ -307,9 +309,15 @@ const TimesheetGroup = ({
     if (!approvers || approvers.length === 0) {
       return <p className="text-gray-400">No approver data</p>;
     }
-    const approved = approvers.filter((a) => a.status === "Approved");
-    const rejected = approvers.filter((a) => a.status === "Rejected");
-    const pending = approvers.filter((a) => a.status === "Pending");
+    const approved = approvers.filter(
+      (a) => a.status?.toUpperCase() === "APPROVED"
+    );
+    const rejected = approvers.filter(
+      (a) => a.status?.toUpperCase() === "REJECTED"
+    );
+    const pending = approvers.filter(
+      (a) => a.status?.toUpperCase() === "PENDING"
+    );
 
     return (
       <div className="space-y-2 text-xs">
@@ -356,13 +364,11 @@ const TimesheetGroup = ({
   // Determine border color based on status
   const getBorderColor = () => {
     if (isWeeklyFormat) {
-      if (
-        currentStatus === "Approved" ||
-        currentStatus === "Partially Approved"
-      )
+      const status = currentStatus?.toLowerCase();
+      if (status === "approved" || status === "partially approved")
         return "border-green-500";
-      if (currentStatus === "Rejected") return "border-red-500";
-      if (currentStatus === "Draft" || currentStatus === "Submitted")
+      if (status === "rejected") return "border-red-500";
+      if (status === "draft" || status === "submitted")
         return "border-yellow-500";
       return "border-gray-500";
     }
@@ -372,13 +378,11 @@ const TimesheetGroup = ({
   // Determine background color for week header based on status
   const getWeekHeaderBgColor = () => {
     if (isWeeklyFormat) {
-      if (
-        currentStatus === "Approved" ||
-        currentStatus === "Partially Approved"
-      )
+      const status = currentStatus?.toLowerCase();
+      if (status === "approved" || status === "partially approved")
         return "bg-green-50 border-b-green-200";
-      if (currentStatus === "Rejected") return "bg-red-50 border-b-red-200";
-      if (currentStatus === "Draft" || currentStatus === "Submitted")
+      if (status === "rejected") return "bg-red-50 border-b-red-200";
+      if (status === "draft" || status === "submitted")
         return "bg-yellow-50 border-b-yellow-200";
       return "bg-gray-50 border-b-gray-200";
     }
@@ -388,14 +392,11 @@ const TimesheetGroup = ({
   // Determine week badge color based on status
   const getWeekBadgeColor = () => {
     if (isWeeklyFormat) {
-      if (
-        currentStatus === "Approved" ||
-        currentStatus === "Partially Approved"
-      )
+      const status = currentStatus?.toLowerCase();
+      if (status === "approved" || status === "partially approved")
         return "bg-green-600";
-      if (currentStatus === "Rejected") return "bg-red-600";
-      if (currentStatus === "Draft" || currentStatus === "Submitted")
-        return "bg-yellow-600";
+      if (status === "rejected") return "bg-red-600";
+      if (status === "draft" || status === "submitted") return "bg-yellow-600";
       return "bg-gray-600";
     }
     return "bg-blue-600";
@@ -404,13 +405,11 @@ const TimesheetGroup = ({
   // Determine total hours text color based on status
   const getTotalHoursColor = () => {
     if (isWeeklyFormat) {
-      if (
-        currentStatus === "Approved" ||
-        currentStatus === "Partially Approved"
-      )
+      const status = currentStatus?.toLowerCase();
+      if (status === "approved" || status === "partially approved")
         return "text-green-700";
-      if (currentStatus === "Rejected") return "text-red-700";
-      if (currentStatus === "Draft" || currentStatus === "Submitted")
+      if (status === "rejected") return "text-red-700";
+      if (status === "draft" || status === "submitted")
         return "text-yellow-700";
       return "text-gray-700";
     }
@@ -479,7 +478,9 @@ const TimesheetGroup = ({
         {/* Daily format header */}
         {!isWeeklyFormat && (
           <>
-            {editDateIndex === timesheetId && emptyTimesheet ? (
+            {editDateIndex === timesheetId &&
+            emptyTimesheet &&
+            status?.toLowerCase() !== "approved" ? (
               <input
                 type="date"
                 className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
@@ -491,8 +492,15 @@ const TimesheetGroup = ({
               />
             ) : (
               <div
-                onClick={() => setEditDateIndex(timesheetId)}
-                className="text-gray-500 font-semibold cursor-pointer"
+                onClick={() =>
+                  status?.toLowerCase() !== "approved" &&
+                  setEditDateIndex(timesheetId)
+                }
+                className={`text-gray-500 font-semibold ${
+                  status?.toLowerCase() !== "approved"
+                    ? "cursor-pointer hover:text-blue-600"
+                    : "cursor-not-allowed"
+                }`}
               >
                 {currentDate}
               </div>
@@ -514,7 +522,12 @@ const TimesheetGroup = ({
               onClick={() => setMenuOpen((open) => !open)}
               className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
               type="button"
-              disabled={currentStatus === "Approved"}
+              disabled={currentStatus?.toLowerCase() === "approved"}
+              title={
+                currentStatus?.toLowerCase() === "approved"
+                  ? "Cannot edit approved timesheet"
+                  : "More options"
+              }
             >
               <MoreVertical size={22} />
             </button>
@@ -552,10 +565,10 @@ const TimesheetGroup = ({
             .map((timesheet, index) => (
               <div
                 key={timesheet.timesheetId}
-                className="bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 shadow-sm"
+                className="bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 shadow-sm overflow-visible"
               >
                 {/* Individual Day Header */}
-                <div className="bg-white border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg">
+                <div className="bg-white border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible">
                   <div className="flex items-center gap-3">
                     <div className="text-sm font-semibold text-gray-700">
                       {formatDate(timesheet.workDate)}
@@ -564,20 +577,28 @@ const TimesheetGroup = ({
                       {calculateTotalHours(timesheet.entries)} hrs
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 relative overflow-visible">
                     <CustomStatusBadge label={timesheet.status} size="sm" />
+                    {/* Show approval status tooltip if available */}
                     {timesheet.actionStatus &&
                       timesheet.actionStatus.length > 0 && (
-                        <Tooltip
-                          content={formatApproverTooltip(
-                            timesheet.actionStatus
-                          )}
+                        <div
+                          style={{
+                            position: "relative",
+                            display: "inline-block",
+                          }}
                         >
-                          <div className="text-xs text-gray-400 cursor-help">
-                            {timesheet.actionStatus.length} approver
-                            {timesheet.actionStatus.length > 1 ? "s" : ""}
-                          </div>
-                        </Tooltip>
+                          <Tooltip
+                            content={formatApproverTooltip(
+                              timesheet.actionStatus
+                            )}
+                          >
+                            <span className="text-xs text-gray-500 cursor-help px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 border border-gray-200 whitespace-nowrap">
+                              {timesheet.actionStatus.length} approver
+                              {timesheet.actionStatus.length > 1 ? "s" : ""}
+                            </span>
+                          </Tooltip>
+                        </div>
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
@@ -601,7 +622,14 @@ const TimesheetGroup = ({
                         }}
                         className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
                         type="button"
-                        disabled={timesheet.status === "Approved"}
+                        disabled={
+                          timesheet.status?.toLowerCase() === "approved"
+                        }
+                        title={
+                          timesheet.status?.toLowerCase() === "approved"
+                            ? "Cannot edit approved timesheet"
+                            : "More options"
+                        }
                       >
                         <MoreVertical size={16} />
                       </button>

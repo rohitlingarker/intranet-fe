@@ -92,7 +92,7 @@ const EntriesTable = ({
   };
 
   const handleEditClick = (idx) => {
-    if (addingNewEntry || status === "Approved") return;
+    if (addingNewEntry || status?.toLowerCase() === "approved") return;
     const entry = entries[idx];
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -418,10 +418,11 @@ const EntriesTable = ({
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
                 <td className="px-4 py-2">
-                  {status !== "Approved" && (
+                  {status?.toLowerCase() !== "approved" && (
                     <button
                       className="text-blue-600 hover:underline text-sm"
                       onClick={() => handleEditClick(idx)}
+                      title="Edit entry"
                     >
                       <Pencil className="inline w-4 h-4" />
                     </button>

@@ -504,30 +504,37 @@ const ManagerApprovalTable = ({ statusFilter, setStatusFilter, ref }) => {
                     Total Hours: {totalHours.toFixed(2)}
                   </span>
                   <span
-                    className={`px-3 py-1 text-sm rounded-full ${
-                      sheet.status === "Approved" ||
-                      sheet.status === "Partially Approved"
-                        ? "bg-green-100 text-green-800"
-                        : sheet.status === "Rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
+                    className={`px-3 py-1 text-sm rounded-full font-medium ${
+                      sheet.status?.toLowerCase() === "approved" ||
+                      sheet.status?.toLowerCase() === "partially approved"
+                        ? "bg-green-100 text-green-800 border border-green-300"
+                        : sheet.status?.toLowerCase() === "rejected"
+                        ? "bg-red-100 text-red-800 border border-red-300"
+                        : sheet.status?.toLowerCase() === "draft" ||
+                          sheet.status?.toLowerCase() === "submitted"
+                        ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                        : "bg-gray-100 text-gray-800 border border-gray-300"
                     }`}
                   >
                     {sheet.status}
                   </span>
-                  {sheet.status === "Pending" && (
+                  {(sheet.status?.toLowerCase() === "pending" ||
+                    sheet.status?.toLowerCase() === "submitted" ||
+                    sheet.status?.toLowerCase() === "draft") && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() =>
                           handleStatusChange(sheet.timesheetId, "Approved")
                         }
                         className="text-green-600 hover:text-green-800 font-bold"
+                        title="Approve timesheet"
                       >
                         <Check size={18} />
                       </button>
                       <button
                         onClick={() => handleRejectClick(sheet.timesheetId)}
                         className="text-red-600 hover:text-red-800 font-bold"
+                        title="Reject timesheet"
                       >
                         <X size={18} />
                       </button>

@@ -98,6 +98,9 @@ const TimesheetHistoryPage = () => {
               taskName:
                 projectTaskMapping.tasks[entry.taskId] ||
                 `Task-${entry.taskId}`,
+              // Ensure isBillable is properly set
+              isBillable:
+                entry.isBillable !== undefined ? entry.isBillable : true,
             }));
           }
 
@@ -115,9 +118,10 @@ const TimesheetHistoryPage = () => {
     });
   };
 
-  // Function to map weekly status to our expected format
+  // Function to map weekly status to our expected format (case-insensitive)
   const mapWeeklyStatus = (weeklyStatus) => {
-    switch (weeklyStatus) {
+    const status = weeklyStatus?.toUpperCase();
+    switch (status) {
       case "DRAFT":
         return "Draft";
       case "SUBMITTED":
@@ -130,7 +134,7 @@ const TimesheetHistoryPage = () => {
         return "Rejected";
       case "PARTIALLY_APPROVED":
         return "Partially Approved";
-      case "No Timesheets":
+      case "NO TIMESHEETS":
         return "No Timesheets";
       default:
         return "Draft";
@@ -139,21 +143,19 @@ const TimesheetHistoryPage = () => {
 
   // Function to get status color for weekly status badge
   const getWeeklyStatusColor = (status) => {
-    switch (status) {
-      case "Draft":
+    switch (status?.toLowerCase()) {
+      case "draft":
+      case "submitted":
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "Submitted":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "Approved":
+      case "approved":
+      case "partially approved":
         return "bg-green-100 text-green-800 border-green-300";
-      case "Rejected":
+      case "rejected":
         return "bg-red-100 text-red-800 border-red-300";
-      case "Partially Approved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "No Timesheets":
+      case "no timesheets":
         return "bg-gray-100 text-gray-600 border-gray-200";
       default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
