@@ -116,7 +116,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
               <div className="space-y-2 mt-4">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">AVAILABLE</span>
-                  <span className="text-gray-500">CONSUMED</span>
+                  <span className="text-gray-500 text-right">CONSUMED</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   {isUnpaid ? "∞ Days" : (
