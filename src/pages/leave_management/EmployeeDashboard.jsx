@@ -51,7 +51,6 @@ const EmployeeDashboard = ({ employeeId }) => {
   const handleCompOffSubmit = async (payload) => {
     setIsLoading(true);
     try {
-      // console.log("payload", payload);
       payload = { ...payload, employeeId };
 
       const res = await axios.post(`${BASE_URL}/api/compoff/request`, payload, {
@@ -64,10 +63,9 @@ const EmployeeDashboard = ({ employeeId }) => {
         );
         setrefreshKeys((prev) => prev + 1);
         try {
-          console.log("Refreshing requests...");
-          await fetchRequests(); // 🔹 refresh pending requests
+          await fetchRequests();
         } catch (err) {
-          // console.error("Failed to refresh requests:", err);
+          toast.error(err?.message || "Failed to refresh requests.");
         }
         return true;
       } else {
@@ -75,7 +73,6 @@ const EmployeeDashboard = ({ employeeId }) => {
         return false;
       }
     } catch (err) {
-      // console.error(err);
       toast.error("Something went wrong while submitting.");
       return false;
     } finally {
