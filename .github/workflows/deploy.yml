@@ -9,6 +9,12 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      VITE_TIMESHEET_API_ENDPOINT :  ${{secrets.VITE_TIMESHEET_API_ENDPOINT}}
+      VITE_USER_MANAGEMENT_URL :  ${{secrets.VITE_USER_MANAGEMENT_URL}}
+      VITE_BASE_URL:  ${{secrets.VITE_BASE_URL}}
+      VITE_PMS_BASE_URL:  ${{secrets.VITE_PMS_BASE_URL}}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
