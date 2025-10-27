@@ -12,6 +12,8 @@ import EditUserForm from "./EditUser";
 import { Pencil, UserX } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js"; // ✅ Import libphonenumber-js
 import { BulkUserUpload } from "./BulkUser";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { toast } from "react-toastify";
  
 const SORT_DIRECTIONS = {
   ASC: "asc",
@@ -38,11 +40,12 @@ export default function UsersTable() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const accessDeniedShownRef = useRef(false);
+  const {logout} = useAuth();
  
   useEffect(() => {
     if (!token) {
       showStatusToast("Session expired. Please login again.", "warning");
-      navigate("/");
+      logout();
     }
   }, [token, navigate]);
  
@@ -56,13 +59,16 @@ export default function UsersTable() {
       setUsers(res.data || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
-      if (err.response?.status === 403 || err.response?.status === 401) {
+      if (err.response?.status === 403) {
         if (!accessDeniedShownRef.current) {
           showStatusToast("Access denied. Admins only.", "error");
           accessDeniedShownRef.current = true;
         }
         navigate("/dashboard");
-      } else {
+      }else if(err.response?.status === 401){
+        showStatusToast("Token tampered", "error");
+        logout();
+      }else {
         showStatusToast("Failed to load users.", "error");
       }
     } finally {

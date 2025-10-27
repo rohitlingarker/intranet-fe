@@ -127,6 +127,13 @@ export default function LoginPage() {
     window.location.href = `${import.meta.env.VITE_USER_MANAGEMENT_URL}/auth/ms-login`;
   };
 
+  // 🔹 Handle Enter key press for both inputs
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleLogin();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#101a36]">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 flex flex-col items-center">
@@ -167,36 +174,35 @@ export default function LoginPage() {
             placeholder="Email address"
             value={email || ""}
             onChange={(e) => setMail(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
           />
 
-{/* Password Input with View/Hide Toggle */}
-<div className="relative w-full">
-  <input
-    type={showPassword ? "text" : "password"}
-    placeholder="Password"
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-    className="w-full px-4 py-2 pr-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50 text-gray-800
+          {/* Password Input with View/Hide Toggle */}
+          <div className="relative w-full">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full px-4 py-2 pr-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50 text-gray-800
                [&::-ms-reveal]:hidden [&::-ms-clear]:hidden 
                [&::-webkit-credentials-auto-fill-button]:hidden 
                [&::-webkit-textfield-decoration-container]:hidden 
                appearance-none"
-    autoComplete="new-password"
-  />
+              autoComplete="new-password"
+            />
 
-  <button
-    type="button"
-    onClick={() => setShowPassword(!showPassword)}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-    tabIndex={-1}
-  >
-    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-  </button>
-</div>
-
-
-
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              tabIndex={-1}
+            >
+              {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+            </button>
+          </div>
 
           <button
             onClick={handleLogin}
@@ -207,13 +213,13 @@ export default function LoginPage() {
           </button>
         </div>
         <div className="flex justify-between mt-6 text-sm text-gray-600 w-full">
-          <button
+          {/* <button
             onClick={() => navigate("/register")}
             className="hover:underline hover:text-blue-600"
             type="button"
-          >
-            Create Account
-          </button>
+          > */}
+            {/* Create Account
+          </button> */}
           <button
             onClick={() => navigate("/reset-password")}
             className="hover:underline hover:text-blue-600"
