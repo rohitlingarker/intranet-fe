@@ -34,6 +34,8 @@ const EmployeeDashboard = ({ employeeId }) => {
   };
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userPermissions = user?.permissions || [];
   const compOffPageRef = useRef();
   const navigate = useNavigate();
 
@@ -54,7 +56,7 @@ const EmployeeDashboard = ({ employeeId }) => {
       payload = { ...payload, employeeId };
 
       const res = await axios.post(`${BASE_URL}/api/compoff/request`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
       if (res.data.success) {

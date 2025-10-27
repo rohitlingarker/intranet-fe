@@ -92,7 +92,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const location = useLocation();
   const isfirsttlogin = localStorage.getItem("isfirsttlogin");
 
-  console.log("isfirsttlogin:", isfirsttlogin);
+  // console.log("isfirsttlogin:", isfirsttlogin);
 
  
 

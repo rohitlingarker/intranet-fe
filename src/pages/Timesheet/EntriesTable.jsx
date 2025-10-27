@@ -7,6 +7,18 @@ import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 import Button from "../../components/Button/Button";
 
+// safely render '01:30' or '16:30:00' as '01:30' or '16:30'
+const prettyTime = (time) => {
+  if (!time) return "";
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 const EntriesTable = ({
   entries,
   mapWorkType,
@@ -15,7 +27,6 @@ const EntriesTable = ({
   status,
   addingNewEntry,
   setAddingNewEntry,
-  setAddingNewTimesheet,
   refreshData,
   projectInfo,
   selectedEntryIds,
@@ -24,19 +35,22 @@ const EntriesTable = ({
 }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({});
-  const [addData, setAddData] = useState({ workType: "Office", isBillable: "Yes" });
+  const [addData, setAddData] = useState({
+    workType: "Office",
+    isBillable: "Yes",
+  });
   const [pendingEntries, setPendingEntries] = useState([]);
 
   // ✅ Add this helper here
-// const isCurrentMonth = (dateStr) => {
-//   const today = new Date();
-//   const work = new Date(dateStr);
-//   return (
-//     work.getMonth() === today.getMonth() &&
-//     work.getFullYear() === today.getFullYear()
-//   );
-//};
-//const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
+  // const isCurrentMonth = (dateStr) => {
+  //   const today = new Date();
+  //   const work = new Date(dateStr);
+  //   return (
+  //     work.getMonth() === today.getMonth() &&
+  //     work.getFullYear() === today.getFullYear()
+  //   );
+  //};
+  //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
 
   useEffect(() => {
     if (!addingNewEntry) setEditIndex(null);
@@ -54,15 +68,22 @@ const EntriesTable = ({
     { label: "No", value: "No" },
   ];
 
-  const projectOptions = projectInfo.map((p) => ({ label: p.project, value: p.projectId }));
-  const projectIdToName = Object.fromEntries(projectInfo.map((p) => [p.projectId, p.project]));
+  const projectOptions = projectInfo.map((p) => ({
+    label: p.projectName,
+    value: p.projectId,
+  }));
+  const projectIdToName = Object.fromEntries(
+    projectInfo.map((p) => [p.projectId, p.projectName])
+  );
   const taskIdToName = Object.fromEntries(
-    projectInfo.flatMap((p) => p.tasks.map((t) => [t.taskId, t.task]))
+    projectInfo.flatMap((p) => p.tasks.map((t) => [t.taskId, t.taskName]))
   );
 
   const getTaskOptions = (projectId) => {
     const proj = projectInfo.find((p) => p.projectId === parseInt(projectId));
-    return proj ? proj.tasks.map((t) => ({ label: t.task, value: t.taskId })) : [];
+    return proj
+      ? proj.tasks.map((t) => ({ label: t.taskName, value: t.taskId }))
+      : [];
   };
 
   const toggleCheckbox = (entryId, checked) => {
@@ -71,7 +92,7 @@ const EntriesTable = ({
   };
 
   const handleEditClick = (idx) => {
-    if (addingNewEntry || status === "Approved") return;
+    if (addingNewEntry || status?.toLowerCase() === "approved") return;
     const entry = entries[idx];
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -97,16 +118,20 @@ const EntriesTable = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "billable" && ((addingNewEntry && addData.projectId < 0) || (!addingNewEntry && editData.projectId < 0))) {
+    if (
+      name === "billable" &&
+      ((addingNewEntry && addData.projectId < 0) ||
+        (!addingNewEntry && editData.projectId < 0))
+    ) {
       return;
     }
 
     if (addingNewEntry) setAddData((prev) => ({ ...prev, [name]: value }));
     else setEditData((prev) => ({ ...prev, [name]: value }));
 
-    if (name === "projectId" && value < 0){
-      if (addingNewEntry) setAddData((prev) => ({ ...prev, isBillable: "No"}));
-      else setEditData((prev) => ({ ...prev, isBillable: "No"}));
+    if (name === "projectId" && value < 0) {
+      if (addingNewEntry) setAddData((prev) => ({ ...prev, isBillable: "No" }));
+      else setEditData((prev) => ({ ...prev, isBillable: "No" }));
     }
   };
 
@@ -115,7 +140,6 @@ const EntriesTable = ({
     const { name, value } = e.target;
     setAddData((prev) => ({ ...prev, [name]: value }));
     console.log(addData);
-    
   };
 
   // validation (works for both addData and editData shapes)
@@ -197,14 +221,33 @@ const EntriesTable = ({
   function parseToLocalTime(datetimeString) {
     if (!datetimeString) return null;
 
-    // If the string doesn't end with 'Z' or a timezone offset, assume it's UTC and add 'Z'
-    const normalized = /Z$|[+-]\d{2}:\d{2}$/.test(datetimeString)
-      ? datetimeString
-      : datetimeString + "Z";
+    try {
+      // If it's just a time string (HH:MM:SS or HH:MM:SS.mmm), treat it as today's time
+      if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(datetimeString)) {
+        const today = new Date();
+        const [hours, minutes, seconds] = datetimeString.split(":");
+        const date = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate(),
+          parseInt(hours),
+          parseInt(minutes),
+          parseInt(seconds.split(".")[0])
+        );
+        return date;
+      }
 
-    return new Date(normalized);
+      // If the string doesn't end with 'Z' or a timezone offset, assume it's UTC and add 'Z'
+      const normalized = /Z$|[+-]\d{2}:\d{2}$/.test(datetimeString)
+        ? datetimeString
+        : datetimeString + "Z";
+
+      return new Date(normalized);
+    } catch (error) {
+      console.error("Error parsing time:", datetimeString, error);
+      return null;
+    }
   }
-
 
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
@@ -362,31 +405,24 @@ const EntriesTable = ({
             ) : (
               <>
                 <td className="px-4 py-2">
-                  {projectIdToName[entry.projectId] || "N/A"}
+                  {entry.projectName ||
+                    projectIdToName[entry.projectId] ||
+                    "N/A"}
                 </td>
                 <td className="px-4 py-2">
-                  {taskIdToName[entry.taskId] || "N/A"}
+                  {entry.taskName || taskIdToName[entry.taskId] || "N/A"}
                 </td>
-                <td className="px-4 py-2">
-                  {parseToLocalTime(entry.fromTime)?.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
-                <td className="px-4 py-2">
-                  {parseToLocalTime(entry.toTime)?.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
+                <td className="px-4 py-2">{prettyTime(entry.fromTime)}</td>
+                <td className="px-4 py-2">{prettyTime(entry.toTime)}</td>
                 <td className="px-4 py-2">{mapWorkType(entry.workType)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
                 <td className="px-4 py-2">
-                  {status !== "Approved" && (
+                  {status?.toLowerCase() !== "approved" && (
                     <button
                       className="text-blue-600 hover:underline text-sm"
                       onClick={() => handleEditClick(idx)}
+                      title="Edit entry"
                     >
                       <Pencil className="inline w-4 h-4" />
                     </button>
@@ -486,7 +522,6 @@ const EntriesTable = ({
                         pendingEntries
                       );
                       setPendingEntries([]);
-                      setAddingNewTimesheet(false);
                       refreshData();
                       showStatusToast("Timesheet submitted!", "success");
                     } catch (err) {
