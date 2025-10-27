@@ -98,7 +98,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         payload,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -107,7 +107,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         `${BASE_URL}/api/leave/get-all-leave-types`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -196,7 +196,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -223,7 +223,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -261,7 +261,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -307,7 +307,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       };
 
       await axios.put(`${BASE_URL}/api/leave-requests/update`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
       toast.success("Leave request updated successfully.");
