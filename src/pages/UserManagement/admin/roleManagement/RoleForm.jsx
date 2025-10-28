@@ -108,7 +108,6 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
       return;
     }
 
-    // ✅ Mandatory role protection logic
     const mandatoryRoles = ["Admin", "HR", "HR-Manager"];
     if (mandatoryRoles.includes(editRole.original_name)) {
       showStatusToast(
@@ -121,7 +120,6 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
 
     setSaving(true);
     try {
-      // ✅ Use correct endpoint with /uuid/
       const res = await axiosInstance.put(
         `/admin/roles/uuid/${editRole.role_uuid}`,
         { role_name: editRole.role_name }
@@ -147,7 +145,6 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
 
   const handleDeleteRole = async () => {
     try {
-      // ✅ Protect mandatory roles from deletion
       const roleToDelete = localRoles.find((r) => r.role_uuid === deleteId);
       if (["Admin", "HR", "HR-Manager"].includes(roleToDelete?.role_name)) {
         showStatusToast(
@@ -158,7 +155,6 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
         return;
       }
 
-      // ✅ Use correct endpoint with /uuid/
       await axiosInstance.delete(`/admin/roles/uuid/${deleteId}`);
       showStatusToast("Role deleted successfully!", "success");
       setDeleteModalOpen(false);
@@ -187,17 +183,28 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
       {/* Add Role Modal */}
       <Modal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <h3 className="text-lg font-semibold mb-3">Add New Role</h3>
-        <FormInput
-          label="Role Name"
-          name="role_name"
-          value={newRoleName}
-          onChange={(e) => setNewRoleName(e.target.value)}
-          placeholder="e.g., Admin"
-          className="mb-3"
-        />
-        <Button onClick={handleAddRole} disabled={saving}>
-          {saving ? "Saving..." : "Add Role"}
-        </Button>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <FormInput
+              label="Role Name"
+              name="role_name"
+              value={newRoleName}
+              onChange={(e) => setNewRoleName(e.target.value)}
+              placeholder="e.g., Admin"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleAddRole} disabled={saving}>
+              {saving ? "Saving..." : "Add Role"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setAddModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Roles List */}
@@ -264,19 +271,30 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
       {/* Edit Role Modal */}
       <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)}>
         <h3 className="text-lg font-semibold mb-3">Edit Role</h3>
-        <FormInput
-          label="Role Name"
-          name="edit_role_name"
-          value={editRole?.role_name || ""}
-          onChange={(e) =>
-            setEditRole((prev) => ({ ...prev, role_name: e.target.value }))
-          }
-          placeholder="e.g., Manager"
-          className="mb-3"
-        />
-        <Button onClick={handleEditRole} disabled={saving}>
-          {saving ? "Updating..." : "Update Role"}
-        </Button>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <FormInput
+              label="Role Name"
+              name="edit_role_name"
+              value={editRole?.role_name || ""}
+              onChange={(e) =>
+                setEditRole((prev) => ({ ...prev, role_name: e.target.value }))
+              }
+              placeholder="e.g., Manager"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleEditRole} disabled={saving}>
+              {saving ? "Updating..." : "Update"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setEditModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Delete Modal */}

@@ -66,22 +66,18 @@ export default function RoleManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Navbar Section */}
       <div className="sticky top-0 z-30 bg-white shadow">
         <Navbar logo="Role Management" navItems={navItems} />
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full mt-4">
         <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Manage Roles Section */}
           {activeTab === "roles" && (
             <div>
-              <div className="mb-4">
-                {/* <h3 className="text-lg font-semibold text-gray-800">
-                  Role Management
-                </h3> */}
-                {/* <p className="text-sm text-gray-600 mt-1">
-                  Create, edit, and delete user roles
-                </p> */}
-              </div>
+              <div className="mb-4"></div>
               <RoleForm
                 roles={roles}
                 setRoles={setRoles}
@@ -91,6 +87,7 @@ export default function RoleManagement() {
             </div>
           )}
 
+          {/* Permission Management Section */}
           {activeTab === "permissions" && (
             <div>
               <div className="mb-4">
@@ -101,10 +98,16 @@ export default function RoleManagement() {
                   View permissions assigned to each role
                 </p>
               </div>
-              <PermissionManagement roles={roles} />
+
+              {/* ✅ Updated to automatically show all permissions with search & pagination */}
+              <PermissionManagement
+                roles={roles}
+                autoDisplayAll={true} // 👈 added flag for auto-display
+              />
             </div>
           )}
 
+          {/* Permission Group Management Section */}
           {activeTab === "groups" && (
             <div>
               <div className="mb-4">
