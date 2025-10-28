@@ -58,7 +58,6 @@ export default function RoleManagement() {
     { id: "groups", label: "Permission Groups", icon: "📋" },
   ];
 
-  // Prepare nav items for Navbar component
   const navItems = tabs.map((tab) => ({
     name: tab.label,
     onClick: () => setActiveTab(tab.id),
@@ -67,28 +66,27 @@ export default function RoleManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar fixed to top */}
       <div className="sticky top-0 z-30 bg-white shadow">
         <Navbar logo="Role Management" navItems={navItems} />
       </div>
 
-      {/* Page content (pushed below navbar) */}
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full mt-4">
         <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
           {activeTab === "roles" && (
             <div>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
+                {/* <h3 className="text-lg font-semibold text-gray-800">
                   Role Management
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                </h3> */}
+                {/* <p className="text-sm text-gray-600 mt-1">
                   Create, edit, and delete user roles
-                </p>
+                </p> */}
               </div>
               <RoleForm
                 roles={roles}
                 setRoles={setRoles}
                 onRoleUpdate={handleRoleUpdate}
+                refreshRoles={fetchRoles}
               />
             </div>
           )}
