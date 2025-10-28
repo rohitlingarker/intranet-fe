@@ -81,6 +81,7 @@ import EditHolidaysPage from "./pages/leave_management/models/EditHolidaysPage";
 // import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
 import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
+import BlockLeaveDates from "./pages/leave_management/models/BlockLeaveDates";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -229,7 +230,7 @@ useEffect(() => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
-          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
+          <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
@@ -482,22 +483,29 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path={`/block-leave-dates/:employeeId`}
+            element={
+              <ProtectedRoute allowedRoles={["Manager"]}>
+                <BlockLeaveDates/>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/leave-policy" element={
-          <ProtectedRoute>
-            <LeavePolicy />
-          </ProtectedRoute>
-        } />
+            <ProtectedRoute>
+              <LeavePolicy />
+            </ProtectedRoute>
+          } />
         <Route path="/unauthorized" element={<Unauthorized />} />
           <Route 
             path={`/leave-details/:employeeId/:leaveName`}
             element={
-              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
+              <ProtectedRoute allowedRoles={["General"]}>
                 <LeaveDetailsPage />
               </ProtectedRoute>
             }
           />
         </Route>
-        {/* <Route path="/unauthorized" element={<Unauthorized />} /> */}
       </Routes>
       <SaveLastPath />
 {/* <<<<<<<<< Temporary merge branch 1

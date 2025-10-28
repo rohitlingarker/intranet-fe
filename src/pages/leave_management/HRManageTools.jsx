@@ -87,7 +87,7 @@ const HRManageTools = ({ employeeId }) => {
 
   return (
     <div className="space-y-6 py-6 px-6">
-      <h1 className="text-xl font-bold text-gray-800">HR Tools</h1>{" "}
+      <h1 className="text-xl font-bold text-gray-800">HR Tools</h1>
       <p className="text-gray-600 mb-2">
         Manage employees, leave types, and holidays.
       </p>
