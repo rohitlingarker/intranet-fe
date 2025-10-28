@@ -229,7 +229,7 @@ useEffect(() => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
-          <Route path="/timesheets/dashboard" element={<DashboardPage />} />
+          <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 

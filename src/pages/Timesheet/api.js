@@ -194,7 +194,7 @@ export async function bulkReviewTimesheet(timesheetIds, status, comment) {
 }
 
 // Dashboard Summary API
-export async function fetchDashboardSummary(startDate, endDate) {
+export async function fetchDashboardSummary() {
   try {
     const response = await fetch(`${apiEndpoint}/api/dashboard/summary`, {
       method: "GET",
