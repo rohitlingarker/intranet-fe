@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import StatusBadge from "../../components/status/statusbadge";
 import EntriesTable from "./EntriesTable";
-import NewTimesheetModal from "./NewTimesheetModal";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
@@ -143,7 +142,6 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [addingNewEntry, setAddingNewEntry] = useState(false);
-  const [showNewTimesheetModal, setShowNewTimesheetModal] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
   );
@@ -246,7 +244,7 @@ const TimesheetGroup = ({
 
   const handleAddEntry = () => {
     setMenuOpen(false);
-    setShowNewTimesheetModal(true);
+    setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
   const handleDeleteClick = () => {
@@ -809,16 +807,6 @@ const TimesheetGroup = ({
         } selected entr${selectedEntryIds.length > 1 ? "ies" : "y"}?`}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-      />
-
-      <NewTimesheetModal
-        isOpen={showNewTimesheetModal}
-        onClose={() => setShowNewTimesheetModal(false)}
-        refreshData={refreshData}
-        onSuccess={() => {
-          setShowNewTimesheetModal(false);
-          refreshData();
-        }}
       />
     </div>
   );
