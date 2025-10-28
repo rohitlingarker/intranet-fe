@@ -1,4 +1,4 @@
-import React, { use, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -15,79 +15,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import Button from "../../components/Button/Button";
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardSummary } from "./api";
 import TimesheetHeader from "./TimesheetHeader";
 
-// Mock timesheet data
-const timesheetData = [
-  {
-    workDate: "2025-10-01",
-    project: "Project A",
-    task: "Design",
-    hours: 8,
-    status: "Approved",
-    billable: true,
-  },
-  {
-    workDate: "2025-10-02",
-    project: "Project B",
-    task: "Develop",
-    hours: 10,
-    status: "Approved",
-    billable: true,
-  },
-  {
-    workDate: "2025-10-03",
-    project: "Project C",
-    task: "Testing",
-    hours: 6,
-    status: "Approved",
-    billable: false,
-  },
-  {
-    workDate: "2025-10-04",
-    project: "Project D",
-    task: "Deploy",
-    hours: 9,
-    status: "Pending",
-    billable: true,
-  },
-  {
-    workDate: "2025-10-05",
-    project: "Project A",
-    task: "Research",
-    hours: 7,
-    status: "Approved",
-    billable: true,
-  },
-  {
-    workDate: "2025-10-06",
-    project: "Project C",
-    task: "Bugfix",
-    hours: 5,
-    status: "Pending",
-    billable: false,
-  },
-  {
-    workDate: "2025-10-07",
-    project: "Project B",
-    task: "Planning",
-    hours: 5,
-    status: "Approved",
-    billable: true,
-  },
-];
-
-// Mock pending actions
-const pendingActions = [
-  "Submit weekly timesheet",
-  "Manager approval for Project A",
-  "Update task description",
-];
-
-// Card components
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-2xl shadow ${className}`}>{children}</div>
 );
@@ -98,11 +29,10 @@ const CardContent = ({ children, className = "" }) => (
 
 const COLORS = ["#2563eb", "#f97316"];
 
-// Main component
 const DashboardPage = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
-  const [dashboardSummary, setDashboardSummary] = useState([]);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
   const [hoursPerDay, setHoursPerDay] = useState([]);
   const [productivityTrend, setProductivityTrend] = useState([]);
   const [billableData, setBillableData] = useState([]);
@@ -110,15 +40,8 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // start date : start date of current month
-        // end date : end date of current month
-        const startDate = new Date();
-        startDate.setDate(1);
-        const endDate = new Date();
-        const response = await fetchDashboardSummary(startDate, endDate);
-        console.log(response);
-
-        setDashboardSummary(response);
+        const response = await fetchDashboardSummary();
+        if (response) setDashboardSummary(response);
       } catch (error) {
         console.error("Error fetching dashboard summary:", error);
       }
@@ -127,173 +50,125 @@ const DashboardPage = () => {
   }, []);
 
   useEffect(() => {
-    if (dashboardSummary) {
-      const dayOrder = [
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-      ];
-      const dayAbbr = {
-        monday: "Mon",
-        tuesday: "Tue",
-        wednesday: "Wed",
-        thursday: "Thu",
-        friday: "Fri",
-        saturday: "Sat",
-        sunday: "Sun",
-      };
+    if (!dashboardSummary) return;
 
-      setHoursPerDay(
-        dayOrder.map((day) => ({
-          day: dayAbbr[day],
-          hours: dashboardSummary.weeklySummary?.[day] || 0, // Use 0 as default value if no data for the day is available in
-        }))
-      );
+    const dayOrder = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
 
-      setProductivityTrend(
-        dayOrder.map((day) => ({
-          day: dayAbbr[day],
-          productivity:
-            dashboardSummary.productivityDetails?.[day]?.productivityScore || 0, // Use 0 as default value if no data for the day is available in
-        }))
-      );
+    const dayAbbr = {
+      monday: "Mon",
+      tuesday: "Tue",
+      wednesday: "Wed",
+      thursday: "Thu",
+      friday: "Fri",
+      saturday: "Sat",
+      sunday: "Sun",
+    };
 
-      setBillableData([
-        {
-          name: "Billable",
-          value: dashboardSummary.billableActivity?.billableLogs || 0,
-        },
-        {
-          name: "Non-Billable",
-          value: dashboardSummary.billableActivity?.nonBillableLogs || 0,
-        },
-      ]);
-    }
+    // Prepare chart data
+    setHoursPerDay(
+      dayOrder.map((day) => ({
+        day: dayAbbr[day],
+        hours: dashboardSummary.weeklySummary?.[day] || 0,
+      }))
+    );
+
+    setProductivityTrend(
+      dayOrder.map((day) => ({
+        day: dayAbbr[day],
+        productivity:
+          dashboardSummary.productivityDetails?.[day]?.productivityScore || 0,
+      }))
+    );
+
+    setBillableData([
+      {
+        name: "Billable Tasks",
+        value: dashboardSummary.billableActivity?.billableTasks || 0,
+      },
+      {
+        name: "Non-Billable Tasks",
+        value: dashboardSummary.billableActivity?.nonBillableTasks || 0,
+      },
+    ]);
   }, [dashboardSummary]);
-
-  // KPI Calculations
-  const totalHours = timesheetData.reduce((s, e) => s + (e.hours || 0), 0);
-
-  const billableHours = timesheetData
-    .filter((t) => t.billable)
-    .reduce((s, e) => s + e.hours, 0);
-
-  const billablePercent =
-    totalHours > 0 ? ((billableHours / totalHours) * 100).toFixed(0) : 0;
-
-  // Chart Data
-  // const billableData = [
-  //   { name: "Billable", value: billableHours },
-  //   { name: "Non-Billable", value: nonBillableHours },
-  // ];
-
-  // const hoursPerDay = useMemo(() => {
-  //   const grouped = timesheetData.reduce((acc, entry) => {
-  //     const day = new Date(entry.workDate).toLocaleDateString("en-US", {
-  //       weekday: "short",
-  //     });
-  //     if (!acc[day]) acc[day] = 0;
-  //     acc[day] += entry.hours;
-  //     return acc;
-  //   }, {});
-  //   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  //   return days.map((d) => ({
-  //     day: d,
-  //     hours: grouped[d] || 0,
-  //   }));
-  // }, []);
-
-  console.log({ hoursPerDay });
-
-  // const productivityTrend = hoursPerDay.map((d) => ({
-  //   day: d.day,
-  //   productivity: d.hours * 10,
-  // }));
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">
-      {/* <div className="flex justify-between mb-2">
-        <h1>
-          <span className="text-3xl font-bold text-gray-900 mr-4">
-            Timesheet Dashboard
-          </span>
-        </h1>
-        <button className="bg-blue-900 hover:bg-blue-900 text-white px-4 py-2 rounded-lg shadow font-semibold">
-        View Entries
-      </button>
-        <Button
-          variant="primary"
-          size="medium"
-          onClick={() => navigate("/timesheets")}
-        >
-          View Entries
-        </Button>
-      </div> */}
-      <TimesheetHeader/>
+      <TimesheetHeader />
       <div className="px-6 pt-8 pb-2 bg-gray-50 font-sans text-base">
-        {/* KPIs */}
+        {/* KPI CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-2">
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
-                Total hours logged
+                Total Hours Logged
               </div>
               <div className="text-3xl font-black text-blue-700">
                 {dashboardSummary?.totalHours || 0}
               </div>
             </CardContent>
           </Card>
+
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
                 Billable %
               </div>
               <div className="text-3xl font-black text-green-600">
-                {dashboardSummary?.billablePercentage || 0}%
+                {dashboardSummary?.billableActivity?.billablePercentage || 0}%
               </div>
             </CardContent>
           </Card>
+
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
-                Tasks worked
+                Tasks Worked
               </div>
               <div className="text-3xl font-black text-emerald-700">
-                {dashboardSummary?.totalTasks || 0}
+                {(dashboardSummary?.billableActivity?.billableTasks || 0) +
+                  (dashboardSummary?.billableActivity?.nonBillableTasks || 0)}
               </div>
             </CardContent>
           </Card>
+
+          {/* ✅ Replaced Pending Approval → Pending Weeks */}
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
-                Pending Approval
+                Pending Weeks
               </div>
               <div className="text-3xl font-black text-orange-500">
-                {dashboardSummary?.timesheetSummary?.pending || 0}
+                {dashboardSummary?.weeklyTimesheetReview?.submittedWeeks || 0}
               </div>
             </CardContent>
           </Card>
+
           <Card>
             <CardContent className="flex flex-col text-center items-center ">
               <div className="text-md font-semibold mb-2">
-                Average Hours per day
+                Average Hours per Day
               </div>
               <div className="text-3xl font-black text-indigo-600">
-                {dashboardSummary?.averageHoursPerDay || 0}
+                {dashboardSummary?.averageHoursPerDay || "00:00"}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Chart Row */}
+        {/* Charts Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2">
           <Card>
             <CardContent>
-              <h3 className="text-lg font-semibold mb-3">Hours per day</h3>
+              <h3 className="text-lg font-semibold mb-3">Hours per Day</h3>
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={hoursPerDay}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
@@ -314,9 +189,10 @@ const DashboardPage = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
           <Card>
             <CardContent>
-              <h3 className="text-lg font-semibold mb-3">Productivity trend</h3>
+              <h3 className="text-lg font-semibold mb-3">Productivity Trend</h3>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={productivityTrend}>
                   <XAxis dataKey="day" axisLine={false} tickLine={false} />
@@ -333,10 +209,11 @@ const DashboardPage = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
           <Card>
             <CardContent>
               <h3 className="text-lg font-semibold mb-3">
-                Billable vs Non Billable
+                Billable vs Non-Billable Tasks
               </h3>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>

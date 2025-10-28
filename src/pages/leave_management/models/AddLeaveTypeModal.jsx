@@ -395,7 +395,8 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               disabled={submitting || loadingLeaveTypes}
             >
               {submitting ? (
-                <LoadingSpinner text="Submitting..." />
+                // <LoadingSpinner text="Submitting..." />
+                "Submitting..."
               ) : editData ? (
                 "Update Leave Type"
               ) : (
