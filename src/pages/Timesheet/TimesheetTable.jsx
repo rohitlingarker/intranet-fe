@@ -35,24 +35,26 @@ const TimesheetTable = ({
       >
         + New Timesheet
       </Button>
-
       {addingNewTimesheet && (
-        <TimesheetGroup
-          emptyTimesheet={true}
-          workDate={new Date().toISOString().split("T")[0]}
-          entries={[]}
-          status="Pending"
-          mapWorkType={mapWorkType}
-          refreshData={() => {
-            refreshData?.();
-            setAddingNewTimesheet(false);
-          }}
-          addingNewTimesheet={addingNewTimesheet}
-          setAddingNewTimesheet={setAddingNewTimesheet}
-          projectInfo={projectInfo}
-        />
+        <div style={{ marginBottom: "20px" }}>
+          {" "}
+          {/* Added margin for spacing */}
+          <TimesheetGroup
+            emptyTimesheet={true}
+            workDate={new Date().toISOString().split("T")[0]}
+            entries={[]}
+            status="Pending"
+            mapWorkType={mapWorkType}
+            refreshData={() => {
+              refreshData?.();
+              setAddingNewTimesheet(false);
+            }}
+            addingNewTimesheet={addingNewTimesheet}
+            setAddingNewTimesheet={setAddingNewTimesheet}
+            projectInfo={projectInfo}
+          />
+        </div>
       )}
-
       {loading ? (
         <LoadingSpinner text="Loading timesheet entries..." />
       ) : data.length === 0 ? (

@@ -481,6 +481,14 @@ const TimesheetGroup = ({
     return "text-blue-700";
   };
 
+  // Calculate the first and last date of the current month
+  const today = new Date();
+  const firstDateOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+  const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
   return (
     <div
       className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs overflow-hidden`}
@@ -548,6 +556,8 @@ const TimesheetGroup = ({
             status?.toLowerCase() !== "approved" ? (
               <input
                 type="date"
+                min={firstDateOfMonth} // Set min to the first date of the current month
+                max={lastDateOfMonth} // Set max to the last date of the current month
                 className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                 value={date}
                 onChange={(e) => {
