@@ -4,7 +4,7 @@ import EntriesTable from "./EntriesTable";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
-import { submitWeeklyTimesheet } from "./api";
+import { submitWeeklyTimesheet, fetchCalendarHolidays } from "./api";
 
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
   if (!open) return null;
@@ -142,6 +142,8 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [addingNewEntry, setAddingNewEntry] = useState(false);
+  const [holidaysMap, setHolidaysMap] = useState({}); // keyed by 'YYYY-MM-DD'
+  const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
   );
@@ -489,6 +491,37 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
+
+  // helper to normalize date string to yyyy-mm-dd
+  const normalize = (d) => {
+    if (!d) return "";
+    return new Date(d).toISOString().split("T")[0];
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const loadHolidays = async () => {
+      try {
+        setLoadingHolidays(true);
+        const data = await fetchCalendarHolidays();
+        if (!mounted || !data) return;
+        const map = {};
+        data.forEach((h) => {
+          const key = normalize(h.holidayDate);
+          map[key] = h;
+        });
+        setHolidaysMap(map);
+      } catch (err) {
+        console.error("Failed to load holidays", err);
+      } finally {
+        setLoadingHolidays(false);
+      }
+    };
+    loadHolidays();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <div
       className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs overflow-hidden`}
@@ -554,17 +587,56 @@ const TimesheetGroup = ({
             {editDateIndex === timesheetId &&
             emptyTimesheet &&
             status?.toLowerCase() !== "approved" ? (
-              <input
-                type="date"
-                min={firstDateOfMonth} // Set min to the first date of the current month
-                max={lastDateOfMonth} // Set max to the last date of the current month
-                className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                value={date}
-                onChange={(e) => {
-                  setEditDateIndex(null);
-                  setDate(e.target.value);
-                }}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  min={firstDateOfMonth}
+                  max={lastDateOfMonth}
+                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                  value={normalize(date)}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    // enforce month range
+                    if (
+                      selected < firstDateOfMonth ||
+                      selected > lastDateOfMonth
+                    ) {
+                      showStatusToast(
+                        "Select a date within the current month",
+                        "error"
+                      );
+                      return;
+                    }
+                    const holiday = holidaysMap[selected];
+                    if (holiday && holiday.submitTimesheet === false) {
+                      // block selection for holidays that are not allowed
+                      showStatusToast(
+                        `Holiday: ${holiday.holidayName} — timesheet not allowed`,
+                        "error"
+                      );
+                      return;
+                    }
+                    setEditDateIndex(null);
+                    setDate(selected);
+                  }}
+                />
+                {/* holiday dot + tooltip for selected date */}
+                {holidaysMap[normalize(date)] && (
+                  <div className="ml-1">
+                    {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
+                    <Tooltip content="Working on holiday">
+                      <span
+                        className={`inline-block w-3 h-3 rounded-full ${
+                          holidaysMap[normalize(date)].submitTimesheet
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                        // title={holidaysMap[normalize(date)].holidayName}
+                        title="Working on holiday"                      />
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
             ) : (
               <div
                 onClick={() =>
