@@ -195,7 +195,14 @@ const DashboardPage = () => {
               <h3 className="text-lg font-semibold mb-3">Productivity Trend</h3>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={productivityTrend}>
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0} // show every tick (Mon..Sun)
+                    padding={{ left: 12, right: 12 }} // avoid clipping first/last tick
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis hide />
                   <Tooltip />
                   <Line
@@ -215,7 +222,7 @@ const DashboardPage = () => {
               <h3 className="text-lg font-semibold mb-3">
                 Billable vs Non-Billable Tasks
               </h3>
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
                     data={billableData}
@@ -223,7 +230,7 @@ const DashboardPage = () => {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={56}
+                    outerRadius={50}
                     label
                   >
                     {billableData.map((entry, idx) => (
