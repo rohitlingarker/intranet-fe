@@ -624,15 +624,19 @@ const TimesheetGroup = ({
                 {holidaysMap[normalize(date)] && (
                   <div className="ml-1">
                     {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip content="Working on holiday">
+                    <Tooltip 
+                      content={holidaysMap[normalize(date)].submitTimesheet
+                        ? "Working on Holiday"
+                        : "Holiday - timesheet not allowed"}
+                    >
                       <span
                         className={`inline-block w-3 h-3 rounded-full ${
                           holidaysMap[normalize(date)].submitTimesheet
-                            ? "bg-green-500"
+                            ? "bg-yellow-500"
                             : "bg-red-500"
                         }`}
-                        // title={holidaysMap[normalize(date)].holidayName}
-                        title="Working on holiday"                      />
+                        title={holidaysMap[normalize(date)].holidayName}
+                      />
                     </Tooltip>
                   </div>
                 )}
