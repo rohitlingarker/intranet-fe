@@ -221,7 +221,7 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
         />
 
         {/* Active checkbox */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <input
             type="checkbox"
             name="is_active"
@@ -233,7 +233,7 @@ export default function EditUserForm({ userId, onSuccess, onClose }) {
           <label htmlFor="is_active" className="text-sm text-gray-700">
             Is Active
           </label>
-        </div>
+        </div> */}
 
         {/* Buttons */}
         <div className="flex gap-4 pt-4 border-t sticky bottom-0 bg-white">
