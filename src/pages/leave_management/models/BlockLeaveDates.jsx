@@ -1,25 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDownIcon, FunnelIcon, CalendarDaysIcon, ArrowLeftCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DateRangePicker from "./DateRangePicker";
 import { format } from "date-fns";
-
-/**
- * BlockLeavePage
- * - Shows manager's projects
- * - After choosing a project, shows project members
- * - Manager can block all members or specific members
- * - Select one or more leave types to block
- * - Choose date range to enforce the block
- *
- * Styling: Tailwind CSS, responsive, accessible, dark-mode friendly
- * Assumptions:
- * - Replace fetch endpoints with your backend routes
- * - Integrate your auth context to get employeeId
- * - Use your own toast system for success/error notifications
- */
 
 const skeleton = "animate-pulse bg-gray-400 rounded hover:cursor-wait";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -217,10 +202,7 @@ const MultiSelect = ({
   );
 };
 
-export default function BlockLeaveDates() {
-  // Simulated auth context
-//   const employeeId = "14";
-
+export default function BlockLeaveDates({ employeeId }) {
   // Data state
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
@@ -237,7 +219,6 @@ export default function BlockLeaveDates() {
   const [submitting, setSubmitting] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const navigate = useNavigate();
-  const { employeeId } = useParams();
 
   // Fetch initial data
   useEffect(() => {
@@ -350,7 +331,7 @@ export default function BlockLeaveDates() {
     endDate &&
     new Date(endDate) >= new Date(startDate);
   
-    const onSubmit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
 
@@ -381,10 +362,9 @@ export default function BlockLeaveDates() {
       setSelectedLeaveTypes([]);
       setStartDate("");
       setEndDate("");
-      toast.success("Leave block created successfully");
+      toast.success(res.data.message || "Leave block created successfully");
     } catch (err) {
-      console.error(err);
-      toast.error("Could not save. Please try again.");
+      toast.error(err?.response?.data?.message || "Could not save. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -475,10 +455,6 @@ export default function BlockLeaveDates() {
             <div>
                 <button type="button" onClick={()=> navigate(-1)} className="text-blue-600 hover:text-blue-800"><ArrowLeftCircleIcon className="mr-2 h-10 w-9" /></button>
             </div>
-            {/* <div className="flex items-center gap-2">
-              <Pill>Manager</Pill>
-              <Pill active>Secure</Pill>
-            </div> */}
           </div>
         </div>
       </header>
