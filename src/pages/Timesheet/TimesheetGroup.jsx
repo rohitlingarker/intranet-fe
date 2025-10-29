@@ -624,10 +624,12 @@ const TimesheetGroup = ({
                 {holidaysMap[normalize(date)] && (
                   <div className="ml-1">
                     {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip 
-                      content={holidaysMap[normalize(date)].submitTimesheet
-                        ? "Working on Holiday"
-                        : "Holiday - timesheet not allowed"}
+                    <Tooltip
+                      content={
+                        holidaysMap[normalize(date)].submitTimesheet
+                          ? "Working on Holiday"
+                          : "Holiday - timesheet not allowed"
+                      }
                     >
                       <span
                         className={`inline-block w-3 h-3 rounded-full ${
@@ -669,19 +671,21 @@ const TimesheetGroup = ({
         {/* 3 dots menu for daily format */}
         {!isWeeklyFormat && (
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
-              type="button"
-              disabled={currentStatus?.toLowerCase() === "approved"}
-              title={
-                currentStatus?.toLowerCase() === "approved"
-                  ? "Cannot edit approved timesheet"
-                  : "More options"
-              }
-            >
-              <MoreVertical size={22} />
-            </button>
+            {window.location.pathname !== "/managerapproval" && (
+              <button
+                onClick={() => setMenuOpen((open) => !open)}
+                className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
+                type="button"
+                disabled={currentStatus?.toLowerCase() === "approved"}
+                title={
+                  currentStatus?.toLowerCase() === "approved"
+                    ? "Cannot edit approved timesheet"
+                    : "More options"
+                }
+              >
+                <MoreVertical size={22} />
+              </button>
+            )}
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
                 <button
@@ -753,14 +757,14 @@ const TimesheetGroup = ({
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
-                    <div
+                    {window.location.pathname !== "/managerapproval" && <div
                       className="relative"
                       ref={(el) => {
                         if (el) {
                           menuRefs.current[timesheet.timesheetId] = el;
                         }
                       }}
-                    >
+                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -821,7 +825,7 @@ const TimesheetGroup = ({
                           </button>
                         </div>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </div>
 

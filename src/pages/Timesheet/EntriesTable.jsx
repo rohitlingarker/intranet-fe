@@ -414,7 +414,7 @@ const EntriesTable = ({
                 </td>
                 <td className="px-4 py-2">{prettyTime(entry.fromTime)}</td>
                 <td className="px-4 py-2">{prettyTime(entry.toTime)}</td>
-                <td className="px-4 py-2">{mapWorkType(entry.workType)}</td>
+                <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
                 <td className="px-4 py-2">
