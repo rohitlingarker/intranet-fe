@@ -17,16 +17,34 @@ import {
 } from "recharts";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
-const COLORS = ["#4c1d95", "#9d174d", "#6366f1", "#ec4899", "#10b981", "#f59e0b"];
+const COLORS = [
+  "#312e81", "#4338ca", "#4f46e5", "#6366f1",
+  "#831843", "#9d174d", "#be185d", "#db2777",
+  "#e879f9", "#c026d3",
+];
+
+// Stage hierarchy → percentage mapping
+const stageProgressMap = {
+  INITIATION: 5,
+  PLANNING: 15,
+  DESIGN: 30,
+  DEVELOPMENT: 65,
+  TESTING: 80,
+  DEPLOYMENT: 90,
+  MAINTENANCE: 98,
+  COMPLETED: 100,
+};
 
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [stories, setStories] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [bugs, setBugs] = useState([]);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedItems, setExpandedItems] = useState({});
+  const [filter, setFilter] = useState("All");
+  const [projectStage, setProjectStage] = useState("");
+  const [projectProgress, setProjectProgress] = useState(0);
 
   const token = localStorage.getItem("token");
 
@@ -37,6 +55,13 @@ const Summary = ({ projectId, projectName }) => {
         const headers = { Authorization: `Bearer ${token}` };
         const base = import.meta.env.VITE_PMS_BASE_URL;
 
+        // Fetch project details (to get stage)
+        const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
+        const stage = projectRes.data.stage || projectRes.data.projectStage || "INITIATION";
+        setProjectStage(stage);
+        setProjectProgress(stageProgressMap[stage?.toUpperCase()] || 0);
+
+        // Fetch related entities
         const [epicRes, storyRes, taskRes, bugRes] = await Promise.all([
           axios.get(`${base}/api/projects/${projectId}/epics`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/stories`, { headers }),
@@ -44,25 +69,49 @@ const Summary = ({ projectId, projectName }) => {
           axios.get(`${base}/api/bugs/project/${projectId}`, { headers }),
         ]);
 
-        const epicsData = epicRes.data;
-        const storiesData = storyRes.data;
-        const tasksData = taskRes.data;
-        const bugsData = bugRes.data;
+        setEpics(epicRes.data);
+        setStories(storyRes.data);
+        setTasks(taskRes.data);
+        setBugs(bugRes.data);
 
-        const enrichedStories = storiesData.map((story) => ({
-          ...story,
-          tasks: tasksData.filter((t) => t.storyId === story.id),
-        }));
+        // Fetch comments
+        const commentPromises = [];
+        const addRequests = (items, type) => {
+          items.forEach((i) =>
+            commentPromises.push({
+              type,
+              id: i.id,
+              name: i.name || i.title || `Unnamed ${type}`,
+              request: axios.get(`${base}/api/comments/${type}/${i.id}`, { headers }),
+            })
+          );
+        };
 
-        const enrichedEpics = epicsData.map((epic) => ({
-          ...epic,
-          stories: enrichedStories.filter((s) => s.epicId === epic.id),
-        }));
+        addRequests(epicRes.data, "epic");
+        addRequests(storyRes.data, "story");
+        addRequests(taskRes.data, "task");
 
-        setEpics(enrichedEpics);
-        setStories(storiesData);
-        setTasks(tasksData);
-        setBugs(bugsData);
+        const results = await Promise.allSettled(commentPromises.map(c => c.request));
+        const allComments = [];
+
+        results.forEach((r, idx) => {
+          if (r.status === "fulfilled") {
+            const { type, name, id } = commentPromises[idx];
+            r.value.data.forEach((c) => {
+              allComments.push({
+                ...c,
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                parentId: c.parentId,
+                parentItemName: name,
+                parentItemId: id,
+              });
+            });
+          }
+        });
+
+        allComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setComments(allComments);
+
       } catch (err) {
         console.error("Failed to fetch project summary:", err);
       } finally {
@@ -73,32 +122,43 @@ const Summary = ({ projectId, projectName }) => {
     fetchAll();
   }, [projectId, token]);
 
-  /** ---------- Helpers ---------- **/
+  /** ---------- Chart Data Preparation ---------- **/
 
-  const prepareStatusData = (items) => {
-    const statusCount = items.reduce((acc, i) => {
-      acc[i.status] = (acc[i.status] || 0) + 1;
-      return acc;
-    }, {});
-    return Object.entries(statusCount).map(([status, value]) => ({ name: status, value }));
+  const prepareTasksByAssigneeData = () => {
+    if (!tasks.length) return [];
+    const grouped = {};
+    tasks.forEach((task) => {
+      const name =
+        task.assignee?.username ||
+        task.assignee?.name ||
+        task.assigneeName ||
+        "Unassigned";
+      grouped[name] = (grouped[name] || 0) + 1;
+    });
+    return Object.entries(grouped)
+      .map(([name, value]) => ({ name: `${name} (${value})`, value }))
+      .sort((a, b) => b.value - a.value);
   };
 
   const preparePriorityData = () => {
-    const group = (items) =>
-      items.reduce((acc, i) => {
-        acc[i.priority || "Unspecified"] = (acc[i.priority || "Unspecified"] || 0) + 1;
-        return acc;
-      }, {});
+    const groupByPriority = (items) => {
+      const result = {};
+      items.forEach((i) => {
+        const p = i.priority || "Unspecified";
+        result[p] = (result[p] || 0) + 1;
+      });
+      return result;
+    };
 
-    const taskData = group(tasks);
-    const storyData = group(stories);
-    const bugData = group(bugs);
+    const taskData = groupByPriority(tasks);
+    const storyData = groupByPriority(stories);
+    const bugData = groupByPriority(bugs);
 
-    const priorities = Array.from(
+    const allPriorities = Array.from(
       new Set([...Object.keys(taskData), ...Object.keys(storyData), ...Object.keys(bugData)])
     );
 
-    return priorities.map((p) => ({
+    return allPriorities.map((p) => ({
       priority: p,
       Tasks: taskData[p] || 0,
       Stories: storyData[p] || 0,
@@ -106,58 +166,19 @@ const Summary = ({ projectId, projectName }) => {
     }));
   };
 
-  const prepareEpicProgressData = () => {
-    return epics.map((epic) => {
-      const epicStories = stories.filter((s) => s.epicId === epic.id);
-      const totalStories = epicStories.length;
-      const completedStories = epicStories.filter((s) => s.status === "DONE").length;
-      const progress = totalStories > 0 ? (completedStories / totalStories) * 100 : 0;
-      return { name: epic.name, Progress: Math.round(progress) };
-    });
-  };
-
-  const prepareWorkDistributionData = () => {
-    const assigned = tasks.filter((t) => t.assigneeId).length;
-    const unassigned = tasks.filter((t) => !t.assigneeId).length;
-    return [
-      { name: "Assigned", value: assigned },
-      { name: "Unassigned", value: unassigned },
-    ];
-  };
-
-  const toggleExpand = (type, id) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [`${type}-${id}`]: !prev[`${type}-${id}`],
+  const groupComments = (data) => {
+    const parentComments = data.filter((c) => !c.parentId);
+    const replies = data.filter((c) => c.parentId);
+    return parentComments.map((parent) => ({
+      ...parent,
+      replies: replies.filter((r) => r.parentId === parent.id),
     }));
   };
 
-  const renderDetails = (item) => {
-    const exclude = ["id", "epicId", "storyId", "projectId", "sprintId", "tasks", "stories"];
-    return (
-      <div className="overflow-x-auto mb-3">
-        <table className="w-full text-sm border border-gray-300 rounded shadow-sm">
-          <tbody>
-            {Object.entries(item).map(([key, val], i) => {
-              if (exclude.includes(key)) return null;
-              const display =
-                typeof val === "object" && val !== null
-                  ? val.name || val.username || val.title || "N/A"
-                  : val;
-              return (
-                <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                  <td className="px-3 py-2 font-semibold border-b border-gray-200 capitalize">
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </td>
-                  <td className="px-3 py-2 border-b border-gray-200">{display ?? "N/A"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+  const filteredComments =
+    filter === "All"
+      ? comments
+      : comments.filter((c) => c.type === filter);
 
   if (loading) {
     return (
@@ -167,164 +188,171 @@ const Summary = ({ projectId, projectName }) => {
     );
   }
 
-  /** ---------- Render ---------- **/
-  const filteredEpics = epics.filter((e) =>
-    e.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-indigo-900">
+      <h2 className="text-3xl font-bold mb-2 text-indigo-900">
         Project Summary: {projectName}
       </h2>
 
-      {/* Totals */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Epics", value: epics.length },
+      {/* Project Stage Progress Bar */}
+      <div className="bg-white shadow rounded-lg p-4 mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-semibold text-indigo-900">Project Stage</h4>
+          <span className="text-sm font-medium text-gray-600">
+            {projectStage} ({projectProgress}%)
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-4">
+          <div
+            className="h-4 rounded-full transition-all duration-700"
+            style={{
+              width: `${projectProgress}%`,
+              background: `linear-gradient(90deg, #4f46e5, #818cf8)`,
+            }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[{ label: "Epics", value: epics.length },
           { label: "Stories", value: stories.length },
           { label: "Tasks", value: tasks.length },
-          { label: "Bugs", value: bugs.length },
-        ].map((item, i) => (
+          { label: "Bugs", value: bugs.length }].map((item, i) => (
           <div
             key={i}
             className="bg-white shadow rounded-lg p-4 text-center hover:shadow-lg transition"
           >
-            <div className="text-gray-600 font-medium">{item.label}</div>
+            <div className="text-gray-500 font-medium">{item.label}</div>
             <div className="text-3xl font-bold text-indigo-900">{item.value}</div>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         {/* Priority Distribution */}
-        <div className="bg-white rounded-lg shadow p-4 hover:shadow-xl transition">
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
           <h4 className="font-semibold text-indigo-900 mb-3">Priority Distribution</h4>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={preparePriorityData()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="priority" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Tasks" fill="#6366f1" />
-              <Bar dataKey="Stories" fill="#ec4899" />
-              <Bar dataKey="Bugs" fill="#f59e0b" />
+              <Bar dataKey="Tasks" fill="#312e81" />
+              <Bar dataKey="Stories" fill="#831843" />
+              <Bar dataKey="Bugs" fill="#9d174d" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Epic Progress */}
-        <div className="bg-white rounded-lg shadow p-4 hover:shadow-xl transition">
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
           <h4 className="font-semibold text-indigo-900 mb-3">Epic Progress</h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={prepareEpicProgressData()}>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart
+              layout="vertical"
+              data={epics.map((epic) => ({
+                Epic: epic.name,
+                Progress: Number(epic.progressPercentage) || 0,
+              }))}
+              margin={{ top: 20, right: 20, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Bar dataKey="Progress" fill="#10b981" />
+              <XAxis type="number" domain={[0, 100]} unit="%" />
+              <YAxis dataKey="Epic" type="category" width={150} />
+              <Tooltip formatter={(v) => [`${v}%`, "Progress"]} />
+              <Legend />
+              <Bar dataKey="Progress" fill="#4f46e5" barSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Work Distribution */}
-        <div className="bg-white rounded-lg shadow p-4 hover:shadow-xl transition">
-          <h4 className="font-semibold text-indigo-900 mb-3">Work Distribution</h4>
-          <ResponsiveContainer width="100%" height={250}>
+        {/* Tasks by Assignee */}
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
+          <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
+          <ResponsiveContainer width="100%" height={340}>
             <PieChart>
               <Pie
-                data={prepareWorkDistributionData()}
-                dataKey="value"
-                nameKey="name"
+                data={prepareTasksByAssigneeData()}
                 cx="50%"
                 cy="50%"
-                outerRadius={80}
-                label
+                outerRadius={120}
+                label={({ name }) => name}
+                dataKey="value"
               >
-                {prepareWorkDistributionData().map((_, i) => (
+                {prepareTasksByAssigneeData().map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value) => `${value} Tasks`} />
+              <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search Epics..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-indigo-200"
-        />
-      </div>
-
-      {/* Nested Epics/Stories/Tasks */}
-      <div className="space-y-4">
-        {filteredEpics.map((epic) => (
-          <div key={epic.id} className="bg-white rounded shadow p-4 hover:shadow-lg transition">
-            <div
-              className="text-lg font-bold text-indigo-900 cursor-pointer flex justify-between items-center"
-              onClick={() => toggleExpand("epic", epic.id)}
-            >
-              <span>Epic: {epic.name}</span>
-              <span className="text-gray-500 text-sm">
-                {epic.stories.length} stories
-              </span>
-            </div>
-
-            {expandedItems[`epic-${epic.id}`] && (
-              <div className="ml-4 mt-3 border-l-2 border-indigo-300 pl-4 space-y-3">
-                {renderDetails(epic)}
-                {epic.stories.map((story) => (
-                  <div
-                    key={story.id}
-                    className="bg-gray-50 rounded p-2 hover:bg-gray-100"
-                  >
-                    <div
-                      className="font-semibold text-pink-800 cursor-pointer flex justify-between"
-                      onClick={() => toggleExpand("story", story.id)}
-                    >
-                      <span>Story: {story.title}</span>
-                      <span className="text-gray-500 text-sm">
-                        {story.tasks.length} tasks
-                      </span>
-                    </div>
-                    {expandedItems[`story-${story.id}`] && (
-                      <div className="ml-4 mt-2 border-l border-pink-200 pl-4 space-y-2">
-                        {renderDetails(story)}
-                        {story.tasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className="bg-white rounded p-2 shadow-sm hover:shadow-md"
-                          >
-                            <div
-                              className="text-sm font-medium cursor-pointer flex justify-between"
-                              onClick={() => toggleExpand("task", task.id)}
-                            >
-                              <span>Task: {task.title}</span>
-                              <span className="text-gray-500">[{task.status}]</span>
-                            </div>
-                            {expandedItems[`task-${task.id}`] && (
-                              <div className="ml-4 mt-1 text-xs text-gray-700">
-                                {renderDetails(task)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* Comments Section */}
+      <div className="bg-white rounded-lg shadow p-6 hover:shadow-xl transition">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+          <h3 className="text-2xl font-semibold text-indigo-900 mb-3 sm:mb-0">
+            Project Comments
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {["All", "Epic", "Story", "Task"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1 rounded-full border transition ${
+                  filter === f
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {filteredComments.length > 0 ? (
+          <div className="max-h-[350px] overflow-y-auto space-y-4">
+            {groupComments(filteredComments).map((comment) => (
+              <div
+                key={comment.id}
+                className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-semibold text-indigo-800">{comment.userName || "Anonymous"}</span>
+                  <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString()}</span>
+                </div>
+                <div className="text-sm text-gray-600 mb-1">
+                  <span className="font-medium text-pink-700">[{comment.type}] </span>
+                  <span className="text-indigo-800 font-medium">{comment.parentItemName}</span>
+                </div>
+                <p className="text-gray-800 whitespace-pre-line mb-2">{comment.content || "(No content)"}</p>
+
+                {comment.replies?.length > 0 && (
+                  <div className="ml-4 border-l-2 border-indigo-300 pl-3 space-y-2">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="p-2 bg-indigo-50 rounded-md">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-indigo-700">{reply.userName || "Anonymous"}</span>
+                          <span className="text-xs text-gray-500">{new Date(reply.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-line">{reply.content || "(No content)"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 text-sm italic">No comments found for this selection.</div>
+        )}
       </div>
     </div>
   );

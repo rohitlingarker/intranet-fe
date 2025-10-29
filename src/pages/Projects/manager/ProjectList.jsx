@@ -377,16 +377,16 @@ const ProjectList = () => {
                       <p>
                         <strong>Owner:</strong> {project.owner?.name || "—"}
                       </p>
-                      <div>
-                        <strong>Members ({project.members.length}):</strong>
-                        <ul>
-                          {project.members.map((member) => (
-                            <li key={member.id}>
-                              {member.name} ({member.role || ""})
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                     <div>
+  <strong>Members ({project.members.length}):</strong>
+  <div>
+    {project.members.map((member) => (
+      <div key={member.id}>
+        {member.name}{member.role ? ` - ${member.role}` : ""}
+      </div>
+    ))}
+  </div>
+</div>
                       <div className="pt-4">
                         <Button
                           variant="primary"
