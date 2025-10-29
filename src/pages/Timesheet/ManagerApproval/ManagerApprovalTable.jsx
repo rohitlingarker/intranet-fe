@@ -347,17 +347,23 @@ const ManagerApprovalTable = ({
             </button>
           </div>
 
-          {enrichedGroupedData.map((user) => (
-            <div
-              key={user.userId}
-              className="bg-white rounded-xl shadow-md border p-4"
-            >
-              <h2 className="text-xl font-bold mb-3 text-gray-800">
-                {user.userName} (ID: {user.userId})
-              </h2>
-              {renderUserWeeks(user)}
+          {enrichedGroupedData.length === 0 ? (
+            <div className="text-center text-gray-500 py-10 text-lg font-medium">
+              No Approvals
             </div>
-          ))}
+          ) : (
+            enrichedGroupedData.map((user) => (
+              <div
+                key={user.userId}
+                className="bg-white rounded-xl shadow-md border p-4"
+              >
+                <h2 className="text-xl font-bold mb-3 text-gray-800">
+                  {user.userName} (ID: {user.userId})
+                </h2>
+                {renderUserWeeks(user)}
+              </div>
+            ))
+          )}
         </>
       )}
     </div>
