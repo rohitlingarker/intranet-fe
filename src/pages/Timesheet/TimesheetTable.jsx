@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import Pagination from "../../components/Pagination/pagination";
-import {TimesheetGroup} from "./TimesheetGroup";
+import { TimesheetGroup } from "./TimesheetGroup";
 import Button from "../../components/Button/Button";
-import { useState } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 const TimesheetTable = ({
   loading,
@@ -13,6 +13,7 @@ const TimesheetTable = ({
   mapWorkType,
   refreshData, // Callback to refresh data after save
   projectInfo,
+  getWeeklyStatusColor,
 }) => {
   const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
 
@@ -27,49 +28,50 @@ const TimesheetTable = ({
       }}
     >
       <Button
-            size="small"
-            variant="primary"
-            className="mb-4"
-            onClick={() => setAddingNewTimesheet(!addingNewTimesheet)}
-          >
-            + New Timesheet
-          </Button>
-          {addingNewTimesheet && (
-            <TimesheetGroup
+        size="small"
+        variant="primary"
+        className="mb-4"
+        onClick={() => setAddingNewTimesheet((s) => !s)}
+      >
+        + New Timesheet
+      </Button>
+      {addingNewTimesheet && (
+        <div style={{ marginBottom: "20px" }}>
+          {" "}
+          {/* Added margin for spacing */}
+          <TimesheetGroup
             emptyTimesheet={true}
-              workDate={new Date().toISOString().split("T")[0]}
-              entries={[]}
-              status="Pending"
-              mapWorkType={mapWorkType}
-              refreshData={refreshData}
-              addingNewTimesheet={addingNewTimesheet}
-              setAddingNewTimesheet={setAddingNewTimesheet}
-              projectInfo={projectInfo}
-            />
-          )}
-      {loading ? (
-        <div className="text-center text-gray-500">
-          Loading timesheet entries...
+            workDate={new Date().toISOString().split("T")[0]}
+            entries={[]}
+            status="Pending"
+            mapWorkType={mapWorkType}
+            refreshData={() => {
+              refreshData?.();
+              setAddingNewTimesheet(false);
+            }}
+            addingNewTimesheet={addingNewTimesheet}
+            setAddingNewTimesheet={setAddingNewTimesheet}
+            projectInfo={projectInfo}
+          />
         </div>
+      )}
+      {loading ? (
+        <LoadingSpinner text="Loading timesheet entries..." />
       ) : data.length === 0 ? (
         <div className="text-center text-gray-500">
           No timesheet entries found.
         </div>
       ) : (
         <>
-          {data.map((row) => (
+          {data.map((weekGroup) => (
             <TimesheetGroup
-              timesheetId={row.timesheetId}
-              key={row.timesheetId}
-              workDate={row.workDate}
-              entries={row.entries}
-              status={row.status}
+              weekGroup={weekGroup}
+              key={weekGroup.weekStart}
               mapWorkType={mapWorkType}
               refreshData={refreshData}
-              addingNewTimesheet={addingNewTimesheet}
-              setAddingNewTimesheet={setAddingNewTimesheet}
               projectInfo={projectInfo}
-              approvers={row.actionStatus}
+              approvers={weekGroup.actionStatus}
+              getWeeklyStatusColor={getWeeklyStatusColor}
             />
           ))}
 
@@ -87,4 +89,4 @@ const TimesheetTable = ({
   );
 };
 
-export {TimesheetTable};
+export { TimesheetTable };

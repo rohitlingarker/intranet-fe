@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import {
   Users,
   FolderKanban,
@@ -12,19 +13,25 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
-
+import { hr } from "date-fns/locale/hr";
+ 
 const Dashboard = () => {
   const { user } = useAuth();
   const [employeeCount, setEmployeeCount] = useState(null);
   const [projectsCount, setProjectsCount] = useState(null);
   const [activeEmployeeCount, setActiveEmployeeCount] = useState(null);
-
+  const [taskCount, setTaskCount] = useState(null);
+  const [avgTimesheetHours, setAvgTimesheetHours] = useState(null);
+  const [pendingApprovals, setPendingApprovals] = useState(null);
+ 
+  // ✅ Determine user roles
+ 
   const roles = user?.roles || [];
   const isAdminOrSuperAdmin =
     roles.includes("Super Admin") || roles.includes("Admin");
   const isDeveloper = roles.includes("Developer");
   const isManager = roles.includes("Manager");
-
+ 
   // ✅ Fetch total employees
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -43,7 +50,7 @@ const Dashboard = () => {
     };
     fetchEmployeeCount();
   }, []);
-
+ 
   // ✅ Fetch active employees
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -62,11 +69,11 @@ const Dashboard = () => {
     };
     fetchActiveEmployees();
   }, []);
-
+ 
   // fetch projects count
   useEffect(() => {
     const token = localStorage.getItem("token");
-
+ 
     const fetchProjectsCount = async () => {
       try {
         const res = await axios.get(
@@ -75,25 +82,100 @@ const Dashboard = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-
+ 
         // Directly use the count from API
-        const count = res.data?.count ?? 0;
+        const count = res.data ?? 0;
         setProjectsCount(count);
+        //console.log("Projects count fetched:", count);
       } catch (error) {
         console.error("Error fetching projects count:", error);
       }
     };
-
+ 
     fetchProjectsCount();
   }, []);
+ 
+  // fetch tasks count
+  useEffect(() => {
+    const token = localStorage.getItem("token");  
+ 
+    const fetchTasksCount = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/status/done/count`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+ 
+        // Directly use the count from API
+        const count = res.data ?? 0;
+        setTaskCount(count);
+        //console.log("Tasks count fetched:", count);
+      } catch (error) {
+        console.error("Error fetching tasks count:", error);
+      }
+    };
+ 
+    fetchTasksCount();
+  }, []);
+ 
+  //fetch average timesheet hours
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+ 
+    const fetchAvgTimesheetHours = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/dashboard/total_hours`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+ 
+        // Directly use the count from API
+        const hours = res.data?.totalHours ?? 0;
+        setAvgTimesheetHours(hours);
+        console.log("Average timesheet hours fetched:", hours);
+      } catch (error) {
+        //console.error("Error fetching average timesheet hours:", error);
+      }
+    };
+    fetchAvgTimesheetHours();
+  }, []);
 
+  // ✅ Fetch pending approvals
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    const fetchPendingApprovals = async () => {
+      try {
+        const decodedToken = jwtDecode(token);
+        const managerId = decodedToken.user_id;
+        const res = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/api/leave-requests/manager/pending-count/${managerId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // Directly use the count from API
+        const count = res.data?.data ?? 0;
+        setPendingApprovals(count);
+        console.log("Pending approvals fetched:", count);
+      } catch (error) {
+        console.error("Error fetching pending approvals:", error);
+      }
+    };
+    fetchPendingApprovals();
+  }, []);
 
   // ✅ Determine project route
   let projectHref = "/projects";
   if (isDeveloper) projectHref = "/projects/developer";
   else if (isManager) projectHref = "/projects/manager";
   else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
-
+ 
   // ✅ Quick Stats — conditionally show based on role
   const quickStats = isAdminOrSuperAdmin
     ? [
@@ -129,20 +211,20 @@ const Dashboard = () => {
         },
         {
           label: "Pending Approvals",
-          value: "8",
+          value: pendingApprovals ?? "—",
           change: "-3",
           icon: AlertCircle,
           positive: false,
         },
         {
           label: "Completed Tasks",
-          value: "89%",
+          value: taskCount ?? "—",
           change: "+5%",
           icon: CheckCircle,
           positive: true,
         },
       ];
-
+ 
   // ✅ Module cards remain same for all roles
   const moduleCards = [
     {
@@ -151,7 +233,7 @@ const Dashboard = () => {
       icon: Users,
       href: "/user-management/users",
       color: "bg-[#263383]",
-      stats: "245 active users",
+      stats: activeEmployeeCount ? `${activeEmployeeCount} employees` : "Loading...",
     },
     {
       title: "Project Management",
@@ -167,7 +249,9 @@ const Dashboard = () => {
       icon: PlaneTakeoff,
       href: "/leave-management",
       color: "bg-[#b22a4f]",
-      stats: "8 pending requests",
+      stats: pendingApprovals
+        ? `${pendingApprovals} pending approvals`
+        : "Loading...",
     },
     {
       title: "Timesheets",
@@ -175,7 +259,9 @@ const Dashboard = () => {
       icon: Clock,
       href: "/timesheets",
       color: "bg-[#ff3d72]",
-      stats: "Today: 6.5 hours",
+      stats: avgTimesheetHours
+        ? `Total logged: ${avgTimesheetHours} hrs`
+        : "0 hrs/week",
     },
     {
       title: "Calendar",
@@ -186,7 +272,7 @@ const Dashboard = () => {
       stats: "5 events today",
     },
   ];
-
+ 
   const recentActivity = [
     {
       action: "New user registration",
@@ -213,7 +299,7 @@ const Dashboard = () => {
       type: "timesheet",
     },
   ];
-
+ 
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -253,7 +339,7 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
-
+ 
       {/* Modules & Activities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Module Cards */}
@@ -290,7 +376,7 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-
+ 
         {/* Right Side Panel */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -317,7 +403,7 @@ const Dashboard = () => {
               ))}
             </div>
           </div>
-
+ 
           {/* Announcements */}
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h4 className="font-semibold text-gray-900 mb-3">
@@ -341,5 +427,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
+ 
 export default Dashboard;

@@ -34,6 +34,8 @@ const EmployeeDashboard = ({ employeeId }) => {
   };
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userPermissions = user?.permissions || [];
   const compOffPageRef = useRef();
   const navigate = useNavigate();
 
@@ -51,11 +53,10 @@ const EmployeeDashboard = ({ employeeId }) => {
   const handleCompOffSubmit = async (payload) => {
     setIsLoading(true);
     try {
-      // console.log("payload", payload);
       payload = { ...payload, employeeId };
 
       const res = await axios.post(`${BASE_URL}/api/compoff/request`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
       if (res.data.success) {
@@ -64,10 +65,9 @@ const EmployeeDashboard = ({ employeeId }) => {
         );
         setrefreshKeys((prev) => prev + 1);
         try {
-          console.log("Refreshing requests...");
-          await fetchRequests(); // 🔹 refresh pending requests
+          await fetchRequests();
         } catch (err) {
-          // console.error("Failed to refresh requests:", err);
+          toast.error(err?.message || "Failed to refresh requests.");
         }
         return true;
       } else {
@@ -75,7 +75,6 @@ const EmployeeDashboard = ({ employeeId }) => {
         return false;
       }
     } catch (err) {
-      // console.error(err);
       toast.error("Something went wrong while submitting.");
       return false;
     } finally {
