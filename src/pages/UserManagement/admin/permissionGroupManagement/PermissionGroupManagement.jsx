@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react"; // Added useRef
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/Button/Button";
@@ -7,13 +7,15 @@ import Pagination from "../../../../components/Pagination/pagination";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 import { toast } from "react-toastify";
 import Modal from "../../../../components/Modal/modal";
+import Navbar from "../../../../components/Navbar/Navbar";
+import { Pencil, Trash } from "lucide-react";
 
-// PermissionList Component
+// PermissionList Component (As provided by you)
 function PermissionList({ permissions, showAdd = false, showDelete = false, onAdd, onDelete }) {
   if (permissions.length === 0) return <div className="text-gray-500 p-2">No permissions found.</div>;
 
   return (
-    <div className="border p-4 rounded bg-gray-50 max-h-64 overflow-y-auto space-y-2">
+    <div className="border p-4 rounded bg-gray-50 max-h-96 overflow-y-auto space-y-2">
       {permissions.map((perm) => (
         <div
           key={perm.permission_uuid}
@@ -55,18 +57,18 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
   );
 }
 
-// PermissionChips Component - displays selected permissions as chips with remove button
+// PermissionChips Component - displays selected permissions as chips with remove button (As provided by you)
 function PermissionChips({ permissions, onRemove, variant = "add" }) {
   if (permissions.length === 0) {
     return <div className="text-gray-500 p-2">No permissions selected.</div>;
   }
 
-  const chipColor = variant === "add" 
-    ? "bg-blue-100 text-blue-800 border-blue-300" 
+  const chipColor = variant === "add"
+    ? "bg-blue-100 text-blue-800 border-blue-300"
     : "bg-red-100 text-red-800 border-red-300";
 
   return (
-    <div className="border p-4 rounded bg-gray-50 max-h-64 overflow-y-auto">
+    <div className="border p-4 rounded bg-gray-50 max-h-96 overflow-y-auto">
       <div className="flex flex-wrap gap-2">
         {permissions.map((perm) => (
           <div
@@ -110,6 +112,8 @@ export default function PermissionGroupManagement() {
 
   // New state for group search and pagination
   const [groupSearchTerm, setGroupSearchTerm] = useState("");
+  // Search specifically for the dropdown inside Group Permissions view
+  const [groupDropdownSearch, setGroupDropdownSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
@@ -118,6 +122,10 @@ export default function PermissionGroupManagement() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // ✅ Ref for the inline permission section
+  const permissionSectionRef = useRef(null);
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -186,13 +194,15 @@ export default function PermissionGroupManagement() {
     try {
       await axiosInstance.post("/admin/groups", { group_name: newGroupName.trim() });
       showUniqueToast("Group created successfully!", "success");
-      setNewGroupName("");
+      setNewGroupName(""); // Reset after successful creation
       fetchGroups();
+      setShowCreateModal(false); // Close modal on success
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast(errorMessage, "error");
     }
   };
+
 
   const handleEditClick = (group) => {
     setEditingGroup(group);
@@ -210,8 +220,8 @@ export default function PermissionGroupManagement() {
     }
 
     try {
-      await axiosInstance.put(`/admin/groups/${editingGroup.group_uuid}`, { 
-        group_name: editGroupName.trim() 
+      await axiosInstance.put(`/admin/groups/${editingGroup.group_uuid}`, {
+        group_name: editGroupName.trim()
       });
       showUniqueToast("Group updated successfully!", "success");
       setShowEditModal(false);
@@ -234,6 +244,11 @@ export default function PermissionGroupManagement() {
       await axiosInstance.delete(`/admin/groups/${deleteGroupId}`);
       fetchGroups();
       showUniqueToast("Group deleted successfully!", "success");
+      // If the deleted group was selected, reset the permission view
+      if (selectedGroupId === deleteGroupId) {
+         handleCloseActions(); // Reset everything
+         setSelectedGroupId(""); // Ensure dropdown resets if needed
+      }
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast("Failed to delete group: " + errorMessage, "error");
@@ -246,6 +261,7 @@ export default function PermissionGroupManagement() {
   const handleGroupSelect = async (groupId) => {
     if (!groupId) {
       setShowPermissionActions(false);
+      // Reset inline view states
       setShowPermissionList(false);
       setShowDeleteList(false);
       setShowViewList(false);
@@ -257,6 +273,7 @@ export default function PermissionGroupManagement() {
     }
     setSelectedGroupId(groupId);
     setShowPermissionActions(true);
+     // Reset inline view states
     setShowPermissionList(false);
     setShowDeleteList(false);
     setShowViewList(false);
@@ -267,49 +284,63 @@ export default function PermissionGroupManagement() {
     await fetchGroupPermissions(groupId);
   };
 
+   // ✅ Scrolls to the section after state update
+   const scrollToPermissionSection = () => {
+    // Use setTimeout to ensure the DOM has updated
+    setTimeout(() => {
+      permissionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+   };
+
   const handleAddClick = () => {
     if (!selectedGroupId) {
       return showUniqueToast("Please select a group first.", "warning");
     }
-    setShowPermissionList(true);
+    setShowPermissionList(true); // Show Add section
     setShowDeleteList(false);
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
-    setSelectedToAdd([]);
+    setSelectedToAdd([]); // Reset selections when switching views
     setSelectedToRemove([]);
+    scrollToPermissionSection(); // ✅ Scroll to section
   };
 
   const handleDeleteClickPermission = () => {
     if (!selectedGroupId) {
       return showUniqueToast("Please select a group first.", "warning");
     }
-    setShowDeleteList(true);
+    setShowDeleteList(true); // Show Delete section
     setShowPermissionList(false);
     setShowViewList(false);
     setSearchTerm("");
     setSearchTrigger(false);
-    setSelectedToAdd([]);
+    setSelectedToAdd([]); // Reset selections when switching views
     setSelectedToRemove([]);
+    scrollToPermissionSection(); // ✅ Scroll to section
   };
 
   const handleViewClick = () => {
     if (!selectedGroupId) {
       return showUniqueToast("Please select a group first.", "warning");
     }
-    setShowViewList(true);
+    setShowViewList(true); // Show View section
     setShowPermissionList(false);
     setShowDeleteList(false);
-    setSelectedToAdd([]);
+    setSearchTerm(""); // Reset search for view
+    setSearchTrigger(false);
+    setSelectedToAdd([]); // Reset selections when switching views
     setSelectedToRemove([]);
+    scrollToPermissionSection(); // ✅ Scroll to section
   };
 
   const handleCloseActions = () => {
     setShowPermissionActions(false);
+    // Reset inline view states
     setShowPermissionList(false);
     setShowDeleteList(false);
     setShowViewList(false);
-    setSelectedGroupId("");
+    setSelectedGroupId(""); // Also deselect the group when closing actions entirely
     setSearchTerm("");
     setSearchTrigger(false);
     setSelectedToAdd([]);
@@ -342,7 +373,7 @@ export default function PermissionGroupManagement() {
 
   // Remove permission from selected list (for removing from group)
   const handleUnselectToRemove = (permission_uuid) => {
-    setSelectedToRemove(selectedToRemove.filter(p => p.permission_uuid !== permission_uuid));
+    setSelectedToRemove(setSelectedToRemove.filter(p => p.permission_uuid !== permission_uuid));
   };
 
   // Bulk add permissions to group
@@ -355,8 +386,9 @@ export default function PermissionGroupManagement() {
       const permissionIds = selectedToAdd.map(p => p.permission_uuid);
       await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, permissionIds);
       showUniqueToast(`${selectedToAdd.length} permission(s) added successfully.`, "success");
-      setSelectedToAdd([]);
-      await fetchGroupPermissions(selectedGroupId);
+      setSelectedToAdd([]); // Clear selection on success
+      await fetchGroupPermissions(selectedGroupId); // Refresh list
+      // Optionally hide the add section after success: setShowPermissionList(false);
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast("Failed to add permissions: " + errorMessage, "error");
@@ -371,12 +403,13 @@ export default function PermissionGroupManagement() {
 
     try {
       const permissionIds = selectedToRemove.map(p => p.permission_uuid);
-      await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { 
-        data: permissionIds 
+      await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, {
+        data: permissionIds
       });
       showUniqueToast(`${selectedToRemove.length} permission(s) removed successfully.`, "success");
-      setSelectedToRemove([]);
-      await fetchGroupPermissions(selectedGroupId);
+      setSelectedToRemove([]); // Clear selection on success
+      await fetchGroupPermissions(selectedGroupId); // Refresh list
+      // Optionally hide the delete section after success: setShowDeleteList(false);
     } catch (err) {
       const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
       showUniqueToast("Failed to remove permissions: " + errorMessage, "error");
@@ -388,7 +421,7 @@ export default function PermissionGroupManagement() {
   );
 
   const filterPermissions = (list) => {
-    if (!searchTrigger) return list;
+    if (!searchTrigger || !searchTerm) return list; // Only filter if search term exists
     return list.filter(
       (perm) =>
         (perm.permission_code?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -397,12 +430,21 @@ export default function PermissionGroupManagement() {
   };
 
   function enrichWithCode(permissionList) {
+    if (!Array.isArray(permissionList)) {
+        console.error("enrichWithCode expected an array, but received:", permissionList);
+        return [];
+    }
     return permissionList.map((perm) => {
-      if (perm.permission_code) return perm;
-      const found = allPermissions.find((p) => p.permission_uuid === perm.permission_uuid);
-      return { ...perm, permission_code: found ? found.permission_code : "Unknown code" };
+        if (!perm || typeof perm !== 'object') {
+            console.error("Invalid item in permissionList:", perm);
+            return { permission_uuid: 'invalid', permission_code: 'Invalid Item' };
+        }
+        if (perm.permission_code) return perm;
+        const found = allPermissions.find((p) => p && p.permission_uuid === perm.permission_uuid);
+        return { ...perm, permission_code: found ? found.permission_code : "Unknown Code" };
     });
   }
+
 
   // Filter available permissions to exclude already selected ones
   const availableToAdd = filterPermissions(unassignedPermissions).filter(
@@ -434,87 +476,115 @@ export default function PermissionGroupManagement() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center sm:text-left">Permission Group Management</h2>
 
-      {/* Create Group */}
-      <div className="bg-white p-4 rounded shadow mb-6 flex flex-col sm:flex-row gap-3 sm:items-center">
-        <input
-          type="text"
-          placeholder="Group Name (letters, spaces, hyphens, underscores only)"
-          value={newGroupName}
-          onChange={(e) => setNewGroupName(e.target.value)}
-          className="flex-1 p-2 border rounded w-full"
-          onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
-        />
-        <Button size="medium" variant="primary" onClick={handleCreate} type="button" className="w-full sm:w-auto">
-          Create Group
-        </Button>
-      </div>
-
-      {/* Search Groups */}
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <SearchInput
-          placeholder="Search existing groups..."
-          onSearch={(q) => setGroupSearchTerm(q)}
-        />
-      </div>
-
-      {/* Groups List */}
-      <div className="bg-white p-4 rounded shadow mb-6 overflow-x-auto">
-        <h3 className="text-lg font-semibold mb-3">Existing Groups</h3>
-        {loading ? (
-          <p className="text-gray-500">Loading groups...</p>
-        ) : currentGroups.length === 0 ? (
-          <p className="text-gray-500">
-            {groupSearchTerm ? "No groups found matching your search." : "No groups found."}
-          </p>
-        ) : (
-          <>
-            <ul className="space-y-2">
-              {currentGroups.map((group) => (
-                <li
-                  key={group?.group_uuid}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
-                >
-                  <span className="font-medium">{group?.group_name}</span>
-                  <div className="flex gap-3 flex-wrap">
-                    <Button
-                      size="small"
-                      variant="primary"
-                      className="text-sm w-full sm:w-auto"
-                      onClick={() => handleEditClick(group)}
-                      type="button"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="danger"
-                      className="text-sm w-full sm:w-auto"
-                      onClick={() => handleDeleteClick(group?.group_uuid)}
-                      type="button"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-4">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                />
-              </div>
-            )}
-          </>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex-grow">
+          <Navbar
+            logo="Permission Groups"
+            navItems={[
+              {
+                name: "Manage Groups",
+                onClick: handleCloseActions,
+                isActive: !showPermissionActions,
+              },
+              {
+                name: "Group Permissions",
+                onClick: () => {
+                    setShowPermissionActions(true);
+                    setShowPermissionList(false);
+                    setShowDeleteList(false);
+                    setShowViewList(false);
+                    setSelectedToAdd([]);
+                    setSelectedToRemove([]);
+                    setSearchTerm("");
+                },
+                isActive: showPermissionActions,
+              },
+            ]}
+          />
+        </div>
+        {!showPermissionActions && (
+          <div className="ml-4">
+            <Button
+              size="medium"
+              variant="primary"
+              onClick={() => setShowCreateModal(true)}
+              type="button"
+              className="whitespace-nowrap"
+            >
+              Create Group
+            </Button>
+          </div>
         )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Manage Groups view (hidden when Group Permissions nav is active) */}
+      {!showPermissionActions && (
+        <>
+          <div className="bg-white p-4 rounded shadow mb-6 overflow-x-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Existing Groups</h3>
+              <div className="ml-4 max-w-xs w-full sm:w-80">
+                <SearchInput
+                  placeholder="Search existing groups..."
+                  onSearch={(q) => setGroupSearchTerm(q)}
+                />
+              </div>
+            </div>
+            {loading ? (
+              <p className="text-gray-500">Loading groups...</p>
+            ) : currentGroups.length === 0 ? (
+              <p className="text-gray-500">
+                {groupSearchTerm ? "No groups found matching your search." : "No groups found."}
+              </p>
+            ) : (
+              <>
+                <ul className="space-y-2">
+                  {currentGroups.map((group) => (
+                    <li
+                      key={group?.group_uuid}
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-2"
+                    >
+                      <span className="font-medium">{group?.group_name}</span>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={() => handleEditClick(group)}
+                          className="p-2 rounded hover:bg-blue-100 text-blue-900"
+                          title={`Edit ${group?.group_name}`}
+                          type="button"
+                          aria-label={`Edit ${group?.group_name}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(group?.group_uuid)}
+                          className="p-2 rounded hover:bg-red-100 text-red-600"
+                          title={`Delete ${group?.group_name}`}
+                          type="button"
+                          aria-label={`Delete ${group?.group_name}`}
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Edit Group Modal */}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)}>
         <h2 className="text-lg font-semibold mb-4">Edit Group</h2>
         <input
@@ -544,7 +614,7 @@ export default function PermissionGroupManagement() {
         </div>
       </Modal>
 
-      {/* Delete Modal */}
+      {/* Delete Group Modal */}
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
         <h2 className="text-lg font-semibold mb-4">Confirm Delete</h2>
         <p className="mb-4">Are you sure you want to delete this group? This action cannot be undone.</p>
@@ -566,148 +636,260 @@ export default function PermissionGroupManagement() {
         </div>
       </Modal>
 
-      {/* Group Permissions */}
-      <div className="bg-white p-4 rounded shadow overflow-x-auto">
-        <h3 className="text-lg font-semibold mb-4">Group Permissions</h3>
-
-        {/* Select Group */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
-          <select
-            value={selectedGroupId}
-            onChange={(e) => handleGroupSelect(e.target.value)}
-            className="flex-1 p-2 border rounded w-full"
+      {/* Create Group Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
+        <h2 className="text-lg font-semibold mb-4">Create Group</h2>
+        <input
+          type="text"
+          placeholder="Group Name (letters, spaces, hyphens, underscores only)"
+          value={newGroupName}
+          onChange={(e) => setNewGroupName(e.target.value)}
+          className="w-full p-2 border rounded mb-4"
+          onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
+        />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleCreate} variant="primary" size="medium" className="w-full sm:w-auto">
+            Create
+          </Button>
+          <Button
+            onClick={() => {
+              setShowCreateModal(false);
+              setNewGroupName("");
+            }}
+            variant="secondary"
+            size="medium"
+            className="w-full sm:w-auto"
           >
-            <option value="">-- Select Group --</option>
-            {groups.map((group) => (
-              <option key={group.group_uuid} value={group.group_uuid}>
-                {group.group_name}
-              </option>
-            ))}
-          </select>
+            Cancel
+          </Button>
         </div>
+      </Modal>
 
-        {showPermissionActions && (
-          <>
-            <hr className="my-4" />
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-md font-semibold">Actions:</h4>
-              <button 
-                onClick={handleCloseActions} 
-                type="button" 
-                className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+
+      {/* Group Permissions view (only when Group Permissions nav is active) */}
+      {showPermissionActions && (
+        <div className="bg-white p-4 rounded shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Group Permissions</h3>
+          </div>
+
+          <div className="flex items-center gap-4 mb-4">
+            <select
+              value={selectedGroupId}
+              onChange={(e) => handleGroupSelect(e.target.value)}
+              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">Select the group</option>
+              {groups.map((group) => (
+                <option key={group.group_uuid} value={group.group_uuid}>
+                  {group.group_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedGroupId && (
+            <div className="flex justify-around items-center mb-4">
+              <Button
+                onClick={handleAddClick}
+                className="px-3 py-2 bg-blue-900 text-white rounded hover:bg-blue-950 transition-colors font-medium"
               >
-                ✕ Close
-              </button>
+                Add
+              </Button>
+              <Button
+                onClick={handleDeleteClickPermission}
+                className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </Button>
+              <Button
+                onClick={handleViewClick}
+                className="px-3 py-2 bg-pink-900 text-white rounded hover:bg-pink-950 transition-colors font-medium"
+              >
+                View
+              </Button>
             </div>
-            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-6 mb-6">
-              <Button size="medium" variant="primary" onClick={handleAddClick} type="button" className="w-full sm:w-auto">
-                Add Permissions
-              </Button>
-              <Button size="medium" variant="danger" onClick={handleDeleteClickPermission} type="button" className="w-full sm:w-auto">
-                Remove Permissions
-              </Button>
-              <Button size="medium" variant="secondary" onClick={handleViewClick} type="button" className="w-full sm:w-auto">
-                View Permissions
-              </Button>
-            </div>
+          )}
 
-            {/* Search Input */}
+          {/* Inline Add / Delete / View sections */}
+          {/* ✅ Added ref here */}
+          <div ref={permissionSectionRef}>
             {(showPermissionList || showDeleteList || showViewList) && (
-              <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                <div className="flex-1">
-                  <SearchInput
-                    placeholder="Search permissions by code or description..."
-                    onSearch={(q) => {
-                      setSearchTerm(q);
-                      setSearchTrigger(q.length > 0);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Add Permissions */}
-            {showPermissionList && (
-              <div>
-                <h5 className="text-md font-medium mb-2">Available Permissions to Add:</h5>
-                <PermissionList
-                  permissions={availableToAdd}
-                  showAdd={true}
-                  showDelete={false}
-                  onAdd={handleSelectToAdd}
-                />
-                
-                {selectedToAdd.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
-                    <PermissionChips 
-                      permissions={selectedToAdd}
-                      onRemove={handleUnselectToAdd}
-                      variant="add"
+              <div className="mb-4 mt-6 border-t pt-6">
+                {showPermissionList && (
+                  <div>
+                    <h5 className="text-md font-medium mb-2">Available Permissions to Add:</h5>
+                    <div className="mb-4">
+                      <SearchInput
+                        placeholder="Search permissions..."
+                        onSearch={(value) => {
+                          setSearchTerm(value);
+                          setSearchTrigger(true);
+                        }}
+                      />
+                    </div>
+                    <PermissionList
+                      permissions={availableToAdd}
+                      showAdd={true}
+                      showDelete={false}
+                      onAdd={handleSelectToAdd}
                     />
                     <div className="mt-4">
-                      <Button 
-                        size="medium" 
-                        variant="primary" 
-                        onClick={handleBulkAddPermissions}
-                        type="button"
-                      >
-                        Confirm Add ({selectedToAdd.length})
-                      </Button>
+                        <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
+                        <PermissionChips
+                          permissions={selectedToAdd}
+                          onRemove={handleUnselectToAdd}
+                          variant="add"
+                        />
+                        {selectedToAdd.length > 0 && (
+                            <div className="mt-4">
+                                <Button
+                                    size="medium"
+                                    variant="primary"
+                                    onClick={handleBulkAddPermissions}
+                                    type="button"
+                                >
+                                    Confirm Add ({selectedToAdd.length})
+                                </Button>
+                            </div>
+                        )}
                     </div>
+                  </div>
+                )}
+
+                {showDeleteList && (
+                  <div>
+                    <h5 className="text-md font-medium mb-2">Current Group Permissions (Select to Remove):</h5>
+                    <div className="mb-4">
+                      <SearchInput
+                        placeholder="Search permissions..."
+                        onSearch={(value) => {
+                          setSearchTerm(value);
+                          setSearchTrigger(true);
+                        }}
+                      />
+                    </div>
+                    <PermissionList
+                      permissions={availableToRemove}
+                      showAdd={false}
+                      showDelete={true}
+                      onDelete={handleSelectToRemove}
+                    />
+                    <div className="mt-4">
+                        <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
+                        <PermissionChips
+                          permissions={selectedToRemove}
+                          onRemove={handleUnselectToRemove}
+                          variant="remove"
+                        />
+                        {selectedToRemove.length > 0 && (
+                            <div className="mt-4">
+                                <Button
+                                    size="medium"
+                                    variant="danger"
+                                    onClick={handleBulkRemovePermissions}
+                                    type="button"
+                                >
+                                    Confirm Remove ({selectedToRemove.length})
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {showViewList && (
+                  <div>
+                    <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
+                    <div className="mb-4">
+                      <SearchInput
+                        placeholder="Search permissions..."
+                        onSearch={(value) => {
+                          setSearchTerm(value);
+                          setSearchTrigger(true);
+                        }}
+                      />
+                    </div>
+                    <PermissionList
+                      permissions={filterPermissions(enrichWithCode(groupPermissions))}
+                      showAdd={false}
+                      showDelete={false}
+                    />
                   </div>
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-            {/* Delete Permissions */}
-            {showDeleteList && (
-              <div>
-                <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
-                <PermissionList
-                  permissions={availableToRemove}
-                  showAdd={false}
-                  showDelete={true}
-                  onDelete={handleSelectToRemove}
-                />
-                
-                {selectedToRemove.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
-                    <PermissionChips 
-                      permissions={selectedToRemove}
-                      onRemove={handleUnselectToRemove}
-                      variant="remove"
-                    />
-                    <div className="mt-4">
-                      <Button 
-                        size="medium" 
-                        variant="danger" 
-                        onClick={handleBulkRemovePermissions}
-                        type="button"
-                      >
-                        Confirm Remove ({selectedToRemove.length})
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+// Custom searchable dropdown (combobox-like) for groups (defined but not used)
+function SearchableDropdown({ options = [], value, onChange, placeholder = "Select", className = "" }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef(null);
 
-            {/* View Permissions */}
-            {showViewList && (
-              <div>
-                <h5 className="text-md font-medium mb-2">Current Group Permissions:</h5>
-                <PermissionList
-                  permissions={filterPermissions(enrichWithCode(groupPermissions))}
-                  showAdd={false}
-                  showDelete={false}
-                />
-              </div>
-            )}
-          </>
-        )}
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = options.filter((option) =>
+    option.label.toLowerCase().includes((search || "").toLowerCase())
+  );
+
+  const selected = options.find((opt) => opt.value === value);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        onClick={() => setOpen(!open)}
+        className={`border border-gray-300 rounded px-3 py-2 flex items-center justify-between cursor-pointer ${className}`}
+      >
+        <span className={selected ? "text-gray-900" : "text-gray-500"}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span className="text-gray-400 ml-2">▾</span>
       </div>
+
+      {open && (
+        <div className="absolute z-[100] mt-1 w-full bg-white border rounded-lg shadow-lg">
+          <div className="p-2 border-b">
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2 py-1 border rounded focus:outline-none focus:border-blue-500"
+              placeholder="Search..."
+            />
+          </div>
+          <ul className="max-h-60 overflow-y-auto">
+            {filtered.map((option) => (
+              <li
+                key={option.value}
+                className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
+                  option.value === value ? "bg-gray-100" : ""
+                }`}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                {option.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,11 +7,11 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    
     name: "",
     projectKey: "",
     description: "",
     status: "PLANNING",
+    currentStage: "INITIATION", // ✅ new field
     ownerId: "",
     memberIds: [],
     startDate: "",
@@ -19,9 +19,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   });
   const [dateError, setDateError] = useState(false);
 
-  const token = localStorage.getItem("token"); // JWT token
+  const token = localStorage.getItem("token");
 
-  // ✅ Fetch users for Owner & Members dropdowns
   useEffect(() => {
     if (!isOpen) return;
 
@@ -31,16 +30,12 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       })
       .then((res) => {
         const content = res.data.content;
-        if (Array.isArray(content)) {
-          setUsers(content);
-        } else {
-          console.error("Invalid users response format:", res.data);
-        }
+        if (Array.isArray(content)) setUsers(content);
+        else console.error("Invalid users response format:", res.data);
       })
       .catch((err) => console.error("Error fetching users:", err));
   }, [isOpen, token]);
 
-  // ✅ Handle inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -81,7 +76,10 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     setFormData({ ...formData, status: e.target.value });
   };
 
-  // ✅ Final Submit
+  const handleStageChange = (e) => {
+    setFormData({ ...formData, currentStage: e.target.value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -103,15 +101,15 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       return;
     }
 
-    // ✅ Build payload matching backend DTO
     const payload = {
       name: projectName,
       projectKey: formData.projectKey.trim(),
       description: formData.description || null,
       status: formData.status,
-      ownerId: parseInt(formData.ownerId, 10), // 👈 FIXED
+      currentStage: formData.currentStage, // ✅ new field
+      ownerId: parseInt(formData.ownerId, 10),
       memberIds: formData.memberIds,
-       memberCount: formData.memberIds.length, // 👈 count of members
+      memberCount: formData.memberIds.length,
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
       endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
     };
@@ -122,15 +120,15 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success(" Project created successfully!");
+      toast.success("✅ Project created successfully!");
       if (onProjectCreated) onProjectCreated();
 
-      // reset
       setFormData({
         name: "",
         projectKey: "",
         description: "",
         status: "PLANNING",
+        currentStage: "INITIATION",
         ownerId: "",
         memberIds: [],
         startDate: "",
@@ -181,6 +179,23 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             <option value="ACTIVE">ACTIVE</option>
             <option value="PLANNING">PLANNING</option>
             <option value="ARCHIVED">ARCHIVED</option>
+            <option value="COMPLETED">COMPLETED</option>
+          </select>
+
+          <select
+            name="currentStage"
+            className="w-full border px-4 py-2 rounded"
+            value={formData.currentStage}
+            onChange={handleStageChange}
+          >
+            <option value="INITIATION">INITIATION</option>
+            <option value="PLANNING">PLANNING</option>
+            <option value="DESIGN">DESIGN</option>
+            <option value="DEVELOPMENT">DEVELOPMENT</option>
+            <option value="TESTING">TESTING</option>
+            <option value="DEPLOYMENT">DEPLOYMENT</option>
+            <option value="MAINTENANCE">MAINTENANCE</option>
+            <option value="COMPLETED">COMPLETED</option>
           </select>
 
           <select
@@ -193,7 +208,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             <option value="">Select Owner *</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.name} ({user.roles.map(role => role).join(", ")})
+                {user.name} ({user.roles.join(", ")})
               </option>
             ))}
           </select>
@@ -245,7 +260,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
                     onChange={() => handleMemberCheckboxChange(user.id)}
                     disabled={formData.ownerId.toString() === user.id.toString()}
                   />
-                  {user.name} ({user.role})
+                  {user.name} ({user.roles.join(", ")})
                 </label>
               ))}
             </div>
@@ -274,4 +289,3 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 };
 
 export default CreateProjectModal;
-
