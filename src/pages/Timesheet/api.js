@@ -371,3 +371,39 @@ export async function fetchProjects() {
     return [];
   }
 } 
+
+
+export const handleBulkReview = async (
+  userId,
+  timesheetIds,
+  status,
+  comments = ""
+) => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/timesheets/review`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          userId,
+          timesheetIds,
+          status,
+          comments: comments || (status === "APPROVED" ? "approved" : ""),
+        }),
+      }
+    );
+
+    if (!response.ok) throw new Error("Failed to review timesheets");
+    showStatusToast(
+      `Timesheets ${status.toLowerCase()} successfully`,
+      "success"
+    );
+  } catch (err) {
+    console.error("Error reviewing timesheets:", err);
+    showStatusToast("Failed to update timesheet status", "error");
+  }
+};

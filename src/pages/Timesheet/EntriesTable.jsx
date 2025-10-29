@@ -319,7 +319,9 @@ const EntriesTable = ({
           <th className="text-left px-4 py-2">Work Location</th>
           <th className="text-left px-4 py-2">Description</th>
           <th className="text-left px-4 py-2">Billable</th>
-          <th className="text-left px-4 py-2">Actions</th>
+          {window.location.pathname !== "/managerapproval" && (
+            <th className="text-left px-4 py-2">Actions</th>
+          )}
         </tr>
       </thead>
 
@@ -404,16 +406,18 @@ const EntriesTable = ({
                     onChange={handleChange}
                   />
                 </td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-2">
-                    <button className="text-green-500" onClick={handleSave}>
-                      <Check />
-                    </button>
-                    <button className="text-red-500" onClick={handleCancel}>
-                      <X />
-                    </button>
-                  </div>
-                </td>
+                {window.location.pathname !== "/managerapproval" && (
+                  <td className="px-4 py-2">
+                    <div className="flex gap-2">
+                      <button className="text-green-500" onClick={handleSave}>
+                        <Check />
+                      </button>
+                      <button className="text-red-500" onClick={handleCancel}>
+                        <X />
+                      </button>
+                    </div>
+                  </td>
+                )}
               </>
             ) : (
               <>
@@ -430,17 +434,19 @@ const EntriesTable = ({
                 <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
-                <td className="px-4 py-2">
-                  {status?.toLowerCase() !== "approved" && (
-                    <button
-                      className="text-blue-600 hover:underline text-sm"
-                      onClick={() => handleEditClick(idx)}
-                      title="Edit entry"
-                    >
-                      <Pencil className="inline w-4 h-4" />
-                    </button>
-                  )}
-                </td>
+                {window.location.pathname !== "/managerapproval" && (
+                  <td className="px-4 py-2">
+                    {status?.toLowerCase() !== "approved" && (
+                      <button
+                        className="text-blue-600 hover:underline text-sm"
+                        onClick={() => handleEditClick(idx)}
+                        title="Edit entry"
+                      >
+                        <Pencil className="inline w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                )}
               </>
             )}
           </tr>
