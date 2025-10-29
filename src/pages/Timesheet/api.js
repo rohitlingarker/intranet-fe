@@ -326,3 +326,28 @@ export async function submitWeeklyTimesheet(timesheetIds) {
     throw err;
   }
 }
+export async function fetchCalendarHolidays() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/holidays/currentMonth`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    showStatusToast({
+      type: "error",
+      message: "Failed to fetch calendar holidays. Please try again.",
+    });
+    console.error("Fetch calendar holidays error:", error);
+    return null; // Return null so calling code can check for loading/error
+  }
+}

@@ -13,7 +13,7 @@ import { Pencil, UserX, UserCheck } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { BulkUserUpload } from "./BulkUser";
 import { useAuth } from "../../../../contexts/AuthContext";
-
+ 
 const SORT_DIRECTIONS = { ASC: "asc", DESC: "desc" };
 const ITEMS_PER_PAGE = 10;
 
@@ -36,7 +36,7 @@ export default function UsersTable() {
   const token = localStorage.getItem("token");
   const accessDeniedShownRef = useRef(false);
   const { logout } = useAuth();
-
+ 
   useEffect(() => {
     if (!token) {
       showStatusToast("Session expired. Please login again.", "warning");
@@ -97,14 +97,14 @@ export default function UsersTable() {
     setEditModalOpen(false);
     setSelectedUseruuId(null);
   };
-
+ 
   // ✅ When deactivate or activate button is clicked
   const handleToggleClick = (useruuId, currentStatus) => {
     setUserToToggle(useruuId);
     setActionType(currentStatus ? "deactivate" : "activate");
     setConfirmModalOpen(true);
   };
-
+ 
   // ✅ Confirm activation/deactivation
   const confirmToggle = async () => {
     if (!userToToggle) return;
@@ -188,7 +188,7 @@ export default function UsersTable() {
   }, [sortedUsers, currentPage]);
 
   const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
-
+ 
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
 
@@ -218,7 +218,7 @@ export default function UsersTable() {
           >
             <Pencil size={18} />
           </span>
-
+ 
           {user.is_active ? (
             <span
               className="cursor-pointer text-red-600 hover:text-red-800"
@@ -308,7 +308,7 @@ export default function UsersTable() {
           onClose={() => setCreateModalOpen(false)}
         />
       </Modal>
-
+ 
       {/* Bulk Upload Modal */}
       <Modal
         isOpen={userBulkUploadModalOpen}
@@ -322,7 +322,7 @@ export default function UsersTable() {
           onSuccess={fetchUsers}
         />
       </Modal>
-
+ 
       {/* Edit Modal */}
       <Modal
         isOpen={isEditModalOpen}
@@ -339,7 +339,7 @@ export default function UsersTable() {
           />
         )}
       </Modal>
-
+ 
       {/* Confirm Activate/Deactivate Modal */}
       <Modal
         isOpen={isConfirmModalOpen}

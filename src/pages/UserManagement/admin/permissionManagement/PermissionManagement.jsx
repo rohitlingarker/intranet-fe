@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { showStatusToast } from "../../../../components/toastfy/toast";
-
+ 
 export default function PermissionManagement() {
   const [permissions, setPermissions] = useState([]);
   const [filteredPermissions, setFilteredPermissions] = useState([]);
@@ -29,19 +29,19 @@ export default function PermissionManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-
+ 
   const token = localStorage.getItem("token");
-
+ 
   const axiosInstance = axios.create({
     baseURL: `${import.meta.env.VITE_USER_MANAGEMENT_URL}`,
     headers: { Authorization: `Bearer ${token}` },
   });
-
+ 
   useEffect(() => {
     fetchPermissions();
     fetchGroups();
   }, []);
-
+ 
   const fetchPermissions = async () => {
     try {
       const res = await axiosInstance.get("/admin/permissions/");
@@ -51,7 +51,7 @@ export default function PermissionManagement() {
       console.error("Failed to fetch permissions", err);
     }
   };
-
+ 
   const fetchGroups = async () => {
     try {
       const res = await axiosInstance.get("/admin/groups");
@@ -60,12 +60,12 @@ export default function PermissionManagement() {
       console.error("Failed to fetch groups", err);
     }
   };
-
+ 
   const showSingleToast = (msg, type) => {
     toast.dismiss();
     showStatusToast(msg, type);
   };
-
+ 
   const validatePermissionCode = (code) => {
     if (!code.trim()) {
       showSingleToast("Enter the permission", "error");
@@ -82,7 +82,7 @@ export default function PermissionManagement() {
     }
     return true;
   };
-
+ 
   const validateDescription = (desc) => {
     if (!desc.trim()) {
       showSingleToast("Description shouldn't be empty", "error");
@@ -95,24 +95,24 @@ export default function PermissionManagement() {
     }
     return true;
   };
-
+ 
   const handleCreate = async () => {
     if (!validatePermissionCode(newPermission)) return;
     if (!validateDescription(description)) return;
-
+ 
     try {
       const payload = {
         permission_code: newPermission,
         description,
         ...(mode === "withGroup" && { group_uuid: selectedGroup }),
       };
-
+ 
       const endpoint = mode === "withGroup"
         ? "/admin/permissions/group"
         : "/admin/permissions/";
-
+ 
       await axiosInstance.post(endpoint, payload);
-
+ 
       showSingleToast("Permission created successfully!", "success");
       resetForm();
       fetchPermissions();
@@ -122,23 +122,23 @@ export default function PermissionManagement() {
       showSingleToast(detail, "error");
     }
   };
-
+ 
   const handleUpdate = async () => {
     if (!validatePermissionCode(editCode)) return;
     if (!validateDescription(editDescription)) return;
-
+ 
     try {
       await axiosInstance.put(`/admin/permissions/${editingPermission.permission_uuid}`, {
         permission_code: editCode,
         description: editDescription,
       });
-
+ 
       if (mode === "withGroup") {
         await axiosInstance.put(`/admin/permissions/${editingPermission.permission_uuid}/group`, {
           group_uuid: editGroup,
         });
       }
-
+ 
       showSingleToast("Permission updated successfully!", "success");
       setShowModal(false);
       fetchPermissions();
@@ -148,7 +148,7 @@ export default function PermissionManagement() {
       showSingleToast(detail, "error");
     }
   };
-
+ 
   const confirmDelete = async () => {
     try {
       await axiosInstance.delete(`/admin/permissions/${deleteId}`);
@@ -162,27 +162,27 @@ export default function PermissionManagement() {
       setDeleteId(null);
     }
   };
-
+ 
   const handlePermissionChange = (e) => {
     const value = e.target.value;
     if (/^[A-Za-z\s-_]*$/.test(value)) setNewPermission(value);
   };
-
+ 
   const handleDescriptionChange = (e) => {
     const value = e.target.value;
     if (/^[A-Za-z0-9\s.,!?'"()_-]*$/.test(value)) setNewDescription(value);
   };
-
+ 
   const handleEditPermissionChange = (e) => {
     const value = e.target.value;
     if (/^[A-Za-z\s-_]*$/.test(value)) setEditCode(value);
   };
-
+ 
   const handleEditDescriptionChange = (e) => {
     const value = e.target.value;
     if (/^[A-Za-z0-9\s.,!?'"()_-]*$/.test(value)) setEditDescription(value);
   };
-
+ 
   const handleEdit = (permission) => {
     setEditingPermission(permission);
     setEditCode(permission.permission_code);
@@ -190,23 +190,23 @@ export default function PermissionManagement() {
     setEditGroup(permission.group_uuid || "");
     setShowModal(true);
   };
-
+ 
   const handleDeleteClick = (id) => {
     setDeleteId(id);
     setShowDeleteModal(true);
   };
-
+ 
   const resetForm = () => {
     setNewPermission("");
     setNewDescription("");
     setSelectedGroup("");
   };
-
+ 
   const handleAddPermission = () => {
     setAddPermission(!addpermission);
     setAddPermissionModal(!addPermissionModal);
   };
-
+ 
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredPermissions(permissions);
@@ -218,20 +218,20 @@ export default function PermissionManagement() {
     }
     setCurrentPage(1);
   }, [searchTerm, permissions]);
-
+ 
   const totalPages = Math.ceil(filteredPermissions.length / itemsPerPage);
   const paginatedPermissions = filteredPermissions.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+ 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Permission Management</h2>
         <Button onClick={handleAddPermission}>Add Permission</Button>
       </div>
-
+ 
       {/* Add Permission Modal */}
       <Modal isOpen={addPermissionModal} onClose={handleAddPermission}>
         {addpermission && (
@@ -272,7 +272,7 @@ export default function PermissionManagement() {
           </div>
         )}
       </Modal>
-
+ 
       {/* Permission List */}
       <div className="bg-white p-4 rounded shadow">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -284,7 +284,7 @@ export default function PermissionManagement() {
             className="max-w-md"
           />
         </div>
-
+ 
         <ul className="space-y-3">
           {paginatedPermissions.map((perm) => (
             <li
@@ -299,7 +299,7 @@ export default function PermissionManagement() {
                   {perm.description || "No description available."}
                 </p>
               </div>
-
+ 
               <div className="flex gap-3 ml-4 flex-shrink-0">
                 <button
                   onClick={() => handleEdit(perm)}
@@ -319,7 +319,7 @@ export default function PermissionManagement() {
             </li>
           ))}
         </ul>
-
+ 
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -327,7 +327,7 @@ export default function PermissionManagement() {
           onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         />
       </div>
-
+ 
       {/* Edit Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
         <h2 className="text-lg font-semibold mb-4">Edit Permission</h2>
@@ -360,7 +360,7 @@ export default function PermissionManagement() {
           </Button>
         </div>
       </Modal>
-
+ 
       {/* Delete Modal */}
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
         <h2 className="text-lg font-semibold mb-4">
