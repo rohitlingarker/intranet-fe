@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
 import Summary from "./Summary";
@@ -12,27 +12,17 @@ import Navbar from "../../../components/Navbar/Navbar";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams(); // ✅ React Router's built-in tab handling
   const token = localStorage.getItem("token");
 
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
 
-  const getSelectedTabFromLocation = () => {
-    const params = new URLSearchParams(location.search);
-    return params.get("tab") || "summary";
-  };
+  // ✅ Read active tab from URL (default = "summary")
+  const currentTab = searchParams.get("tab") || "summary";
 
-  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
-
-  useEffect(() => {
-  if (selectedTab === "status-report") {
-    navigate(`/projects/${projectId}/status-report`, { replace: true });
-  }
-}, [selectedTab, navigate, projectId]);
-
-
+  // ✅ Fetch project name
   useEffect(() => {
     if (projectId && token) {
       axios
@@ -52,15 +42,24 @@ const ProjectTabs = () => {
     }
   }, [projectId, token]);
 
-  useEffect(() => {
-    setSelectedTab(getSelectedTabFromLocation());
-  }, [location.search]);
+  // ✅ Navbar tab items
+  const navItems = [
+    { name: "Summary", tab: "summary" },
+    { name: "Backlog", tab: "backlog" },
+    { name: "Board", tab: "board" },
+    { name: "Sprints", tab: "sprint" },
+    { name: "Status Report", tab: "status-report" },
+  ];
 
+  // ✅ Change tab (updates URL so it survives refresh)
+  const handleTabChange = (tab) => {
+    setSearchParams({ tab }); // keeps ?tab= in URL
+  };
+
+  // ✅ Render correct tab content
   const renderTabContent = () => {
-    if (!projectId) return null;
     const pid = parseInt(projectId, 10);
-
-    switch (selectedTab) {
+    switch (currentTab) {
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
@@ -72,7 +71,7 @@ const ProjectTabs = () => {
       case "status-report":
         return <Lists projectId={pid} />;
       default:
-        return null;
+        return <Summary projectId={pid} projectName={projectName} />;
     }
   };
 
@@ -84,24 +83,17 @@ const ProjectTabs = () => {
     return <div className="p-6 text-red-500">Project not found.</div>;
   }
 
-  const navItems = [
-    { name: "Summary", tab: "summary" },
-    { name: "Backlog", tab: "backlog" },
-    { name: "Board", tab: "board" },
-    { name: "Sprints", tab: "sprint" },
-    { name: "Status Report", tab: "status-report" },
-  ];
-
+  // ✅ Build Navbar
   const navItemsWithActive = navItems.map((item) => ({
     name: item.name,
-    onClick: () => navigate(`/projects/${projectId}?tab=${item.tab}`),
-    isActive: selectedTab === item.tab,
+    onClick: () => handleTabChange(item.tab),
+    isActive: currentTab === item.tab,
   }));
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Sticky Navbar Header */}
-      <header className=" top-0 z-50 border-b  bg-white">
+      {/* Sticky Navbar */}
+      <header className="top-0 z-50 border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
             {projectName}
@@ -112,7 +104,9 @@ const ProjectTabs = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-slate-50">
-        <div className="max-w-7xl mx-auto w-full px-4 py-4">{renderTabContent()}</div>
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">
+          {renderTabContent()}
+        </div>
       </main>
     </div>
   );
