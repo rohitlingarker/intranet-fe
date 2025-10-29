@@ -231,7 +231,9 @@ const TimesheetGroup = ({
       );
 
       if (isOutsideAllMenus) {
-        setMenuOpen(false);
+        console.log({isOutsideAllMenus});
+        
+        // setMenuOpen(false);
         setOpenMenuId(null);
       }
     }
@@ -245,7 +247,9 @@ const TimesheetGroup = ({
     : calculateTotalHours(entriesState);
 
   const handleAddEntry = () => {
+    console.log("handlin");
     setMenuOpen(false);
+    
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
@@ -254,6 +258,8 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
+    console.log("handle delete");
+    
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
@@ -524,7 +530,7 @@ const TimesheetGroup = ({
   }, []);
   return (
     <div
-      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs overflow-hidden`}
+      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs`}
     >
       {/* Week Header */}
       {isWeeklyFormat && (
@@ -793,6 +799,7 @@ const TimesheetGroup = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log("Opening menu for:", timesheet.timesheetId, newMenuId);
                               handleAddEntry();
                               setOpenMenuId(null);
                               setMenuOpen(false);
