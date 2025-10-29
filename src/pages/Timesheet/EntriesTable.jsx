@@ -280,6 +280,7 @@ const EntriesTable = ({
         fromTime: newStart.toISOString(),
         toTime: newEnd.toISOString(),
         isBillable: addData.isBillable === "Yes",
+        workLocation: addData.workType,
       },
     ]);
     // hide add-row and reset
