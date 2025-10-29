@@ -132,14 +132,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 
 
-// ✅ Save last path on every navigation
+// ✅ Save last path including query params (?tab=)
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
-    localStorage.setItem("lastPath", location.pathname);
-  }, [location.pathname]);
+    localStorage.setItem("lastPath", location.pathname + location.search);
+  }, [location]);
   return null;
 };
+
+
 
 // ✅ Project Manager Demo Layout
 const ProjectManager = () => {

@@ -361,15 +361,20 @@ export default function PermissionGroupManagement() {
   };
 
   // Add permission to selected list (for removing from group)
-  const handleSelectToRemove = (permission_uuid) => {
-    const perm = groupPermissions.find(p => p.permission_uuid === permission_uuid);
-    if (perm) {
-      const enrichedPerm = enrichWithCode([perm])[0];
-      if (!selectedToRemove.some(p => p.permission_uuid === permission_uuid)) {
-        setSelectedToRemove([...selectedToRemove, enrichedPerm]);
-      }
-    }
-  };
+  // ✅ Replace your handleSelectToRemove with this:
+const handleSelectToRemove = async (permission_uuid) => {
+  try {
+    await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, {
+      data: [permission_uuid],
+    });
+    showUniqueToast("Permission removed successfully.", "success");
+    await fetchGroupPermissions(selectedGroupId); // Refresh list
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast("Failed to remove permission: " + errorMessage, "error");
+  }
+};
+
 
   // Remove permission from selected list (for removing from group)
   const handleUnselectToRemove = (permission_uuid) => {
@@ -776,7 +781,7 @@ export default function PermissionGroupManagement() {
                       onDelete={handleSelectToRemove}
                     />
                     <div className="mt-4">
-                        <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
+                        {/* <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5> */}
                         <PermissionChips
                           permissions={selectedToRemove}
                           onRemove={handleUnselectToRemove}
