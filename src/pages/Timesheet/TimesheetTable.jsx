@@ -1,10 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import Pagination from "../../components/Pagination/pagination";
 import { TimesheetGroup } from "./TimesheetGroup";
-import NewTimesheetModal from "./NewTimesheetModal";
 import Button from "../../components/Button/Button";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { useState } from "react";
 
 const TimesheetTable = ({
   loading,
@@ -18,7 +16,6 @@ const TimesheetTable = ({
   getWeeklyStatusColor,
 }) => {
   const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
-  const [showNewTimesheetModal, setShowNewTimesheetModal] = useState(false);
 
   return (
     <div
@@ -34,20 +31,30 @@ const TimesheetTable = ({
         size="small"
         variant="primary"
         className="mb-4"
-        onClick={() => setShowNewTimesheetModal(true)}
+        onClick={() => setAddingNewTimesheet((s) => !s)}
       >
         + New Timesheet
       </Button>
-
-      <NewTimesheetModal
-        isOpen={showNewTimesheetModal}
-        onClose={() => setShowNewTimesheetModal(false)}
-        refreshData={refreshData}
-        onSuccess={() => {
-          setShowNewTimesheetModal(false);
-          refreshData();
-        }}
-      />
+      {addingNewTimesheet && (
+        <div style={{ marginBottom: "20px" }}>
+          {" "}
+          {/* Added margin for spacing */}
+          <TimesheetGroup
+            emptyTimesheet={true}
+            workDate={new Date().toISOString().split("T")[0]}
+            entries={[]}
+            status="Pending"
+            mapWorkType={mapWorkType}
+            refreshData={() => {
+              refreshData?.();
+              setAddingNewTimesheet(false);
+            }}
+            addingNewTimesheet={addingNewTimesheet}
+            setAddingNewTimesheet={setAddingNewTimesheet}
+            projectInfo={projectInfo}
+          />
+        </div>
+      )}
       {loading ? (
         <LoadingSpinner text="Loading timesheet entries..." />
       ) : data.length === 0 ? (

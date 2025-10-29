@@ -27,7 +27,7 @@ const ProjectTabs = () => {
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
   useEffect(() => {
-  if (selectedTab === "lists") {
+  if (selectedTab === "status-report") {
     navigate(`/projects/${projectId}/status-report`, { replace: true });
   }
 }, [selectedTab, navigate, projectId]);
@@ -69,7 +69,7 @@ const ProjectTabs = () => {
         return <Board projectId={pid} projectName={projectName} />;
       case "sprint":
         return <SprintBoard projectId={pid} projectName={projectName} />;
-      case "lists":
+      case "status-report":
         return <Lists projectId={pid} />;
       default:
         return null;
@@ -89,7 +89,7 @@ const ProjectTabs = () => {
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
     { name: "Sprints", tab: "sprint" },
-    { name: "Lists", tab: "lists" },
+    { name: "Status Report", tab: "status-report" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
