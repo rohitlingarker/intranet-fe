@@ -241,22 +241,6 @@ const ManagerApprovalTable = ({
           key={week.weekId}
           className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
         >
-          {/* 🔹 Task + Project Summary for quick view */}
-          <div className="bg-gray-50 px-4 py-2 text-sm border-b">
-            {week.timesheets.flatMap((t) =>
-              t.entries.map((e, i) => (
-                <div key={i} className="flex justify-between text-gray-700">
-                  <span>
-                    <strong>Project:</strong> {e.projectName}
-                  </span>
-                  <span>
-                    <strong>Task:</strong> {e.taskName}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
           <TimesheetGroup
             weekGroup={{
               weekStart: week.startDate,
