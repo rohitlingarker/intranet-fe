@@ -104,12 +104,10 @@ export default function PermissionManagement() {
       const payload = {
         permission_code: newPermission,
         description,
-        ...(mode === "withGroup" && { group_uuid: selectedGroup }),
+        group_uuid: selectedGroup
       };
  
-      const endpoint = mode === "withGroup"
-        ? "/admin/permissions/group"
-        : "/admin/permissions/";
+      const endpoint = "/admin/permissions/group";
  
       await axiosInstance.post(endpoint, payload);
  
@@ -382,3 +380,4 @@ export default function PermissionManagement() {
     </div>
   );
 }
+ 
