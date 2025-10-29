@@ -17,8 +17,7 @@ const ProjectTabs = () => {
 
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
-  const [selectedTab, setSelectedTab] = useState(null);
-
+  
   // ✅ Initialize tab only once from URL
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
@@ -37,8 +36,13 @@ const ProjectTabs = () => {
     setSearchParams({ tab });
   };
 
-  console.log("URL Tab:", searchParams.get("tab"));
-  console.log("Selected Tab:", selectedTab);
+  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
+
+  useEffect(() => {
+  if (selectedTab === "status-report") {
+    navigate(`/projects/${projectId}/status-report`, { replace: true });
+  }
+}, [selectedTab, navigate, projectId]);
 
 
   // ✅ Fetch project details
@@ -73,7 +77,7 @@ const ProjectTabs = () => {
         return <Board projectId={pid} projectName={projectName} />;
       case "sprint":
         return <SprintBoard projectId={pid} projectName={projectName} />;
-      case "lists":
+      case "status-report":
         return <Lists projectId={pid} />;
       default:
         return <Summary projectId={pid} projectName={projectName} />;
@@ -90,7 +94,7 @@ const ProjectTabs = () => {
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
     { name: "Sprints", tab: "sprint" },
-    { name: "Lists", tab: "lists" },
+    { name: "Status Report", tab: "status-report" },
   ];
 
   // ✅ Navbar tabs with active highlight

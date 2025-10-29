@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import LeaveDashboard from "../charts/LeaveDashboard";
-import ProjectMembersOnLeave from "./ProjectMembersOnLeave";
+import BlockLeaveDates from "./BlockLeaveDates";
+import ManageActiveLeaveBlocks from "./ManageActiveLeaveBlocks";
 
-export default function LeaveSection({ employeeId, leaveId }) {
+export default function BlockLeaveSection({ employeeId }) {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "projectMembers"
 
   return (
@@ -23,7 +23,7 @@ export default function LeaveSection({ employeeId, leaveId }) {
                 : "text-gray-600 hover:text-gray-900"
             }
           >
-            Leave Balance
+            Active Blocked Leaves
           </span>
 
           {/* ✨ CHANGE: Conditional underline with layoutId */}
@@ -49,7 +49,7 @@ export default function LeaveSection({ employeeId, leaveId }) {
                 : "text-gray-600 hover:text-gray-900"
             }
           >
-            Team Members on Leave
+            Block Leave Dates
           </span>
           
           {/* ✨ CHANGE: Conditional underline with layoutId */}
@@ -75,7 +75,7 @@ export default function LeaveSection({ employeeId, leaveId }) {
               transition={{ duration: 0.3 }}
               className="absolute w-full"
             >
-              <LeaveDashboard employeeId={employeeId} />
+              <ManageActiveLeaveBlocks employeeId={employeeId} />
             </motion.div>
           )}
 
@@ -88,7 +88,7 @@ export default function LeaveSection({ employeeId, leaveId }) {
               transition={{ duration: 0.3 }}
               className="absolute w-full"
             >
-              <ProjectMembersOnLeave employeeId={employeeId} leaveId={leaveId} />
+              <BlockLeaveDates employeeId={employeeId} />
             </motion.div>
           )}
         </AnimatePresence>

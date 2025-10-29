@@ -260,7 +260,7 @@ const Dashboard = () => {
       href: "/timesheets",
       color: "bg-[#ff3d72]",
       stats: avgTimesheetHours
-        ? `Avg: ${avgTimesheetHours} hrs/week`
+        ? `Total logged: ${avgTimesheetHours} hrs`
         : "0 hrs/week",
     },
     {

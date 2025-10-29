@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
 import { useAuth } from "../../contexts/AuthContext";
+import Button from "../../components/Button/Button";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -15,7 +17,7 @@ const AdminPanel = ({ employeeId }) => {
   const token = localStorage.getItem("token");
   const { user } = useAuth();
   const permissions = user?.permissions || [];
-  console.log("permissions", permissions);
+  const navigate = useNavigate();
 
   // const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
   // const isManager = user?.role?.toLowerCase() === "manager";
@@ -105,6 +107,11 @@ const AdminPanel = ({ employeeId }) => {
             Leave Management
           </h1>
           <p className="text-gray-600">Handle leave requests and approvals</p>
+        </div>
+        <div>
+          <Button onClick={() => navigate(`/block-leave-dates/${employeeId}`)} variant="secondary" size="medium">
+            Manage Leave Blocks
+          </Button>
         </div>
       </div>
 

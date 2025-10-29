@@ -1,220 +1,358 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+"use client";
 
-const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#ec4899', '#10b981', '#f59e0b'];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+
+const COLORS = [
+  "#312e81", "#4338ca", "#4f46e5", "#6366f1",
+  "#831843", "#9d174d", "#be185d", "#db2777",
+  "#e879f9", "#c026d3",
+];
+
+// Stage hierarchy → percentage mapping
+const stageProgressMap = {
+  INITIATION: 5,
+  PLANNING: 15,
+  DESIGN: 30,
+  DEVELOPMENT: 65,
+  TESTING: 80,
+  DEPLOYMENT: 90,
+  MAINTENANCE: 98,
+  COMPLETED: 100,
+};
 
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedItems, setExpandedItems] = useState({});
+  const [stories, setStories] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [bugs, setBugs] = useState([]);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("All");
+  const [projectStage, setProjectStage] = useState("");
+  const [projectProgress, setProjectProgress] = useState(0);
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchAll = async () => {
-      setLoading(true); // Start loading
+      setLoading(true);
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const [epicRes, storyRes, taskRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, { headers }),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers }),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, { headers }),
+        const base = import.meta.env.VITE_PMS_BASE_URL;
+
+        // Fetch project details (to get stage)
+        const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
+        const stage = projectRes.data.stage || projectRes.data.projectStage || "INITIATION";
+        setProjectStage(stage);
+        setProjectProgress(stageProgressMap[stage?.toUpperCase()] || 0);
+
+        // Fetch related entities
+        const [epicRes, storyRes, taskRes, bugRes] = await Promise.all([
+          axios.get(`${base}/api/projects/${projectId}/epics`, { headers }),
+          axios.get(`${base}/api/projects/${projectId}/stories`, { headers }),
+          axios.get(`${base}/api/projects/${projectId}/tasks`, { headers }),
+          axios.get(`${base}/api/bugs/project/${projectId}`, { headers }),
         ]);
 
-        const epicsData = epicRes.data;
-        const storiesData = storyRes.data;
-        const tasksData = taskRes.data;
+        setEpics(epicRes.data);
+        setStories(storyRes.data);
+        setTasks(taskRes.data);
+        setBugs(bugRes.data);
 
-        const enrichedStories = storiesData.map(story => ({
-          ...story,
-          tasks: tasksData.filter(task => task.storyId === story.id),
-        }));
+        // Fetch comments
+        const commentPromises = [];
+        const addRequests = (items, type) => {
+          items.forEach((i) =>
+            commentPromises.push({
+              type,
+              id: i.id,
+              name: i.name || i.title || `Unnamed ${type}`,
+              request: axios.get(`${base}/api/comments/${type}/${i.id}`, { headers }),
+            })
+          );
+        };
 
-        const enrichedEpics = epicsData.map(epic => ({
-          ...epic,
-          stories: enrichedStories.filter(story => story.epicId === epic.id),
-        }));
+        addRequests(epicRes.data, "epic");
+        addRequests(storyRes.data, "story");
+        addRequests(taskRes.data, "task");
 
-        setEpics(enrichedEpics);
+        const results = await Promise.allSettled(commentPromises.map(c => c.request));
+        const allComments = [];
+
+        results.forEach((r, idx) => {
+          if (r.status === "fulfilled") {
+            const { type, name, id } = commentPromises[idx];
+            r.value.data.forEach((c) => {
+              allComments.push({
+                ...c,
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                parentId: c.parentId,
+                parentItemName: name,
+                parentItemId: id,
+              });
+            });
+          }
+        });
+
+        allComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setComments(allComments);
+
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        console.error("Failed to fetch project summary:", err);
       } finally {
-        setLoading(false); // Always stop loading
+        setLoading(false);
       }
     };
 
     fetchAll();
   }, [projectId, token]);
 
-  const prepareStatusData = (items) => {
-    const statusCount = items.reduce((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1;
-      return acc;
-    }, {});
-    return Object.entries(statusCount).map(([status, value]) => ({ name: status, value }));
+  /** ---------- Chart Data Preparation ---------- **/
+
+  const prepareTasksByAssigneeData = () => {
+    if (!tasks.length) return [];
+    const grouped = {};
+    tasks.forEach((task) => {
+      const name =
+        task.assignee?.username ||
+        task.assignee?.name ||
+        task.assigneeName ||
+        "Unassigned";
+      grouped[name] = (grouped[name] || 0) + 1;
+    });
+    return Object.entries(grouped)
+      .map(([name, value]) => ({ name: `${name} (${value})`, value }))
+      .sort((a, b) => b.value - a.value);
   };
 
-  const allStories = epics.flatMap(e => e.stories || []);
-  const allTasks = allStories.flatMap(s => s.tasks || []);
+  const preparePriorityData = () => {
+    const groupByPriority = (items) => {
+      const result = {};
+      items.forEach((i) => {
+        const p = i.priority || "Unspecified";
+        result[p] = (result[p] || 0) + 1;
+      });
+      return result;
+    };
 
-  const filteredEpics = epics.filter(epic =>
-  (epic.name ?? "").toLowerCase().includes((searchTerm ?? "").toLowerCase())
-);
+    const taskData = groupByPriority(tasks);
+    const storyData = groupByPriority(stories);
+    const bugData = groupByPriority(bugs);
 
-  const toggleExpand = (type, id) => {
-    setExpandedItems(prev => ({ ...prev, [`${type}-${id}`]: !prev[`${type}-${id}`] }));
-  };
-
-  const renderDetails = (item) => {
-    const excludeKeys = [
-      'id', 'epicId', 'storyId', 'projectId', 'sprintId', 
-      'tasks', 'stories', 'assigneeId', 'reporterId'
-    ];
-    return (
-      <div className="overflow-x-auto mb-3">
-        <table className="w-full text-sm border border-gray-300 rounded shadow-lg">
-          <tbody>
-            {Object.entries(item).map(([key, value], idx) => {
-              if (excludeKeys.includes(key)) return null;
-              let displayValue =
-                typeof value === 'object' && value !== null
-                  ? value.name || value.username || value.title || 'N/A'
-                  : value;
-              return (
-                <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-100'}>
-                  <td className="px-4 py-3 font-semibold border-b border-gray-300 w-1/3 capitalize">{key.replace(/([A-Z])/g, ' $1')}</td>
-                  <td className="px-4 py-3 border-b border-gray-300 font-medium">{displayValue ?? 'N/A'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    const allPriorities = Array.from(
+      new Set([...Object.keys(taskData), ...Object.keys(storyData), ...Object.keys(bugData)])
     );
+
+    return allPriorities.map((p) => ({
+      priority: p,
+      Tasks: taskData[p] || 0,
+      Stories: storyData[p] || 0,
+      Bugs: bugData[p] || 0,
+    }));
   };
+
+  const groupComments = (data) => {
+    const parentComments = data.filter((c) => !c.parentId);
+    const replies = data.filter((c) => c.parentId);
+    return parentComments.map((parent) => ({
+      ...parent,
+      replies: replies.filter((r) => r.parentId === parent.id),
+    }));
+  };
+
+  const filteredComments =
+    filter === "All"
+      ? comments
+      : comments.filter((c) => c.type === filter);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <LoadingSpinner text="Fetching data..." />
+        <LoadingSpinner text="Loading Project Summary..." />
       </div>
     );
   }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h2 className="text-2xl font-bold mb-6 text-indigo-900">Project Summary: {projectName}</h2>
+      <h2 className="text-3xl font-bold mb-2 text-indigo-900">
+        Project Summary: {projectName}
+      </h2>
 
-      {/* Totals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Epics', value: epics.length },
-          { label: 'Stories', value: allStories.length },
-          { label: 'Tasks', value: allTasks.length },
-        ].map((item, idx) => (
-          <div key={idx} className="bg-white shadow-md rounded p-4 text-center hover:shadow-xl transition">
-            <div className="text-gray-700 font-semibold">{item.label}</div>
+      {/* Project Stage Progress Bar */}
+      <div className="bg-white shadow rounded-lg p-4 mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-semibold text-indigo-900">Project Stage</h4>
+          <span className="text-sm font-medium text-gray-600">
+            {projectStage} ({projectProgress}%)
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-4">
+          <div
+            className="h-4 rounded-full transition-all duration-700"
+            style={{
+              width: `${projectProgress}%`,
+              background: `linear-gradient(90deg, #4f46e5, #818cf8)`,
+            }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[{ label: "Epics", value: epics.length },
+          { label: "Stories", value: stories.length },
+          { label: "Tasks", value: tasks.length },
+          { label: "Bugs", value: bugs.length }].map((item, i) => (
+          <div
+            key={i}
+            className="bg-white shadow rounded-lg p-4 text-center hover:shadow-lg transition"
+          >
+            <div className="text-gray-500 font-medium">{item.label}</div>
             <div className="text-3xl font-bold text-indigo-900">{item.value}</div>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {[
-          { title: 'Epics Status', data: epics },
-          { title: 'Stories Status', data: allStories },
-          { title: 'Tasks Status', data: allTasks },
-        ].map((chart, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow-md p-4 hover:shadow-xl transition">
-            <h4 className="font-semibold text-indigo-900 mb-3">{chart.title}</h4>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={prepareStatusData(chart.data)}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  label
-                >
-                  {prepareStatusData(chart.data).map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+        {/* Priority Distribution */}
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
+          <h4 className="font-semibold text-indigo-900 mb-3">Priority Distribution</h4>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={preparePriorityData()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="priority" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="Tasks" fill="#312e81" />
+              <Bar dataKey="Stories" fill="#831843" />
+              <Bar dataKey="Bugs" fill="#9d174d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search Epics..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-indigo-200 focus:outline-none"
-        />
-      </div>
-
-      {/* Nested List */}
-      <div className="space-y-4">
-        {filteredEpics.map(epic => (
-          <div key={epic.id} className="bg-white rounded shadow p-4 hover:shadow-lg transition">
-            <div
-              className="text-lg font-bold text-indigo-900 cursor-pointer flex justify-between items-center"
-              onClick={() => toggleExpand('epic', epic.id)}
+        {/* Epic Progress */}
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
+          <h4 className="font-semibold text-indigo-900 mb-3">Epic Progress</h4>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart
+              layout="vertical"
+              data={epics.map((epic) => ({
+                Epic: epic.name,
+                Progress: Number(epic.progressPercentage) || 0,
+              }))}
+              margin={{ top: 20, right: 20, bottom: 20 }}
             >
-              <span>Epic: {epic.name}</span>
-              <span className="text-gray-500 text-sm">{epic.stories.length} stories</span>
-            </div>
-            {expandedItems[`epic-${epic.id}`] && (
-              <div className="ml-4 mt-3 border-l-2 border-indigo-300 pl-4 space-y-3">
-                {renderDetails(epic)}
-                {epic.stories.map(story => (
-                  <div key={story.id} className="bg-gray-50 rounded p-2 hover:bg-gray-100">
-                    <div
-                      className="font-semibold text-pink-800 cursor-pointer flex justify-between items-center"
-                      onClick={() => toggleExpand('story', story.id)}
-                    >
-                      <span>Story: {story.title}</span>
-                      <span className="text-gray-500 text-sm">{story.tasks.length} tasks</span>
-                    </div>
-                    {expandedItems[`story-${story.id}`] && (
-                      <div className="ml-4 mt-2 border-l border-pink-200 pl-4 space-y-2">
-                        {renderDetails(story)}
-                        {story.tasks.map(task => (
-                          <div key={task.id} className="bg-white rounded p-2 shadow-sm hover:shadow-md">
-                            <div
-                              className="text-sm font-medium cursor-pointer flex justify-between"
-                              onClick={() => toggleExpand('task', task.id)}
-                            >
-                              <span>Task: {task.title}</span>
-                              <span className="text-gray-500">[{task.status}]</span>
-                            </div>
-                            {expandedItems[`task-${task.id}`] && (
-                              <div className="ml-4 mt-1 text-xs text-gray-700">
-                                {renderDetails(task)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 100]} unit="%" />
+              <YAxis dataKey="Epic" type="category" width={150} />
+              <Tooltip formatter={(v) => [`${v}%`, "Progress"]} />
+              <Legend />
+              <Bar dataKey="Progress" fill="#4f46e5" barSize={30} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Tasks by Assignee */}
+        <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
+          <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
+          <ResponsiveContainer width="100%" height={340}>
+            <PieChart>
+              <Pie
+                data={prepareTasksByAssigneeData()}
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                label={({ name }) => name}
+                dataKey="value"
+              >
+                {prepareTasksByAssigneeData().map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
-              </div>
-            )}
+              </Pie>
+              <Tooltip formatter={(value) => `${value} Tasks`} />
+              <Legend verticalAlign="bottom" height={36} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Comments Section */}
+      <div className="bg-white rounded-lg shadow p-6 hover:shadow-xl transition">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+          <h3 className="text-2xl font-semibold text-indigo-900 mb-3 sm:mb-0">
+            Project Comments
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {["All", "Epic", "Story", "Task"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1 rounded-full border transition ${
+                  filter === f
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {filteredComments.length > 0 ? (
+          <div className="max-h-[350px] overflow-y-auto space-y-4">
+            {groupComments(filteredComments).map((comment) => (
+              <div
+                key={comment.id}
+                className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-semibold text-indigo-800">{comment.userName || "Anonymous"}</span>
+                  <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString()}</span>
+                </div>
+                <div className="text-sm text-gray-600 mb-1">
+                  <span className="font-medium text-pink-700">[{comment.type}] </span>
+                  <span className="text-indigo-800 font-medium">{comment.parentItemName}</span>
+                </div>
+                <p className="text-gray-800 whitespace-pre-line mb-2">{comment.content || "(No content)"}</p>
+
+                {comment.replies?.length > 0 && (
+                  <div className="ml-4 border-l-2 border-indigo-300 pl-3 space-y-2">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="p-2 bg-indigo-50 rounded-md">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-indigo-700">{reply.userName || "Anonymous"}</span>
+                          <span className="text-xs text-gray-500">{new Date(reply.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-line">{reply.content || "(No content)"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 text-sm italic">No comments found for this selection.</div>
+        )}
       </div>
     </div>
   );

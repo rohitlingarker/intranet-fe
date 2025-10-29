@@ -43,7 +43,7 @@ const TimesheetHeader = () => {
           <Button
           variant="primary"
           size="medium"
-          onClick={() => navigate("/timesheets/dashboard")}
+          onClick={() => navigate("/timesheet/dashboard")}
         >
           Dashboard
         </Button>)}
