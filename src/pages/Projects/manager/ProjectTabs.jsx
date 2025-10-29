@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import Summary from "./Summary";
@@ -7,32 +7,41 @@ import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import Lists from "./ProjectStatusReport";
-
 import Navbar from "../../../components/Navbar/Navbar";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(null);
 
-  const getSelectedTabFromLocation = () => {
-    const params = new URLSearchParams(location.search);
-    return params.get("tab") || "summary";
+  // ✅ Initialize tab only once from URL
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (!tabFromUrl) {
+      // No tab in URL → set default tab as 'summary' and update URL
+      setSearchParams({ tab: "summary" }, { replace: true });
+      setSelectedTab("summary");
+    } else {
+      setSelectedTab(tabFromUrl);
+    }
+  }, [searchParams, setSearchParams]);
+
+  // ✅ Handle tab changes (triggered by Navbar clicks)
+  const handleTabChange = (tab) => {
+    setSelectedTab(tab);
+    setSearchParams({ tab });
   };
 
-  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
-
-  useEffect(() => {
-  if (selectedTab === "lists") {
-    navigate(`/projects/${projectId}/status-report`, { replace: true });
-  }
-}, [selectedTab, navigate, projectId]);
+  console.log("URL Tab:", searchParams.get("tab"));
+  console.log("Selected Tab:", selectedTab);
 
 
+  // ✅ Fetch project details
   useEffect(() => {
     if (projectId && token) {
       axios
@@ -46,18 +55,13 @@ const ProjectTabs = () => {
           setProjectName(res.data.name);
           setNotFound(false);
         })
-        .catch(() => {
-          setNotFound(true);
-        });
+        .catch(() => setNotFound(true));
     }
   }, [projectId, token]);
 
-  useEffect(() => {
-    setSelectedTab(getSelectedTabFromLocation());
-  }, [location.search]);
-
+  // ✅ Render correct tab component
   const renderTabContent = () => {
-    if (!projectId) return null;
+    if (!projectId || !selectedTab) return null;
     const pid = parseInt(projectId, 10);
 
     switch (selectedTab) {
@@ -72,17 +76,14 @@ const ProjectTabs = () => {
       case "lists":
         return <Lists projectId={pid} />;
       default:
-        return null;
+        return <Summary projectId={pid} projectName={projectName} />;
     }
   };
 
-  if (!projectId) {
+  if (!projectId)
     return <div className="p-6 text-slate-400">No project selected.</div>;
-  }
-
-  if (notFound) {
+  if (notFound)
     return <div className="p-6 text-red-500">Project not found.</div>;
-  }
 
   const navItems = [
     { name: "Summary", tab: "summary" },
@@ -92,16 +93,17 @@ const ProjectTabs = () => {
     { name: "Lists", tab: "lists" },
   ];
 
+  // ✅ Navbar tabs with active highlight
   const navItemsWithActive = navItems.map((item) => ({
     name: item.name,
-    onClick: () => navigate(`/projects/${projectId}?tab=${item.tab}`),
+    onClick: () => handleTabChange(item.tab),
     isActive: selectedTab === item.tab,
   }));
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Sticky Navbar Header */}
-      <header className=" top-0 z-50 border-b  bg-white">
+      {/* Header */}
+      <header className="top-0 z-50 border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
             {projectName}
@@ -112,7 +114,9 @@ const ProjectTabs = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-slate-50">
-        <div className="max-w-7xl mx-auto w-full px-4 py-4">{renderTabContent()}</div>
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">
+          {renderTabContent()}
+        </div>
       </main>
     </div>
   );

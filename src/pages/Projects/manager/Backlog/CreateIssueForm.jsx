@@ -54,11 +54,12 @@ const CreateIssueForm = ({
 
   // Fetch projects, users, sprints
   useEffect(() => {
+    const pid = initialProjectId;
     const fetchData = async () => {
       try {
         const [projectsRes, usersRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/members`, axiosConfig),
           //axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
         ]);
         setProjects(projectsRes.data.content || projectsRes.data || []);

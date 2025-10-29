@@ -60,7 +60,9 @@ const Summary = ({ projectId, projectName }) => {
   const allStories = epics.flatMap(e => e.stories || []);
   const allTasks = allStories.flatMap(s => s.tasks || []);
 
-  const filteredEpics = epics.filter(epic => epic.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredEpics = epics.filter(epic =>
+  (epic.name ?? "").toLowerCase().includes((searchTerm ?? "").toLowerCase())
+);
 
   const toggleExpand = (type, id) => {
     setExpandedItems(prev => ({ ...prev, [`${type}-${id}`]: !prev[`${type}-${id}`] }));
