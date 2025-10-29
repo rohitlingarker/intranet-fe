@@ -351,3 +351,23 @@ export async function fetchCalendarHolidays() {
     return null; // Return null so calling code can check for loading/error
   }
 }
+
+export async function fetchProjects() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/project-info/all`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch timesheets");
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching timesheets:", error);
+    showStatusToast("Failed to fetch timesheets", "error");
+    return [];
+  }
+} 
