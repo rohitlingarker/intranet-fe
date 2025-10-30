@@ -246,6 +246,177 @@ const ManagerApprovalTable = ({
     doc.save("manager_timesheets.pdf");
   };
 
+const renderUserWeeks = (user) =>
+  user.weeklySummary
+    .filter(
+      (week) =>
+        statusFilter === "All" ||
+        week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
+    )
+    .map((week) => (
+      <div
+        key={week.weekId}
+        className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
+      >
+        {/* Manager actions */}
+        {week.weeklyStatus === "SUBMITTED" && (
+          <div className="p-4 border-t flex gap-3 justify-end">
+            {/* ✅ Approve All Button */}
+            <Button
+              variant="success"
+              size="medium"
+              onClick={() => {
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                handleBulkReview(
+                  user.userId,
+                  timesheetIds,
+                  "APPROVED",
+                  "approved"
+                );
+                onRefresh();
+              }}
+            >
+              Approve All
+            </Button>
+
+            {/* ❌ Reject All Button */}
+
+            <Button
+              variant="danger"
+              size="medium"
+              onClick={() => {
+                // Open a single rejection comment box per week
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                setShowCommentBox((prev) => ({
+                  ...prev,
+                  [week.weekId]: true,
+                }));
+                setRejectionComments((prev) => ({
+                  ...prev,
+                  [week.weekId]: "",
+                }));
+              }}
+            >
+              Reject All
+            </Button>
+          </div>
+        )}
+        <TimesheetGroup
+          weekGroup={{
+            weekStart: week.startDate,
+            weekEnd: week.endDate,
+            timesheets: week.timesheets,
+            weekRange: `${new Date(
+              week.startDate
+            ).toLocaleDateString()} - ${new Date(
+              week.endDate
+            ).toLocaleDateString()}`,
+            totalHours: week.totalHours,
+            status: week.weeklyStatus,
+            weekNumber: week.weekId,
+            monthName: new Date(week.startDate).toLocaleString("en-US", {
+              month: "long",
+            }),
+            year: new Date(week.startDate).getFullYear(),
+          }}
+          refreshData={onRefresh}
+          mapWorkType={(type) => type}
+          projectInfo={projectInfo}
+        />
+
+        {showCommentBox[week.weekId] && (
+          <div className="p-4 bg-red-50 border-t">
+            <textarea
+              className="border p-2 w-full rounded"
+              rows="2"
+              placeholder="Enter rejection reason"
+              value={rejectionComments[week.weekId] || ""}
+              onChange={(e) =>
+                setRejectionComments((prev) => ({
+                  ...prev,
+                  [week.weekId]: e.target.value,
+                }))
+              }
+            />
+            <div className="flex gap-2 mt-2 justify-end">
+              <Button
+                variant="danger"
+                size="small"
+                onClick={() => {
+                  const timesheetIds = week.timesheets.map(
+                    (t) => t.timesheetId
+                  );
+                  const comment = rejectionComments[week.weekId] || "";
+                  handleBulkReview(
+                    user.userId,
+                    timesheetIds,
+                    "REJECTED",
+                    comment
+                  );
+                  setShowCommentBox((prev) => ({
+                    ...prev,
+                    [week.weekId]: false,
+                  }));
+                  onRefresh();
+                }}
+              >
+                Confirm Reject
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() =>
+                  setShowCommentBox((prev) => ({
+                    ...prev,
+                    [week.weekId]: false,
+                  }))
+                }
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Rejection boxes */}
+        {/* {week.timesheets.map(
+            (t) =>
+              showCommentBox[t.timesheetId] && (
+                <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
+                  <textarea
+                    className="border p-2 w-full rounded"
+                    rows="2"
+                    placeholder="Enter rejection reason"
+                    value={rejectionComments[t.timesheetId] || ""}
+                    onChange={(e) =>
+                      setRejectionComments((prev) => ({
+                        ...prev,
+                        [t.timesheetId]: e.target.value,
+                      }))
+                    }
+                  />
+                  <div className="flex gap-2 mt-2 justify-end">
+                    <Button
+                      variant="danger"
+                      size="small"
+                      onClick={() => handleConfirmReject(t.timesheetId)}
+                    >
+                      Confirm Reject
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => handleCancelReject(t.timesheetId)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )
+          )} */}
+      </div>
+    ));
   // Track selection mode and selected users
   const [isRemoveMode, setIsRemoveMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -490,7 +661,7 @@ const handleAddUserClick = async () => {
                 <h2 className="text-xl font-bold mb-3 text-gray-800">
                   {user.userName} (ID: {user.userId})
                 </h2>
-                {/* Render user’s weekly summaries */}
+                {renderUserWeeks(user)}
               </div>
             ))
           )}
