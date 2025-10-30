@@ -322,6 +322,9 @@ const ManagerApprovalTable = ({
   const [monthlyHolidays, setMonthlyHolidays] = useState([]);
   const [selectedAddUser, setSelectedAddUser] = useState("");
   const [selectedHoliday, setSelectedHoliday] = useState("");
+  const [reason, setReason] = useState("");
+  const [addUserLoading, setAddUserLoading] = useState(false);
+
 
   const fetchManagerUsers = async () => {
     try {
@@ -364,13 +367,16 @@ const ManagerApprovalTable = ({
     }
   };
 const handleConfirmAddUser = async () => {
-  if (!selectedAddUser || !selectedHoliday) return;
+  if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
+    showStatusToast("Please fill all fields before confirming.", "warning");
+    return;
+  }
 
   try {
     const res = await fetch(
       `${
         import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-      }/api/holiday-exclude-users`,
+      }/api/holiday-exclude-users/create`,
       {
         method: "POST",
         headers: {
@@ -378,8 +384,9 @@ const handleConfirmAddUser = async () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          userId: selectedAddUser,
-          holidayId: selectedHoliday,
+          userId: parseInt(selectedAddUser, 10),
+          holidayDate: selectedHoliday,
+          reason,
         }),
       }
     );
@@ -391,11 +398,13 @@ const handleConfirmAddUser = async () => {
     setShowAddUserSection(false);
     setSelectedAddUser("");
     setSelectedHoliday("");
+    setReason("");
   } catch (err) {
     console.error("Error adding holiday exclude user:", err);
     showStatusToast("Failed to add user", "error");
   }
 };
+
 
 
   // -----------------------------
@@ -520,7 +529,6 @@ const handleConfirmAddUser = async () => {
             )}
 
             {/* --- Action Buttons --- */}
-            {/* --- Action Buttons --- */}
             <div className="mt-6 space-y-4">
               <div className="flex justify-between gap-3">
                 <Button
@@ -572,66 +580,90 @@ const handleConfirmAddUser = async () => {
                     Add Holiday Excluded User
                   </h3>
 
-                  {/* User Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select User
-                    </label>
-                    <select
-                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      value={selectedAddUser}
-                      onChange={(e) => setSelectedAddUser(e.target.value)}
-                    >
-                      <option value="">-- Select User --</option>
-                      {managerUsers.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.id} - {u.fullName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {addUserLoading ? (
+                    <LoadingSpinner text="Loading user & holiday data..." />
+                  ) : (
+                    <>
+                      {/* User Dropdown */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select User
+                        </label>
+                        <select
+                          className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          value={selectedAddUser}
+                          onChange={(e) => setSelectedAddUser(e.target.value)}
+                        >
+                          <option value="">-- Select User --</option>
+                          {managerUsers.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.id} - {u.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                  {/* Holiday Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Holiday
-                    </label>
-                    <select
-                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      value={selectedHoliday}
-                      onChange={(e) => setSelectedHoliday(e.target.value)}
-                    >
-                      <option value="">-- Select Holiday --</option>
-                      {monthlyHolidays.map((h) => (
-                        <option key={h.holidayId} value={h.holidayId}>
-                          {h.holidayDate} - {h.holidayDescription}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      {/* Holiday Dropdown */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select Holiday
+                        </label>
+                        <select
+                          className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          value={selectedHoliday}
+                          onChange={(e) => setSelectedHoliday(e.target.value)}
+                        >
+                          <option value="">-- Select Holiday --</option>
+                          {monthlyHolidays.map((h) => (
+                            <option key={h.holidayId} value={h.holidayDate}>
+                              {h.holidayDate} - {h.holidayDescription}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                  {/* Confirm / Cancel Buttons */}
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      variant="primary"
-                      size="small"
-                      disabled={!selectedAddUser || !selectedHoliday}
-                      onClick={handleConfirmAddUser}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      onClick={() => {
-                        setShowAddUserSection(false);
-                        setSelectedAddUser("");
-                        setSelectedHoliday("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+                      {/* Reason Textarea */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Reason
+                        </label>
+                        <textarea
+                          className="w-full border rounded-lg p-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          placeholder="Enter reason for exclusion..."
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Confirm / Cancel Buttons */}
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="primary"
+                          size="small"
+                          disabled={
+                            !selectedAddUser ||
+                            !selectedHoliday ||
+                            !reason.trim()
+                          }
+                          onClick={handleConfirmAddUser}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() => {
+                            setShowAddUserSection(false);
+                            setSelectedAddUser("");
+                            setSelectedHoliday("");
+                            setReason("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
