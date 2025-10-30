@@ -215,7 +215,7 @@ const CreateIssueForm = ({
         }}
         options={[
           { label: "Epic", value: "Epic" },
-          { label: "User Story", value: "User Story" },
+          { label: "Story", value: "Story" },
           { label: "Task", value: "Task" },
           { label: "Bug", value: "Bug" },
         ]}
@@ -242,7 +242,7 @@ const CreateIssueForm = ({
           </>
         )}
 
-        {issueType === "User Story" && (
+        {issueType === "Story" && (
           <>
             <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
             <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />

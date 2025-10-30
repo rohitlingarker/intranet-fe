@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import ManagerApprovalTable from "./ManagerApprovalTable";
 import Button from "../../../components/Button/Button";
-import { useNavigate } from "react-router-dom";
 import ManagerDashboard from "../ManagerDashboard";
 import TimesheetHeader from "../TimesheetHeader";
 

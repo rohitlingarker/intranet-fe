@@ -9,7 +9,6 @@ import FormTextArea from "../../../../components/forms/FormTextArea";
 
 const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState(null);
-  const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [sprints, setSprints] = useState([]);
@@ -34,23 +33,22 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
         const bug = res.data;
 
         setFormData({
-          id: bug.id, // keep locally but remove before sending
-          type: bug.type || "Bug",
+          id: bug.id,
           title: bug.title || "",
           description: bug.description || "",
-          severity: bug.severity || "MINOR",
           priority: bug.priority || "MEDIUM",
           status: bug.status || "OPEN",
-          reporterId: bug.reporter?.id || "",
-          assigneeId: bug.assignedTo?.id || "",
-          projectId: projectId || bug.project?.id || "",
-          sprintId: bug.sprint?.id || "",
-          epicId: bug.epic?.id || "",
-          taskId: bug.task?.id || "",
+          severity: bug.severity || "MINOR",
+          reporter: bug.reporter || "",
+          assignedTo: bug.assignedTo || "",
+          projectId: bug.projectId || projectId || "",
+          sprintId: bug.sprintId || "",
+          epicId: bug.epicId || "",
+          taskId: bug.taskId || "",
           stepsToReproduce: bug.stepsToReproduce || "",
           expectedResult: bug.expectedResult || "",
           actualResult: bug.actualResult || "",
-          attachments: bug.attachments || [],
+          attachments: bug.attachments || "",
         });
       } catch (error) {
         console.error("Error fetching bug details:", error);
@@ -63,37 +61,21 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
 
   // ---------------- FETCH RELATED DATA ----------------
   useEffect(() => {
-    const fetchRelatedData = async () => {
+    const fetchData = async () => {
       try {
-        const [projectsRes, usersRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
+        const [usersRes, taskRes, sprintRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, axiosConfig),
         ]);
-
-        setProjects(projectsRes.data.content || projectsRes.data || []);
         setUsers(usersRes.data.content || usersRes.data || []);
-
-        // Fetch project-specific tasks & sprints
-        if (projectId) {
-          const [taskRes, sprintRes] = await Promise.all([
-            axios.get(
-              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
-              axiosConfig
-            ),
-            axios.get(
-              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-              axiosConfig
-            ),
-          ]);
-          setTasks(taskRes.data || []);
-          setSprints(sprintRes.data || []);
-        }
+        setTasks(taskRes.data || []);
+        setSprints(sprintRes.data || []);
       } catch (error) {
         console.error("Error fetching related data:", error);
       }
     };
-
-    fetchRelatedData();
+    if (projectId) fetchData();
   }, [projectId]);
 
   // ---------------- HANDLE CHANGE ----------------
@@ -101,11 +83,7 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: ["projectId", "sprintId", "epicId", "taskId", "assigneeId", "reporterId"].includes(name)
-        ? value
-          ? Number(value)
-          : ""
-        : value,
+      [name]: value,
     }));
   };
 
@@ -114,16 +92,28 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
     e.preventDefault();
     setLoading(true);
 
-    // ✅ Remove id before sending to avoid Hibernate identifier error
-    const { id, ...cleanData } = formData;
-
-    const payload = {
-      ...cleanData,
-      reporter: formData.reporterId,
-      assignedTo: formData.assigneeId,
-    };
-
     try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status,
+        severity: formData.severity,
+        assignedTo: formData.assignedTo ? Number(formData.assignedTo) : null,
+        reporter: formData.reporter ? Number(formData.reporter) : null,
+        projectId: formData.projectId ? Number(formData.projectId) : null,
+        sprintId: formData.sprintId ? Number(formData.sprintId) : null,
+        epicId: formData.epicId ? Number(formData.epicId) : null,
+        taskId: formData.taskId ? Number(formData.taskId) : null,
+        stepsToReproduce: formData.stepsToReproduce,
+        expectedResult: formData.expectedResult,
+        actualResult: formData.actualResult,
+        attachments:
+          typeof formData.attachments === "string"
+            ? formData.attachments
+            : JSON.stringify(formData.attachments),
+      };
+
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/bugs/${bugId}`,
         payload,
@@ -140,7 +130,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
     }
   };
 
-  // ---------------- LOADING STATE ----------------
   if (!formData) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -155,7 +144,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative max-h-[90vh] flex flex-col">
-        {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
@@ -170,17 +158,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
 
         <div className="px-8 pb-6 overflow-y-auto scrollbar-hide">
           <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* Type */}
-            <FormSelect
-              label="Type"
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              options={[{ label: "Bug", value: "Bug" }]}
-              disabled
-            />
-
             <FormInput
               label="Title *"
               name="title"
@@ -208,7 +185,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
                 { label: "Closed", value: "CLOSED" },
                 { label: "Reopened", value: "REOPENED" },
               ]}
-              required
             />
 
             <FormSelect
@@ -222,7 +198,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
                 { label: "High", value: "HIGH" },
                 { label: "Critical", value: "CRITICAL" },
               ]}
-              required
             />
 
             <FormSelect
@@ -235,7 +210,6 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
                 { label: "Major", value: "MAJOR" },
                 { label: "Blocker", value: "BLOCKER" },
               ]}
-              required
             />
 
             <FormSelect
@@ -256,8 +230,8 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
 
             <FormSelect
               label="Assignee (Optional)"
-              name="assigneeId"
-              value={formData.assigneeId || ""}
+              name="assignedTo"
+              value={formData.assignedTo || ""}
               onChange={handleChange}
               options={users.map((u) => ({
                 label: u.name || u.username,
@@ -267,8 +241,8 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
 
             <FormSelect
               label="Reporter (Optional)"
-              name="reporterId"
-              value={formData.reporterId || ""}
+              name="reporter"
+              value={formData.reporter || ""}
               onChange={handleChange}
               options={users.map((u) => ({
                 label: u.name || u.username,
@@ -296,13 +270,13 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
               value={formData.actualResult}
               onChange={handleChange}
             />
-            <FormTextArea
-              label="Attachments (Optional)"
+
+            <FormInput
+              label="Attachments (Optional - File path or URL)"
               name="attachments"
-              value={formData.attachments}
+              value={formData.attachments || ""}
               onChange={handleChange}
             />
-
 
             <div className="flex justify-end gap-3 pt-4">
               <button
