@@ -316,6 +316,88 @@ const ManagerApprovalTable = ({
     }
   };
 
+
+  const [showAddUserSection, setShowAddUserSection] = useState(false);
+  const [managerUsers, setManagerUsers] = useState([]);
+  const [monthlyHolidays, setMonthlyHolidays] = useState([]);
+  const [selectedAddUser, setSelectedAddUser] = useState("");
+  const [selectedHoliday, setSelectedHoliday] = useState("");
+
+  const fetchManagerUsers = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch manager users");
+      const data = await res.json();
+      setManagerUsers(data);
+    } catch (err) {
+      console.error("Error fetching manager users:", err);
+      showStatusToast("Failed to load user list", "error");
+    }
+  };
+
+  const fetchMonthlyHolidays = async () => {
+    const currentMonth = new Date().getMonth() + 1;
+    try {
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_LMS_BASE_URL
+        }/api/holidays/month/${currentMonth}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch holidays");
+      const data = await res.json();
+      setMonthlyHolidays(data);
+    } catch (err) {
+      console.error("Error fetching holidays:", err);
+      showStatusToast("Failed to load holiday list", "error");
+    }
+  };
+const handleConfirmAddUser = async () => {
+  if (!selectedAddUser || !selectedHoliday) return;
+
+  try {
+    const res = await fetch(
+      `${
+        import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+      }/api/holiday-exclude-users`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          userId: selectedAddUser,
+          holidayId: selectedHoliday,
+        }),
+      }
+    );
+
+    if (!res.ok) throw new Error("Failed to add user to holiday exclude list");
+
+    showStatusToast("User added to holiday exclusion successfully!", "success");
+    fetchHolidayExcludedUsers();
+    setShowAddUserSection(false);
+    setSelectedAddUser("");
+    setSelectedHoliday("");
+  } catch (err) {
+    console.error("Error adding holiday exclude user:", err);
+    showStatusToast("Failed to add user", "error");
+  }
+};
+
+
   // -----------------------------
   // Main Render
   // -----------------------------
@@ -438,12 +520,17 @@ const ManagerApprovalTable = ({
             )}
 
             {/* --- Action Buttons --- */}
+            {/* --- Action Buttons --- */}
             <div className="mt-6 space-y-4">
               <div className="flex justify-between gap-3">
                 <Button
                   variant="primary"
                   size="small"
-                  onClick={() => console.log("Add User clicked")}
+                  onClick={() => {
+                    setShowAddUserSection(true);
+                    fetchManagerUsers();
+                    fetchMonthlyHolidays();
+                  }}
                 >
                   Add User
                 </Button>
@@ -477,6 +564,76 @@ const ManagerApprovalTable = ({
                   </Button>
                 )}
               </div>
+
+              {/* --- Add User Section --- */}
+              {showAddUserSection && (
+                <div className="mt-6 border-t pt-4 transition-all space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Add Holiday Excluded User
+                  </h3>
+
+                  {/* User Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select User
+                    </label>
+                    <select
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      value={selectedAddUser}
+                      onChange={(e) => setSelectedAddUser(e.target.value)}
+                    >
+                      <option value="">-- Select User --</option>
+                      {managerUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.id} - {u.fullName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Holiday Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Holiday
+                    </label>
+                    <select
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      value={selectedHoliday}
+                      onChange={(e) => setSelectedHoliday(e.target.value)}
+                    >
+                      <option value="">-- Select Holiday --</option>
+                      {monthlyHolidays.map((h) => (
+                        <option key={h.holidayId} value={h.holidayId}>
+                          {h.holidayDate} - {h.holidayDescription}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Confirm / Cancel Buttons */}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      variant="primary"
+                      size="small"
+                      disabled={!selectedAddUser || !selectedHoliday}
+                      onClick={handleConfirmAddUser}
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => {
+                        setShowAddUserSection(false);
+                        setSelectedAddUser("");
+                        setSelectedHoliday("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <Button
