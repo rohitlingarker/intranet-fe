@@ -15,7 +15,7 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
   if (permissions.length === 0) return <div className="text-gray-500 p-2">No permissions found.</div>;
 
   return (
-    <div className="border p-4 rounded bg-gray-50 max-h-96 overflow-y-auto space-y-2">
+    <div className="border p-4 rounded bg-gray-50 max-h-60 overflow-y-auto space-y-2">
       {permissions.map((perm) => (
         <div
           key={perm.permission_uuid}

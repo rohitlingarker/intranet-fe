@@ -11,6 +11,7 @@ import {
   X, // added close icon
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { is } from "date-fns/locale";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -171,11 +172,11 @@ const Sidebar = ({ isCollapsed }) => {
           <li>
             <Link
               to={
-                isAdmin
-                  ? "/projects/admin"
-                  : isManager
+                isManager
                   ? "/projects/manager"
-                  : "/projects/developer"
+                  : isDeveloper
+                  ? "/projects/developer"
+                  : "/projects/admin"
               }
               className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
                 location.pathname.startsWith("/projects")
