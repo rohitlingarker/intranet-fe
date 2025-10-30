@@ -11,7 +11,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     projectKey: "",
     description: "",
     status: "PLANNING",
-    currentStage: "INITIATION", // ✅ new field
+    currentStage: "INITIATION", 
     ownerId: "",
     memberIds: [],
     startDate: "",
@@ -106,7 +106,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       projectKey: formData.projectKey.trim(),
       description: formData.description || null,
       status: formData.status,
-      currentStage: formData.currentStage, // ✅ new field
+      currentStage: formData.currentStage, 
       ownerId: parseInt(formData.ownerId, 10),
       memberIds: formData.memberIds,
       memberCount: formData.memberIds.length,

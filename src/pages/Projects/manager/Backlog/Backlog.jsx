@@ -31,9 +31,6 @@ const Backlog = ({ projectId, projectName }) => {
     setShowSprintForm(false);
   };
 
-  console.log("Backlog mounted!");
-
-
   const fetchProjects = () => {
     axios
       .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers })

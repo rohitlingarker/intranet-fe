@@ -19,11 +19,7 @@ const ProjectDashboard = () => {
   const token = localStorage.getItem("token");
   // Decode token to get userId
   const decodedToken = jwtDecode(token);
-  const userId = decodedToken.user_id; 
-  // debug console.log("Logged in userId:", userId);
-  console.log("Logged in userId:", userId);
-  
-
+  const userId = decodedToken.user_id;
   const axiosConfig = {
     headers: {
       "Content-Type": "application/json",
@@ -152,11 +148,11 @@ const ProjectDashboard = () => {
               value={tasks.length}
               textColor="text-green-700"
             />
-            <ThreeCard
+            {/* <ThreeCard
               title="Epics"
               value={dashboardData.totalEpics}
               textColor="text-purple-700"
-            />
+            /> */}
             <ThreeCard
               title="Stories"
               value={stories.length}
