@@ -233,7 +233,7 @@ export default function PermissionManagement() {
       {/* Add Permission Modal */}
       <Modal isOpen={addPermissionModal} onClose={handleAddPermission}>
         {addpermission && (
-          <div className="bg-white p-4 rounded shadow mb-6">
+          <div className="flex flex-col gap-[8px] bg-white p-4 rounded shadow mb-6">
             <h3 className="text-lg font-semibold mb-3">Add New Permission</h3>
             <FormInput
               label="Permission Code"
@@ -257,6 +257,7 @@ export default function PermissionManagement() {
               onChange={(e) => setSelectedGroup(String(e.target.value))}
               className="w-full p-2 border rounded mb-3"
             >
+              
               <option value="">Select Group</option>
               {groups.map((g) => (
                 <option key={g.group_uuid} value={g.group_uuid}>
