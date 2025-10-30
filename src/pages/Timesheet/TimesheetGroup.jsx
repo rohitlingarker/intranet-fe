@@ -799,7 +799,7 @@ const TimesheetGroup = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log("Opening menu for:", timesheet.timesheetId, newMenuId);
+                              console.log("Opening menu for:", timesheet.timesheetId);
                               handleAddEntry();
                               setOpenMenuId(null);
                               setMenuOpen(false);

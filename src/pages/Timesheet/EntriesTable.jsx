@@ -53,6 +53,8 @@ const EntriesTable = ({
   //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
 
   useEffect(() => {
+    console.log({addingNewEntry});
+    
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
@@ -400,12 +402,7 @@ const EntriesTable = ({
                   />
                 </td>
                 <td className="px-4 py-2">
-                  <FormSelect
-                    name="isBillable"
-                    value={editData.isBillable}
-                    options={billableOptions}
-                    onChange={handleChange}
-                  />
+                  {editData.isBillable}
                 </td>
                 {window.location.pathname !== "/managerapproval" && (
                   <td className="px-4 py-2">
