@@ -163,7 +163,7 @@ const TimesheetHistoryPage = () => {
   const fetchAndStoreProjectTaskInfo = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/project-info/all`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/project-info`,
         {
           method: "GET",
           headers: {
