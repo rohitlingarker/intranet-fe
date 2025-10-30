@@ -5,8 +5,6 @@ import {
   ChevronRight,
   Pencil,
   Trash,
-  Check,
-  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
@@ -31,22 +29,33 @@ const ProjectList = () => {
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user"));
 
-  // Fetch all projects
+  // ✅ Fetch projects (both owner + member)
   const fetchProjects = async (status) => {
     setLoading(true);
     try {
-      const url =
+      const base = import.meta.env.VITE_PMS_BASE_URL;
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const ownerUrl =
         status && status !== "All"
-          ? `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner?status=${status}`
-          : `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner`;
+          ? `${base}/api/projects/owner?status=${status}`
+          : `${base}/api/projects/owner`;
+      const ownerRes = await axios.get(ownerUrl, { headers });
 
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let memberRes = { data: [] };
+      if (user?.id) {
+        const memberUrl = `${base}/api/projects/member/${user.id}`;
+        memberRes = await axios.get(memberUrl, { headers });
+      }
 
-      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setProjects(data);
+      const allProjects = [...ownerRes.data, ...memberRes.data];
+      const uniqueProjects = Array.from(
+        new Map(allProjects.map((p) => [p.id, p])).values()
+      );
+
+      setProjects(uniqueProjects);
     } catch (error) {
       console.error("Failed to fetch projects", error);
     } finally {
@@ -54,7 +63,7 @@ const ProjectList = () => {
     }
   };
 
-  // Fetch all users
+  // ✅ Fetch users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -90,12 +99,15 @@ const ProjectList = () => {
     setExpandedId(project.id);
     setEditingProjectId(project.id);
     setFormData({
-      name: project.name,
-      projectKey: project.projectKey,
-      description: project.description,
-      status: project.status,
+      name: project.name || "",
+      projectKey: project.projectKey || "",
+      description: project.description || "",
+      status: project.status || "ACTIVE",
+      currentStage: project.currentStage || "INITIATION",
       ownerId: project.owner?.id || "",
       memberIds: project.members?.map((m) => m.id) || [],
+      startDate: project.startDate ? project.startDate.split("T")[0] : "",
+      endDate: project.endDate ? project.endDate.split("T")[0] : "",
     });
   };
 
@@ -108,30 +120,20 @@ const ProjectList = () => {
     const { name, value } = e.target;
 
     if (formData.status === "ARCHIVED" && name !== "status") {
-      toast.warn(
-        "Archived projects can only have their status changed to ACTIVE.",
-        {
-          position: "top-right",
-        }
-      );
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
       return;
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleStatusChange = (e) => {
-    setFormData((prev) => ({ ...prev, status: e.target.value }));
-  };
-
   const handleMemberToggle = (userId) => {
     if (formData.status === "ARCHIVED") {
-      toast.warn(
-        "Archived projects can only have their status changed to ACTIVE.",
-        {
-          position: "top-right",
-        }
-      );
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
       return;
     }
     setFormData((prev) => {
@@ -145,20 +147,38 @@ const ProjectList = () => {
   const submitEdit = async (projectId) => {
     try {
       setIsSubmitting(true);
+      const updatedProjectData = {
+        ...formData,
+        ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
+        memberIds: formData.memberIds || [],
+      };
+
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        {
-          ...formData,
-          ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
-          memberIds: formData.memberIds || [],
-        },
+        updatedProjectData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                ...updatedProjectData,
+                owner: users.find((u) => u.id === parseInt(formData.ownerId)) || p.owner,
+                members: users.filter((u) => formData.memberIds?.includes(u.id)),
+              }
+            : p
+        )
+      );
+
       toast.success("Project updated successfully!", { position: "top-right" });
       setEditingProjectId(null);
-      fetchProjects(filterStatus);
     } catch (err) {
       console.error("Failed to update project", err);
+      toast.error("Failed to update project. Please try again.", {
+        position: "top-right",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -172,23 +192,20 @@ const ProjectList = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Project deleted successfully!", { position: "top-right" });
-      fetchProjects(filterStatus);
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
     } catch (err) {
       console.error("Failed to delete project", err);
     }
   };
 
   const filteredProjects = projects.filter((p) => {
-  const matchesSearch =
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase());
-
-  const matchesStatus =
-    filterStatus === "All" ? true : p.status === filterStatus;
-
-  return matchesSearch && matchesStatus;
-});
-
+    const matchesSearch =
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "All" ? true : p.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   // Pagination
   const indexOfLastProject = currentPage * projectsPerPage;
@@ -212,7 +229,6 @@ const ProjectList = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Status Filter Dropdown */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -222,6 +238,7 @@ const ProjectList = () => {
           <option value="ACTIVE">Active</option>
           <option value="PLANNING">Planning</option>
           <option value="ARCHIVED">Archived</option>
+          <option value="COMPLETED">Completed</option>
         </select>
 
         <Button
@@ -277,127 +294,34 @@ const ProjectList = () => {
               </div>
 
               {expandedId === project.id && (
-                <div className="mt-4 border-t pt-4">
-                  {editingProjectId === project.id ? (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name || ""}
-                        onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                        placeholder="Project Name"
-                        disabled={formData.status === "ARCHIVED"}
-                      />
-                      <input
-                        type="text"
-                        name="projectKey"
-                        value={formData.projectKey || ""}
-                        onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                        placeholder="Project Key"
-                        disabled={formData.status === "ARCHIVED"}
-                      />
-                      <textarea
-                        name="description"
-                        value={formData.description || ""}
-                        onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl resize-none"
-                        placeholder="Project Description"
-                        disabled={formData.status === "ARCHIVED"}
-                      />
-                      <select
-                        name="status"
-                        value={formData.status || ""}
-                        onChange={handleStatusChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="PLANNING">PLANNING</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                      </select>
-                      <select
-                        name="ownerId"
-                        value={formData.ownerId || ""}
-                        onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                        disabled={formData.status === "ARCHIVED"}
-                      >
-                        <option value="">Select Owner</option>
-                        {users.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} ({u.role})
-                          </option>
+                <div className="mt-4 border-t pt-4 text-sm text-gray-700">
+                  <p><strong>Description:</strong> {project.description || "—"}</p>
+                  <p><strong>Status:</strong> {project.status}</p>
+                  <p><strong>Stage:</strong> {project.currentStage}</p>
+                  <p><strong>Owner:</strong> {project.owner?.name || "—"}</p>
+
+                  <div className="mt-3">
+                    <strong>Members:</strong>
+                    {project.members && project.members.length > 0 ? (
+                      <ul className="list-disc list-inside ml-2 mt-1">
+                        {project.members.map((m) => (
+                          <li key={m.id}>{m.name} ({m.email})</li>
                         ))}
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        {users.map((user) => (
-                          <label
-                            key={user.id}
-                            className="flex gap-2 items-center text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.memberIds?.includes(user.id)}
-                              onChange={() => handleMemberToggle(user.id)}
-                              disabled={formData.status === "ARCHIVED"}
-                            />
-                            {user.name} ({user.role})
-                          </label>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="success"
-                          size="small"
-                          onClick={() => submitEdit(project.id)}
-                          disabled={isSubmitting}
-                        >
-                          <Check size={14} className="mr-1" />
-                          {isSubmitting ? "Saving..." : "Save"}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          onClick={cancelEdit}
-                        >
-                          <X size={14} className="mr-1" /> Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {project.description || "—"}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {project.status}
-                      </p>
-                      <p>
-                        <strong>Owner:</strong> {project.owner?.name || "—"}
-                      </p>
-                     <div>
-  <strong>Members ({project.members.length}):</strong>
-  <div>
-    {project.members.map((member) => (
-      <div key={member.id}>
-        {member.name}{member.role ? ` - ${member.role}` : ""}
-      </div>
-    ))}
-  </div>
-</div>
-                      <div className="pt-4">
-                        <Button
-                          variant="primary"
-                          size="small"
-                          onClick={() => navigate(`/projects/${project.id}`)}
-                        >
-                          Project Workspace
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 ml-2">No members assigned.</p>
+                    )}
+                  </div>
+
+                  <div className="pt-4">
+                    <Button
+                      variant="primary"
+                      size="small"
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                    >
+                      Project Workspace
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -409,8 +333,8 @@ const ProjectList = () => {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         />
       )}
 
