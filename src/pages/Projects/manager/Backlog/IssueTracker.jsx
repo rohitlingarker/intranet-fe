@@ -7,7 +7,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import EditBugForm from "./EditBugForm";
-import EditStoryForm from "./EditStoryForm"; // ✅ NEW IMPORT
+import EditStoryForm from "./EditStoryForm";
+import EditTaskForm from "./EditTaskForm";
+import EditEpicForm from "./EditEpicForm"; // ✅ NEW IMPORT
 
 const IssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
@@ -20,12 +22,20 @@ const IssueTracker = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
 
-  // For Edit Modals
+  // ===== Edit modals =====
   const [showEditBugModal, setShowEditBugModal] = useState(false);
   const [editingBugId, setEditingBugId] = useState(null);
+
   const [showEditStoryModal, setShowEditStoryModal] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState(null);
 
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const [showEditEpicModal, setShowEditEpicModal] = useState(false); // ✅ NEW
+  const [editingEpicId, setEditingEpicId] = useState(null); // ✅ NEW
+
+  // ===== Filters =====
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
@@ -37,7 +47,7 @@ const IssueTracker = () => {
     "Content-Type": "application/json",
   };
 
-  // ===== FETCH ALL ISSUES =====
+  // ===== FETCH ISSUES =====
   const fetchIssues = async () => {
     try {
       setLoading(true);
@@ -110,7 +120,7 @@ const IssueTracker = () => {
     }
   }, [projectId]);
 
-  // ===== FILTERS =====
+  // ===== FILTER HANDLER =====
   useEffect(() => {
     let filtered = [...issues];
     if (searchTerm)
@@ -141,6 +151,7 @@ const IssueTracker = () => {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
       toast.success(`${issue.type} deleted successfully!`);
       setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
+      setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
     } catch (err) {
       console.error(err);
       toast.error(`Failed to delete ${issue.type}`);
@@ -155,21 +166,44 @@ const IssueTracker = () => {
     } else if (issue.type === "Story") {
       setEditingStoryId(issue.id);
       setShowEditStoryModal(true);
+    } else if (issue.type === "Task") {
+      setEditingTaskId(issue.id);
+      setShowEditTaskModal(true);
+    } else if (issue.type === "Epic") {
+      setEditingEpicId(issue.id);
+      setShowEditEpicModal(true);
     } else {
-      toast.info("Editing is available only for Bugs and Stories currently");
+      toast.info("Editing is available only for Bugs, Stories, Tasks, and Epics");
     }
   };
 
+  // ===== MODAL UPDATE HANDLERS =====
   const handleBugUpdated = () => {
     setShowEditBugModal(false);
     setEditingBugId(null);
     fetchIssues();
+    toast.success("Bug updated successfully!");
   };
 
   const handleStoryUpdated = () => {
     setShowEditStoryModal(false);
     setEditingStoryId(null);
     fetchIssues();
+    toast.success("Story updated successfully!");
+  };
+
+  const handleTaskUpdated = () => {
+    setShowEditTaskModal(false);
+    setEditingTaskId(null);
+    fetchIssues();
+    toast.success("Task updated successfully!");
+  };
+
+  const handleEpicUpdated = () => { // ✅ NEW HANDLER
+    setShowEditEpicModal(false);
+    setEditingEpicId(null);
+    fetchIssues();
+    toast.success("Epic updated successfully!");
   };
 
   // ===== PROJECT NAME =====
@@ -293,6 +327,8 @@ const IssueTracker = () => {
                         ? "bg-red-50"
                         : issue.type === "Story"
                         ? "bg-blue-50"
+                        : issue.type === "Task"
+                        ? "bg-green-50"
                         : ""
                     }`}
                   >
@@ -347,7 +383,7 @@ const IssueTracker = () => {
         )}
       </div>
 
-      {/* ✅ Edit Bug Modal */}
+      {/* Edit Modals */}
       {showEditBugModal && editingBugId && (
         <EditBugForm
           bugId={editingBugId}
@@ -357,13 +393,31 @@ const IssueTracker = () => {
         />
       )}
 
-      {/* ✅ Edit Story Modal */}
       {showEditStoryModal && editingStoryId && (
         <EditStoryForm
           storyId={editingStoryId}
           projectId={projectId}
           onClose={() => setShowEditStoryModal(false)}
           onUpdated={handleStoryUpdated}
+        />
+      )}
+
+      {showEditTaskModal && editingTaskId && (
+        <EditTaskForm
+          taskId={editingTaskId}
+          projectId={projectId}
+          onClose={() => setShowEditTaskModal(false)}
+          onUpdated={handleTaskUpdated}
+        />
+      )}
+
+      {/* ✅ NEW: Epic Edit Modal */}
+      {showEditEpicModal && editingEpicId && (
+        <EditEpicForm
+          epicId={editingEpicId}
+          projectId={projectId}
+          onClose={() => setShowEditEpicModal(false)}
+          onUpdated={handleEpicUpdated}
         />
       )}
     </div>

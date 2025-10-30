@@ -14,6 +14,12 @@ const ViewSheet = () => {
   const [issue, setIssue] = useState(location.state?.issue || null);
   const [loading, setLoading] = useState(!location.state?.issue);
 
+  const [relatedNames, setRelatedNames] = useState({
+    epicName: "",
+    storyName: "",
+    sprintName: "",
+  });
+
   const token = localStorage.getItem("token");
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -27,6 +33,7 @@ const ViewSheet = () => {
     return null;
   };
 
+  // Fetch issue details
   useEffect(() => {
     if (!issue) {
       const endpoint = getEndpoint();
@@ -40,6 +47,42 @@ const ViewSheet = () => {
         .finally(() => setLoading(false));
     }
   }, [id, type]);
+
+  // Fetch related entity names (Epic, Story, Sprint)
+  useEffect(() => {
+    if (!issue) return;
+
+    const base = import.meta.env.VITE_PMS_BASE_URL;
+
+    const fetchName = async (endpoint) => {
+      try {
+        const res = await axios.get(`${base}${endpoint}`, { headers });
+        return res.data.name || res.data.title || res.data.sprintName;
+      } catch {
+        return null;
+      }
+    };
+
+    const fetchRelated = async () => {
+      const names = {};
+
+      if (issue.epicId) {
+        names.epicName = await fetchName(`/api/epics/${issue.epicId}`);
+      }
+
+      if (issue.storyId) {
+        names.storyName = await fetchName(`/api/stories/${issue.storyId}`);
+      }
+
+      if (issue.sprint?.id) {
+        names.sprintName = await fetchName(`/api/sprints/${issue.sprint.id}`);
+      }
+
+      setRelatedNames(names);
+    };
+
+    fetchRelated();
+  }, [issue]);
 
   if (loading) {
     return <p className="p-6 text-indigo-600 font-medium">Loading {type} details...</p>;
@@ -114,15 +157,27 @@ const ViewSheet = () => {
             <>
               <Detail label="Story Points" value={issue.storyPoints} />
               <Detail label="Acceptance Criteria" value={issue.acceptanceCriteria} />
-              <Detail label="Epic ID" value={issue.epicId} />
-              <Detail label="Sprint ID" value={issue.sprint?.id} />
+              <Detail
+                label="Epic"
+                value={relatedNames.epicName || issue.epicId || "-"}
+              />
+              <Detail
+                label="Sprint"
+                value={relatedNames.sprintName || issue.sprint?.id || "-"}
+              />
             </>
           )}
 
           {type === "task" && (
             <>
-              <Detail label="Story ID" value={issue.storyId} />
-              <Detail label="Sprint ID" value={issue.sprint?.id} />
+              <Detail
+                label="Story"
+                value={relatedNames.storyName || issue.storyId || "-"}
+              />
+              <Detail
+                label="Sprint"
+                value={relatedNames.sprintName || issue.sprint?.id || "-"}
+              />
               <Detail label="Acceptance Criteria" value={issue.acceptanceCriteria} />
             </>
           )}
