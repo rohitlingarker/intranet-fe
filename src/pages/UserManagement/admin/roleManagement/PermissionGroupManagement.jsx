@@ -3,7 +3,8 @@ import {
   getPermissionGroupsByRole,
   getAvailablePermissionGroupsForRole,
   addPermissionGroupsToRole,
-  removePermissionGroupFromRole,
+  removePermissionGroupFromRole, // single delete
+  removePermissionGroupsFromRole, // ✅ new bulk delete endpoint
 } from "../../../../services/roleManagementService";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
@@ -54,14 +55,9 @@ const PermissionGroupManagement = ({ roles }) => {
 
   const handleSelectGroup = (group) => {
     const uuidStr = group.group_uuid.toString();
-    if (groupAction === "delete") {
-      setSelectedGroupUUIDs([uuidStr]);
-      setSelectedGroupNames([group.group_name]);
-    } else {
-      if (!selectedGroupUUIDs.includes(uuidStr)) {
-        setSelectedGroupUUIDs((prev) => [...prev, uuidStr]);
-        setSelectedGroupNames((prev) => [...prev, group.group_name]);
-      }
+    if (!selectedGroupUUIDs.includes(uuidStr)) {
+      setSelectedGroupUUIDs((prev) => [...prev, uuidStr]);
+      setSelectedGroupNames((prev) => [...prev, group.group_name]);
     }
   };
 
@@ -84,16 +80,17 @@ const PermissionGroupManagement = ({ roles }) => {
     }
   };
 
+  // ✅ Updated to support deleting multiple groups at once
   const submitDeleteGroupsForRole = async () => {
-    if (!selectedGroupUUIDs.length) return showStatusToast("Select a group to delete", "error");
+    if (!selectedGroupUUIDs.length) return showStatusToast("Select group(s) to delete", "error");
     try {
-      for (const uuid of selectedGroupUUIDs) {
-        await removePermissionGroupFromRole(selectedGroupRole.role_uuid, uuid);
-      }
-      showStatusToast("Group removed successfully", "success");
+      console.log(selectedGroupRole.role_uuid);
+      console.log("Removing groups:", selectedGroupUUIDs);
+      await removePermissionGroupsFromRole(selectedGroupRole.role_uuid, selectedGroupUUIDs);
+      showStatusToast("Groups removed successfully", "success");
       setShowModal(false);
     } catch {
-      showStatusToast("Failed to remove group", "error");
+      showStatusToast("Failed to remove groups", "error");
     }
   };
 
@@ -188,7 +185,11 @@ const PermissionGroupManagement = ({ roles }) => {
                         <span className="font-medium text-gray-800">{group.group_name}</span>
                         <Button
                           onClick={() => handleSelectGroup(group)}
-                          className="px-3 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          className={`px-3 py-0.5 text-xs rounded transition-colors ${
+                            selectedGroupUUIDs.includes(group.group_uuid.toString())
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : "bg-blue-600 text-white hover:bg-blue-700"
+                          }`}
                         >
                           {selectedGroupUUIDs.includes(group.group_uuid.toString())
                             ? "Selected"
@@ -241,7 +242,7 @@ const PermissionGroupManagement = ({ roles }) => {
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    {groupAction === "add" ? "Add Groups" : "Remove Group"}
+                    {groupAction === "add" ? "Add Groups" : "Remove Groups"}
                   </Button>
                   <Button
                     onClick={() => setShowModal(false)}

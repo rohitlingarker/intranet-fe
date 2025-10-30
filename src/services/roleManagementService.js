@@ -56,3 +56,7 @@ export const removeAccessPointFromRole = (roleId, accessId) =>
   axiosInstance.delete(`${ROLE_URL}/${roleId}/access-points/${accessId}`);
 // export const getAllAccessPoints = () =>
 //   axiosInstance.get(`${ROLE_URL}/access-points/all`);
+export const removePermissionGroupsFromRole = (roleId,groupIds) =>{
+  axiosInstance.post(`${ROLE_URL}/uuid/${roleId}/groups/remove`, {
+    group_uuids: groupIds,
+  })};
