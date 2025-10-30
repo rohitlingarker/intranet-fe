@@ -6,7 +6,7 @@ import { reviewTimesheet, handleBulkReview } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 
 const ManagerApprovalTable = ({
   loading,
@@ -17,6 +17,9 @@ const ManagerApprovalTable = ({
   const [rejectionComments, setRejectionComments] = useState({});
   const [showCommentBox, setShowCommentBox] = useState({});
   const [projectInfo, setProjectInfo] = useState([]);
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayData, setHolidayData] = useState([]);
+  const [holidayLoading, setHolidayLoading] = useState(false);
 
   // -----------------------------
   // Fetch project info
@@ -50,6 +53,38 @@ const ManagerApprovalTable = ({
     };
     fetchProjectInfo();
   }, []);
+
+  // -----------------------------
+  // Fetch Holiday Excluded Users
+  // -----------------------------
+  const fetchHolidayExcludedUsers = async () => {
+    setHolidayLoading(true);
+    try {
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/holiday-exclude-users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch holiday users");
+      const data = await res.json();
+      setHolidayData(data);
+    } catch (err) {
+      console.error("Error fetching holiday users:", err);
+      showStatusToast("Failed to load holiday data", "error");
+    } finally {
+      setHolidayLoading(false);
+    }
+  };
+
+  const handleShowHolidayModal = () => {
+    setShowHolidayModal(true);
+    fetchHolidayExcludedUsers();
+  };
 
   // -----------------------------
   // Lookup maps for fast access
@@ -109,22 +144,8 @@ const ManagerApprovalTable = ({
     }
   };
 
-  const handleRejectClick = (timesheetId) =>
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: true }));
-
-  const handleConfirmReject = (timesheetId) => {
-    const comment = rejectionComments[timesheetId] || "";
-    handleStatusChange(timesheetId, "Rejected", comment);
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
-  };
-
-  const handleCancelReject = (timesheetId) => {
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
-    setRejectionComments((prev) => ({ ...prev, [timesheetId]: "" }));
-  };
-
   // -----------------------------
-  // CSV Export
+  // Export Logic (CSV / PDF)
   // -----------------------------
   const exportCSV = () => {
     const rows = [
@@ -176,9 +197,6 @@ const ManagerApprovalTable = ({
     document.body.removeChild(link);
   };
 
-  // -----------------------------
-  // PDF Export
-  // -----------------------------
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("Manager Timesheet Report", 14, 10);
@@ -228,148 +246,141 @@ const ManagerApprovalTable = ({
     doc.save("manager_timesheets.pdf");
   };
 
-  // -----------------------------
-  // Render Weekly View per User
-  // -----------------------------
-  const renderUserWeeks = (user) =>
-    user.weeklySummary
-      .filter(
-        (week) =>
-          statusFilter === "All" ||
-          week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
-      )
-      .map((week) => (
-        <div
-          key={week.weekId}
-          className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
-        >
-          {/* Manager actions */}
-          {week.weeklyStatus === "SUBMITTED" && (
-            <div className="p-4 border-t flex gap-3 justify-end">
-              {/* ✅ Approve All Button */}
+const renderUserWeeks = (user) =>
+  user.weeklySummary
+    .filter(
+      (week) =>
+        statusFilter === "All" ||
+        week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
+    )
+    .map((week) => (
+      <div
+        key={week.weekId}
+        className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
+      >
+        {/* Manager actions */}
+        {week.weeklyStatus === "SUBMITTED" && (
+          <div className="p-4 border-t flex gap-3 justify-end">
+            {/* ✅ Approve All Button */}
+            <Button
+              variant="success"
+              size="medium"
+              onClick={() => {
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                handleBulkReview(
+                  user.userId,
+                  timesheetIds,
+                  "APPROVED",
+                  "approved"
+                );
+                onRefresh();
+              }}
+            >
+              Approve All
+            </Button>
+
+            {/* ❌ Reject All Button */}
+
+            <Button
+              variant="danger"
+              size="medium"
+              onClick={() => {
+                // Open a single rejection comment box per week
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                setShowCommentBox((prev) => ({
+                  ...prev,
+                  [week.weekId]: true,
+                }));
+                setRejectionComments((prev) => ({
+                  ...prev,
+                  [week.weekId]: "",
+                }));
+              }}
+            >
+              Reject All
+            </Button>
+          </div>
+        )}
+        <TimesheetGroup
+          weekGroup={{
+            weekStart: week.startDate,
+            weekEnd: week.endDate,
+            timesheets: week.timesheets,
+            weekRange: `${new Date(
+              week.startDate
+            ).toLocaleDateString()} - ${new Date(
+              week.endDate
+            ).toLocaleDateString()}`,
+            totalHours: week.totalHours,
+            status: week.weeklyStatus,
+            weekNumber: week.weekId,
+            monthName: new Date(week.startDate).toLocaleString("en-US", {
+              month: "long",
+            }),
+            year: new Date(week.startDate).getFullYear(),
+          }}
+          refreshData={onRefresh}
+          mapWorkType={(type) => type}
+          projectInfo={projectInfo}
+        />
+
+        {showCommentBox[week.weekId] && (
+          <div className="p-4 bg-red-50 border-t">
+            <textarea
+              className="border p-2 w-full rounded"
+              rows="2"
+              placeholder="Enter rejection reason"
+              value={rejectionComments[week.weekId] || ""}
+              onChange={(e) =>
+                setRejectionComments((prev) => ({
+                  ...prev,
+                  [week.weekId]: e.target.value,
+                }))
+              }
+            />
+            <div className="flex gap-2 mt-2 justify-end">
               <Button
-                variant="success"
-                size="medium"
+                variant="danger"
+                size="small"
                 onClick={() => {
                   const timesheetIds = week.timesheets.map(
                     (t) => t.timesheetId
                   );
+                  const comment = rejectionComments[week.weekId] || "";
                   handleBulkReview(
                     user.userId,
                     timesheetIds,
-                    "APPROVED",
-                    "approved"
-                  );
-                  onRefresh();
-                }}
-              >
-                Approve All
-              </Button>
-
-              {/* ❌ Reject All Button */}
-
-              <Button
-                variant="danger"
-                size="medium"
-                onClick={() => {
-                  // Open a single rejection comment box per week
-                  const timesheetIds = week.timesheets.map(
-                    (t) => t.timesheetId
+                    "REJECTED",
+                    comment
                   );
                   setShowCommentBox((prev) => ({
                     ...prev,
-                    [week.weekId]: true,
+                    [week.weekId]: false,
                   }));
-                  setRejectionComments((prev) => ({
-                    ...prev,
-                    [week.weekId]: "",
-                  }));
+                  onRefresh();
                 }}
               >
-                Reject All
+                Confirm Reject
               </Button>
-            </div>
-          )}
-          <TimesheetGroup
-            weekGroup={{
-              weekStart: week.startDate,
-              weekEnd: week.endDate,
-              timesheets: week.timesheets,
-              weekRange: `${new Date(
-                week.startDate
-              ).toLocaleDateString()} - ${new Date(
-                week.endDate
-              ).toLocaleDateString()}`,
-              totalHours: week.totalHours,
-              status: week.weeklyStatus,
-              weekNumber: week.weekId,
-              monthName: new Date(week.startDate).toLocaleString("en-US", {
-                month: "long",
-              }),
-              year: new Date(week.startDate).getFullYear(),
-            }}
-            refreshData={onRefresh}
-            mapWorkType={(type) => type}
-            projectInfo={projectInfo}
-          />
 
-          {showCommentBox[week.weekId] && (
-            <div className="p-4 bg-red-50 border-t">
-              <textarea
-                className="border p-2 w-full rounded"
-                rows="2"
-                placeholder="Enter rejection reason"
-                value={rejectionComments[week.weekId] || ""}
-                onChange={(e) =>
-                  setRejectionComments((prev) => ({
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() =>
+                  setShowCommentBox((prev) => ({
                     ...prev,
-                    [week.weekId]: e.target.value,
+                    [week.weekId]: false,
                   }))
                 }
-              />
-              <div className="flex gap-2 mt-2 justify-end">
-                <Button
-                  variant="danger"
-                  size="small"
-                  onClick={() => {
-                    const timesheetIds = week.timesheets.map(
-                      (t) => t.timesheetId
-                    );
-                    const comment = rejectionComments[week.weekId] || "";
-                    handleBulkReview(
-                      user.userId,
-                      timesheetIds,
-                      "REJECTED",
-                      comment
-                    );
-                    setShowCommentBox((prev) => ({
-                      ...prev,
-                      [week.weekId]: false,
-                    }));
-                    onRefresh();
-                  }}
-                >
-                  Confirm Reject
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={() =>
-                    setShowCommentBox((prev) => ({
-                      ...prev,
-                      [week.weekId]: false,
-                    }))
-                  }
-                >
-                  Cancel
-                </Button>
-              </div>
+              >
+                Cancel
+              </Button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Rejection boxes */}
-          {/* {week.timesheets.map(
+        {/* Rejection boxes */}
+        {/* {week.timesheets.map(
             (t) =>
               showCommentBox[t.timesheetId] && (
                 <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
@@ -404,11 +415,177 @@ const ManagerApprovalTable = ({
                 </div>
               )
           )} */}
-        </div>
-      ));
+      </div>
+    ));
+  // Track selection mode and selected users
+  const [isRemoveMode, setIsRemoveMode] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+
+  // Toggle remove mode
+  const toggleRemoveMode = () => {
+    if (isRemoveMode) {
+      // Leaving remove mode — clear selections
+      setIsRemoveMode(false);
+      setSelectedUsers([]);
+    } else {
+      // Enter remove mode
+      setIsRemoveMode(true);
+    }
+  };
+
+  // Select / Deselect single user (only in remove mode)
+  const handleSelectUser = (userId) => {
+    if (!isRemoveMode) return;
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Select or deselect all users
+  const handleToggleSelectAll = () => {
+    if (selectedUsers.length === holidayData.length) {
+      setSelectedUsers([]); // Deselect all
+    } else {
+      setSelectedUsers(holidayData.map((u) => u.id)); // Select all
+    }
+  };
+
+  // Handle remove selected users
+  const handleRemoveSelectedUsers = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to remove ${selectedUsers.length} user(s)?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      for (const id of selectedUsers) {
+        const res = await fetch(
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holiday-exclude-users/${id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        if (!res.ok) throw new Error(`Failed to delete user ${id}`);
+      }
+
+      showStatusToast("Selected user(s) removed successfully!", "success");
+      fetchHolidayExcludedUsers();
+      setSelectedUsers([]);
+      setIsRemoveMode(false); // Exit remove mode after success
+    } catch (err) {
+      console.error("Error removing users:", err);
+      showStatusToast("Error while removing users", "error");
+    }
+  };
+
+
+  const [showAddUserSection, setShowAddUserSection] = useState(false);
+  const [managerUsers, setManagerUsers] = useState([]);
+  const [monthlyHolidays, setMonthlyHolidays] = useState([]);
+  const [selectedAddUser, setSelectedAddUser] = useState("");
+  const [selectedHoliday, setSelectedHoliday] = useState("");
+  const [reason, setReason] = useState("");
+  const [addUserLoading, setAddUserLoading] = useState(false);
+
+
+  
+const handleConfirmAddUser = async () => {
+  if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
+    showStatusToast("Please fill all fields before confirming.", "warning");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${
+        import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+      }/api/holiday-exclude-users/create`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          userId: parseInt(selectedAddUser, 10),
+          holidayDate: selectedHoliday,
+          reason,
+        }),
+      }
+    );
+
+    if (!res.ok) throw new Error("Failed to add user to holiday exclude list");
+
+    showStatusToast("User added to holiday exclusion successfully!", "success");
+    fetchHolidayExcludedUsers();
+    setShowAddUserSection(false);
+    setSelectedAddUser("");
+    setSelectedHoliday("");
+    setReason("");
+  } catch (err) {
+    console.error("Error adding holiday exclude user:", err);
+    showStatusToast("Failed to add user", "error");
+  }
+};
+
+
+const handleAddUserClick = async () => {
+  setShowAddUserSection(true);
+  setAddUserLoading(true);
+  try {
+    const currentMonth = new Date().getMonth() + 1;
+
+    // Run both API calls in parallel and wait for both to finish
+    const [usersRes, holidaysRes] = await Promise.all([
+      fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      ),
+      fetch(
+        `${
+          import.meta.env.VITE_LMS_BASE_URL
+        }/api/holidays/month/${currentMonth}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      ),
+    ]);
+
+    if (!usersRes.ok || !holidaysRes.ok)
+      throw new Error("Failed to fetch data");
+
+    const [usersData, holidaysData] = await Promise.all([
+      usersRes.json(),
+      holidaysRes.json(),
+    ]);
+
+    setManagerUsers(usersData);
+    setMonthlyHolidays(holidaysData);
+  } catch (err) {
+    console.error("Error loading add-user data:", err);
+    showStatusToast("Failed to load user or holiday data", "error");
+  } finally {
+    setAddUserLoading(false);
+  }
+};
 
   // -----------------------------
-  // Render Main
+  // Main Render
   // -----------------------------
   return (
     <div className="space-y-6">
@@ -423,8 +600,12 @@ const ManagerApprovalTable = ({
             <Button variant="primary" size="small" onClick={exportPDF}>
               Export PDF
             </Button>
-            <Button variant="secondary" size="small">
-              <MoreVertical  size={10}/>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleShowHolidayModal}
+            >
+              <MoreVertical size={14} />
             </Button>
           </div>
 
@@ -446,6 +627,235 @@ const ManagerApprovalTable = ({
             ))
           )}
         </>
+      )}
+
+      {/* ----------------------------- */}
+      {/* Holiday Modal */}
+      {/* ----------------------------- */}
+      {showHolidayModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => setShowHolidayModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <X size={18} />
+            </button>
+
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+              Holiday Excluded Users
+            </h2>
+
+            {holidayLoading ? (
+              <LoadingSpinner text="Loading holiday data..." />
+            ) : holidayData.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No users found who worked on holidays.
+              </p>
+            ) : (
+              <>
+                {/* --- Select All / Deselect All --- */}
+                {isRemoveMode && (
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-600">
+                      {selectedUsers.length === holidayData.length
+                        ? "All users selected"
+                        : `${selectedUsers.length} selected`}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={handleToggleSelectAll}
+                    >
+                      {selectedUsers.length === holidayData.length
+                        ? "Deselect All"
+                        : "Select All"}
+                    </Button>
+                  </div>
+                )}
+
+                {/* --- User List --- */}
+                <div className="overflow-y-auto max-h-80 space-y-3">
+                  {holidayData.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectUser(item.id)}
+                      className={`border rounded-lg p-4 transition-all ${
+                        isRemoveMode ? "cursor-pointer" : "cursor-default"
+                      } ${
+                        isRemoveMode && selectedUsers.includes(item.id)
+                          ? "bg-red-100 border-red-400"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      <h3 className="font-semibold text-gray-800 text-lg">
+                        {item.userName} (User ID: {item.userId})
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Holiday Date:</span>{" "}
+                        {new Date(item.holidayDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Reason:</span>{" "}
+                        {item.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* --- Action Buttons --- */}
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between gap-3">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={handleAddUserClick}
+                >
+                  Add User
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => console.log("Update User clicked")}
+                >
+                  Update User
+                </Button>
+
+                {!isRemoveMode ? (
+                  <Button
+                    variant="danger"
+                    size="small"
+                    onClick={toggleRemoveMode}
+                  >
+                    Remove User
+                  </Button>
+                ) : (
+                  <Button
+                    variant="danger"
+                    size="small"
+                    disabled={selectedUsers.length === 0}
+                    onClick={handleRemoveSelectedUsers}
+                  >
+                    {selectedUsers.length > 0
+                      ? `Confirm Remove (${selectedUsers.length})`
+                      : "Confirm Remove"}
+                  </Button>
+                )}
+              </div>
+
+              {/* --- Add User Section --- */}
+              {showAddUserSection && (
+                <div className="mt-6 border-t pt-4 transition-all space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Add Holiday Excluded User
+                  </h3>
+
+                  {addUserLoading ? (
+                    <LoadingSpinner text="Loading user & holiday data..." />
+                  ) : (
+                    <>
+                      {/* User Dropdown */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select User
+                        </label>
+                        <select
+                          className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          value={selectedAddUser}
+                          onChange={(e) => setSelectedAddUser(e.target.value)}
+                        >
+                          <option value="">-- Select User --</option>
+                          {managerUsers.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.id} - {u.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Holiday Dropdown */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select Holiday
+                        </label>
+                        <select
+                          className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          value={selectedHoliday}
+                          onChange={(e) => setSelectedHoliday(e.target.value)}
+                        >
+                          <option value="">-- Select Holiday --</option>
+                          {monthlyHolidays.map((h) => (
+                            <option key={h.holidayId} value={h.holidayDate}>
+                              {h.holidayDate} - {h.holidayDescription}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Reason Textarea */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Reason
+                        </label>
+                        <textarea
+                          className="w-full border rounded-lg p-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          placeholder="Enter reason for exclusion..."
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Confirm / Cancel Buttons */}
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="primary"
+                          size="small"
+                          disabled={
+                            !selectedAddUser ||
+                            !selectedHoliday ||
+                            !reason.trim()
+                          }
+                          onClick={handleConfirmAddUser}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() => {
+                            setShowAddUserSection(false);
+                            setSelectedAddUser("");
+                            setSelectedHoliday("");
+                            setReason("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() => {
+                    setIsRemoveMode(false);
+                    setSelectedUsers([]);
+                    setShowHolidayModal(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
+import { set } from "date-fns";
 
 const CreateIssueForm = ({
   issueType: initialIssueType = "Epic",
@@ -41,12 +42,14 @@ const CreateIssueForm = ({
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [projectsRes, usersRes] = await Promise.all([
+        const [projectsRes, usersRes,ownerRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${formData.projectId}/members`, axiosConfig),
+          
         ]);
         setProjects(projectsRes.data.content || projectsRes.data || []);
         setUsers(usersRes.data.content || usersRes.data || []);
+        
       } catch (error) {
         console.error("Error fetching projects/users:", error);
         toast.error("Failed to load projects or users.");
@@ -108,12 +111,14 @@ const CreateIssueForm = ({
     if (issueType === "Epic") {
       endpoint = "/api/epics";
       payload = {
-        name: formData.name,
-        description: formData.description || "",
-        progressPercentage: Number(formData.progressPercentage || 0),
-        projectId: Number(formData.projectId),
-        reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-        dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
+       name: formData.name,
+    description: formData.description || "",
+    status: formData.status || "OPEN", // 🆕 Add Epic status
+    priority: formData.priority || "MEDIUM", // 🆕 Add Epic priority
+    progressPercentage: Number(formData.progressPercentage || 0),
+    projectId: Number(formData.projectId),
+    reporterId: formData.reporterId ? Number(formData.reporterId) : null,
+    dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       };
     }
 
@@ -235,11 +240,65 @@ const CreateIssueForm = ({
         {/* Conditional forms */}
         {issueType === "Epic" && (
           <>
-            <FormInput label="Epic Name *" name="name" value={formData.name || ""} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />
-            <FormInput label="Progress (%)" name="progressPercentage" type="number" value={formData.progressPercentage || ""} onChange={handleChange} />
-            <FormDatePicker label="Due Date" name="dueDate" value={formData.dueDate || ""} onChange={handleChange} />
-          </>
+  <FormInput
+    label="Epic Name *"
+    name="name"
+    value={formData.name || ""}
+    onChange={handleChange}
+    required
+  />
+
+  <FormTextArea
+    label="Description"
+    name="description"
+    value={formData.description || ""}
+    onChange={handleChange}
+  />
+
+ <FormSelect
+  label="Status"
+  name="status"
+  value={formData.status || "OPEN"}
+  onChange={handleChange}
+  options={[
+    { label: "Open", value: "OPEN" },
+    { label: "In Progress", value: "IN_PROGRESS" },
+    { label: "Completed", value: "COMPLETED" },
+    { label: "On Hold", value: "ON_HOLD" },
+  ]}
+/>
+
+<FormSelect
+  label="Priority"
+  name="priority"
+  value={formData.priority || "MEDIUM"}
+  onChange={handleChange}
+  options={[
+    { label: "Low", value: "LOW" },
+    { label: "Medium", value: "MEDIUM" },
+    { label: "High", value: "HIGH" },
+    { label: "Critical", value: "CRITICAL" },
+  ]}
+/>
+
+
+
+  <FormInput
+    label="Progress (%)"
+    name="progressPercentage"
+    type="number"
+    value={formData.progressPercentage || ""}
+    onChange={handleChange}
+  />
+
+  <FormDatePicker
+    label="Due Date"
+    name="dueDate"
+    value={formData.dueDate || ""}
+    onChange={handleChange}
+  />
+</>
+
         )}
 
         {issueType === "Story" && (

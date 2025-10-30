@@ -35,6 +35,18 @@ const stageProgressMap = {
   COMPLETED: 100,
 };
 
+// Stage-based color gradient for progress bar
+const stageColorMap = {
+  INITIATION: "linear-gradient(90deg, #6366f1, #818cf8)",
+  PLANNING: "linear-gradient(90deg, #4338ca, #6366f1)",
+  DESIGN: "linear-gradient(90deg, #2563eb, #60a5fa)",
+  DEVELOPMENT: "linear-gradient(90deg, #4f46e5, #818cf8)",
+  TESTING: "linear-gradient(90deg, #9333ea, #c084fc)",
+  DEPLOYMENT: "linear-gradient(90deg, #16a34a, #86efac)",
+  MAINTENANCE: "linear-gradient(90deg, #eab308, #facc15)",
+  COMPLETED: "linear-gradient(90deg, #22c55e, #86efac)",
+};
+
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [stories, setStories] = useState([]);
@@ -57,9 +69,11 @@ const Summary = ({ projectId, projectName }) => {
 
         // Fetch project details (to get stage)
         const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
-        const stage = projectRes.data.stage || projectRes.data.projectStage || "INITIATION";
-        setProjectStage(stage);
-        setProjectProgress(stageProgressMap[stage?.toUpperCase()] || 0);
+        const stage = projectRes.data.currentStage || projectRes.data.currentStage || "INITIATION";
+        const upperStage = stage?.toUpperCase();
+
+        setProjectStage(upperStage);
+        setProjectProgress(stageProgressMap[upperStage] || 0);
 
         // Fetch related entities
         const [epicRes, storyRes, taskRes, bugRes] = await Promise.all([
@@ -188,6 +202,8 @@ const Summary = ({ projectId, projectName }) => {
     );
   }
 
+  const progressBarColor = stageColorMap[projectStage] || "linear-gradient(90deg, #4f46e5, #818cf8)";
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h2 className="text-3xl font-bold mb-2 text-indigo-900">
@@ -207,7 +223,7 @@ const Summary = ({ projectId, projectName }) => {
             className="h-4 rounded-full transition-all duration-700"
             style={{
               width: `${projectProgress}%`,
-              background: `linear-gradient(90deg, #4f46e5, #818cf8)`,
+              background: progressBarColor,
             }}
           ></div>
         </div>
