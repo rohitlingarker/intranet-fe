@@ -406,6 +406,51 @@ const handleConfirmAddUser = async () => {
 };
 
 
+const handleAddUserClick = async () => {
+  setShowAddUserSection(true);
+  setAddUserLoading(true);
+  try {
+    const currentMonth = new Date().getMonth() + 1;
+
+    // Run both API calls in parallel and wait for both to finish
+    const [usersRes, holidaysRes] = await Promise.all([
+      fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      ),
+      fetch(
+        `${
+          import.meta.env.VITE_LMS_BASE_URL
+        }/api/holidays/month/${currentMonth}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      ),
+    ]);
+
+    if (!usersRes.ok || !holidaysRes.ok)
+      throw new Error("Failed to fetch data");
+
+    const [usersData, holidaysData] = await Promise.all([
+      usersRes.json(),
+      holidaysRes.json(),
+    ]);
+
+    setManagerUsers(usersData);
+    setMonthlyHolidays(holidaysData);
+  } catch (err) {
+    console.error("Error loading add-user data:", err);
+    showStatusToast("Failed to load user or holiday data", "error");
+  } finally {
+    setAddUserLoading(false);
+  }
+};
 
   // -----------------------------
   // Main Render
@@ -457,7 +502,7 @@ const handleConfirmAddUser = async () => {
       {/* ----------------------------- */}
       {showHolidayModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[85vh] overflow-y-auto">
             <button
               onClick={() => setShowHolidayModal(false)}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -534,11 +579,7 @@ const handleConfirmAddUser = async () => {
                 <Button
                   variant="primary"
                   size="small"
-                  onClick={() => {
-                    setShowAddUserSection(true);
-                    fetchManagerUsers();
-                    fetchMonthlyHolidays();
-                  }}
+                  onClick={handleAddUserClick}
                 >
                   Add User
                 </Button>
