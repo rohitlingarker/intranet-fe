@@ -6,7 +6,7 @@ import { reviewTimesheet, handleBulkReview } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 
 const ManagerApprovalTable = ({
   loading,
@@ -17,6 +17,9 @@ const ManagerApprovalTable = ({
   const [rejectionComments, setRejectionComments] = useState({});
   const [showCommentBox, setShowCommentBox] = useState({});
   const [projectInfo, setProjectInfo] = useState([]);
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayData, setHolidayData] = useState([]);
+  const [holidayLoading, setHolidayLoading] = useState(false);
 
   // -----------------------------
   // Fetch project info
@@ -50,6 +53,38 @@ const ManagerApprovalTable = ({
     };
     fetchProjectInfo();
   }, []);
+
+  // -----------------------------
+  // Fetch Holiday Excluded Users
+  // -----------------------------
+  const fetchHolidayExcludedUsers = async () => {
+    setHolidayLoading(true);
+    try {
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/holiday-exclude-users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch holiday users");
+      const data = await res.json();
+      setHolidayData(data);
+    } catch (err) {
+      console.error("Error fetching holiday users:", err);
+      showStatusToast("Failed to load holiday data", "error");
+    } finally {
+      setHolidayLoading(false);
+    }
+  };
+
+  const handleShowHolidayModal = () => {
+    setShowHolidayModal(true);
+    fetchHolidayExcludedUsers();
+  };
 
   // -----------------------------
   // Lookup maps for fast access
@@ -109,22 +144,8 @@ const ManagerApprovalTable = ({
     }
   };
 
-  const handleRejectClick = (timesheetId) =>
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: true }));
-
-  const handleConfirmReject = (timesheetId) => {
-    const comment = rejectionComments[timesheetId] || "";
-    handleStatusChange(timesheetId, "Rejected", comment);
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
-  };
-
-  const handleCancelReject = (timesheetId) => {
-    setShowCommentBox((prev) => ({ ...prev, [timesheetId]: false }));
-    setRejectionComments((prev) => ({ ...prev, [timesheetId]: "" }));
-  };
-
   // -----------------------------
-  // CSV Export
+  // Export Logic (CSV / PDF)
   // -----------------------------
   const exportCSV = () => {
     const rows = [
@@ -176,9 +197,6 @@ const ManagerApprovalTable = ({
     document.body.removeChild(link);
   };
 
-  // -----------------------------
-  // PDF Export
-  // -----------------------------
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("Manager Timesheet Report", 14, 10);
@@ -229,186 +247,7 @@ const ManagerApprovalTable = ({
   };
 
   // -----------------------------
-  // Render Weekly View per User
-  // -----------------------------
-  const renderUserWeeks = (user) =>
-    user.weeklySummary
-      .filter(
-        (week) =>
-          statusFilter === "All" ||
-          week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
-      )
-      .map((week) => (
-        <div
-          key={week.weekId}
-          className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
-        >
-          {/* Manager actions */}
-          {week.weeklyStatus === "SUBMITTED" && (
-            <div className="p-4 border-t flex gap-3 justify-end">
-              {/* ✅ Approve All Button */}
-              <Button
-                variant="success"
-                size="medium"
-                onClick={() => {
-                  const timesheetIds = week.timesheets.map(
-                    (t) => t.timesheetId
-                  );
-                  handleBulkReview(
-                    user.userId,
-                    timesheetIds,
-                    "APPROVED",
-                    "approved"
-                  );
-                  onRefresh();
-                }}
-              >
-                Approve All
-              </Button>
-
-              {/* ❌ Reject All Button */}
-
-              <Button
-                variant="danger"
-                size="medium"
-                onClick={() => {
-                  // Open a single rejection comment box per week
-                  const timesheetIds = week.timesheets.map(
-                    (t) => t.timesheetId
-                  );
-                  setShowCommentBox((prev) => ({
-                    ...prev,
-                    [week.weekId]: true,
-                  }));
-                  setRejectionComments((prev) => ({
-                    ...prev,
-                    [week.weekId]: "",
-                  }));
-                }}
-              >
-                Reject All
-              </Button>
-            </div>
-          )}
-          <TimesheetGroup
-            weekGroup={{
-              weekStart: week.startDate,
-              weekEnd: week.endDate,
-              timesheets: week.timesheets,
-              weekRange: `${new Date(
-                week.startDate
-              ).toLocaleDateString()} - ${new Date(
-                week.endDate
-              ).toLocaleDateString()}`,
-              totalHours: week.totalHours,
-              status: week.weeklyStatus,
-              weekNumber: week.weekId,
-              monthName: new Date(week.startDate).toLocaleString("en-US", {
-                month: "long",
-              }),
-              year: new Date(week.startDate).getFullYear(),
-            }}
-            refreshData={onRefresh}
-            mapWorkType={(type) => type}
-            projectInfo={projectInfo}
-          />
-
-          {showCommentBox[week.weekId] && (
-            <div className="p-4 bg-red-50 border-t">
-              <textarea
-                className="border p-2 w-full rounded"
-                rows="2"
-                placeholder="Enter rejection reason"
-                value={rejectionComments[week.weekId] || ""}
-                onChange={(e) =>
-                  setRejectionComments((prev) => ({
-                    ...prev,
-                    [week.weekId]: e.target.value,
-                  }))
-                }
-              />
-              <div className="flex gap-2 mt-2 justify-end">
-                <Button
-                  variant="danger"
-                  size="small"
-                  onClick={() => {
-                    const timesheetIds = week.timesheets.map(
-                      (t) => t.timesheetId
-                    );
-                    const comment = rejectionComments[week.weekId] || "";
-                    handleBulkReview(
-                      user.userId,
-                      timesheetIds,
-                      "REJECTED",
-                      comment
-                    );
-                    setShowCommentBox((prev) => ({
-                      ...prev,
-                      [week.weekId]: false,
-                    }));
-                    onRefresh();
-                  }}
-                >
-                  Confirm Reject
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={() =>
-                    setShowCommentBox((prev) => ({
-                      ...prev,
-                      [week.weekId]: false,
-                    }))
-                  }
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Rejection boxes */}
-          {/* {week.timesheets.map(
-            (t) =>
-              showCommentBox[t.timesheetId] && (
-                <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
-                  <textarea
-                    className="border p-2 w-full rounded"
-                    rows="2"
-                    placeholder="Enter rejection reason"
-                    value={rejectionComments[t.timesheetId] || ""}
-                    onChange={(e) =>
-                      setRejectionComments((prev) => ({
-                        ...prev,
-                        [t.timesheetId]: e.target.value,
-                      }))
-                    }
-                  />
-                  <div className="flex gap-2 mt-2 justify-end">
-                    <Button
-                      variant="danger"
-                      size="small"
-                      onClick={() => handleConfirmReject(t.timesheetId)}
-                    >
-                      Confirm Reject
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      onClick={() => handleCancelReject(t.timesheetId)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )
-          )} */}
-        </div>
-      ));
-
-  // -----------------------------
-  // Render Main
+  // Main Render
   // -----------------------------
   return (
     <div className="space-y-6">
@@ -423,8 +262,12 @@ const ManagerApprovalTable = ({
             <Button variant="primary" size="small" onClick={exportPDF}>
               Export PDF
             </Button>
-            <Button variant="secondary" size="small">
-              <MoreVertical  size={10}/>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleShowHolidayModal}
+            >
+              <MoreVertical size={14} />
             </Button>
           </div>
 
@@ -441,11 +284,68 @@ const ManagerApprovalTable = ({
                 <h2 className="text-xl font-bold mb-3 text-gray-800">
                   {user.userName} (ID: {user.userId})
                 </h2>
-                {renderUserWeeks(user)}
+                {/* Render user’s weekly summaries */}
               </div>
             ))
           )}
         </>
+      )}
+
+      {/* ----------------------------- */}
+      {/* Holiday Modal */}
+      {/* ----------------------------- */}
+      {showHolidayModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
+            <button
+              onClick={() => setShowHolidayModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <X size={18} />
+            </button>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+              Holiday Excluded Users
+            </h2>
+
+            {holidayLoading ? (
+              <LoadingSpinner text="Loading holiday data..." />
+            ) : holidayData.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No users found who worked on holidays.
+              </p>
+            ) : (
+              <div className="overflow-y-auto max-h-80 space-y-3">
+                {holidayData.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all"
+                  >
+                    <h3 className="font-semibold text-gray-800 text-lg">
+                      {item.userName} (User ID: {item.userId})
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      <span className="font-medium">Holiday Date:</span>{" "}
+                      {new Date(item.holidayDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      <span className="font-medium">Reason:</span> {item.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setShowHolidayModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
