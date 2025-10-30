@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
- 
- 
 import Summary from "./Summary";
 import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import Lists from "./ProjectStatusReport";
- 
- 
 import Navbar from "../../../components/Navbar/Navbar";
  
  
@@ -38,10 +34,6 @@ const ProjectTabs = () => {
     navigate(`/projects/${projectId}/status-report`);
   }
 }, [selectedTab, navigate, projectId]);
- 
- 
- 
- 
   useEffect(() => {
     if (projectId && token) {
       axios

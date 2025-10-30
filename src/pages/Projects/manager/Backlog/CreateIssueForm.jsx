@@ -41,7 +41,6 @@ const CreateIssueForm = ({
   // ---------- Fetch Projects & Users ----------
   useEffect(() => {
     const pid = initialProjectId;
-    const fetchData = async () => {
     const fetchInitialData = async () => {
       try {
         const [projectsRes, usersRes,ownerRes] = await Promise.all([

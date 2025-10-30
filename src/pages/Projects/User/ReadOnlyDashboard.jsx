@@ -20,10 +20,6 @@ const ProjectDashboard = () => {
   // Decode token to get userId
   const decodedToken = jwtDecode(token);
   const userId = decodedToken.user_id;
-  const token = localStorage.getItem("token");
-  // Decode token to get userId
-  const decodedToken = jwtDecode(token);
-  const userId = decodedToken.user_id;
   const axiosConfig = {
     headers: {
       "Content-Type": "application/json",
@@ -133,7 +129,6 @@ const ProjectDashboard = () => {
         <h1 className="text-3xl font-bold">My Dashboard</h1>
         <div className="flex gap-3">
           <Button onClick={goToMyProfile} variant="primary">
-          <Button onClick={goToMyProfile} variant="primary">
             My Profile
           </Button>
         </div>
@@ -148,26 +143,20 @@ const ProjectDashboard = () => {
             <ThreeCard
               title="Projects Involved"
               value={projects.length}
-              title="Projects Involved"
-              value={projects.length}
               textColor="text-indigo-900"
             />
             <ThreeCard
               title="Tasks"
               value={tasks.length}
-              value={tasks.length}
               textColor="text-green-700"
             />
             {/* <ThreeCard
-            {/* <ThreeCard
               title="Epics"
-              value={dashboardData.totalEpics}
+              value={epics.length}
               textColor="text-purple-700"
-            /> */}
             /> */}
             <ThreeCard
               title="Stories"
-              value={stories.length}
               value={stories.length}
               textColor="text-orange-600"
             />
