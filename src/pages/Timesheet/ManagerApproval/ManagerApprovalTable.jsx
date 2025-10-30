@@ -335,14 +335,41 @@ const ManagerApprovalTable = ({
               </div>
             )}
 
-            <div className="mt-4 flex justify-end">
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => setShowHolidayModal(false)}
-              >
-                Close
-              </Button>
+            {/* ✅ Added this section */}
+            <div className="mt-4 space-y-4">
+              <div className="flex justify-between gap-3">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => console.log("Add User clicked")}
+                >
+                  Add User
+                </Button>
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => console.log("Update User clicked")}
+                >
+                  Update User
+                </Button>
+                <Button
+                  variant="danger"
+                  size="small"
+                  onClick={() => console.log("Remove User clicked")}
+                >
+                  Remove User
+                </Button>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() => setShowHolidayModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
