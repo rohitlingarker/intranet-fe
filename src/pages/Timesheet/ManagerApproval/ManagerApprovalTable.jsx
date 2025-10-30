@@ -2,9 +2,10 @@ import React, { useMemo, useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import LoadingSpinner from "../../../components/LoadingSpinner";
-import { reviewTimesheet } from "../api";
+import { reviewTimesheet, handleBulkReview } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
+import Button from "../../../components/Button/Button";
 
 const ManagerApprovalTable = ({
   loading,
@@ -241,6 +242,53 @@ const ManagerApprovalTable = ({
           key={week.weekId}
           className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
         >
+          {/* Manager actions */}
+          {week.weeklyStatus === "SUBMITTED" && (
+            <div className="p-4 border-t flex gap-3 justify-end">
+              {/* ✅ Approve All Button */}
+              <Button
+                variant="success"
+                size="medium"
+                onClick={() => {
+                  const timesheetIds = week.timesheets.map(
+                    (t) => t.timesheetId
+                  );
+                  handleBulkReview(
+                    user.userId,
+                    timesheetIds,
+                    "APPROVED",
+                    "approved"
+                  );
+                  onRefresh();
+                }}
+              >
+                Approve All
+              </Button>
+
+              {/* ❌ Reject All Button */}
+
+              <Button
+                variant="danger"
+                size="medium"
+                onClick={() => {
+                  // Open a single rejection comment box per week
+                  const timesheetIds = week.timesheets.map(
+                    (t) => t.timesheetId
+                  );
+                  setShowCommentBox((prev) => ({
+                    ...prev,
+                    [week.weekId]: true,
+                  }));
+                  setRejectionComments((prev) => ({
+                    ...prev,
+                    [week.weekId]: "",
+                  }));
+                }}
+              >
+                Reject All
+              </Button>
+            </div>
+          )}
           <TimesheetGroup
             weekGroup={{
               weekStart: week.startDate,
@@ -264,30 +312,63 @@ const ManagerApprovalTable = ({
             projectInfo={projectInfo}
           />
 
-          {/* Manager actions */}
-          <div className="p-4 border-t flex gap-3 justify-end">
-            <button
-              onClick={() =>
-                week.timesheets.forEach((t) =>
-                  handleStatusChange(t.timesheetId, "APPROVED")
-                )
-              }
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              Approve All
-            </button>
-            <button
-              onClick={() =>
-                week.timesheets.forEach((t) => handleRejectClick(t.timesheetId))
-              }
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            >
-              Reject
-            </button>
-          </div>
+          {showCommentBox[week.weekId] && (
+            <div className="p-4 bg-red-50 border-t">
+              <textarea
+                className="border p-2 w-full rounded"
+                rows="2"
+                placeholder="Enter rejection reason"
+                value={rejectionComments[week.weekId] || ""}
+                onChange={(e) =>
+                  setRejectionComments((prev) => ({
+                    ...prev,
+                    [week.weekId]: e.target.value,
+                  }))
+                }
+              />
+              <div className="flex gap-2 mt-2 justify-end">
+                <Button
+                  variant="danger"
+                  size="small"
+                  onClick={() => {
+                    const timesheetIds = week.timesheets.map(
+                      (t) => t.timesheetId
+                    );
+                    const comment = rejectionComments[week.weekId] || "";
+                    handleBulkReview(
+                      user.userId,
+                      timesheetIds,
+                      "REJECTED",
+                      comment
+                    );
+                    setShowCommentBox((prev) => ({
+                      ...prev,
+                      [week.weekId]: false,
+                    }));
+                    onRefresh();
+                  }}
+                >
+                  Confirm Reject
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() =>
+                    setShowCommentBox((prev) => ({
+                      ...prev,
+                      [week.weekId]: false,
+                    }))
+                  }
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Rejection boxes */}
-          {week.timesheets.map(
+          {/* {week.timesheets.map(
             (t) =>
               showCommentBox[t.timesheetId] && (
                 <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
@@ -304,22 +385,24 @@ const ManagerApprovalTable = ({
                     }
                   />
                   <div className="flex gap-2 mt-2 justify-end">
-                    <button
-                      className="bg-red-500 text-white px-3 py-1 rounded"
+                    <Button
+                      variant="danger"
+                      size="small"
                       onClick={() => handleConfirmReject(t.timesheetId)}
                     >
                       Confirm Reject
-                    </button>
-                    <button
-                      className="bg-gray-300 px-3 py-1 rounded"
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="small"
                       onClick={() => handleCancelReject(t.timesheetId)}
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )
-          )}
+          )} */}
         </div>
       ));
 
@@ -333,31 +416,31 @@ const ManagerApprovalTable = ({
       ) : (
         <>
           <div className="flex justify-end gap-3 mb-4">
-            <button
-              onClick={exportCSV}
-              className="bg-gray-100 px-3 py-1 rounded hover:bg-gray-200"
-            >
+            <Button variant="primary" size="small" onClick={exportCSV}>
               Export CSV
-            </button>
-            <button
-              onClick={exportPDF}
-              className="bg-gray-100 px-3 py-1 rounded hover:bg-gray-200"
-            >
+            </Button>
+            <Button variant="primary" size="small" onClick={exportPDF}>
               Export PDF
-            </button>
+            </Button>
           </div>
 
-          {enrichedGroupedData.map((user) => (
-            <div
-              key={user.userId}
-              className="bg-white rounded-xl shadow-md border p-4"
-            >
-              <h2 className="text-xl font-bold mb-3 text-gray-800">
-                {user.userName} (ID: {user.userId})
-              </h2>
-              {renderUserWeeks(user)}
+          {enrichedGroupedData.length === 0 ? (
+            <div className="text-center text-gray-500 py-10 text-lg font-medium">
+              No Approvals
             </div>
-          ))}
+          ) : (
+            enrichedGroupedData.map((user) => (
+              <div
+                key={user.userId}
+                className="bg-white rounded-xl shadow-md border p-4"
+              >
+                <h2 className="text-xl font-bold mb-3 text-gray-800">
+                  {user.userName} (ID: {user.userId})
+                </h2>
+                {renderUserWeeks(user)}
+              </div>
+            ))
+          )}
         </>
       )}
     </div>

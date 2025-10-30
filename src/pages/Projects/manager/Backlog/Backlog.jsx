@@ -38,7 +38,6 @@ const Backlog = ({ projectId, projectName }) => {
       .catch((err) => console.error("Failed to fetch projects", err));
   };
 
-
   const fetchStories = () => {
     axios
       .get(
@@ -51,7 +50,10 @@ const Backlog = ({ projectId, projectName }) => {
 
   const fetchNoEpicStories = () => {
     axios
-      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, { params: { projectId }, headers })
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, {
+        params: { projectId },
+        headers,
+      })
       .then((res) => setNoEpicStories(res.data))
       .catch((err) => console.error("Failed to fetch no epic stories", err));
   };
@@ -98,9 +100,13 @@ const Backlog = ({ projectId, projectName }) => {
     });
   };
 
-  // ✅ Define filtered lists (in case you want filtering later)
   const filteredNoEpicStories = noEpicStories || [];
   const filteredStories = stories || [];
+
+  // ✅ Sort sprints by createdAt descending (latest first)
+  const sortedSprints = [...sprints].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -159,8 +165,10 @@ const Backlog = ({ projectId, projectName }) => {
           ) : (
             <div className="space-y-2">
               {filteredNoEpicStories.map((story) => (
-                // 🟢 Hardcoded status as BACKLOG
-                <StoryCard key={story.id} story={{ ...story, status: "BACKLOG" }} />
+                <StoryCard
+                  key={story.id}
+                  story={{ ...story, status: "BACKLOG" }}
+                />
               ))}
             </div>
           )}
@@ -172,11 +180,13 @@ const Backlog = ({ projectId, projectName }) => {
             Assign to Sprint
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {sprints.map((sprint) => (
+            {sortedSprints.map((sprint) => (
               <SprintColumn
                 key={sprint.id}
                 sprint={sprint}
-                stories={filteredStories.filter((s) => s.sprintId === sprint.id)}
+                stories={filteredStories.filter(
+                  (s) => s.sprintId === sprint.id
+                )}
                 onDropStory={handleDropStory}
                 onChangeStatus={() => {}}
               />

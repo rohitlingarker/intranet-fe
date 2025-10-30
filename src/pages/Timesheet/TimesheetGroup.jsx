@@ -857,7 +857,7 @@ const TimesheetGroup = ({
             ))}
 
           {/* Submit Week Button */}
-          {isWeeklyFormat && weekData && (
+          {window.location.pathname !== "/managerapproval" && isWeeklyFormat && weekData && (
             <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
               <button
                 onClick={handleSubmitWeek}
