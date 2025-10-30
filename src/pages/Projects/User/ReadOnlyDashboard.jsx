@@ -3,7 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
 import ThreeCard from "../../../components/Cards/ThreeCards";
-
+import {jwtDecode} from "jwt-decode";
+ 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,35 +12,75 @@ const ProjectDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [reminders, setReminders] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
-
+  const [tasks, setTasks] = useState([]);
+  const [stories, setStories] = useState([]);
+ 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token"); // JWT token
-
+  const token = localStorage.getItem("token");
+  // Decode token to get userId
+  const decodedToken = jwtDecode(token);
+  const userId = decodedToken.user_id;
   const axiosConfig = {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
   };
-
-  const fetchProjects = async () => {
+ 
+  // ✅ Fetch only projects where the logged-in user is a member
+  const fetchUserProjects = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         axiosConfig
       );
       const data = res.data.content || res.data;
       setProjects(data);
     } catch (err) {
-      setError("Failed to load projects");
-      console.error(err);
+      console.error("Failed to load user projects:", err);
+      setError("Failed to load your projects.");
     } finally {
       setLoading(false);
     }
   };
-
+ 
+  // fetch tasks assigned to the user
+  const fetchUserTasks = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/assignee/${userId}`,
+        axiosConfig
+      );
+      const data = res.data.content || res.data;
+      setTasks(data);
+    } catch (err) {
+      console.error("Failed to load user tasks:", err);
+      setError("Failed to load your tasks.");
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
+  //fetch stories assigned to the user
+  const fetchUserStories = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/assignee/${userId}`,
+        axiosConfig
+      );
+      const data = res.data.content || res.data;
+      setStories(data);
+    } catch (err) {
+      console.error("Failed to load user stories:", err);
+      setError("Failed to load your stories.");
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
+  // ✅ Fetch dashboard summary data (overall stats for this user)
   const fetchDashboard = async () => {
     try {
       const res = await axios.get(
@@ -53,7 +94,8 @@ const ProjectDashboard = () => {
       setDashboardLoading(false);
     }
   };
-
+ 
+  // ✅ Fetch reminders
   const fetchReminders = async () => {
     try {
       const res = await axios.get(
@@ -65,36 +107,31 @@ const ProjectDashboard = () => {
       console.error("Failed to fetch reminders:", err);
     }
   };
-
+ 
   useEffect(() => {
-    fetchProjects();
-    fetchDashboard();
-    fetchReminders();
-  }, []);
-
+    if (userId) {
+      fetchUserProjects();
+      fetchDashboard();
+      fetchReminders();
+      fetchUserTasks();
+      fetchUserStories();
+    }
+  }, [userId]);
+ 
   const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
   const goToMyProfile = () => navigate("/projects/user/myprofile");
-
+ 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Project Dashboard</h1>
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
         <div className="flex gap-3">
-          {/* <Button
-            onClick={() => navigate("/projects/userlist")}
-            variant="secondary"
-          >
-            View Project List
-          </Button> */}
-          <Button
-            onClick={goToMyProfile}
-            variant="primary"
-          >
+          <Button onClick={goToMyProfile} variant="primary">
             My Profile
           </Button>
         </div>
       </div>
-
+ 
       {dashboardLoading ? (
         <p className="text-gray-600">Loading summary...</p>
       ) : dashboardData ? (
@@ -102,27 +139,27 @@ const ProjectDashboard = () => {
           {/* 🔹 Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
             <ThreeCard
-              title="Projects"
-              value={dashboardData.totalProjects}
+              title="Projects Involved"
+              value={projects.length}
               textColor="text-indigo-900"
             />
             <ThreeCard
               title="Tasks"
-              value={dashboardData.totalTasks}
+              value={tasks.length}
               textColor="text-green-700"
             />
-            <ThreeCard
+            {/* <ThreeCard
               title="Epics"
               value={dashboardData.totalEpics}
               textColor="text-purple-700"
-            />
+            /> */}
             <ThreeCard
               title="Stories"
-              value={dashboardData.totalStories}
+              value={stories.length}
               textColor="text-orange-600"
             />
           </div>
-
+ 
           {/* 🔸 Status Count Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map(
@@ -147,8 +184,8 @@ const ProjectDashboard = () => {
               )
             )}
           </div>
-
-          {/* 🔔 Reminders / Deadlines */}
+ 
+          {/* 🔔 Reminders */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
@@ -164,11 +201,10 @@ const ProjectDashboard = () => {
                   <li>📝 {reminders?.todoStoryCount ?? 0} stories are in TODO</li>
                   <li>
                     🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
-                    assigned owner
+                    owner
                   </li>
                   <li>
-                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are
-                    ending soon
+                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
                   </li>
                 </ul>
               ) : (
@@ -176,30 +212,39 @@ const ProjectDashboard = () => {
               )}
             </div>
           </div>
-
-          {/* 📌 Quick Access Projects */}
+ 
+          {/* 📌 Projects the user is involved in */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                Quick Access
+                My Projects
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.slice(0, 3).map((project) => (
-                  <div
-                    key={project.id}
-                    onClick={() => goToProjectTab(project.id)}
-                    className="cursor-pointer hover:shadow-md transition-all border p-4 rounded-xl"
-                  >
-                    <h4 className="font-semibold text-indigo-700 text-lg">
-                      {project.name}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Key: {project.projectKey}
-                    </p>
-                    <p className="text-xs text-gray-400">{project.status}</p>
-                  </div>
-                ))}
-              </div>
+ 
+              {loading ? (
+                <p>Loading your projects...</p>
+              ) : projects.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => goToProjectTab(project.id)}
+                      className="cursor-pointer hover:shadow-md transition-all border p-4 rounded-xl bg-gray-50"
+                    >
+                      <h4 className="font-semibold text-indigo-700 text-lg">
+                        {project.name}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Key: {project.projectKey}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {project.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">You’re not assigned to any project yet.</p>
+              )}
             </div>
           </div>
         </>
@@ -209,5 +254,5 @@ const ProjectDashboard = () => {
     </div>
   );
 };
-
+ 
 export default ProjectDashboard;

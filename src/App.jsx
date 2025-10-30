@@ -267,7 +267,7 @@ useEffect(() => {
             path="/projects/userbacklog/:projectId"
             element={<UserBacklog />}
           />
-           <Route path="/projects/admin" element={<AdminDashboard />} /> 
+           <Route path="/projects/admin" element={<ProjectManager />} /> 
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
