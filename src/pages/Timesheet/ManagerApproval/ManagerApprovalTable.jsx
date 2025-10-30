@@ -246,6 +246,76 @@ const ManagerApprovalTable = ({
     doc.save("manager_timesheets.pdf");
   };
 
+  // Track selection mode and selected users
+  const [isRemoveMode, setIsRemoveMode] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+
+  // Toggle remove mode
+  const toggleRemoveMode = () => {
+    if (isRemoveMode) {
+      // Leaving remove mode — clear selections
+      setIsRemoveMode(false);
+      setSelectedUsers([]);
+    } else {
+      // Enter remove mode
+      setIsRemoveMode(true);
+    }
+  };
+
+  // Select / Deselect single user (only in remove mode)
+  const handleSelectUser = (userId) => {
+    if (!isRemoveMode) return;
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Select or deselect all users
+  const handleToggleSelectAll = () => {
+    if (selectedUsers.length === holidayData.length) {
+      setSelectedUsers([]); // Deselect all
+    } else {
+      setSelectedUsers(holidayData.map((u) => u.id)); // Select all
+    }
+  };
+
+  // Handle remove selected users
+  const handleRemoveSelectedUsers = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to remove ${selectedUsers.length} user(s)?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      for (const id of selectedUsers) {
+        const res = await fetch(
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holiday-exclude-users/${id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        if (!res.ok) throw new Error(`Failed to delete user ${id}`);
+      }
+
+      showStatusToast("Selected user(s) removed successfully!", "success");
+      fetchHolidayExcludedUsers();
+      setSelectedUsers([]);
+      setIsRemoveMode(false); // Exit remove mode after success
+    } catch (err) {
+      console.error("Error removing users:", err);
+      showStatusToast("Error while removing users", "error");
+    }
+  };
+
   // -----------------------------
   // Main Render
   // -----------------------------
@@ -303,6 +373,7 @@ const ManagerApprovalTable = ({
             >
               <X size={18} />
             </button>
+
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
               Holiday Excluded Users
             </h2>
@@ -314,29 +385,60 @@ const ManagerApprovalTable = ({
                 No users found who worked on holidays.
               </p>
             ) : (
-              <div className="overflow-y-auto max-h-80 space-y-3">
-                {holidayData.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all"
-                  >
-                    <h3 className="font-semibold text-gray-800 text-lg">
-                      {item.userName} (User ID: {item.userId})
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">Holiday Date:</span>{" "}
-                      {new Date(item.holidayDate).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">Reason:</span> {item.reason}
-                    </p>
+              <>
+                {/* --- Select All / Deselect All --- */}
+                {isRemoveMode && (
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-600">
+                      {selectedUsers.length === holidayData.length
+                        ? "All users selected"
+                        : `${selectedUsers.length} selected`}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={handleToggleSelectAll}
+                    >
+                      {selectedUsers.length === holidayData.length
+                        ? "Deselect All"
+                        : "Select All"}
+                    </Button>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* --- User List --- */}
+                <div className="overflow-y-auto max-h-80 space-y-3">
+                  {holidayData.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectUser(item.id)}
+                      className={`border rounded-lg p-4 transition-all ${
+                        isRemoveMode ? "cursor-pointer" : "cursor-default"
+                      } ${
+                        isRemoveMode && selectedUsers.includes(item.id)
+                          ? "bg-red-100 border-red-400"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      <h3 className="font-semibold text-gray-800 text-lg">
+                        {item.userName} (User ID: {item.userId})
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Holiday Date:</span>{" "}
+                        {new Date(item.holidayDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Reason:</span>{" "}
+                        {item.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
-            {/* ✅ Added this section */}
-            <div className="mt-4 space-y-4">
+            {/* --- Action Buttons --- */}
+            <div className="mt-6 space-y-4">
               <div className="flex justify-between gap-3">
                 <Button
                   variant="primary"
@@ -345,6 +447,7 @@ const ManagerApprovalTable = ({
                 >
                   Add User
                 </Button>
+
                 <Button
                   variant="primary"
                   size="small"
@@ -352,20 +455,38 @@ const ManagerApprovalTable = ({
                 >
                   Update User
                 </Button>
-                <Button
-                  variant="danger"
-                  size="small"
-                  onClick={() => console.log("Remove User clicked")}
-                >
-                  Remove User
-                </Button>
+
+                {!isRemoveMode ? (
+                  <Button
+                    variant="danger"
+                    size="small"
+                    onClick={toggleRemoveMode}
+                  >
+                    Remove User
+                  </Button>
+                ) : (
+                  <Button
+                    variant="danger"
+                    size="small"
+                    disabled={selectedUsers.length === 0}
+                    onClick={handleRemoveSelectedUsers}
+                  >
+                    {selectedUsers.length > 0
+                      ? `Confirm Remove (${selectedUsers.length})`
+                      : "Confirm Remove"}
+                  </Button>
+                )}
               </div>
 
               <div className="flex justify-end">
                 <Button
                   variant="secondary"
                   size="small"
-                  onClick={() => setShowHolidayModal(false)}
+                  onClick={() => {
+                    setIsRemoveMode(false);
+                    setSelectedUsers([]);
+                    setShowHolidayModal(false);
+                  }}
                 >
                   Close
                 </Button>
