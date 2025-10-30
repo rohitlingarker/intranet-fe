@@ -1,4 +1,11 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  Suspense,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../../components/toastfy/toast";
@@ -7,12 +14,17 @@ import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import SearchInput from "../../../../components/filter/Searchbar";
 import Modal from "../../../../components/Modal/modal";
-import CreateUserForm from "./CreateUser";
-import EditUserForm from "./EditUser";
 import { Pencil, UserX, UserCheck } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { BulkUserUpload } from "./BulkUser";
 import { useAuth } from "../../../../contexts/AuthContext";
+import LoadingSpinner from "../../../../components/LoadingSpinner"
+ 
+ 
+ 
+// ✅ Lazy load heavy components
+const CreateUserForm = React.lazy(() => import("./CreateUser"));
+const EditUserForm = React.lazy(() => import("./EditUser"));
+const BulkUserUpload = React.lazy(() => import("./BulkUser"));
  
 const SORT_DIRECTIONS = { ASC: "asc", DESC: "desc" };
 const ITEMS_PER_PAGE = 10;
@@ -98,14 +110,12 @@ export default function UsersTable() {
     setSelectedUseruuId(null);
   };
  
-  // ✅ When deactivate or activate button is clicked
   const handleToggleClick = (useruuId, currentStatus) => {
     setUserToToggle(useruuId);
     setActionType(currentStatus ? "deactivate" : "activate");
     setConfirmModalOpen(true);
   };
  
-  // ✅ Confirm activation/deactivation
   const confirmToggle = async () => {
     if (!userToToggle) return;
     try {
@@ -303,10 +313,12 @@ export default function UsersTable() {
         subtitle="Fill out the form to add a new user to the system."
         className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-y-auto"
       >
-        <CreateUserForm
-          onSuccess={handleUserCreated}
-          onClose={() => setCreateModalOpen(false)}
-        />
+        <Suspense fallback={<LoadingSpinner text="Loading create form..." />}>
+          <CreateUserForm
+            onSuccess={handleUserCreated}
+            onClose={() => setCreateModalOpen(false)}
+          />
+        </Suspense>
       </Modal>
  
       {/* Bulk Upload Modal */}
@@ -317,11 +329,20 @@ export default function UsersTable() {
         subtitle="Excel should contain 4 columns: first_name, last_name, mail, and contact (as headers)."
         className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
       >
-        <BulkUserUpload
-          onClose={() => setUserBulkUploadModalOpen(false)}
-          onSuccess={fetchUsers}
-        />
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-10">
+              <LoadingSpinner text="Loading bulk upload..." />
+            </div>
+          }
+        >
+          <BulkUserUpload
+            onClose={() => setUserBulkUploadModalOpen(false)}
+            onSuccess={fetchUsers}
+          />
+        </Suspense>
       </Modal>
+ 
  
       {/* Edit Modal */}
       <Modal
@@ -332,11 +353,13 @@ export default function UsersTable() {
         className="!mt-16 !max-h-[calc(100vh-8rem)] overflow-hidden"
       >
         {selectedUseruuId && (
-          <EditUserForm
-            userId={selectedUseruuId}
-            onSuccess={handleUserUpdated}
-            onClose={handleEditClose}
-          />
+          <Suspense fallback={<LoadingSpinner text="Loading edit form..." />}>
+            <EditUserForm
+              userId={selectedUseruuId}
+              onSuccess={handleUserUpdated}
+              onClose={handleEditClose}
+            />
+          </Suspense>
         )}
       </Modal>
  
