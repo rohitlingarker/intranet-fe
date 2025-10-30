@@ -497,46 +497,7 @@ const renderUserWeeks = (user) =>
   const [addUserLoading, setAddUserLoading] = useState(false);
 
 
-  const fetchManagerUsers = async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      if (!res.ok) throw new Error("Failed to fetch manager users");
-      const data = await res.json();
-      setManagerUsers(data);
-    } catch (err) {
-      console.error("Error fetching manager users:", err);
-      showStatusToast("Failed to load user list", "error");
-    }
-  };
-
-  const fetchMonthlyHolidays = async () => {
-    const currentMonth = new Date().getMonth() + 1;
-    try {
-      const res = await fetch(
-        `${
-          import.meta.env.VITE_LMS_BASE_URL
-        }/api/holidays/month/${currentMonth}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      if (!res.ok) throw new Error("Failed to fetch holidays");
-      const data = await res.json();
-      setMonthlyHolidays(data);
-    } catch (err) {
-      console.error("Error fetching holidays:", err);
-      showStatusToast("Failed to load holiday list", "error");
-    }
-  };
+  
 const handleConfirmAddUser = async () => {
   if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
     showStatusToast("Please fill all fields before confirming.", "warning");
