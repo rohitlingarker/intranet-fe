@@ -20,6 +20,10 @@ const ProjectDashboard = () => {
   // Decode token to get userId
   const decodedToken = jwtDecode(token);
   const userId = decodedToken.user_id;
+  const token = localStorage.getItem("token");
+  // Decode token to get userId
+  const decodedToken = jwtDecode(token);
+  const userId = decodedToken.user_id;
   const axiosConfig = {
     headers: {
       "Content-Type": "application/json",
@@ -33,6 +37,7 @@ const ProjectDashboard = () => {
     setError(null);
     try {
       const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         axiosConfig
       );
@@ -107,7 +112,7 @@ const ProjectDashboard = () => {
       console.error("Failed to fetch reminders:", err);
     }
   };
-
+ 
   useEffect(() => {
     if (userId) {
       fetchUserProjects();
@@ -120,18 +125,20 @@ const ProjectDashboard = () => {
 
   const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
   const goToMyProfile = () => navigate("/projects/user/myprofile");
-
+ 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
         <div className="flex gap-3">
+          <Button onClick={goToMyProfile} variant="primary">
           <Button onClick={goToMyProfile} variant="primary">
             My Profile
           </Button>
         </div>
       </div>
-
+ 
       {dashboardLoading ? (
         <p className="text-gray-600">Loading summary...</p>
       ) : dashboardData ? (
@@ -141,25 +148,31 @@ const ProjectDashboard = () => {
             <ThreeCard
               title="Projects Involved"
               value={projects.length}
+              title="Projects Involved"
+              value={projects.length}
               textColor="text-indigo-900"
             />
             <ThreeCard
               title="Tasks"
               value={tasks.length}
+              value={tasks.length}
               textColor="text-green-700"
             />
+            {/* <ThreeCard
             {/* <ThreeCard
               title="Epics"
               value={dashboardData.totalEpics}
               textColor="text-purple-700"
             /> */}
+            /> */}
             <ThreeCard
               title="Stories"
+              value={stories.length}
               value={stories.length}
               textColor="text-orange-600"
             />
           </div>
-
+ 
           {/* 🔸 Status Count Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map(
@@ -202,8 +215,10 @@ const ProjectDashboard = () => {
                   <li>
                     🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
                     owner
+                    owner
                   </li>
                   <li>
+                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
                     🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
                   </li>
                 </ul>
@@ -217,6 +232,7 @@ const ProjectDashboard = () => {
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
+                My Projects
                 My Projects
               </h3>
 
@@ -254,5 +270,5 @@ const ProjectDashboard = () => {
     </div>
   );
 };
-
+ 
 export default ProjectDashboard;

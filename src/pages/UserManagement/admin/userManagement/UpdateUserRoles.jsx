@@ -9,6 +9,7 @@ import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 
+
 const ITEMS_PER_PAGE = 10;
 const SORT_DIRECTIONS = {
   ASC: "asc",
@@ -213,12 +214,16 @@ export default function UpdateUserRole() {
 /* ------------------------------
    Modal component (internal)
    ------------------------------ */
+/* ------------------------------
+   Modal component (internal)
+   ------------------------------ */
 function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
   const [user, setUser] = useState(null);
   const [roles, setRoles] = useState([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = localStorage.getItem("token");
   const authHeader = {
@@ -294,9 +299,12 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         .filter((r) => selectedRoleIds.includes(r.role_uuid))
         .map((r) => r.role_name);
 
-      console.log(response)
+      console.log(response);
 
-      showStatusToast(response?.data?.message || "Roles updated successfully!", "success");
+      showStatusToast(
+        response?.data?.message || "Roles updated successfully!",
+        "success"
+      );
       if (typeof onSaved === "function") onSaved(updatedRoleNames);
       console.log("Updated roles:", updatedRoleNames);
       onClose();
@@ -307,6 +315,13 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
       setSaving(false);
     }
   };
+
+  // ✅ Filter roles dynamically using search term
+  const filteredRoles = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return roles;
+    return roles.filter((r) => r.role_name.toLowerCase().includes(term));
+  }, [roles, searchTerm]);
 
   return (
     <Modal isOpen={true} onClose={onClose}>
@@ -322,23 +337,40 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
               </span>
             </h2>
 
-            <p className="text-gray-500 mb-4">Select or deselect roles below:</p>
+            <p className="text-gray-500 mb-4">
+              Select or deselect roles below:
+            </p>
 
-            <div className="grid grid-cols-2 gap-3 mb-6 max-h-72 overflow-y-auto">
-              {roles.map((role) => (
-                <label
-                  key={role.role_uuid}
-                  className="flex items-center gap-3 text-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRoleIds.includes(role.role_uuid)}
-                    onChange={() => toggleRole(role.role_uuid)}
-                    className="accent-blue-600 w-4 h-4"
-                  />
-                  <span>{role.role_name}</span>
-                </label>
-              ))}
+            {/* ✅ Role search input */}
+            <SearchInput
+              placeholder="Search roles..."
+              value={searchTerm}
+              onSearch={(val) => setSearchTerm(val)}
+              delay={300}
+              className="mb-4"
+            />
+
+            <div className="grid grid-cols-2 gap-3 mb-6 max-h-40 overflow-y-auto">
+              {filteredRoles.length > 0 ? (
+                filteredRoles.map((role) => (
+                  <label
+                    key={role.role_uuid}
+                    className="flex items-center gap-3 text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRoleIds.includes(role.role_uuid)}
+                      onChange={() => toggleRole(role.role_uuid)}
+                      className="accent-blue-600 w-4 h-4"
+                    />
+                    <span>{role.role_name}</span>
+                  </label>
+                ))
+              ) : (
+                <div className="col-span-2 text-gray-400 italic">
+                  No roles found.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-4">

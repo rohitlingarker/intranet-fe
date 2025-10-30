@@ -5,7 +5,11 @@ import Button from "../../../../components/Button/Button";
 import { FiEye, FiEdit, FiTrash } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import CreateIssueForm from "../Backlog/CreateIssueForm";
+
+import EditBugForm from "./EditBugForm";
+import EditStoryForm from "./EditStoryForm";
+import EditTaskForm from "./EditTaskForm";
+import EditEpicForm from "./EditEpicForm"; // ✅ NEW IMPORT
 
 const IssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
@@ -16,15 +20,22 @@ const IssueTracker = () => {
   const [issues, setIssues] = useState([]);
   const [filteredIssues, setFilteredIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editItem, setEditItem] = useState(null);
-
-  // Dropdown data
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [epics, setEpics] = useState([]);
-  const [sprints, setSprints] = useState([]);
 
-  // Filters
+  // ===== Edit modals =====
+  const [showEditBugModal, setShowEditBugModal] = useState(false);
+  const [editingBugId, setEditingBugId] = useState(null);
+
+  const [showEditStoryModal, setShowEditStoryModal] = useState(false);
+  const [editingStoryId, setEditingStoryId] = useState(null);
+
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const [showEditEpicModal, setShowEditEpicModal] = useState(false); // ✅ NEW
+  const [editingEpicId, setEditingEpicId] = useState(null); // ✅ NEW
+
+  // ===== Filters =====
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
@@ -36,7 +47,7 @@ const IssueTracker = () => {
     "Content-Type": "application/json",
   };
 
-  // ===== FETCH ALL ISSUES =====
+  // ===== FETCH ISSUES =====
   const fetchIssues = async () => {
     try {
       setLoading(true);
@@ -72,10 +83,9 @@ const IssueTracker = () => {
 
       const bugsData = bugsRes.data.map((b) => ({
         ...b,
-        title: b.title,
         type: "Bug",
-        reporterName: b.reporterName || "",
-        assigneeName: b.assigneeName || "",
+        reporterName: b.reporterName || b.reporter?.name || "",
+        assigneeName: b.assigneeName || b.assignedTo?.name || "",
         projectName: b.project?.name || "",
         priority: b.priority || "MEDIUM",
         status: b.status || "OPEN",
@@ -92,113 +102,36 @@ const IssueTracker = () => {
     }
   };
 
-  // ===== FETCH DROPDOWNS =====
-  const fetchFormOptions = async () => {
+  // ===== FETCH PROJECTS =====
+  const fetchProjects = async () => {
     try {
-      const [projectsRes, usersRes, epicsRes, sprintsRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers }),
-      ]);
-
-      setProjects(projectsRes.data || []);
-      setUsers(usersRes.data || []);
-      setEpics(epicsRes.data || []);
-      setSprints(sprintsRes.data || []);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers });
+      setProjects(res.data || []);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load form options");
+      toast.error("Failed to load projects");
     }
   };
 
   useEffect(() => {
     if (projectId) {
       fetchIssues();
-      fetchFormOptions();
+      fetchProjects();
     }
   }, [projectId]);
 
-  // ===== APPLY FILTERS =====
+  // ===== FILTER HANDLER =====
   useEffect(() => {
     let filtered = [...issues];
-
-    if (searchTerm) {
+    if (searchTerm)
       filtered = filtered.filter((i) =>
         i.title?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-    if (filterType) {
-      filtered = filtered.filter((i) => i.type === filterType);
-    }
-    if (filterPriority) {
-      filtered = filtered.filter((i) => i.priority === filterPriority);
-    }
-    if (filterStatus) {
-      filtered = filtered.filter((i) => i.status === filterStatus);
-    }
-
+    if (filterType) filtered = filtered.filter((i) => i.type === filterType);
+    if (filterPriority) filtered = filtered.filter((i) => i.priority === filterPriority);
+    if (filterStatus) filtered = filtered.filter((i) => i.status === filterStatus);
     setFilteredIssues(filtered);
   }, [searchTerm, filterType, filterPriority, filterStatus, issues]);
-
-  // ===== EDIT =====
-  const handleEdit = (issue) => {
-    let initialData = {};
-    if (issue.type === "Epic") {
-      initialData = {
-        id: issue.id,
-        title: issue.name || issue.title,
-        description: issue.description || "",
-        progressPercentage: issue.progressPercentage || 0,
-        projectId,
-      };
-    } else if (issue.type === "Story") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        status: issue.status || "BACKLOG",
-        priority: issue.priority || "MEDIUM",
-        storyPoints: issue.storyPoints || 0,
-        epicId: issue.epicId || null,
-        reporterId: issue.reporter?.id || "",
-        assigneeId: issue.assignee?.id || null,
-        sprintId: issue.sprint?.id || null,
-        projectId,
-      };
-    } else if (issue.type === "Task") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        status: issue.status || "TODO",
-        priority: issue.priority || "MEDIUM",
-        storyId: issue.storyId || null,
-        reporterId: issue.reporter?.id || "",
-        assigneeId: issue.assignee?.id || null,
-        sprintId: issue.sprint?.id || null,
-        projectId,
-      };
-    } else if (issue.type === "Bug") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        severity: issue.severity || "MEDIUM",
-        status: issue.status || "OPEN",
-        priority: issue.priority || "MEDIUM",
-        reporterId: issue.reporter || "",
-        assigneeId: issue.assignedTo || "",
-        projectId,
-      };
-    }
-    setEditItem({ type: issue.type, initialData });
-  };
-
-  const handleEditClose = () => {
-    setEditItem(null);
-    fetchIssues();
-  };
 
   // ===== DELETE =====
   const handleDelete = async (issue) => {
@@ -218,10 +151,59 @@ const IssueTracker = () => {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
       toast.success(`${issue.type} deleted successfully!`);
       setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
+      setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
     } catch (err) {
       console.error(err);
       toast.error(`Failed to delete ${issue.type}`);
     }
+  };
+
+  // ===== EDIT =====
+  const handleEdit = (issue) => {
+    if (issue.type === "Bug") {
+      setEditingBugId(issue.id);
+      setShowEditBugModal(true);
+    } else if (issue.type === "Story") {
+      setEditingStoryId(issue.id);
+      setShowEditStoryModal(true);
+    } else if (issue.type === "Task") {
+      setEditingTaskId(issue.id);
+      setShowEditTaskModal(true);
+    } else if (issue.type === "Epic") {
+      setEditingEpicId(issue.id);
+      setShowEditEpicModal(true);
+    } else {
+      toast.info("Editing is available only for Bugs, Stories, Tasks, and Epics");
+    }
+  };
+
+  // ===== MODAL UPDATE HANDLERS =====
+  const handleBugUpdated = () => {
+    setShowEditBugModal(false);
+    setEditingBugId(null);
+    fetchIssues();
+    toast.success("Bug updated successfully!");
+  };
+
+  const handleStoryUpdated = () => {
+    setShowEditStoryModal(false);
+    setEditingStoryId(null);
+    fetchIssues();
+    toast.success("Story updated successfully!");
+  };
+
+  const handleTaskUpdated = () => {
+    setShowEditTaskModal(false);
+    setEditingTaskId(null);
+    fetchIssues();
+    toast.success("Task updated successfully!");
+  };
+
+  const handleEpicUpdated = () => { // ✅ NEW HANDLER
+    setShowEditEpicModal(false);
+    setEditingEpicId(null);
+    fetchIssues();
+    toast.success("Epic updated successfully!");
   };
 
   // ===== PROJECT NAME =====
@@ -258,7 +240,7 @@ const IssueTracker = () => {
         <SummaryCard title="High Priority" count={highPriority} />
       </div>
 
-      {/* Filter Section */}
+      {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-center">
         <input
           type="text"
@@ -267,33 +249,21 @@ const IssueTracker = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 rounded w-64"
         />
-        <select
-          className="border p-2 rounded"
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-        >
+        <select className="border p-2 rounded" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
           <option value="">All Types</option>
           <option value="Epic">Epic</option>
           <option value="Story">Story</option>
           <option value="Task">Task</option>
           <option value="Bug">Bug</option>
         </select>
-        <select
-          className="border p-2 rounded"
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-        >
+        <select className="border p-2 rounded" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
           <option value="">All Priorities</option>
           <option value="LOW">Low</option>
           <option value="MEDIUM">Medium</option>
           <option value="HIGH">High</option>
           <option value="CRITICAL">Critical</option>
         </select>
-        <select
-          className="border p-2 rounded"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
+        <select className="border p-2 rounded" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="">All Status</option>
           <option value="BACKLOG">Backlog</option>
           <option value="TODO">Todo</option>
@@ -355,6 +325,10 @@ const IssueTracker = () => {
                         ? "bg-purple-50"
                         : issue.type === "Bug"
                         ? "bg-red-50"
+                        : issue.type === "Story"
+                        ? "bg-blue-50"
+                        : issue.type === "Task"
+                        ? "bg-green-50"
                         : ""
                     }`}
                   >
@@ -374,20 +348,12 @@ const IssueTracker = () => {
                         {issue.type}
                       </span>
                     </td>
-                    <td className="border px-4 py-2">
-                      <BadgePriority priority={issue.priority} />
-                    </td>
-                    <td className="border px-4 py-2">
-                      <BadgeStatus status={issue.status} />
-                    </td>
+                    <td className="border px-4 py-2"><BadgePriority priority={issue.priority} /></td>
+                    <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
-                    <td className="border px-4 py-2">
-                      {issue.createdOn ? new Date(issue.createdOn).toLocaleDateString() : "-"}
-                    </td>
-                    <td className="border px-4 py-2">
-                      {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : "-"}
-                    </td>
+                    <td className="border px-4 py-2">{issue.createdOn ? new Date(issue.createdOn).toLocaleDateString() : "-"}</td>
+                    <td className="border px-4 py-2">{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : "-"}</td>
                     <td className="border px-4 py-2 flex items-center gap-3">
                       <ActionIcon
                         label="View"
@@ -400,9 +366,11 @@ const IssueTracker = () => {
                       >
                         <FiEye size={18} className="text-blue-600" />
                       </ActionIcon>
+
                       <ActionIcon label="Edit" onClick={() => handleEdit(issue)}>
                         <FiEdit size={18} className="text-green-600" />
                       </ActionIcon>
+
                       <ActionIcon label="Delete" onClick={() => handleDelete(issue)}>
                         <FiTrash size={18} className="text-red-600" />
                       </ActionIcon>
@@ -415,27 +383,42 @@ const IssueTracker = () => {
         )}
       </div>
 
-      {/* Edit Modal */}
-      {editItem && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-lg relative">
-            <button onClick={() => setEditItem(null)} className="absolute top-2 right-2">
-              ✖
-            </button>
-            <CreateIssueForm
-              mode="edit"
-              issueType={editItem.type}
-              initialData={editItem.initialData}
-              projects={projects}
-              users={users}
-              epics={epics}
-              sprints={sprints}
-              onClose={handleEditClose}
-              onCreated={handleEditClose}
-              projectId={projectId}
-            />
-          </div>
-        </div>
+      {/* Edit Modals */}
+      {showEditBugModal && editingBugId && (
+        <EditBugForm
+          bugId={editingBugId}
+          projectId={projectId}
+          onClose={() => setShowEditBugModal(false)}
+          onUpdated={handleBugUpdated}
+        />
+      )}
+
+      {showEditStoryModal && editingStoryId && (
+        <EditStoryForm
+          storyId={editingStoryId}
+          projectId={projectId}
+          onClose={() => setShowEditStoryModal(false)}
+          onUpdated={handleStoryUpdated}
+        />
+      )}
+
+      {showEditTaskModal && editingTaskId && (
+        <EditTaskForm
+          taskId={editingTaskId}
+          projectId={projectId}
+          onClose={() => setShowEditTaskModal(false)}
+          onUpdated={handleTaskUpdated}
+        />
+      )}
+
+      {/* ✅ NEW: Epic Edit Modal */}
+      {showEditEpicModal && editingEpicId && (
+        <EditEpicForm
+          epicId={editingEpicId}
+          projectId={projectId}
+          onClose={() => setShowEditEpicModal(false)}
+          onUpdated={handleEpicUpdated}
+        />
       )}
     </div>
   );
@@ -457,11 +440,7 @@ const BadgePriority = ({ priority }) => {
     CRITICAL: "bg-red-600 text-white",
   };
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-medium ${
-        colors[priority] || "bg-gray-100 text-gray-600"
-      }`}
-    >
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[priority] || "bg-gray-100 text-gray-600"}`}>
       {priority || "-"}
     </span>
   );
@@ -481,11 +460,7 @@ const BadgeStatus = ({ status }) => {
     BLOCKED: "bg-red-200 text-red-800",
   };
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-medium ${
-        colors[status] || "bg-gray-100 text-gray-600"
-      }`}
-    >
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-600"}`}>
       {status || "-"}
     </span>
   );

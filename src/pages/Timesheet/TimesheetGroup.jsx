@@ -231,7 +231,9 @@ const TimesheetGroup = ({
       );
 
       if (isOutsideAllMenus) {
-        setMenuOpen(false);
+        console.log({isOutsideAllMenus});
+        
+        // setMenuOpen(false);
         setOpenMenuId(null);
       }
     }
@@ -245,7 +247,9 @@ const TimesheetGroup = ({
     : calculateTotalHours(entriesState);
 
   const handleAddEntry = () => {
+    console.log("handlin");
     setMenuOpen(false);
+    
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
@@ -254,6 +258,8 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
+    console.log("handle delete");
+    
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
@@ -524,7 +530,7 @@ const TimesheetGroup = ({
   }, []);
   return (
     <div
-      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs overflow-hidden`}
+      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs`}
     >
       {/* Week Header */}
       {isWeeklyFormat && (
@@ -624,10 +630,12 @@ const TimesheetGroup = ({
                 {holidaysMap[normalize(date)] && (
                   <div className="ml-1">
                     {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip 
-                      content={holidaysMap[normalize(date)].submitTimesheet
-                        ? "Working on Holiday"
-                        : "Holiday - timesheet not allowed"}
+                    <Tooltip
+                      content={
+                        holidaysMap[normalize(date)].submitTimesheet
+                          ? "Working on Holiday"
+                          : "Holiday - timesheet not allowed"
+                      }
                     >
                       <span
                         className={`inline-block w-3 h-3 rounded-full ${
@@ -669,19 +677,21 @@ const TimesheetGroup = ({
         {/* 3 dots menu for daily format */}
         {!isWeeklyFormat && (
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
-              type="button"
-              disabled={currentStatus?.toLowerCase() === "approved"}
-              title={
-                currentStatus?.toLowerCase() === "approved"
-                  ? "Cannot edit approved timesheet"
-                  : "More options"
-              }
-            >
-              <MoreVertical size={22} />
-            </button>
+            {window.location.pathname !== "/managerapproval" && (
+              <button
+                onClick={() => setMenuOpen((open) => !open)}
+                className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
+                type="button"
+                disabled={currentStatus?.toLowerCase() === "approved"}
+                title={
+                  currentStatus?.toLowerCase() === "approved"
+                    ? "Cannot edit approved timesheet"
+                    : "More options"
+                }
+              >
+                <MoreVertical size={22} />
+              </button>
+            )}
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
                 <button
@@ -753,14 +763,14 @@ const TimesheetGroup = ({
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
-                    <div
+                    {window.location.pathname !== "/managerapproval" && <div
                       className="relative"
                       ref={(el) => {
                         if (el) {
                           menuRefs.current[timesheet.timesheetId] = el;
                         }
                       }}
-                    >
+                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -789,6 +799,7 @@ const TimesheetGroup = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log("Opening menu for:", timesheet.timesheetId, newMenuId);
                               handleAddEntry();
                               setOpenMenuId(null);
                               setMenuOpen(false);
@@ -821,7 +832,7 @@ const TimesheetGroup = ({
                           </button>
                         </div>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </div>
 
@@ -846,7 +857,7 @@ const TimesheetGroup = ({
             ))}
 
           {/* Submit Week Button */}
-          {isWeeklyFormat && weekData && (
+          {window.location.pathname !== "/managerapproval" && isWeeklyFormat && weekData && (
             <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
               <button
                 onClick={handleSubmitWeek}
