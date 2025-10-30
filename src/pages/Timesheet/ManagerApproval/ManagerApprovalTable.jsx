@@ -6,6 +6,7 @@ import { reviewTimesheet, handleBulkReview } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
+import { MoreVertical } from "lucide-react";
 
 const ManagerApprovalTable = ({
   loading,
@@ -421,6 +422,9 @@ const ManagerApprovalTable = ({
             </Button>
             <Button variant="primary" size="small" onClick={exportPDF}>
               Export PDF
+            </Button>
+            <Button variant="secondary" size="small">
+              <MoreVertical  size={10}/>
             </Button>
           </div>
 
