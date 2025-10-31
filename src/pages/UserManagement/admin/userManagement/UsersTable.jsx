@@ -1,7 +1,6 @@
 import React, {
   useEffect,
   useState,
-  useMemo,
   useCallback,
   useRef,
   Suspense,
@@ -17,31 +16,26 @@ import Modal from "../../../../components/Modal/modal";
 import { Pencil, UserX, UserCheck } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useAuth } from "../../../../contexts/AuthContext";
-import LoadingSpinner from "../../../../components/LoadingSpinner"
+import LoadingSpinner from "../../../../components/LoadingSpinner";
  
- 
- 
-// ✅ Lazy load heavy components
 const CreateUserForm = React.lazy(() => import("./CreateUser"));
 const EditUserForm = React.lazy(() => import("./EditUser"));
 const BulkUserUpload = React.lazy(() => import("./BulkUser"));
  
-const SORT_DIRECTIONS = { ASC: "asc", DESC: "desc" };
 const ITEMS_PER_PAGE = 10;
  
 export default function UsersTable() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("name");
-  const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [totalUsers, setTotalUsers] = useState(0);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [selectedUseruuId, setSelectedUseruuId] = useState(null);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
-  const [actionType, setActionType] = useState(""); // "activate" or "deactivate"
+  const [actionType, setActionType] = useState("");
   const [userBulkUploadModalOpen, setUserBulkUploadModalOpen] = useState(false);
  
   const navigate = useNavigate();
@@ -56,14 +50,19 @@ export default function UsersTable() {
     }
   }, [token, navigate]);
  
+  // ✅ Fetch from backend with pagination & search
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axios.get(
         `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          params: { page: currentPage, limit: ITEMS_PER_PAGE, search: searchTerm },
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      setUsers(res.data || []);
+      setUsers(res.data.users || []);
+      setTotalUsers(res.data.total || 0);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       if (err.response?.status === 403) {
@@ -81,7 +80,7 @@ export default function UsersTable() {
     } finally {
       setLoading(false);
     }
-  }, [token, navigate]);
+  }, [token, navigate, currentPage, searchTerm]);
  
   useEffect(() => {
     fetchUsers();
@@ -124,11 +123,6 @@ export default function UsersTable() {
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/uuid/${userToToggle}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.user_uuid === userToToggle ? { ...u, is_active: false } : u
-          )
-        );
         showStatusToast("User deactivated successfully.", "success");
       } else {
         await axios.patch(
@@ -136,13 +130,9 @@ export default function UsersTable() {
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.user_uuid === userToToggle ? { ...u, is_active: true } : u
-          )
-        );
         showStatusToast("User activated successfully.", "success");
       }
+      fetchUsers();
     } catch (err) {
       console.error(`${actionType} failed:`, err);
       showStatusToast(`Failed to ${actionType} user.`, "error");
@@ -153,56 +143,12 @@ export default function UsersTable() {
     }
   };
  
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) =>
-      `${user.first_name} ${user.last_name} ${user.mail} ${user.contact}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    );
-  }, [users, searchTerm]);
- 
-  const sortedUsers = useMemo(() => {
-    const copy = [...filteredUsers];
-    copy.sort((a, b) => {
-      let aVal, bVal;
-      switch (sortBy) {
-        case "name":
-          aVal = `${a.first_name} ${a.last_name}`.toLowerCase();
-          bVal = `${b.first_name} ${b.last_name}`.toLowerCase();
-          break;
-        case "email":
-          aVal = (a.mail ?? "").toLowerCase();
-          bVal = (b.mail ?? "").toLowerCase();
-          break;
-        case "contact":
-          aVal = (a.contact ?? "").toString();
-          bVal = (b.contact ?? "").toString();
-          break;
-        case "status":
-          aVal = a.is_active ? 1 : 0;
-          bVal = b.is_active ? 1 : 0;
-          break;
-        default:
-          aVal = bVal = "";
-      }
-      return sortDirection === SORT_DIRECTIONS.ASC
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
-    });
-    return copy;
-  }, [filteredUsers, sortBy, sortDirection]);
- 
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedUsers.slice(start, start + ITEMS_PER_PAGE);
-  }, [sortedUsers, currentPage]);
- 
-  const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
  
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
  
-  const tableData = paginatedUsers.map((user) => {
+  const tableData = users.map((user) => {
     let formattedContact = user.contact;
     if (user.contact) {
       const phoneNumber = parsePhoneNumberFromString(
@@ -289,12 +235,7 @@ export default function UsersTable() {
         className="mb-4 max-w-md"
       />
  
-      <GenericTable
-        headers={headers}
-        rows={tableData}
-        columns={columns}
-        loading={loading}
-      />
+      <GenericTable headers={headers} rows={tableData} columns={columns} loading={loading} />
  
       {!loading && totalPages > 1 && (
         <Pagination
@@ -305,7 +246,7 @@ export default function UsersTable() {
         />
       )}
  
-      {/* Create Modal */}
+      {/* --- Modals (unchanged) --- */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -321,7 +262,6 @@ export default function UsersTable() {
         </Suspense>
       </Modal>
  
-      {/* Bulk Upload Modal */}
       <Modal
         isOpen={userBulkUploadModalOpen}
         onClose={() => setUserBulkUploadModalOpen(false)}
@@ -329,22 +269,11 @@ export default function UsersTable() {
         subtitle="Excel should contain 4 columns: first_name, last_name, mail, and contact (as headers)."
         className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
       >
-        <Suspense
-          fallback={
-            <div className="flex justify-center py-10">
-              <LoadingSpinner text="Loading bulk upload..." />
-            </div>
-          }
-        >
-          <BulkUserUpload
-            onClose={() => setUserBulkUploadModalOpen(false)}
-            onSuccess={fetchUsers}
-          />
+        <Suspense fallback={<LoadingSpinner text="Loading bulk upload..." />}>
+          <BulkUserUpload onClose={() => setUserBulkUploadModalOpen(false)} onSuccess={fetchUsers} />
         </Suspense>
       </Modal>
  
- 
-      {/* Edit Modal */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={handleEditClose}
@@ -363,14 +292,11 @@ export default function UsersTable() {
         )}
       </Modal>
  
-      {/* Confirm Activate/Deactivate Modal */}
       <Modal
         isOpen={isConfirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
         title={
-          actionType === "deactivate"
-            ? "Confirm Deactivation"
-            : "Confirm Activation"
+          actionType === "deactivate" ? "Confirm Deactivation" : "Confirm Activation"
         }
         subtitle={
           actionType === "deactivate"
@@ -380,11 +306,7 @@ export default function UsersTable() {
         className="!mt-16 !max-h-[calc(100vh-8rem)] !overflow-hidden"
       >
         <div className="flex justify-end gap-3 mt-6">
-          <Button
-            onClick={() => setConfirmModalOpen(false)}
-            variant="secondary"
-            size="medium"
-          >
+          <Button onClick={() => setConfirmModalOpen(false)} variant="secondary" size="medium">
             Cancel
           </Button>
           <Button
