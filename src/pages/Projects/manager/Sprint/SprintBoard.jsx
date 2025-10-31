@@ -141,6 +141,7 @@ const SprintBoard = ({ projectId, projectName }) => {
               />
             </div>
           ))}
+          
         </div>
 
         {/* Modal */}
