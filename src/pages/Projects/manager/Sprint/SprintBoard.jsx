@@ -127,22 +127,28 @@ const SprintBoard = ({ projectId, projectName }) => {
         </div>
 
         {/* Sprint Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredSprints.map(sprint => (
-            <div
-              key={sprint.id}
-              className="bg-white rounded-2xl shadow p-6"
-            >
-              <SprintColumn
-                sprint={sprint}
-                stories={stories.filter(story => story.sprintId === sprint.id)}
-                onDropStory={handleDropStory}
-                onChangeStatus={handleStatusChange}
-              />
-            </div>
-          ))}
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative">
+          {filteredSprints.length > 0 ? (
+            filteredSprints.map(sprint => (
+              <div key={sprint.id} className="bg-white rounded-2xl shadow p-6">
+                <SprintColumn
+                  sprint={sprint}
+                  stories={stories.filter(story => story.sprintId === sprint.id)}
+                  onDropStory={handleDropStory}
+                  onChangeStatus={handleStatusChange}
+                />
+              </div>
+            ))
+          ) : (
+            // Show message ONLY when filter is not ALL and sprints are loaded
+            filter !== 'ALL' && sprints.length > 0 && (
+              <p className="absolute left-0 text-gray-600 font-medium mt-2">
+                No {filter.toLowerCase()} sprints found.
+              </p>
+            )
+          )}
         </div>
+
 
         {/* Modal */}
         <CreateSprintModal
