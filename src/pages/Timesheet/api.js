@@ -131,14 +131,14 @@ export async function addEntryToTimesheet(timesheetId, workdate, payload) {
       );
     } else {
       res = await fetch(
-        `${apiEndpoint}/api/timesheet/add-entry/${timesheetId}`,
+        `${apiEndpoint}/api/timesheet/addEntries`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({timeSheetId:timesheetId, entries:payload}),
         }
       );
     }

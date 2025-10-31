@@ -163,9 +163,12 @@ const TimesheetGroup = ({
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
+    
+    // console.log({weekGroup});
+    
 
     // Disabled if already approved or partially approved
-    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY_APPROVED") {
+    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
       return true;
     }
 
@@ -190,7 +193,7 @@ const TimesheetGroup = ({
     if (weeklyStatus === "APPROVED") {
       return "Week Already Approved";
     }
-    if (weeklyStatus === "PARTIALLY_APPROVED") {
+    if (weeklyStatus === "PARTIALLY APPROVED") {
       return "Week Partially Approved";
     }
     if (weeklyStatus === "SUBMITTED") {
@@ -231,7 +234,7 @@ const TimesheetGroup = ({
       );
 
       if (isOutsideAllMenus) {
-        console.log({isOutsideAllMenus});
+        // console.log({isOutsideAllMenus});
         
         // setMenuOpen(false);
         setOpenMenuId(null);
@@ -247,7 +250,6 @@ const TimesheetGroup = ({
     : calculateTotalHours(entriesState);
 
   const handleAddEntry = () => {
-    console.log("handlin");
     setMenuOpen(false);
     
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
@@ -258,7 +260,6 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
-    console.log("handle delete");
     
     setMenuOpen(false);
     setIsConfirmOpen(true);
@@ -682,11 +683,11 @@ const TimesheetGroup = ({
                 onClick={() => setMenuOpen((open) => !open)}
                 className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
                 type="button"
-                disabled={currentStatus?.toLowerCase() === "approved"}
+                disabled={currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"}
                 title={
-                  currentStatus?.toLowerCase() === "approved"
+                  currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"
                     ? "Cannot edit approved timesheet"
-                    : "More options"
+                    : "More optionssssssss"
                 }
               >
                 <MoreVertical size={22} />
@@ -784,10 +785,11 @@ const TimesheetGroup = ({
                         className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
                         type="button"
                         disabled={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" ||
+                          timesheet.status?.toLowerCase() === "partially approved"
                         }
                         title={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially approved"
                             ? "Cannot edit approved timesheet"
                             : "More options"
                         }
@@ -799,7 +801,7 @@ const TimesheetGroup = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log("Opening menu for:", timesheet.timesheetId, newMenuId);
+                              // console.log("Opening menu for:", timesheet.timesheetId);
                               handleAddEntry();
                               setOpenMenuId(null);
                               setMenuOpen(false);

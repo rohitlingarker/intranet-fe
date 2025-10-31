@@ -246,141 +246,145 @@ const ManagerApprovalTable = ({
     doc.save("manager_timesheets.pdf");
   };
 
-const renderUserWeeks = (user) =>
-  user.weeklySummary
-    .filter(
-      (week) =>
-        statusFilter === "All" ||
-        week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
-    )
-    .map((week) => (
-      <div
-        key={week.weekId}
-        className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
-      >
-        {/* Manager actions */}
-        {week.weeklyStatus === "SUBMITTED" && (
-          <div className="p-4 border-t flex gap-3 justify-end">
-            {/* ✅ Approve All Button */}
-            <Button
-              variant="success"
-              size="medium"
-              onClick={() => {
-                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
-                handleBulkReview(
-                  user.userId,
-                  timesheetIds,
-                  "APPROVED",
-                  "approved"
-                );
-                onRefresh();
-              }}
-            >
-              Approve All
-            </Button>
-
-            {/* ❌ Reject All Button */}
-
-            <Button
-              variant="danger"
-              size="medium"
-              onClick={() => {
-                // Open a single rejection comment box per week
-                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
-                setShowCommentBox((prev) => ({
-                  ...prev,
-                  [week.weekId]: true,
-                }));
-                setRejectionComments((prev) => ({
-                  ...prev,
-                  [week.weekId]: "",
-                }));
-              }}
-            >
-              Reject All
-            </Button>
-          </div>
-        )}
-        <TimesheetGroup
-          weekGroup={{
-            weekStart: week.startDate,
-            weekEnd: week.endDate,
-            timesheets: week.timesheets,
-            weekRange: `${new Date(
-              week.startDate
-            ).toLocaleDateString()} - ${new Date(
-              week.endDate
-            ).toLocaleDateString()}`,
-            totalHours: week.totalHours,
-            status: week.weeklyStatus,
-            weekNumber: week.weekId,
-            monthName: new Date(week.startDate).toLocaleString("en-US", {
-              month: "long",
-            }),
-            year: new Date(week.startDate).getFullYear(),
-          }}
-          refreshData={onRefresh}
-          mapWorkType={(type) => type}
-          projectInfo={projectInfo}
-        />
-
-        {showCommentBox[week.weekId] && (
-          <div className="p-4 bg-red-50 border-t">
-            <textarea
-              className="border p-2 w-full rounded"
-              rows="2"
-              placeholder="Enter rejection reason"
-              value={rejectionComments[week.weekId] || ""}
-              onChange={(e) =>
-                setRejectionComments((prev) => ({
-                  ...prev,
-                  [week.weekId]: e.target.value,
-                }))
-              }
-            />
-            <div className="flex gap-2 mt-2 justify-end">
+  const renderUserWeeks = (user) =>
+    user.weeklySummary
+      .filter(
+        (week) =>
+          statusFilter === "All" ||
+          week.weeklyStatus?.toUpperCase() === statusFilter.toUpperCase()
+      )
+      .map((week) => (
+        <div
+          key={week.weekId}
+          className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
+        >
+          {/* Manager actions */}
+          {week.weeklyStatus === "SUBMITTED" && (
+            <div className="p-4 border-t flex gap-3 justify-end">
+              {/* ✅ Approve All Button */}
               <Button
-                variant="danger"
-                size="small"
+                variant="success"
+                size="medium"
                 onClick={() => {
                   const timesheetIds = week.timesheets.map(
                     (t) => t.timesheetId
                   );
-                  const comment = rejectionComments[week.weekId] || "";
                   handleBulkReview(
                     user.userId,
                     timesheetIds,
-                    "REJECTED",
-                    comment
+                    "APPROVED",
+                    "approved"
                   );
-                  setShowCommentBox((prev) => ({
-                    ...prev,
-                    [week.weekId]: false,
-                  }));
                   onRefresh();
                 }}
               >
-                Confirm Reject
+                Approve All
               </Button>
+
+              {/* ❌ Reject All Button */}
 
               <Button
-                variant="secondary"
-                size="small"
-                onClick={() =>
+                variant="danger"
+                size="medium"
+                onClick={() => {
+                  // Open a single rejection comment box per week
+                  const timesheetIds = week.timesheets.map(
+                    (t) => t.timesheetId
+                  );
                   setShowCommentBox((prev) => ({
                     ...prev,
-                    [week.weekId]: false,
-                  }))
-                }
+                    [week.weekId]: true,
+                  }));
+                  setRejectionComments((prev) => ({
+                    ...prev,
+                    [week.weekId]: "",
+                  }));
+                }}
               >
-                Cancel
+                Reject All
               </Button>
             </div>
-          </div>
-        )}
+          )}
+          <TimesheetGroup
+            weekGroup={{
+              weekStart: week.startDate,
+              weekEnd: week.endDate,
+              timesheets: week.timesheets,
+              weekRange: `${new Date(
+                week.startDate
+              ).toLocaleDateString()} - ${new Date(
+                week.endDate
+              ).toLocaleDateString()}`,
+              totalHours: week.totalHours,
+              status: week.weeklyStatus,
+              weekNumber: week.weekId,
+              monthName: new Date(week.startDate).toLocaleString("en-US", {
+                month: "long",
+              }),
+              year: new Date(week.startDate).getFullYear(),
+            }}
+            refreshData={onRefresh}
+            mapWorkType={(type) => type}
+            projectInfo={projectInfo}
+          />
 
-        {/* Rejection boxes */}
-        {/* {week.timesheets.map(
+          {showCommentBox[week.weekId] && (
+            <div className="p-4 bg-red-50 border-t">
+              <textarea
+                className="border p-2 w-full rounded"
+                rows="2"
+                placeholder="Enter rejection reason"
+                value={rejectionComments[week.weekId] || ""}
+                onChange={(e) =>
+                  setRejectionComments((prev) => ({
+                    ...prev,
+                    [week.weekId]: e.target.value,
+                  }))
+                }
+              />
+              <div className="flex gap-2 mt-2 justify-end">
+                <Button
+                  variant="danger"
+                  size="small"
+                  onClick={() => {
+                    const timesheetIds = week.timesheets.map(
+                      (t) => t.timesheetId
+                    );
+                    const comment = rejectionComments[week.weekId] || "";
+                    handleBulkReview(
+                      user.userId,
+                      timesheetIds,
+                      "REJECTED",
+                      comment
+                    );
+                    setShowCommentBox((prev) => ({
+                      ...prev,
+                      [week.weekId]: false,
+                    }));
+                    onRefresh();
+                  }}
+                >
+                  Confirm Reject
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() =>
+                    setShowCommentBox((prev) => ({
+                      ...prev,
+                      [week.weekId]: false,
+                    }))
+                  }
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Rejection boxes */}
+          {/* {week.timesheets.map(
             (t) =>
               showCommentBox[t.timesheetId] && (
                 <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
@@ -415,8 +419,8 @@ const renderUserWeeks = (user) =>
                 </div>
               )
           )} */}
-      </div>
-    ));
+        </div>
+      ));
   // Track selection mode and selected users
   const [isRemoveMode, setIsRemoveMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -435,12 +439,27 @@ const renderUserWeeks = (user) =>
 
   // Select / Deselect single user (only in remove mode)
   const handleSelectUser = (userId) => {
-    if (!isRemoveMode) return;
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+    if (isRemoveMode) {
+      setSelectedUsers((prev) =>
+        prev.includes(userId)
+          ? prev.filter((id) => id !== userId)
+          : [...prev, userId]
+      );
+    }
+    if (!isUpdateMode) {
+      // Pre-fill the form with existing record data
+      setSelectedUpdateRecord(record);
+      setUpdateHoliday(record.holidayDate);
+      setUpdateReason(record.reason || "");
+
+      // Smooth scroll to the update form
+      setTimeout(() => {
+        updateSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 200);
+    }
   };
 
   // Select or deselect all users
@@ -487,7 +506,6 @@ const renderUserWeeks = (user) =>
     }
   };
 
-
   const [showAddUserSection, setShowAddUserSection] = useState(false);
   const [managerUsers, setManagerUsers] = useState([]);
   const [monthlyHolidays, setMonthlyHolidays] = useState([]);
@@ -495,94 +513,96 @@ const renderUserWeeks = (user) =>
   const [selectedHoliday, setSelectedHoliday] = useState("");
   const [reason, setReason] = useState("");
   const [addUserLoading, setAddUserLoading] = useState(false);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
 
+  const handleConfirmAddUser = async () => {
+    if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
+      showStatusToast("Please fill all fields before confirming.", "warning");
+      return;
+    }
 
-  
-const handleConfirmAddUser = async () => {
-  if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
-    showStatusToast("Please fill all fields before confirming.", "warning");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `${
-        import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-      }/api/holiday-exclude-users/create`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          userId: parseInt(selectedAddUser, 10),
-          holidayDate: selectedHoliday,
-          reason,
-        }),
-      }
-    );
-
-    if (!res.ok) throw new Error("Failed to add user to holiday exclude list");
-
-    showStatusToast("User added to holiday exclusion successfully!", "success");
-    fetchHolidayExcludedUsers();
-    setShowAddUserSection(false);
-    setSelectedAddUser("");
-    setSelectedHoliday("");
-    setReason("");
-  } catch (err) {
-    console.error("Error adding holiday exclude user:", err);
-    showStatusToast("Failed to add user", "error");
-  }
-};
-
-
-const handleAddUserClick = async () => {
-  setShowAddUserSection(true);
-  setAddUserLoading(true);
-  try {
-    const currentMonth = new Date().getMonth() + 1;
-
-    // Run both API calls in parallel and wait for both to finish
-    const [usersRes, holidaysRes] = await Promise.all([
-      fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      ),
-      fetch(
+    try {
+      const res = await fetch(
         `${
-          import.meta.env.VITE_LMS_BASE_URL
-        }/api/holidays/month/${currentMonth}`,
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/holiday-exclude-users/create`,
         {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
+          body: JSON.stringify({
+            userId: parseInt(selectedAddUser, 10),
+            holidayDate: selectedHoliday,
+            reason,
+          }),
         }
-      ),
-    ]);
+      );
 
-    if (!usersRes.ok || !holidaysRes.ok)
-      throw new Error("Failed to fetch data");
+      if (!res.ok)
+        throw new Error("Failed to add user to holiday exclude list");
 
-    const [usersData, holidaysData] = await Promise.all([
-      usersRes.json(),
-      holidaysRes.json(),
-    ]);
+      showStatusToast(
+        "User added to holiday exclusion successfully!",
+        "success"
+      );
+      fetchHolidayExcludedUsers();
+      setShowAddUserSection(false);
+      setSelectedAddUser("");
+      setSelectedHoliday("");
+      setReason("");
+    } catch (err) {
+      console.error("Error adding holiday exclude user:", err);
+      showStatusToast("Failed to add user", "error");
+    }
+  };
 
-    setManagerUsers(usersData);
-    setMonthlyHolidays(holidaysData);
-  } catch (err) {
-    console.error("Error loading add-user data:", err);
-    showStatusToast("Failed to load user or holiday data", "error");
-  } finally {
-    setAddUserLoading(false);
-  }
-};
+  const handleAddUserClick = async () => {
+    setShowAddUserSection(true);
+    setAddUserLoading(true);
+    try {
+      const currentMonth = new Date().getMonth() + 1;
+
+      // Run both API calls in parallel and wait for both to finish
+      const [usersRes, holidaysRes] = await Promise.all([
+        fetch(
+          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        ),
+        fetch(
+          `${
+            import.meta.env.VITE_LMS_BASE_URL
+          }/api/holidays/month/${currentMonth}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        ),
+      ]);
+
+      if (!usersRes.ok || !holidaysRes.ok)
+        throw new Error("Failed to fetch data");
+
+      const [usersData, holidaysData] = await Promise.all([
+        usersRes.json(),
+        holidaysRes.json(),
+      ]);
+
+      setManagerUsers(usersData);
+      setMonthlyHolidays(holidaysData);
+    } catch (err) {
+      console.error("Error loading add-user data:", err);
+      showStatusToast("Failed to load user or holiday data", "error");
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
 
   // -----------------------------
   // Main Render
@@ -719,7 +739,14 @@ const handleAddUserClick = async () => {
                 <Button
                   variant="primary"
                   size="small"
-                  onClick={() => console.log("Update User clicked")}
+                  onClick={() => {
+                    setIsUpdateMode(true);
+                    setShowAddUserSection(false);
+                    setSelectedAddUser(null);
+                    setSelectedHoliday("");
+                    setReason("");
+                    showStatusToast("Select a record above to update.", "info");
+                  }}
                 >
                   Update User
                 </Button>
