@@ -407,7 +407,7 @@ const Modal = ({ children, onClose }) => (
         onClick={onClose}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
       >
-        &times;
+        
       </button>
       {children}
     </div>
