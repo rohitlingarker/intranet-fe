@@ -683,11 +683,11 @@ const TimesheetGroup = ({
                 onClick={() => setMenuOpen((open) => !open)}
                 className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
                 type="button"
-                disabled={currentStatus?.toLowerCase() === "approved"}
+                disabled={currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"}
                 title={
-                  currentStatus?.toLowerCase() === "approved"
+                  currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"
                     ? "Cannot edit approved timesheet"
-                    : "More options"
+                    : "More optionssssssss"
                 }
               >
                 <MoreVertical size={22} />
@@ -785,10 +785,11 @@ const TimesheetGroup = ({
                         className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
                         type="button"
                         disabled={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" ||
+                          timesheet.status?.toLowerCase() === "partially approved"
                         }
                         title={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially approved"
                             ? "Cannot edit approved timesheet"
                             : "More options"
                         }
