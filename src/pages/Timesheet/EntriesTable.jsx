@@ -10,7 +10,7 @@ import Button from "../../components/Button/Button";
 // safely render '01:30' or '16:30:00' as '01:30' or '16:30'
 const prettyTime = (time) => {
   if (!time) return "";
-  const date = new Date(time);
+  const date = new Date(time.slice(-1) === "Z" ? time : time+"Z"); // treat as UTC
   if (isNaN(date.getTime())) return "";
   return date.toLocaleTimeString([], {
     hour: "2-digit",
@@ -53,7 +53,7 @@ const EntriesTable = ({
   //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
 
   useEffect(() => {
-    console.log({addingNewEntry});
+    // console.log({addingNewEntry});
     
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
@@ -74,7 +74,7 @@ const EntriesTable = ({
     label: p.project,
     value: p.projectId,
   }));
-  console.log({ projectInfo });
+  // console.log({ projectInfo });
 
   const projectIdToName = Object.fromEntries(
     projectInfo.map((p) => [p.projectId, p.project])
