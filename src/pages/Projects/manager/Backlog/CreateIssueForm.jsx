@@ -1,394 +1,215 @@
+// src/pages/Projects/manager/Backlog.jsx
 import React, { useEffect, useState } from "react";
+import CreateSprint from "./sprint";
+import { Plus, List } from "lucide-react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import CreateIssueForm from "./CreateIssueForm";
+import StoryCard from "../Sprint/StoryCard";
+import SprintColumn from "../Sprint/SprintColumn";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import Button from "../../../../components/Button/Button";
 
-import FormInput from "../../../../components/forms/FormInput";
-import FormDatePicker from "../../../../components/forms/FormDatePicker";
-import FormSelect from "../../../../components/forms/FormSelect";
-import FormTextArea from "../../../../components/forms/FormTextArea";
-import { set } from "date-fns";
-
-const CreateIssueForm = ({
-  issueType: initialIssueType = "Epic",
-  initialData = {},
-  projectId: initialProjectId = null,
-  ownerId: initialOwnerId = null,
-  memberIds: initialMemberIds = [],
-  onClose,
-  onCreated,
-}) => {
-  const [issueType, setIssueType] = useState(initialIssueType);
-  const [formData, setFormData] = useState({
-    projectId: initialProjectId,
-    ...initialData, // removed reporterId & assigneeId defaults
-  });
-
-  const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [epics, setEpics] = useState([]);
+const Backlog = ({ projectId, projectName }) => {
+  const [showIssueForm, setShowIssueForm] = useState(false);
+  const [showSprintForm, setShowSprintForm] = useState(false);
   const [stories, setStories] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [sprints, setSprints] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [noEpicStories, setNoEpicStories] = useState([]);
+  const [projects, setProjects] = useState([]);
 
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   };
 
-  // ---------- Fetch Projects & Users ----------
+  const handleCloseForms = () => {
+    setShowIssueForm(false);
+    setShowSprintForm(false);
+  };
+
+  const fetchProjects = () => {
+    axios
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers })
+      .then((res) => setProjects(res.data.content || res.data || []))
+      .catch((err) => console.error("Failed to fetch projects", err));
+  };
+
+  const fetchStories = () => {
+    axios
+      .get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+        { headers }
+      )
+      .then((res) => setStories(res.data))
+      .catch((err) => console.error("Failed to fetch stories", err));
+  };
+
+  const fetchNoEpicStories = () => {
+    axios
+      .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/no-epic`, {
+        params: { projectId },
+        headers,
+      })
+      .then((res) => setNoEpicStories(res.data))
+      .catch((err) => console.error("Failed to fetch no epic stories", err));
+  };
+
+  const fetchSprints = () => {
+    axios
+      .get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+        { headers }
+      )
+      .then((res) => setSprints(res.data))
+      .catch((err) => console.error("Failed to fetch sprints", err));
+  };
+
   useEffect(() => {
-    const pid = initialProjectId;
-    const fetchInitialData = async () => {
-      try {
-        const [projectsRes, usersRes,ownerRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/members`, axiosConfig),
-          //axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
-        ]);
-        setProjects(projectsRes.data.content || projectsRes.data || []);
-        setUsers(usersRes.data.content || usersRes.data || []);
-        
-      } catch (error) {
-        console.error("Error fetching projects/users:", error);
-        toast.error("Failed to load projects or users.");
-      }
-    };
-    fetchInitialData();
-  }, []);
+    fetchProjects();
+    fetchStories();
+    fetchSprints();
+    fetchNoEpicStories();
+  }, [projectId]);
 
-  // ---------- Fetch Dependent Data ----------
-  useEffect(() => {
-    const loadProjectData = async () => {
-      if (!formData.projectId) {
-        setEpics([]);
-        setStories([]);
-        setTasks([]);
-        setSprints([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const [epicRes, storyRes, taskRes, sprintRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${formData.projectId}/epics`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${formData.projectId}/stories`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${formData.projectId}/tasks`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${formData.projectId}/sprints`, axiosConfig),
-        ]);
-        setEpics(epicRes.data || []);
-        setStories(storyRes.data || []);
-        setTasks(taskRes.data || []);
-        setSprints(sprintRes.data || []);
-      } catch (error) {
-        console.error("Error fetching project data:", error);
-        toast.error("Failed to load project-related data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProjectData();
-  }, [formData.projectId]);
-
-  // ---------- Handle Change ----------
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId", "taskId"].includes(name)
-        ? value ? Number(value) : null
-        : value,
-    }));
+  // ✅ Handle story drop & update lists immediately
+  const handleDropStory = (storyId, sprintId) => {
+    axios
+      .put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
+        { sprintId },
+        { headers }
+      )
+      .then(() => {
+        // Update local state instantly
+        setStories((prev) =>
+          prev.map((s) =>
+            s.id === storyId ? { ...s, sprintId: sprintId } : s
+          )
+        );
+        // Remove from backlog stories (noEpicStories)
+        setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
+      })
+      .catch((err) => console.error("Failed to assign story to sprint", err));
   };
 
-  // ---------- Handle Submit ----------
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    let endpoint = "/api/tasks";
-    let payload = {};
+  const selectedProject = projects.find((p) => p.id === projectId);
 
-    if (issueType === "Epic") {
-      endpoint = "/api/epics";
-      payload = {
-       name: formData.name,
-    description: formData.description || "",
-    status: formData.status || "OPEN", // 🆕 Add Epic status
-    priority: formData.priority || "MEDIUM", // 🆕 Add Epic priority
-    progressPercentage: Number(formData.progressPercentage || 0),
-    projectId: Number(formData.projectId),
-    reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-    dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
-      };
-    }
-
-    if (issueType === "Story") {
-      endpoint = "/api/stories";
-      payload = {
-        title: formData.title,
-        description: formData.description || "",
-        priority: formData.priority || "MEDIUM",
-        status: formData.status || "BACKLOG",
-        assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
-        reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-        projectId: Number(formData.projectId),
-        sprintId: formData.sprintId || null,
-        epicId: formData.epicId || null,
-        storyPoints: formData.storyPoints ? Number(formData.storyPoints) : null,
-        acceptanceCriteria: formData.acceptanceCriteria || "",
-        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-      };
-    }
-
-    if (issueType === "Task") {
-      endpoint = "/api/tasks";
-      payload = {
-        title: formData.title,
-        description: formData.description || "",
-        priority: formData.priority || "MEDIUM",
-        status: formData.status || "BACKLOG",
-        projectId: Number(formData.projectId),
-        reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-        assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
-        storyId: formData.storyId || null,
-        sprintId: formData.sprintId || null,
-        epicId: formData.epicId || null,
-        estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
-        actualHours: formData.actualHours ? Number(formData.actualHours) : null,
-      };
-    }
-
-    if (issueType === "Bug") {
-      endpoint = "/api/bugs";
-      payload = {
-        title: formData.title,
-        description: formData.description || "",
-        priority: formData.priority || "MEDIUM",
-        status: formData.status || "OPEN",
-        severity: formData.severity || "MINOR",
-        reporter: formData.reporterId ? Number(formData.reporterId) : null,
-        assignedTo: formData.assigneeId ? Number(formData.assigneeId) : null,
-        projectId: Number(formData.projectId),
-        sprintId: formData.sprintId || null,
-        epicId: formData.epicId || null,
-        taskId: formData.taskId || null,
-        stepsToReproduce: formData.stepsToReproduce || "",
-        expectedResult: formData.expectedResult || "",
-        actualResult: formData.actualResult || "",
-      };
-    }
-
-    try {
-      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload, axiosConfig);
-      toast.success(`${issueType} created successfully!`);
-      setTimeout(() => {
-        onCreated?.();
-        onClose?.();
-      }, 800);
-    } catch (error) {
-      console.error("Error creating issue:", error);
-      toast.error(`Failed to create ${issueType}.`);
-    }
+  const goToIssueTracker = () => {
+    navigate(`/projects/${projectId}/issuetracker`, {
+      state: { projectId },
+    });
   };
 
-  const selectedProject = projects.find((p) => p.id === formData.projectId);
+  const filteredNoEpicStories = noEpicStories || [];
+  const filteredStories = stories || [];
 
-  // ---------- Render ----------
+  // ✅ Sort sprints by latest created
+  const sortedSprints = [...sprints].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
-      <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-        <X size={20} />
-      </button>
+    <DndProvider backend={HTML5Backend}>
+      <div className="max-w-6xl mx-auto mt-6 px-4 space-y-6">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-medium text-indigo-900">
+            Backlog of {projectName}
+          </h1>
+          <div className="flex gap-3">
+            <Button
+              size="medium"
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={goToIssueTracker}
+            >
+              <List size={18} /> Issue Tracker
+            </Button>
 
-      <ToastContainer />
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Create {issueType}
-      </h2>
-
-      {loading && <p className="text-sm text-gray-500 mb-3">Loading project data...</p>}
-
-      <FormSelect
-        label="Issue Type"
-        name="issueType"
-        value={issueType}
-        onChange={(e) => {
-          setIssueType(e.target.value);
-          setFormData({
-            projectId: initialProjectId, // reset without prefilling assignee/reporter
-          });
-        }}
-        options={[
-          { label: "Epic", value: "Epic" },
-          { label: "Story", value: "Story" },
-          { label: "Task", value: "Task" },
-          { label: "Bug", value: "Bug" },
-        ]}
-      />
-
-      <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-        <div>
-          <label className="block text-gray-700 font-semibold mb-2">Project *</label>
-          <input
-            type="text"
-            value={selectedProject ? selectedProject.name : ""}
-            readOnly
-            className="w-full border rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-          />
+            <Button
+              size="medium"
+              variant="primary"
+              className="flex items-center gap-2"
+              onClick={() => setShowIssueForm(true)}
+            >
+              <Plus size={18} /> Create Issue
+            </Button>
+          </div>
         </div>
 
-        {/* Conditional forms */}
-        {issueType === "Epic" && (
-          <>
-  <FormInput
-    label="Epic Name *"
-    name="name"
-    value={formData.name || ""}
-    onChange={handleChange}
-    required
-  />
-
-  <FormTextArea
-    label="Description"
-    name="description"
-    value={formData.description || ""}
-    onChange={handleChange}
-  />
-
- <FormSelect
-  label="Status"
-  name="status"
-  value={formData.status || "OPEN"}
-  onChange={handleChange}
-  options={[
-    { label: "Open", value: "OPEN" },
-    { label: "In Progress", value: "IN_PROGRESS" },
-    { label: "Completed", value: "COMPLETED" },
-    { label: "On Hold", value: "ON_HOLD" },
-  ]}
-/>
-
-<FormSelect
-  label="Priority"
-  name="priority"
-  value={formData.priority || "MEDIUM"}
-  onChange={handleChange}
-  options={[
-    { label: "Low", value: "LOW" },
-    { label: "Medium", value: "MEDIUM" },
-    { label: "High", value: "HIGH" },
-    { label: "Critical", value: "CRITICAL" },
-  ]}
-/>
-
-
-
-  <FormInput
-    label="Progress (%)"
-    name="progressPercentage"
-    type="number"
-    value={formData.progressPercentage || ""}
-    onChange={handleChange}
-  />
-
-  <FormDatePicker
-    label="Due Date"
-    name="dueDate"
-    value={formData.dueDate || ""}
-    onChange={handleChange}
-  />
-</>
-
+        {/* ✅ Create Issue Modal */}
+        {showIssueForm && selectedProject && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+              <CreateIssueForm
+                onClose={handleCloseForms}
+                onCreated={() => {
+                  fetchStories();
+                  fetchNoEpicStories();
+                }}
+                projectId={projectId}
+                ownerId={selectedProject.owner?.id}
+                memberIds={selectedProject.members?.map((m) => m.id) || []}
+              />
+            </div>
+          </div>
         )}
 
-        {issueType === "Story" && (
-          <>
-            <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />
-            <FormSelect label="Epic" name="epicId" value={formData.epicId || ""} onChange={handleChange} options={epics.map(e => ({ label: e.name, value: e.id }))} />
-            <FormSelect label="Priority *" name="priority" value={formData.priority || "MEDIUM"} onChange={handleChange} options={[
-              { label: "Low", value: "LOW" },
-              { label: "Medium", value: "MEDIUM" },
-              { label: "High", value: "HIGH" },
-              { label: "Critical", value: "CRITICAL" },
-            ]} />
-            <FormSelect label="Status *" name="status" value={formData.status || "BACKLOG"} onChange={handleChange} options={[
-              { label: "Backlog", value: "BACKLOG" },
-              { label: "To Do", value: "TODO" },
-              { label: "In Progress", value: "IN_PROGRESS" },
-              { label: "Done", value: "DONE" },
-            ]} />
-            <FormInput label="Story Points" name="storyPoints" type="number" value={formData.storyPoints || ""} onChange={handleChange} />
-            <FormTextArea label="Acceptance Criteria" name="acceptanceCriteria" value={formData.acceptanceCriteria || ""} onChange={handleChange} />
-            <FormSelect label="Sprint" name="sprintId" value={formData.sprintId || ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
-            <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-            <FormSelect label="Reporter" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-          </>
+        {/* Create Sprint Modal */}
+        {showSprintForm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+              <CreateSprint onClose={handleCloseForms} projectId={projectId} />
+            </div>
+          </div>
         )}
 
-        {issueType === "Task" && (
-          <>
-            <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />
-            <FormSelect label="Story *" name="storyId" value={formData.storyId || ""} onChange={handleChange} options={stories.map(s => ({ label: s.title, value: s.id }))} />
-            <FormSelect label="Priority *" name="priority" value={formData.priority || "MEDIUM"} onChange={handleChange} options={[
-              { label: "Low", value: "LOW" },
-              { label: "Medium", value: "MEDIUM" },
-              { label: "High", value: "HIGH" },
-              { label: "Critical", value: "CRITICAL" },
-            ]} />
-            <FormSelect label="Status *" name="status" value={formData.status || "BACKLOG"} onChange={handleChange} options={[
-              { label: "Backlog", value: "BACKLOG" },
-              { label: "To Do", value: "TODO" },
-              { label: "In Progress", value: "IN_PROGRESS" },
-              { label: "Done", value: "DONE" },
-            ]} />
-            <FormSelect label="Sprint" name="sprintId" value={formData.sprintId || ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
-            <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-            <FormSelect label="Reporter" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-          </>
-        )}
+        {/* Backlog Stories Section */}
+        <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
+          <h2 className="text-base font-medium text-indigo-900 mb-3">
+            Backlog Stories
+          </h2>
+          {filteredNoEpicStories.length === 0 ? (
+            <p className="text-gray-400 italic">No unassigned stories</p>
+          ) : (
+            <div className="space-y-2">
+              {filteredNoEpicStories.map((story) => (
+                <StoryCard
+                  key={story.id}
+                  story={{ ...story, status: "BACKLOG" }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-        {issueType === "Bug" && (
-          <>
-            <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />
-            <FormSelect label="Status *" name="status" value={formData.status || "OPEN"} onChange={handleChange} options={[
-              { label: "Open", value: "OPEN" },
-              { label: "In Progress", value: "IN_PROGRESS" },
-              { label: "Resolved", value: "RESOLVED" },
-              { label: "Closed", value: "CLOSED" },
-              { label: "Reopened", value: "REOPENED" },
-            ]} />
-            <FormSelect label="Priority *" name="priority" value={formData.priority || "MEDIUM"} onChange={handleChange} options={[
-              { label: "Low", value: "LOW" },
-              { label: "Medium", value: "MEDIUM" },
-              { label: "High", value: "HIGH" },
-              { label: "Critical", value: "CRITICAL" },
-            ]} />
-            <FormSelect label="Severity *" name="severity" value={formData.severity || "MINOR"} onChange={handleChange} options={[
-              { label: "Minor", value: "MINOR" },
-              { label: "Major", value: "MAJOR" },
-              { label: "Blocker", value: "BLOCKER" },
-            ]} />
-            <FormSelect label="Task" name="taskId" value={formData.taskId || ""} onChange={handleChange} options={tasks.map(t => ({ label: t.title, value: t.id }))} />
-            <FormSelect label="Sprint" name="sprintId" value={formData.sprintId || ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
-            <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-            <FormSelect label="Reporter" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-          </>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
-        >
-          {loading ? "Creating..." : `Create ${issueType}`}
-        </button>
-      </form>
-    </div>
+        {/* Sprint Columns */}
+        <div>
+          <h2 className="text-base font-medium text-indigo-900 mb-3">
+            Assign to Sprint
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {sortedSprints.map((sprint) => (
+              <SprintColumn
+                key={sprint.id}
+                sprint={sprint}
+                stories={filteredStories.filter(
+                  (s) => s.sprintId === sprint.id
+                )}
+                onDropStory={handleDropStory}
+                onChangeStatus={() => {}}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </DndProvider>
   );
 };
 
-export default CreateIssueForm;
+export default Backlog;

@@ -1,3 +1,4 @@
+// ✅ IssueTracker.jsx (Unified Edit Modal System with Create Success Toast)
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -9,7 +10,8 @@ import "react-toastify/dist/ReactToastify.css";
 import EditBugForm from "./EditBugForm";
 import EditStoryForm from "./EditStoryForm";
 import EditTaskForm from "./EditTaskForm";
-import EditEpicForm from "./EditEpicForm"; // ✅ NEW IMPORT
+import EditEpicForm from "./EditEpicForm";
+import LoadingSpinner from "../../../../components/LoadingSpinner";
 
 const IssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
@@ -22,18 +24,12 @@ const IssueTracker = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
 
-  // ===== Edit modals =====
-  const [showEditBugModal, setShowEditBugModal] = useState(false);
-  const [editingBugId, setEditingBugId] = useState(null);
-
-  const [showEditStoryModal, setShowEditStoryModal] = useState(false);
-  const [editingStoryId, setEditingStoryId] = useState(null);
-
-  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
-  const [editingTaskId, setEditingTaskId] = useState(null);
-
-  const [showEditEpicModal, setShowEditEpicModal] = useState(false); // ✅ NEW
-  const [editingEpicId, setEditingEpicId] = useState(null); // ✅ NEW
+  // ===== Unified Edit Modal =====
+  const [editModal, setEditModal] = useState({
+    visible: false,
+    type: null,
+    id: null,
+  });
 
   // ===== Filters =====
   const [searchTerm, setSearchTerm] = useState("");
@@ -124,9 +120,7 @@ const IssueTracker = () => {
   useEffect(() => {
     let filtered = [...issues];
     if (searchTerm)
-      filtered = filtered.filter((i) =>
-        i.title?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter((i) => i.title?.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterType) filtered = filtered.filter((i) => i.type === filterType);
     if (filterPriority) filtered = filtered.filter((i) => i.priority === filterPriority);
     if (filterStatus) filtered = filtered.filter((i) => i.status === filterStatus);
@@ -142,10 +136,7 @@ const IssueTracker = () => {
     else if (issue.type === "Story") endpoint = `/api/stories/${issue.id}`;
     else if (issue.type === "Task") endpoint = `/api/tasks/${issue.id}`;
     else if (issue.type === "Bug") endpoint = `/api/bugs/${issue.id}`;
-    else {
-      toast.error("Unknown issue type!");
-      return;
-    }
+    else return toast.error("Unknown issue type!");
 
     try {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
@@ -160,57 +151,27 @@ const IssueTracker = () => {
 
   // ===== EDIT =====
   const handleEdit = (issue) => {
-    if (issue.type === "Bug") {
-      setEditingBugId(issue.id);
-      setShowEditBugModal(true);
-    } else if (issue.type === "Story") {
-      setEditingStoryId(issue.id);
-      setShowEditStoryModal(true);
-    } else if (issue.type === "Task") {
-      setEditingTaskId(issue.id);
-      setShowEditTaskModal(true);
-    } else if (issue.type === "Epic") {
-      setEditingEpicId(issue.id);
-      setShowEditEpicModal(true);
-    } else {
-      toast.info("Editing is available only for Bugs, Stories, Tasks, and Epics");
+    setEditModal({ visible: true, type: issue.type, id: issue.id });
+  };
+
+  const handleUpdated = () => {
+    setEditModal({ visible: false, type: null, id: null });
+    fetchIssues();
+    toast.success("Issue updated successfully!");
+  };
+
+  // ===== CREATE SUCCESS HANDLER =====
+  useEffect(() => {
+    if (location.state?.createdIssueType) {
+      toast.success(`${location.state.createdIssueType} created successfully!`);
+      navigate(location.pathname, { replace: true, state: {} }); // clear toast trigger state
     }
-  };
+  }, [location.state, navigate, location.pathname]);
 
-  // ===== MODAL UPDATE HANDLERS =====
-  const handleBugUpdated = () => {
-    setShowEditBugModal(false);
-    setEditingBugId(null);
-    fetchIssues();
-    toast.success("Bug updated successfully!");
-  };
-
-  const handleStoryUpdated = () => {
-    setShowEditStoryModal(false);
-    setEditingStoryId(null);
-    fetchIssues();
-    toast.success("Story updated successfully!");
-  };
-
-  const handleTaskUpdated = () => {
-    setShowEditTaskModal(false);
-    setEditingTaskId(null);
-    fetchIssues();
-    toast.success("Task updated successfully!");
-  };
-
-  const handleEpicUpdated = () => { // ✅ NEW HANDLER
-    setShowEditEpicModal(false);
-    setEditingEpicId(null);
-    fetchIssues();
-    toast.success("Epic updated successfully!");
-  };
-
-  // ===== PROJECT NAME =====
   const currentProject = projects.find((p) => p.id === Number(projectId));
   const projectName = currentProject ? currentProject.name : projectId;
 
-  // ===== STATS =====
+  // ===== Stats =====
   const totalIssues = issues.length;
   const openIssues = issues.filter((i) => ["OPEN", "TODO", "BACKLOG"].includes(i.status)).length;
   const inProgress = issues.filter((i) => i.status === "IN_PROGRESS").length;
@@ -241,29 +202,41 @@ const IssueTracker = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-center">
+      <div className="bg-white p-5 rounded-lg shadow-md flex flex-wrap gap-3 items-center border border-gray-100">
         <input
           type="text"
-          placeholder="Search by title..."
+          placeholder="🔍 Search by title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="border p-2 rounded w-64"
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         />
-        <select className="border p-2 rounded" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
           <option value="">All Types</option>
           <option value="Epic">Epic</option>
           <option value="Story">Story</option>
           <option value="Task">Task</option>
           <option value="Bug">Bug</option>
         </select>
-        <select className="border p-2 rounded" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+        >
           <option value="">All Priorities</option>
           <option value="LOW">Low</option>
           <option value="MEDIUM">Medium</option>
           <option value="HIGH">High</option>
           <option value="CRITICAL">Critical</option>
         </select>
-        <select className="border p-2 rounded" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
           <option value="">All Status</option>
           <option value="BACKLOG">Backlog</option>
           <option value="TODO">Todo</option>
@@ -291,10 +264,12 @@ const IssueTracker = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
-        {loading ? (
-          <p className="p-4">Loading issues...</p>
-        ) : (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <LoadingSpinner text="Loading issues..." />
+        </div>
+      ) : (
+        <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="min-w-full border-collapse text-sm">
             <thead className="bg-gray-100 text-gray-700">
               <tr>
@@ -380,49 +355,64 @@ const IssueTracker = () => {
               )}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* Edit Modals */}
-      {showEditBugModal && editingBugId && (
-        <EditBugForm
-          bugId={editingBugId}
-          projectId={projectId}
-          onClose={() => setShowEditBugModal(false)}
-          onUpdated={handleBugUpdated}
-        />
+        </div>
       )}
 
-      {showEditStoryModal && editingStoryId && (
-        <EditStoryForm
-          storyId={editingStoryId}
-          projectId={projectId}
-          onClose={() => setShowEditStoryModal(false)}
-          onUpdated={handleStoryUpdated}
-        />
-      )}
-
-      {showEditTaskModal && editingTaskId && (
-        <EditTaskForm
-          taskId={editingTaskId}
-          projectId={projectId}
-          onClose={() => setShowEditTaskModal(false)}
-          onUpdated={handleTaskUpdated}
-        />
-      )}
-
-      {/* ✅ NEW: Epic Edit Modal */}
-      {showEditEpicModal && editingEpicId && (
-        <EditEpicForm
-          epicId={editingEpicId}
-          projectId={projectId}
-          onClose={() => setShowEditEpicModal(false)}
-          onUpdated={handleEpicUpdated}
-        />
+      {/* ===== Unified Edit Modal ===== */}
+      {editModal.visible && (
+        <Modal onClose={() => setEditModal({ visible: false, type: null, id: null })}>
+          {editModal.type === "Bug" && (
+            <EditBugForm
+              bugId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={handleUpdated}
+            />
+          )}
+          {editModal.type === "Story" && (
+            <EditStoryForm
+              storyId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={handleUpdated}
+            />
+          )}
+          {editModal.type === "Task" && (
+            <EditTaskForm
+              taskId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={handleUpdated}
+            />
+          )}
+          {editModal.type === "Epic" && (
+            <EditEpicForm
+              epicId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={handleUpdated}
+            />
+          )}
+        </Modal>
       )}
     </div>
   );
 };
+
+// ===== Modal Component =====
+const Modal = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-auto max-w-2xl relative">
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
+      >
+        &times;
+      </button>
+      {children}
+    </div>
+  </div>
+);
 
 // ===== Helper Components =====
 const SummaryCard = ({ title, count }) => (

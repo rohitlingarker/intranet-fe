@@ -5,16 +5,15 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { ClipboardList } from "lucide-react";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
-const getColumnStyles = () => {
-  return {
-    header:
-      "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
-    body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
-    container:
-      "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
-  };
-};
+const getColumnStyles = () => ({
+  header:
+    "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
+  body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
+  container:
+    "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
+});
 
+// ========== KANBAN CARD ==========
 const KanbanCard = ({ task }) => {
   const [{ isDragging }, dragRef] = useDrag({
     type: "TASK",
@@ -42,6 +41,7 @@ const KanbanCard = ({ task }) => {
   );
 };
 
+// ========== KANBAN COLUMN ==========
 const KanbanColumn = ({ status, tasks, onDrop }) => {
   const { header, body, container } = getColumnStyles();
 
@@ -72,6 +72,7 @@ const KanbanColumn = ({ status, tasks, onDrop }) => {
   );
 };
 
+// ========== MAIN BOARD ==========
 const Board = ({ projectId, projectName }) => {
   const [tasks, setTasks] = useState([]);
   const [stories, setStories] = useState([]);
@@ -95,7 +96,6 @@ const Board = ({ projectId, projectName }) => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        // Fetch stories and tasks concurrently
         const [storiesRes, tasksRes, sprintsRes] = await Promise.all([
           axios.get(
             `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
@@ -114,24 +114,32 @@ const Board = ({ projectId, projectName }) => {
         const storiesData = storiesRes.data;
         const tasksData = tasksRes.data;
         const sprintsData = sprintsRes.data;
+
         setSprints(sprintsData);
         setStories(storiesData);
 
-        const activeSprint = sprintsData.find((sprint) => sprint.status === "ACTIVE") || null;
+        const activeSprint =
+          sprintsData.find((s) => s.status === "ACTIVE") || null;
 
-        if (activeSprint) {
-          setCurrentSprint({ id: activeSprint.id, name: activeSprint.name || `Sprint ${activeSprint.id}` });
-        } else {
-          setCurrentSprint(null); // No active sprint
+        if (!activeSprint) {
+          console.warn("No active sprint found for this project");
+          setCurrentSprint(null);
+          setTasks([]);
+          setLoading(false);
+          return;
         }
 
+        setCurrentSprint({
+          id: activeSprint.id,
+          name: activeSprint.name || `Sprint ${activeSprint.id}`,
+        });
 
-        // Get IDs of stories assigned to current sprint
+        // ✅ Corrected story filter: use story.sprintId === activeSprint.id
         const sprintStoryIds = storiesData
-          .filter((story) => story.sprintId === (activeSprint ? activeSprint.sprintId : null))
+          .filter((story) => story.sprintId === activeSprint.id)
           .map((story) => story.id);
 
-        // Normalize and filter tasks whose storyId is in sprint stories
+        // ✅ Normalize and filter tasks by those stories
         const normalizedTasks = tasksData
           .map((task) => ({
             ...task,
@@ -169,8 +177,8 @@ const Board = ({ projectId, projectName }) => {
         { ...updatedTask, status: backendStatusMap[newStatus] },
         { headers }
       );
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.id === taskId ? updatedTask : t))
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? updatedTask : t))
       );
     } catch (err) {
       console.error("Failed to update task:", err);
@@ -196,13 +204,19 @@ const Board = ({ projectId, projectName }) => {
         <h3 className="text-xl font-semibold mb-3 text-indigo-900">
           Scrum Board: {projectName}
         </h3>
-        {currentSprint && (
+
+        {currentSprint ? (
           <div className="mb-6 flex gap-2 items-center">
             <span className="bg-indigo-100 text-indigo-900 px-4 py-2 rounded-2xl font-medium text-sm shadow">
               Current Sprint: {currentSprint.name}
             </span>
           </div>
+        ) : (
+          <p className="text-gray-500 italic mb-6">
+            No active sprint found for this project.
+          </p>
         )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {["TO_DO", "IN_PROGRESS", "DONE"].map((status) => (
             <KanbanColumn
