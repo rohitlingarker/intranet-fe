@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
 import ThreeCard from "../../../components/Cards/ThreeCards";
 import {jwtDecode} from "jwt-decode";
- 
+
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ const ProjectDashboard = () => {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [stories, setStories] = useState([]);
- 
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   // Decode token to get userId
@@ -26,13 +26,14 @@ const ProjectDashboard = () => {
       Authorization: `Bearer ${token}`,
     },
   };
- 
+
   // ✅ Fetch only projects where the logged-in user is a member
   const fetchUserProjects = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         axiosConfig
       );
@@ -45,7 +46,7 @@ const ProjectDashboard = () => {
       setLoading(false);
     }
   };
- 
+
   // fetch tasks assigned to the user
   const fetchUserTasks = async () => {
     try {
@@ -62,10 +63,10 @@ const ProjectDashboard = () => {
       setLoading(false);
     }
   };
- 
+
   //fetch stories assigned to the user
   const fetchUserStories = async () => {
-    try {
+    try { 
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/assignee/${userId}`,
         axiosConfig
@@ -79,7 +80,7 @@ const ProjectDashboard = () => {
       setLoading(false);
     }
   };
- 
+
   // ✅ Fetch dashboard summary data (overall stats for this user)
   const fetchDashboard = async () => {
     try {
@@ -94,7 +95,7 @@ const ProjectDashboard = () => {
       setDashboardLoading(false);
     }
   };
- 
+
   // ✅ Fetch reminders
   const fetchReminders = async () => {
     try {
@@ -117,13 +118,14 @@ const ProjectDashboard = () => {
       fetchUserStories();
     }
   }, [userId]);
- 
+
   const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
   const goToMyProfile = () => navigate("/projects/user/myprofile");
  
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
         <h1 className="text-3xl font-bold">My Dashboard</h1>
         <div className="flex gap-3">
           <Button onClick={goToMyProfile} variant="primary">
@@ -150,7 +152,7 @@ const ProjectDashboard = () => {
             />
             {/* <ThreeCard
               title="Epics"
-              value={dashboardData.totalEpics}
+              value={epics.length}
               textColor="text-purple-700"
             /> */}
             <ThreeCard
@@ -184,7 +186,7 @@ const ProjectDashboard = () => {
               )
             )}
           </div>
- 
+
           {/* 🔔 Reminders */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
@@ -202,8 +204,10 @@ const ProjectDashboard = () => {
                   <li>
                     🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
                     owner
+                    owner
                   </li>
                   <li>
+                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
                     🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
                   </li>
                 </ul>
@@ -212,14 +216,15 @@ const ProjectDashboard = () => {
               )}
             </div>
           </div>
- 
+
           {/* 📌 Projects the user is involved in */}
           <div className="mb-6">
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
                 My Projects
+                My Projects
               </h3>
- 
+
               {loading ? (
                 <p>Loading your projects...</p>
               ) : projects.length > 0 ? (

@@ -1,117 +1,175 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
+
 import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 
 const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
-  const [formData, setFormData] = useState({
-    id: bugId || null,
-    title: "",
-    description: "",
-    priority: "MEDIUM",
-    status: "OPEN",
-    severity: "MINOR",
-    type: "",
-    assignedTo: "",
-    reporter: "",
-    projectId: projectId || "",
-    sprintId: null,
-    epicId: null,
-    taskId: null,
-    stepsToReproduce: "",
-    expectedResult: "",
-    actualResult: "",
-    attachments: "",
-  });
-
+  const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [sprints, setSprints] = useState([]);
+  const [epics, setEpics] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
+  const token = localStorage.getItem("token");
+
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+
+  // 🟦 Fetch bug + related data
   useEffect(() => {
-    const fetchBug = async () => {
+    const fetchData = async () => {
+      if (!bugId || !projectId) return;
+      setLoading(true);
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/bugs/${bugId}`
-        );
-        // ✅ ensure id from backend is preserved
-        setFormData((prev) => ({
-          ...prev,
-          ...res.data,
-          id: res.data.id ?? bugId,
-        }));
-      } catch (err) {
-        toast.error("Failed to fetch bug details");
+        const [bugRes, membersRes, sprintsRes, epicsRes, tasksRes] =
+          await Promise.all([
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/bugs/${bugId}`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
+              axiosConfig
+            ),
+          ]);
+
+        const bug = bugRes.data;
+
+        setFormData({
+          title: bug.title || "",
+          description: bug.description || "",
+          priority: bug.priority || "MEDIUM",
+          status: bug.status || "OPEN",
+          severity: bug.severity || "MINOR",
+          type: bug.type || "",
+          assignedTo: bug.assignedTo || bug.assigneeId || null,
+          reporter: bug.reporter || bug.reporterId || null,
+          projectId: Number(projectId),
+          sprintId: bug.sprintId || null,
+          epicId: bug.epicId || null,
+          taskId: bug.taskId || null,
+          stepsToReproduce: bug.stepsToReproduce || "",
+          expectedResult: bug.expectedResult || "",
+          actualResult: bug.actualResult || "",
+          attachments: bug.attachments || "",
+        });
+
+        setUsers(membersRes.data || []);
+        setSprints(sprintsRes.data || []);
+        setEpics(epicsRes.data || []);
+        setTasks(tasksRes.data || []);
+      } catch (error) {
+        console.error("Error loading bug data:", error);
+        toast.error("❌ Failed to load bug details.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (bugId) fetchBug();
-  }, [bugId]);
+    fetchData();
+  }, [bugId, projectId]);
 
+  // 🟧 Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: ["assignedTo", "reporter", "sprintId", "epicId", "taskId"].includes(name)
+        ? value
+          ? Number(value)
+          : null
+        : value,
     }));
   };
 
+  // 🟥 Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!bugId) return;
+
+    const payload = {
+      ...formData,
+      projectId: Number(projectId),
+    };
 
     try {
-      // ✅ ensure id is sent and numeric
-      const payload = {
-        ...formData,
-        id: Number(formData.id || bugId),
-        projectId: Number(formData.projectId),
-        assignedTo: formData.assignedTo
-          ? Number(formData.assignedTo)
-          : null,
-        reporter: formData.reporter ? Number(formData.reporter) : null,
-        sprintId: formData.sprintId ? Number(formData.sprintId) : null,
-        epicId: formData.epicId ? Number(formData.epicId) : null,
-        taskId: formData.taskId ? Number(formData.taskId) : null,
-      };
-
-      console.log("PUT Payload:", payload); // 🔍 Debug log
-
+      setLoading(true);
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/bugs/${bugId}`,
         payload,
-        { headers: { "Content-Type": "application/json" } }
+        axiosConfig
       );
-
-      toast.success("Bug updated successfully!");
-      onUpdated?.();
-      onClose?.();
+      toast.success("✅ Bug updated successfully!");
+      setTimeout(() => {
+        onUpdated?.();
+        onClose?.();
+      }, 1000);
     } catch (error) {
-      console.error("Error updating bug:", error.response?.data || error);
-      toast.error(
-        error.response?.data?.message || "Failed to update bug."
-      );
+      console.error("Error updating bug:", error.response || error);
+      toast.error(error.response?.data?.message || "❌ Failed to update bug.");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Edit Bug</h2>
-          <button onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
+  if (loading)
+    return <p className="text-gray-600 text-center">Loading bug details...</p>;
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+  // 🟩 Render
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="w-full max-w-3xl bg-white p-8 rounded-2xl shadow-2xl relative max-h-[85vh] overflow-y-auto scrollbar-hide">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Toast notifications */}
+        <ToastContainer
+          position="top-right"
+          autoClose={2000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="colored"
+        />
+
+        <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
+          Edit Bug
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <FormInput
-            label="Title"
+            label="Title *"
             name="title"
-            value={formData.title}
+            value={formData.title || ""}
             onChange={handleChange}
             required
           />
@@ -119,77 +177,152 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
           <FormTextArea
             label="Description"
             name="description"
-            value={formData.description}
+            value={formData.description || ""}
             onChange={handleChange}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormSelect
-              label="Priority"
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              options={["LOW", "MEDIUM", "HIGH", "CRITICAL"]}
-            />
-            <FormSelect
-              label="Status"
+              label="Status *"
               name="status"
-              value={formData.status}
+              value={formData.status || "OPEN"}
               onChange={handleChange}
               options={[
-                "OPEN",
-                "IN_PROGRESS",
-                "RESOLVED",
-                "CLOSED",
-                "REOPENED",
+                { label: "Open", value: "OPEN" },
+                { label: "In Progress", value: "IN_PROGRESS" },
+                { label: "Resolved", value: "RESOLVED" },
+                { label: "Closed", value: "CLOSED" },
+                { label: "Reopened", value: "REOPENED" },
               ]}
             />
+
             <FormSelect
-              label="Severity"
-              name="severity"
-              value={formData.severity}
+              label="Priority *"
+              name="priority"
+              value={formData.priority || "MEDIUM"}
               onChange={handleChange}
-              options={["MINOR", "MAJOR", "BLOCKER"]}
+              options={[
+                { label: "Low", value: "LOW" },
+                { label: "Medium", value: "MEDIUM" },
+                { label: "High", value: "HIGH" },
+                { label: "Critical", value: "CRITICAL" },
+              ]}
+            />
+          </div>
+
+          <FormSelect
+            label="Severity *"
+            name="severity"
+            value={formData.severity || "MAJOR"}
+            onChange={handleChange}
+            options={[
+              { label: "Minor", value: "MINOR" },
+              { label: "Major", value: "MAJOR" },
+              { label: "Blocker", value: "BLOCKER" },
+            ]}
+          />
+
+          <FormInput
+            label="Type"
+            name="type"
+            value={formData.type || ""}
+            onChange={handleChange}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormSelect
+              label="Task"
+              name="taskId"
+              value={formData.taskId || ""}
+              onChange={handleChange}
+              options={[
+                { label: "Select", value: "" },
+                ...tasks.map((t) => ({ label: t.title, value: t.id })),
+              ]}
+            />
+
+            <FormSelect
+              label="Sprint"
+              name="sprintId"
+              value={formData.sprintId || ""}
+              onChange={handleChange}
+              options={[
+                { label: "Select", value: "" },
+                ...sprints.map((s) => ({ label: s.name, value: s.id })),
+              ]}
+            />
+          </div>
+
+          <FormSelect
+            label="Epic"
+            name="epicId"
+            value={formData.epicId || ""}
+            onChange={handleChange}
+            options={[
+              { label: "Select", value: "" },
+              ...epics.map((e) => ({ label: e.name, value: e.id })),
+            ]}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormSelect
+              label="Assignee"
+              name="assignedTo"
+              value={formData.assignedTo || ""}
+              onChange={handleChange}
+              options={[
+                { label: "Select", value: "" },
+                ...users.map((u) => ({ label: u.name, value: u.id })),
+              ]}
+            />
+
+            <FormSelect
+              label="Reporter"
+              name="reporter"
+              value={formData.reporter || ""}
+              onChange={handleChange}
+              options={[
+                { label: "Select", value: "" },
+                ...users.map((u) => ({ label: u.name, value: u.id })),
+              ]}
             />
           </div>
 
           <FormTextArea
-            label="Steps To Reproduce"
+            label="Steps to Reproduce"
             name="stepsToReproduce"
-            value={formData.stepsToReproduce}
+            value={formData.stepsToReproduce || ""}
             onChange={handleChange}
           />
 
           <FormTextArea
             label="Expected Result"
             name="expectedResult"
-            value={formData.expectedResult}
+            value={formData.expectedResult || ""}
             onChange={handleChange}
           />
 
           <FormTextArea
             label="Actual Result"
             name="actualResult"
-            value={formData.actualResult}
+            value={formData.actualResult || ""}
             onChange={handleChange}
           />
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              {loading ? "Updating..." : "Update"}
-            </button>
-          </div>
+          <FormInput
+            label="Attachments (URL or path)"
+            name="attachments"
+            value={formData.attachments || ""}
+            onChange={handleChange}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+          >
+            {loading ? "Updating..." : "Update Bug"}
+          </button>
         </form>
       </div>
     </div>

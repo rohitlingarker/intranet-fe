@@ -103,7 +103,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       projectKey: formData.projectKey.trim(),
       description: formData.description || null,
       status: formData.status,
-      currentStage: formData.currentStage, // 🟩 Included new field
+      currentStage: formData.currentStage, 
       ownerId: parseInt(formData.ownerId, 10),
       memberIds: formData.memberIds,
       memberCount: formData.memberIds.length,

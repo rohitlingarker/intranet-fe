@@ -121,8 +121,12 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
   // ---------- Render ----------
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
-      <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative max-h-[80vh] overflow-y-auto scrollbar-hide">
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+      >
         <X size={20} />
       </button>
 
@@ -131,7 +135,12 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <FormInput label="Title *" name="title" value={formData.title} onChange={handleChange} required />
-        <FormTextArea label="Description (optional)" name="description" value={formData.description} onChange={handleChange} />
+        <FormTextArea
+          label="Description (optional)"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+        />
         <FormSelect
           label="Epic (optional)"
           name="epicId"
