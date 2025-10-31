@@ -378,7 +378,7 @@ const IssueTracker = () => {
                     <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
-                    <td className="border px-4 py-2">{issue.billable ? "Yes" : "No"}</td>
+                   
                     <td className="border px-4 py-2">
                       {issue.createdAt
                         ? new Date(issue.createdAt).toLocaleDateString()
