@@ -29,18 +29,33 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
   const token = localStorage.getItem("token");
   const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   };
 
-  // ---------- Fetch Initial Data ----------
+  // ---------- Fetch Data ----------
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [storyRes, userRes, epicRes, sprintRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, axiosConfig),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+            axiosConfig
+          ),
         ]);
 
         setFormData({
@@ -67,9 +82,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
       }
     };
 
-    if (storyId && projectId) {
-      fetchData();
-    }
+    if (storyId && projectId) fetchData();
   }, [storyId, projectId]);
 
   // ---------- Handle Input Change ----------
@@ -78,7 +91,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     setFormData((prev) => ({
       ...prev,
       [name]: ["epicId", "sprintId", "assigneeId", "reporterId", "storyPoints"].includes(name)
-        ? value ? Number(value) : null
+        ? value
+          ? Number(value)
+          : null
         : value,
     }));
   };
@@ -103,7 +118,11 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     };
 
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`, payload, axiosConfig);
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+        payload,
+        axiosConfig
+      );
       toast.success("Story updated successfully!");
       setTimeout(() => {
         onUpdated?.();
@@ -117,94 +136,152 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     }
   };
 
-  if (loading) return <p className="text-gray-600 text-center">Loading...</p>;
+  if (loading)
+    return <p className="text-gray-600 text-center py-6">Loading story details...</p>;
 
   // ---------- Render ----------
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
-      <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-        <X size={20} />
+    <div className="relative bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto border border-gray-100">
+      {/* Close Button */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition"
+      >
+        <X size={22} />
       </button>
 
       <ToastContainer />
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit User Story</h2>
+
+      {/* Header */}
+      <h2 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
+        Edit User Story
+      </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <FormInput label="Title *" name="title" value={formData.title} onChange={handleChange} required />
-        <FormTextArea label="Description (optional)" name="description" value={formData.description} onChange={handleChange} />
+        {/* Title */}
+        <FormInput
+          label="Title *"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          required
+        />
+
+        {/* Description */}
+        <FormTextArea
+          label="Description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Enter a short summary or details about the story..."
+        />
+
+        {/* Epic */}
         <FormSelect
           label="Epic (optional)"
           name="epicId"
           value={formData.epicId || ""}
           onChange={handleChange}
-          options={[{ label: "Select", value: "" }, ...epics.map((e) => ({ label: e.name, value: e.id }))]}
-        />
-        <FormSelect
-          label="Priority *"
-          name="priority"
-          value={formData.priority}
-          onChange={handleChange}
           options={[
-            { label: "Low", value: "LOW" },
-            { label: "Medium", value: "MEDIUM" },
-            { label: "High", value: "HIGH" },
-            { label: "Critical", value: "CRITICAL" },
+            { label: "Select Epic", value: "" },
+            ...epics.map((e) => ({ label: e.name, value: e.id })),
           ]}
         />
-        <FormSelect
-          label="Status *"
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          options={[
-            { label: "Backlog", value: "BACKLOG" },
-            { label: "To Do", value: "TODO" },
-            { label: "In Progress", value: "IN_PROGRESS" },
-            { label: "Done", value: "DONE" },
-          ]}
-        />
-        <FormInput
-          label="Story Points (optional)"
-          name="storyPoints"
-          type="number"
-          value={formData.storyPoints || ""}
-          onChange={handleChange}
-        />
+
+        {/* Priority & Status in Two Columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormSelect
+            label="Priority *"
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+            options={[
+              { label: "Low", value: "LOW" },
+              { label: "Medium", value: "MEDIUM" },
+              { label: "High", value: "HIGH" },
+              { label: "Critical", value: "CRITICAL" },
+            ]}
+          />
+          <FormSelect
+            label="Status *"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={[
+              { label: "Backlog", value: "BACKLOG" },
+              { label: "To Do", value: "TODO" },
+              { label: "In Progress", value: "IN_PROGRESS" },
+              { label: "Done", value: "DONE" },
+            ]}
+          />
+        </div>
+
+        {/* Story Points & Sprint in Two Columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormInput
+            label="Story Points"
+            name="storyPoints"
+            type="number"
+            value={formData.storyPoints || ""}
+            onChange={handleChange}
+            placeholder="Enter points (optional)"
+          />
+          <FormSelect
+            label="Sprint (optional)"
+            name="sprintId"
+            value={formData.sprintId || ""}
+            onChange={handleChange}
+            options={[
+              { label: "Select Sprint", value: "" },
+              ...sprints.map((s) => ({ label: s.name, value: s.id })),
+            ]}
+          />
+        </div>
+
+        {/* Acceptance Criteria */}
         <FormTextArea
-          label="Acceptance Criteria (optional)"
+          label="Acceptance Criteria"
           name="acceptanceCriteria"
           value={formData.acceptanceCriteria}
           onChange={handleChange}
-        />
-        <FormSelect
-          label="Sprint (optional)"
-          name="sprintId"
-          value={formData.sprintId || ""}
-          onChange={handleChange}
-          options={[{ label: "Select", value: "" }, ...sprints.map((s) => ({ label: s.name, value: s.id }))]}
-        />
-        <FormSelect
-          label="Assignee (optional)"
-          name="assigneeId"
-          value={formData.assigneeId || ""}
-          onChange={handleChange}
-          options={[{ label: "Select", value: "" }, ...users.map((u) => ({ label: u.name, value: u.id }))]}
-        />
-        <FormSelect
-          label="Reporter (optional)"
-          name="reporterId"
-          value={formData.reporterId || ""}
-          onChange={handleChange}
-          options={[{ label: "Select", value: "" }, ...users.map((u) => ({ label: u.name, value: u.id }))]}
+          placeholder="Define what success looks like for this story..."
         />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
-        >
-          {loading ? "Saving..." : "Update Story"}
-        </button>
+        {/* Assignee & Reporter in Two Columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FormSelect
+            label="Assignee"
+            name="assigneeId"
+            value={formData.assigneeId || ""}
+            onChange={handleChange}
+            options={[
+              { label: "Select Assignee", value: "" },
+              ...users.map((u) => ({ label: u.name, value: u.id })),
+            ]}
+          />
+          <FormSelect
+            label="Reporter"
+            name="reporterId"
+            value={formData.reporterId || ""}
+            onChange={handleChange}
+            options={[
+              { label: "Select Reporter", value: "" },
+              ...users.map((u) => ({ label: u.name, value: u.id })),
+            ]}
+          />
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition disabled:opacity-50"
+          >
+            {loading ? "Saving..." : "Update Story"}
+          </button>
+        </div>
       </form>
     </div>
   );

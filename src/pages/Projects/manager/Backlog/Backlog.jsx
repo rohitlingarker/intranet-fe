@@ -1,7 +1,7 @@
 // src/pages/Projects/manager/Backlog.jsx
 import React, { useEffect, useState } from "react";
 import CreateSprint from "./sprint";
-import { Plus, List } from "lucide-react";
+import { Plus, List, X } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import CreateIssueForm from "./CreateIssueForm";
@@ -93,7 +93,7 @@ const Backlog = ({ projectId, projectName }) => {
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
-  // ✅ Navigate to Issue Tracker and send projectId via state
+  // ✅ Navigate to Issue Tracker
   const goToIssueTracker = () => {
     navigate(`/projects/${projectId}/issuetracker`, {
       state: { projectId },
@@ -103,7 +103,7 @@ const Backlog = ({ projectId, projectName }) => {
   const filteredNoEpicStories = noEpicStories || [];
   const filteredStories = stories || [];
 
-  // ✅ Sort sprints by createdAt descending (latest first)
+  // ✅ Sort sprints by createdAt (latest first)
   const sortedSprints = [...sprints].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
@@ -137,25 +137,46 @@ const Backlog = ({ projectId, projectName }) => {
           </div>
         </div>
 
-        {/* Create Issue Form */}
-        {showIssueForm && selectedProject && (
-          <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <CreateIssueForm
-              onClose={handleCloseForms}
-              onCreated={fetchStories}
-              projectId={projectId}
-              ownerId={selectedProject.owner?.id}
-              memberIds={selectedProject.members?.map((m) => m.id) || []}
-            />
+        {/* ✅ Modal: Create Issue */}
+        {showIssueForm && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
+            <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 overflow-y-auto max-h-[90vh]">
+              <button
+                onClick={handleCloseForms}
+                className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+              >
+                <X size={22} />
+              </button>
+              <CreateIssueForm
+                onClose={handleCloseForms}
+                onCreated={() => {
+                  fetchStories();
+                  fetchNoEpicStories();
+                }}
+                projectId={projectId}
+                ownerId={selectedProject?.owner?.id}
+                memberIds={selectedProject?.members?.map((m) => m.id) || []}
+              />
+            </div>
           </div>
         )}
 
-        {/* Create Sprint Form */}
+        {/* ✅ Modal: Create Sprint */}
         {showSprintForm && (
-          <CreateSprint onClose={handleCloseForms} projectId={projectId} />
+          <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
+            <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6 overflow-y-auto max-h-[90vh]">
+              <button
+                onClick={handleCloseForms}
+                className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+              >
+                <X size={22} />
+              </button>
+              <CreateSprint onClose={handleCloseForms} projectId={projectId} />
+            </div>
+          </div>
         )}
 
-        {/* Unassigned Stories */}
+        {/* ✅ Unassigned (Backlog) Stories Section */}
         <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Backlog Stories
@@ -174,7 +195,7 @@ const Backlog = ({ projectId, projectName }) => {
           )}
         </div>
 
-        {/* Sprint List */}
+        {/* ✅ Sprint List Section */}
         <div>
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Assign to Sprint

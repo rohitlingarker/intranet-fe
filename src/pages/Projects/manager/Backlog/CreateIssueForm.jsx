@@ -3,13 +3,13 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
-
+ 
 import FormInput from "../../../../components/forms/FormInput";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import { set } from "date-fns";
-
+ 
 const CreateIssueForm = ({
   issueType: initialIssueType = "Epic",
   initialData = {},
@@ -24,7 +24,7 @@ const CreateIssueForm = ({
     projectId: initialProjectId,
     ...initialData, // removed reporterId & assigneeId defaults
   });
-
+ 
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [epics, setEpics] = useState([]);
@@ -32,12 +32,12 @@ const CreateIssueForm = ({
   const [tasks, setTasks] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [loading, setLoading] = useState(false);
-
+ 
   const token = localStorage.getItem("token");
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   };
-
+ 
   // ---------- Fetch Projects & Users ----------
   useEffect(() => {
     const pid = initialProjectId;
@@ -50,7 +50,7 @@ const CreateIssueForm = ({
         ]);
         setProjects(projectsRes.data.content || projectsRes.data || []);
         setUsers(usersRes.data.content || usersRes.data || []);
-        
+       
       } catch (error) {
         console.error("Error fetching projects/users:", error);
         toast.error("Failed to load projects or users.");
@@ -58,7 +58,7 @@ const CreateIssueForm = ({
     };
     fetchInitialData();
   }, []);
-
+ 
   // ---------- Fetch Dependent Data ----------
   useEffect(() => {
     const loadProjectData = async () => {
@@ -69,7 +69,7 @@ const CreateIssueForm = ({
         setSprints([]);
         return;
       }
-
+ 
       setLoading(true);
       try {
         const [epicRes, storyRes, taskRes, sprintRes] = await Promise.all([
@@ -91,7 +91,7 @@ const CreateIssueForm = ({
     };
     loadProjectData();
   }, [formData.projectId]);
-
+ 
   // ---------- Handle Change ----------
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -102,13 +102,13 @@ const CreateIssueForm = ({
         : value,
     }));
   };
-
+ 
   // ---------- Handle Submit ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     let endpoint = "/api/tasks";
     let payload = {};
-
+ 
     if (issueType === "Epic") {
       endpoint = "/api/epics";
       payload = {
@@ -122,7 +122,7 @@ const CreateIssueForm = ({
     dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       };
     }
-
+ 
     if (issueType === "Story") {
       endpoint = "/api/stories";
       payload = {
@@ -141,7 +141,7 @@ const CreateIssueForm = ({
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
       };
     }
-
+ 
     if (issueType === "Task") {
       endpoint = "/api/tasks";
       payload = {
@@ -159,27 +159,34 @@ const CreateIssueForm = ({
         actualHours: formData.actualHours ? Number(formData.actualHours) : null,
       };
     }
-
+ 
     if (issueType === "Bug") {
       endpoint = "/api/bugs";
       payload = {
-        title: formData.title,
-        description: formData.description || "",
-        priority: formData.priority || "MEDIUM",
-        status: formData.status || "OPEN",
-        severity: formData.severity || "MINOR",
-        reporter: formData.reporterId ? Number(formData.reporterId) : null,
-        assignedTo: formData.assigneeId ? Number(formData.assigneeId) : null,
-        projectId: Number(formData.projectId),
-        sprintId: formData.sprintId || null,
-        epicId: formData.epicId || null,
-        taskId: formData.taskId || null,
-        stepsToReproduce: formData.stepsToReproduce || "",
-        expectedResult: formData.expectedResult || "",
-        actualResult: formData.actualResult || "",
+       title: formData.title,
+  description: formData.description || "",
+  priority: formData.priority || "MEDIUM",
+  status: formData.status || "OPEN",
+  severity: formData.severity || "MINOR",
+  type: formData.type || "",
+  // ✅ Always ensure reporter is set
+  reporter: formData.reporterId
+    ? Number(formData.reporterId)
+    : currentUser?.id // fallback to logged-in user
+      ? Number(currentUser.id)
+      : null,
+  assignedTo: formData.assigneeId ? Number(formData.assigneeId) : null,
+  projectId: Number(formData.projectId),
+  sprintId: formData.sprintId || null,
+  epicId: formData.epicId || null,
+  taskId: formData.taskId || null,
+  stepsToReproduce: formData.stepsToReproduce || "",
+  expectedResult: formData.expectedResult || "",
+  actualResult: formData.actualResult || "",
+  attachments: formData.attachments || "",
       };
     }
-
+ 
     try {
       await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload, axiosConfig);
       toast.success(`${issueType} created successfully!`);
@@ -192,23 +199,23 @@ const CreateIssueForm = ({
       toast.error(`Failed to create ${issueType}.`);
     }
   };
-
+ 
   const selectedProject = projects.find((p) => p.id === formData.projectId);
-
+ 
   // ---------- Render ----------
   return (
     <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
       <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
         <X size={20} />
       </button>
-
+ 
       <ToastContainer />
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
         Create {issueType}
       </h2>
-
+ 
       {loading && <p className="text-sm text-gray-500 mb-3">Loading project data...</p>}
-
+ 
       <FormSelect
         label="Issue Type"
         name="issueType"
@@ -226,7 +233,7 @@ const CreateIssueForm = ({
           { label: "Bug", value: "Bug" },
         ]}
       />
-
+ 
       <form onSubmit={handleSubmit} className="space-y-6 mt-4">
         <div>
           <label className="block text-gray-700 font-semibold mb-2">Project *</label>
@@ -237,7 +244,7 @@ const CreateIssueForm = ({
             className="w-full border rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
           />
         </div>
-
+ 
         {/* Conditional forms */}
         {issueType === "Epic" && (
           <>
@@ -248,14 +255,14 @@ const CreateIssueForm = ({
     onChange={handleChange}
     required
   />
-
+ 
   <FormTextArea
     label="Description"
     name="description"
     value={formData.description || ""}
     onChange={handleChange}
   />
-
+ 
  <FormSelect
   label="Status"
   name="status"
@@ -268,7 +275,7 @@ const CreateIssueForm = ({
     { label: "On Hold", value: "ON_HOLD" },
   ]}
 />
-
+ 
 <FormSelect
   label="Priority"
   name="priority"
@@ -281,9 +288,9 @@ const CreateIssueForm = ({
     { label: "Critical", value: "CRITICAL" },
   ]}
 />
-
-
-
+ 
+ 
+ 
   <FormInput
     label="Progress (%)"
     name="progressPercentage"
@@ -291,7 +298,7 @@ const CreateIssueForm = ({
     value={formData.progressPercentage || ""}
     onChange={handleChange}
   />
-
+ 
   <FormDatePicker
     label="Due Date"
     name="dueDate"
@@ -299,9 +306,9 @@ const CreateIssueForm = ({
     onChange={handleChange}
   />
 </>
-
+ 
         )}
-
+ 
         {issueType === "Story" && (
           <>
             <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
@@ -326,7 +333,7 @@ const CreateIssueForm = ({
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
           </>
         )}
-
+ 
         {issueType === "Task" && (
           <>
             <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
@@ -349,36 +356,142 @@ const CreateIssueForm = ({
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
           </>
         )}
-
+ 
         {issueType === "Bug" && (
-          <>
-            <FormInput label="Title *" name="title" value={formData.title || ""} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description || ""} onChange={handleChange} />
-            <FormSelect label="Status *" name="status" value={formData.status || "OPEN"} onChange={handleChange} options={[
-              { label: "Open", value: "OPEN" },
-              { label: "In Progress", value: "IN_PROGRESS" },
-              { label: "Resolved", value: "RESOLVED" },
-              { label: "Closed", value: "CLOSED" },
-              { label: "Reopened", value: "REOPENED" },
-            ]} />
-            <FormSelect label="Priority *" name="priority" value={formData.priority || "MEDIUM"} onChange={handleChange} options={[
-              { label: "Low", value: "LOW" },
-              { label: "Medium", value: "MEDIUM" },
-              { label: "High", value: "HIGH" },
-              { label: "Critical", value: "CRITICAL" },
-            ]} />
-            <FormSelect label="Severity *" name="severity" value={formData.severity || "MINOR"} onChange={handleChange} options={[
-              { label: "Minor", value: "MINOR" },
-              { label: "Major", value: "MAJOR" },
-              { label: "Blocker", value: "BLOCKER" },
-            ]} />
-            <FormSelect label="Task" name="taskId" value={formData.taskId || ""} onChange={handleChange} options={tasks.map(t => ({ label: t.title, value: t.id }))} />
-            <FormSelect label="Sprint" name="sprintId" value={formData.sprintId || ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
-            <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-            <FormSelect label="Reporter" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-          </>
-        )}
+         <>
+  <FormInput
+    label="Title *"
+    name="title"
+    value={formData.title || ""}
+    onChange={handleChange}
+    required
+  />
+  <FormTextArea
+    label="Description"
+    name="description"
+    value={formData.description || ""}
+    onChange={handleChange}
+  />
+  
+  <FormSelect
+  label="Status *"
+  name="status"
+  value={formData.status || "OPEN"}
+  onChange={handleChange}
+  options={[
+    { label: "Open", value: "open" },
+    { label: "In Progress", value: "IN_PROGRESS" },
+    { label: "Resolved", value: "RESOLVED" },
+    { label: "Closed", value: "CLOSED" },
+    { label: "Reopened", value: "REOPENED" },
+  ]}
+/>
+  <FormSelect
+    label="Priority *"
+    name="priority"
+    value={formData.priority || "MEDIUM"}
+    onChange={handleChange}
+    options={[
+      { label: "Low", value: "LOW" },
+      { label: "Medium", value: "MEDIUM" },
+      { label: "High", value: "HIGH" },
+      { label: "Critical", value: "CRITICAL" },
+    ]}
+  />
 
+  <FormSelect
+    label="Severity *"
+    name="severity"
+    value={formData.severity || "MINOR"}
+    onChange={handleChange}
+    options={[
+      { label: "Minor", value: "MINOR" },
+      { label: "Major", value: "MAJOR" },
+      { label: "Blocker", value: "BLOCKER" },
+    ]}
+  />
+
+  <FormInput
+    label="Type"
+    name="type"
+    value={formData.type || ""}
+    onChange={handleChange}
+    placeholder="e.g. UI Bug, Functional Bug, Performance Issue"
+  />
+
+  <FormSelect
+    label="Task"
+    name="taskId"
+    value={formData.taskId || ""}
+    onChange={handleChange}
+    options={tasks.map(t => ({ label: t.title, value: t.id }))}
+  />
+
+  <FormSelect
+    label="Sprint"
+    name="sprintId"
+    value={formData.sprintId || ""}
+    onChange={handleChange}
+    options={sprints.map(s => ({ label: s.name, value: s.id }))}
+  />
+
+  <FormSelect
+    label="Epic"
+    name="epicId"
+    value={formData.epicId || ""}
+    onChange={handleChange}
+    options={epics.map(e => ({ label: e.name, value: e.id }))}
+  />
+
+  <FormSelect
+    label="Assignee"
+    name="assigneeId"
+    value={formData.assigneeId || ""}
+    onChange={handleChange}
+    options={users.map(u => ({ label: u.name, value: u.id }))}
+  />
+
+  <FormSelect
+    label="Reporter"
+    name="reporterId"
+    value={formData.reporterId || ""}
+    onChange={handleChange}
+    options={users.map(u => ({ label: u.name, value: u.id }))}
+  />
+
+  <FormTextArea
+    label="Steps to Reproduce"
+    name="stepsToReproduce"
+    value={formData.stepsToReproduce || ""}
+    onChange={handleChange}
+    placeholder="Step-by-step instructions to reproduce the bug"
+  />
+
+  <FormTextArea
+    label="Expected Result"
+    name="expectedResult"
+    value={formData.expectedResult || ""}
+    onChange={handleChange}
+  />
+
+  <FormTextArea
+    label="Actual Result"
+    name="actualResult"
+    value={formData.actualResult || ""}
+    onChange={handleChange}
+  />
+
+  <FormInput
+    label="Attachments"
+    name="attachments"
+    value={formData.attachments || ""}
+    onChange={handleChange}
+    placeholder="Paste file URL or path"
+  />
+</>
+
+        )}
+ 
         <button
           type="submit"
           disabled={loading}
@@ -390,5 +503,5 @@ const CreateIssueForm = ({
     </div>
   );
 };
-
+ 
 export default CreateIssueForm;
