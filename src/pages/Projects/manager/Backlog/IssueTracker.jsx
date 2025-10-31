@@ -1,9 +1,9 @@
-// ✅ IssueTracker.jsx (Unified Edit Modal System with Create Success Toast)
+// ✅ IssueTracker.jsx (Unified Edit Modal System with Create / Update / Delete Success Toast + User & Billable Filter)
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Button from "../../../../components/Button/Button";
-import { FiEye, FiEdit, FiTrash } from "react-icons/fi";
+import { FiEye, FiEdit, FiTrash, FiX } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -36,6 +36,8 @@ const IssueTracker = () => {
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterUser, setFilterUser] = useState("");
+  const [filterBillable, setFilterBillable] = useState(""); // ✅ NEW Billable filter
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -124,8 +126,21 @@ const IssueTracker = () => {
     if (filterType) filtered = filtered.filter((i) => i.type === filterType);
     if (filterPriority) filtered = filtered.filter((i) => i.priority === filterPriority);
     if (filterStatus) filtered = filtered.filter((i) => i.status === filterStatus);
+    if (filterUser)
+      filtered = filtered.filter(
+        (i) =>
+          i.reporterName?.toLowerCase() === filterUser.toLowerCase() ||
+          i.assigneeName?.toLowerCase() === filterUser.toLowerCase()
+      );
+    if (filterBillable)
+      filtered = filtered.filter((i) =>
+        filterBillable === "Yes"
+          ? i.billable === true || i.billable === "Yes"
+          : i.billable === false || i.billable === "No"
+      );
+
     setFilteredIssues(filtered);
-  }, [searchTerm, filterType, filterPriority, filterStatus, issues]);
+  }, [searchTerm, filterType, filterPriority, filterStatus, filterUser, filterBillable, issues]);
 
   // ===== DELETE =====
   const handleDelete = async (issue) => {
@@ -140,9 +155,9 @@ const IssueTracker = () => {
 
     try {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
-      toast.success(`${issue.type} deleted successfully!`);
       setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
       setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
+      toast.success(`${issue.type} deleted successfully! ✅`);
     } catch (err) {
       console.error(err);
       toast.error(`Failed to delete ${issue.type}`);
@@ -154,22 +169,29 @@ const IssueTracker = () => {
     setEditModal({ visible: true, type: issue.type, id: issue.id });
   };
 
-  const handleUpdated = () => {
+  const handleUpdated = (updatedType) => {
     setEditModal({ visible: false, type: null, id: null });
     fetchIssues();
-    toast.success("Issue updated successfully!");
+    toast.success(`${updatedType || "Issue"} updated successfully! ✅`);
   };
 
   // ===== CREATE SUCCESS HANDLER =====
   useEffect(() => {
     if (location.state?.createdIssueType) {
-      toast.success(`${location.state.createdIssueType} created successfully!`);
-      navigate(location.pathname, { replace: true, state: {} }); // clear toast trigger state
+      toast.success(`${location.state.createdIssueType} created successfully! ✅`);
+      navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
 
   const currentProject = projects.find((p) => p.id === Number(projectId));
   const projectName = currentProject ? currentProject.name : projectId;
+
+  // ===== Extract unique user names for dropdown =====
+  const userNames = Array.from(
+    new Set(
+      issues.flatMap((i) => [i.reporterName, i.assigneeName].filter(Boolean))
+    )
+  ).sort();
 
   // ===== Stats =====
   const totalIssues = issues.length;
@@ -247,7 +269,33 @@ const IssueTracker = () => {
           <option value="CLOSED">Closed</option>
           <option value="BLOCKED">Blocked</option>
         </select>
-        {(filterType || filterPriority || filterStatus || searchTerm) && (
+
+        {/* ✅ New User Filter */}
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterUser}
+          onChange={(e) => setFilterUser(e.target.value)}
+        >
+          <option value="">All Users</option>
+          {userNames.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+
+        {/* ✅ New Billable Filter */}
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterBillable}
+          onChange={(e) => setFilterBillable(e.target.value)}
+        >
+          <option value="">All Billable</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+
+        {(filterType || filterPriority || filterStatus || searchTerm || filterUser || filterBillable) && (
           <Button
             size="small"
             variant="secondary"
@@ -256,6 +304,8 @@ const IssueTracker = () => {
               setFilterType("");
               setFilterPriority("");
               setFilterStatus("");
+              setFilterUser("");
+              setFilterBillable("");
             }}
           >
             Clear Filters
@@ -279,6 +329,7 @@ const IssueTracker = () => {
                 <th className="border px-4 py-2 text-left">Status</th>
                 <th className="border px-4 py-2 text-left">Reporter</th>
                 <th className="border px-4 py-2 text-left">Assigned To</th>
+                <th className="border px-4 py-2 text-left">Billable</th> {/* ✅ Added Column */}
                 <th className="border px-4 py-2 text-left">Created On</th>
                 <th className="border px-4 py-2 text-left">Due Date</th>
                 <th className="border px-4 py-2 text-left">Actions</th>
@@ -287,7 +338,7 @@ const IssueTracker = () => {
             <tbody>
               {filteredIssues.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-6 text-center text-gray-500 italic">
+                  <td colSpan="10" className="p-6 text-center text-gray-500 italic">
                     No issues found
                   </td>
                 </tr>
@@ -327,8 +378,21 @@ const IssueTracker = () => {
                     <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
-                    <td className="border px-4 py-2">{issue.createdOn ? new Date(issue.createdOn).toLocaleDateString() : "-"}</td>
-                    <td className="border px-4 py-2">{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : "-"}</td>
+                    <td className="border px-4 py-2">{issue.billable ? "Yes" : "No"}</td>
+                    <td className="border px-4 py-2">
+                      {issue.createdAt
+                        ? new Date(issue.createdAt).toLocaleDateString()
+                        : issue.createdDate
+                        ? new Date(issue.createdDate).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td className="border px-4 py-2">
+                      {issue.dueDate
+                        ? new Date(issue.dueDate).toLocaleDateString()
+                        : issue.type === "Story" || issue.type === "Bug"
+                        ? "No Due Date"
+                        : "-"}
+                    </td>
                     <td className="border px-4 py-2 flex items-center gap-3">
                       <ActionIcon
                         label="View"
@@ -366,7 +430,7 @@ const IssueTracker = () => {
               bugId={editModal.id}
               projectId={projectId}
               onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={handleUpdated}
+              onUpdated={() => handleUpdated("Bug")}
             />
           )}
           {editModal.type === "Story" && (
@@ -374,7 +438,7 @@ const IssueTracker = () => {
               storyId={editModal.id}
               projectId={projectId}
               onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={handleUpdated}
+              onUpdated={() => handleUpdated("Story")}
             />
           )}
           {editModal.type === "Task" && (
@@ -382,7 +446,7 @@ const IssueTracker = () => {
               taskId={editModal.id}
               projectId={projectId}
               onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={handleUpdated}
+              onUpdated={() => handleUpdated("Task")}
             />
           )}
           {editModal.type === "Epic" && (
@@ -390,7 +454,7 @@ const IssueTracker = () => {
               epicId={editModal.id}
               projectId={projectId}
               onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={handleUpdated}
+              onUpdated={() => handleUpdated("Epic")}
             />
           )}
         </Modal>
@@ -407,7 +471,7 @@ const Modal = ({ children, onClose }) => (
         onClick={onClose}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
       >
-        
+        <FiX />
       </button>
       {children}
     </div>

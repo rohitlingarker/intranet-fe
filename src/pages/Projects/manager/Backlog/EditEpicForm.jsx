@@ -11,30 +11,44 @@ import FormDatePicker from "../../../../components/forms/FormDatePicker";
 
 const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState(null);
-  const [projects, setProjects] = useState([]);
+  const [projectName, setProjectName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [createdDate, setCreatedDate] = useState(null);
 
   const token = localStorage.getItem("token");
   const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   };
 
   // ---------- Fetch Epic + Project Data ----------
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const projectRes = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
-          axiosConfig
-        );
-        setProjects(projectRes.data.content || projectRes.data || []);
+        let projectNameValue = "";
 
+        // Fetch project name
+        if (projectId) {
+          const projectRes = await axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
+            axiosConfig
+          );
+          projectNameValue = projectRes.data?.name || "";
+          setProjectName(projectNameValue);
+        }
+
+        // Fetch epic if editing
         if (epicId) {
           const epicRes = await axios.get(
             `${import.meta.env.VITE_PMS_BASE_URL}/api/epics/${epicId}`,
             axiosConfig
           );
           const epic = epicRes.data;
+
+          setCreatedDate(epic.createdAt ? epic.createdAt.split("T")[0] : null);
+
           setFormData({
             name: epic.name || "",
             description: epic.description || "",
@@ -44,8 +58,12 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             dueDate: epic.dueDate ? epic.dueDate.split("T")[0] : "",
             projectId: epic.project?.id || projectId || "",
           });
+
+          if (!projectNameValue && epic.project?.name) {
+            setProjectName(epic.project.name);
+          }
         } else {
-          // Default values for new epic
+          // Default form for creating new epic
           setFormData({
             name: "",
             description: "",
@@ -55,6 +73,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             dueDate: "",
             projectId: projectId || "",
           });
+          setCreatedDate(new Date().toISOString().split("T")[0]); // use today's date for new epic
         }
       } catch (error) {
         console.error("Error loading epic data:", error);
@@ -76,10 +95,26 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
     }));
   };
 
+  // ---------- Validation ----------
+  const validateForm = () => {
+    if (createdDate && formData.dueDate) {
+      const due = new Date(formData.dueDate);
+      const created = new Date(createdDate);
+
+      if (due < created) {
+        toast.error("Due date cannot be earlier than the created date.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   // ---------- Submit ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData) return;
+
+    if (!validateForm()) return;
 
     const payload = {
       name: formData.name,
@@ -94,28 +129,29 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
     try {
       let response;
       if (epicId) {
-        // ✏️ Update existing epic
         response = await axios.put(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/epics/${epicId}`,
           payload,
           axiosConfig
         );
-        toast.success("Epic updated successfully!");
+        toast.success("✅ Epic updated successfully!");
       } else {
-        // 🆕 Create new epic
         response = await axios.post(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/epics`,
           payload,
           axiosConfig
         );
-        toast.success("Epic created successfully!");
+        toast.success("✅ Epic created successfully!");
       }
 
       onUpdated?.(response.data);
-      onClose?.();
+
+      setTimeout(() => {
+        onClose?.();
+      }, 1000);
     } catch (error) {
       console.error("Error saving epic:", error);
-      toast.error(error.response?.data?.message || "Failed to save epic.");
+      toast.error(error.response?.data?.message || "❌ Failed to save epic.");
     }
   };
 
@@ -142,27 +178,20 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         </button>
 
         <div className="p-8">
-          <ToastContainer />
+          <ToastContainer position="top-right" autoClose={2000} />
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
             {epicId ? "Edit Epic" : "Create Epic"}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Project */}
-            <FormSelect
+            <FormInput
               label="Project"
-              name="projectId"
-              value={formData.projectId}
-              onChange={handleChange}
-              options={projects.map((p) => ({
-                label: p.name,
-                value: p.id,
-              }))}
-              placeholder="Select Project"
-              required
+              name="projectName"
+              value={projectName || ""}
+              readOnly
+              disabled
             />
 
-            {/* Name */}
             <FormInput
               label="Epic Name *"
               name="name"
@@ -171,7 +200,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               required
             />
 
-            {/* Description */}
             <FormTextArea
               label="Description"
               name="description"
@@ -179,7 +207,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Status */}
             <FormSelect
               label="Status *"
               name="status"
@@ -193,7 +220,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Priority */}
             <FormSelect
               label="Priority *"
               name="priority"
@@ -207,7 +233,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Progress */}
             <FormInput
               label="Progress (%)"
               name="progressPercentage"
@@ -218,15 +243,18 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Due Date */}
             <FormDatePicker
               label="Due Date"
               name="dueDate"
               value={formData.dueDate || ""}
               onChange={handleChange}
             />
+            {createdDate && (
+              <p className="text-sm text-gray-500 -mt-3">
+                Created on: {createdDate}
+              </p>
+            )}
 
-            {/* Buttons */}
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 type="button"
@@ -251,7 +279,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         </div>
       </div>
 
-      {/* Hide Scrollbar */}
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
