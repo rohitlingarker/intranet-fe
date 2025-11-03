@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "./CreateProjectModal";
 import Button from "../../../components/Button/Button";
 import ThreeCard from "../../../components/Cards/ThreeCards";
- 
+import {
+  Bell,
+  ListTodo,
+  FileText,
+  AlertTriangle,
+  Clock,
+} from "lucide-react";
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -203,38 +209,48 @@ const ProjectDashboard = () => {
             )}
 </div>
  
-          {/* 🔔 Reminders / Deadlines */}
+
+
+{/* 🔔 Reminders / Deadlines */}
 <div className="mb-6">
-<div className="bg-white rounded-2xl shadow p-6">
-<h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                Reminders
-</h3>
-              {reminders ? (
-<ul className="space-y-1 text-sm text-gray-700">
-<li>
-                    🔔 {reminders?.taskDueSoonCount ?? 0} tasks are due in the
-                    next 2 days
-</li>
-<li>
-                    📌 {reminders?.todoTaskCount ?? 0} tasks are in TODO
-</li>
-<li>
-                    📝 {reminders?.todoStoryCount ?? 0} stories are in TODO
-</li>
-<li>
-                    🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
-                    assigned owner
-</li>
-<li>
-                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are
-                    ending soon
-</li>
-</ul>
-              ) : (
-<p className="text-sm text-gray-500">Loading reminders...</p>
-              )}
+  <div className="bg-white rounded-2xl shadow p-6">
+    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+      <Bell className="w-5 h-5 text-indigo-600" />
+      Reminders
+    </h3>
+
+    {reminders ? (
+      <ul className="space-y-2 text-sm text-gray-700">
+        <li className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-yellow-600" />
+          {reminders?.taskDueSoonCount ?? 0} tasks are due in the next 2 days
+        </li>
+        <li className="flex items-center gap-2">
+          <ListTodo className="w-4 h-4 text-blue-600" />
+          {reminders?.todoTaskCount ?? 0} tasks are in TODO
+        </li>
+        <li className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-green-600" />
+          {reminders?.todoStoryCount ?? 0} stories are in TODO
+        </li>
+        <li className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600" />
+          {reminders?.unassignedProjectCount ?? 0} projects have no assigned owner
+        </li>
+        <li className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-purple-600" />
+          {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
+        </li>
+      </ul>
+    ) : (
+      <p className="text-sm text-gray-500 flex items-center gap-2">
+        <Clock className="w-4 h-4 text-gray-400 animate-spin" />
+        Loading reminders...
+      </p>
+    )}
+  </div>
 </div>
-</div>
+
  
           {/* 📌 Quick Access Projects */}
 <div className="mb-6">
