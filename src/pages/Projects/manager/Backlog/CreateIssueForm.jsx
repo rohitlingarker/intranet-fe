@@ -45,7 +45,7 @@ const CreateIssueForm = ({
       try {
         const [projectsRes, usersRes,ownerRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/members`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/members-with-owner`, axiosConfig),
           //axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`, axiosConfig),
         ]);
         setProjects(projectsRes.data.content || projectsRes.data || []);
@@ -157,6 +157,7 @@ const CreateIssueForm = ({
         epicId: formData.epicId || null,
         estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
         actualHours: formData.actualHours ? Number(formData.actualHours) : null,
+        isBillable: formData.isBillable ? "Yes" : "No",
       };
     }
  
@@ -166,7 +167,7 @@ const CreateIssueForm = ({
        title: formData.title,
   description: formData.description || "",
   priority: formData.priority || "MEDIUM",
-  status: formData.status || "OPEN",
+  status: formData.status || "Open",
   severity: formData.severity || "MINOR",
   type: formData.type || "",
   // ✅ Always ensure reporter is set
@@ -355,7 +356,18 @@ const CreateIssueForm = ({
             <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
           </>
+          
         )}
+        <FormSelect
+              label="Billable"
+              name="isBillable"
+              value={formData.isBillable}
+              onChange={handleChange}
+              options={[
+                { label: "Yes", value: "Yes" },
+                { label: "No", value: "No" },
+              ]}
+            />
  
         {issueType === "Bug" && (
          <>
@@ -376,10 +388,10 @@ const CreateIssueForm = ({
   <FormSelect
   label="Status *"
   name="status"
-  value={formData.status || "OPEN"}
+  value={formData.status || "Open"}
   onChange={handleChange}
   options={[
-    { label: "Open", value: "open" },
+    { label: "Open", value: "Open" },
     { label: "In Progress", value: "IN_PROGRESS" },
     { label: "Resolved", value: "RESOLVED" },
     { label: "Closed", value: "CLOSED" },
@@ -452,7 +464,7 @@ const CreateIssueForm = ({
   />
 
   <FormSelect
-    label="Reporter"
+    label="Reporter *" 
     name="reporterId"
     value={formData.reporterId || ""}
     onChange={handleChange}

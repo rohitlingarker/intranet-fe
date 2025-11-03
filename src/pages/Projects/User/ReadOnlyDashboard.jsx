@@ -222,7 +222,6 @@ const ProjectDashboard = () => {
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
                 My Projects
-                My Projects
               </h3>
 
               {loading ? (

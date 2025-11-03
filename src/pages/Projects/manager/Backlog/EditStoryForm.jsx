@@ -45,7 +45,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             axiosConfig
           ),
           axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`,
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
             axiosConfig
           ),
           axios.get(

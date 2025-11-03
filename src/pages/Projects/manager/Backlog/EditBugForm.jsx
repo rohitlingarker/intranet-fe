@@ -38,7 +38,7 @@ const EditBugForm = ({ bugId, projectId, onClose, onUpdated }) => {
               axiosConfig
             ),
             axios.get(
-              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members`,
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
               axiosConfig
             ),
             axios.get(
