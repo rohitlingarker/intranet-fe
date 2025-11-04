@@ -144,7 +144,8 @@ const IssueTracker = () => {
 
   // ===== DELETE =====
   const handleDelete = async (issue) => {
-    if (!window.confirm(`Are you sure you want to delete this ${issue.type}?`)) return;
+    const confirmed = window.confirm(`⚠️ Are you sure you want to delete this ${issue.type}? This action cannot be undone.`);
+    if (!confirmed) return;
 
     let endpoint = "";
     if (issue.type === "Epic") endpoint = `/api/epics/${issue.id}`;
@@ -227,7 +228,7 @@ const IssueTracker = () => {
       <div className="bg-white p-5 rounded-lg shadow-md flex flex-wrap gap-3 items-center border border-gray-100">
         <input
           type="text"
-          placeholder="🔍 Search by title..."
+          placeholder=" Search by title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -329,10 +330,10 @@ const IssueTracker = () => {
                 <th className="border px-4 py-2 text-left">Status</th>
                 <th className="border px-4 py-2 text-left">Reporter</th>
                 <th className="border px-4 py-2 text-left">Assigned To</th>
-                <th className="border px-4 py-2 text-left">Billable</th> {/* ✅ Added Column */}
+                {/* <th className="border px-4 py-2 text-left">Billable</th> */}
                 <th className="border px-4 py-2 text-left">Created On</th>
                 <th className="border px-4 py-2 text-left">Due Date</th>
-                <th className="border px-4 py-2 text-left">Actions</th>
+                {/* <th className="border px-4 py-2 text-left">Actions</th> */}
               </tr>
             </thead>
             <tbody>
@@ -378,7 +379,7 @@ const IssueTracker = () => {
                     <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
-                   
+                    {/* <td className="border px-4 py-2">{issue.billable ? "Yes" : "No"}</td> */}
                     <td className="border px-4 py-2">
                       {issue.createdAt
                         ? new Date(issue.createdAt).toLocaleDateString()

@@ -355,10 +355,7 @@ const CreateIssueForm = ({
             <FormSelect label="Sprint" name="sprintId" value={formData.sprintId || ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
             <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
-          </>
-          
-        )}
-        <FormSelect
+              <FormSelect
               label="Billable"
               name="isBillable"
               value={formData.isBillable}
@@ -368,6 +365,10 @@ const CreateIssueForm = ({
                 { label: "No", value: "No" },
               ]}
             />
+          </>
+          
+        )}
+        
  
         {issueType === "Bug" && (
          <>
