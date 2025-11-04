@@ -5,10 +5,9 @@ import AddEmployeeModal from "./models/AddEmployeeModal";
 import AddLeaveTypeModal from "./models/AddLeaveTypeModal";
 import AddHolidaysModal from "./models/AddHolidaysModal"; // 1. Import the new modal
 import { Pencil, Trash2 } from "lucide-react";
-import ActionDropdown from "./models/ActionDropdownHrTools";
 import { toast } from "react-toastify";
-import ConfirmationModal from "./models/ConfirmationModal";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import EffectiveDeactivationDate from "./models/EffectiveDeactivationDate";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -20,16 +19,15 @@ const HRManageTools = ({ employeeId }) => {
   const [isAddHolidaysModalOpen, setIsAddHolidaysModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
-    useState(false);
   const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] =
     useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [effectiveDeactivationDate, setEffectiveDeactivationDate] = useState("");
+  const [isEffectiveModalOpen, setIsEffectiveModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchLeaveTypes();
@@ -39,7 +37,7 @@ const HRManageTools = ({ employeeId }) => {
     try {
       setIsLoading(true); // ✅ Show spinner
       const res = await axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setLeaveTypes(res.data);
     } catch (err) {
@@ -50,16 +48,17 @@ const HRManageTools = ({ employeeId }) => {
     }
   };
 
-  const confirmDelete = (leaveTypeId) => {
+  const handleConfirm = (leaveTypeId) => {
     setSelectedLeaveTypeIdToDelete(leaveTypeId);
-    setIsDeleteConfirmationOpen(true);
+    setIsEffectiveModalOpen(true);
   };
 
   const executeDelete = async () => {
     setIsDeleting(true);
-    await handleDeleteLeaveType(selectedLeaveTypeIdToDelete);
+    await handleDeleteLeaveType(selectedLeaveTypeIdToDelete, effectiveDeactivationDate);
     setIsDeleting(false);
-    setIsDeleteConfirmationOpen(false);
+    setIsEffectiveModalOpen(false);
+    setEffectiveDeactivationDate("");
   };
 
   const handleDeleteLeaveType = async (leaveTypeId) => {
@@ -68,8 +67,11 @@ const HRManageTools = ({ employeeId }) => {
         `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
+          data: {
+            deactivationEffectiveDate: effectiveDeactivationDate,
+          }
         }
       );
       toast.success(res.data?.message || "Leave type deleted successfully");
@@ -182,13 +184,6 @@ const HRManageTools = ({ employeeId }) => {
                       </td>
                     ))}
                     <td className="border px-3 py-2 min-w-[100px] sticky right-0 bg-white">
-                      {/* <ActionDropdown
-                        onEdit={() => {
-                          setEditLeaveType(lt);
-                          setIsAddLeaveTypeModalOpen(true);
-                        }}
-                        onDelete={() => confirmDelete(lt.leaveTypeId)}
-                      /> */}
                       <div className="flex items-center justify-center gap-3">
                         <button
                           title="Edit"
@@ -202,7 +197,7 @@ const HRManageTools = ({ employeeId }) => {
                         </button>
                         <button
                           title="Delete"
-                          onClick={() => confirmDelete(lt.leaveTypeId)}
+                          onClick={() => handleConfirm(lt.leaveTypeId)}
                           className="text-red-500 hover:text-red-800 transition-colors"
                         >
                           <Trash2 size={16} />
@@ -233,13 +228,14 @@ const HRManageTools = ({ employeeId }) => {
           setIsAddLeaveTypeModalOpen(false);
         }}
       />
-      <ConfirmationModal
-        isOpen={isDeleteConfirmationOpen}
-        title="Confirm Deletion"
-        message="Are you sure you want to delete this leave type? This action cannot be undone."
-        onCancel={() => setIsDeleteConfirmationOpen(false)}
+      <EffectiveDeactivationDate 
+        isOpen={isEffectiveModalOpen}
         onConfirm={executeDelete}
+        onCancel={() => setIsEffectiveModalOpen(false)}
         isLoading={isDeleting}
+        // confirmText="Deactivate"
+        effectiveDate={effectiveDeactivationDate}
+        setEffectiveDate={setEffectiveDeactivationDate}
       />
       {/* 4. Render the AddHolidaysModal */}
       <AddHolidaysModal

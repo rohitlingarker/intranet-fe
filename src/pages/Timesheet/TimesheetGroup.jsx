@@ -349,6 +349,8 @@ const TimesheetGroup = ({
   const CustomStatusBadge = ({ label, size = "sm" }) => {
     const getStatusColor = (status) => {
       switch (status?.toLowerCase()) {
+        case "holiday":
+          return "bg-red-100 text-red-800 border-red-300";
         case "draft":
         case "submitted":
           return "bg-yellow-100 text-yellow-800 border-yellow-300";
@@ -358,7 +360,7 @@ const TimesheetGroup = ({
         case "rejected":
           return "bg-red-100 text-red-800 border-red-300";
         default:
-          return "bg-gray-100 text-gray-800 border-gray-300";
+          return "bg-gray-100 text-gray-800 border-gray-300"
       }
     };
 
@@ -498,6 +500,7 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
+  const todaysDate = today.toISOString().split("T")[0];  
 
   // helper to normalize date string to yyyy-mm-dd
   const normalize = (d) => {
@@ -598,6 +601,7 @@ const TimesheetGroup = ({
                 <input
                   type="date"
                   min={firstDateOfMonth}
+                  // max={todaysDate}
                   max={lastDateOfMonth}
                   className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                   value={normalize(date)}
@@ -683,9 +687,13 @@ const TimesheetGroup = ({
                 onClick={() => setMenuOpen((open) => !open)}
                 className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
                 type="button"
-                disabled={currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"}
+                disabled={
+                  currentStatus?.toLowerCase() === "approved" ||
+                  currentStatus?.toLowerCase() === "partially approved"
+                }
                 title={
-                  currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"
+                  currentStatus?.toLowerCase() === "approved" ||
+                  currentStatus?.toLowerCase() === "partially approved"
                     ? "Cannot edit approved timesheet"
                     : "More optionssssssss"
                 }
@@ -740,6 +748,9 @@ const TimesheetGroup = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 relative overflow-visible">
+                    {timesheet.isHoliday && (
+                      <CustomStatusBadge label="Holiday" size="sm" />
+                    )}
                     <CustomStatusBadge label={timesheet.status} size="sm" />
                     {/* Show approval status tooltip if available */}
                     {timesheet.actionStatus &&
@@ -764,77 +775,82 @@ const TimesheetGroup = ({
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
-                    {window.location.pathname !== "/managerapproval" && <div
-                      className="relative"
-                      ref={(el) => {
-                        if (el) {
-                          menuRefs.current[timesheet.timesheetId] = el;
-                        }
-                      }}
-                     >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newMenuId =
-                            openMenuId === timesheet.timesheetId
-                              ? null
-                              : timesheet.timesheetId;
-                          setOpenMenuId(newMenuId);
-                          setMenuOpen(newMenuId !== null);
+                    {window.location.pathname !== "/managerapproval" && (
+                      <div
+                        className="relative"
+                        ref={(el) => {
+                          if (el) {
+                            menuRefs.current[timesheet.timesheetId] = el;
+                          }
                         }}
-                        className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
-                        type="button"
-                        disabled={
-                          timesheet.status?.toLowerCase() === "approved" ||
-                          timesheet.status?.toLowerCase() === "partially approved"
-                        }
-                        title={
-                          timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially approved"
-                            ? "Cannot edit approved timesheet"
-                            : "More options"
-                        }
                       >
-                        <MoreVertical size={16} />
-                      </button>
-                      {openMenuId === timesheet.timesheetId && (
-                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // console.log("Opening menu for:", timesheet.timesheetId);
-                              handleAddEntry();
-                              setOpenMenuId(null);
-                              setMenuOpen(false);
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Add Entry
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick();
-                              setOpenMenuId(null);
-                              setMenuOpen(false);
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-                          >
-                            Delete
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelect();
-                              setOpenMenuId(null);
-                              setMenuOpen(false);
-                            }}
-                            className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100"
-                          >
-                            Select
-                          </button>
-                        </div>
-                      )}
-                    </div>}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newMenuId =
+                              openMenuId === timesheet.timesheetId
+                                ? null
+                                : timesheet.timesheetId;
+                            setOpenMenuId(newMenuId);
+                            setMenuOpen(newMenuId !== null);
+                          }}
+                          className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
+                          type="button"
+                          disabled={
+                            timesheet.status?.toLowerCase() === "approved" ||
+                            timesheet.status?.toLowerCase() ===
+                              "partially approved"
+                          }
+                          title={
+                            timesheet.status?.toLowerCase() === "approved" ||
+                            timesheet.status?.toLowerCase() ===
+                              "partially approved"
+                              ? "Cannot edit approved timesheet"
+                              : "More options"
+                          }
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenuId === timesheet.timesheetId && (
+                          <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // console.log("Opening menu for:", timesheet.timesheetId);
+                                handleAddEntry();
+                                setOpenMenuId(null);
+                                setMenuOpen(false);
+                              }}
+                              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Add Entry
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick();
+                                setOpenMenuId(null);
+                                setMenuOpen(false);
+                              }}
+                              className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelect();
+                                setOpenMenuId(null);
+                                setMenuOpen(false);
+                              }}
+                              className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100"
+                            >
+                              Select
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -859,27 +875,29 @@ const TimesheetGroup = ({
             ))}
 
           {/* Submit Week Button */}
-          {window.location.pathname !== "/managerapproval" && isWeeklyFormat && weekData && (
-            <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
-              <button
-                onClick={handleSubmitWeek}
-                disabled={isSubmittingWeek || isSubmitDisabled()}
-                className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-colors ${
-                  isSubmitDisabled()
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : isSubmittingWeek
-                    ? "bg-blue-400 text-white cursor-wait"
-                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-                }`}
-              >
-                {isSubmittingWeek
-                  ? "Submitting..."
-                  : isSubmitDisabled()
-                  ? getSubmitButtonText()
-                  : "SUBMIT WEEK"}
-              </button>
-            </div>
-          )}
+          {window.location.pathname !== "/managerapproval" &&
+            isWeeklyFormat &&
+            weekData && (
+              <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
+                <button
+                  onClick={handleSubmitWeek}
+                  disabled={isSubmittingWeek || isSubmitDisabled()}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-colors ${
+                    isSubmitDisabled()
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : isSubmittingWeek
+                      ? "bg-blue-400 text-white cursor-wait"
+                      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+                  }`}
+                >
+                  {isSubmittingWeek
+                    ? "Submitting..."
+                    : isSubmitDisabled()
+                    ? getSubmitButtonText()
+                    : "SUBMIT WEEK"}
+                </button>
+              </div>
+            )}
         </div>
       ) : (
         <EntriesTable

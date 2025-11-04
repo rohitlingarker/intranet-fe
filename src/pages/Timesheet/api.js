@@ -252,7 +252,7 @@ export async function filterByRange(startDate, endDate) {
 export async function getManagerDashboardData(startDate, endDate) {
   try {
     const res = await fetch(
-      `${apiEndpoint}/api/manager/summary?startDate=${startDate}&endDate=${endDate}`,
+      `${apiEndpoint}/api/manager/summary`,
       {
         method: "GET",
         headers: {
