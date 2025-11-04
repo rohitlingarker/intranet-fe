@@ -39,7 +39,9 @@ export const getAvailablePermissionGroupsForRole = (roleId) =>
 export const updatePermissionGroupsForRole = (roleId, groupIds) =>
   axiosInstance.put(`${ROLE_URL}/${roleId}/groups`, { group_ids: groupIds });
 export const addPermissionGroupsToRole = (roleId, groupIds) =>
-  axiosInstance.post(`${ROLE_URL}/uuid/${roleId}/groups`, { group_uuids: groupIds });
+  axiosInstance.post(`${ROLE_URL}/uuid/${roleId}/groups`, {
+    group_uuids: groupIds,
+  });
 export const removePermissionGroupFromRole = (roleId, groupId) =>
   axiosInstance.delete(`${ROLE_URL}/${roleId}/groups/${groupId}`);
 
@@ -52,5 +54,9 @@ export const mapAccessPointToRole = (roleId, accessId) =>
   axiosInstance.post(`${ROLE_URL}/${roleId}/access-points/${accessId}`);
 export const removeAccessPointFromRole = (roleId, accessId) =>
   axiosInstance.delete(`${ROLE_URL}/${roleId}/access-points/${accessId}`);
-export const getAllAccessPoints = () =>
-  axiosInstance.get(`${ROLE_URL}/access-points/all`);
+// export const getAllAccessPoints = () =>
+//   axiosInstance.get(`${ROLE_URL}/access-points/all`);
+export const removePermissionGroupsFromRole = (roleId,groupIds) =>{
+  axiosInstance.post(`${ROLE_URL}/uuid/${roleId}/groups/remove`, {
+    group_uuids: groupIds,
+  })};

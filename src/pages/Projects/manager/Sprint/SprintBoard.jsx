@@ -110,14 +110,18 @@ const SprintBoard = ({ projectId, projectName }) => {
 
         {/* Filter Dropdown */}
         <div className="flex items-center gap-3">
-          <label htmlFor="sprintFilter" className="text-sm font-medium text-gray-700">
+          <label
+            htmlFor="sprintFilter"
+            className="text-base font-medium text-gray-700"
+          >
             Filter Sprints:
           </label>
           <select
             id="sprintFilter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border border-gray-300 rounded-lg px-4 py-3 text-base w-48 
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="ALL">ALL</option>
             <option value="PLANNING">PLANNING</option>
@@ -126,22 +130,30 @@ const SprintBoard = ({ projectId, projectName }) => {
           </select>
         </div>
 
+
         {/* Sprint Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredSprints.map(sprint => (
-            <div
-              key={sprint.id}
-              className="bg-white rounded-2xl shadow p-6"
-            >
-              <SprintColumn
-                sprint={sprint}
-                stories={stories.filter(story => story.sprintId === sprint.id)}
-                onDropStory={handleDropStory}
-                onChangeStatus={handleStatusChange}
-              />
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative">
+          {filteredSprints.length > 0 ? (
+            filteredSprints.map(sprint => (
+              <div key={sprint.id} className="bg-white rounded-2xl shadow p-6">
+                <SprintColumn
+                  sprint={sprint}
+                  stories={stories.filter(story => story.sprintId === sprint.id)}
+                  onDropStory={handleDropStory}
+                  onChangeStatus={handleStatusChange}
+                />
+              </div>
+            ))
+          ) : (
+            // Show message ONLY when filter is not ALL and sprints are loaded
+            filter !== 'ALL' && sprints.length > 0 && (
+              <p className="absolute left-0 text-gray-600 font-medium mt-2">
+                No {filter.toLowerCase()} sprints found.
+              </p>
+            )
+          )}
         </div>
+
 
         {/* Modal */}
         <CreateSprintModal

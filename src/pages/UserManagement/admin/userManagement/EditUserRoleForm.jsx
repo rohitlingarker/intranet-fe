@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { showStatusToast } from "../../../../components/toastfy/toast";
+import SearchInput from "../../../../components/filter/Searchbar";
+
+
 export default function EditUserRoleForm() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -12,6 +15,7 @@ export default function EditUserRoleForm() {
   const [roles, setRoles] = useState([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = localStorage.getItem("token");
   const authHeader = {
@@ -68,9 +72,7 @@ export default function EditUserRoleForm() {
   const handleSave = async () => {
     try {
       await axios.put(
-        `${
-          import.meta.env.VITE_USER_MANAGEMENT_URL
-        }/admin/users/${userId}/role`,
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/${userId}/role`,
         { role_ids: selectedRoleIds },
         authHeader
       );
@@ -82,6 +84,11 @@ export default function EditUserRoleForm() {
     }
   };
 
+  // Filter roles by search term
+  const filteredRoles = roles.filter((role) =>
+    role.role_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading || !user) {
     return (
       <div className="flex justify-center items-center h-64 text-blue-600 text-lg font-medium">
@@ -91,34 +98,46 @@ export default function EditUserRoleForm() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="w-full">
       <div className="bg-white p-6 rounded-2xl shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        {/* Modal Header */}
+        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
           Edit Roles for{" "}
           <span className="text-blue-600">
             {user.first_name} {user.last_name}
           </span>
         </h2>
+        <p className="mb-4 text-gray-500 text-center">
+          Assign or unassign user roles below:
+        </p>
 
-        <p className="mb-4 text-gray-500">Assign or unassign user roles:</p>
+        {/* ✅ Search Bar - clearly visible at the top */}
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {roles.map((role) => (
-            <label
-              key={role.role_id}
-              className="flex items-center gap-3 text-gray-700"
-            >
-              <input
-                type="checkbox"
-                checked={selectedRoleIds.includes(role.role_id)}
-                onChange={() => toggleRole(role.role_id)}
-                className="accent-blue-600 w-4 h-4"
-              />
-              <span>{role.role_name}</span>
-            </label>
-          ))}
+        {/* Roles List */}
+        <div className="grid grid-cols-2 gap-3 mb-6 max-h-[300px] overflow-y-auto pr-2">
+          {filteredRoles.length > 0 ? (
+            filteredRoles.map((role) => (
+              <label
+                key={role.role_id}
+                className="flex items-center gap-3 text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedRoleIds.includes(role.role_id)}
+                  onChange={() => toggleRole(role.role_id)}
+                  className="accent-blue-600 w-4 h-4"
+                />
+                <span>{role.role_name}</span>
+              </label>
+            ))
+          ) : (
+            <p className="text-gray-400 col-span-2 text-center py-4">
+              No roles found.
+            </p>
+          )}
         </div>
 
+        {/* Buttons */}
         <div className="flex justify-end gap-4">
           <button
             onClick={handleSave}

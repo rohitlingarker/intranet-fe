@@ -38,7 +38,7 @@ function ProjectStatusReportWrapper() {
         const combinedIssues = [
           ...epicsRes.data.map(item => ({
             id: item.id,
-            title: item.title,
+            title: item.name,
             assignee: item.assignee,
             type: 'Epic',
             status: item.status,

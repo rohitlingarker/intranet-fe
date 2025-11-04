@@ -71,9 +71,9 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
         }
       );
 
-      toast.success("✅ Sprint created successfully!", {
+      toast.success("Sprint created successfully!", {
         position: "top-right",
-        autoClose: 5000,
+        autoClose: 1000,
       });
 
       onCreated(response.data);
@@ -201,7 +201,15 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
             />
           </div>
 
-          <div className="text-center">
+          <div className="flex justify-end space-x-4 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition"
+            >
+              Cancel
+            </button>
+
             <button
               type="submit"
               className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
@@ -209,6 +217,7 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
               Create Sprint
             </button>
           </div>
+
         </form>
       </div>
     </div>

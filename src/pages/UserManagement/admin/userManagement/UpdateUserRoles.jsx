@@ -2,34 +2,29 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../../components/toastfy/toast";
-
+ 
 import SearchInput from "../../../../components/filter/Searchbar";
 import GenericTable from "../../../../components/Table/table";
 import Pagination from "../../../../components/Pagination/pagination";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
-
+ 
 const ITEMS_PER_PAGE = 10;
-const SORT_DIRECTIONS = {
-  ASC: "asc",
-  DESC: "desc",
-};
-
+const SORT_DIRECTIONS = { ASC: "asc", DESC: "desc" };
+ 
 export default function UpdateUserRole() {
   const [users, setUsers] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortDirection, setSortDirection] = useState(SORT_DIRECTIONS.ASC);
-
-  // modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser_uuId, setSelectedUser_uuId] = useState(null);
-
+ 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-
-  // axios instance
+ 
   const axiosInstance = useMemo(() => {
     const headers = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -38,75 +33,61 @@ export default function UpdateUserRole() {
       headers,
     });
   }, [token]);
-
+ 
   useEffect(() => {
     if (!token) {
       showStatusToast("Session expired. Please login again.", "warning");
       navigate("/");
     }
   }, [token, navigate]);
-
-  useEffect(() => {
-    const fetchUsersWithRoles = async () => {
-      setLoading(true);
-      try {
-        const res = await axiosInstance.get("/admin/users/roles");
-        setUsers(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch users with roles:", err);
-        const msg =
-          err?.response?.data?.detail ||
-          err?.response?.data?.message ||
-          err.message ||
-          "Failed to load user roles.";
-        showStatusToast(msg, "error");
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          navigate("/home");
-        }
-      } finally {
-        setLoading(false);
+ 
+  // ✅ Fetch users from backend with pagination
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get("/admin/users/roles", {
+        params: {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          search: searchTerm || "",
+        },
+      });
+      if (res.data) {
+        setUsers(res.data.users || []);
+        setTotalUsers(res.data.total || 0);
+      } else {
+        setUsers([]);
+        setTotalUsers(0);
       }
-    };
-    fetchUsersWithRoles();
-  }, [axiosInstance, navigate]);
-
-  // filter, sort, paginate
-  const filteredUsers = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter((user) =>
-      `${user.name || ""} ${user.mail || ""} ${user.roles?.join(" ") || ""}`
-        .toLowerCase()
-        .includes(term)
-    );
-  }, [users, searchTerm]);
-
-  const sortedUsers = useMemo(() => {
-    const copy = [...filteredUsers];
-    copy.sort((a, b) => {
-      const aName = (a.name || "").toLowerCase();
-      const bName = (b.name || "").toLowerCase();
-      return sortDirection === SORT_DIRECTIONS.ASC
-        ? aName.localeCompare(bName)
-        : bName.localeCompare(aName);
-    });
-    return copy;
-  }, [filteredUsers, sortDirection]);
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedUsers.slice(start, start + ITEMS_PER_PAGE);
-  }, [sortedUsers, currentPage]);
-
-  const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
-
+    } catch (err) {
+      console.error("Failed to fetch users with roles:", err);
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err.message ||
+        "Failed to load user roles.";
+      showStatusToast(msg, "error");
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        navigate("/dashboard");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+ 
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage, searchTerm]);
+ 
+  const totalPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
+ 
   const toggleSort = () => {
     setSortDirection((prev) =>
       prev === SORT_DIRECTIONS.ASC ? SORT_DIRECTIONS.DESC : SORT_DIRECTIONS.ASC
     );
+    setUsers((prev) => [...prev].reverse());
   };
-
-  // table headers
+ 
   const headers = [
     "S.no",
     <span key="name" className="cursor-pointer" onClick={toggleSort}>
@@ -117,10 +98,10 @@ export default function UpdateUserRole() {
     "Actions",
   ];
   const columns = ["Serial no", "name", "mail", "roles", "actions"];
-
-  const tableRows = paginatedUsers.map((user) => ({
-    "Serial no": (users.indexOf(user) + 1).toString(),
-    name: user.name,
+ 
+  const tableRows = users.map((user, index) => ({
+    "Serial no": ((currentPage - 1) * ITEMS_PER_PAGE + index + 1).toString(),
+    name: `${user.name || ""}`,
     mail: user.mail || <span className="text-gray-400 italic">N/A</span>,
     roles:
       user.roles?.length > 0 ? (
@@ -141,7 +122,7 @@ export default function UpdateUserRole() {
       </Button>
     ),
   }));
-
+ 
   const handleRolesSaved = (userUuid, updatedRoleNames) => {
     setUsers((prev) =>
       prev.map((u) =>
@@ -149,10 +130,10 @@ export default function UpdateUserRole() {
       )
     );
   };
-
+ 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* ✅ Back Button */}
+      {/* ✅ Top Bar */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <h2 className="text-xl font-semibold text-blue-700">
           Update User Roles
@@ -165,7 +146,8 @@ export default function UpdateUserRole() {
           ← Back
         </Button>
       </div>
-
+ 
+      {/* ✅ Search Bar */}
       <SearchInput
         onSearch={(value) => {
           setSearchTerm(value || "");
@@ -175,14 +157,16 @@ export default function UpdateUserRole() {
         delay={300}
         className="mb-4 max-w-md"
       />
-
+ 
+      {/* ✅ Table */}
       <GenericTable
         headers={headers}
         rows={tableRows}
         columns={columns}
         loading={loading}
       />
-
+ 
+      {/* ✅ Pagination */}
       {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -191,9 +175,9 @@ export default function UpdateUserRole() {
           onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         />
       )}
-
+ 
+      {/* ✅ Modal */}
       {isModalOpen && selectedUser_uuId && (
-        console.log("Opening modal for userId:", selectedUser_uuId) ||
         <EditUserRoleModal
           user_uuId={selectedUser_uuId}
           onClose={() => {
@@ -209,7 +193,7 @@ export default function UpdateUserRole() {
     </div>
   );
 }
-
+ 
 /* ------------------------------
    Modal component (internal)
    ------------------------------ */
@@ -219,17 +203,14 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
+ 
   const token = localStorage.getItem("token");
-  const authHeader = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
-
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+ 
   useEffect(() => {
-    console.log("EditUserRoleModal mounted for userId:", user_uuId);
     if (!user_uuId) return;
     let mounted = true;
-
+ 
     const loadData = async () => {
       setLoading(true);
       try {
@@ -238,15 +219,13 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
           axiosInstance.get(`/admin/roles`, authHeader),
           axiosInstance.get(`/admin/users/uuid/${user_uuId}/roles`, authHeader),
         ]);
-        console.log("Fetched user, roles, assigned:", userRes, rolesRes, assignedRes);
-
+ 
         if (!mounted) return;
-
+ 
         setUser(userRes.data);
         setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
-
+ 
         let assignedIds = [];
-
         if (assignedRes.data?.roles && Array.isArray(assignedRes.data.roles)) {
           const roleNameToId = rolesRes.data.reduce((acc, r) => {
             acc[r.role_name] = r.role_uuid;
@@ -256,7 +235,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
             .map((roleName) => roleNameToId[roleName])
             .filter(Boolean);
         }
-
+ 
         setSelectedRoleIds(assignedIds);
       } catch (err) {
         console.error("Failed to load roles", err);
@@ -265,13 +244,13 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         if (mounted) setLoading(false);
       }
     };
-
+ 
     loadData();
     return () => {
       mounted = false;
     };
   }, [user_uuId, axiosInstance]);
-
+ 
   const toggleRole = (roleId) => {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId)
@@ -279,7 +258,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         : [...prev, roleId]
     );
   };
-
+ 
   const handleSave = async () => {
     if (!user_uuId) return;
     setSaving(true);
@@ -289,16 +268,16 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         { role_ids: selectedRoleIds },
         authHeader
       );
-
+ 
       const updatedRoleNames = roles
         .filter((r) => selectedRoleIds.includes(r.role_uuid))
         .map((r) => r.role_name);
-
-      console.log(response)
-
-      showStatusToast(response?.data?.message || "Roles updated successfully!", "success");
+ 
+      showStatusToast(
+        response?.data?.message || "Roles updated successfully!",
+        "success"
+      );
       if (typeof onSaved === "function") onSaved(updatedRoleNames);
-      console.log("Updated roles:", updatedRoleNames);
       onClose();
     } catch (err) {
       console.error("Failed to update roles", err);
@@ -307,7 +286,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
       setSaving(false);
     }
   };
-
+ 
   return (
     <Modal isOpen={true} onClose={onClose}>
       <div className="p-4 max-w-lg">
@@ -321,9 +300,11 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
                 {user?.first_name} {user?.last_name}
               </span>
             </h2>
-
-            <p className="text-gray-500 mb-4">Select or deselect roles below:</p>
-
+ 
+            <p className="text-gray-500 mb-4">
+              Select or deselect roles below:
+            </p>
+ 
             <div className="grid grid-cols-2 gap-3 mb-6 max-h-72 overflow-y-auto">
               {roles.map((role) => (
                 <label
@@ -340,7 +321,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
                 </label>
               ))}
             </div>
-
+ 
             <div className="flex justify-end gap-4">
               <Button
                 onClick={handleSave}
@@ -360,3 +341,4 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
     </Modal>
   );
 }
+ 

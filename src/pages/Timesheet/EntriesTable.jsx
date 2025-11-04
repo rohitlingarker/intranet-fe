@@ -10,7 +10,7 @@ import Button from "../../components/Button/Button";
 // safely render '01:30' or '16:30:00' as '01:30' or '16:30'
 const prettyTime = (time) => {
   if (!time) return "";
-  const date = new Date(time);
+  const date = new Date(time.slice(-1) === "Z" ? time : time+"Z"); // treat as UTC
   if (isNaN(date.getTime())) return "";
   return date.toLocaleTimeString([], {
     hour: "2-digit",
@@ -37,7 +37,7 @@ const EntriesTable = ({
   const [editData, setEditData] = useState({});
   const [addData, setAddData] = useState({
     workType: "Office",
-    isBillable: "Yes",
+    isBillable: false,
   });
   const [pendingEntries, setPendingEntries] = useState([]);
 
@@ -53,6 +53,8 @@ const EntriesTable = ({
   //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
 
   useEffect(() => {
+    // console.log({addingNewEntry});
+    
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
@@ -69,20 +71,26 @@ const EntriesTable = ({
   ];
 
   const projectOptions = projectInfo.map((p) => ({
-    label: p.projectName,
+    label: p.project,
     value: p.projectId,
   }));
+  // console.log({ projectInfo });
+
   const projectIdToName = Object.fromEntries(
-    projectInfo.map((p) => [p.projectId, p.projectName])
+    projectInfo.map((p) => [p.projectId, p.project])
   );
   const taskIdToName = Object.fromEntries(
-    projectInfo.flatMap((p) => p.tasks.map((t) => [t.taskId, t.taskName]))
+    projectInfo.flatMap((p) => p.tasks.map((t) => [t.taskId, t.task]))
+  );
+
+  const taskIdToBillablity = Object.fromEntries(
+    projectInfo.flatMap((p) => p.tasks.map((t) => [t.taskId, t.billable]))
   );
 
   const getTaskOptions = (projectId) => {
     const proj = projectInfo.find((p) => p.projectId === parseInt(projectId));
     return proj
-      ? proj.tasks.map((t) => ({ label: t.taskName, value: t.taskId }))
+      ? proj.tasks.map((t) => ({ label: t.task, value: t.taskId }))
       : [];
   };
 
@@ -118,28 +126,35 @@ const EntriesTable = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (
-      name === "billable" &&
-      ((addingNewEntry && addData.projectId < 0) ||
-        (!addingNewEntry && editData.projectId < 0))
-    ) {
-      return;
+    if (addingNewEntry) return; // not used for add row
+
+    let updated = { ...editData, [name]: value };
+
+    if (name === "taskId" && editData.projectId) {
+      const project = projectInfo.find(
+        (p) => p.projectId === parseInt(editData.projectId)
+      );
+      const task = project?.tasks.find((t) => t.taskId === parseInt(value));
+      if (task) updated.isBillable = task.billable;
     }
 
-    if (addingNewEntry) setAddData((prev) => ({ ...prev, [name]: value }));
-    else setEditData((prev) => ({ ...prev, [name]: value }));
-
-    if (name === "projectId" && value < 0) {
-      if (addingNewEntry) setAddData((prev) => ({ ...prev, isBillable: "No" }));
-      else setEditData((prev) => ({ ...prev, isBillable: "No" }));
-    }
+    setEditData(updated);
   };
 
   // ←──────── NEW: handler for add-row inputs ────────→
   const handleAddChange = (e) => {
     const { name, value } = e.target;
-    setAddData((prev) => ({ ...prev, [name]: value }));
-    console.log(addData);
+    let updated = { ...addData, [name]: value };
+
+    if (name === "taskId" && addData.projectId) {
+      const project = projectInfo.find(
+        (p) => p.projectId === parseInt(addData.projectId)
+      );
+      const task = project?.tasks.find((t) => t.taskId === parseInt(value));
+      if (task) updated.isBillable = task.billable;
+    }
+
+    setAddData(updated);
   };
 
   // validation (works for both addData and editData shapes)
@@ -267,6 +282,7 @@ const EntriesTable = ({
         fromTime: newStart.toISOString(),
         toTime: newEnd.toISOString(),
         isBillable: addData.isBillable === "Yes",
+        workLocation: addData.workType,
       },
     ]);
     // hide add-row and reset
@@ -306,7 +322,9 @@ const EntriesTable = ({
           <th className="text-left px-4 py-2">Work Location</th>
           <th className="text-left px-4 py-2">Description</th>
           <th className="text-left px-4 py-2">Billable</th>
-          <th className="text-left px-4 py-2">Actions</th>
+          {window.location.pathname !== "/managerapproval" && (
+            <th className="text-left px-4 py-2">Actions</th>
+          )}
         </tr>
       </thead>
 
@@ -384,23 +402,20 @@ const EntriesTable = ({
                   />
                 </td>
                 <td className="px-4 py-2">
-                  <FormSelect
-                    name="isBillable"
-                    value={editData.isBillable}
-                    options={billableOptions}
-                    onChange={handleChange}
-                  />
+                  {editData.isBillable}
                 </td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-2">
-                    <button className="text-green-500" onClick={handleSave}>
-                      <Check />
-                    </button>
-                    <button className="text-red-500" onClick={handleCancel}>
-                      <X />
-                    </button>
-                  </div>
-                </td>
+                {window.location.pathname !== "/managerapproval" && (
+                  <td className="px-4 py-2">
+                    <div className="flex gap-2">
+                      <button className="text-green-500" onClick={handleSave}>
+                        <Check />
+                      </button>
+                      <button className="text-red-500" onClick={handleCancel}>
+                        <X />
+                      </button>
+                    </div>
+                  </td>
+                )}
               </>
             ) : (
               <>
@@ -414,20 +429,22 @@ const EntriesTable = ({
                 </td>
                 <td className="px-4 py-2">{prettyTime(entry.fromTime)}</td>
                 <td className="px-4 py-2">{prettyTime(entry.toTime)}</td>
-                <td className="px-4 py-2">{mapWorkType(entry.workType)}</td>
+                <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
-                <td className="px-4 py-2">
-                  {status?.toLowerCase() !== "approved" && (
-                    <button
-                      className="text-blue-600 hover:underline text-sm"
-                      onClick={() => handleEditClick(idx)}
-                      title="Edit entry"
-                    >
-                      <Pencil className="inline w-4 h-4" />
-                    </button>
-                  )}
-                </td>
+                {window.location.pathname !== "/managerapproval" && (
+                  <td className="px-4 py-2">
+                    {status?.toLowerCase() !== "approved" && (
+                      <button
+                        className="text-blue-600 hover:underline text-sm"
+                        onClick={() => handleEditClick(idx)}
+                        title="Edit entry"
+                      >
+                        <Pencil className="inline w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                )}
               </>
             )}
           </tr>
@@ -486,12 +503,18 @@ const EntriesTable = ({
               />
             </td>
             <td className="px-4 py-2">
-              <FormSelect
+              {/* <FormSelect
                 name="isBillable"
                 value={addData.isBillable}
                 options={billableOptions}
                 onChange={handleAddChange}
-              />
+              /> */}
+              {addData.projectId &&
+              taskIdToBillablity[addData.taskId] !== undefined
+                ? taskIdToBillablity[addData.taskId]
+                  ? "Yes"
+                  : "No"
+                : "N/A"}
             </td>
             <td className="px-4 py-2">
               <div className="flex gap-2">

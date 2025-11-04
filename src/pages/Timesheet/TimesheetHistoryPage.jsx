@@ -132,7 +132,7 @@ const TimesheetHistoryPage = () => {
         return "Approved";
       case "REJECTED":
         return "Rejected";
-      case "PARTIALLY_APPROVED":
+      case "PARTIALLY APPROVED":
         return "Partially Approved";
       case "NO TIMESHEETS":
         return "No Timesheets";
@@ -163,7 +163,7 @@ const TimesheetHistoryPage = () => {
   const fetchAndStoreProjectTaskInfo = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/project-info/all`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/project-info`,
         {
           method: "GET",
           headers: {
@@ -178,7 +178,7 @@ const TimesheetHistoryPage = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched project/task info:", data);
+      // console.log("Fetched project/task info:", data);
 
       // Create mapping objects for quick lookup
       const projectsMap = {};
@@ -247,11 +247,11 @@ const TimesheetHistoryPage = () => {
 
         // First, fetch and store project/task information
         const projectTaskMapping = await fetchAndStoreProjectTaskInfo();
-        console.log("Project/Task mapping:", projectTaskMapping);
+        // console.log("Project/Task mapping:", projectTaskMapping);
 
         // Then fetch timesheet history
         const data = await fetchTimesheetHistory(user?.user_id || 1);
-        console.log("Fetched timesheet history:", data);
+        // console.log("Fetched timesheet history:", data);
 
         // Map API response to our expected format using the mapping data
         const weeklyEntries = mapApiResponseToEntries(data, projectTaskMapping);
