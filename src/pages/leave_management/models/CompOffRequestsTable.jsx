@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
-import { Fonts } from "../../../components/Fonts/Fonts";
-import Pagination from "../../../components/Pagination/pagination"; // <-- Import your Pagination component
+import Pagination from "../../../components/Pagination/pagination";
 
-const CompOffRequestsTable = ({ requests, onCancel }) => {
+const CompOffRequestsTable = ({ requests, onCancel, loading }) => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
 
@@ -16,9 +15,9 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
     setConfirmModalOpen(true);
   };
 
-  const confirmCancellation = () => {
+  const confirmCancellation = async () => {
     if (selectedRequestId) {
-      onCancel(selectedRequestId);
+      await onCancel(selectedRequestId);
     }
     setConfirmModalOpen(false);
     setSelectedRequestId(null);
@@ -66,16 +65,26 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
                 key={req.idleaveCompoff}
                 className="border-t border-gray-200 text-xs text-center justify-center"
               >
-                <td className="p-3">{new Date(req.startDate).toLocaleDateString("en-US", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}</td>
-                <td className="p-3">{new Date(req.endDate).toLocaleDateString("en-US", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}</td>
+                <td className="p-3">
+                  {new Date(req.startDate).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {req.startSession && req.startSession !== "none" && (
+                    <span className="ml-1 text-gray-500">({req.startSession})</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  {new Date(req.endDate).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {req.endSession && req.endSession !== "none" && (
+                    <span className="ml-1 text-gray-500">({req.endSession})</span>
+                  )}
+                </td>
                 <td className="p-3">{req.duration}</td>
                 <td className="p-3">{req.status}</td>
                 <td className="p-3">
@@ -123,6 +132,7 @@ const CompOffRequestsTable = ({ requests, onCancel }) => {
         message="Are you sure you want to cancel this comp-off request?"
         onConfirm={confirmCancellation}
         onCancel={cancelModal}
+        isLoading={loading}
       />
     </div>
   );

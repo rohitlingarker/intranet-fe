@@ -58,14 +58,12 @@ const MonthlyStats = ({ employeeId, refreshKey }) => {
 
       {loading ? (
         <p className="text-sm text-gray-500 animate-pulse">Loading...</p>
-      ) : error ? (
-        <p className="text-sm text-red-500">{error}</p>
-      ) : (
+      ) : leaveData.length > 0 ? (
         <div className="h-36 sm:h-44 md:h-52 lg:h-56 xl:h-45">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+              margin={{ top: 10, right: 0, left: 0, bottom: 20 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -129,6 +127,8 @@ const MonthlyStats = ({ employeeId, refreshKey }) => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      ) : (
+        <p className="text-sm text-gray-400">No data available</p>
       )}
     </div>
   );

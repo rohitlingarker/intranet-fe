@@ -31,7 +31,7 @@ const fetchData = async (
     }
 
     const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
-      axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
+      axios.get(`${BASE_URL}/api/leave-requests/employee/pending/${employeeId}`, {
         withCredentials: true,
         headers: {
           "Cache-Control": "no-store",
