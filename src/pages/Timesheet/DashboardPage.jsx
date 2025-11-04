@@ -131,11 +131,11 @@ const DashboardPage = () => {
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
-                Tasks Worked
+                Unsubmitted Weeks
               </div>
               <div className="text-3xl font-black text-emerald-700">
-                {(dashboardSummary?.billableActivity?.billableTasks || 0) +
-                  (dashboardSummary?.billableActivity?.nonBillableTasks || 0)}
+                {dashboardSummary?.weeklyTimesheetReview?.notSubmittedWeeks ||
+                  0}
               </div>
             </CardContent>
           </Card>
