@@ -103,7 +103,8 @@ const TimesheetHistoryPage = () => {
                 entry.isBillable !== undefined ? entry.isBillable : true,
             }));
           }
-
+          //map holiday flag from API response 
+          timesheet.isHoliday=!!timesheet.isHolidayTimesheet;
           // Merge action status from individual timesheets
           if (timesheet.actionStatus) {
             weekGroup.actionStatus = [
