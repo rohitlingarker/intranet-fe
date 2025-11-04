@@ -174,7 +174,7 @@ const Backlog = ({ projectId, projectName }) => {
                 onClick={handleCloseForms}
                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
               >
-                <X size={22} />
+               
               </button>
               <CreateSprint onClose={handleCloseForms} projectId={projectId} />
             </div>
@@ -214,6 +214,7 @@ const Backlog = ({ projectId, projectName }) => {
                   (s) => s.sprintId === sprint.id
                 )}
                 onDropStory={handleDropStory}
+
                 onChangeStatus={() => {}}
               />
             ))}

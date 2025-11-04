@@ -6,13 +6,13 @@ import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-
+ 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const token = localStorage.getItem("token");
-
+ 
 const EmployeeLeaveBalances = () => {
   const navigate = useNavigate(); // <-- Hook for navigation
-
+ 
   const [data, setData] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,26 +23,26 @@ const EmployeeLeaveBalances = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+ 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-
+ 
   const wrapperRef = useRef(null);
-
+ 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setShowSuggestions(false);
       }
     };
-
+ 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [wrapperRef]);
-
+ 
   // 🔹 Hide suggestions when pressing Escape
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -50,13 +50,13 @@ const EmployeeLeaveBalances = () => {
         setShowSuggestions(false);
       }
     };
-
+ 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [setShowSuggestions]);
-
+ 
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery.trim());
@@ -64,11 +64,11 @@ const EmployeeLeaveBalances = () => {
     }, 400);
     return () => clearTimeout(handler);
   }, [searchQuery]);
-
+ 
   useEffect(() => {
     fetchLeaveData(debouncedQuery);
   }, [debouncedQuery]);
-
+ 
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
@@ -88,21 +88,21 @@ const EmployeeLeaveBalances = () => {
         console.error("Error fetching suggestions", err);
       }
     };
-
+ 
     fetchSuggestions();
   }, [searchQuery]);
-
+ 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       const gender = selectedEmployee?.employeeGender?.toLowerCase();
-
+ 
       const filteredBalances = leaveTypes
         .filter(({ leaveTypeName }) => {
           const lowerName = leaveTypeName.toLowerCase();
           const isMaternity = lowerName.includes("maternity");
           const isPaternity = lowerName.includes("paternity");
-
+ 
           // ❌ Exclude maternity for males, paternity for females, or if gender unknown
           if (
             (isMaternity && gender === "male") ||
@@ -111,7 +111,7 @@ const EmployeeLeaveBalances = () => {
           ) {
             return false;
           }
-
+ 
           return true;
         })
         .map(({ leaveTypeName, leaveTypeId }) => ({
@@ -122,13 +122,13 @@ const EmployeeLeaveBalances = () => {
             selectedEmployee.balances[leaveTypeName]?.year ??
             new Date().getFullYear(),
         }));
-
+ 
       const payload = {
         employeeId: selectedEmployee.employeeId,
         balances: filteredBalances,
         // performedBy: hrId,
       };
-
+ 
       const res = await axios.put(
         `${BASE_URL}/api/leave-balance/update`,
         payload,
@@ -138,7 +138,7 @@ const EmployeeLeaveBalances = () => {
           },
         }
       );
-
+ 
       toast.success(res.data?.message || "Leave balances updated successfully");
       setIsEditModalOpen(false);
       fetchLeaveData();
@@ -148,12 +148,12 @@ const EmployeeLeaveBalances = () => {
       setIsSubmitting(false);
     }
   };
-
+ 
   const handleEdit = (employee) => {
     setSelectedEmployee({ ...employee });
     setIsEditModalOpen(true);
   };
-
+ 
   const fetchLeaveData = async (query = "") => {
     try {
       setIsLoading(true);
@@ -163,21 +163,21 @@ const EmployeeLeaveBalances = () => {
           : `${BASE_URL}/api/leave-balance/search?query=${encodeURIComponent(
               query
             )}`;
-
+ 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+ 
       const raw = response.data;
       const groupedByEmployee = {};
-
+ 
       raw.forEach((entry) => {
         const empId = entry.employee?.employeeId || "Unknown";
         const empName = `${entry.employee?.firstName || ""} ${
           entry.employee?.lastName || ""
         }`.trim();
         const gender = entry?.employee?.gender;
-
+ 
         if (!groupedByEmployee[empId]) {
           groupedByEmployee[empId] = {
             employeeId: empId,
@@ -186,7 +186,7 @@ const EmployeeLeaveBalances = () => {
             balances: {},
           };
         }
-
+ 
         const leaveTypeName = entry.leaveType.leaveName;
         groupedByEmployee[empId].balances[leaveTypeName] = {
           ...entry,
@@ -195,9 +195,9 @@ const EmployeeLeaveBalances = () => {
           year: entry.year,
         };
       });
-
+ 
       setData(Object.values(groupedByEmployee));
-
+ 
       if (leaveTypes.length === 0 && raw.length > 0) {
         const allLeaveTypes = Array.from(
           new Map(
@@ -219,24 +219,24 @@ const EmployeeLeaveBalances = () => {
       setIsLoading(false);
     }
   };
-
+ 
   const handleSuggestionClick = (suggestion) => {
     setSearchQuery(suggestion);
     setDebouncedQuery(suggestion);
     setSuggestions([]);
     setShowSuggestions(false);
   };
-
+ 
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
-
+ 
   const handlePrevious = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-
+ 
   return (
     <div className="p-6 overflow-auto">
       {/* 🔹 Loading Spinner Overlay */}
@@ -245,7 +245,7 @@ const EmployeeLeaveBalances = () => {
           <LoadingSpinner text="Loading Leave Balances" />
         </div>
       )}
-
+ 
       {/* backbutton and title */}
       <div className="flex items-center justify-between px-6 mb-4 ">
         <h2 className="text-xl font-bold text-gray-800">
@@ -261,7 +261,7 @@ const EmployeeLeaveBalances = () => {
           Back
         </motion.button>
       </div>
-
+ 
       {/* Search Bar */}
       <div ref={wrapperRef} className="mb-4 relative h-9 w-full max-w-md">
         <input
@@ -272,7 +272,7 @@ const EmployeeLeaveBalances = () => {
           className="border px-4 py-2 rounded w-full shadow-sm"
           onFocus={() => setShowSuggestions(true)}
         />
-
+ 
         {showSuggestions && suggestions.length > 0 && (
           <ul className="absolute bg-white border rounded w-full shadow-md mt-1 max-h-48 overflow-y-auto z-20">
             {suggestions.map((s, i) => (
@@ -286,7 +286,7 @@ const EmployeeLeaveBalances = () => {
             ))}
           </ul>
         )}
-
+ 
         {searchQuery && (
           <button
             onClick={() => {
@@ -300,7 +300,7 @@ const EmployeeLeaveBalances = () => {
           </button>
         )}
       </div>
-
+ 
       {/* Table */}
       <div className="overflow-x-auto border rounded-md">
         <table className="min-w-max text-sm text-left border-collapse relative">
@@ -355,7 +355,7 @@ const EmployeeLeaveBalances = () => {
           </tbody>
         </table>
       </div>
-
+ 
       {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
@@ -365,14 +365,14 @@ const EmployeeLeaveBalances = () => {
           onNext={handleNext}
         />
       )}
-
+ 
       {/* 🔹 Spinner during submit (modal) */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <LoadingSpinner />
         </div>
       )}
-
+ 
       {isEditModalOpen && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           {/* Spinner Overlay */}
@@ -381,13 +381,13 @@ const EmployeeLeaveBalances = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent border-white"></div>
             </div>
           )}
-
+ 
           {/* Modal Content */}
           <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
             <h3 className="text-xl font-bold mb-6">
               Edit Leave Balances – {selectedEmployee.employeeName}
             </h3>
-
+ 
             <div className="space-y-4">
               {leaveTypes.map(({ leaveTypeId, leaveTypeName }) => {
                 const gender = selectedEmployee?.employeeGender?.toLowerCase();
@@ -397,14 +397,14 @@ const EmployeeLeaveBalances = () => {
                 const currentValue =
                   selectedEmployee.balances[leaveTypeName]?.remainingLeaves ??
                   "";
-
+ 
                 const isMaternity = leaveTypeName
                   .toLowerCase()
                   .includes("maternity");
                 const isPaternity = leaveTypeName
                   .toLowerCase()
                   .includes("paternity");
-
+ 
                 let isDisabled = false;
                 if (
                   (isMaternity && gender === "male") ||
@@ -413,7 +413,7 @@ const EmployeeLeaveBalances = () => {
                 ) {
                   isDisabled = true;
                 }
-
+ 
                 return (
                   <div
                     key={leaveTypeId}
@@ -450,7 +450,7 @@ const EmployeeLeaveBalances = () => {
                 );
               })}
             </div>
-
+ 
             <div className="mt-8 flex justify-end gap-4">
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -473,5 +473,5 @@ const EmployeeLeaveBalances = () => {
     </div>
   );
 };
-
+ 
 export default EmployeeLeaveBalances;

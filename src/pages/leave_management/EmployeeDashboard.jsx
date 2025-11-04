@@ -13,14 +13,11 @@ import ActionButtons from "./models/ActionButtons";
 import CompOffRequestModal from "./models/CompOffRequestModal";
 import Button from "../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
-import Calendar from "./charts/Calendar";
+// import Calendar from "./charts/Calendar";
 import UpcomingHolidays from "./charts/UpcomingHolidays";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import LoadingSpinner from "../../components/LoadingSpinner";
-import AllHolidaysGrid from "./charts/AllHolidaysGrid";
-import { set } from "date-fns";
 
 // This component now holds everything from the "Employee View"
 const EmployeeDashboard = ({ employeeId }) => {
@@ -51,6 +48,7 @@ const EmployeeDashboard = ({ employeeId }) => {
   // };
 
   const handleCompOffSubmit = async (payload) => {
+    console.log("Submitting comp-off request from EmployeeDashboard:", payload);
     setIsLoading(true);
     try {
       payload = { ...payload, employeeId };
@@ -58,10 +56,9 @@ const EmployeeDashboard = ({ employeeId }) => {
       const res = await axios.post(`${BASE_URL}/api/compoff/request`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
       if (res.data.success) {
         toast.success(
-          res.data.message || "Comp-Off request submitted successfully!"
+          res?.data?.message || "Comp-Off request submitted successfully!"
         );
         setrefreshKeys((prev) => prev + 1);
         try {
@@ -75,7 +72,7 @@ const EmployeeDashboard = ({ employeeId }) => {
         return false;
       }
     } catch (err) {
-      toast.error("Something went wrong while submitting.");
+      toast.error(err?.response?.data?.message || "Failed to submit comp-off request.");
       return false;
     } finally {
       setIsLoading(false);
@@ -184,7 +181,7 @@ const EmployeeDashboard = ({ employeeId }) => {
       )}
 
       <h2 className="text-small font-semibold m-4">My Leave Stats</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <WeeklyPattern employeeId={employeeId} refreshKey={refreshKeys} />
         <CustomActiveShapePieChart
           employeeId={employeeId}
