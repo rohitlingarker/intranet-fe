@@ -519,7 +519,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               <th
-                className="px-4 py-3 text-center text-xs uppercase sticky left-0 z-20 bg-blue-900"
+                className="px-4 py-3 text-center text-xs uppercase sticky left-1 z-20 bg-blue-900"
                 style={{ width: "4%" }}
               >
                 <input
@@ -542,13 +542,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "10%" }}
+                style={{ width: "12%" }}
               >
                 From
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "10%" }}
+                style={{ width: "12%" }}
               >
                 To
               </th>
@@ -584,7 +584,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "8%" }}
+                style={{ width: "15%" }}
               >
                 Last Action By
               </th>
@@ -646,7 +646,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         ].includes(request.status.toLowerCase())}
                       />
                     </td>
-                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[4.5%] z-10 bg-white">
+                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[3.5%] z-10 bg-white">
                       <button
                         onClick={() =>
                           setLeaveBalaceModel({
@@ -657,15 +657,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         }
                       >
                         {request.employee.fullName}
-                        <div className="text-gray-500">
+                        <div className="text-gray-500 text-ellipsis whitespace-nowrap overflow-hidden max-w-[100px]">
                           {request.employee.jobTitle}
                         </div>
                       </button>
                     </td>
                     {/* ... other <td> cells for your data ... */}
                     <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                           {request.startDate
                             ? new Date(request.startDate).toLocaleDateString(
                                 "en-US",
@@ -677,11 +676,9 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               )
                             : "-"}
                         </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                           {request.endDate
                             ? new Date(request.endDate).toLocaleDateString(
                                 "en-US",
@@ -693,7 +690,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               )
                             : "-"}
                         </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
@@ -703,7 +699,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                         {request.requestDate
                           ? new Date(request.requestDate).toLocaleDateString(
                               "en-US",

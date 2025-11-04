@@ -29,7 +29,7 @@ const HRManageTools = ({ employeeId }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
 
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchLeaveTypes();
@@ -39,7 +39,7 @@ const HRManageTools = ({ employeeId }) => {
     try {
       setIsLoading(true); // ✅ Show spinner
       const res = await axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setLeaveTypes(res.data);
     } catch (err) {
@@ -68,7 +68,7 @@ const HRManageTools = ({ employeeId }) => {
         `${BASE_URL}/api/leave/delete-leave-type/${leaveTypeId}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );

@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
  
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem("token");
+// const token = localStorage.getItem("token");
  
 const EmployeeLeaveBalances = () => {
   const navigate = useNavigate(); // <-- Hook for navigation
@@ -80,7 +80,7 @@ const EmployeeLeaveBalances = () => {
           `${BASE_URL}/api/leave-balance/autocomplete?query=${encodeURIComponent(
             searchQuery
           )}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         setSuggestions(res.data);
         setShowSuggestions(true);
@@ -134,7 +134,7 @@ const EmployeeLeaveBalances = () => {
         payload,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
@@ -165,7 +165,7 @@ const EmployeeLeaveBalances = () => {
             )}`;
  
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
  
       const raw = response.data;
