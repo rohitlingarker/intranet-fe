@@ -124,7 +124,9 @@ const MultiSelect = ({
 
   return (
     <div className="w-full" id={id}>
-      {label ? <label className="block text-sm font-medium mb-1">{label}</label> : null}
+      {label ? (
+        <label className="block text-sm font-medium mb-1">{label}</label>
+      ) : null}
 
       <button
         type="button"
@@ -167,7 +169,11 @@ const MultiSelect = ({
               )}
             </div>
 
-            <ul role="listbox" className="max-h-60 overflow-auto py-1" aria-multiselectable="true">
+            <ul
+              role="listbox"
+              className="max-h-60 overflow-auto py-1"
+              aria-multiselectable="true"
+            >
               {filtered.length === 0 ? (
                 <li className="px-3 py-2 text-sm text-gray-500">No results</li>
               ) : (
@@ -206,7 +212,13 @@ const MultiSelect = ({
             const key = String(v);
             const found = (options || []).find((o) => String(o.value) === key);
             return (
-              <Pill key={key} active onRemove={() => onChange(value.filter((id) => String(id) !== key))}>
+              <Pill
+                key={key}
+                active
+                onRemove={() =>
+                  onChange(value.filter((id) => String(id) !== key))
+                }
+              >
                 {found ? found.label : key}
               </Pill>
             );
@@ -251,7 +263,11 @@ function DateRangeInline({ start, end, setStart, setEnd, holidays }) {
         label={<>End</>}
         defaultDate={localEndDate}
         onChange={handleEndChange}
-        disabledDays={[{ dayOfWeek: [0, 6] }, { before: localStartDate }, ...(holidays || [])]}
+        disabledDays={[
+          { dayOfWeek: [0, 6] },
+          { before: localStartDate },
+          ...(holidays || []),
+        ]}
         align="right"
       />
     </div>
@@ -270,9 +286,9 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
   const [holidays, setHolidays] = useState([]);
 
   // Inline edit state
-//   const [editingId, setEditingId] = useState(null);
-//   const [editDrafts, setEditDrafts] = useState({}); // id -> draft
-//   const [submittingId, setSubmittingId] = useState(null);
+  //   const [editingId, setEditingId] = useState(null);
+  //   const [editDrafts, setEditDrafts] = useState({}); // id -> draft
+  //   const [submittingId, setSubmittingId] = useState(null);
   const [unblockingId, setUnblockingId] = useState(null);
   const [filterText, setFilterText] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -323,7 +339,10 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
         : [];
 
       const leaveIdMap = new Map(
-        (ltIdsJson || []).map((item) => [item.leaveName, String(item.leaveTypeId)])
+        (ltIdsJson || []).map((item) => [
+          item.leaveName,
+          String(item.leaveTypeId),
+        ])
       );
 
       const mergedLeaveTypes = (ltJson || []).map((lt) => ({
@@ -333,22 +352,35 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
       setLeaveTypes(mergedLeaveTypes);
 
       // Pull blocks from { data: [...] }
-      const rawBlocks = Array.isArray(blocksRes?.data?.data) ? blocksRes.data.data : [];
+      const rawBlocks = Array.isArray(blocksRes?.data?.data)
+        ? blocksRes.data.data
+        : [];
+      console.log("Fetched raw blocks:", rawBlocks);
 
       // Preload members for all projects in blocks
-      const uniqueProjectIds = Array.from(new Set(rawBlocks.map((b) => String(b.projectId))));
+      const uniqueProjectIds = Array.from(
+        new Set(rawBlocks.map((b) => String(b.projectId)))
+      );
       const memberEntries = await Promise.all(
         uniqueProjectIds.map(async (pid) => {
           try {
-            const res = await axios.get(`${PMS_BASE_URL}/api/projects/${pid}/members`, {
-              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            });
+            const res = await axios.get(
+              `${PMS_BASE_URL}/api/projects/${pid}/members`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            );
             const memsRaw = Array.isArray(res.data)
               ? res.data
               : Array.isArray(res.data?.data)
               ? res.data.data
               : [];
-            const mems = memsRaw.map((m) => ({ value: String(m.id), label: `${m.name}` }));
+            const mems = memsRaw.map((m) => ({
+              value: String(m.id),
+              label: `${m.name}`,
+            }));
             return [String(pid), mems];
           } catch (err) {
             console.error(`Failed to load members for project ${pid}`, err);
@@ -360,32 +392,90 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
       setMembersMap(newMembersMap);
 
       // Normalize blocks to UI shape
+      // const normalizedBlocks = rawBlocks.map((block) => {
+      //   const projectIdStr = String(block.projectId);
+      //   const project = (projJson || []).find((p) => String(p.id) === projectIdStr);
+
+      //   const allProjectMembers = newMembersMap.get(projectIdStr) || [];
+      //   const allMemberIds = new Set(allProjectMembers.map((m) => String(m.value)));
+
+      //   const blockMemberIds = (Array.isArray(block.members) ? block.members : []).map((m) =>
+      //     String(m.employeeId)
+      //   );
+      //   const blockLeaveTypeIds = (Array.isArray(block.leaveTypes) ? block.leaveTypes : []).map(
+      //     (lt) => String(lt.leaveTypeId)
+      //   );
+
+      //   const isScopeAll =
+      //     allMemberIds.size > 0 &&
+      //     blockMemberIds.length === allMemberIds.size &&
+      //     blockMemberIds.every((id) => allMemberIds.has(String(id)));
+
+      //   const memberNames = blockMemberIds.map((id) => {
+      //     const found = allProjectMembers.find((m) => String(m.value) === String(id));
+      //     return found ? found.label : id;
+      //   });
+
+      //   const leaveTypeNames = blockLeaveTypeIds.map((id) => {
+      //     const found = mergedLeaveTypes.find((lt) => String(lt.value) === String(id));
+      //     return found ? found.label : id;
+      //   });
+
+      //   return {
+      //     id: String(block.id),
+      //     managerId: String(block.managerId),
+      //     projectId: projectIdStr,
+      //     projectName: project ? project.name : projectIdStr,
+      //     startDate: block.startDate,
+      //     endDate: block.endDate,
+      //     reason: block.reason,
+      //     status: block.status,
+      //     scopeAll: isScopeAll,
+      //     memberIds: blockMemberIds,
+      //     memberNames,
+      //     leaveTypeIds: blockLeaveTypeIds,
+      //     leaveTypeNames,
+      //   };
+      // });
+
       const normalizedBlocks = rawBlocks.map((block) => {
         const projectIdStr = String(block.projectId);
-        const project = (projJson || []).find((p) => String(p.id) === projectIdStr);
+        const project = (projJson || []).find(
+          (p) => String(p.id) === projectIdStr
+        );
 
         const allProjectMembers = newMembersMap.get(projectIdStr) || [];
-        const allMemberIds = new Set(allProjectMembers.map((m) => String(m.value)));
+        const allMemberIds = new Set(
+          allProjectMembers.map((m) => String(m.value))
+        );
 
-        const blockMemberIds = (Array.isArray(block.members) ? block.members : []).map((m) =>
+        // Extract block-level data
+        const blockMemberIds = (block.members || []).map((m) =>
           String(m.employeeId)
         );
-        const blockLeaveTypeIds = (Array.isArray(block.leaveTypes) ? block.leaveTypes : []).map(
-          (lt) => String(lt.leaveTypeId)
+        const blockLeaveTypeIds = (block.leaveTypes || []).map((lt) =>
+          String(lt.leaveTypeId)
         );
 
-        const isScopeAll =
-          allMemberIds.size > 0 &&
-          blockMemberIds.length === allMemberIds.size &&
-          blockMemberIds.every((id) => allMemberIds.has(String(id)));
+        // Extract mappings (these represent blocked leaves)
+        const blockedMappings = (block.mappings || []).map((map) => ({
+          employeeId: String(map.employeeId),
+          leaveTypeId: String(map.leaveTypeId),
+          status: map.status,
+        }));
 
+        // Resolve names
         const memberNames = blockMemberIds.map((id) => {
-          const found = allProjectMembers.find((m) => String(m.value) === String(id));
+          const found = allProjectMembers.find(
+            (m) => String(m.value) === String(id)
+          );
           return found ? found.label : id;
         });
 
         const leaveTypeNames = blockLeaveTypeIds.map((id) => {
-          const found = mergedLeaveTypes.find((lt) => String(lt.value) === String(id));
+          const found = mergedLeaveTypes.find(
+            (lt) => String(lt.value) === String(id)
+          );
           return found ? found.label : id;
         });
 
@@ -398,11 +488,11 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
           endDate: block.endDate,
           reason: block.reason,
           status: block.status,
-          scopeAll: isScopeAll,
           memberIds: blockMemberIds,
           memberNames,
           leaveTypeIds: blockLeaveTypeIds,
           leaveTypeNames,
+          blockedMappings, // 👈 Added this new property
         };
       });
 
@@ -439,98 +529,108 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
     const key = String(pid);
     if (membersMap.has(key)) return;
     try {
-      const res = await axios.get(`${PMS_BASE_URL}/api/projects/${key}/members`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const memsRaw = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.data) ? res.data.data : [];
-      const mems = memsRaw.map((m) => ({ value: String(m.id), label: `${m.name}` }));
+      const res = await axios.get(
+        `${PMS_BASE_URL}/api/projects/${key}/members`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      const memsRaw = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      const mems = memsRaw.map((m) => ({
+        value: String(m.id),
+        label: `${m.name}`,
+      }));
       setMembersMap((prev) => new Map(prev).set(key, mems));
     } catch (e) {
       toast.error("Failed to fetch project members");
     }
   };
 
-//   const startEdit = async (b) => {
-//     setEditingId(b.id);
-//     await ensureMembersLoaded(b.projectId);
-//     setEditDrafts((prev) => ({
-//       ...prev,
-//       [b.id]: {
-//         projectId: String(b.projectId),
-//         scopeAll: !!b.scopeAll,
-//         memberIds: Array.isArray(b.memberIds) ? b.memberIds.map(String) : [],
-//         leaveTypeIds: Array.isArray(b.leaveTypeIds) ? b.leaveTypeIds.map(String) : [],
-//         startDate: b.startDate,
-//         endDate: b.endDate,
-//       },
-//     }));
-//   };
+  //   const startEdit = async (b) => {
+  //     setEditingId(b.id);
+  //     await ensureMembersLoaded(b.projectId);
+  //     setEditDrafts((prev) => ({
+  //       ...prev,
+  //       [b.id]: {
+  //         projectId: String(b.projectId),
+  //         scopeAll: !!b.scopeAll,
+  //         memberIds: Array.isArray(b.memberIds) ? b.memberIds.map(String) : [],
+  //         leaveTypeIds: Array.isArray(b.leaveTypeIds) ? b.leaveTypeIds.map(String) : [],
+  //         startDate: b.startDate,
+  //         endDate: b.endDate,
+  //       },
+  //     }));
+  //   };
 
-//   const cancelEdit = (id) => {
-//     setEditingId(null);
-//     setEditDrafts((prev) => {
-//       const next = { ...prev };
-//       delete next[id];
-//       return next;
-//     });
-//   };
+  //   const cancelEdit = (id) => {
+  //     setEditingId(null);
+  //     setEditDrafts((prev) => {
+  //       const next = { ...prev };
+  //       delete next[id];
+  //       return next;
+  //     });
+  //   };
 
-//   const saveEdit = async (id) => {
-//     const draft = editDrafts[id];
-//     if (!draft) return;
+  //   const saveEdit = async (id) => {
+  //     const draft = editDrafts[id];
+  //     if (!draft) return;
 
-//     if (!draft.projectId) return toast.error("Project is required.");
-//     if (!draft.scopeAll && (!Array.isArray(draft.memberIds) || draft.memberIds.length === 0)) {
-//       return toast.error("Select at least one employee or enable All members.");
-//     }
-//     if (!Array.isArray(draft.leaveTypeIds) || draft.leaveTypeIds.length === 0) {
-//       return toast.error("Select at least one leave type.");
-//     }
-//     if (!draft.startDate || !draft.endDate) {
-//       return toast.error("Select a valid date range.");
-//     }
-//     if (new Date(draft.endDate) < new Date(draft.startDate)) {
-//       return toast.error("End date cannot be before start date.");
-//     }
+  //     if (!draft.projectId) return toast.error("Project is required.");
+  //     if (!draft.scopeAll && (!Array.isArray(draft.memberIds) || draft.memberIds.length === 0)) {
+  //       return toast.error("Select at least one employee or enable All members.");
+  //     }
+  //     if (!Array.isArray(draft.leaveTypeIds) || draft.leaveTypeIds.length === 0) {
+  //       return toast.error("Select at least one leave type.");
+  //     }
+  //     if (!draft.startDate || !draft.endDate) {
+  //       return toast.error("Select a valid date range.");
+  //     }
+  //     if (new Date(draft.endDate) < new Date(draft.startDate)) {
+  //       return toast.error("End date cannot be before start date.");
+  //     }
 
-//     setSubmittingId(id);
-//     try {
-//       const allMembersForProject = membersMap.get(String(draft.projectId)) || [];
-//       const payload = {
-//         blockId: id,
-//         projectId: String(draft.projectId),
-//         members: draft.scopeAll ? allMembersForProject.map((m) => String(m.value)) : draft.memberIds.map(String),
-//         leaveTypeIds: draft.leaveTypeIds.map(String),
-//         startDate: draft.startDate,
-//         endDate: draft.endDate,
-//         managerId: String(employeeId),
-//         year: new Date().getFullYear()
-//       };
+  //     setSubmittingId(id);
+  //     try {
+  //       const allMembersForProject = membersMap.get(String(draft.projectId)) || [];
+  //       const payload = {
+  //         blockId: id,
+  //         projectId: String(draft.projectId),
+  //         members: draft.scopeAll ? allMembersForProject.map((m) => String(m.value)) : draft.memberIds.map(String),
+  //         leaveTypeIds: draft.leaveTypeIds.map(String),
+  //         startDate: draft.startDate,
+  //         endDate: draft.endDate,
+  //         managerId: String(employeeId),
+  //         year: new Date().getFullYear()
+  //       };
 
-//       // Adjust method/URL to your backend
-//       const res = await axios.post(`${BASE_URL}/api/leave-block/unblock`, payload, {
-//         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-//       });
-//       if (!res.data?.success) {
-//         throw new Error(res.data?.message || "Failed to update leave block");
-//       }
-//       toast.success("Leave block updated.");
-//       await fetchInitial();
-//       cancelEdit(id);
-//     } catch (err) {
-//       console.error(err);
-//       toast.error("Update failed. Please try again.");
-//     } finally {
-//       setSubmittingId(null);
-//     }
-//   };
-   
-const handleOpenEditModal = async (block) => {
+  //       // Adjust method/URL to your backend
+  //       const res = await axios.post(`${BASE_URL}/api/leave-block/unblock`, payload, {
+  //         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  //       });
+  //       if (!res.data?.success) {
+  //         throw new Error(res.data?.message || "Failed to update leave block");
+  //       }
+  //       toast.success("Leave block updated.");
+  //       await fetchInitial();
+  //       cancelEdit(id);
+  //     } catch (err) {
+  //       console.error(err);
+  //       toast.error("Update failed. Please try again.");
+  //     } finally {
+  //       setSubmittingId(null);
+  //     }
+  //   };
+
+  const handleOpenEditModal = async (block) => {
     // We must load members before opening the modal
     await ensureMembersLoaded(block.projectId);
     setSelectedBlock(block);
     setIsEditModalOpen(true);
-   };
+  };
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
@@ -538,102 +638,183 @@ const handleOpenEditModal = async (block) => {
   };
 
   // *** UPDATED SAVE LOGIC ***
-// *** UPDATED SAVE LOGIC ***
-const handleSaveModal = async (
-  blockId,
-  blockUpdates,
-  employeesToUnblockAll, // List of emp IDs where "Unblock All" was checked
-  allLeaveTypeIdsInBlock // List of all leave type IDs originally in the block
-) => {
-  // Get the full original block data needed for the update payload
-  const originalBlock = selectedBlock;
-  if (!originalBlock) {
-    // Added error handling if original block data isn't available
-    toast.error("Error: Could not retrieve original block data.");
-    throw new Error("Could not find block data.");
-  }
+  // *** UPDATED SAVE LOGIC ***
+  // const handleSaveModal = async (data) => {
+  //   const {
+  //     blockId,
+  //     updates = {},
+  //     unblockRequests = data.unblockRequests || data.unblockedRequests || [], // ✅ supports both
+  //   } = data || {};
 
-  const year = new Date().getFullYear();
+  //   console.log("Handling save for block ID:", data);
+  //   console.log("Resolved unblockRequests:", unblockRequests);
 
-  try {
-    // --- CONDITIONAL API CALL ---
-    if (employeesToUnblockAll.length > 0) {
-      // **Scenario 1: "Unblock All" was checked for at least one employee.**
-      // Call the POST /unblock endpoint.
-      const unblockPayload = {
-        blockId: blockId,
-        employeeIds: employeesToUnblockAll, // Send only employees marked for full unblock
-        leaveTypeIds: allLeaveTypeIdsInBlock, // Send all leave types associated with the block
-        year: year,
-      };
+  //   const originalBlock = selectedBlock;
+  //   if (!originalBlock) {
+  //     toast.error("Error: Could not retrieve original block data.");
+  //     return;
+  //   }
 
-      await axios.post(
-        `${BASE_URL}/api/leave-block/unblock`,
-        unblockPayload,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      toast.success("Successfully unblocked leave types for selected employees.");
+  //   const year = new Date().getFullYear();
 
-    } else {
-      // **Scenario 2: "Unblock All" was NOT checked for any employee.**
-      // Call the PUT /update endpoint.
-      // NOTE: This payload sends the *original* members and leaveTypeIds.
-      // Any *partial* unchecks made in the modal table are NOT reflected here
-      // because the payload structure doesn't support it.
-      // The backend would need custom logic to interpret this update
-      // alongside potential individual unblocks if that's intended.
-      const updatePayload = {
-        projectId: originalBlock.projectId,
-        members: originalBlock.memberIds,      // Original list
-        leaveTypeIds: originalBlock.leaveTypeIds, // Original list
-        startDate: blockUpdates.startDate,      // Updated
-        endDate: blockUpdates.endDate,        // Updated
-        managerId: originalBlock.managerId,     // Original
-        reason: blockUpdates.reason,          // Updated
-        status: originalBlock.status,         // Original
-        year: year,
-      };
+  //   try {
+  //     // ✅ If there are unblock requests → call unblock API
+  //     if (unblockRequests.length > 0) {
+  //       const payload = {
+  //         blockId,
+  //         unblockRequests,
+  //         year,
+  //       };
 
-      await axios.put(
-        `${BASE_URL}/api/leave-block/update/${blockId}`,
-        updatePayload,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      toast.success("Block details   updated.");
+  //       console.log("🔹 Unblock Payload:", payload);
+
+  //       await axios.post(`${BASE_URL}/api/leave-block/unblock`, payload, {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       });
+
+  //       toast.success("Selected leave types successfully unblocked.");
+  //     }
+
+  //     // ✅ If user updated dates or reason → call update API
+  //     if (updates && (updates.startDate || updates.endDate || updates.reason)) {
+  //       const updatePayload = {
+  //         blockId,
+  //         ...updates,
+  //         year,
+  //       };
+
+  //       console.log("🟦 Update Block Payload:", updatePayload);
+
+  //       await axios.put(
+  //         `${BASE_URL}/api/leave-block/update/${blockId}`,
+  //         updatePayload,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //           },
+  //         }
+  //       );
+
+  //       toast.success("Block details updated successfully.");
+  //     }
+
+  //     await fetchInitial();
+  //     handleCloseEditModal();
+  //   } catch (err) {
+  //     console.error("Failed to save modal data:", err);
+  //     toast.error(
+  //       err.response?.data?.message ||
+  //         "Failed to save update. Please try again."
+  //     );
+  //   }
+  // };
+
+  //   const handleSaveModal = async (payload) => {
+  //   // payload expected:
+  //   // {
+  //   //   blockId,
+  //   //   reason,
+  //   //   startDate,
+  //   //   endDate,
+  //   //   status,
+  //   //   mappingUpdates: [ { employeeId, leaveTypeId, status }, ... ]
+  //   // }
+  //   if (!payload || !payload.blockId) {
+  //     toast.error("Invalid payload from modal.");
+  //     return;
+  //   }
+
+  //   const blockId = payload.blockId;
+  //   const year = new Date().getFullYear();
+
+  //   try {
+  //     console.log("🟦 Update Block Payload:", payload);
+
+  //     // PUT update call (single API)
+  //     await axios.put(`${BASE_URL}/api/leave-block/update/${blockId}`, payload, {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //       },
+  //     });
+
+  //     toast.success("Block details updated successfully.");
+
+  //     // refresh list and close modal
+  //     await fetchInitial();
+  //     handleCloseEditModal();
+  //   } catch (err) {
+  //     console.error("Failed to save modal data:", err);
+  //     toast.error(
+  //       err.response?.data?.message || "Failed to save update. Please try again."
+  //     );
+  //   }
+  // };
+
+  //new one
+
+  const handleSaveModal = async (data) => {
+    const { blockId, type, updates, mappingUpdates, unblockedRequests } =
+      data || {};
+
+    if (!blockId) {
+      toast.error("Error: Block ID missing in request.");
+      return;
     }
 
-    // --- Common Success Path ---
-    await fetchInitial(); // Refresh the list in both cases
-    handleCloseEditModal(); // Close the modal
+    const payload = {
+      type, // ✅ <-- REQUIRED NOW
+      blockId,
+      year: new Date().getFullYear(),
+    };
 
-  } catch (err) {
-    console.error("Failed to save modal data:", err);
-    // Rethrow the error so the modal can display it via its own catch block
-    throw new Error(
-      err.response?.data?.message || "Failed to save update. Please try again."
-    );
-  }
-};
+    if (updates) payload.updates = updates;
+    if (mappingUpdates?.length) payload.mappingUpdates = mappingUpdates;
+    if (unblockedRequests?.length)
+      payload.unblockedRequests = unblockedRequests;
+
+    console.log("📌 Final API Payload →", payload);
+
+    try {
+      await axios.patch(
+        `${BASE_URL}/api/leave-block/update/${blockId}`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+
+      toast.success("Leave block updated successfully.");
+      await fetchInitial();
+      handleCloseEditModal();
+    } catch (err) {
+      console.error("Failed to save modal data:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to update leave block"
+      );
+    }
+  };
 
   const unblock = async (id) => {
     setUnblockingId(id);
     try {
       // Using provided deactivate endpoint
       const res = await axios.post(
-        `${BASE_URL}/api/leave-block/deactivate`,
-        { id },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        `${BASE_URL}/api/leave-block/deactivate/${id}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
       );
       if (!res.data?.success) {
         throw new Error(res.data?.message || "Failed to unblock");
       }
       toast.success("Leave block removed.");
       setBlocks((prev) => prev.filter((b) => String(b.id) !== String(id)));
-    //   if (editingId === id) cancelEdit(id);
+      //   if (editingId === id) cancelEdit(id);
     } catch (err) {
       console.error(err);
       toast.error("Could not unblock. Please try again.");
@@ -647,13 +828,24 @@ const handleSaveModal = async (
     const q = filterText.trim().toLowerCase();
     if (!q) return list;
     return list.filter((b) => {
-      const project = (projects.find((p) => String(p.id) === String(b.projectId))?.name || "").toLowerCase();
-      const members = (Array.isArray(b.memberNames) ? b.memberNames : []).join(", ").toLowerCase();
-      const types = (Array.isArray(b.leaveTypeNames) ? b.leaveTypeNames : []).join(", ").toLowerCase();
+      const project = (
+        projects.find((p) => String(p.id) === String(b.projectId))?.name || ""
+      ).toLowerCase();
+      const members = (Array.isArray(b.memberNames) ? b.memberNames : [])
+        .join(", ")
+        .toLowerCase();
+      const types = (Array.isArray(b.leaveTypeNames) ? b.leaveTypeNames : [])
+        .join(", ")
+        .toLowerCase();
+      const mappings = (Array.isArray(b.mappings) ? b.mappings : [])
+        .join(", ")
+        .toLowerCase();
+
       return (
         project.includes(q) ||
         members.includes(q) ||
         types.includes(q) ||
+        mappings.includes(q) ||
         (b.startDate || "").toLowerCase().includes(q) ||
         (b.endDate || "").toLowerCase().includes(q)
       );
@@ -666,10 +858,16 @@ const handleSaveModal = async (
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Manage Blocked Leave</h1>
-            <p className="mt-1 text-xs">View, edit, or unblock existing leave blocks set by the manager.</p>
+            <p className="mt-1 text-xs">
+              View, edit, or unblock existing leave blocks set by the manager.
+            </p>
           </div>
           <div>
-            <button type="button" onClick={() => navigate(-1)} className="text-blue-600 hover:text-blue-800">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="text-blue-600 hover:text-blue-800"
+            >
               <ArrowLeftCircleIcon className="mr-2 h-10 w-9" />
             </button>
           </div>
@@ -681,7 +879,9 @@ const handleSaveModal = async (
           <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-base font-semibold">Active blocks</h2>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Search and manage current blocked date ranges.</p>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Search and manage current blocked date ranges.
+              </p>
             </div>
             <div className="w-full sm:w-80">
               <input
@@ -700,12 +900,24 @@ const handleSaveModal = async (
             <table className="w-full table-auto">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Project</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Scope</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Employees</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Leave types</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Dates</th>
-                  <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">Actions</th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Project
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Scope
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Employees
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Leave types
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Dates
+                  </th>
+                  <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -717,15 +929,19 @@ const handleSaveModal = async (
                   </tr>
                 ) : filteredBlocks.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-3 py-8 text-center text-sm text-gray-500">No active blocks</td>
+                    <td
+                      colSpan="6"
+                      className="px-3 py-8 text-center text-sm text-gray-500"
+                    >
+                      No active blocks
+                    </td>
                   </tr>
                 ) : (
                   filteredBlocks.map((b) => {
+                    console.log("Rendering block:", b);
                     const projectLabel =
-                      (projects.find(
-                        (p) => String(p.id) === String(b.projectId)
-                      )?.name) ||
-                      b.projectName;
+                      projects.find((p) => String(p.id) === String(b.projectId))
+                        ?.name || b.projectName;
 
                     return (
                       <tr key={b.id} className="align-top">
@@ -746,9 +962,11 @@ const handleSaveModal = async (
                         {/* Employees */}
                         <td className="px-3 py-3 min-w-[280px]">
                           <div className="flex flex-wrap gap-2">
-                            {(b.memberNames || []).slice(0, 4).map((name, i) => (
-                              <Pill key={i}>{name}</Pill>
-                            ))}
+                            {(b.memberNames || [])
+                              .slice(0, 4)
+                              .map((name, i) => (
+                                <Pill key={i}>{name}</Pill>
+                              ))}
                             {(b.memberNames || []).length > 4 ? (
                               <Pill>
                                 +{(b.memberNames || []).length - 4} more
@@ -761,16 +979,14 @@ const handleSaveModal = async (
                         {/* Leave types (fixed: compute inline for read-only) */}
                         <td className="px-3 py-3 min-w-[260px]">
                           <div className="flex flex-wrap gap-2">
-                            {(b.leaveTypeIds || [])
-                              .slice(0, 4)
-                              .map((id, i) => {
-                                const found = (leaveTypes || []).find(
-                                  (lt) => String(lt.value) === String(id)
-                                );
-                                return (
-                                  <Pill key={i}>{found ? found.label : id}</Pill>
-                                );
-                              })}
+                            {(b.leaveTypeIds || []).slice(0, 4).map((id, i) => {
+                              const found = (leaveTypes || []).find(
+                                (lt) => String(lt.value) === String(id)
+                              );
+                              return (
+                                <Pill key={i}>{found ? found.label : id}</Pill>
+                              );
+                            })}
                             {(b.leaveTypeIds || []).length > 4 ? (
                               <Pill>
                                 +{(b.leaveTypeIds || []).length - 4} more

@@ -498,6 +498,7 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
+  const todaysDate = today.toISOString().split("T")[0];  
 
   // helper to normalize date string to yyyy-mm-dd
   const normalize = (d) => {
@@ -598,6 +599,7 @@ const TimesheetGroup = ({
                 <input
                   type="date"
                   min={firstDateOfMonth}
+                  // max={todaysDate}
                   max={lastDateOfMonth}
                   className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                   value={normalize(date)}

@@ -128,7 +128,8 @@ const TimesheetFilters = ({
         }}
       >
         <option>All Status</option>
-        <option value={"Pending"}>Pending</option>
+        {/* <option value={"Pending"}>Pending</option> */}
+        <option value={"Submitted"}>Submitted</option>
         <option value={"Approved"}>Approved</option>
         <option value={"Rejected"}>Rejected</option>
       </select>

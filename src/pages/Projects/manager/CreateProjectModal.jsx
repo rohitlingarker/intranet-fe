@@ -258,7 +258,9 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
                 value={formData.startDate}
                 onChange={handleInputChange}
                 onKeyDown={(e) => e.preventDefault()}
+                required
               />
+             
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">End Date</label>
