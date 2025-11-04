@@ -52,7 +52,7 @@ const defaultForm = {
   weekendsAndHolidaysAllowed: false,
   active: true,
   effectiveStartDate: "",
-  deactivationEffectiveDate: "",
+  // deactivationEffectiveDate: "",
 };
  
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
@@ -245,7 +245,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Effective Start Date *
+                Effective Start Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -256,7 +256,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Deactivation Effective Date
               </label>
@@ -267,7 +267,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* Numeric Fields */}

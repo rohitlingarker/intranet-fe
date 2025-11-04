@@ -12,7 +12,7 @@ const ApprovalQueue = ({ actionType, payload }) => {
     );
   }
 
-  const highlightKeys = ["effectiveStartDate", "effectiveEndDate"];
+  const highlightKeys = ["effectiveStartDate", "deactivationEffectiveDate"];
 
   const formatKey = (key) =>
     key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
