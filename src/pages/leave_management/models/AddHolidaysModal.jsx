@@ -12,12 +12,13 @@ import {
   Hash,
   Download,
   Upload,
+  Globe,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
 // --- Configuration ---
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const token = localStorage.getItem("token");
+// const token = localStorage.getItem("token");
 
 // --- Helper UI Component ---
 const InputGroup = ({ label, icon, children }) => (
@@ -41,6 +42,7 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
   const [description, setDescription] = useState("");
   const [type, setType] = useState("NATIONAL");
   const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +57,7 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
       setDescription("");
       setType("NATIONAL");
       setState("");
+      setCountry("");
       setYear(new Date().getFullYear().toString());
       setError("");
       if (fileInputRef.current) {
@@ -85,6 +88,7 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
     setDate("");
     setDescription("");
     setState("");
+    setCountry("");
   };
 
   const handleRemoveHoliday = (idToRemove) => {
@@ -98,7 +102,7 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
       const response = await axios.get(
         `${BASE_URL}/api/holidays/template/download`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           responseType: "blob",
         }
       );
@@ -118,10 +122,6 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // --- [FIXED] Excel Upload Logic ---
-  // --- [FIXED] Excel Upload Logic ---
-  // --- [FIXED] Excel Upload Logic ---
-  // --- [FINAL FIXED] Excel Upload Logic ---
 const handleFileUpload = (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -143,8 +143,6 @@ const handleFileUpload = (e) => {
         header: 1,
         blankrows: true, 
       });
-
-      console.log("Raw data from Excel:", dataAsArray); // Helpful for debugging
 
       const headers = dataAsArray[0].map(h => String(h).trim());
       // FIX #2: Filter out any truly empty rows after reading them all.
@@ -257,7 +255,7 @@ const handleFileUpload = (e) => {
 
     try {
       await axios.post(`${BASE_URL}/api/holidays/add`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       toast.success(`${holidays.length} holiday(s) added successfully!`);
       if (onSuccess) onSuccess();
@@ -285,7 +283,7 @@ const handleFileUpload = (e) => {
         {/* Header */}
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-900">
-            Add Company Holidays
+            Add Holidays
           </h2>
           <button
             onClick={onClose}
@@ -302,7 +300,7 @@ const handleFileUpload = (e) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <InputGroup
                 label="Date *"
-                icon={<CalendarDays className="h-5 w-5 text-gray-400" />}
+                icon={<CalendarDays className="h-5 w-5 text-orange-500" />}
               >
                 <input
                   type="date"
@@ -314,7 +312,7 @@ const handleFileUpload = (e) => {
               <div className="lg:col-span-2">
                 <InputGroup
                   label="Description *"
-                  icon={<Text className="h-5 w-5 text-gray-400" />}
+                  icon={<Text className="h-5 w-5 text-blue-400" />}
                 >
                   <input
                     type="text"
@@ -327,7 +325,7 @@ const handleFileUpload = (e) => {
               </div>
               <InputGroup
                 label="Type *"
-                icon={<Tag className="h-5 w-5 text-gray-400" />}
+                icon={<Tag className="h-5 w-5 text-green-400" />}
               >
                 <select
                   value={type}
@@ -354,7 +352,7 @@ const handleFileUpload = (e) => {
               {type === "REGIONAL" && (
                 <InputGroup
                   label="State *"
-                  icon={<MapPin className="h-5 w-5 text-gray-400" />}
+                  icon={<MapPin className="h-5 w-5 text-red-400" />}
                 >
                   <input
                     type="text"
@@ -366,6 +364,18 @@ const handleFileUpload = (e) => {
                 </InputGroup>
               )}
             </div>
+            <InputGroup
+              label="Country *"
+              icon={<Globe className="h-5 w-5 text-blue-500" />}
+            >
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="e.g., India"
+                className="w-1/2 p-2 pl-10 border bg-white rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+              />
+            </InputGroup>
             <div className="pt-2 flex justify-center">
               <button
                 type="button"

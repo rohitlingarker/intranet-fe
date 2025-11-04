@@ -574,7 +574,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                   {/* Start Date Section */}
                   <div className="flex-1 space-y-1">
                     <label className="text-xs font-medium text-gray-600">
-                      From {formatDateForDisplay(startDate)}
+                      Start Day {formatDateForDisplay(startDate)}
                     </label>
                     <select
                       value={halfDayConfig.start}
@@ -598,7 +598,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                       <div className="pt-8 text-gray-500 font-medium"> – </div>
                       <div className="flex-1 space-y-1">
                         <label className="text-xs font-medium text-gray-600">
-                          To {formatDateForDisplay(endDate)}
+                          End Day {formatDateForDisplay(endDate)}
                         </label>
                         <select
                           value={halfDayConfig.end}
