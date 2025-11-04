@@ -163,9 +163,12 @@ const TimesheetGroup = ({
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
+    
+    // console.log({weekGroup});
+    
 
     // Disabled if already approved or partially approved
-    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY_APPROVED") {
+    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
       return true;
     }
 
@@ -190,7 +193,7 @@ const TimesheetGroup = ({
     if (weeklyStatus === "APPROVED") {
       return "Week Already Approved";
     }
-    if (weeklyStatus === "PARTIALLY_APPROVED") {
+    if (weeklyStatus === "PARTIALLY APPROVED") {
       return "Week Partially Approved";
     }
     if (weeklyStatus === "SUBMITTED") {
@@ -231,7 +234,9 @@ const TimesheetGroup = ({
       );
 
       if (isOutsideAllMenus) {
-        setMenuOpen(false);
+        // console.log({isOutsideAllMenus});
+        
+        // setMenuOpen(false);
         setOpenMenuId(null);
       }
     }
@@ -246,6 +251,7 @@ const TimesheetGroup = ({
 
   const handleAddEntry = () => {
     setMenuOpen(false);
+    
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
@@ -254,6 +260,7 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
+    
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
@@ -491,6 +498,7 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
+  const todaysDate = today.toISOString().split("T")[0];  
 
   // helper to normalize date string to yyyy-mm-dd
   const normalize = (d) => {
@@ -524,7 +532,7 @@ const TimesheetGroup = ({
   }, []);
   return (
     <div
-      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs overflow-hidden`}
+      className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs`}
     >
       {/* Week Header */}
       {isWeeklyFormat && (
@@ -591,6 +599,7 @@ const TimesheetGroup = ({
                 <input
                   type="date"
                   min={firstDateOfMonth}
+                  // max={todaysDate}
                   max={lastDateOfMonth}
                   className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                   value={normalize(date)}
@@ -624,10 +633,12 @@ const TimesheetGroup = ({
                 {holidaysMap[normalize(date)] && (
                   <div className="ml-1">
                     {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip 
-                      content={holidaysMap[normalize(date)].submitTimesheet
-                        ? "Working on Holiday"
-                        : "Holiday - timesheet not allowed"}
+                    <Tooltip
+                      content={
+                        holidaysMap[normalize(date)].submitTimesheet
+                          ? "Working on Holiday"
+                          : "Holiday - timesheet not allowed"
+                      }
                     >
                       <span
                         className={`inline-block w-3 h-3 rounded-full ${
@@ -669,19 +680,21 @@ const TimesheetGroup = ({
         {/* 3 dots menu for daily format */}
         {!isWeeklyFormat && (
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
-              type="button"
-              disabled={currentStatus?.toLowerCase() === "approved"}
-              title={
-                currentStatus?.toLowerCase() === "approved"
-                  ? "Cannot edit approved timesheet"
-                  : "More options"
-              }
-            >
-              <MoreVertical size={22} />
-            </button>
+            {window.location.pathname !== "/managerapproval" && (
+              <button
+                onClick={() => setMenuOpen((open) => !open)}
+                className="p-2 rounded-full hover:bg-gray-300 focus:outline-none"
+                type="button"
+                disabled={currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"}
+                title={
+                  currentStatus?.toLowerCase() === "approved" || currentStatus?.toLowerCase() === "partially approved"
+                    ? "Cannot edit approved timesheet"
+                    : "More optionssssssss"
+                }
+              >
+                <MoreVertical size={22} />
+              </button>
+            )}
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
                 <button
@@ -753,14 +766,14 @@ const TimesheetGroup = ({
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
-                    <div
+                    {window.location.pathname !== "/managerapproval" && <div
                       className="relative"
                       ref={(el) => {
                         if (el) {
                           menuRefs.current[timesheet.timesheetId] = el;
                         }
                       }}
-                    >
+                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -774,10 +787,11 @@ const TimesheetGroup = ({
                         className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
                         type="button"
                         disabled={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" ||
+                          timesheet.status?.toLowerCase() === "partially approved"
                         }
                         title={
-                          timesheet.status?.toLowerCase() === "approved"
+                          timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially approved"
                             ? "Cannot edit approved timesheet"
                             : "More options"
                         }
@@ -789,6 +803,7 @@ const TimesheetGroup = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // console.log("Opening menu for:", timesheet.timesheetId);
                               handleAddEntry();
                               setOpenMenuId(null);
                               setMenuOpen(false);
@@ -821,7 +836,7 @@ const TimesheetGroup = ({
                           </button>
                         </div>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </div>
 
@@ -846,7 +861,7 @@ const TimesheetGroup = ({
             ))}
 
           {/* Submit Week Button */}
-          {isWeeklyFormat && weekData && (
+          {window.location.pathname !== "/managerapproval" && isWeeklyFormat && weekData && (
             <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
               <button
                 onClick={handleSubmitWeek}

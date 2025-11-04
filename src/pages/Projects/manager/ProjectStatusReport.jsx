@@ -146,14 +146,14 @@ export default function ProjectStatusReport({ projectData }) {
         </header>
 
         {/* ✅ Sticky Filters Section */}
-        <section className="mb-4 p-4 bg-white rounded-lg shadow-sm sticky top-[70px] z-40">
-          <div className="flex gap-4 flex-wrap items-center">
+        <section className="mb-4 p-4 h-auto bg-white rounded-lg shadow-sm  top-[70px] z-40">
+          <div className="flex gap-4 h-auto flex-wrap items-center">
             <div className="w-72">
               <label className="block text-xs text-gray-600">Assignee</label>
               <select
                 value={filterAssignee}
                 onChange={e => setFilterAssignee(e.target.value)}
-                className="mt-1 block w-full border rounded p-2"
+                className="mt-1 h-auto block w-full border rounded p-2"
               >
                 {assignees.map(a => (
                   <option key={a.id} value={a.id}>

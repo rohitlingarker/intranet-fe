@@ -131,14 +131,14 @@ export async function addEntryToTimesheet(timesheetId, workdate, payload) {
       );
     } else {
       res = await fetch(
-        `${apiEndpoint}/api/timesheet/add-entry/${timesheetId}`,
+        `${apiEndpoint}/api/timesheet/addEntries`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({timeSheetId:timesheetId, entries:payload}),
         }
       );
     }
@@ -280,6 +280,55 @@ export async function getManagerDashboardData(startDate, endDate) {
   }
 }
 
+// export async function submitWeeklyTimesheet(timesheetIds) {
+//   try {
+//     const res = await fetch(`${apiEndpoint}/api/weeklyReview/submit`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${localStorage.getItem("token")}`,
+//       },
+//       body: JSON.stringify(timesheetIds),
+//     });
+
+//     if (!res.ok) {
+//       let errorMessage = "Failed to submit weekly timesheet";
+
+//       try {
+//         const errorData = await res.json();
+//         errorMessage = errorData?.message || errorData || errorMessage;
+//       } catch {
+//         // fallback if response isn't JSON (e.g. plain text)
+//         const text = await res.text();
+//         if (text) errorMessage = text;
+//       }
+
+//       throw new Error(errorMessage);
+//     }
+
+
+//     // Handle both JSON and text responses
+//     let responseMessage = "Weekly timesheet submitted successfully";
+//     const contentType = res.headers.get("content-type");
+
+//     if (contentType && contentType.includes("application/json")) {
+//       const data = await res.json();
+//       responseMessage = data.message || responseMessage;
+//     } else {
+//       const text = await res.text();
+//       responseMessage = text || responseMessage;
+//     }
+
+//     showStatusToast(responseMessage, "success");
+//     return responseMessage;
+//   } catch (err) {
+//     showStatusToast(
+//       err.message || "Failed to submit weekly timesheet",
+//       "error"
+//     );
+//     throw err;
+//   }
+// }
 export async function submitWeeklyTimesheet(timesheetIds) {
   try {
     const res = await fetch(`${apiEndpoint}/api/weeklyReview/submit`, {
@@ -291,26 +340,34 @@ export async function submitWeeklyTimesheet(timesheetIds) {
       body: JSON.stringify(timesheetIds),
     });
 
+    // Handle non-OK responses (includes 400)
     if (!res.ok) {
-      // Try to parse as JSON, fallback to text
       let errorMessage = "Failed to submit weekly timesheet";
+
       try {
-        const errorData = await res.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch {
-        const errorText = await res.text();
-        errorMessage = errorText || errorMessage;
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          errorMessage = errorData?.message || JSON.stringify(errorData);
+        } else {
+          const errorText = await res.text();
+          errorMessage = errorText || errorMessage;
+        }
+      } catch (err) {
+        console.error("Error parsing error response:", err);
       }
+
       throw new Error(errorMessage);
     }
 
-    // Handle both JSON and text responses
+    // ✅ Handle success response (either JSON or text)
     let responseMessage = "Weekly timesheet submitted successfully";
     const contentType = res.headers.get("content-type");
 
     if (contentType && contentType.includes("application/json")) {
       const data = await res.json();
-      responseMessage = data.message || responseMessage;
+      responseMessage = data?.message || responseMessage;
     } else {
       const text = await res.text();
       responseMessage = text || responseMessage;
@@ -326,6 +383,7 @@ export async function submitWeeklyTimesheet(timesheetIds) {
     throw err;
   }
 }
+
 export async function fetchCalendarHolidays() {
   try {
     const response = await fetch(`${apiEndpoint}/api/holidays/currentMonth`, {
@@ -351,3 +409,59 @@ export async function fetchCalendarHolidays() {
     return null; // Return null so calling code can check for loading/error
   }
 }
+
+export async function fetchProjects() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/project-info/all`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch timesheets");
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching timesheets:", error);
+    showStatusToast("Failed to fetch timesheets", "error");
+    return [];
+  }
+} 
+
+
+export const handleBulkReview = async (
+  userId,
+  timesheetIds,
+  status,
+  comments = ""
+) => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/timesheets/review`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          userId,
+          timesheetIds,
+          status,
+          comments: comments || (status === "APPROVED" ? "approved" : ""),
+        }),
+      }
+    );
+
+    if (!response.ok) throw new Error("Failed to review timesheets");
+    showStatusToast(
+      `Timesheets ${status.toLowerCase()} successfully`,
+      "success"
+    );
+  } catch (err) {
+    console.error("Error reviewing timesheets:", err);
+    showStatusToast("Failed to update timesheet status", "error");
+  }
+};

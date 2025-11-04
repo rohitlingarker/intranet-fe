@@ -251,7 +251,6 @@ export default function EditLeaveModal({
         });
         setLeaveTypes(res.data);
       } catch (err) {
-        console.log("Failed to fetch leave types Error:", err);
         toast.error(err?.message || "Failed to load leave type details.");
       }
     };
@@ -398,7 +397,7 @@ export default function EditLeaveModal({
       toast.success("Leave request updated successfully");
       if (onSuccess) onSuccess(data);
       handleClose();
-      onClose();
+      // onClose();
     } catch (err) {
       setError(
         "Failed to update leave request: " +
@@ -613,6 +612,7 @@ export default function EditLeaveModal({
             <button
               type="button"
               onClick={handleClose}
+              disabled={submitting || isLockedByOther}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
             >
               Cancel

@@ -30,7 +30,7 @@ function ProjectStatusReportWrapper() {
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, { headers }),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers }),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/bugs/project/${projectId}`, { headers }),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, { headers }),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`, { headers }),
         ]);
 
         const projectDetails = projectRes.data;
@@ -38,11 +38,11 @@ function ProjectStatusReportWrapper() {
         const combinedIssues = [
           ...epicsRes.data.map(item => ({
             id: item.id,
-            title: item.title,
+            title: item.name,
             assignee: item.assignee,
             type: 'Epic',
             status: item.status,
-            storyPoints: item.storyPoints || 0,
+            storyPoints: item.storyPoints ,
             estimate: item.estimate || 0,
             created: item.created || item.createdAt || '-',
           })),

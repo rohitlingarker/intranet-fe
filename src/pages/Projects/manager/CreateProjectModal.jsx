@@ -7,20 +7,21 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    projectKey: "",
-    description: "",
-    status: "PLANNING",
-    currentStage: "INITIATION", // ✅ new field
-    ownerId: "",
-    memberIds: [],
-    startDate: "",
-    endDate: "",
+    name: "", // 🟩 Project Name
+    projectKey: "", // 🟩 Project Key
+    description: "", // 🟩 Project Description
+    status: "PLANNING", // 🟩 Project Status
+    currentStage: "INITIATION", // 🟩 Current Stage (NEW COLUMN)
+    ownerId: "", // 🟩 Project Owner
+    memberIds: [], // 🟩 Project Members
+    startDate: "", // 🟩 Start Date
+    endDate: "", // 🟩 End Date
   });
   const [dateError, setDateError] = useState(false);
 
   const token = localStorage.getItem("token");
 
+  // ✅ Fetch users for Owner & Member dropdowns
   useEffect(() => {
     if (!isOpen) return;
 
@@ -36,22 +37,26 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       .catch((err) => console.error("Error fetching users:", err));
   }, [isOpen, token]);
 
+  // ✅ Handle all form field changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "name") {
+      // Prevent special characters
       const cleanedValue = value.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, " ");
       setFormData((prev) => ({ ...prev, [name]: cleanedValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
+    // ✅ Date validation
     if (name === "startDate" || name === "endDate") {
       const { startDate, endDate } = { ...formData, [name]: value };
       setDateError(startDate && endDate && new Date(endDate) < new Date(startDate));
     }
   };
 
+  // ✅ Handle Owner selection
   const handleOwnerChange = (e) => {
     const newOwnerId = e.target.value;
     setFormData((prev) => ({
@@ -61,6 +66,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     }));
   };
 
+  // ✅ Handle Member checkboxes
   const handleMemberCheckboxChange = (userId) => {
     if (userId.toString() === formData.ownerId.toString()) return;
 
@@ -72,41 +78,32 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     });
   };
 
+  // ✅ Handle Status change
   const handleStatusChange = (e) => {
     setFormData({ ...formData, status: e.target.value });
   };
 
+  // ✅ Handle Current Stage change
   const handleStageChange = (e) => {
     setFormData({ ...formData, currentStage: e.target.value });
   };
 
+  // ✅ Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const projectName = formData.name.trim();
-    if (!projectName) {
-      toast.error("❌ Project name is required.");
-      return;
-    }
-    if (!formData.projectKey.trim()) {
-      toast.error("❌ Project key is required.");
-      return;
-    }
-    if (!formData.ownerId) {
-      toast.error("❌ Please select a project owner.");
-      return;
-    }
-    if (dateError) {
-      toast.error("❌ End date cannot be before Start date.");
-      return;
-    }
+    if (!projectName) return toast.error("❌ Project name is required.");
+    if (!formData.projectKey.trim()) return toast.error("❌ Project key is required.");
+    if (!formData.ownerId) return toast.error("❌ Please select a project owner.");
+    if (dateError) return toast.error("❌ End date cannot be before Start date.");
 
     const payload = {
       name: projectName,
       projectKey: formData.projectKey.trim(),
       description: formData.description || null,
       status: formData.status,
-      currentStage: formData.currentStage, // ✅ new field
+      currentStage: formData.currentStage, 
       ownerId: parseInt(formData.ownerId, 10),
       memberIds: formData.memberIds,
       memberCount: formData.memberIds.length,
@@ -120,7 +117,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success("✅ Project created successfully!");
+      toast.success(" Project created successfully!");
       if (onProjectCreated) onProjectCreated();
 
       setFormData({
@@ -138,7 +135,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       onClose();
     } catch (error) {
       console.error("Failed to create project:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "❌ Failed to create project.");
+      toast.error(error.response?.data?.message || " Failed to create project.");
     } finally {
       setIsSubmitting(false);
     }
@@ -152,93 +149,127 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            name="name"
-            placeholder="Project Name *"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            name="projectKey"
-            placeholder="Project Key *"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.projectKey}
-            onChange={handleInputChange}
-            required
-          />
 
-          <select
-            name="status"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.status}
-            onChange={handleStatusChange}
-            required
-          >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="PLANNING">PLANNING</option>
-            <option value="ARCHIVED">ARCHIVED</option>
-            <option value="COMPLETED">COMPLETED</option>
-          </select>
+          {/* 🟩 Project Name */}
+          <label className="block">
+            <span className="font-medium text-sm">Project Name *</span>
+            <input
+              name="name"
+              placeholder="Enter project name"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+            />
+          </label>
 
-          <select
-            name="currentStage"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.currentStage}
-            onChange={handleStageChange}
-          >
-            <option value="INITIATION">INITIATION</option>
-            <option value="PLANNING">PLANNING</option>
-            <option value="DESIGN">DESIGN</option>
-            <option value="DEVELOPMENT">DEVELOPMENT</option>
-            <option value="TESTING">TESTING</option>
-            <option value="DEPLOYMENT">DEPLOYMENT</option>
-            <option value="MAINTENANCE">MAINTENANCE</option>
-            <option value="COMPLETED">COMPLETED</option>
-          </select>
+          {/* 🟩 Project Key */}
+          <label className="block">
+            <span className="font-medium text-sm">Project Key *</span>
+            <input
+              name="projectKey"
+              placeholder="Enter project key"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.projectKey}
+              onChange={handleInputChange}
+              required
+            />
+          </label>
 
-          <select
-            name="ownerId"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.ownerId}
-            onChange={handleOwnerChange}
-            required
-          >
-            <option value="">Select Owner *</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.roles.join(", ")})
-              </option>
-            ))}
-          </select>
+          {/* 🟩 Project Status */}
+          <label className="block">
+            <span className="font-medium text-sm">Project Status *</span>
+            <select
+              name="status"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.status}
+              onChange={handleStatusChange}
+              required
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="PLANNING">PLANNING</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+          </label>
 
-          <textarea
-            name="description"
-            placeholder="Project Description (Optional)"
-            className="w-full border px-4 py-2 rounded"
-            value={formData.description}
-            onChange={handleInputChange}
-          />
+          {/* 🟩 Current Stage (NEW COLUMN) */}
+          <label className="block">
+            <span className="font-medium text-sm">Current Stage *</span>
+            <select
+              name="currentStage"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.currentStage}
+              onChange={handleStageChange}
+              required
+            >
+              <option value="INITIATION">INITIATION</option>
+              <option value="PLANNING">PLANNING</option>
+              <option value="DESIGN">DESIGN</option>
+              <option value="DEVELOPMENT">DEVELOPMENT</option>
+              <option value="TESTING">TESTING</option>
+              <option value="DEPLOYMENT">DEPLOYMENT</option>
+              <option value="MAINTENANCE">MAINTENANCE</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+          </label>
 
+          {/* 🟩 Project Owner */}
+          <label className="block">
+            <span className="font-medium text-sm">Project Owner *</span>
+            <select
+              name="ownerId"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.ownerId}
+              onChange={handleOwnerChange}
+              required
+            >
+              <option value="">Select Owner</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.roles.join(", ")})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* 🟩 Description */}
+          <label className="block">
+            <span className="font-medium text-sm">Project Description (Optional)</span>
+            <textarea
+              name="description"
+              placeholder="Add project description"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.description}
+              onChange={handleInputChange}
+            />
+          </label>
+
+          {/* 🟩 Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <label className="block text-sm font-medium mb-1">Start Date *</label>
               <input
                 type="date"
                 name="startDate"
-                className={`w-full border px-4 py-2 rounded ${dateError ? "border-red-500" : ""}`}
+                className={`w-full border px-4 py-2 rounded ${
+                  dateError ? "border-red-500" : ""
+                }`}
                 value={formData.startDate}
                 onChange={handleInputChange}
                 onKeyDown={(e) => e.preventDefault()}
+                required
               />
+             
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">End Date</label>
               <input
                 type="date"
                 name="endDate"
-                className={`w-full border px-4 py-2 rounded ${dateError ? "border-red-500" : ""}`}
+                className={`w-full border px-4 py-2 rounded ${
+                  dateError ? "border-red-500" : ""
+                }`}
                 value={formData.endDate}
                 onChange={handleInputChange}
                 onKeyDown={(e) => e.preventDefault()}
@@ -246,9 +277,12 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             </div>
           </div>
           {dateError && (
-            <p className="text-red-600 text-sm mt-1">⚠️ End date cannot be before Start date</p>
+            <p className="text-red-600 text-sm mt-1">
+              ⚠️ End date cannot be before Start date
+            </p>
           )}
 
+          {/* 🟩 Members */}
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members (Optional):</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
@@ -266,7 +300,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          {/* 🟩 Buttons */}
+          <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"
               onClick={onClose}

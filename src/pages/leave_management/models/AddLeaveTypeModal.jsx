@@ -4,13 +4,13 @@ import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
-
+ 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const useLeavelables = () => {
   const [leavelables, setLeavelables] = useState([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     const fetchLeavelables = async () => {
       try {
@@ -54,7 +54,7 @@ const defaultForm = {
   effectiveStartDate: "",
   deactivationEffectiveDate: "",
 };
-
+ 
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
@@ -143,7 +143,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   };
 
   if (!isOpen) return null;
-
+ 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg sm:max-w-xl max-h-[90vh] overflow-y-auto relative">
@@ -152,7 +152,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <LoadingSpinner text="Submitting..." />
           </div>
         )}
-
+ 
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <FileText className="w-6 h-6 text-green-600 mr-3" />
@@ -169,7 +169,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <X className="w-6 h-6" />
           </button>
         </div>
-
+ 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
           {/* Leave Name Dropdown */}
           {/* Leave Name Dropdown */}
@@ -296,7 +296,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </div>
             ))}
           </div>
-
+ 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -340,7 +340,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </div>
             ))}
           </div>
-
+ 
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button
@@ -368,5 +368,5 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     </div>
   );
 };
-
+ 
 export default AddLeaveTypeModal;

@@ -1,3 +1,4 @@
+// ✅ ProjectList.jsx (Final Updated Version)
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -5,8 +6,6 @@ import {
   ChevronRight,
   Pencil,
   Trash,
-  Check,
-  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
@@ -31,30 +30,42 @@ const ProjectList = () => {
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user"));
 
-  // Fetch all projects
+  // ✅ Fetch all projects (Owner + Member)
   const fetchProjects = async (status) => {
     setLoading(true);
     try {
-      const url =
+      const base = import.meta.env.VITE_PMS_BASE_URL;
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const ownerUrl =
         status && status !== "All"
-          ? `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner?status=${status}`
-          : `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/owner`;
+          ? `${base}/api/projects/owner?status=${status}`
+          : `${base}/api/projects/owner`;
+      const ownerRes = await axios.get(ownerUrl, { headers });
 
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let memberRes = { data: [] };
+      if (user?.id) {
+        const memberUrl = `${base}/api/projects/member/${user.id}`;
+        memberRes = await axios.get(memberUrl, { headers });
+      }
 
-      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setProjects(data);
+      const allProjects = [...ownerRes.data, ...memberRes.data];
+      const uniqueProjects = Array.from(
+        new Map(allProjects.map((p) => [p.id, p])).values()
+      );
+
+      setProjects(uniqueProjects);
     } catch (error) {
-      console.error("Failed to fetch projects", error);
+      console.error("❌ Failed to fetch projects", error);
+      toast.error("Failed to load projects.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch all users
+  // ✅ Fetch Users for Owner/Member dropdowns
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -64,7 +75,7 @@ const ProjectList = () => {
       const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setUsers(data);
     } catch (err) {
-      console.error("Failed to fetch users", err);
+      console.error("❌ Failed to fetch users", err);
     }
   };
 
@@ -74,28 +85,33 @@ const ProjectList = () => {
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
     fetchProjects(filterStatus);
   }, [filterStatus]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // ✅ Expand/Collapse
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
     setEditingProjectId(null);
   };
 
+  // ✅ Start Edit
   const startEdit = (project) => {
     setExpandedId(project.id);
     setEditingProjectId(project.id);
     setFormData({
-      name: project.name,
-      projectKey: project.projectKey,
-      description: project.description,
-      status: project.status,
-      ownerId: project.owner?.id || "",
+      name: project.name || "",
+      projectKey: project.projectKey || "",
+      description: project.description || "",
+      status: project.status || "ACTIVE",
+      currentStage: project.currentStage || "INITIATION",
+      ownerId: project.owner?.id || user?.id || "",
       memberIds: project.members?.map((m) => m.id) || [],
+      startDate: project.startDate ? project.startDate.split("T")[0] : "",
+      endDate: project.endDate ? project.endDate.split("T")[0] : "",
     });
   };
 
@@ -104,36 +120,28 @@ const ProjectList = () => {
     setFormData({});
   };
 
+  // ✅ Handle Input Changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (formData.status === "ARCHIVED" && name !== "status") {
-      toast.warn(
-        "Archived projects can only have their status changed to ACTIVE.",
-        {
-          position: "top-right",
-        }
-      );
+    if (editingProjectId && formData.status === "ARCHIVED" && name !== "status") {
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
       return;
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleStatusChange = (e) => {
-    setFormData((prev) => ({ ...prev, status: e.target.value }));
-  };
-
   const handleMemberToggle = (userId) => {
-    if (formData.status === "ARCHIVED") {
-      toast.warn(
-        "Archived projects can only have their status changed to ACTIVE.",
-        {
-          position: "top-right",
-        }
-      );
+    if (editingProjectId && formData.status === "ARCHIVED") {
+      toast.warn("Archived projects can only have their status changed to ACTIVE.", {
+        position: "top-right",
+      });
       return;
     }
+
     setFormData((prev) => {
       const updated = prev.memberIds?.includes(userId)
         ? prev.memberIds.filter((id) => id !== userId)
@@ -142,28 +150,60 @@ const ProjectList = () => {
     });
   };
 
+  // ✅ Update Project API (Includes All Columns)
   const submitEdit = async (projectId) => {
     try {
       setIsSubmitting(true);
-      await axios.put(
+
+      const updatedProjectData = {
+        name: formData.name?.trim() || "",
+        projectKey: formData.projectKey?.trim() || "",
+        description: formData.description?.trim() || "",
+        status: formData.status || "ACTIVE",
+        currentStage: formData.currentStage || "INITIATION",
+        ownerId: formData.ownerId ? Number(formData.ownerId) : user?.id || null,
+        memberIds: Array.isArray(formData.memberIds)
+          ? formData.memberIds.map((id) => Number(id))
+          : [],
+        startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
+        endDate: formData.endDate ? `${formData.endDate}T00:00:00` : null,
+      };
+
+      const res = await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        {
-          ...formData,
-          ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
-          memberIds: formData.memberIds || [],
-        },
+        updatedProjectData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Project updated successfully!", { position: "top-right" });
+
+      // ✅ Update UI locally
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                ...res.data,
+                owner:
+                  users.find((u) => u.id === Number(updatedProjectData.ownerId)) ||
+                  p.owner,
+                members: users.filter((u) =>
+                  updatedProjectData.memberIds.includes(u.id)
+                ),
+              }
+            : p
+        )
+      );
+
+      toast.success(" Project updated successfully!");
       setEditingProjectId(null);
-      fetchProjects(filterStatus);
     } catch (err) {
-      console.error("Failed to update project", err);
+      console.error(" Project update failed", err);
+      toast.error("Failed to update project. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ✅ Delete Project
   const handleDelete = async (projectId) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
@@ -171,38 +211,34 @@ const ProjectList = () => {
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Project deleted successfully!", { position: "top-right" });
-      fetchProjects(filterStatus);
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      toast.success("🗑️ Project deleted successfully!");
     } catch (err) {
-      console.error("Failed to delete project", err);
+      console.error(" Failed to delete project", err);
+      toast.error("Failed to delete project.");
     }
   };
 
+  // ✅ Filter + Pagination
   const filteredProjects = projects.filter((p) => {
-  const matchesSearch =
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.projectKey?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "All" ? true : p.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
-  const matchesStatus =
-    filterStatus === "All" ? true : p.status === filterStatus;
-
-  return matchesSearch && matchesStatus;
-});
-
-
-  // Pagination
-  const indexOfLastProject = currentPage * projectsPerPage;
-  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
-  const currentProjects = filteredProjects.slice(
-    indexOfFirstProject,
-    indexOfLastProject
-  );
+  const indexOfLast = currentPage * projectsPerPage;
+  const indexOfFirst = indexOfLast - projectsPerPage;
+  const currentProjects = filteredProjects.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-black mb-6">Projects</h1>
 
+      {/* 🔍 Search + Filters */}
       <div className="flex justify-between items-center mb-6 gap-4">
         <input
           type="text"
@@ -212,7 +248,6 @@ const ProjectList = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        {/* Status Filter Dropdown */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -222,6 +257,7 @@ const ProjectList = () => {
           <option value="ACTIVE">Active</option>
           <option value="PLANNING">Planning</option>
           <option value="ARCHIVED">Archived</option>
+          <option value="COMPLETED">Completed</option>
         </select>
 
         <Button
@@ -233,6 +269,7 @@ const ProjectList = () => {
         </Button>
       </div>
 
+      {/* 🧾 Project List */}
       {loading ? (
         <p className="text-gray-600">Loading projects...</p>
       ) : currentProjects.length === 0 ? (
@@ -276,117 +313,149 @@ const ProjectList = () => {
                 </div>
               </div>
 
+              {/* 🔽 Expand Panel */}
               {expandedId === project.id && (
-                <div className="mt-4 border-t pt-4">
+                <div className="mt-4 border-t pt-4 text-sm text-gray-700">
                   {editingProjectId === project.id ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <input
-                        type="text"
                         name="name"
-                        value={formData.name || ""}
+                        value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
+                        className="border px-2 py-1 rounded w-full"
                         placeholder="Project Name"
-                        disabled={formData.status === "ARCHIVED"}
                       />
                       <input
-                        type="text"
                         name="projectKey"
-                        value={formData.projectKey || ""}
+                        value={formData.projectKey}
                         onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
+                        className="border px-2 py-1 rounded w-full"
                         placeholder="Project Key"
-                        disabled={formData.status === "ARCHIVED"}
                       />
                       <textarea
                         name="description"
-                        value={formData.description || ""}
+                        value={formData.description}
                         onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl resize-none"
-                        placeholder="Project Description"
-                        disabled={formData.status === "ARCHIVED"}
+                        className="border px-2 py-1 rounded w-full"
+                        placeholder="Description"
                       />
+
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          name="startDate"
+                          value={formData.startDate || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        />
+                        <input
+                          type="date"
+                          name="endDate"
+                          value={formData.endDate || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        />
+                      </div>
+
                       <select
                         name="status"
-                        value={formData.status || ""}
-                        onChange={handleStatusChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="PLANNING">PLANNING</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                      </select>
-                      <select
-                        name="ownerId"
-                        value={formData.ownerId || ""}
+                        value={formData.status}
                         onChange={handleInputChange}
-                        className="w-full border px-3 py-2 rounded-xl"
-                        disabled={formData.status === "ARCHIVED"}
+                        className="border px-2 py-1 rounded w-full"
                       >
-                        <option value="">Select Owner</option>
-                        {users.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} ({u.role})
-                          </option>
-                        ))}
+                        <option value="ACTIVE">Active</option>
+                        <option value="PLANNING">Planning</option>
+                        <option value="ARCHIVED">Archived</option>
+                        <option value="COMPLETED">Completed</option>
                       </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        {users.map((user) => (
-                          <label
-                            key={user.id}
-                            className="flex gap-2 items-center text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.memberIds?.includes(user.id)}
-                              onChange={() => handleMemberToggle(user.id)}
-                              disabled={formData.status === "ARCHIVED"}
-                            />
-                            {user.name} ({user.role})
-                          </label>
-                        ))}
+
+                      <select
+                        name="currentStage"
+                        value={formData.currentStage}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                      >
+                        <option value="INITIATION">Initiation</option>
+                        <option value="PLANNING">Planning</option>
+                        <option value="DESIGN">Design</option>
+                        <option value="DEVELOPMENT">Development</option>
+                        <option value="TESTING">Testing</option>
+                        <option value="DEPLOYMENT">Deployment</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="COMPLETED">Completed</option>
+                      </select>
+
+                      {/* Owner */}
+                      <div>
+                        <label className="font-medium">Owner:</label>
+                        <select
+                          name="ownerId"
+                          value={formData.ownerId || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        >
+                          <option value="">Select Owner</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="flex gap-2">
+
+                      {/* Members */}
+                      <div>
+                        <label className="font-medium">Members:</label>
+                        <div className="grid grid-cols-2 gap-2 mt-1 max-h-32 overflow-y-auto border p-2 rounded">
+                          {users.map((u) => (
+                            <label key={u.id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.memberIds?.includes(u.id)}
+                                onChange={() => handleMemberToggle(u.id)}
+                              />
+                              {u.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="secondary" size="small" onClick={cancelEdit}>
+                          Cancel
+                        </Button>
                         <Button
-                          variant="success"
+                          variant="primary"
                           size="small"
                           onClick={() => submitEdit(project.id)}
                           disabled={isSubmitting}
                         >
-                          <Check size={14} className="mr-1" />
                           {isSubmitting ? "Saving..." : "Save"}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          onClick={cancelEdit}
-                        >
-                          <X size={14} className="mr-1" /> Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {project.description || "—"}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {project.status}
-                      </p>
-                      <p>
-                        <strong>Owner:</strong> {project.owner?.name || "—"}
-                      </p>
-                     <div>
-  <strong>Members ({project.members.length}):</strong>
-  <div>
-    {project.members.map((member) => (
-      <div key={member.id}>
-        {member.name}{member.role ? ` - ${member.role}` : ""}
-      </div>
-    ))}
-  </div>
-</div>
+                    <>
+                      <p><strong>Description:</strong> {project.description || "—"}</p>
+                      <p><strong>Status:</strong> {project.status}</p>
+                      <p><strong>Stage:</strong> {project.currentStage}</p>
+                      <p><strong>Owner:</strong> {project.owner?.name || "—"}</p>
+                      <p><strong>Start:</strong> {project.startDate?.split("T")[0] || "—"}</p>
+                      <p><strong>End:</strong> {project.endDate?.split("T")[0] || "—"}</p>
+
+                      <div className="mt-3">
+                        <strong>Members:</strong>
+                        {project.members?.length ? (
+                          <ul className="list-disc list-inside ml-2 mt-1">
+                            {project.members.map((m) => (
+                              <li key={m.id}>{m.name} ({m.email})</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-500 ml-2">No members assigned.</p>
+                        )}
+                      </div>
+
                       <div className="pt-4">
                         <Button
                           variant="primary"
@@ -396,7 +465,7 @@ const ProjectList = () => {
                           Project Workspace
                         </Button>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -405,12 +474,13 @@ const ProjectList = () => {
         </div>
       )}
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         />
       )}
 

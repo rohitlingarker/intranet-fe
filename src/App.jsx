@@ -36,7 +36,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-// import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
+import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -132,14 +132,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 
 
-// ✅ Save last path on every navigation
+// ✅ Save last path including query params (?tab=)
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
-    localStorage.setItem("lastPath", location.pathname);
-  }, [location.pathname]);
+    localStorage.setItem("lastPath", location.pathname + location.search);
+  }, [location]);
   return null;
 };
+
+
 
 // ✅ Project Manager Demo Layout
 const ProjectManager = () => {
@@ -265,7 +267,7 @@ useEffect(() => {
             path="/projects/userbacklog/:projectId"
             element={<UserBacklog />}
           />
-          {/* <Route path="/projects/admin" element={<AdminDashboard />} /> */}
+           <Route path="/projects/admin" element={<ProjectManager />} /> 
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}

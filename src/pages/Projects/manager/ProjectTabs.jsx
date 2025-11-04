@@ -6,7 +6,7 @@ import Summary from "./Summary";
 import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
-import Lists from "./ProjectStatusReport";
+import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 
 import Navbar from "../../../components/Navbar/Navbar";
 
@@ -26,13 +26,12 @@ const ProjectTabs = () => {
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
+  // ✅ Removed redirect for status-report — keeps navbar visible
   useEffect(() => {
-  if (selectedTab === "status-report") {
-    navigate(`/projects/${projectId}/status-report`, { replace: true });
-  }
-}, [selectedTab, navigate, projectId]);
+    setSelectedTab(getSelectedTabFromLocation());
+  }, [location.search]);
 
-
+  // Fetch project details
   useEffect(() => {
     if (projectId && token) {
       axios
@@ -52,10 +51,6 @@ const ProjectTabs = () => {
     }
   }, [projectId, token]);
 
-  useEffect(() => {
-    setSelectedTab(getSelectedTabFromLocation());
-  }, [location.search]);
-
   const renderTabContent = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
@@ -70,7 +65,7 @@ const ProjectTabs = () => {
       case "sprint":
         return <SprintBoard projectId={pid} projectName={projectName} />;
       case "status-report":
-        return <Lists projectId={pid} />;
+        return <ProjectStatusReportWrapper projectId={pid} />;
       default:
         return null;
     }
@@ -100,8 +95,8 @@ const ProjectTabs = () => {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Sticky Navbar Header */}
-      <header className=" top-0 z-50 border-b  bg-white">
+      {/* ✅ Fixed Navbar (always visible) */}
+      <header className="sticky top-0 z-50 border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
             {projectName}
@@ -110,9 +105,11 @@ const ProjectTabs = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* ✅ Content below navbar */}
       <main className="flex-1 overflow-auto bg-slate-50">
-        <div className="max-w-7xl mx-auto w-full px-4 py-4">{renderTabContent()}</div>
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">
+          {renderTabContent()}
+        </div>
       </main>
     </div>
   );

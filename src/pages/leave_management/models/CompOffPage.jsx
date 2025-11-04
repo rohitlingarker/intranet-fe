@@ -7,7 +7,6 @@ import React, {
 import axios from "axios";
 import { toast } from "react-toastify";
 import CompOffRequestsTable from "./CompOffRequestsTable";
-import CompOffRequestModal from "./CompOffRequestModal";
 import LoadingSpinner from "../../../components/LoadingSpinner"; // your spinner component
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -18,6 +17,7 @@ const CompOffPage = forwardRef(
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const token = localStorage.getItem("token");
 
@@ -31,7 +31,7 @@ const CompOffPage = forwardRef(
         setIsLoading(true);
         const res = await axios.get(
           `${BASE_URL}/api/compoff/employee/${employeeId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
 
         if (res.data.success) {
@@ -62,21 +62,16 @@ const CompOffPage = forwardRef(
           `${BASE_URL}/api/compoff/request`,
           payload,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
         );
-
-        if (res.data.success) {
-          toast.success("Comp-Off request submitted successfully!");
-          await fetchRequests(); // refresh list
-          return true;
-        } else {
-          toast.error(res.data.message || "Failed to submit comp-off request.");
-          return false;
-        }
+        console.log("response",res);
+        toast.success(res?.data?.message || "Comp-Off request submitted!");
+        await fetchRequests();
+        return true;
       } catch (err) {
-        console.error(err);
-        toast.error("Something went wrong while submitting.");
+        console.log("error",err);
+        // toast.error(err?.data?.message || "Failed to submit comp-off request");
         return false;
       } finally {
         setIsLoading(false);
@@ -96,19 +91,23 @@ const CompOffPage = forwardRef(
             <CompOffRequestsTable
               key={pendingRequests.map((r) => r.idleaveCompoff).join(",")}
               requests={pendingRequests}
+              loading={loading}
               onCancel={async (id) => {
                 try {
+                  setLoading(true);
                   await axios.put(
                     `${BASE_URL}/api/compoff/employee/cancel/${id}`,
                     {},
                     {
-                      headers: { Authorization: `Bearer ${token}` },
+                      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                     }
                   );
                   toast.success("Comp-Off request cancelled!");
                   await fetchRequests(); // ✅ awaited
                 } catch {
                   toast.error("Failed to cancel request");
+                } finally {
+                  setLoading(false);
                 }
               }}
             />

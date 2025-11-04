@@ -35,6 +35,18 @@ const stageProgressMap = {
   COMPLETED: 100,
 };
 
+// Stage-based color gradient for progress bar
+const stageColorMap = {
+  INITIATION: "linear-gradient(90deg, #6366f1, #818cf8)",
+  PLANNING: "linear-gradient(90deg, #4338ca, #6366f1)",
+  DESIGN: "linear-gradient(90deg, #2563eb, #60a5fa)",
+  DEVELOPMENT: "linear-gradient(90deg, #4f46e5, #818cf8)",
+  TESTING: "linear-gradient(90deg, #9333ea, #c084fc)",
+  DEPLOYMENT: "linear-gradient(90deg, #16a34a, #86efac)",
+  MAINTENANCE: "linear-gradient(90deg, #eab308, #facc15)",
+  COMPLETED: "linear-gradient(90deg, #22c55e, #86efac)",
+};
+
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [stories, setStories] = useState([]);
@@ -57,9 +69,11 @@ const Summary = ({ projectId, projectName }) => {
 
         // Fetch project details (to get stage)
         const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
-        const stage = projectRes.data.stage || projectRes.data.projectStage || "INITIATION";
-        setProjectStage(stage);
-        setProjectProgress(stageProgressMap[stage?.toUpperCase()] || 0);
+        const stage = projectRes.data.currentStage || projectRes.data.currentStage || "INITIATION";
+        const upperStage = stage?.toUpperCase();
+
+        setProjectStage(upperStage);
+        setProjectProgress(stageProgressMap[upperStage] || 0);
 
         // Fetch related entities
         const [epicRes, storyRes, taskRes, bugRes] = await Promise.all([
@@ -188,6 +202,8 @@ const Summary = ({ projectId, projectName }) => {
     );
   }
 
+  const progressBarColor = stageColorMap[projectStage] || "linear-gradient(90deg, #4f46e5, #818cf8)";
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h2 className="text-3xl font-bold mb-2 text-indigo-900">
@@ -202,12 +218,12 @@ const Summary = ({ projectId, projectName }) => {
             {projectStage} ({projectProgress}%)
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
+        <div className="w-full h-full bg-gray-200 rounded-full ">
           <div
             className="h-4 rounded-full transition-all duration-700"
             style={{
               width: `${projectProgress}%`,
-              background: `linear-gradient(90deg, #4f46e5, #818cf8)`,
+              background: progressBarColor,
             }}
           ></div>
         </div>
@@ -230,7 +246,7 @@ const Summary = ({ projectId, projectName }) => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1  md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
         {/* Priority Distribution */}
         <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
           <h4 className="font-semibold text-indigo-900 mb-3">Priority Distribution</h4>
@@ -272,26 +288,41 @@ const Summary = ({ projectId, projectName }) => {
 
         {/* Tasks by Assignee */}
         <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-          <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
-          <ResponsiveContainer width="100%" height={340}>
-            <PieChart>
-              <Pie
-                data={prepareTasksByAssigneeData()}
-                cx="50%"
-                cy="50%"
-                outerRadius={120}
-                label={({ name }) => name}
-                dataKey="value"
-              >
-                {prepareTasksByAssigneeData().map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => `${value} Tasks`} />
-              <Legend verticalAlign="bottom" height={36} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+  <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
+
+  <ResponsiveContainer width="100%" height={300}>
+    <PieChart>
+      <Pie
+        data={prepareTasksByAssigneeData()}
+        cx="50%"
+        cy="50%"
+        outerRadius={120}
+        labelLine={false}
+        label={({ name }) => name}
+        dataKey="value"
+      >
+        {prepareTasksByAssigneeData().map((_, i) => (
+          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+        ))}
+      </Pie>
+      <Tooltip formatter={(value) => `${value} Tasks`} />
+    </PieChart>
+  </ResponsiveContainer>
+
+  {/* Custom legend below chart */}
+  <div className="flex flex-wrap justify-center gap-3 mt-4">
+    {prepareTasksByAssigneeData().map((entry, i) => (
+      <div key={i} className="flex items-center space-x-2">
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: COLORS[i % COLORS.length] }}
+        />
+        <span className="text-sm text-gray-700">{entry.name}</span>
+      </div>
+    ))}
+  </div>
+</div>
+
       </div>
 
       {/* Comments Section */}
