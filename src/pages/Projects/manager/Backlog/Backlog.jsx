@@ -83,13 +83,18 @@ const Backlog = ({ projectId, projectName }) => {
         { headers }
       )
       .then(() => {
-        setStories((prev) =>
-          prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
+        // ✅ Update story’s sprintId locally
+        setStories(prev =>
+          prev.map(s =>
+            s.id === storyId ? { ...s, sprintId } : s
+          )
         );
-        setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
+
+        // ✅ Optional: remove it from no-epic list if you maintain it separately
+        setNoEpicStories(prev => prev.filter(s => s.id !== storyId));
       })
-      .catch((err) => console.error("Failed to assign story to sprint", err));
-  };
+      .catch(err => console.error("Failed to assign story to sprint", err));
+    };
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
