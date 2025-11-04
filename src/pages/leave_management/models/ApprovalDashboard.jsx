@@ -6,7 +6,6 @@ import { ChevronRight } from "lucide-react";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import clearingDesk from "../../../components/icons/clearing-desk_emmv.svg"
 import ConfirmationModal from "./ConfirmationModal";
-import { set } from "date-fns";
 
 const ApprovalDashboard = () => {
   const [requests, setRequests] = useState([]);
@@ -97,6 +96,8 @@ const ApprovalDashboard = () => {
   };
 
   const handleReject = async (request) => {
+    const { id } = request;
+    const reason = actionState[id]?.reason || "";
     try {
       setActionLoading(true);
       await approvalService.rejectRequest(id, reason);
@@ -104,7 +105,6 @@ const ApprovalDashboard = () => {
       await loadPendingApprovals();
     } catch (error) {
       toast.error("Failed to reject request");
-      console.error("Failed to reject:", error);
     } finally {
       setIsConfirmationOpen(false);
       setActionLoading(false);
@@ -124,7 +124,7 @@ const ApprovalDashboard = () => {
 
       {isLoading ? (
         <div className="text-center p-10 bg-white rounded-lg shadow">
-          <LoadingSpinner text="Loading Approvals..." />
+          <LoadingSpinner text="Loading Requests..." />
         </div>
       ) : requests.length === 0 ? (
         <div className="flex flex-col justify-center items-center p-8 bg-white rounded-lg">
@@ -196,6 +196,9 @@ const ApprovalDashboard = () => {
                           </label>
                           <input
                             id={`reason-${request.id}`}
+                            maxLength="100"
+                            rows="3"
+                            cols="40"
                             type="text"
                             placeholder="Required for rejection..."
                             value={actionState[request.id]?.reason || ""}
@@ -251,12 +254,11 @@ const ApprovalDashboard = () => {
         onCancel={() => setIsConfirmationOpen(false)}
         isLoading={actionLoading}
       />
-      {actionLoading && (
+      {/* {actionLoading && (
         <div className="flex justify-center py-4">
-          <LoadingSpinner />
-          <span className="ml-2 text-gray-600 text-sm">Processing...</span>
+          <LoadingSpinner text="Processing..." />
         </div>
-      )}
+      )} */}
     </div>
   );
 };

@@ -87,13 +87,12 @@ const ProjectDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
-        
       );
       setDashboardData(res.data);
     } catch (err) {
@@ -107,7 +106,7 @@ const ProjectDashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

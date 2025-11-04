@@ -90,14 +90,22 @@ function formatDateForDisplay(dateStr) {
   });
 }
 
-// This calculation function already supports the new "Full Day" option in custom mode.
-// ** CORRECTED Helper: Date calculation logic **
-// ** FINAL CORRECTED Helper: Date calculation logic **
-// Replace the old countWeekdaysBetween with this version
-function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
+// --- MODIFIED ---
+// Updated function signature to accept leaveTypeId
+function countWeekdaysBetween(
+  fromDate,
+  toDate,
+  halfDayConfig,
+  holidays = [],
+  leaveTypeId = null // --- NEW ---
+) {
   if (!fromDate || !toDate || !halfDayConfig) return 0;
 
-  // Normalize holidays to a Set of 'yyyy-MM-dd' strings for O(1) checks
+  // --- NEW ---
+  // Assuming 'L-ML' is the ID for Maternity Leave.
+  // Change this ID if yours is different.
+  const isMaternityLeave = leaveTypeId === "L-ML";
+
   const holidaySet = new Set(
     holidays
       .filter(Boolean)
@@ -127,14 +135,27 @@ function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isHoliday = holidaySet.has(currentDateStr);
 
-    if (!isWeekend && !isHoliday) {
+    // --- MODIFIED ---
+    // If it's maternity leave, count ALL days.
+    // Otherwise, follow the original logic of skipping weekends/holidays.
+    if (isMaternityLeave || (!isWeekend && !isHoliday)) {
       const isStartDate = currentDateStr === fromDate;
       const isEndDate = currentDateStr === toDate;
 
+      // This logic correctly handles half-days.
+      // We assume Maternity Leave will have `allowHalfDay: false`,
+      // so halfDayConfig will be {start: 'none', end: 'none'},
+      // which correctly resolves to 1 day for start and end.
       if (isStartDate) {
-        total += halfDayConfig.start === "first" || halfDayConfig.start === "second" ? 0.5 : 1;
+        total +=
+          halfDayConfig.start === "first" || halfDayConfig.start === "second"
+            ? 0.5
+            : 1;
       } else if (isEndDate) {
-        total += halfDayConfig.end === "first" || halfDayConfig.end === "second" ? 0.5 : 1;
+        total +=
+          halfDayConfig.end === "first" || halfDayConfig.end === "second"
+            ? 0.5
+            : 1;
       } else {
         total += 1;
       }
@@ -250,7 +271,14 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
   const employeeId = useAuth()?.user?.user_id;
 
   const isMultiDay = startDate && endDate && startDate !== endDate;
-  const weekdays = countWeekdaysBetween(startDate, endDate, halfDayConfig, holidays);
+  // --- MODIFIED --- Pass leaveTypeId to the calculation
+  const weekdays = countWeekdaysBetween(
+    startDate,
+    endDate,
+    halfDayConfig,
+    holidays,
+    leaveTypeId
+  );
 
   const shouldShowDriveLink = () => {
     if (!selectedLeaveType) return false;
@@ -331,30 +359,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     fetchHolidays();
   }, [isOpen, employeeId]);
 
-  // const handleStartDateChange = (e) => {
-  //   setError("");
-  //   const date = e.target.value;
-  //   if (isWeekend(date)) {
-  //     setError("You cannot select a Saturday or Sunday as start date.");
-  //     setStartDate("");
-  //     setEndDate("");
-  //     return;
-  //   }
-  //   setStartDate(date);
-  //   setEndDate(date);
-  // };
-
-  // const handleEndDateChange = (e) => {
-  //   setError("");
-  //   const date = e.target.value;
-  //   if (isWeekend(date)) {
-  //     setError("You cannot select a Saturday or Sunday as end date.");
-  //     setEndDate(startDate);
-  //     return;
-  //   }
-  //   setEndDate(date);
-  // };
-
   const handleStartDateChange = (date) => {
     if (!date) return;
     const dateString = format(date, "yyyy-MM-dd");
@@ -387,11 +391,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     setSuccess("");
     setSubmitting(true);
 
+    // --- MODIFIED --- Pass leaveTypeId to the calculation
     const daysRequested = countWeekdaysBetween(
       startDate,
       endDate,
-      halfDayConfig, 
-      holidays
+      halfDayConfig,
+      holidays,
+      leaveTypeId
     );
 
     const payload = {
@@ -405,8 +411,8 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
       // halfDayDetails: showCustomHalfDay ? {
-      //   start: halfDayConfig.start,
-      //   end: isMultiDay ? halfDayConfig.end : 'none',
+      //   start: halfDayConfig.start,
+      //   end: isMultiDay ? halfDayConfig.end : 'none',
       // } : null,
       ...(shouldShowDriveLink() && { driveLink: driveLink }),
     };
@@ -417,15 +423,8 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       });
       setSuccess("Leave request submitted!");
       onSuccess?.();
-      
+
       setTimeout(() => {
-        // setStartDate("");
-        // setEndDate("");
-        // setLeaveTypeId("");
-        // setReason("");
-        // setShowCustomHalfDay(false);
-        // setHalfDayConfig({ start: "none", end: "none" });
-        // setDriveLink("");
         onClose();
       }, 1000);
     } catch (err) {
@@ -473,12 +472,6 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             </div>
           )}
           <div className="grid gap-5 sm:grid-cols-2">
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Start Date <span className="text-red-500">*</span>
-              </label>
-              <input type="date" value={startDate} onChange={handleStartDateChange} required className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
-            </div> */}
             <DateRangePicker
               label={
                 <>
@@ -487,22 +480,11 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               }
               defaultDate={startDate ? new Date(startDate + "T00:00:00") : null}
               onChange={handleStartDateChange}
-              defaultMonth={startDate ? new Date(startDate + "T00:00:00") : null}
+              defaultMonth={
+                startDate ? new Date(startDate + "T00:00:00") : null
+              }
               disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
             />
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={handleEndDateChange}
-                min={startDate}
-                required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              />
-            </div> */}
             <DateRangePicker
               label={
                 <>
@@ -511,7 +493,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               }
               defaultDate={endDate ? new Date(endDate + "T00:00:00") : null}
               onChange={handleEndDateChange}
-              defaultMonth={startDate ? new Date(startDate + "T00:00:00") : null}
+              defaultMonth={
+                endDate
+                  ? new Date(endDate + "T00:00:00")
+                  : startDate
+                  ? new Date(startDate + "T00:00:00")
+                  : null
+              }
               align="right"
               disabledDays={[
                 { dayOfWeek: [0, 6] },
@@ -525,7 +513,10 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               {weekdays} {weekdays === 1 ? "day" : "days"}
             </span>
             <p className="text-xs text-gray-500">
-              Weekends and Holidays are excluded.
+              {/* --- NEW --- Dynamically change helper text */}
+              {leaveTypeId === "L-ML"
+                ? "All days are included."
+                : "Weekends and Holidays are excluded."}
             </p>
           </div>
 
@@ -636,7 +627,9 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
               Reason <span className="text-red-500">*</span>
             </label>
             <textarea
-              maxLength="100" rows="3" cols="40"
+              maxLength="100"
+              rows="3"
+              cols="40"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Add a reason"

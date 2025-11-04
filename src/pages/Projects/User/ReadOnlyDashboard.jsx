@@ -34,7 +34,6 @@ const ProjectDashboard = () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
         axiosConfig
       );
       const data = res.data.content || res.data;
@@ -85,7 +84,7 @@ const ProjectDashboard = () => {
   const fetchDashboard = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/${userId}`,
         axiosConfig
       );
       setDashboardData(res.data);
@@ -126,7 +125,6 @@ const ProjectDashboard = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <h1 className="text-3xl font-bold">My Dashboard</h1>
         <div className="flex gap-3">
           <Button onClick={goToMyProfile} variant="primary">
             My Profile
@@ -164,12 +162,12 @@ const ProjectDashboard = () => {
  
           {/* 🔸 Status Count Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {["taskStatusCount", "epicStatusCount", "storyStatusCount"].map(
+            {["taskStatus", "storyStatus"].map(
               (key) => (
                 <div key={key} className="bg-white rounded-2xl shadow p-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
                     {key
-                      .replace("StatusCount", " Status")
+                      .replace("Status", " Status")
                       .replace(/([a-z])([A-Z])/g, "$1 $2")}
                   </h3>
                   <ul className="space-y-1 text-sm text-gray-700">
