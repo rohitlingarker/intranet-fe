@@ -56,7 +56,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const { leaveTypes, loading: loadingLeaveTypes } = useLeaveTypes();
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
  
   // Prefill form on edit
   useEffect(() => {
@@ -150,13 +150,13 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       ? await axios.patch(url, payload, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         })
       : await axios.post(url, payload, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
  
