@@ -1,5 +1,3 @@
-// FILE: ManagerEditLeaveRequest.js
-
 import React, { useEffect, useState, Fragment } from "react";
 import axios from "axios";
 import { X, Lock } from "lucide-react";
@@ -89,27 +87,6 @@ function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
   const current = new Date(fromDate + "T00:00:00Z");
   const end = new Date(toDate + "T00:00:00Z");
 
-  // while (current <= end) {
-  //   const dayOfWeek = current.getUTCDay();
-  //   const currentDateStr = current.toISOString().split('T')[0];
-  //   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  //   const isHoliday = holidaySet.has(currentDateStr);
-
-  //   if (!isWeekend && !isHoliday) {
-  //     const isStartDate = currentDateStr === fromDate;
-  //     const isEndDate = currentDateStr === toDate;
-
-  //     if (isStartDate) {
-  //       total += (halfDayConfig.start === 'first' || halfDayConfig.start === 'second') ? 0.5 : 1;
-  //     } else if (isEndDate) {
-  //       total += (halfDayConfig.end === 'first' || halfDayConfig.end === 'second') ? 0.5 : 1;
-  //     } else {
-  //       total += 1;
-  //     }
-  //   }
-  //   current.setUTCDate(current.getUTCDate() + 1);
-  // }
-  // return total;
   while (current <= end) {
     const dayOfWeek = current.getUTCDay();
     const currentDateStr = current.toISOString().split("T")[0];
@@ -358,10 +335,7 @@ export default function ManagerEditLeaveRequest({
   };
 
   const handleClose = async () => {
-    // This is the crucial part.
-    // We wait for the lock to be released...
     await manualReleaseLock();
-    // ...and *then* we call the original onClose prop to hide the modal.
     onClose();
   };
 
