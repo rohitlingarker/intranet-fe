@@ -52,5 +52,5 @@ export const mapAccessPointToRole = (roleId, accessId) =>
   axiosInstance.post(`${ROLE_URL}/${roleId}/access-points/${accessId}`);
 export const removeAccessPointFromRole = (roleId, accessId) =>
   axiosInstance.delete(`${ROLE_URL}/${roleId}/access-points/${accessId}`);
-export const getAllAccessPoints = () =>
-  axiosInstance.get(`${ROLE_URL}/access-points/all`);
+// export const getAllAccessPoints = () =>
+//   axiosInstance.get(`${ROLE_URL}/access-points/all`);

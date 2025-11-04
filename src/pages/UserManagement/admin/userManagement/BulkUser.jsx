@@ -119,4 +119,4 @@ const BulkUserUpload = ({ onClose, onSuccess }) => {
   );
 };
 
-export { BulkUserUpload };
+export default BulkUserUpload;

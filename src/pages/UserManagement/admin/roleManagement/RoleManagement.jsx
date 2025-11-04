@@ -3,7 +3,7 @@ import axios from "axios";
 import RoleForm from "./RoleForm";
 import PermissionManagement from "./PermissionManagement";
 import PermissionGroupManagement from "./PermissionGroupManagement";
-import { getAllAccessPoints } from "../../../../services/roleManagementService";
+// import { getAllAccessPoints } from "../../../../services/roleManagementService";
 import Navbar from "../../../../components/Navbar/Navbar";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
@@ -34,18 +34,18 @@ export default function RoleManagement() {
     }
   };
 
-  const fetchAccessPoints = async () => {
-    try {
-      const res = await getAllAccessPoints();
-      setAccessPoints(res.data);
-    } catch (err) {
-      console.error("Failed to fetch access points:", err);
-    }
-  };
+  // const fetchAccessPoints = async () => {
+  //   try {
+  //     const res = await getAllAccessPoints();
+  //     setAccessPoints(res.data);
+  //   } catch (err) {
+  //     console.error("Failed to fetch access points:", err);
+  //   }
+  // };
 
   useEffect(() => {
     fetchRoles();
-    fetchAccessPoints();
+    // fetchAccessPoints();
   }, []);
 
   const handleRoleUpdate = (updatedRoles) => {
