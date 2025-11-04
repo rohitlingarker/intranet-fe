@@ -9,7 +9,7 @@ import { showStatusToast } from "../../../../components/toastfy/toast";
 
 export default function RoleManagement() {
   const [roles, setRoles] = useState([]);
-  const [accessPoints, setAccessPoints] = useState([]);
+  // const [accessPoints, setAccessPoints] = useState([]);
   const [activeTab, setActiveTab] = useState("roles");
 
   const token = localStorage.getItem("token");

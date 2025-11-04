@@ -17,11 +17,11 @@ import { Pencil, UserX, UserCheck } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useAuth } from "../../../../contexts/AuthContext";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
-
+ 
 const CreateUserForm = React.lazy(() => import("./CreateUser"));
 const EditUserForm = React.lazy(() => import("./EditUser"));
 const BulkUserUpload = React.lazy(() => import("./BulkUser"));
-
+ 
 const ITEMS_PER_PAGE = 10;
 
 export default function UsersTable() {
@@ -49,7 +49,7 @@ export default function UsersTable() {
       logout();
     }
   }, [token, navigate]);
-
+ 
   // ✅ Fetch from backend with pagination & search
   const fetchUsers = useCallback(async () => {
     try {
@@ -81,7 +81,7 @@ export default function UsersTable() {
       setLoading(false);
     }
   }, [token, navigate, currentPage, searchTerm]);
-
+ 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -108,13 +108,13 @@ export default function UsersTable() {
     setEditModalOpen(false);
     setSelectedUseruuId(null);
   };
-
+ 
   const handleToggleClick = (useruuId, currentStatus) => {
     setUserToToggle(useruuId);
     setActionType(currentStatus ? "deactivate" : "activate");
     setConfirmModalOpen(true);
   };
-
+ 
   const confirmToggle = async () => {
     if (!userToToggle) return;
     try {
@@ -142,12 +142,12 @@ export default function UsersTable() {
       setActionType("");
     }
   };
-
+ 
   const totalPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
-
+ 
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
-
+ 
   const tableData = users.map((user) => {
     let formattedContact = user.contact;
     if (user.contact) {
@@ -234,9 +234,9 @@ export default function UsersTable() {
         placeholder="Search users by name, email, or contact..."
         className="mb-4 max-w-md"
       />
-
+ 
       <GenericTable headers={headers} rows={tableData} columns={columns} loading={loading} />
-
+ 
       {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -245,7 +245,7 @@ export default function UsersTable() {
           onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         />
       )}
-
+ 
       {/* --- Modals (unchanged) --- */}
       <Modal
         isOpen={isCreateModalOpen}
@@ -261,7 +261,7 @@ export default function UsersTable() {
           />
         </Suspense>
       </Modal>
-
+ 
       <Modal
         isOpen={userBulkUploadModalOpen}
         onClose={() => setUserBulkUploadModalOpen(false)}
@@ -273,7 +273,7 @@ export default function UsersTable() {
           <BulkUserUpload onClose={() => setUserBulkUploadModalOpen(false)} onSuccess={fetchUsers} />
         </Suspense>
       </Modal>
-
+ 
       <Modal
         isOpen={isEditModalOpen}
         onClose={handleEditClose}
@@ -291,7 +291,7 @@ export default function UsersTable() {
           </Suspense>
         )}
       </Modal>
-
+ 
       <Modal
         isOpen={isConfirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}

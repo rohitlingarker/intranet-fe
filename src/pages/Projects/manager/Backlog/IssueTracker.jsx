@@ -1,11 +1,17 @@
+// ✅ IssueTracker.jsx (Unified Edit Modal System with Create / Update / Delete Success Toast + User & Billable Filter)
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Button from "../../../../components/Button/Button";
-import { FiEye, FiEdit, FiTrash } from "react-icons/fi";
+import { FiEye, FiEdit, FiTrash, FiX } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import CreateIssueForm from "../Backlog/CreateIssueForm";
+
+import EditBugForm from "./EditBugForm";
+import EditStoryForm from "./EditStoryForm";
+import EditTaskForm from "./EditTaskForm";
+import EditEpicForm from "./EditEpicForm";
+import LoadingSpinner from "../../../../components/LoadingSpinner";
 
 const IssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
@@ -16,19 +22,22 @@ const IssueTracker = () => {
   const [issues, setIssues] = useState([]);
   const [filteredIssues, setFilteredIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editItem, setEditItem] = useState(null);
-
-  // Dropdown data
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [epics, setEpics] = useState([]);
-  const [sprints, setSprints] = useState([]);
 
-  // Filters
+  // ===== Unified Edit Modal =====
+  const [editModal, setEditModal] = useState({
+    visible: false,
+    type: null,
+    id: null,
+  });
+
+  // ===== Filters =====
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterUser, setFilterUser] = useState("");
+  const [filterBillable, setFilterBillable] = useState(""); // ✅ NEW Billable filter
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -36,7 +45,7 @@ const IssueTracker = () => {
     "Content-Type": "application/json",
   };
 
-  // ===== FETCH ALL ISSUES =====
+  // ===== FETCH ISSUES =====
   const fetchIssues = async () => {
     try {
       setLoading(true);
@@ -72,10 +81,9 @@ const IssueTracker = () => {
 
       const bugsData = bugsRes.data.map((b) => ({
         ...b,
-        title: b.title,
         type: "Bug",
-        reporterName: b.reporterName || "",
-        assigneeName: b.assigneeName || "",
+        reporterName: b.reporterName || b.reporter?.name || "",
+        assigneeName: b.assigneeName || b.assignedTo?.name || "",
         projectName: b.project?.name || "",
         priority: b.priority || "MEDIUM",
         status: b.status || "OPEN",
@@ -92,113 +100,47 @@ const IssueTracker = () => {
     }
   };
 
-  // ===== FETCH DROPDOWNS =====
-  const fetchFormOptions = async () => {
+  // ===== FETCH PROJECTS =====
+  const fetchProjects = async () => {
     try {
-      const [projectsRes, usersRes, epicsRes, sprintsRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, { headers }),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers }),
-      ]);
-
-      setProjects(projectsRes.data || []);
-      setUsers(usersRes.data || []);
-      setEpics(epicsRes.data || []);
-      setSprints(sprintsRes.data || []);
+      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers });
+      setProjects(res.data || []);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load form options");
+      toast.error("Failed to load projects");
     }
   };
 
   useEffect(() => {
     if (projectId) {
       fetchIssues();
-      fetchFormOptions();
+      fetchProjects();
     }
   }, [projectId]);
 
-  // ===== APPLY FILTERS =====
+  // ===== FILTER HANDLER =====
   useEffect(() => {
     let filtered = [...issues];
-
-    if (searchTerm) {
-      filtered = filtered.filter((i) =>
-        i.title?.toLowerCase().includes(searchTerm.toLowerCase())
+    if (searchTerm)
+      filtered = filtered.filter((i) => i.title?.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (filterType) filtered = filtered.filter((i) => i.type === filterType);
+    if (filterPriority) filtered = filtered.filter((i) => i.priority === filterPriority);
+    if (filterStatus) filtered = filtered.filter((i) => i.status === filterStatus);
+    if (filterUser)
+      filtered = filtered.filter(
+        (i) =>
+          i.reporterName?.toLowerCase() === filterUser.toLowerCase() ||
+          i.assigneeName?.toLowerCase() === filterUser.toLowerCase()
       );
-    }
-    if (filterType) {
-      filtered = filtered.filter((i) => i.type === filterType);
-    }
-    if (filterPriority) {
-      filtered = filtered.filter((i) => i.priority === filterPriority);
-    }
-    if (filterStatus) {
-      filtered = filtered.filter((i) => i.status === filterStatus);
-    }
+    if (filterBillable)
+      filtered = filtered.filter((i) =>
+        filterBillable === "Yes"
+          ? i.billable === true || i.billable === "Yes"
+          : i.billable === false || i.billable === "No"
+      );
 
     setFilteredIssues(filtered);
-  }, [searchTerm, filterType, filterPriority, filterStatus, issues]);
-
-  // ===== EDIT =====
-  const handleEdit = (issue) => {
-    let initialData = {};
-    if (issue.type === "Epic") {
-      initialData = {
-        id: issue.id,
-        title: issue.name || issue.title,
-        description: issue.description || "",
-        progressPercentage: issue.progressPercentage || 0,
-        projectId,
-      };
-    } else if (issue.type === "Story") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        status: issue.status || "BACKLOG",
-        priority: issue.priority || "MEDIUM",
-        storyPoints: issue.storyPoints || 0,
-        epicId: issue.epicId || null,
-        reporterId: issue.reporter?.id || "",
-        assigneeId: issue.assignee?.id || null,
-        sprintId: issue.sprint?.id || null,
-        projectId,
-      };
-    } else if (issue.type === "Task") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        status: issue.status || "TODO",
-        priority: issue.priority || "MEDIUM",
-        storyId: issue.storyId || null,
-        reporterId: issue.reporter?.id || "",
-        assigneeId: issue.assignee?.id || null,
-        sprintId: issue.sprint?.id || null,
-        projectId,
-      };
-    } else if (issue.type === "Bug") {
-      initialData = {
-        id: issue.id,
-        title: issue.title,
-        description: issue.description || "",
-        severity: issue.severity || "MEDIUM",
-        status: issue.status || "OPEN",
-        priority: issue.priority || "MEDIUM",
-        reporterId: issue.reporter || "",
-        assigneeId: issue.assignedTo || "",
-        projectId,
-      };
-    }
-    setEditItem({ type: issue.type, initialData });
-  };
-
-  const handleEditClose = () => {
-    setEditItem(null);
-    fetchIssues();
-  };
+  }, [searchTerm, filterType, filterPriority, filterStatus, filterUser, filterBillable, issues]);
 
   // ===== DELETE =====
   const handleDelete = async (issue) => {
@@ -209,26 +151,49 @@ const IssueTracker = () => {
     else if (issue.type === "Story") endpoint = `/api/stories/${issue.id}`;
     else if (issue.type === "Task") endpoint = `/api/tasks/${issue.id}`;
     else if (issue.type === "Bug") endpoint = `/api/bugs/${issue.id}`;
-    else {
-      toast.error("Unknown issue type!");
-      return;
-    }
+    else return toast.error("Unknown issue type!");
 
     try {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
-      toast.success(`${issue.type} deleted successfully!`);
       setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
+      setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
+      toast.success(`${issue.type} deleted successfully! ✅`);
     } catch (err) {
       console.error(err);
       toast.error(`Failed to delete ${issue.type}`);
     }
   };
 
-  // ===== PROJECT NAME =====
+  // ===== EDIT =====
+  const handleEdit = (issue) => {
+    setEditModal({ visible: true, type: issue.type, id: issue.id });
+  };
+
+  const handleUpdated = (updatedType) => {
+    setEditModal({ visible: false, type: null, id: null });
+    fetchIssues();
+    toast.success(`${updatedType || "Issue"} updated successfully! ✅`);
+  };
+
+  // ===== CREATE SUCCESS HANDLER =====
+  useEffect(() => {
+    if (location.state?.createdIssueType) {
+      toast.success(`${location.state.createdIssueType} created successfully! ✅`);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
   const currentProject = projects.find((p) => p.id === Number(projectId));
   const projectName = currentProject ? currentProject.name : projectId;
 
-  // ===== STATS =====
+  // ===== Extract unique user names for dropdown =====
+  const userNames = Array.from(
+    new Set(
+      issues.flatMap((i) => [i.reporterName, i.assigneeName].filter(Boolean))
+    )
+  ).sort();
+
+  // ===== Stats =====
   const totalIssues = issues.length;
   const openIssues = issues.filter((i) => ["OPEN", "TODO", "BACKLOG"].includes(i.status)).length;
   const inProgress = issues.filter((i) => i.status === "IN_PROGRESS").length;
@@ -258,17 +223,17 @@ const IssueTracker = () => {
         <SummaryCard title="High Priority" count={highPriority} />
       </div>
 
-      {/* Filter Section */}
-      <div className="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-center">
+      {/* Filters */}
+      <div className="bg-white p-5 rounded-lg shadow-md flex flex-wrap gap-3 items-center border border-gray-100">
         <input
           type="text"
-          placeholder="Search by title..."
+          placeholder="🔍 Search by title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="border p-2 rounded w-64"
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         />
         <select
-          className="border p-2 rounded"
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
@@ -279,7 +244,7 @@ const IssueTracker = () => {
           <option value="Bug">Bug</option>
         </select>
         <select
-          className="border p-2 rounded"
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
         >
@@ -290,7 +255,7 @@ const IssueTracker = () => {
           <option value="CRITICAL">Critical</option>
         </select>
         <select
-          className="border p-2 rounded"
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
@@ -304,7 +269,33 @@ const IssueTracker = () => {
           <option value="CLOSED">Closed</option>
           <option value="BLOCKED">Blocked</option>
         </select>
-        {(filterType || filterPriority || filterStatus || searchTerm) && (
+
+        {/* ✅ New User Filter */}
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterUser}
+          onChange={(e) => setFilterUser(e.target.value)}
+        >
+          <option value="">All Users</option>
+          {userNames.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+
+        {/* ✅ New Billable Filter */}
+        <select
+          className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
+          value={filterBillable}
+          onChange={(e) => setFilterBillable(e.target.value)}
+        >
+          <option value="">All Billable</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+
+        {(filterType || filterPriority || filterStatus || searchTerm || filterUser || filterBillable) && (
           <Button
             size="small"
             variant="secondary"
@@ -313,6 +304,8 @@ const IssueTracker = () => {
               setFilterType("");
               setFilterPriority("");
               setFilterStatus("");
+              setFilterUser("");
+              setFilterBillable("");
             }}
           >
             Clear Filters
@@ -321,10 +314,12 @@ const IssueTracker = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
-        {loading ? (
-          <p className="p-4">Loading issues...</p>
-        ) : (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <LoadingSpinner text="Loading issues..." />
+        </div>
+      ) : (
+        <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="min-w-full border-collapse text-sm">
             <thead className="bg-gray-100 text-gray-700">
               <tr>
@@ -334,6 +329,7 @@ const IssueTracker = () => {
                 <th className="border px-4 py-2 text-left">Status</th>
                 <th className="border px-4 py-2 text-left">Reporter</th>
                 <th className="border px-4 py-2 text-left">Assigned To</th>
+                <th className="border px-4 py-2 text-left">Billable</th> {/* ✅ Added Column */}
                 <th className="border px-4 py-2 text-left">Created On</th>
                 <th className="border px-4 py-2 text-left">Due Date</th>
                 <th className="border px-4 py-2 text-left">Actions</th>
@@ -342,7 +338,7 @@ const IssueTracker = () => {
             <tbody>
               {filteredIssues.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-6 text-center text-gray-500 italic">
+                  <td colSpan="10" className="p-6 text-center text-gray-500 italic">
                     No issues found
                   </td>
                 </tr>
@@ -355,6 +351,10 @@ const IssueTracker = () => {
                         ? "bg-purple-50"
                         : issue.type === "Bug"
                         ? "bg-red-50"
+                        : issue.type === "Story"
+                        ? "bg-blue-50"
+                        : issue.type === "Task"
+                        ? "bg-green-50"
                         : ""
                     }`}
                   >
@@ -374,19 +374,24 @@ const IssueTracker = () => {
                         {issue.type}
                       </span>
                     </td>
-                    <td className="border px-4 py-2">
-                      <BadgePriority priority={issue.priority} />
-                    </td>
-                    <td className="border px-4 py-2">
-                      <BadgeStatus status={issue.status} />
-                    </td>
+                    <td className="border px-4 py-2"><BadgePriority priority={issue.priority} /></td>
+                    <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
+                   
                     <td className="border px-4 py-2">
-                      {issue.createdOn ? new Date(issue.createdOn).toLocaleDateString() : "-"}
+                      {issue.createdAt
+                        ? new Date(issue.createdAt).toLocaleDateString()
+                        : issue.createdDate
+                        ? new Date(issue.createdDate).toLocaleDateString()
+                        : "-"}
                     </td>
                     <td className="border px-4 py-2">
-                      {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : "-"}
+                      {issue.dueDate
+                        ? new Date(issue.dueDate).toLocaleDateString()
+                        : issue.type === "Story" || issue.type === "Bug"
+                        ? "No Due Date"
+                        : "-"}
                     </td>
                     <td className="border px-4 py-2 flex items-center gap-3">
                       <ActionIcon
@@ -400,9 +405,11 @@ const IssueTracker = () => {
                       >
                         <FiEye size={18} className="text-blue-600" />
                       </ActionIcon>
+
                       <ActionIcon label="Edit" onClick={() => handleEdit(issue)}>
                         <FiEdit size={18} className="text-green-600" />
                       </ActionIcon>
+
                       <ActionIcon label="Delete" onClick={() => handleDelete(issue)}>
                         <FiTrash size={18} className="text-red-600" />
                       </ActionIcon>
@@ -412,34 +419,64 @@ const IssueTracker = () => {
               )}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* Edit Modal */}
-      {editItem && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-lg relative">
-            <button onClick={() => setEditItem(null)} className="absolute top-2 right-2">
-              ✖
-            </button>
-            <CreateIssueForm
-              mode="edit"
-              issueType={editItem.type}
-              initialData={editItem.initialData}
-              projects={projects}
-              users={users}
-              epics={epics}
-              sprints={sprints}
-              onClose={handleEditClose}
-              onCreated={handleEditClose}
-              projectId={projectId}
-            />
-          </div>
         </div>
+      )}
+
+      {/* ===== Unified Edit Modal ===== */}
+      {editModal.visible && (
+        <Modal onClose={() => setEditModal({ visible: false, type: null, id: null })}>
+          {editModal.type === "Bug" && (
+            <EditBugForm
+              bugId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={() => handleUpdated("Bug")}
+            />
+          )}
+          {editModal.type === "Story" && (
+            <EditStoryForm
+              storyId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={() => handleUpdated("Story")}
+            />
+          )}
+          {editModal.type === "Task" && (
+            <EditTaskForm
+              taskId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={() => handleUpdated("Task")}
+            />
+          )}
+          {editModal.type === "Epic" && (
+            <EditEpicForm
+              epicId={editModal.id}
+              projectId={projectId}
+              onClose={() => setEditModal({ visible: false, type: null, id: null })}
+              onUpdated={() => handleUpdated("Epic")}
+            />
+          )}
+        </Modal>
       )}
     </div>
   );
 };
+
+// ===== Modal Component =====
+const Modal = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-auto max-w-2xl relative">
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
+      >
+        <FiX />
+      </button>
+      {children}
+    </div>
+  </div>
+);
 
 // ===== Helper Components =====
 const SummaryCard = ({ title, count }) => (
@@ -457,11 +494,7 @@ const BadgePriority = ({ priority }) => {
     CRITICAL: "bg-red-600 text-white",
   };
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-medium ${
-        colors[priority] || "bg-gray-100 text-gray-600"
-      }`}
-    >
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[priority] || "bg-gray-100 text-gray-600"}`}>
       {priority || "-"}
     </span>
   );
@@ -481,11 +514,7 @@ const BadgeStatus = ({ status }) => {
     BLOCKED: "bg-red-200 text-red-800",
   };
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-medium ${
-        colors[status] || "bg-gray-100 text-gray-600"
-      }`}
-    >
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-600"}`}>
       {status || "-"}
     </span>
   );

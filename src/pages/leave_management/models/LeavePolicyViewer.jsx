@@ -96,7 +96,7 @@ export default function LeavePolicyViewer() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const BASE_URL = "http://localhost:1337/api/leave-policies";
+  const BASE_URL = "https://leave-policy-strapi.onrender.com/api/leave-policies";
 
   useEffect(() => {
     const fetchPolicies = async () => {

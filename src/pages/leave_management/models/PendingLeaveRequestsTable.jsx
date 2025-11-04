@@ -60,11 +60,9 @@ const PendingLeaveRequestsTable = ({
         `${BASE_URL}/api/leave-requests/${cancelId}/cancel/${empId}`, 
         null,       
         {
-          headers: { 
-            "Cache-Control": "no-store", 
-            Authorization: `Bearer ${token}`
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
           },
-          withCredentials: true,
         }
       );
 
@@ -119,16 +117,26 @@ const PendingLeaveRequestsTable = ({
             {pendingLeaves.map((leave) => (
               <tr key={leave.leaveId} className="border-t text-xs">
                 <td className="p-3 text-center">{getLabelFromName(leave.leaveType?.leaveName)}</td>
-                <td className="p-3 text-center">{new Date(leave.startDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}</td>
-                <td className="p-3 text-center">{new Date(leave.endDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}</td>
+                <td className="p-3 text-center">
+                  {new Date(leave.startDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  {leave.startSession && leave.startSession !== "none" && (
+                    <span className="ml-1 text-gray-500">({leave.startSession})</span>
+                  )}
+                </td>
+                <td className="p-3 text-center">
+                  {new Date(leave.endDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  {leave.endSession && leave.endSession !== "none" && (
+                    <span className="ml-1 text-gray-500">({leave.endSession})</span>
+                  )}
+                  </td>
                 <td className="p-3 text-center">{leave.daysRequested}</td>
                 <td className="p-3 text-center">{leave.reason || "-"}</td>
                 <td className="p-3 text-center">

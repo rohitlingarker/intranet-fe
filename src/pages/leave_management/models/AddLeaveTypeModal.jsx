@@ -4,14 +4,14 @@ import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
-
+ 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-
+ 
 // Hook to fetch leave types
 const useLeaveTypes = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     const fetchLeaveTypes = async () => {
       try {
@@ -28,10 +28,10 @@ const useLeaveTypes = () => {
     };
     fetchLeaveTypes();
   }, []);
-
+ 
   return { leaveTypes, loading };
 };
-
+ 
 // Default form values
 const defaultForm = {
   leaveTypeId: "",
@@ -51,20 +51,20 @@ const defaultForm = {
   allowNegativeBalance: false,
   noticePeriodRestriction: false,
 };
-
+ 
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const { leaveTypes, loading: loadingLeaveTypes } = useLeaveTypes();
   const token = localStorage.getItem("token");
-
+ 
   // Prefill form on edit
   useEffect(() => {
     if (isOpen) {
       setFormData(editData ? { ...defaultForm, ...editData } : defaultForm);
     }
   }, [isOpen, editData]);
-
+ 
   // Map editData to leave types after loading
   useEffect(() => {
     if (!loadingLeaveTypes && isOpen && editData) {
@@ -87,7 +87,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             editData.leaveName &&
             String(t.label) === String(editData.leaveName)
         );
-
+ 
       if (match) {
         setFormData((prev) => ({
           ...prev,
@@ -104,7 +104,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       }
     }
   }, [loadingLeaveTypes, leaveTypes, editData, isOpen]);
-
+ 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -112,11 +112,11 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
+ 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setSubmitting(true);
-
+ 
   // Build payload with numeric conversions
   let payload = {
     ...formData,
@@ -135,16 +135,16 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     pastDateLimitDays:
       formData.pastDateLimitDays === "" ? 0 : Number(formData.pastDateLimitDays),
   };
-
+ 
   // Remove all null or undefined fields
   Object.keys(payload).forEach(
     (key) => (payload[key] === null || payload[key] === undefined) && delete payload[key]
   );
-
+ 
   const url = editData
     ? `${BASE_URL}/api/leave/update-leave-type/${editData.leaveTypeId}`
     : `${BASE_URL}/api/leave/add-leave-type`;
-
+ 
   try {
     const response = editData
       ? await axios.patch(url, payload, {
@@ -159,7 +159,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             Authorization: `Bearer ${token}`,
           },
         });
-
+ 
     if (response.data?.success) {
       toast.success(
         response.data.message || (editData ? "Leave type updated!" : "Leave type added!")
@@ -175,10 +175,10 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     setSubmitting(false);
   }
 };
-
-
+ 
+ 
   if (!isOpen) return null;
-
+ 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg sm:max-w-xl max-h-[90vh] overflow-y-auto relative">
@@ -188,7 +188,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <LoadingSpinner text="Submitting..." />
           </div>
         )}
-
+ 
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <FileText className="w-6 h-6 text-green-600 mr-3" />
@@ -205,7 +205,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <X className="w-6 h-6" />
           </button>
         </div>
-
+ 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
           {/* Leave Type Select */}
           <div>
@@ -294,7 +294,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </Listbox>
             )}
           </div>
-
+ 
           {/* Numeric and text inputs */}
           <div className="grid gap-4 sm:grid-cols-2">
             {[
@@ -320,7 +320,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </div>
             ))}
           </div>
-
+ 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -335,7 +335,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               placeholder="Describe the leave type"
             />
           </div>
-
+ 
           {/* Boolean checkboxes */}
           <div className="grid gap-1 sm:grid-cols-2">
             {[
@@ -378,7 +378,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </label>
             </div>
           </div>
-
+ 
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button
@@ -409,5 +409,5 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     </div>
   );
 };
-
+ 
 export default AddLeaveTypeModal;
