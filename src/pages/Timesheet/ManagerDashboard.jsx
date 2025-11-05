@@ -171,7 +171,7 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
           </h2>
           <button
             onClick={() => {
-              setStatusFilter("Pending");
+              setStatusFilter("Submitted");
               handleScroll();
             }}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow"
@@ -181,7 +181,7 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
         </div>
         <span>
           <p className=" justify-center text-2xl font-bold text-blue-800 mt-4">
-            {stats.pending} Entries
+            {stats.pending} Weeks
           </p>
         </span>
       </div>
