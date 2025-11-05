@@ -123,7 +123,7 @@ const PendingLeaveRequestsTable = ({
                     day: "numeric",
                     year: "numeric",
                   })}
-                  {leave.startSession && leave.startSession !== "none" && (
+                  {leave.startSession && leave.startSession !== "none" && leave.startSession !== "fullday" && (
                     <span className="ml-1 text-gray-500">({leave.startSession})</span>
                   )}
                 </td>
@@ -133,7 +133,7 @@ const PendingLeaveRequestsTable = ({
                     day: "numeric",
                     year: "numeric",
                   })}
-                  {leave.endSession && leave.endSession !== "none" && (
+                  {leave.endSession && leave.endSession !== "none" && leave.endSession !== "fullday" && (
                     <span className="ml-1 text-gray-500">({leave.endSession})</span>
                   )}
                   </td>
