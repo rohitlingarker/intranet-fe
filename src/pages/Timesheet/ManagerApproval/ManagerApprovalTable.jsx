@@ -575,9 +575,7 @@ const ManagerApprovalTable = ({
           }
         ),
         fetch(
-          `${
-            import.meta.env.VITE_LMS_BASE_URL
-          }/api/holidays/month/${currentMonth}`,
+          `${import.meta.env.VITE_BASE_URL}/api/holidays/month/${currentMonth}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
