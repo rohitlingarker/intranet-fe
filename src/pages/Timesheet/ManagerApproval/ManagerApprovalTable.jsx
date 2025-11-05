@@ -381,43 +381,6 @@ const ManagerApprovalTable = ({
               </div>
             </div>
           )}
-
-          {/* Rejection boxes */}
-          {/* {week.timesheets.map(
-            (t) =>
-              showCommentBox[t.timesheetId] && (
-                <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
-                  <textarea
-                    className="border p-2 w-full rounded"
-                    rows="2"
-                    placeholder="Enter rejection reason"
-                    value={rejectionComments[t.timesheetId] || ""}
-                    onChange={(e) =>
-                      setRejectionComments((prev) => ({
-                        ...prev,
-                        [t.timesheetId]: e.target.value,
-                      }))
-                    }
-                  />
-                  <div className="flex gap-2 mt-2 justify-end">
-                    <Button
-                      variant="danger"
-                      size="small"
-                      onClick={() => handleConfirmReject(t.timesheetId)}
-                    >
-                      Confirm Reject
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      onClick={() => handleCancelReject(t.timesheetId)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )
-          )} */}
         </div>
       ));
   // Track selection mode and selected users
