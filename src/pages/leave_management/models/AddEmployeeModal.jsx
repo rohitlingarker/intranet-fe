@@ -1,33 +1,32 @@
-import React, { useState } from 'react';
-import { X, User } from 'lucide-react';
-import axios from 'axios';
+import React, { useState } from "react";
+import { X, User } from "lucide-react";
+import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const AddEmployeeModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    gender: '',
-    phone: '',
-    hireDate: '',
-    jobTitle: '',
-    managerId: '',
-    password: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    gender: "",
+    phone: "",
+    hireDate: "",
+    role: "",
+    managerId: "",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const token = localStorage.getItem('token');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const token = localStorage.getItem("token");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
-    // Prepare payload to match backend
     const payload = {
       firstName: formData.firstName,
       lastName: formData.lastName,
@@ -35,49 +34,50 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
       gender: formData.gender,
       phone: formData.phone,
       hireDate: formData.hireDate,
-      jobTitle: formData.jobTitle,
+      jobTitle: formData.role,
       password: formData.password,
-      managerId: formData.managerId, // Uncomment if backend expects managerId as string
-      // manager: { employeeId: formData.managerId } // Uncomment if backend expects object
     };
+
+    // 🔥 FIX: send as nested object
     if (formData.managerId) {
-      payload.managerId = { employeeId: formData.managerId }; // assuming manager expects an employee object.
+      payload.manager = { employeeId: formData.managerId };
     }
+
     try {
       await axios.post(`${BASE_URL}/api/employee/register`, payload, {
-        headers: { 
-          Authorization:`Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setSuccess('Employee added successfully!');
+      setSuccess("Employee added successfully!");
       setLoading(false);
       setTimeout(() => {
-        setSuccess('');
+        setSuccess("");
         onClose();
       }, 1000);
       setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        gender: '',
-        phone: '',
-        hireDate: '',
-        jobTitle: '',
-        managerId: '',
-        password: '',
+        firstName: "",
+        lastName: "",
+        email: "",
+        gender: "",
+        phone: "",
+        hireDate: "",
+        role: "",
+        managerId: "",
+        password: "",
       });
     } catch (err) {
       setLoading(false);
       setError(
         err.response?.data?.message ||
-        err.message ||
-        'Failed to add employee. Please try again!'
+          err.message ||
+          "Failed to add employee. Please try again!"
       );
     }
   };
 
   const handleChange = (e) => {
     setFormData({
-      ...formData, [e.target.name]: e.target.value
+      ...formData,
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -89,7 +89,9 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <User className="w-6 h-6 text-indigo-600 mr-3" />
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add New Employee</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              Add New Employee
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -110,8 +112,11 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 First Name *
               </label>
               <input
-                type="text" name="firstName" value={formData.firstName}
-                onChange={handleChange} required
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
                 className="input"
                 placeholder="Enter first name"
               />
@@ -121,8 +126,11 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Last Name *
               </label>
               <input
-                type="text" name="lastName" value={formData.lastName}
-                onChange={handleChange} required
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
                 className="input"
                 placeholder="Enter last name"
               />
@@ -132,12 +140,16 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Gender *
               </label>
               <select
-                name="gender" value={formData.gender}
-                onChange={handleChange} required
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                required
                 className="input"
               >
                 <option value="">Select gender</option>
-                <option>Male</option><option>Female</option><option>Other</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
               </select>
             </div>
             <div>
@@ -145,8 +157,11 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Phone
               </label>
               <input
-                type="tel" name="phone" value={formData.phone}
-                onChange={handleChange} maxLength={10}
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                maxLength={10}
                 className="input"
                 placeholder="Optional"
               />
@@ -156,8 +171,11 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Email *
               </label>
               <input
-                type="email" name="email" value={formData.email}
-                onChange={handleChange} required
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
                 className="input"
                 placeholder="Enter email address"
               />
@@ -167,8 +185,11 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Joining Date *
               </label>
               <input
-                type="date" name="hireDate" value={formData.hireDate}
-                onChange={handleChange} required
+                type="date"
+                name="hireDate"
+                value={formData.hireDate}
+                onChange={handleChange}
+                required
                 className="input"
               />
             </div>
@@ -177,7 +198,9 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Designation
               </label>
               <input
-                type="text" name="jobTitle" value={formData.jobTitle}
+                type="text"
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
                 className="input"
                 placeholder="Ex: Software Engineer"
@@ -188,7 +211,9 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Manager Employee ID
               </label>
               <input
-                type="text" name="managerId" value={formData.managerId}
+                type="text"
+                name="managerId"
+                value={formData.managerId}
                 onChange={handleChange}
                 className="input"
                 placeholder="Ex: PAVEMP12345"
@@ -199,12 +224,14 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
                 Password *
               </label>
               <input
-                type="password" name="password" value={formData.password}     
-                onChange={handleChange} 
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 className="input"
                 placeholder="Enter password"
               />
-          </div>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button

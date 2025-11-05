@@ -47,10 +47,10 @@ const ManagerApprovalPage = () => {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <TimesheetHeader />
-      {/* <ManagerDashboard
+      <ManagerDashboard
         setStatusFilter={setStatusFilter}
         handleScroll={handleScroll}
-      /> */}
+      />
       <ManagerApprovalTable
         loading={loading}
         groupedData={groupedTimesheets}

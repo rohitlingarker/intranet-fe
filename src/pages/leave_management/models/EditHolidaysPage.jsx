@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Edit, Trash, Save, XCircle } from "lucide-react";
+import { Edit, Trash2, Save, XCircle } from "lucide-react";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import ConfirmationModal from "./ConfirmationModal";
 import { motion } from "framer-motion";
@@ -26,7 +26,7 @@ const EditHolidaysPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   // Fetch all holidays
   useEffect(() => {
@@ -34,7 +34,7 @@ const EditHolidaysPage = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(`${BASE_URL}/api/holidays/all`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setHolidays(response.data);
       } catch (err) {
@@ -46,7 +46,7 @@ const EditHolidaysPage = () => {
       }
     };
     fetchHolidays();
-  }, [token]);
+  }, [localStorage.getItem("token")]);
 
   // Handlers for editing
   const handleEditClick = (holiday) => {
@@ -68,7 +68,7 @@ const EditHolidaysPage = () => {
     try {
       setIsLoading(true);
       await axios.put(`${BASE_URL}/api/holidays/update`, editedData, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       toast.success("Holiday updated successfully!");
       setHolidays((holidays) =>
@@ -91,7 +91,7 @@ const EditHolidaysPage = () => {
     try {
       setIsLoading(true);
       await axios.delete(`${BASE_URL}/api/holidays/delete/${holidayId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       toast.success("Holiday deleted successfully!");
       setHolidays((holidays) =>
@@ -190,7 +190,7 @@ const EditHolidaysPage = () => {
                         className="border rounded p-1 w-full"
                       />
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 w-1/6">
                       <select
                         name="type"
                         value={editedData.type}
@@ -209,7 +209,7 @@ const EditHolidaysPage = () => {
                         value={editedData.state || ""}
                         onChange={handleInputChange}
                         placeholder="State"
-                        className="border rounded p-1 w-full bg-gray-100"
+                        className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
                         readOnly
                       />
                     </td>
@@ -220,7 +220,7 @@ const EditHolidaysPage = () => {
                         value={editedData.country || ""}
                         onChange={handleInputChange}
                         placeholder="Country"
-                        className="border rounded p-1 w-full bg-gray-100"
+                        className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
                         readOnly
                       />
                     </td>
@@ -272,7 +272,7 @@ const EditHolidaysPage = () => {
                         className="p-2 text-red-600 hover:text-red-800"
                         title="Delete"
                       >
-                        <Trash size={20} />
+                        <Trash2 size={20} />
                       </button>
                     </td>
                   </>

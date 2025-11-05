@@ -1,19 +1,14 @@
-// ✅ IssueTracker.jsx (Unified Edit Modal System with Create / Update / Delete Success Toast + User & Billable Filter)
+// ✅ UserIssueTracker.jsx (Final View-Only Version)
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Button from "../../../../components/Button/Button";
-import { FiEye, FiEdit, FiTrash, FiX } from "react-icons/fi";
+import { FiEye } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-import EditBugForm from "./EditBugForm";
-import EditStoryForm from "./EditStoryForm";
-import EditTaskForm from "./EditTaskForm";
-import EditEpicForm from "./EditEpicForm";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 
-const IssueTracker = () => {
+const UserIssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,20 +19,13 @@ const IssueTracker = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
 
-  // ===== Unified Edit Modal =====
-  const [editModal, setEditModal] = useState({
-    visible: false,
-    type: null,
-    id: null,
-  });
-
   // ===== Filters =====
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterUser, setFilterUser] = useState("");
-  const [filterBillable, setFilterBillable] = useState(""); // ✅ NEW Billable filter
+  const [filterBillable, setFilterBillable] = useState("");
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -142,52 +130,10 @@ const IssueTracker = () => {
     setFilteredIssues(filtered);
   }, [searchTerm, filterType, filterPriority, filterStatus, filterUser, filterBillable, issues]);
 
-  // ===== DELETE =====
-  const handleDelete = async (issue) => {
-    const confirmed = window.confirm(`⚠️ Are you sure you want to delete this ${issue.type}? This action cannot be undone.`);
-    if (!confirmed) return;
-
-    let endpoint = "";
-    if (issue.type === "Epic") endpoint = `/api/epics/${issue.id}`;
-    else if (issue.type === "Story") endpoint = `/api/stories/${issue.id}`;
-    else if (issue.type === "Task") endpoint = `/api/tasks/${issue.id}`;
-    else if (issue.type === "Bug") endpoint = `/api/bugs/${issue.id}`;
-    else return toast.error("Unknown issue type!");
-
-    try {
-      await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
-      setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
-      setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
-      toast.success(`${issue.type} deleted successfully! ✅`);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Failed to delete ${issue.type}`);
-    }
-  };
-
-  // ===== EDIT =====
-  const handleEdit = (issue) => {
-    setEditModal({ visible: true, type: issue.type, id: issue.id });
-  };
-
-  const handleUpdated = (updatedType) => {
-    setEditModal({ visible: false, type: null, id: null });
-    fetchIssues();
-    toast.success(`${updatedType || "Issue"} updated successfully! ✅`);
-  };
-
-  // ===== CREATE SUCCESS HANDLER =====
-  useEffect(() => {
-    if (location.state?.createdIssueType) {
-      toast.success(`${location.state.createdIssueType} created successfully! ✅`);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state, navigate, location.pathname]);
-
   const currentProject = projects.find((p) => p.id === Number(projectId));
   const projectName = currentProject ? currentProject.name : projectId;
 
-  // ===== Extract unique user names for dropdown =====
+  // ===== Extract unique user names =====
   const userNames = Array.from(
     new Set(
       issues.flatMap((i) => [i.reporterName, i.assigneeName].filter(Boolean))
@@ -228,7 +174,7 @@ const IssueTracker = () => {
       <div className="bg-white p-5 rounded-lg shadow-md flex flex-wrap gap-3 items-center border border-gray-100">
         <input
           type="text"
-          placeholder=" Search by title..."
+          placeholder="Search by title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -271,7 +217,7 @@ const IssueTracker = () => {
           <option value="BLOCKED">Blocked</option>
         </select>
 
-        {/* ✅ New User Filter */}
+        {/* User Filter */}
         <select
           className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
           value={filterUser}
@@ -285,7 +231,7 @@ const IssueTracker = () => {
           ))}
         </select>
 
-        {/* ✅ New Billable Filter */}
+        {/* Billable Filter */}
         <select
           className="border border-gray-300 rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-indigo-500"
           value={filterBillable}
@@ -296,7 +242,12 @@ const IssueTracker = () => {
           <option value="No">No</option>
         </select>
 
-        {(filterType || filterPriority || filterStatus || searchTerm || filterUser || filterBillable) && (
+        {(filterType ||
+          filterPriority ||
+          filterStatus ||
+          searchTerm ||
+          filterUser ||
+          filterBillable) && (
           <Button
             size="small"
             variant="secondary"
@@ -330,10 +281,9 @@ const IssueTracker = () => {
                 <th className="border px-4 py-2 text-left">Status</th>
                 <th className="border px-4 py-2 text-left">Reporter</th>
                 <th className="border px-4 py-2 text-left">Assigned To</th>
-                {/* <th className="border px-4 py-2 text-left">Billable</th> */}
                 <th className="border px-4 py-2 text-left">Created On</th>
                 <th className="border px-4 py-2 text-left">Due Date</th>
-                {/* <th className="border px-4 py-2 text-left">Actions</th> */}
+                <th className="border px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -375,11 +325,14 @@ const IssueTracker = () => {
                         {issue.type}
                       </span>
                     </td>
-                    <td className="border px-4 py-2"><BadgePriority priority={issue.priority} /></td>
-                    <td className="border px-4 py-2"><BadgeStatus status={issue.status} /></td>
+                    <td className="border px-4 py-2">
+                      <BadgePriority priority={issue.priority} />
+                    </td>
+                    <td className="border px-4 py-2">
+                      <BadgeStatus status={issue.status} />
+                    </td>
                     <td className="border px-4 py-2">{issue.reporterName || "-"}</td>
                     <td className="border px-4 py-2">{issue.assigneeName || "-"}</td>
-                    {/* <td className="border px-4 py-2">{issue.billable ? "Yes" : "No"}</td> */}
                     <td className="border px-4 py-2">
                       {issue.createdAt
                         ? new Date(issue.createdAt).toLocaleDateString()
@@ -394,7 +347,7 @@ const IssueTracker = () => {
                         ? "No Due Date"
                         : "-"}
                     </td>
-                    <td className="border px-4 py-2 flex items-center gap-3">
+                    <td className="border px-4 py-2 text-center">
                       <ActionIcon
                         label="View"
                         onClick={() =>
@@ -406,14 +359,6 @@ const IssueTracker = () => {
                       >
                         <FiEye size={18} className="text-blue-600" />
                       </ActionIcon>
-
-                      <ActionIcon label="Edit" onClick={() => handleEdit(issue)}>
-                        <FiEdit size={18} className="text-green-600" />
-                      </ActionIcon>
-
-                      <ActionIcon label="Delete" onClick={() => handleDelete(issue)}>
-                        <FiTrash size={18} className="text-red-600" />
-                      </ActionIcon>
                     </td>
                   </tr>
                 ))
@@ -422,62 +367,9 @@ const IssueTracker = () => {
           </table>
         </div>
       )}
-
-      {/* ===== Unified Edit Modal ===== */}
-      {editModal.visible && (
-        <Modal onClose={() => setEditModal({ visible: false, type: null, id: null })}>
-          {editModal.type === "Bug" && (
-            <EditBugForm
-              bugId={editModal.id}
-              projectId={projectId}
-              onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={() => handleUpdated("Bug")}
-            />
-          )}
-          {editModal.type === "Story" && (
-            <EditStoryForm
-              storyId={editModal.id}
-              projectId={projectId}
-              onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={() => handleUpdated("Story")}
-            />
-          )}
-          {editModal.type === "Task" && (
-            <EditTaskForm
-              taskId={editModal.id}
-              projectId={projectId}
-              onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={() => handleUpdated("Task")}
-            />
-          )}
-          {editModal.type === "Epic" && (
-            <EditEpicForm
-              epicId={editModal.id}
-              projectId={projectId}
-              onClose={() => setEditModal({ visible: false, type: null, id: null })}
-              onUpdated={() => handleUpdated("Epic")}
-            />
-          )}
-        </Modal>
-      )}
     </div>
   );
 };
-
-// ===== Modal Component =====
-const Modal = ({ children, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg shadow-lg p-6 w-auto max-w-2xl relative">
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
-      >
-        <FiX />
-      </button>
-      {children}
-    </div>
-  </div>
-);
 
 // ===== Helper Components =====
 const SummaryCard = ({ title, count }) => (
@@ -495,7 +387,11 @@ const BadgePriority = ({ priority }) => {
     CRITICAL: "bg-red-600 text-white",
   };
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[priority] || "bg-gray-100 text-gray-600"}`}>
+    <span
+      className={`px-2 py-1 rounded text-xs font-medium ${
+        colors[priority] || "bg-gray-100 text-gray-600"
+      }`}
+    >
       {priority || "-"}
     </span>
   );
@@ -515,14 +411,18 @@ const BadgeStatus = ({ status }) => {
     BLOCKED: "bg-red-200 text-red-800",
   };
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${colors[status] || "bg-gray-100 text-gray-600"}`}>
+    <span
+      className={`px-2 py-1 rounded text-xs font-medium ${
+        colors[status] || "bg-gray-100 text-gray-600"
+      }`}
+    >
       {status || "-"}
     </span>
   );
 };
 
 const ActionIcon = ({ label, onClick, children }) => (
-  <div className="relative group">
+  <div className="relative group inline-block">
     <button onClick={onClick} className="hover:scale-110 transition">
       {children}
     </button>
@@ -532,4 +432,4 @@ const ActionIcon = ({ label, onClick, children }) => (
   </div>
 );
 
-export default IssueTracker;
+export default UserIssueTracker;

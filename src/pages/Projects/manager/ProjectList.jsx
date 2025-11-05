@@ -1,3 +1,4 @@
+// ✅ ProjectList.jsx (Final Updated Version)
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -31,7 +32,7 @@ const ProjectList = () => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // ✅ Fetch projects (both owner + member)
+  // ✅ Fetch all projects (Owner + Member)
   const fetchProjects = async (status) => {
     setLoading(true);
     try {
@@ -57,13 +58,14 @@ const ProjectList = () => {
 
       setProjects(uniqueProjects);
     } catch (error) {
-      console.error("Failed to fetch projects", error);
+      console.error("❌ Failed to fetch projects", error);
+      toast.error("Failed to load projects.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Fetch users
+  // ✅ Fetch Users for Owner/Member dropdowns
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -73,7 +75,7 @@ const ProjectList = () => {
       const data = Array.isArray(res.data) ? res.data : res.data.content || [];
       setUsers(data);
     } catch (err) {
-      console.error("Failed to fetch users", err);
+      console.error("❌ Failed to fetch users", err);
     }
   };
 
@@ -83,18 +85,20 @@ const ProjectList = () => {
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
     fetchProjects(filterStatus);
   }, [filterStatus]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // ✅ Expand/Collapse
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
     setEditingProjectId(null);
   };
 
+  // ✅ Start Edit
   const startEdit = (project) => {
     setExpandedId(project.id);
     setEditingProjectId(project.id);
@@ -104,7 +108,7 @@ const ProjectList = () => {
       description: project.description || "",
       status: project.status || "ACTIVE",
       currentStage: project.currentStage || "INITIATION",
-      ownerId: project.owner?.id || "",
+      ownerId: project.owner?.id || user?.id || "",
       memberIds: project.members?.map((m) => m.id) || [],
       startDate: project.startDate ? project.startDate.split("T")[0] : "",
       endDate: project.endDate ? project.endDate.split("T")[0] : "",
@@ -116,10 +120,11 @@ const ProjectList = () => {
     setFormData({});
   };
 
+  // ✅ Handle Input Changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (formData.status === "ARCHIVED" && name !== "status") {
+    if (editingProjectId && formData.status === "ARCHIVED" && name !== "status") {
       toast.warn("Archived projects can only have their status changed to ACTIVE.", {
         position: "top-right",
       });
@@ -130,12 +135,13 @@ const ProjectList = () => {
   };
 
   const handleMemberToggle = (userId) => {
-    if (formData.status === "ARCHIVED") {
+    if (editingProjectId && formData.status === "ARCHIVED") {
       toast.warn("Archived projects can only have their status changed to ACTIVE.", {
         position: "top-right",
       });
       return;
     }
+
     setFormData((prev) => {
       const updated = prev.memberIds?.includes(userId)
         ? prev.memberIds.filter((id) => id !== userId)
@@ -144,46 +150,60 @@ const ProjectList = () => {
     });
   };
 
+  // ✅ Update Project API (Includes All Columns)
   const submitEdit = async (projectId) => {
     try {
       setIsSubmitting(true);
+
       const updatedProjectData = {
-        ...formData,
-        ownerId: formData.ownerId ? parseInt(formData.ownerId) : null,
-        memberIds: formData.memberIds || [],
+        name: formData.name?.trim() || "",
+        projectKey: formData.projectKey?.trim() || "",
+        description: formData.description?.trim() || "",
+        status: formData.status || "ACTIVE",
+        currentStage: formData.currentStage || "INITIATION",
+        ownerId: formData.ownerId ? Number(formData.ownerId) : user?.id || null,
+        memberIds: Array.isArray(formData.memberIds)
+          ? formData.memberIds.map((id) => Number(id))
+          : [],
+        startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
+        endDate: formData.endDate ? `${formData.endDate}T00:00:00` : null,
       };
 
-      await axios.put(
+      const res = await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         updatedProjectData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // ✅ Update UI locally
       setProjects((prev) =>
         prev.map((p) =>
           p.id === projectId
             ? {
                 ...p,
-                ...updatedProjectData,
-                owner: users.find((u) => u.id === parseInt(formData.ownerId)) || p.owner,
-                members: users.filter((u) => formData.memberIds?.includes(u.id)),
+                ...res.data,
+                owner:
+                  users.find((u) => u.id === Number(updatedProjectData.ownerId)) ||
+                  p.owner,
+                members: users.filter((u) =>
+                  updatedProjectData.memberIds.includes(u.id)
+                ),
               }
             : p
         )
       );
 
-      toast.success("Project updated successfully!", { position: "top-right" });
+      toast.success(" Project updated successfully!");
       setEditingProjectId(null);
     } catch (err) {
-      console.error("Failed to update project", err);
-      toast.error("Failed to update project. Please try again.", {
-        position: "top-right",
-      });
+      console.error(" Project update failed", err);
+      toast.error("Failed to update project. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ✅ Delete Project
   const handleDelete = async (projectId) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
@@ -191,13 +211,15 @@ const ProjectList = () => {
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Project deleted successfully!", { position: "top-right" });
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      toast.success("🗑️ Project deleted successfully!");
     } catch (err) {
-      console.error("Failed to delete project", err);
+      console.error(" Failed to delete project", err);
+      toast.error("Failed to delete project.");
     }
   };
 
+  // ✅ Filter + Pagination
   const filteredProjects = projects.filter((p) => {
     const matchesSearch =
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -207,19 +229,16 @@ const ProjectList = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination
-  const indexOfLastProject = currentPage * projectsPerPage;
-  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
-  const currentProjects = filteredProjects.slice(
-    indexOfFirstProject,
-    indexOfLastProject
-  );
+  const indexOfLast = currentPage * projectsPerPage;
+  const indexOfFirst = indexOfLast - projectsPerPage;
+  const currentProjects = filteredProjects.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-black mb-6">Projects</h1>
 
+      {/* 🔍 Search + Filters */}
       <div className="flex justify-between items-center mb-6 gap-4">
         <input
           type="text"
@@ -250,6 +269,7 @@ const ProjectList = () => {
         </Button>
       </div>
 
+      {/* 🧾 Project List */}
       {loading ? (
         <p className="text-gray-600">Loading projects...</p>
       ) : currentProjects.length === 0 ? (
@@ -293,35 +313,160 @@ const ProjectList = () => {
                 </div>
               </div>
 
+              {/* 🔽 Expand Panel */}
               {expandedId === project.id && (
                 <div className="mt-4 border-t pt-4 text-sm text-gray-700">
-                  <p><strong>Description:</strong> {project.description || "—"}</p>
-                  <p><strong>Status:</strong> {project.status}</p>
-                  <p><strong>Stage:</strong> {project.currentStage}</p>
-                  <p><strong>Owner:</strong> {project.owner?.name || "—"}</p>
+                  {editingProjectId === project.id ? (
+                    <div className="space-y-2">
+                      <input
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                        placeholder="Project Name"
+                      />
+                      <input
+                        name="projectKey"
+                        value={formData.projectKey}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                        placeholder="Project Key"
+                      />
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                        placeholder="Description"
+                      />
 
-                  <div className="mt-3">
-                    <strong>Members:</strong>
-                    {project.members && project.members.length > 0 ? (
-                      <ul className="list-disc list-inside ml-2 mt-1">
-                        {project.members.map((m) => (
-                          <li key={m.id}>{m.name} ({m.email})</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-gray-500 ml-2">No members assigned.</p>
-                    )}
-                  </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          name="startDate"
+                          value={formData.startDate || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        />
+                        <input
+                          type="date"
+                          name="endDate"
+                          value={formData.endDate || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        />
+                      </div>
 
-                  <div className="pt-4">
-                    <Button
-                      variant="primary"
-                      size="small"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      Project Workspace
-                    </Button>
-                  </div>
+                      <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                      >
+                        <option value="ACTIVE">Active</option>
+                        <option value="PLANNING">Planning</option>
+                        <option value="ARCHIVED">Archived</option>
+                        <option value="COMPLETED">Completed</option>
+                      </select>
+
+                      <select
+                        name="currentStage"
+                        value={formData.currentStage}
+                        onChange={handleInputChange}
+                        className="border px-2 py-1 rounded w-full"
+                      >
+                        <option value="INITIATION">Initiation</option>
+                        <option value="PLANNING">Planning</option>
+                        <option value="DESIGN">Design</option>
+                        <option value="DEVELOPMENT">Development</option>
+                        <option value="TESTING">Testing</option>
+                        <option value="DEPLOYMENT">Deployment</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="COMPLETED">Completed</option>
+                      </select>
+
+                      {/* Owner */}
+                      <div>
+                        <label className="font-medium">Owner:</label>
+                        <select
+                          name="ownerId"
+                          value={formData.ownerId || ""}
+                          onChange={handleInputChange}
+                          className="border px-2 py-1 rounded w-full"
+                        >
+                          <option value="">Select Owner</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Members */}
+                      <div>
+                        <label className="font-medium">Members:</label>
+                        <div className="grid grid-cols-2 gap-2 mt-1 max-h-32 overflow-y-auto border p-2 rounded">
+                          {users.map((u) => (
+                            <label key={u.id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.memberIds?.includes(u.id)}
+                                onChange={() => handleMemberToggle(u.id)}
+                              />
+                              {u.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="secondary" size="small" onClick={cancelEdit}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="small"
+                          onClick={() => submitEdit(project.id)}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p><strong>Description:</strong> {project.description || "—"}</p>
+                      <p><strong>Status:</strong> {project.status}</p>
+                      <p><strong>Stage:</strong> {project.currentStage}</p>
+                      <p><strong>Owner:</strong> {project.owner?.name || "—"}</p>
+                      <p><strong>Start:</strong> {project.startDate?.split("T")[0] || "—"}</p>
+                      <p><strong>End:</strong> {project.endDate?.split("T")[0] || "—"}</p>
+
+                      <div className="mt-3">
+                        <strong>Members:</strong>
+                        {project.members?.length ? (
+                          <ul className="list-disc list-inside ml-2 mt-1">
+                            {project.members.map((m) => (
+                              <li key={m.id}>{m.name} ({m.email})</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-gray-500 ml-2">No members assigned.</p>
+                        )}
+                      </div>
+
+                      <div className="pt-4">
+                        <Button
+                          variant="primary"
+                          size="small"
+                          onClick={() => navigate(`/projects/${project.id}`)}
+                        >
+                          Project Workspace
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -329,6 +474,7 @@ const ProjectList = () => {
         </div>
       )}
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}

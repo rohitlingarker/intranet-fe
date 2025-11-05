@@ -5,13 +5,14 @@ const ApprovalQueue = ({ actionType, payload }) => {
   try {
     parsed = JSON.parse(payload);
   } catch (e) {
-    console.error("Failed to parse approval payload:", e);
     return (
       <p className="text-sm font-medium text-red-600 bg-red-50 p-3 rounded-md">
         Error: Could not parse request details.
       </p>
     );
   }
+
+  const highlightKeys = ["effectiveStartDate", "deactivationEffectiveDate"];
 
   const formatKey = (key) =>
     key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
@@ -38,8 +39,11 @@ const ApprovalQueue = ({ actionType, payload }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {entries.map(([k, v]) => (
-              <tr key={k}>
+            {entries.map(([k, v]) => {
+              const highlight = highlightKeys.includes(k);
+              console.log("highlight", k);
+              return (
+                <tr key={k} className={highlight ? "bg-blue-100" : ""}>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
                   {formatKey(k)}
                 </td>
@@ -47,7 +51,8 @@ const ApprovalQueue = ({ actionType, payload }) => {
                   {typeof v === "object" ? JSON.stringify(v) : String(v)}
                 </td>
               </tr>
-            ))}
+            );
+          })}
           </tbody>
         </table>
       </div>
@@ -84,24 +89,35 @@ const ApprovalQueue = ({ actionType, payload }) => {
                 Before
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                After
+               After
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {rows.map(({ k, b, a, changed }) => (
-              <tr key={k} className={changed ? "bg-yellow-50" : ""}>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                  {formatKey(k)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {typeof b === "object" ? JSON.stringify(b) : String(b)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {typeof a === "object" ? JSON.stringify(a) : String(a)}
-                </td>
-              </tr>
-            ))}
+            {rows.map(({ k, b, a, changed }) => {
+              const isHighlighted = highlightKeys.includes(k);
+              
+              // Prioritize 'changed' color, then 'highlighted' color
+              const rowClass = changed
+                ? "bg-yellow-50"
+                : isHighlighted
+                ? "bg-blue-100"
+                : "";
+
+              return (
+                <tr key={k} className={rowClass}>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                    {formatKey(k)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    {typeof b === "object" ? JSON.stringify(b) : String(b)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    {typeof a === "object" ? JSON.stringify(a) : String(a)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -352,14 +368,6 @@ const ApprovalQueue = ({ actionType, payload }) => {
 
           {/* Diff by leave type */}
           <ComparisonTable />
-
-          {/* Raw old details if present */}
-          {/* {oldArray.length > 0 ? (
-            <div>
-              <div className="text-xs text-gray-500 mt-2">Old details</div>
-              <OldDetailsTable />
-            </div>
-          ) : null} */}
         </div>
       );
     }

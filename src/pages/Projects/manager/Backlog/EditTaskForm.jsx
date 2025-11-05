@@ -15,6 +15,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const [sprints, setSprints] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [createdDate, setCreatedDate] = useState(null);
 
   if (!taskId || !projectId) return null;
 
@@ -31,7 +32,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`, axiosConfig),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, axiosConfig),
           axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?size=100`, axiosConfig),
+          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`, axiosConfig),
         ]);
 
         const task = taskRes.data;
@@ -41,6 +42,9 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
         setSprints(sprintsRes.data || []);
         setUsers(allUsers);
 
+        setCreatedDate(task.createdAt ? task.createdAt.split("T")[0] : null);
+
+        // ✅ Ensure isBillable is stored as "Yes"/"No" string
         setFormData({
           title: task.title || "",
           description: task.description || "",
@@ -52,7 +56,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           storyId: task.story?.id || "",
           assigneeName: task.assignee?.name || "",
           reporterName: task.reporter?.name || "",
-          isBillable: task.isBillable ? "Yes" : "No",
+          isBillable: task.isBillable ? "Yes" : "No", // ✅ Fix
         });
       } catch (error) {
         console.error("Error loading task data:", error);
@@ -74,12 +78,26 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     }));
   };
 
+  // ---------- Validation ----------
+  const validateForm = () => {
+    if (createdDate && formData.dueDate) {
+      const due = new Date(formData.dueDate);
+      const created = new Date(createdDate);
+
+      if (due < created) {
+        toast.error("Due date cannot be earlier than the created date.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   // ---------- Submit ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData) return;
+    if (!validateForm()) return;
 
-    // Match user objects by name
     const selectedAssignee = users.find((u) => u.name === formData.assigneeName);
     const selectedReporter = users.find((u) => u.name === formData.reporterName);
 
@@ -89,13 +107,13 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       priority: formData.priority,
       status: formData.status,
       storyPoints: formData.storyPoints ? Number(formData.storyPoints) : null,
-      dueDate: formData.dueDate || null,
+      dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       sprintId: formData.sprintId || null,
       storyId: formData.storyId || null,
       projectId: Number(projectId),
       assigneeId: selectedAssignee ? selectedAssignee.id : null,
       reporterId: selectedReporter ? selectedReporter.id : null,
-      isBillable: formData.isBillable === "Yes",
+      billable: formData.isBillable , // ✅ Convert to boolean before PUT
     };
 
     try {
@@ -145,7 +163,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
             <FormInput
               label="Title *"
               name="title"
@@ -154,7 +171,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               required
             />
 
-            {/* Description */}
             <FormTextArea
               label="Description"
               name="description"
@@ -162,7 +178,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Priority */}
             <FormSelect
               label="Priority *"
               name="priority"
@@ -176,7 +191,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Status */}
             <FormSelect
               label="Status *"
               name="status"
@@ -190,7 +204,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Story Points */}
             <FormInput
               label="Story Points"
               name="storyPoints"
@@ -199,15 +212,18 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Due Date */}
             <FormDatePicker
               label="Due Date"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
             />
+            {createdDate && (
+              <p className="text-sm text-gray-500 -mt-3">
+                Created on: {createdDate}
+              </p>
+            )}
 
-            {/* Sprint */}
             <FormSelect
               label="Sprint"
               name="sprintId"
@@ -220,7 +236,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select sprint"
             />
 
-            {/* Story */}
             <FormSelect
               label="Story"
               name="storyId"
@@ -233,7 +248,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select story"
             />
 
-            {/* Assignee */}
             <FormSelect
               label="Assignee"
               name="assigneeName"
@@ -246,7 +260,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select assignee"
             />
 
-            {/* Reporter */}
             <FormSelect
               label="Reporter"
               name="reporterName"
@@ -259,19 +272,18 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select reporter"
             />
 
-            {/* Billable */}
+            {/* ✅ Corrected Billable Field */}
             <FormSelect
-              label="Billable"
-              name="isBillable"
-              value={formData.isBillable}
-              onChange={handleChange}
-              options={[
-                { label: "Yes", value: "Yes" },
-                { label: "No", value: "No" },
-              ]}
-            />
+  label="Billable"
+  name="isBillable"
+  value={String(formData.isBillable)} // ✅ always "true"/"false"
+  onChange={handleChange}
+  options={[
+    { label: "Yes", value: "true" },
+    { label: "No", value: "false" },
+  ]}
+/>
 
-            {/* Buttons */}
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 type="button"
@@ -292,7 +304,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
         </div>
       </div>
 
-      {/* Invisible Scrollbar */}
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {

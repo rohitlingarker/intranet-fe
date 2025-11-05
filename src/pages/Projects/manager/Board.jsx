@@ -8,9 +8,9 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 const getColumnStyles = () => ({
   header:
     "bg-indigo-900 text-white rounded-t-2xl font-bold text-lg py-3 text-center",
-  body: "bg-white rounded-b-2xl p-4 flex-1 min-h-[500px]",
+  body: "bg-white rounded-b-2xl p-4 flex-1 min-h-auto",
   container:
-    "rounded-2xl shadow-lg border border-gray-300 flex flex-col flex-1",
+    "rounded-2xl h-auto shadow-lg border border-gray-300 flex flex-col flex-1",
 });
 
 // ========== KANBAN CARD ==========
@@ -200,7 +200,7 @@ const Board = ({ projectId, projectName }) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6 min-h-screen">
+      <div className="p-6 min-h-auto">
         <h3 className="text-xl font-semibold mb-3 text-indigo-900">
           Scrum Board: {projectName}
         </h3>
@@ -217,7 +217,7 @@ const Board = ({ projectId, projectName }) => {
           </p>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid h-auto grid-cols-1 md:grid-cols-3 gap-6">
           {["TO_DO", "IN_PROGRESS", "DONE"].map((status) => (
             <KanbanColumn
               key={status}

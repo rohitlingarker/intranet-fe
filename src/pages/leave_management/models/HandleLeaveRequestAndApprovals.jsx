@@ -49,12 +49,12 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
 
-  const { user } = useAuth();
-  const permissions = user?.permissions || [];
+  // const { user } = useAuth();
+  // const permissions = user?.permissions || [];
   const managerId = employeeId;
-  const canApprove = permissions.includes("Approve_LeaveRequest");
-  const canReject = permissions.includes("Reject_LeaveRequest");
-  const canEdit = permissions.includes("Edit_LeaveRequest");
+  // const canApprove = permissions.includes("Approve_LeaveRequest");
+  // const canReject = permissions.includes("Reject_LeaveRequest");
+  // const canEdit = permissions.includes("Edit_LeaveRequest");
 
   // const toLeaveRequest = (raw) => ({
   //   leaveId: raw.leaveId,
@@ -459,37 +459,47 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
 
                     {/* ✅ Accept All */}
                     <button
-                      onClick={canApprove ? handleAcceptAll : undefined}
-                      disabled={!canApprove || selectedRequests.length === 0}
-                      title={
-                        canApprove
-                          ? "Approve all selected leave requests"
-                          : "You don’t have permission to approve requests"
-                      }
+                      onClick={handleAcceptAll} //{canApprove ? handleAcceptAll : undefined}
+                      disabled={selectedRequests.length === 0} //{!canApprove || selectedRequests.length === 0}
+                      // title={
+                      //   canApprove
+                      //     ? "Approve all selected leave requests"
+                      //     : "You don’t have permission to approve requests"
+                      // }
+                      title="Approve all selected leave requests"
+      //                 className={`px-3 py-1 rounded-md transition
+      // ${
+      //   canApprove
+      //     ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+      //     : "bg-gray-300 text-gray-500 cursor-not-allowed"
+      // }`}                
                       className={`px-3 py-1 rounded-md transition
-      ${
-        canApprove
-          ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-      }`}
+                      ${
+                        "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                      }`}
                     >
                       Accept All
                     </button>
 
                     {/* ❌ Reject All */}
                     <button
-                      onClick={canReject ? handleRejectAll : undefined}
-                      disabled={!canReject || selectedRequests.length === 0}
-                      title={
-                        canReject
-                          ? "Reject all selected leave requests"
-                          : "You don’t have permission to reject requests"
-                      }
+                      onClick={handleRejectAll} //{canReject ? handleRejectAll : undefined}
+                      disabled={selectedRequests.length === 0} //{!canReject || selectedRequests.length === 0}
+                      // title={
+                      //   canReject
+                      //     ? "Reject all selected leave requests"
+                      //     : "You don’t have permission to reject requests"
+                      // }
+                      title="Reject all selected leave requests"
+                      // className={`px-3 py-1 rounded-md transition
+                      // ${
+                      //   canReject
+                      //     ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                      //     : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      // }`}
                       className={`px-3 py-1 rounded-md transition
                       ${
-                        canReject
-                          ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                       }`}
                     >
                       Reject All
@@ -509,7 +519,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
             )}
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               <th
-                className="px-4 py-3 text-center text-xs uppercase sticky left-0 z-20 bg-blue-900"
+                className="px-4 py-3 text-center text-xs uppercase sticky left-1 z-20 bg-blue-900"
                 style={{ width: "4%" }}
               >
                 <input
@@ -532,13 +542,13 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "10%" }}
+                style={{ width: "12%" }}
               >
                 From
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "10%" }}
+                style={{ width: "12%" }}
               >
                 To
               </th>
@@ -574,7 +584,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
               </th>
               <th
                 className="px-4 py-3 text-center text-xs uppercase"
-                style={{ width: "8%" }}
+                style={{ width: "15%" }}
               >
                 Last Action By
               </th>
@@ -636,7 +646,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         ].includes(request.status.toLowerCase())}
                       />
                     </td>
-                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[4.5%] z-10 bg-white">
+                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[3.5%] z-10 bg-white">
                       <button
                         onClick={() =>
                           setLeaveBalaceModel({
@@ -647,15 +657,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         }
                       >
                         {request.employee.fullName}
-                        <div className="text-gray-500">
+                        <div className="text-gray-500 text-ellipsis whitespace-nowrap overflow-hidden max-w-[100px]">
                           {request.employee.jobTitle}
                         </div>
                       </button>
                     </td>
                     {/* ... other <td> cells for your data ... */}
                     <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                           {request.startDate
                             ? new Date(request.startDate).toLocaleDateString(
                                 "en-US",
@@ -667,11 +676,9 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               )
                             : "-"}
                         </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                           {request.endDate
                             ? new Date(request.endDate).toLocaleDateString(
                                 "en-US",
@@ -683,7 +690,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               )
                             : "-"}
                         </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
@@ -693,7 +699,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 whitespace-nowrap">
                         {request.requestDate
                           ? new Date(request.requestDate).toLocaleDateString(
                               "en-US",
@@ -759,71 +765,79 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                           <>
                             {/* ✅ Approve Button */}
                             <button
-                              title={
-                                canApprove
-                                  ? "Approve"
-                                  : "You don't have permission to approve this request"
-                              }
+                              // title={
+                              //   canApprove
+                              //     ? "Approve"
+                              //     : "You don't have permission to approve this request"
+                              // }
+                              title="Approve"
+                              // className={`p-1 transition-colors ${
+                              //   canApprove
+                              //     ? "text-green-600 hover:text-green-800"
+                              //     : "text-gray-400 cursor-not-allowed"
+                              // } disabled:opacity-50 disabled:cursor-not-allowed`}
                               className={`p-1 transition-colors ${
-                                canApprove
-                                  ? "text-green-600 hover:text-green-800"
-                                  : "text-gray-400 cursor-not-allowed"
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                "text-green-600 hover:text-green-800"}`}
                               onClick={() =>
-                                canApprove &&
+                                //canApprove &&
                                 setConfirmation({
                                   action: "approve",
                                   leaveId: request.leaveId,
                                 })
                               }
                               aria-label="Approve Request"
-                              disabled={loading || !canApprove}
+                              disabled={loading} //{loading || !canApprove}
                             >
                               <Check className="w-4 h-4" />
                             </button>
 
                             {/* ❌ Reject Button */}
                             <button
-                              title={
-                                canReject
-                                  ? "Reject"
-                                  : "You don't have permission to reject this request"
-                              }
-                              className={`p-1 transition-colors ${
-                                canReject
-                                  ? "text-red-600 hover:text-red-800"
-                                  : "text-gray-400 cursor-not-allowed"
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              // title={
+                              //   canReject
+                              //     ? "Reject"
+                              //     : "You don't have permission to reject this request"
+                              // }
+                              title="Reject"
+                              // className={`p-1 transition-colors ${
+                              //   canReject
+                              //     ? "text-red-600 hover:text-red-800"
+                              //     : "text-gray-400 cursor-not-allowed"
+                              // } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              className="p-1 transition-colors text-red-600 hover:text-red-800"
                               onClick={() =>
-                                canReject &&
+                                //canReject &&
                                 setConfirmation({
                                   action: "reject",
                                   leaveId: request.leaveId,
                                 })
                               }
                               aria-label="Reject Request"
-                              disabled={loading || !canReject}
+                              disabled={loading} //{loading || !canReject}
                             >
                               <X className="w-4 h-4" />
                             </button>
 
                             {/* ✏️ Edit Button */}
                             <button
-                              title={
-                                canEdit
-                                  ? "Edit"
-                                  : "You don't have permission to edit this request"
-                              }
+                              // title={
+                              //   canEdit
+                              //     ? "Edit"
+                              //     : "You don't have permission to edit this request"
+                              // }
+                              title="Edit"
                               onClick={() =>
-                                canEdit && setEditingRequest(request)
+                                //canEdit && 
+                                setEditingRequest(request)
                               }
                               aria-label="Edit Request"
-                              disabled={loading || !canEdit}
-                              className={`p-1 transition-colors ${
-                                canEdit
-                                  ? "text-blue-600 hover:text-blue-800"
-                                  : "text-gray-400 cursor-not-allowed"
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              disabled={loading} //{loading || !canEdit}
+                              // className={`p-1 transition-colors ${
+                              //   canEdit
+                              //     ? "text-blue-600 hover:text-blue-800"
+                              //     : "text-gray-400 cursor-not-allowed"
+                              // } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              className="p-1 transition-colors text-blue-600 hover:text-blue-800"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
