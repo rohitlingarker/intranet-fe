@@ -140,7 +140,7 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
       <div className="bg-white shadow-lg rounded-2xl p-8 flex-1">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-700">
-            Yesterday Missing Timesheets
+            Missing timesheets for Last 15 days
           </h2>
           <button className="bg-orange-400 hover:bg-orange-400 text-white px-4 py-2 rounded-lg shadow">
             Remind

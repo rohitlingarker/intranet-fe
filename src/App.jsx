@@ -47,7 +47,7 @@ import Userprofile from "./pages/Projects/User/Userprofile";
 import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusReportWrapper";
-
+import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -272,7 +272,7 @@ useEffect(() => {
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
           />
-          
+          <Route path="/projects/:projectId/user/userissuetracker" element={<UserIssueTracker />} />
            <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
 
           <Route path="/projects/:projectId/status-report" element={<ProjectStatusReportWrapper />} />

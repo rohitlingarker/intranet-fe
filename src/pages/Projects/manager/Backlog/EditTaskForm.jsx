@@ -44,6 +44,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
         setCreatedDate(task.createdAt ? task.createdAt.split("T")[0] : null);
 
+        // ✅ Ensure isBillable is stored as "Yes"/"No" string
         setFormData({
           title: task.title || "",
           description: task.description || "",
@@ -55,7 +56,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           storyId: task.story?.id || "",
           assigneeName: task.assignee?.name || "",
           reporterName: task.reporter?.name || "",
-          isBillable: task.isBillable ? "Yes" : "No",
+          isBillable: task.isBillable ? "Yes" : "No", // ✅ Fix
         });
       } catch (error) {
         console.error("Error loading task data:", error);
@@ -95,7 +96,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData) return;
-
     if (!validateForm()) return;
 
     const selectedAssignee = users.find((u) => u.name === formData.assigneeName);
@@ -107,13 +107,13 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       priority: formData.priority,
       status: formData.status,
       storyPoints: formData.storyPoints ? Number(formData.storyPoints) : null,
-      dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null, // ✅ ensure LocalDateTime
+      dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       sprintId: formData.sprintId || null,
       storyId: formData.storyId || null,
       projectId: Number(projectId),
       assigneeId: selectedAssignee ? selectedAssignee.id : null,
       reporterId: selectedReporter ? selectedReporter.id : null,
-      isBillable: formData.isBillable === "Yes",
+      billable: formData.isBillable , // ✅ Convert to boolean before PUT
     };
 
     try {
@@ -272,16 +272,17 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select reporter"
             />
 
+            {/* ✅ Corrected Billable Field */}
             <FormSelect
-              label="Billable"
-              name="isBillable"
-              value={formData.isBillable}
-              onChange={handleChange}
-              options={[
-                { label: "Yes", value: "Yes" },
-                { label: "No", value: "No" },
-              ]}
-            />
+  label="Billable"
+  name="isBillable"
+  value={String(formData.isBillable)} // ✅ always "true"/"false"
+  onChange={handleChange}
+  options={[
+    { label: "Yes", value: "true" },
+    { label: "No", value: "false" },
+  ]}
+/>
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
