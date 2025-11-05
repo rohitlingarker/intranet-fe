@@ -20,6 +20,11 @@ const PermissionGroupManagement = ({ roles }) => {
   const [selectedGroupNames, setSelectedGroupNames] = useState([]);
   const [selectedGroupUUIDs, setSelectedGroupUUIDs] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [groupLoading, setGroupLoading] = useState(false); // ✅ new loading state
+  const [cancelLoading, setCancelLoading] = useState(false); // ✅ new cancel button loading state
+  const [deleting, setDeleting] = useState(false);
+  
+
 
   useEffect(() => {
     if (!dropdownRole) {
@@ -84,8 +89,6 @@ const PermissionGroupManagement = ({ roles }) => {
   const submitDeleteGroupsForRole = async () => {
     if (!selectedGroupUUIDs.length) return showStatusToast("Select group(s) to delete", "error");
     try {
-      console.log(selectedGroupRole.role_uuid);
-      console.log("Removing groups:", selectedGroupUUIDs);
       await removePermissionGroupsFromRole(selectedGroupRole.role_uuid, selectedGroupUUIDs);
       showStatusToast("Groups removed successfully", "success");
       setShowModal(false);
@@ -125,11 +128,22 @@ const PermissionGroupManagement = ({ roles }) => {
               Add
             </Button>
             <Button
-              onClick={() => handleOpenModal("delete")}
-              className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
-            >
-              Delete
-            </Button>
+  onClick={async () => {
+    setDeleting(true);
+    try {
+      await handleOpenModal("delete");
+    } finally {
+      setDeleting(false);
+    }
+  }}
+  disabled={deleting}
+  className={`px-3 py-2 text-white rounded transition-colors font-medium ${
+    deleting ? "bg-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+  }`}
+>
+  {deleting ? "Opening..." : "Delete"}
+</Button>
+
             <Button
               onClick={() => handleOpenModal("view")}
               className="px-3 py-2 bg-pink-900 text-white rounded hover:bg-pink-950 transition-colors font-medium"
@@ -226,29 +240,50 @@ const PermissionGroupManagement = ({ roles }) => {
                   )}
                 </div>
 
+                {/* ✅ Add/Remove + Cancel Buttons with Dynamic Text */}
                 <div className="flex justify-end mt-6 gap-2">
                   <Button
-                    onClick={() =>
-                      groupAction === "add"
-                        ? submitAddGroupsForRole()
-                        : submitDeleteGroupsForRole()
-                    }
-                    disabled={!selectedGroupUUIDs.length}
+                    onClick={async () => {
+                      setGroupLoading(true);
+                      try {
+                        if (groupAction === "add") {
+                          await submitAddGroupsForRole();
+                        } else {
+                          await submitDeleteGroupsForRole();
+                        }
+                      } finally {
+                        setGroupLoading(false);
+                      }
+                    }}
+                    disabled={!selectedGroupUUIDs.length || groupLoading}
                     className={`px-6 py-2 text-white rounded transition-colors font-medium ${
-                      selectedGroupUUIDs.length
+                      selectedGroupUUIDs.length && !groupLoading
                         ? groupAction === "add"
                           ? "bg-blue-900 hover:bg-blue-950"
                           : "bg-red-600 hover:bg-red-700"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    {groupAction === "add" ? "Add Groups" : "Remove Groups"}
+                    {groupLoading
+                      ? groupAction === "add"
+                        ? "Adding..."
+                        : "Removing..."
+                      : groupAction === "add"
+                      ? "Add Groups"
+                      : "Remove Groups"}
                   </Button>
+
                   <Button
-                    onClick={() => setShowModal(false)}
+                    onClick={async () => {
+                      setCancelLoading(true);
+                      await new Promise((r) => setTimeout(r, 600)); // mimic UX delay
+                      setShowModal(false);
+                      setCancelLoading(false);
+                    }}
                     className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    disabled={cancelLoading}
                   >
-                    Cancel
+                    {cancelLoading ? "Cancelling..." : "Cancel"}
                   </Button>
                 </div>
               </>

@@ -8,10 +8,10 @@ import { showStatusToast } from "../../../../components/toastfy/toast";
 import { toast } from "react-toastify";
 import Modal from "../../../../components/Modal/modal";
 import Navbar from "../../../../components/Navbar/Navbar";
-import { Pencil, Trash } from "lucide-react";
+import { Pencil, Trash ,Loader2} from "lucide-react";
 
 // PermissionList Component (As provided by you)
-function PermissionList({ permissions, showAdd = false, showDelete = false, onAdd, onDelete }) {
+function PermissionList({ permissions, showAdd = false, showDelete = false, onAdd, onDelete, processingItemId = null }) {
   if (permissions.length === 0) return <div className="text-gray-500 p-2">No permissions found.</div>;
 
   return (
@@ -29,25 +29,29 @@ function PermissionList({ permissions, showAdd = false, showDelete = false, onAd
             <div className="flex gap-2 flex-wrap">
               {showAdd && (
                 <Button
-                  size="small"
-                  variant="primary"
-                  onClick={() => onAdd && onAdd(perm.permission_uuid)}
-                  type="button"
-                  className="w-full sm:w-auto"
-                >
-                  Add
-                </Button>
+  size="small"
+  variant="primary"
+  onClick={() => onAdd && onAdd(perm.permission_uuid)}
+  type="button"
+  className="w-full sm:w-auto flex items-center gap-2 justify-center"
+  disabled={processingItemId === perm.permission_uuid}
+>
+  {processingItemId === perm.permission_uuid ? (<><Loader2 className="w-4 h-4 animate-spin" /> Adding</>) : "Add"}
+</Button>
+
               )}
               {showDelete && (
                 <Button
-                  size="small"
-                  variant="danger"
-                  onClick={() => onDelete && onDelete(perm.permission_uuid)}
-                  type="button"
-                  className="w-full sm:w-auto"
-                >
-                  Delete
-                </Button>
+  size="small"
+  variant="danger"
+  onClick={() => onDelete && onDelete(perm.permission_uuid)}
+  type="button"
+  className="w-full sm:w-auto flex items-center gap-2 justify-center"
+  disabled={processingItemId === perm.permission_uuid}
+>
+  {processingItemId === perm.permission_uuid ? (<><Loader2 className="w-4 h-4 animate-spin" /> Deleting</>) : "Delete"}
+</Button>
+
               )}
             </div>
           )}
@@ -105,6 +109,16 @@ export default function PermissionGroupManagement() {
   const [showViewList, setShowViewList] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTrigger, setSearchTrigger] = useState(false);
+  // loading flags for various buttons
+const [creating, setCreating] = useState(false);             // Create modal -> Create
+const [updating, setUpdating] = useState(false);             // Edit modal -> Save
+const [deletingGroup, setDeletingGroup] = useState(false);   // Delete modal -> Yes Delete
+const [bulkAddLoading, setBulkAddLoading] = useState(false); // Inline Confirm Add
+const [bulkRemoveLoading, setBulkRemoveLoading] = useState(false); // Inline Confirm Remove
+const [canceling, setCanceling] = useState(false);           // used for showing Cancelling... on modal cancel button
+// optional per-item processing state (for small Add/Delete buttons per permission item)
+const [processingItemId, setProcessingItemId] = useState(null);
+
 
   // New state for selected permissions to add/remove
   const [selectedToAdd, setSelectedToAdd] = useState([]);
@@ -126,6 +140,12 @@ export default function PermissionGroupManagement() {
 
   // ✅ Ref for the inline permission section
   const permissionSectionRef = useRef(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+// const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [showViewModal, setShowViewModal] = useState(false);
+// const [groupPermissions, setGroupPermissions] = useState([]);
+const [loadingPermissions, setLoadingPermissions] = useState(false);
+
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -183,25 +203,28 @@ export default function PermissionGroupManagement() {
   };
 
   const handleCreate = async () => {
-    if (!newGroupName.trim()) {
-      return showUniqueToast("Enter the group name", "error");
-    }
+  if (!newGroupName.trim()) {
+    return showUniqueToast("Enter the group name", "error");
+  }
+  if (!validateGroupName(newGroupName)) {
+    return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
+  }
 
-    if (!validateGroupName(newGroupName)) {
-      return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
-    }
+  setCreating(true);
+  try {
+    await axiosInstance.post("/admin/groups", { group_name: newGroupName.trim() });
+    showUniqueToast("Group created successfully!", "success");
+    setNewGroupName("");
+    await fetchGroups();
+    setShowCreateModal(false);
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast(errorMessage, "error");
+  } finally {
+    setCreating(false);
+  }
+};
 
-    try {
-      await axiosInstance.post("/admin/groups", { group_name: newGroupName.trim() });
-      showUniqueToast("Group created successfully!", "success");
-      setNewGroupName(""); // Reset after successful creation
-      fetchGroups();
-      setShowCreateModal(false); // Close modal on success
-    } catch (err) {
-      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast(errorMessage, "error");
-    }
-  };
 
 
   const handleEditClick = (group) => {
@@ -211,28 +234,27 @@ export default function PermissionGroupManagement() {
   };
 
   const handleUpdate = async () => {
-    if (!editGroupName.trim()) {
-      return showUniqueToast("Enter the group name", "error");
-    }
+  if (!editGroupName.trim()) return showUniqueToast("Enter the group name", "error");
+  if (!validateGroupName(editGroupName)) return showUniqueToast("Group name can only contain letters...", "error");
 
-    if (!validateGroupName(editGroupName)) {
-      return showUniqueToast("Group name can only contain letters, spaces, hyphens, and underscores", "error");
-    }
+  setUpdating(true);
+  try {
+    await axiosInstance.put(`/admin/groups/${editingGroup.group_uuid}`, {
+      group_name: editGroupName.trim()
+    });
+    showUniqueToast("Group updated successfully!", "success");
+    setShowEditModal(false);
+    setEditingGroup(null);
+    setEditGroupName("");
+    await fetchGroups();
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast(errorMessage, "error");
+  } finally {
+    setUpdating(false);
+  }
+};
 
-    try {
-      await axiosInstance.put(`/admin/groups/${editingGroup.group_uuid}`, {
-        group_name: editGroupName.trim()
-      });
-      showUniqueToast("Group updated successfully!", "success");
-      setShowEditModal(false);
-      setEditingGroup(null);
-      setEditGroupName("");
-      fetchGroups();
-    } catch (err) {
-      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast(errorMessage, "error");
-    }
-  };
 
   const handleDeleteClick = (group_uuid) => {
     setDeleteGroupId(group_uuid);
@@ -240,23 +262,25 @@ export default function PermissionGroupManagement() {
   };
 
   const confirmDelete = async () => {
-    try {
-      await axiosInstance.delete(`/admin/groups/${deleteGroupId}`);
-      fetchGroups();
-      showUniqueToast("Group deleted successfully!", "success");
-      // If the deleted group was selected, reset the permission view
-      if (selectedGroupId === deleteGroupId) {
-         handleCloseActions(); // Reset everything
-         setSelectedGroupId(""); // Ensure dropdown resets if needed
-      }
-    } catch (err) {
-      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast("Failed to delete group: " + errorMessage, "error");
-    } finally {
-      setShowDeleteModal(false);
-      setDeleteGroupId(null);
+  setDeletingGroup(true);
+  try {
+    await axiosInstance.delete(`/admin/groups/${deleteGroupId}`);
+    await fetchGroups();
+    showUniqueToast("Group deleted successfully!", "success");
+    if (selectedGroupId === deleteGroupId) {
+      handleCloseActions();
+      setSelectedGroupId("");
     }
-  };
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast("Failed to delete group: " + errorMessage, "error");
+  } finally {
+    setDeletingGroup(false);
+    setShowDeleteModal(false);
+    setDeleteGroupId(null);
+  }
+};
+
 
   const handleGroupSelect = async (groupId) => {
     if (!groupId) {
@@ -348,12 +372,17 @@ export default function PermissionGroupManagement() {
   };
 
   // Add permission to selected list (for adding to group)
-  const handleSelectToAdd = (permission_uuid) => {
+  const handleSelectToAdd = async (permission_uuid) => {
+  setProcessingItemId(permission_uuid);
+  try {
     const perm = allPermissions.find(p => p.permission_uuid === permission_uuid);
     if (perm && !selectedToAdd.some(p => p.permission_uuid === permission_uuid)) {
-      setSelectedToAdd([...selectedToAdd, perm]);
+      setSelectedToAdd(prev => [...prev, perm]);
     }
-  };
+  } finally {
+    setProcessingItemId(null);
+  }
+};
 
   // Remove permission from selected list (for adding to group)
   const handleUnselectToAdd = (permission_uuid) => {
@@ -363,15 +392,16 @@ export default function PermissionGroupManagement() {
   // Add permission to selected list (for removing from group)
   // ✅ Replace your handleSelectToRemove with this:
 const handleSelectToRemove = async (permission_uuid) => {
+  setProcessingItemId(permission_uuid);
   try {
-    await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, {
-      data: [permission_uuid],
-    });
+    await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { data: [permission_uuid] });
     showUniqueToast("Permission removed successfully.", "success");
-    await fetchGroupPermissions(selectedGroupId); // Refresh list
+    await fetchGroupPermissions(selectedGroupId);
   } catch (err) {
     const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
     showUniqueToast("Failed to remove permission: " + errorMessage, "error");
+  } finally {
+    setProcessingItemId(null);
   }
 };
 
@@ -383,43 +413,43 @@ const handleSelectToRemove = async (permission_uuid) => {
 
   // Bulk add permissions to group
   const handleBulkAddPermissions = async () => {
-    if (selectedToAdd.length === 0) {
-      return showUniqueToast("No permissions selected to add.", "warning");
-    }
+  if (selectedToAdd.length === 0) return showUniqueToast("No permissions selected to add.", "warning");
 
-    try {
-      const permissionIds = selectedToAdd.map(p => p.permission_uuid);
-      await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, permissionIds);
-      showUniqueToast(`${selectedToAdd.length} permission(s) added successfully.`, "success");
-      setSelectedToAdd([]); // Clear selection on success
-      await fetchGroupPermissions(selectedGroupId); // Refresh list
-      // Optionally hide the add section after success: setShowPermissionList(false);
-    } catch (err) {
-      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast("Failed to add permissions: " + errorMessage, "error");
-    }
-  };
+  setBulkAddLoading(true);
+  try {
+    const permissionIds = selectedToAdd.map(p => p.permission_uuid);
+    await axiosInstance.post(`/admin/groups/${selectedGroupId}/permissions`, permissionIds);
+    showUniqueToast(`${selectedToAdd.length} permission(s) added successfully.`, "success");
+    setSelectedToAdd([]);
+    await fetchGroupPermissions(selectedGroupId);
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast("Failed to add permissions: " + errorMessage, "error");
+  } finally {
+    setBulkAddLoading(false);
+  }
+};
+
 
   // Bulk remove permissions from group
   const handleBulkRemovePermissions = async () => {
-    if (selectedToRemove.length === 0) {
-      return showUniqueToast("No permissions selected to remove.", "warning");
-    }
+  if (selectedToRemove.length === 0) return showUniqueToast("No permissions selected to remove.", "warning");
 
-    try {
-      const permissionIds = selectedToRemove.map(p => p.permission_uuid);
-      await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, {
-        data: permissionIds
-      });
-      showUniqueToast(`${selectedToRemove.length} permission(s) removed successfully.`, "success");
-      setSelectedToRemove([]); // Clear selection on success
-      await fetchGroupPermissions(selectedGroupId); // Refresh list
-      // Optionally hide the delete section after success: setShowDeleteList(false);
-    } catch (err) {
-      const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
-      showUniqueToast("Failed to remove permissions: " + errorMessage, "error");
-    }
-  };
+  setBulkRemoveLoading(true);
+  try {
+    const permissionIds = selectedToRemove.map(p => p.permission_uuid);
+    await axiosInstance.delete(`/admin/groups/${selectedGroupId}/permissions`, { data: permissionIds });
+    showUniqueToast(`${selectedToRemove.length} permission(s) removed successfully.`, "success");
+    setSelectedToRemove([]);
+    await fetchGroupPermissions(selectedGroupId);
+  } catch (err) {
+    const errorMessage = err?.response?.data?.detail || err?.response?.data?.message || err.message;
+    showUniqueToast("Failed to remove permissions: " + errorMessage, "error");
+  } finally {
+    setBulkRemoveLoading(false);
+  }
+};
+
 
   const unassignedPermissions = allPermissions.filter(
     (perm) => !groupPermissions.some((gp) => gp.permission_uuid === perm.permission_uuid)
@@ -601,21 +631,33 @@ const handleSelectToRemove = async (permission_uuid) => {
           onKeyPress={(e) => e.key === 'Enter' && handleUpdate()}
         />
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleUpdate} variant="primary" size="medium" className="w-full sm:w-auto">
-            Save
-          </Button>
           <Button
-            onClick={() => {
-              setShowEditModal(false);
-              setEditingGroup(null);
-              setEditGroupName("");
-            }}
-            variant="secondary"
-            size="medium"
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
+  onClick={handleUpdate}
+  variant="primary"
+  size="medium"
+  className="w-full sm:w-auto flex items-center gap-2 justify-center"
+  disabled={updating}
+>
+  {updating ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>) : "Save"}
+</Button>
+
+<Button
+  onClick={async () => {
+    setCanceling(true);
+    await new Promise(r => setTimeout(r, 200));
+    setShowEditModal(false);
+    setEditingGroup(null);
+    setEditGroupName("");
+    setCanceling(false);
+  }}
+  variant="secondary"
+  size="medium"
+  className="w-full sm:w-auto"
+  disabled={updating || canceling}
+>
+  {canceling ? (<><Loader2 className="w-4 h-4 animate-spin" /> Cancelling...</>) : "Cancel"}
+</Button>
+
         </div>
       </Modal>
 
@@ -624,20 +666,29 @@ const handleSelectToRemove = async (permission_uuid) => {
         <h2 className="text-lg font-semibold mb-4">Confirm Delete</h2>
         <p className="mb-4">Are you sure you want to delete this group? This action cannot be undone.</p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={confirmDelete} variant="danger" size="medium" className="w-full sm:w-auto">
-            Yes, Delete
-          </Button>
           <Button
-            onClick={() => {
-              setShowDeleteModal(false);
-              setDeleteGroupId(null);
-            }}
-            variant="secondary"
-            size="medium"
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
+  onClick={confirmDelete}
+  variant="danger"
+  size="medium"
+  className="w-full sm:w-auto flex items-center gap-2 justify-center"
+  disabled={deletingGroup}
+>
+  {deletingGroup ? (<><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>) : "Yes, Delete"}
+</Button>
+
+<Button
+  onClick={() => {
+    setShowDeleteModal(false);
+    setDeleteGroupId(null);
+  }}
+  variant="secondary"
+  size="medium"
+  className="w-full sm:w-auto"
+  disabled={deletingGroup}
+>
+  {deletingGroup ? "Please wait..." : "Cancel"}
+</Button>
+
         </div>
       </Modal>
 
@@ -653,20 +704,32 @@ const handleSelectToRemove = async (permission_uuid) => {
           onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
         />
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleCreate} variant="primary" size="medium" className="w-full sm:w-auto">
-            Create
-          </Button>
           <Button
-            onClick={() => {
-              setShowCreateModal(false);
-              setNewGroupName("");
-            }}
-            variant="secondary"
-            size="medium"
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
+  onClick={handleCreate}
+  variant="primary"
+  size="medium"
+  className="w-full sm:w-auto flex items-center gap-2 justify-center"
+  disabled={creating}
+>
+  {creating ? (<><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>) : "Create"}
+</Button>
+
+<Button
+  onClick={async () => {
+    setCanceling(true);
+    await new Promise(r => setTimeout(r, 250));
+    setShowCreateModal(false);
+    setNewGroupName("");
+    setCanceling(false);
+  }}
+  variant="secondary"
+  size="medium"
+  className="w-full sm:w-auto"
+  disabled={creating || canceling}
+>
+  {canceling ? (<><Loader2 className="w-4 h-4 animate-spin" /> Cancelling...</>) : "Cancel"}
+</Button>
+
         </div>
       </Modal>
 
@@ -738,6 +801,7 @@ const handleSelectToRemove = async (permission_uuid) => {
                       showAdd={true}
                       showDelete={false}
                       onAdd={handleSelectToAdd}
+                      processingItemId={processingItemId}
                     />
                     <div className="mt-4">
                         <h5 className="text-md font-medium mb-2">Selected Permission Names:</h5>
@@ -749,13 +813,16 @@ const handleSelectToRemove = async (permission_uuid) => {
                         {selectedToAdd.length > 0 && (
                             <div className="mt-4">
                                 <Button
-                                    size="medium"
-                                    variant="primary"
-                                    onClick={handleBulkAddPermissions}
-                                    type="button"
-                                >
-                                    Confirm Add ({selectedToAdd.length})
-                                </Button>
+  size="medium"
+  variant="primary"
+  onClick={handleBulkAddPermissions}
+  type="button"
+  className="flex items-center gap-2"
+  disabled={bulkAddLoading}
+>
+  {bulkAddLoading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>) : <>Confirm Add ({selectedToAdd.length})</>}
+</Button>
+
                             </div>
                         )}
                     </div>
@@ -790,13 +857,16 @@ const handleSelectToRemove = async (permission_uuid) => {
                         {selectedToRemove.length > 0 && (
                             <div className="mt-4">
                                 <Button
-                                    size="medium"
-                                    variant="danger"
-                                    onClick={handleBulkRemovePermissions}
-                                    type="button"
-                                >
-                                    Confirm Remove ({selectedToRemove.length})
-                                </Button>
+  size="medium"
+  variant="danger"
+  onClick={handleBulkRemovePermissions}
+  type="button"
+  className="flex items-center gap-2"
+  disabled={bulkRemoveLoading}
+>
+  {bulkRemoveLoading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Removing...</>) : <>Confirm Remove ({selectedToRemove.length})</>}
+</Button>
+
                             </div>
                         )}
                     </div>
