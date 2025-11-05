@@ -287,14 +287,13 @@ const ManagerApprovalTable = ({
                 variant="danger"
                 size="medium"
                 onClick={() => {
-                  // Open a single rejection comment box per week
+                  // Close all other rejection boxes for this user and open only one
                   const timesheetIds = week.timesheets.map(
                     (t) => t.timesheetId
                   );
-                  setShowCommentBox((prev) => ({
-                    ...prev,
-                    [week.weekId]: true,
-                  }));
+
+                  // Reset all boxes except the current one
+                  setShowCommentBox({ [user.userId]: week.weekId });
                   setRejectionComments((prev) => ({
                     ...prev,
                     [week.weekId]: "",
@@ -328,7 +327,7 @@ const ManagerApprovalTable = ({
             projectInfo={projectInfo}
           />
 
-          {showCommentBox[week.weekId] && (
+          {showCommentBox[user.userId] === week.weekId && (
             <div className="p-4 bg-red-50 border-t">
               <textarea
                 className="border p-2 w-full rounded"
@@ -382,43 +381,6 @@ const ManagerApprovalTable = ({
               </div>
             </div>
           )}
-
-          {/* Rejection boxes */}
-          {/* {week.timesheets.map(
-            (t) =>
-              showCommentBox[t.timesheetId] && (
-                <div key={t.timesheetId} className="p-4 bg-red-50 border-t">
-                  <textarea
-                    className="border p-2 w-full rounded"
-                    rows="2"
-                    placeholder="Enter rejection reason"
-                    value={rejectionComments[t.timesheetId] || ""}
-                    onChange={(e) =>
-                      setRejectionComments((prev) => ({
-                        ...prev,
-                        [t.timesheetId]: e.target.value,
-                      }))
-                    }
-                  />
-                  <div className="flex gap-2 mt-2 justify-end">
-                    <Button
-                      variant="danger"
-                      size="small"
-                      onClick={() => handleConfirmReject(t.timesheetId)}
-                    >
-                      Confirm Reject
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      onClick={() => handleCancelReject(t.timesheetId)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )
-          )} */}
         </div>
       ));
   // Track selection mode and selected users
@@ -575,9 +537,7 @@ const ManagerApprovalTable = ({
           }
         ),
         fetch(
-          `${
-            import.meta.env.VITE_LMS_BASE_URL
-          }/api/holidays/month/${currentMonth}`,
+          `${import.meta.env.VITE_BASE_URL}/api/holidays/month/${currentMonth}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

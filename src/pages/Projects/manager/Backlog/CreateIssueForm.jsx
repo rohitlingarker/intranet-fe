@@ -93,15 +93,25 @@ const CreateIssueForm = ({
   }, [formData.projectId]);
  
   // ---------- Handle Change ----------
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId", "taskId"].includes(name)
-        ? value ? Number(value) : null
+   // ---------- Handle Change ----------
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]:
+      // convert IDs to numbers
+      ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId", "taskId"].includes(name)
+        ? value
+          ? Number(value)
+          : null
+        // ✅ convert "true"/"false" to boolean for isBillable
+        : name === "isBillable"
+        ? value === "true"
         : value,
-    }));
-  };
+  }));
+};
+
  
   // ---------- Handle Submit ----------
   const handleSubmit = async (e) => {
@@ -142,24 +152,25 @@ const CreateIssueForm = ({
       };
     }
  
-    if (issueType === "Task") {
-      endpoint = "/api/tasks";
-      payload = {
-        title: formData.title,
-        description: formData.description || "",
-        priority: formData.priority || "MEDIUM",
-        status: formData.status || "BACKLOG",
-        projectId: Number(formData.projectId),
-        reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-        assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
-        storyId: formData.storyId || null,
-        sprintId: formData.sprintId || null,
-        epicId: formData.epicId || null,
-        estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
-        actualHours: formData.actualHours ? Number(formData.actualHours) : null,
-        isBillable: formData.isBillable ? "Yes" : "No",
-      };
-    }
+   if (issueType === "Task") {
+  endpoint = "/api/tasks";
+  payload = {
+    title: formData.title,
+    description: formData.description || "",
+    priority: formData.priority || "MEDIUM",
+    status: formData.status || "BACKLOG",
+    projectId: Number(formData.projectId),
+    reporterId: formData.reporterId ? Number(formData.reporterId) : null,
+    assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
+    storyId: formData.storyId || null,
+    sprintId: formData.sprintId || null,
+    epicId: formData.epicId || null,
+    estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
+    actualHours: formData.actualHours ? Number(formData.actualHours) : null,
+    billable: formData.isBillable ,  // ✅ send actual boolean
+  };
+}
+
  
     if (issueType === "Bug") {
       endpoint = "/api/bugs";
@@ -356,15 +367,16 @@ const CreateIssueForm = ({
             <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
               <FormSelect
-              label="Billable"
-              name="isBillable"
-              value={formData.isBillable}
-              onChange={handleChange}
-              options={[
-                { label: "Yes", value: "Yes" },
-                { label: "No", value: "No" },
-              ]}
-            />
+  label="Billable"
+  name="isBillable"
+  value={String(formData.isBillable)} // ✅ always "true"/"false"
+  onChange={handleChange}
+  options={[
+    { label: "Yes", value: "true" },
+    { label: "No", value: "false" },
+  ]}
+/>
+
           </>
           
         )}

@@ -113,7 +113,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       projectId: Number(projectId),
       assigneeId: selectedAssignee ? selectedAssignee.id : null,
       reporterId: selectedReporter ? selectedReporter.id : null,
-      isBillable: formData.isBillable === "Yes", // ✅ Convert to boolean before PUT
+      billable: formData.isBillable , // ✅ Convert to boolean before PUT
     };
 
     try {
@@ -274,15 +274,15 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
             {/* ✅ Corrected Billable Field */}
             <FormSelect
-              label="Billable"
-              name="isBillable"
-              value={formData.isBillable}
-              onChange={handleChange}
-              options={[
-                { label: "Yes", value: "Yes" },
-                { label: "No", value: "No" },
-              ]}
-            />
+  label="Billable"
+  name="isBillable"
+  value={String(formData.isBillable)} // ✅ always "true"/"false"
+  onChange={handleChange}
+  options={[
+    { label: "Yes", value: "true" },
+    { label: "No", value: "false" },
+  ]}
+/>
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
