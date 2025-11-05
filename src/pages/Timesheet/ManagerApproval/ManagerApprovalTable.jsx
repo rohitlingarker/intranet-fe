@@ -287,14 +287,13 @@ const ManagerApprovalTable = ({
                 variant="danger"
                 size="medium"
                 onClick={() => {
-                  // Open a single rejection comment box per week
+                  // Close all other rejection boxes for this user and open only one
                   const timesheetIds = week.timesheets.map(
                     (t) => t.timesheetId
                   );
-                  setShowCommentBox((prev) => ({
-                    ...prev,
-                    [week.weekId]: true,
-                  }));
+
+                  // Reset all boxes except the current one
+                  setShowCommentBox({ [user.userId]: week.weekId });
                   setRejectionComments((prev) => ({
                     ...prev,
                     [week.weekId]: "",
@@ -328,7 +327,7 @@ const ManagerApprovalTable = ({
             projectInfo={projectInfo}
           />
 
-          {showCommentBox[week.weekId] && (
+          {showCommentBox[user.userId] === week.weekId && (
             <div className="p-4 bg-red-50 border-t">
               <textarea
                 className="border p-2 w-full rounded"
