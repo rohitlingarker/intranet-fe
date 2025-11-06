@@ -70,8 +70,7 @@ const CompOffPage = forwardRef(
         await fetchRequests();
         return true;
       } catch (err) {
-        console.log("error",err);
-        // toast.error(err?.data?.message || "Failed to submit comp-off request");
+        toast.error(err?.data?.message || "Failed to submit comp-off request");
         return false;
       } finally {
         setIsLoading(false);

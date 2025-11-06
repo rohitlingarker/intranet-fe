@@ -222,6 +222,9 @@ const EntriesTable = ({
             fromTime: newStart.toISOString(),
             toTime: newEnd.toISOString(),
             isBillable: editData.isBillable === "Yes",
+            workLocation: editData.workType,
+            description: editData.description,
+            id: editData.timesheetEntryId,
           },
         ],
       });

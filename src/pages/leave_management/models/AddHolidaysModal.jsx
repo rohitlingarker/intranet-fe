@@ -68,8 +68,9 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
 
   const handleAddHoliday = () => {
     setError("");
-    if (!date || !description || !year) {
-      setError("Date, Description, and Year are required.");
+    if (!date || !description || !year || !state || !country) {
+      toast.error("Please fill in all the required fields.");
+      setError("Date, Description, Year, State and Country are required.");
       return;
     }
     if (type === "REGIONAL" && !state) {
@@ -349,7 +350,7 @@ const handleFileUpload = (e) => {
                   className="w-full p-2 pl-10 border bg-white rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 />
               </InputGroup>
-              {type === "REGIONAL" && (
+              {/* {type === "REGIONAL" && ( */}
                 <InputGroup
                   label="State *"
                   icon={<MapPin className="h-5 w-5 text-red-400" />}
@@ -362,7 +363,7 @@ const handleFileUpload = (e) => {
                     className="w-full p-2 pl-10 border bg-white rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   />
                 </InputGroup>
-              )}
+              {/* )} */}
             </div>
             <InputGroup
               label="Country *"

@@ -44,15 +44,15 @@ const ApprovalQueue = ({ actionType, payload }) => {
               console.log("highlight", k);
               return (
                 <tr key={k} className={highlight ? "bg-blue-100" : ""}>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                  {formatKey(k)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {typeof v === "object" ? JSON.stringify(v) : String(v)}
-                </td>
-              </tr>
-            );
-          })}
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                    {formatKey(k)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -89,14 +89,14 @@ const ApprovalQueue = ({ actionType, payload }) => {
                 Before
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-               After
+                After
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {rows.map(({ k, b, a, changed }) => {
               const isHighlighted = highlightKeys.includes(k);
-              
+
               // Prioritize 'changed' color, then 'highlighted' color
               const rowClass = changed
                 ? "bg-yellow-50"
@@ -174,10 +174,17 @@ const ApprovalQueue = ({ actionType, payload }) => {
       const after = (parsed && parsed.after) || {};
       return <DiffTable before={before} after={after} />;
     }
+    // ✨ MODIFICATION START: Added case for UPDATE_HOLIDAY
+    case "UPDATE_HOLIDAY": {
+      const before = (parsed && parsed.beforeState) || {};
+      const after = (parsed && parsed.requestedState) || {};
+      return <DiffTable before={before} after={after} />;
+    }
+    // ✨ MODIFICATION END
     case "DEACTIVATE_LEAVE_TYPE": {
       return <KeyValueTable obj={parsed} />;
     }
-        case "UPDATE_EMPLOYEE_LEAVE_BALANCE": {
+    case "UPDATE_EMPLOYEE_LEAVE_BALANCE": {
       // Accept three shapes:
       // 1) only newData
       // 2) beforeData + newData
@@ -280,56 +287,6 @@ const ApprovalQueue = ({ actionType, payload }) => {
         </div>
       );
 
-      // const OldDetailsTable = () => {
-      //   if (!Array.isArray(oldArray) || oldArray.length === 0) return null;
-      //   return (
-      //     <div className="overflow-x-auto mt-4 border border-gray-200 rounded-lg">
-      //       <table className="min-w-full divide-y divide-gray-200">
-      //         <thead className="bg-gray-50">
-      //           <tr>
-      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      //               Leave Type
-      //             </th>
-      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      //               Leave Name
-      //             </th>
-      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      //               Remaining
-      //             </th>
-      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      //               Year
-      //             </th>
-      //             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      //               Last Accrual
-      //             </th>
-      //           </tr>
-      //         </thead>
-      //         <tbody className="bg-white divide-y divide-gray-200">
-      //           {oldArray.map((row, idx) => (
-      //             <tr key={row.balanceId || idx}>
-      //               <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-      //                 {row?.leaveType?.leaveTypeId}
-      //               </td>
-      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-      //                 {row?.leaveType?.leaveName}
-      //               </td>
-      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-      //                 {row?.remainingLeaves}
-      //               </td>
-      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-      //                 {row?.year}
-      //               </td>
-      //               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-      //                 {row?.lastAccrualDate || "-"}
-      //               </td>
-      //             </tr>
-      //           ))}
-      //         </tbody>
-      //       </table>
-      //     </div>
-      //   );
-      // };
-
       return (
         <div className="mt-4 space-y-4">
           {/* Summary */}
@@ -372,9 +329,17 @@ const ApprovalQueue = ({ actionType, payload }) => {
       );
     }
     default: {
-      if (parsed && parsed.newData && typeof parsed.newData === "object") {
-        return <KeyValueTable obj={parsed.newData} />;
+      if (parsed && parsed.newData) {
+        // Check if newData is an array (like ADD_HOLIDAY)
+        if (Array.isArray(parsed.newData) && parsed.newData.length > 0) {
+          return <KeyValueTable obj={parsed.newData[0]} />;
+        }
+        // Check if newData is a non-array object
+        if (typeof parsed.newData === "object" && !Array.isArray(parsed.newData)) {
+          return <KeyValueTable obj={parsed.newData} />;
+        }
       }
+      // Fallback for simple payloads (like DELETE_HOLIDAY or DEACTIVATE_LEAVE_TYPE)
       return <KeyValueTable obj={parsed} />;
     }
   }

@@ -29,6 +29,11 @@ export default function PermissionManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [adding, setAdding] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [processing, setProcessing] = useState(false); // for generic cancel/ok actions if needed
+
  
   const token = localStorage.getItem("token");
  
@@ -227,7 +232,23 @@ export default function PermissionManagement() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Permission Management</h2>
-        <Button onClick={handleAddPermission}>Add Permission</Button>
+        <Button
+  onClick={async () => {
+    setAdding(true);
+    try {
+      await handleAddPermission(); // <-- your existing function
+    } finally {
+      setAdding(false);
+    }
+  }}
+  disabled={adding}
+  className={`px-6 py-2 text-white rounded transition-colors font-medium ${
+    adding ? "bg-gray-400 cursor-not-allowed" : "bg-blue-900 hover:bg-blue-950"
+  }`}
+>
+  {adding ? "Adding..." : "Add Permission"}
+</Button>
+
       </div>
  
       {/* Add Permission Modal */}
@@ -347,9 +368,23 @@ export default function PermissionManagement() {
           className="w-full p-2 border rounded mb-3"
         />
         <div className="flex gap-3 mt-4">
-          <Button onClick={handleUpdate} variant="primary" size="medium">
-            Update
-          </Button>
+          <Button
+  onClick={async () => {
+    setUpdating(true);
+    try {
+      await handleUpdate(); // <-- your existing function
+    } finally {
+      setUpdating(false);
+    }
+  }}
+  disabled={updating}
+  className={`px-6 py-2 text-white rounded transition-colors font-medium ${
+    updating ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+  }`}
+>
+  {updating ? "Updating..." : "Update"}
+</Button>
+
           <Button
             onClick={() => setShowModal(false)}
             variant="secondary"

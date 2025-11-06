@@ -37,8 +37,7 @@ const IssueTracker = () => {
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterUser, setFilterUser] = useState("");
-  const [filterBillable, setFilterBillable] = useState(""); // ✅ NEW Billable filter
-
+  const [filterBillable, setFilterBillable] = useState(""); 
   const token = localStorage.getItem("token");
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -158,7 +157,7 @@ const IssueTracker = () => {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
       setIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
       setFilteredIssues((prev) => prev.filter((i) => !(i.type === issue.type && i.id === issue.id)));
-      toast.success(`${issue.type} deleted successfully! ✅`);
+      toast.success(`${issue.type} deleted successfully! `);
     } catch (err) {
       console.error(err);
       toast.error(`Failed to delete ${issue.type}`);
@@ -173,7 +172,7 @@ const IssueTracker = () => {
   const handleUpdated = (updatedType) => {
     setEditModal({ visible: false, type: null, id: null });
     fetchIssues();
-    toast.success(`${updatedType || "Issue"} updated successfully! ✅`);
+    toast.success(`${updatedType || "Issue"} updated successfully! `);
   };
 
   // ===== CREATE SUCCESS HANDLER =====

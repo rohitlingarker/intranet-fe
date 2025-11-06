@@ -205,19 +205,32 @@ const ProjectList = () => {
 
   // ✅ Delete Project
   const handleDelete = async (projectId) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) return;
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      toast.success("🗑️ Project deleted successfully!");
-    } catch (err) {
-      console.error(" Failed to delete project", err);
-      toast.error("Failed to delete project.");
+  if (!window.confirm("🗑️ Are you sure you want to delete this project?")) return;
+
+  try {
+    await axios.delete(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    toast.success("✅ Project deleted successfully!");
+  } catch (err) {
+    console.error("❌ Failed to delete project:", err);
+
+    // Friendly error message based on cause
+    if (err.response?.status === 400 && err.response?.data?.message?.includes("foreign key")) {
+      toast.error("⚠️ Cannot delete this project because it has linked tasks or dependencies.");
+    } else if (err.response?.status === 403) {
+      toast.error("🚫 You don’t have permission to delete this project.");
+    } else if (err.response?.status === 404) {
+      toast.error("🔍 Project not found — it may have already been deleted.");
+    } else {
+      toast.error(" Something went wrong while deleting the project. Please try again.");
     }
-  };
+  }
+};
+
 
   // ✅ Filter + Pagination
   const filteredProjects = projects.filter((p) => {

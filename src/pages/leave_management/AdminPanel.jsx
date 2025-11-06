@@ -168,7 +168,7 @@ const AdminPanel = ({ employeeId }) => {
       </div> */}
 
       {/* Comp-Off Balance Requests Section */}
-      {permissions.includes("See_CompOffBalanceRequest") && (
+      {permissions.includes("VIEW_PENDING_COMPOFF_REQUESTS") && (
         <CompOffBalanceRequests managerId={employeeId} />
       )}
       {/* <CompOffBalanceRequests managerId={employeeId} /> */}
