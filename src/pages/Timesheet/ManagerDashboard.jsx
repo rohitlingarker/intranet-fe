@@ -11,11 +11,14 @@ import {
 
 import { getManagerDashboardData } from "../Timesheet/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { showStatusToast } from "../../components/toastfy/toast";
 
 const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reminding, setReminding] = useState(false);
+
 
   // Map server weekday names to short labels
   const dayMap = {
@@ -68,6 +71,45 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
       </div>
     );
   }
+  // ✅ NEW: Handle "Remind" button click
+  const handleRemind = async () => {
+    if (!stats || stats.missingTimesheets.length === 0) {
+      alert("No users to remind 🎉");
+      return;
+    }
+
+    const emails = stats.missingTimesheets.map((u) => u.email);
+
+    setReminding(true);
+    try {
+      // ✅ FIXED URL: removed extra brace and ensured correct base URL usage
+      const response = await fetch(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/mail/send_reminder`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(emails),
+        }
+      );
+
+      if (response.ok) {
+        showStatusToast(
+          `Reminder emails sent to ${emails.length} users successfully!`,"success")
+      } else {
+        const errMsg = await response.text();
+        showStatusToast(
+          `Failed to send reminders. Server response: ${errMsg}`,"error")
+      }
+    } catch (error) {
+      showStatusToast(
+        `Failed to send reminders. Please try again.`,"error")
+    } finally {
+      setReminding(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
@@ -142,8 +184,16 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
           <h2 className="text-lg font-semibold text-gray-700">
             Missing timesheets for Last 15 days
           </h2>
-          <button className="bg-orange-400 hover:bg-orange-400 text-white px-4 py-2 rounded-lg shadow">
-            Remind
+          <button
+            onClick={handleRemind}
+            disabled={reminding}
+            className={`${
+              reminding
+                ? "bg-orange-300 cursor-not-allowed"
+                : "bg-orange-400 hover:bg-orange-500"
+            } text-white px-4 py-2 rounded-lg shadow`}
+          >
+            {reminding ? "Sending..." : "Remind"}
           </button>
         </div>
         {stats.missingTimesheets.length > 0 ? (
