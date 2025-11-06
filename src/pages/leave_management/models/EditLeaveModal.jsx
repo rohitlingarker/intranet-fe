@@ -485,14 +485,14 @@ export default function EditLeaveModal({
               />
             </div>
 
-            <div className="text-center space-y-1">
+            <div className="text-center space-y-1 mt-2">
               <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-md border border-indigo-200 shadow-sm">
                 {weekdays} {weekdays === 1 ? "day" : "days"}
               </span>
             </div>
 
             {(selectedLeaveType && selectedLeaveType.allowHalfDay) && (
-              <div className="space-y-3">
+              <div className="space-y-3 mt-2">
                 <div className="p-1 inline-flex items-center bg-gray-200 rounded-lg">
                   <button
                     type="button"
@@ -568,7 +568,7 @@ export default function EditLeaveModal({
               </div>
             )}
 
-            <div>
+            <div className="mt-2">
               <label className="text-sm font-medium text-gray-700">
                 Leave Type
               </label>
@@ -579,7 +579,7 @@ export default function EditLeaveModal({
               />
             </div>
 
-            <div>
+            <div className="mt-2">
               <label className="text-sm font-medium text-gray-700">
                 Reason
               </label>

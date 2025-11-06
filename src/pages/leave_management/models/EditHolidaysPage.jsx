@@ -33,7 +33,7 @@ const EditHolidaysPage = () => {
     const fetchHolidays = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${BASE_URL}/api/holidays/all`, {
+        const response = await axios.get(`${BASE_URL}/api/holidays/year/${new Date().getFullYear()}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setHolidays(response.data);
@@ -260,8 +260,9 @@ const EditHolidaysPage = () => {
                     <td className="px-4 py-2 flex justify-center gap-2">
                       <button
                         onClick={() => handleEditClick(holiday)}
-                        className="p-2 text-blue-600 hover:text-blue-800"
-                        title="Edit"
+                        className={`p-2 text-blue-600  ${holiday.isActive ? "hover:text-blue-800" : "text-opacity-15 cursor-not-allowed"}`}
+                        title={holiday.isActive ? "Edit" : "This holiday cannot be edited."}
+                        disabled={!holiday.isActive}
                       >
                         <Edit size={20} />
                       </button>
@@ -269,8 +270,9 @@ const EditHolidaysPage = () => {
                         onClick={() =>
                           handleDeleteConfirmation(holiday.holidayId)
                         }
-                        className="p-2 text-red-600 hover:text-red-800"
-                        title="Delete"
+                        className={`p-2 text-red-600  ${holiday.isActive ? "hover:text-red-800" : "text-opacity-15 cursor-not-allowed"}`}
+                        title={holiday.isActive ? "Delete" : "This holiday cannot be deleted."}
+                        disabled={!holiday.isActive}
                       >
                         <Trash2 size={20} />
                       </button>

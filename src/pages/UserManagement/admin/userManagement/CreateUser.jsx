@@ -20,6 +20,7 @@ export default function CreateUserForm({ onSuccess, onClose }) {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [toastActive, setToastActive] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const showSingleToast = (message, type = "error") => {
     if (!toastActive) {
@@ -223,25 +224,32 @@ export default function CreateUserForm({ onSuccess, onClose }) {
           </div>
 
           <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            onClick={() => {
-              const suggestion = generatePasswordFromUser(
-                form.first_name,
-                form.contact
-              );
-              setForm((prev) => ({ ...prev, password: suggestion }));
-              setGeneratedPassword(suggestion);
-              showStatusToast(
-                "Password generated from current First Name & Contact.",
-                "info"
-              );
-            }}
-            className="whitespace-nowrap h-[34px]"
-          >
-            Generate
-          </Button>
+  type="button"
+  variant="secondary"
+  size="small"
+  disabled={generating} // disable while generating
+  onClick={() => {
+    setGenerating(true);
+    setTimeout(() => {
+      const suggestion = generatePasswordFromUser(form.first_name, form.contact);
+      if (suggestion) {
+        setForm((prev) => ({ ...prev, password: suggestion }));
+        setGeneratedPassword(suggestion);
+        showStatusToast(
+          "Password generated from current First Name & Contact.",
+          "info"
+        );
+      } else {
+        showStatusToast("Failed to generate password.", "error");
+      }
+      setGenerating(false);
+    }, 600); // short delay for UX (optional)
+  }}
+  className="whitespace-nowrap h-[34px]"
+>
+  {generating ? "Generating..." : "Generate"}
+</Button>
+
         </div>
 
         {/* Active checkbox */}

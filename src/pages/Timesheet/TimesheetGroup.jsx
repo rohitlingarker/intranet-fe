@@ -6,6 +6,7 @@ import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
 import { submitWeeklyTimesheet, fetchCalendarHolidays } from "./api";
 
+
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
   if (!open) return null;
 
@@ -89,6 +90,7 @@ const calculateTotalHours = (entries) => {
       } else {
         start = new Date(entry.fromTime);
       }
+      
 
       if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(entry.toTime)) {
         const [endHours, endMinutes, endSeconds] = entry.toTime.split(":");
@@ -128,6 +130,7 @@ const TimesheetGroup = ({
   approvers = [
     { approverName: "Dummy Approver1", status: "Pending" },
     { approverName: "Dummy Approver2", status: "Approved" },
+    
   ],
 }) => {
   // Handle both old daily format and new weekly format
@@ -183,6 +186,8 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
+  
+
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -260,10 +265,11 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
-    
+  
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
+  
 
   const toggleDateChange = (e) => {
     if (status?.toLowerCase() === "approved") return; // prevent date change if approved
@@ -280,7 +286,7 @@ const TimesheetGroup = ({
           const response = await fetch(
             `${
               import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-            }/api/timesheet/entries`,
+            }/api/timesheet/deleteEntries/${timesheet.timesheetId}`,
             {
               method: "DELETE",
               headers: {
@@ -288,7 +294,7 @@ const TimesheetGroup = ({
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
               body: JSON.stringify({
-                timesheetId: timesheet.timesheetId,
+                // timesheetId: timesheet.timesheetId,
                 entryIds: selectedEntryIds,
               }),
             }
@@ -299,7 +305,7 @@ const TimesheetGroup = ({
         const response = await fetch(
           `${
             import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-          }/api/timesheet/entries`,
+          }/api/timesheet/deleteEntries/${timesheetId}`,
           {
             method: "DELETE",
             headers: {
@@ -307,11 +313,13 @@ const TimesheetGroup = ({
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
             body: JSON.stringify({
-              timesheetId: timesheetId,
+              // timesheetId: timesheetId,
               entryIds: selectedEntryIds,
             }),
           }
         );
+        const data = await response.text();
+        console.log("Delete response data:", data);
         if (!response.ok) throw new Error("Failed to delete entries");
       }
       setSelectedEntryIds([]);
@@ -326,12 +334,14 @@ const TimesheetGroup = ({
     setIsConfirmOpen(false);
   };
 
+ 
   const handleSelect = () => {
     setMenuOpen(false);
     setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
     setSelectedEntryIds([]); // clear previous selection
   };
 
+  
   const approveStatus = approvers.every(
     (a) => a.status?.toUpperCase() === "APPROVED"
   );

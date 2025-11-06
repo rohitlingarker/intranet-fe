@@ -64,7 +64,7 @@ export const reviewTimesheet = async (timesheetId, comment, status) => {
 export async function updateTimesheet(timesheetId, payload) {
   try {
     const res = await fetch(
-      `${apiEndpoint}/api/timesheet/update/${timesheetId}`,
+      `${apiEndpoint}/api/timesheet/updateEntries/${timesheetId}`,
       {
         method: "PUT",
         headers: {

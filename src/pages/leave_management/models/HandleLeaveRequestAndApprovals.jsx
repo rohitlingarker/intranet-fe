@@ -80,7 +80,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     if (managerId) {
       fetchData();
     }
-  }, [managerId, selectedYear, selectedMonth, searchTerm, selectedStatus]); // selectedStatus (can be added)
+  }, [managerId, selectedYear, selectedMonth, selectedStatus]); // selectedStatus (can be added)
 
   const fetchData = async () => {
     setLoading(true);
@@ -90,7 +90,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
         status: selectedStatus !== "All" ? selectedStatus : null,
         year: selectedYear || null, // from your year dropdown
         month: selectedMonth || null, // from your month dropdown
-        // searchTerm: searchTerm || null,
       };
 
       const res = await axios.post(
@@ -151,8 +150,29 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
     );
   };
 
-  const totalPages = Math.ceil(adminLeaveRequests.length / itemsPerPage);
-  const paginatedRequests = adminLeaveRequests.slice(
+  const filteredRequests = adminLeaveRequests.filter((leave) => {
+    const lt = (leave.leaveType?.leaveName || "").toLowerCase();
+    const en = (leave.employee?.fullName || "").toLowerCase();
+    const st = (leave.status || "").toLowerCase();
+    const rs = (leave.reason || "").toLowerCase();
+    const search = searchTerm.toLowerCase();
+
+    // If search is empty, show everything
+    if (search === "") {
+      return true;
+    }
+
+    // Otherwise, check for a match in any of the fields
+    return (
+      lt.includes(search) ||
+      en.includes(search) ||
+      st.includes(search) ||
+      rs.includes(search)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const paginatedRequests = filteredRequests.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -618,6 +638,12 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                   No leaves to be displayed.
                 </td>
               </tr>
+            ) : filteredRequests.length === 0 ? (
+                <tr>
+                  <td className="text-center text-gray-500 py-12" colSpan="13">
+                    No leaves found matching {searchTerm}.
+                  </td>
+                </tr>
             ) : (
               // State 3: Render the data rows if data exists
               paginatedRequests.map((request) => {
@@ -675,6 +701,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                                 }
                               )
                             : "-"}
+                            <div className="text-gray-500">
+                              {request.startSession && request.startSession !== "none" && request.startSession !== "fullday" && (
+                                ` (${request.startSession})`
+                              )}
+                            </div>
                         </div>
                     </td>
                     <td className="px-6 py-4">
@@ -689,6 +720,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                                 }
                               )
                             : "-"}
+                            <div className="text-gray-500">
+                              {request.endSession && request.endSession !== "none" && request.endSession !== "fullday" && (
+                                ` (${request.endSession})`
+                              )}
+                            </div>
                         </div>
                     </td>
                     <td className="px-6 py-4">

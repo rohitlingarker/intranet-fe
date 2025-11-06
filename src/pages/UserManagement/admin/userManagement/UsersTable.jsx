@@ -17,13 +17,13 @@ import { Pencil, UserX, UserCheck } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useAuth } from "../../../../contexts/AuthContext";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
- 
+
 const CreateUserForm = React.lazy(() => import("./CreateUser"));
 const EditUserForm = React.lazy(() => import("./EditUser"));
 const BulkUserUpload = React.lazy(() => import("./BulkUser"));
- 
+
 const ITEMS_PER_PAGE = 10;
- 
+
 export default function UsersTable() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,19 +37,20 @@ export default function UsersTable() {
   const [userToToggle, setUserToToggle] = useState(null);
   const [actionType, setActionType] = useState("");
   const [userBulkUploadModalOpen, setUserBulkUploadModalOpen] = useState(false);
- 
+  const [confirming, setConfirming] = useState(false); // ✅ moved inside component
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const accessDeniedShownRef = useRef(false);
   const { logout } = useAuth();
- 
+
   useEffect(() => {
     if (!token) {
       showStatusToast("Session expired. Please login again.", "warning");
       logout();
     }
   }, [token, navigate]);
- 
+
   // ✅ Fetch from backend with pagination & search
   const fetchUsers = useCallback(async () => {
     try {
@@ -81,40 +82,40 @@ export default function UsersTable() {
       setLoading(false);
     }
   }, [token, navigate, currentPage, searchTerm]);
- 
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
- 
+
   const handleUserCreated = () => {
     setCreateModalOpen(false);
     showStatusToast("User created successfully!", "success");
     fetchUsers();
   };
- 
+
   const handleUserUpdated = () => {
     setEditModalOpen(false);
     setSelectedUseruuId(null);
     showStatusToast("User updated successfully!", "success");
     fetchUsers();
   };
- 
+
   const handleEditClick = (useruuId) => {
     setSelectedUseruuId(useruuId);
     setEditModalOpen(true);
   };
- 
+
   const handleEditClose = () => {
     setEditModalOpen(false);
     setSelectedUseruuId(null);
   };
- 
+
   const handleToggleClick = (useruuId, currentStatus) => {
     setUserToToggle(useruuId);
     setActionType(currentStatus ? "deactivate" : "activate");
     setConfirmModalOpen(true);
   };
- 
+
   const confirmToggle = async () => {
     if (!userToToggle) return;
     try {
@@ -142,12 +143,12 @@ export default function UsersTable() {
       setActionType("");
     }
   };
- 
+
   const totalPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
- 
+
   const headers = ["ID", "Name", "Email", "Contact", "Status", "Actions"];
   const columns = ["user_id", "name", "mail", "contact", "status", "actions"];
- 
+
   const tableData = users.map((user) => {
     let formattedContact = user.contact;
     if (user.contact) {
@@ -158,7 +159,7 @@ export default function UsersTable() {
         formattedContact = phoneNumber.formatInternational();
       }
     }
- 
+
     return {
       user_id: user.user_id,
       name: `${user.first_name} ${user.last_name}`,
@@ -174,7 +175,7 @@ export default function UsersTable() {
           >
             <Pencil size={18} />
           </span>
- 
+
           {user.is_active ? (
             <span
               className="cursor-pointer text-red-600 hover:text-red-800"
@@ -196,7 +197,7 @@ export default function UsersTable() {
       ),
     };
   });
- 
+
   return (
     <div className="px-6 py-4">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -225,7 +226,7 @@ export default function UsersTable() {
           </Button>
         </div>
       </div>
- 
+
       <SearchInput
         onSearch={(value) => {
           setSearchTerm(value);
@@ -234,9 +235,9 @@ export default function UsersTable() {
         placeholder="Search users by name, email, or contact..."
         className="mb-4 max-w-md"
       />
- 
+
       <GenericTable headers={headers} rows={tableData} columns={columns} loading={loading} />
- 
+
       {!loading && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -245,8 +246,8 @@ export default function UsersTable() {
           onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
         />
       )}
- 
-      {/* --- Modals (unchanged) --- */}
+
+      {/* --- Modals --- */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -261,7 +262,7 @@ export default function UsersTable() {
           />
         </Suspense>
       </Modal>
- 
+
       <Modal
         isOpen={userBulkUploadModalOpen}
         onClose={() => setUserBulkUploadModalOpen(false)}
@@ -273,7 +274,7 @@ export default function UsersTable() {
           <BulkUserUpload onClose={() => setUserBulkUploadModalOpen(false)} onSuccess={fetchUsers} />
         </Suspense>
       </Modal>
- 
+
       <Modal
         isOpen={isEditModalOpen}
         onClose={handleEditClose}
@@ -291,7 +292,7 @@ export default function UsersTable() {
           </Suspense>
         )}
       </Modal>
- 
+
       <Modal
         isOpen={isConfirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
@@ -310,11 +311,23 @@ export default function UsersTable() {
             Cancel
           </Button>
           <Button
-            onClick={confirmToggle}
+            onClick={async () => {
+              setConfirming(true);
+              try {
+                await confirmToggle();
+              } finally {
+                setConfirming(false);
+              }
+            }}
             variant={actionType === "deactivate" ? "danger" : "success"}
             size="medium"
+            disabled={confirming}
           >
-            Confirm
+            {confirming
+              ? actionType === "deactivate"
+                ? "Deactivating..."
+                : "Activating..."
+              : "Confirm"}
           </Button>
         </div>
       </Modal>
