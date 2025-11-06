@@ -51,40 +51,44 @@ const ManagerApprovalPage = () => {
 
   // ✅ Apply filters for deeply nested structure
   useEffect(() => {
+    if (!groupedTimesheets.length) return;
+
+    // Start with all users' timesheets
     let filtered = [...groupedTimesheets];
 
     filtered = filtered.filter((user) => {
-      // 🔹 User filter
-      if (userFilter !== "All Users" && user.userName !== userFilter) {
+      // 🔹 1️⃣ User Filter — show all users if "All Users" selected
+      if (
+        userFilter &&
+        userFilter !== "All Users" &&
+        user.userName.trim().toLowerCase() !== userFilter.trim().toLowerCase()
+      ) {
         return false;
       }
 
-      // 🔹 Search filter
+      // 🔹 2️⃣ Search Filter — search across username and nested entries
       if (searchTerm.trim()) {
         const lowerSearch = searchTerm.toLowerCase();
 
-        // Match username
         const userMatch = user.userName.toLowerCase().includes(lowerSearch);
 
-        // Match in entries (project, task, description, workLocation, etc.)
         const nestedMatch = user.weeklySummary?.some((week) =>
           week.timesheets?.some((ts) =>
-            ts.entries?.some((entry) => {
-              return (
+            ts.entries?.some(
+              (entry) =>
                 entry.description?.toLowerCase().includes(lowerSearch) ||
                 entry.otherDescription?.toLowerCase().includes(lowerSearch) ||
                 entry.workLocation?.toLowerCase().includes(lowerSearch) ||
                 entry.projectName?.toLowerCase().includes(lowerSearch) ||
                 entry.taskName?.toLowerCase().includes(lowerSearch)
-              );
-            })
+            )
           )
         );
 
         if (!userMatch && !nestedMatch) return false;
       }
 
-      // 🔹 Date filter
+      // 🔹 3️⃣ Date Filter — match selected date exactly
       if (selectedDate) {
         const hasDate = user.weeklySummary?.some((week) =>
           week.timesheets?.some((ts) => ts.workDate === selectedDate)
@@ -92,7 +96,7 @@ const ManagerApprovalPage = () => {
         if (!hasDate) return false;
       }
 
-      // 🔹 Status filter
+      // 🔹 4️⃣ Status Filter — match weekly or timesheet statuses
       if (statusFilter !== "All") {
         const hasStatus = user.weeklySummary?.some(
           (week) =>
@@ -108,11 +112,12 @@ const ManagerApprovalPage = () => {
         if (!hasStatus) return false;
       }
 
-      return true;
+      return true; // ✅ include this user
     });
 
     setFilteredTimesheets(filtered);
   }, [statusFilter, userFilter, selectedDate, searchTerm, groupedTimesheets]);
+
 
   // ✅ Reset Filters
   const handleResetFilters = () => {
@@ -168,12 +173,14 @@ const ManagerApprovalPage = () => {
           onChange={(e) => setUserFilter(e.target.value)}
           className="px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
         >
-          <option>All Users</option>
-          {[...new Set(groupedTimesheets.map((item) => item.userName))].map(
-            (user) => (
-              <option key={user}>{user}</option>
-            )
-          )}
+          <option value="All Users">All Users</option>
+          {[...new Set(groupedTimesheets.map((item) => item.userName?.trim()))]
+            .filter(Boolean)
+            .map((user) => (
+              <option key={user} value={user}>
+                {user}
+              </option>
+            ))}
         </select>
 
         {/* Reset Button */}

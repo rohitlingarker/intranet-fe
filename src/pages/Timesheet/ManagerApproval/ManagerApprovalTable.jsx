@@ -20,6 +20,15 @@ const ManagerApprovalTable = ({
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayData, setHolidayData] = useState([]);
   const [holidayLoading, setHolidayLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+
+  // 🆕 Update User feature hooks — moved here to fix undefined error
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [selectedUpdateRecord, setSelectedUpdateRecord] = useState(null);
+  const [updateHoliday, setUpdateHoliday] = useState("");
+  const [updateReason, setUpdateReason] = useState("");
+  const updateSectionRef = React.useRef(null);
 
   // -----------------------------
   // Fetch project info
@@ -147,55 +156,131 @@ const ManagerApprovalTable = ({
   // -----------------------------
   // Export Logic (CSV / PDF)
   // -----------------------------
-  const exportCSV = () => {
-    const rows = [
-      [
-        "User ID",
-        "User Name",
-        "Project",
-        "Task",
-        "Start",
-        "End",
-        "Work Type",
-        "Description",
-        "Hours",
-        "Date",
-        "Status",
-      ],
-    ];
+   
+// 🧮 Helper: Get month-wise week and date range
+const getMonthWeekRange = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth();
 
-    enrichedGroupedData.forEach((user) =>
-      user.weeklySummary.forEach((week) =>
-        week.timesheets.forEach((sheet) =>
-          sheet.entries.forEach((entry) => {
-            rows.push([
-              user.userId,
-              user.userName,
-              entry.projectName,
-              entry.taskName,
-              new Date(entry.fromTime).toLocaleTimeString(),
-              new Date(entry.toTime).toLocaleTimeString(),
-              entry.workLocation || "-",
-              entry.description || "",
-              entry.hoursWorked?.toFixed(2) || 0,
-              new Date(sheet.workDate).toLocaleDateString(),
-              sheet.status,
-            ]);
-          })
-        )
-      )
-    );
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      rows.map((e) => e.map((v) => `"${v}"`).join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = "manager_timesheets.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const weeks = [];
+  let start = new Date(firstOfMonth);
+  while (start <= lastOfMonth) {
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    if (end > lastOfMonth) end.setDate(lastOfMonth.getDate());
+    weeks.push({ start: new Date(start), end: new Date(end) });
+    start.setDate(start.getDate() + 7);
+  }
+
+  for (let i = 0; i < weeks.length; i++) {
+    if (d >= weeks[i].start && d <= weeks[i].end) {
+      return {
+        weekNumber: i + 1,
+        dateRange: `${weeks[i].start.toLocaleDateString()} - ${weeks[i].end.toLocaleDateString()}`,
+      };
+    }
+  }
+  return { weekNumber: "-", dateRange: "-" };
+};
+
+const exportCSV = () => {
+  const rows = [
+    [
+      "User ID",
+      "User Name",
+      "Week",
+      "Date Range",
+      "Total Hours",
+      "Billable Hours",
+      "Date",
+      "Project",
+      "Task",
+      "Start Time",
+      "End Time",
+      "Hours Worked",
+      "Work Type",
+      "Description",
+      "Status",
+    ],
+  ];
+
+  enrichedGroupedData.forEach((user) => {
+    let userPrinted = false;
+
+    user.weeklySummary.forEach((week) => {
+      // Get week details based on calendar month
+      const allDates = week.timesheets.flatMap((t) => t.entries.map((e) => new Date(t.workDate)));
+      const firstEntryDate = allDates[0];
+      const { weekNumber, dateRange } = getMonthWeekRange(firstEntryDate);
+
+      // Calculate total hours for the week
+      const totalHours = week.timesheets.reduce(
+        (sum, sheet) => sum + sheet.entries.reduce((s, e) => s + (e.hoursWorked || 0), 0),
+        0
+      );
+
+      // 🧮 Calculate Billable Hours based on `billable === "Yes"` (or true)
+      const billableHours = week.timesheets.reduce(
+        (sum, sheet) =>
+          sum +
+          sheet.entries
+            .filter((e) => e.billable === "Yes" || e.billable === true)
+            .reduce((s, e) => s + (e.hoursWorked || 0), 0),
+        0
+      );
+
+      let weekPrinted = false;
+
+      week.timesheets.forEach((sheet) =>
+        sheet.entries.forEach((entry) => {
+          const userId = !userPrinted ? user.userId : "";
+          const userName = !userPrinted ? user.userName : "";
+          const weekLabel = !weekPrinted ? `Week ${weekNumber}` : "";
+          const dateRangeValue = !weekPrinted ? dateRange : "";
+          const totalHoursValue = !weekPrinted ? totalHours.toFixed(2) : "";
+          const billableHoursValue = !weekPrinted ? billableHours.toFixed(2) : "";
+
+          rows.push([
+            userId,
+            userName,
+            weekLabel,
+            dateRangeValue,
+            totalHoursValue,
+            billableHoursValue,
+            new Date(sheet.workDate).toLocaleDateString(),
+            entry.projectName,
+            entry.taskName,
+            new Date(entry.fromTime).toLocaleTimeString(),
+            new Date(entry.toTime).toLocaleTimeString(),
+            entry.hoursWorked?.toFixed(2) || 0,
+            entry.workLocation || "-",
+            entry.description || "",
+            sheet.status,
+          ]);
+
+          userPrinted = true;
+          weekPrinted = true;
+        })
+      );
+    });
+  });
+
+  // Download CSV
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+
+  const link = document.createElement("a");
+  link.href = encodeURI(csvContent);
+  link.download = "manager_timesheets_with_billable_hours.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -260,48 +345,61 @@ const ManagerApprovalTable = ({
         >
           {/* Manager actions */}
           {week.weeklyStatus === "SUBMITTED" && (
-            <div className="p-4 border-t flex gap-3 justify-end">
-              {/* ✅ Approve All Button */}
-              <Button
-                variant="success"
-                size="medium"
-                onClick={() => {
-                  const timesheetIds = week.timesheets.map(
-                    (t) => t.timesheetId
-                  );
-                  handleBulkReview(
-                    user.userId,
-                    timesheetIds,
-                    "APPROVED",
-                    "approved"
-                  );
-                  onRefresh();
-                }}
-              >
-                Approve All
-              </Button>
+            <div className="p-4 border-t flex gap-3 justify-end items-center">
+              {actionLoading ? (
+                <LoadingSpinner text="Processing..." />
+              ) : (
+                <>
+                  <Button
+                    variant="success"
+                    size="medium"
+                    disabled={actionLoading}
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        const timesheetIds = week.timesheets.map(
+                          (t) => t.timesheetId
+                        );
+                        await handleBulkReview(
+                          user.userId,
+                          timesheetIds,
+                          "APPROVED",
+                          "approved"
+                        );
+                        // showStatusToast(
+                        //   "Timesheets approved successfully!",
+                        //   "success"
+                        // );
+                        await onRefresh?.();
+                      } catch (err) {
+                        showStatusToast(
+                          "Failed to approve timesheets",
+                          "error"
+                        );
+                      } finally {
+                        setActionLoading(false);
+                      }
+                    }}
+                  >
+                    Approve All
+                  </Button>
 
-              {/* ❌ Reject All Button */}
-
-              <Button
-                variant="danger"
-                size="medium"
-                onClick={() => {
-                  // Close all other rejection boxes for this user and open only one
-                  const timesheetIds = week.timesheets.map(
-                    (t) => t.timesheetId
-                  );
-
-                  // Reset all boxes except the current one
-                  setShowCommentBox({ [user.userId]: week.weekId });
-                  setRejectionComments((prev) => ({
-                    ...prev,
-                    [week.weekId]: "",
-                  }));
-                }}
-              >
-                Reject All
-              </Button>
+                  <Button
+                    variant="danger"
+                    size="medium"
+                    disabled={actionLoading}
+                    onClick={() => {
+                      setShowCommentBox({ [user.userId]: week.weekId });
+                      setRejectionComments((prev) => ({
+                        ...prev,
+                        [week.weekId]: "",
+                      }));
+                    }}
+                  >
+                    Reject All
+                  </Button>
+                </>
+              )}
             </div>
           )}
           <TimesheetGroup
@@ -345,22 +443,35 @@ const ManagerApprovalTable = ({
                 <Button
                   variant="danger"
                   size="small"
-                  onClick={() => {
-                    const timesheetIds = week.timesheets.map(
-                      (t) => t.timesheetId
-                    );
-                    const comment = rejectionComments[week.weekId] || "";
-                    handleBulkReview(
-                      user.userId,
-                      timesheetIds,
-                      "REJECTED",
-                      comment
-                    );
-                    setShowCommentBox((prev) => ({
-                      ...prev,
-                      [week.weekId]: false,
-                    }));
-                    onRefresh();
+                  disabled={actionLoading}
+                  onClick={async () => {
+                    setActionLoading(true);
+                    try {
+                      const timesheetIds = week.timesheets.map(
+                        (t) => t.timesheetId
+                      );
+                      const comment = rejectionComments[week.weekId] || "";
+                      await handleBulkReview(
+                        user.userId,
+                        timesheetIds,
+                        "REJECTED",
+                        comment
+                      );
+                      // showStatusToast(
+                      //   "Timesheets rejected successfully!",
+                      //   "success"
+                      // );
+                      setShowCommentBox((prev) => ({
+                        ...prev,
+                        [user.userId]: null,
+                      }));
+                      await onRefresh?.();
+                    } catch (err) {
+                      console.error("Error rejecting timesheets:", err);
+                      showStatusToast("Failed to reject timesheets", "error");
+                    } finally {
+                      setActionLoading(false);
+                    }
                   }}
                 >
                   Confirm Reject
@@ -369,12 +480,13 @@ const ManagerApprovalTable = ({
                 <Button
                   variant="secondary"
                   size="small"
-                  onClick={() =>
+                  onClick={(e) => {
+                    e.stopPropagation(); // 🧩 prevent click from bubbling up
                     setShowCommentBox((prev) => ({
                       ...prev,
-                      [week.weekId]: false,
-                    }))
-                  }
+                      [user.userId]: null, // ✅ fixed line
+                    }));
+                  }}
                 >
                   Cancel
                 </Button>
@@ -400,21 +512,24 @@ const ManagerApprovalTable = ({
   };
 
   // Select / Deselect single user (only in remove mode)
-  const handleSelectUser = (userId) => {
+  const handleSelectUser = (record) => {
+    // 🟥 Case 1: Remove mode (multi-select)
     if (isRemoveMode) {
       setSelectedUsers((prev) =>
-        prev.includes(userId)
-          ? prev.filter((id) => id !== userId)
-          : [...prev, userId]
+        prev.includes(record.id)
+          ? prev.filter((id) => id !== record.id)
+          : [...prev, record.id]
       );
+      return;
     }
-    if (!isUpdateMode) {
-      // Pre-fill the form with existing record data
+
+    // 🟦 Case 2: Update mode (select one record)
+    if (isUpdateMode) {
       setSelectedUpdateRecord(record);
       setUpdateHoliday(record.holidayDate);
       setUpdateReason(record.reason || "");
 
-      // Smooth scroll to the update form
+      // Smooth scroll into view
       setTimeout(() => {
         updateSectionRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -475,7 +590,6 @@ const ManagerApprovalTable = ({
   const [selectedHoliday, setSelectedHoliday] = useState("");
   const [reason, setReason] = useState("");
   const [addUserLoading, setAddUserLoading] = useState(false);
-  const [isUpdateMode, setIsUpdateMode] = useState(false);
 
   const handleConfirmAddUser = async () => {
     if (!selectedAddUser || !selectedHoliday || !reason.trim()) {
@@ -561,6 +675,50 @@ const ManagerApprovalTable = ({
       showStatusToast("Failed to load user or holiday data", "error");
     } finally {
       setAddUserLoading(false);
+    }
+  };
+
+  // 🆕 Confirm Update (PUT) API call
+  const handleConfirmUpdateUser = async () => {
+    if (!selectedUpdateRecord) {
+      showStatusToast("Please select a record to update.", "warning");
+      return;
+    }
+    if (!updateHoliday || !updateReason.trim()) {
+      showStatusToast("Please fill all fields before confirming.", "warning");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/holiday-exclude-users/${selectedUpdateRecord.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            userId: selectedUpdateRecord.userId,
+            holidayDate: updateHoliday,
+            reason: updateReason,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to update user record");
+
+      showStatusToast("Holiday exclusion updated successfully!", "success");
+      fetchHolidayExcludedUsers(); // refresh list
+      setIsUpdateMode(false);
+      setSelectedUpdateRecord(null);
+      setUpdateHoliday("");
+      setUpdateReason("");
+    } catch (err) {
+      console.error("Error updating record:", err);
+      showStatusToast("Failed to update user", "error");
     }
   };
 
@@ -659,7 +817,7 @@ const ManagerApprovalTable = ({
                   {holidayData.map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => handleSelectUser(item.id)}
+                      onClick={() => handleSelectUser(item)}
                       className={`border rounded-lg p-4 transition-all ${
                         isRemoveMode ? "cursor-pointer" : "cursor-default"
                       } ${
@@ -685,7 +843,6 @@ const ManagerApprovalTable = ({
               </>
             )}
 
-            {/* --- Action Buttons --- */}
             <div className="mt-6 space-y-4">
               <div className="flex justify-between gap-3">
                 <Button
@@ -700,8 +857,19 @@ const ManagerApprovalTable = ({
                   variant="primary"
                   size="small"
                   onClick={() => {
+                    // 🆕 Check if holiday data exists first
+                    if (!holidayData || holidayData.length === 0) {
+                      showStatusToast(
+                        "No holiday excluded users found. Please create one first.",
+                        "info"
+                      );
+                      return;
+                    }
+
                     setIsUpdateMode(true);
                     setShowAddUserSection(false);
+                    setIsRemoveMode(false);
+                    setSelectedUsers([]);
                     setSelectedAddUser(null);
                     setSelectedHoliday("");
                     setReason("");
@@ -715,7 +883,17 @@ const ManagerApprovalTable = ({
                   <Button
                     variant="danger"
                     size="small"
-                    onClick={toggleRemoveMode}
+                    onClick={() => {
+                      // 🆕 Check if holiday data exists first
+                      if (!holidayData || holidayData.length === 0) {
+                        showStatusToast(
+                          "No holiday excluded users found. Please create one first.",
+                          "info"
+                        );
+                        return;
+                      }
+                      toggleRemoveMode();
+                    }}
                   >
                     Remove User
                   </Button>
@@ -724,7 +902,11 @@ const ManagerApprovalTable = ({
                     variant="danger"
                     size="small"
                     disabled={selectedUsers.length === 0}
-                    onClick={handleRemoveSelectedUsers}
+                    onClick={async () => {
+                      await handleRemoveSelectedUsers();
+                      setIsRemoveMode(false);
+                      setSelectedUsers([]);
+                    }}
                   >
                     {selectedUsers.length > 0
                       ? `Confirm Remove (${selectedUsers.length})`
@@ -733,7 +915,7 @@ const ManagerApprovalTable = ({
                 )}
               </div>
 
-              {/* --- Add User Section --- */}
+              {/* ---------- Add User Section ---------- */}
               {showAddUserSection && (
                 <div className="mt-6 border-t pt-4 transition-all space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">
@@ -744,7 +926,6 @@ const ManagerApprovalTable = ({
                     <LoadingSpinner text="Loading user & holiday data..." />
                   ) : (
                     <>
-                      {/* User Dropdown */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Select User
@@ -763,7 +944,6 @@ const ManagerApprovalTable = ({
                         </select>
                       </div>
 
-                      {/* Holiday Dropdown */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Select Holiday
@@ -782,7 +962,6 @@ const ManagerApprovalTable = ({
                         </select>
                       </div>
 
-                      {/* Reason Textarea */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Reason
@@ -795,17 +974,17 @@ const ManagerApprovalTable = ({
                         />
                       </div>
 
-                      {/* Confirm / Cancel Buttons */}
                       <div className="flex justify-end gap-3">
                         <Button
                           variant="primary"
                           size="small"
-                          disabled={
-                            !selectedAddUser ||
-                            !selectedHoliday ||
-                            !reason.trim()
-                          }
-                          onClick={handleConfirmAddUser}
+                          onClick={async () => {
+                            await handleConfirmAddUser();
+                            setShowAddUserSection(false);
+                            setReason("");
+                            setSelectedAddUser("");
+                            setSelectedHoliday("");
+                          }}
                         >
                           Confirm
                         </Button>
@@ -814,9 +993,9 @@ const ManagerApprovalTable = ({
                           size="small"
                           onClick={() => {
                             setShowAddUserSection(false);
+                            setReason("");
                             setSelectedAddUser("");
                             setSelectedHoliday("");
-                            setReason("");
                           }}
                         >
                           Cancel
@@ -827,6 +1006,94 @@ const ManagerApprovalTable = ({
                 </div>
               )}
 
+              {/* 🆕 Update User Section */}
+              {isUpdateMode && selectedUpdateRecord && (
+                <div
+                  ref={updateSectionRef}
+                  className="mt-6 border-t pt-4 transition-all space-y-4 bg-blue-50 p-4 rounded-lg"
+                >
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Update Holiday Excluded User
+                  </h3>
+
+                  {/* 🆕 User Info (Read-only) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      User
+                    </label>
+                    <input
+                      type="text"
+                      value={`${selectedUpdateRecord.userName} (User ID: ${selectedUpdateRecord.userId})`}
+                      readOnly
+                      className="w-full border rounded-lg p-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* 🆕 Holiday Dropdown (for changing holiday date) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Holiday
+                    </label>
+                    <select
+                      className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
+                      value={updateHoliday}
+                      onChange={(e) => setUpdateHoliday(e.target.value)}
+                    >
+                      <option value="">-- Select Holiday --</option>
+                      {monthlyHolidays.map((h) => (
+                        <option key={h.holidayId} value={h.holidayDate}>
+                          {h.holidayDate} - {h.holidayDescription}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 🆕 Editable Reason */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reason
+                    </label>
+                    <textarea
+                      className="w-full border rounded-lg p-2 h-20 resize-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="Enter reason for exclusion..."
+                      value={updateReason}
+                      onChange={(e) => setUpdateReason(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 🆕 Confirm / Cancel Buttons */}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      variant="primary"
+                      size="small"
+                      disabled={!updateHoliday || !updateReason.trim()}
+                      onClick={async () => {
+                        await handleConfirmUpdateUser();
+                        setSelectedUpdateRecord(null);
+                        setIsUpdateMode(false);
+                        setUpdateHoliday("");
+                        setUpdateReason("");
+                      }}
+                    >
+                      Confirm Update
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => {
+                        setIsUpdateMode(false);
+                        setSelectedUpdateRecord(null);
+                        setUpdateHoliday("");
+                        setUpdateReason("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <Button
                   variant="secondary"
@@ -834,6 +1101,9 @@ const ManagerApprovalTable = ({
                   onClick={() => {
                     setIsRemoveMode(false);
                     setSelectedUsers([]);
+                    setIsUpdateMode(false);
+                    setShowAddUserSection(false);
+                    setSelectedUpdateRecord(null);
                     setShowHolidayModal(false);
                   }}
                 >

@@ -8,6 +8,7 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
+import { se } from "date-fns/locale/se";
 
 const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState(null);
@@ -21,7 +22,10 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
   const token = localStorage.getItem("token");
   const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   };
 
   // ---------- Fetch Data ----------
@@ -29,10 +33,22 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     const fetchData = async () => {
       try {
         const [taskRes, storiesRes, sprintsRes, usersRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, axiosConfig),
-          axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`, axiosConfig),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+            axiosConfig
+          ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
+            axiosConfig
+          ),
         ]);
 
         const task = taskRes.data;
@@ -44,7 +60,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
         setCreatedDate(task.createdAt ? task.createdAt.split("T")[0] : null);
 
-        // ✅ Ensure isBillable is stored as "Yes"/"No" string
+        // ✅ Prefill all form values properly
         setFormData({
           title: task.title || "",
           description: task.description || "",
@@ -56,7 +72,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           storyId: task.story?.id || "",
           assigneeName: task.assignee?.name || "",
           reporterName: task.reporter?.name || "",
-          isBillable: task.isBillable ? "Yes" : "No", // ✅ Fix
+          isBillable: Boolean(task.isBillable) // ✅ Fix
         });
       } catch (error) {
         console.error("Error loading task data:", error);
@@ -71,12 +87,31 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
   // ---------- Handle Change ----------
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
+  const { name, value } = e.target;
+
+  setFormData((prev) => {
+    let updated = {
       ...prev,
-      [name]: value,
-    }));
-  };
+      [name]:
+        ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId"].includes(name)
+          ? value
+            ? Number(value)
+            : null
+          : name === "isBillable"
+          ? value === "true"
+          : value,
+    };
+
+    // 🧩 Auto-fill sprint when a story is selected
+    if (name === "storyId" && value) {
+      const selectedStory = stories.find((s) => s.id === Number(value));
+      updated.sprintId = selectedStory?.sprint?.id || selectedStory?.sprintId || null;
+    }
+
+    return updated;
+  });
+};
+
 
   // ---------- Validation ----------
   const validateForm = () => {
@@ -98,22 +133,28 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     if (!formData) return;
     if (!validateForm()) return;
 
-    const selectedAssignee = users.find((u) => u.name === formData.assigneeName);
-    const selectedReporter = users.find((u) => u.name === formData.reporterName);
+    const selectedAssignee = users.find(
+      (u) => u.name === formData.assigneeName
+    );
+    const selectedReporter = users.find(
+      (u) => u.name === formData.reporterName
+    );
 
     const payload = {
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
       status: formData.status,
-      storyPoints: formData.storyPoints ? Number(formData.storyPoints) : null,
+      storyPoints: formData.storyPoints
+        ? Number(formData.storyPoints)
+        : null,
       dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       sprintId: formData.sprintId || null,
       storyId: formData.storyId || null,
       projectId: Number(projectId),
       assigneeId: selectedAssignee ? selectedAssignee.id : null,
       reporterId: selectedReporter ? selectedReporter.id : null,
-      billable: formData.isBillable , // ✅ Convert to boolean before PUT
+      billable: formData.isBillable === "true", // ✅ send boolean to backend
     };
 
     try {
@@ -124,8 +165,10 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       );
 
       toast.success("Task updated successfully!");
-      onUpdated?.(response.data);
-      onClose?.();
+      setTimeout(() => {
+        onUpdated?.();
+        onClose?.();
+      }, 500);
     } catch (error) {
       console.error("Error updating task:", error);
       toast.error(error.response?.data?.message || "Failed to update task.");
@@ -146,9 +189,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   // ---------- Render ----------
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div
-        className="bg-white rounded-2xl shadow-lg w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar"
-      >
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
@@ -158,9 +199,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
         <div className="p-8">
           <ToastContainer />
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Edit Task
-          </h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Task</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput
@@ -261,7 +300,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
             />
 
             <FormSelect
-              label="Reporter"
+              label="Reporter *"
               name="reporterName"
               value={formData.reporterName}
               onChange={handleChange}
@@ -272,17 +311,16 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               placeholder="Select reporter"
             />
 
-            {/* ✅ Corrected Billable Field */}
             <FormSelect
-  label="Billable"
-  name="isBillable"
-  value={String(formData.isBillable)} // ✅ always "true"/"false"
-  onChange={handleChange}
-  options={[
-    { label: "Yes", value: "true" },
-    { label: "No", value: "false" },
-  ]}
-/>
+              label="Billable"
+              name="isBillable"
+              value={String(formData.isBillable)} // ✅ always "true"/"false"
+              onChange={handleChange}
+              options={[
+                { label: "Yes", value: "true" },
+                { label: "No", value: "false" },
+              ]}
+            />
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
