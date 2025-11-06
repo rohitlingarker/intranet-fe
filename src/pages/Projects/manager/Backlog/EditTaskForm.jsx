@@ -8,6 +8,7 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
+import { se } from "date-fns/locale/se";
 
 const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState(null);
@@ -56,7 +57,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           storyId: task.story?.id || "",
           assigneeName: task.assignee?.name || "",
           reporterName: task.reporter?.name || "",
-          isBillable: task.isBillable ? "Yes" : "No", // ✅ Fix
+          isBillable: Boolean(task.isBillable) // ✅ Fix
         });
       } catch (error) {
         console.error("Error loading task data:", error);
@@ -71,12 +72,31 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
   // ---------- Handle Change ----------
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
+  const { name, value } = e.target;
+
+  setFormData((prev) => {
+    let updated = {
       ...prev,
-      [name]: value,
-    }));
-  };
+      [name]:
+        ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId"].includes(name)
+          ? value
+            ? Number(value)
+            : null
+          : name === "isBillable"
+          ? value === "true"
+          : value,
+    };
+
+    // 🧩 Auto-fill sprint when a story is selected
+    if (name === "storyId" && value) {
+      const selectedStory = stories.find((s) => s.id === Number(value));
+      updated.sprintId = selectedStory?.sprint?.id || selectedStory?.sprintId || null;
+    }
+
+    return updated;
+  });
+};
+
 
   // ---------- Validation ----------
   const validateForm = () => {
@@ -124,8 +144,10 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       );
 
       toast.success("Task updated successfully!");
-      onUpdated?.(response.data);
-      onClose?.();
+      setTimeout(() => {
+        onUpdated?.();
+        onClose?.();
+      }, 500);
     } catch (error) {
       console.error("Error updating task:", error);
       toast.error(error.response?.data?.message || "Failed to update task.");
@@ -261,7 +283,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
             />
 
             <FormSelect
-              label="Reporter"
+              label="Reporter *"
               name="reporterName"
               value={formData.reporterName}
               onChange={handleChange}
@@ -274,15 +296,15 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
             {/* ✅ Corrected Billable Field */}
             <FormSelect
-  label="Billable"
-  name="isBillable"
-  value={String(formData.isBillable)} // ✅ always "true"/"false"
-  onChange={handleChange}
-  options={[
-    { label: "Yes", value: "true" },
-    { label: "No", value: "false" },
-  ]}
-/>
+              label="Billable"
+              name="isBillable"
+              value={String(formData.isBillable)} // ✅ always "true"/"false"
+              onChange={handleChange}
+              options={[
+                { label: "Yes", value: "true" },
+                { label: "No", value: "false" },
+              ]}
+            />
 
             <div className="flex justify-end space-x-3 mt-6">
               <button

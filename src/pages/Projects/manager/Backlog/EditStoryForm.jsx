@@ -261,7 +261,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             ]}
           />
           <FormSelect
-            label="Reporter"
+            label="Reporter *"
             name="reporterId"
             value={formData.reporterId || ""}
             onChange={handleChange}
