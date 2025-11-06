@@ -156,55 +156,131 @@ const ManagerApprovalTable = ({
   // -----------------------------
   // Export Logic (CSV / PDF)
   // -----------------------------
-  const exportCSV = () => {
-    const rows = [
-      [
-        "User ID",
-        "User Name",
-        "Project",
-        "Task",
-        "Start",
-        "End",
-        "Work Type",
-        "Description",
-        "Hours",
-        "Date",
-        "Status",
-      ],
-    ];
+   
+// 🧮 Helper: Get month-wise week and date range
+const getMonthWeekRange = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth();
 
-    enrichedGroupedData.forEach((user) =>
-      user.weeklySummary.forEach((week) =>
-        week.timesheets.forEach((sheet) =>
-          sheet.entries.forEach((entry) => {
-            rows.push([
-              user.userId,
-              user.userName,
-              entry.projectName,
-              entry.taskName,
-              new Date(entry.fromTime).toLocaleTimeString(),
-              new Date(entry.toTime).toLocaleTimeString(),
-              entry.workLocation || "-",
-              entry.description || "",
-              entry.hoursWorked?.toFixed(2) || 0,
-              new Date(sheet.workDate).toLocaleDateString(),
-              sheet.status,
-            ]);
-          })
-        )
-      )
-    );
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      rows.map((e) => e.map((v) => `"${v}"`).join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = "manager_timesheets.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const weeks = [];
+  let start = new Date(firstOfMonth);
+  while (start <= lastOfMonth) {
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    if (end > lastOfMonth) end.setDate(lastOfMonth.getDate());
+    weeks.push({ start: new Date(start), end: new Date(end) });
+    start.setDate(start.getDate() + 7);
+  }
+
+  for (let i = 0; i < weeks.length; i++) {
+    if (d >= weeks[i].start && d <= weeks[i].end) {
+      return {
+        weekNumber: i + 1,
+        dateRange: `${weeks[i].start.toLocaleDateString()} - ${weeks[i].end.toLocaleDateString()}`,
+      };
+    }
+  }
+  return { weekNumber: "-", dateRange: "-" };
+};
+
+const exportCSV = () => {
+  const rows = [
+    [
+      "User ID",
+      "User Name",
+      "Week",
+      "Date Range",
+      "Total Hours",
+      "Billable Hours",
+      "Date",
+      "Project",
+      "Task",
+      "Start Time",
+      "End Time",
+      "Hours Worked",
+      "Work Type",
+      "Description",
+      "Status",
+    ],
+  ];
+
+  enrichedGroupedData.forEach((user) => {
+    let userPrinted = false;
+
+    user.weeklySummary.forEach((week) => {
+      // Get week details based on calendar month
+      const allDates = week.timesheets.flatMap((t) => t.entries.map((e) => new Date(t.workDate)));
+      const firstEntryDate = allDates[0];
+      const { weekNumber, dateRange } = getMonthWeekRange(firstEntryDate);
+
+      // Calculate total hours for the week
+      const totalHours = week.timesheets.reduce(
+        (sum, sheet) => sum + sheet.entries.reduce((s, e) => s + (e.hoursWorked || 0), 0),
+        0
+      );
+
+      // 🧮 Calculate Billable Hours based on `billable === "Yes"` (or true)
+      const billableHours = week.timesheets.reduce(
+        (sum, sheet) =>
+          sum +
+          sheet.entries
+            .filter((e) => e.billable === "Yes" || e.billable === true)
+            .reduce((s, e) => s + (e.hoursWorked || 0), 0),
+        0
+      );
+
+      let weekPrinted = false;
+
+      week.timesheets.forEach((sheet) =>
+        sheet.entries.forEach((entry) => {
+          const userId = !userPrinted ? user.userId : "";
+          const userName = !userPrinted ? user.userName : "";
+          const weekLabel = !weekPrinted ? `Week ${weekNumber}` : "";
+          const dateRangeValue = !weekPrinted ? dateRange : "";
+          const totalHoursValue = !weekPrinted ? totalHours.toFixed(2) : "";
+          const billableHoursValue = !weekPrinted ? billableHours.toFixed(2) : "";
+
+          rows.push([
+            userId,
+            userName,
+            weekLabel,
+            dateRangeValue,
+            totalHoursValue,
+            billableHoursValue,
+            new Date(sheet.workDate).toLocaleDateString(),
+            entry.projectName,
+            entry.taskName,
+            new Date(entry.fromTime).toLocaleTimeString(),
+            new Date(entry.toTime).toLocaleTimeString(),
+            entry.hoursWorked?.toFixed(2) || 0,
+            entry.workLocation || "-",
+            entry.description || "",
+            sheet.status,
+          ]);
+
+          userPrinted = true;
+          weekPrinted = true;
+        })
+      );
+    });
+  });
+
+  // Download CSV
+  const csvContent =
+    "data:text/csv;charset=utf-8," +
+    rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+
+  const link = document.createElement("a");
+  link.href = encodeURI(csvContent);
+  link.download = "manager_timesheets_with_billable_hours.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
   const exportPDF = () => {
     const doc = new jsPDF();

@@ -80,9 +80,8 @@ export async function updateTimesheet(timesheetId, payload) {
       throw new Error(errorData.message || "Failed to update timesheet");
     }
 
-    const data = res;
-    showStatusToast("Timesheet updated successfully", "success");
-    console.log("Update successful:", data);
+    const data = await res.text();
+    showStatusToast(data, "success");
 
     return data;
   } catch (err) {

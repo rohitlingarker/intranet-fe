@@ -84,7 +84,7 @@ const ManagerDashboard = ({ setStatusFilter, handleScroll }) => {
     try {
       // ✅ FIXED URL: removed extra brace and ensured correct base URL usage
       const response = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/mail/send_reminder`,
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheet/send_reminder`,
         {
           method: "POST",
           headers: {
