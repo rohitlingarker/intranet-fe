@@ -807,7 +807,17 @@ const ManagerApprovalTable = ({
                   <Button
                     variant="danger"
                     size="small"
-                    onClick={toggleRemoveMode}
+                    onClick={() => {
+                      // 🆕 Check if holiday data exists first
+                      if (!holidayData || holidayData.length === 0) {
+                        showStatusToast(
+                          "No holiday excluded users found. Please create one first.",
+                          "info"
+                        );
+                        return;
+                      }
+                      toggleRemoveMode();
+                    }}
                   >
                     Remove User
                   </Button>
