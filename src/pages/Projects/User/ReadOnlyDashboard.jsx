@@ -96,7 +96,7 @@ const ProjectDashboard = () => {
   const fetchReminders = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/${userId}/reminders`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders/`,
         axiosConfig
       );
       setReminders(res.data);
