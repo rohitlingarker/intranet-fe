@@ -258,8 +258,8 @@ const Summary = ({ projectId, projectName }) => {
               <Tooltip />
               <Legend />
               <Bar dataKey="Tasks" fill="#312e81" />
-              <Bar dataKey="Stories" fill="#831843" />
-              <Bar dataKey="Bugs" fill="#9d174d" />
+<Bar dataKey="Stories" fill="#831843" />
+<Bar dataKey="Bugs" fill="#1d4ed8" /> 
             </BarChart>
           </ResponsiveContainer>
         </div>
