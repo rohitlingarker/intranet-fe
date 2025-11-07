@@ -5,6 +5,7 @@ import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import { XCircle } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -326,16 +327,17 @@ const LeaveHistory = () => {
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
             <thead className="bg-gray-100 text-xs uppercase text-gray-600">
-              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                <th className="text-left px-4 py-3 text-xs">Leave Type</th>
-                <th className="text-left px-4 py-3 text-xs">Requested by</th>
-                <th className="text-left px-4 py-3 text-xs">From</th>
-                <th className="text-left px-4 py-3 text-xs">To</th>
-                <th className="text-left px-4 py-3 text-xs">Days</th>
-                <th className="text-left px-4 py-3 text-xs">Status</th>
-                <th className="text-left px-4 py-3 text-xs">Reason</th>
-                <th className="text-left px-4 py-3 text-xs">Comment</th>
-                <th className="text-left px-4 py-3 text-xs">Approved By</th>
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm text-center">
+                <th className="px-4 py-3 text-xs">Leave Type</th>
+                <th className="px-4 py-3 text-xs">Requested by</th>
+                <th className="px-4 py-3 text-xs">From</th>
+                <th className="px-4 py-3 text-xs">To</th>
+                <th className="px-4 py-3 text-xs">Days</th>
+                <th className="px-4 py-3 text-xs">Status</th>
+                <th className="px-4 py-3 text-xs">Reason</th>
+                <th className="px-4 py-3 text-xs">Comment</th>
+                <th className="px-4 py-3 text-xs">Approved By</th>
+                <th className="px-4 py-3 text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -344,7 +346,7 @@ const LeaveHistory = () => {
                   key={leave.leaveId || index}
                   className={`${
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-gray-100 transition`}
+                  } hover:bg-gray-100 transition text-center`}
                 >
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {getLeaveLabel(leave.leaveType?.leaveName)}
@@ -395,6 +397,13 @@ const LeaveHistory = () => {
                   </td>
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.approvedBy?.fullName || "-"}
+                  </td>
+                  <td className="p-3">
+                    {leave.status === "APPROVED" && (
+                      <button type="button" title="Cancel Approved Leave">
+                        <XCircle className="text-orange-500 text-sm" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

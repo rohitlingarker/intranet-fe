@@ -11,7 +11,7 @@ export default function UpcomingHolidays() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAllHolidays, setShowAllHolidays] = useState(false);
 
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
   const handleViewHolidays = () => setShowAllHolidays(true);
   const handleHideHolidays = () => setShowAllHolidays(false);
@@ -20,8 +20,8 @@ export default function UpcomingHolidays() {
     const fetchHolidays = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/api/holidays/all`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `${import.meta.env.VITE_BASE_URL}/api/holidays/year/${new Date().getFullYear()}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         setHolidays(res.data);
       } catch (err) {
