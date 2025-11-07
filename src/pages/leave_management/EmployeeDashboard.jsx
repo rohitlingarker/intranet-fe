@@ -30,7 +30,7 @@ const EmployeeDashboard = ({ employeeId }) => {
     setPendingRequests(newRequests);
   };
   const BASE_URL = import.meta.env.VITE_BASE_URL;
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
   const userPermissions = user?.permissions || [];
   const compOffPageRef = useRef();

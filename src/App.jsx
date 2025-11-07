@@ -65,7 +65,8 @@ import AccessPointDetails from "./pages/UserManagement/admin/accessPointManageme
 import AccessPointEdit from "./pages/UserManagement/admin/accessPointManagement/AccessPointEdit";
 import AccessPointMapping from "./pages/UserManagement/admin/accessPointManagement/AccessPointMapping";
 import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
-
+import BulkAccessPointCreate from "./pages/UserManagement/admin/accessPointManagement/BulkAccessPointCreate";
+import BulkPermissionMapping from "./pages/UserManagement/admin/accessPointManagement/BulkPermissionMapping";
 import Profile from "./pages/UserManagement/user/Profile";
 import EditProfile from "./pages/UserManagement/user/EditProfile";
 
@@ -329,6 +330,16 @@ useEffect(() => {
             path="/user-management/access-points/admin/access-point-mapping"
             element={<AccessPointMapping />}
           />
+          <Route
+            path="/user-management/access-points/create-bulk"
+            element={<BulkAccessPointCreate />}
+          />
+
+          <Route
+            path="/user-management/access-point-map-permission-bulk"
+            element={<BulkPermissionMapping />}
+          />
+
 
           {/* <Route
             path="/user-management/users"

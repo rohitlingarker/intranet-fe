@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDownIcon, FunnelIcon, CalendarDaysIcon, ArrowLeftCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronDownIcon,
+  FunnelIcon,
+  CalendarDaysIcon,
+  ArrowLeftCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -32,7 +38,9 @@ const Toggle = ({ checked, onChange, label, hint, id }) => (
       <span id={`${id}-label`} className="text-sm font-medium  ">
         {label}
       </span>
-      {hint ? <span className="text-xs text-gray-500 dark:text-gray-400">{hint}</span> : null}
+      {hint ? (
+        <span className="text-xs text-gray-500 dark:text-gray-400">{hint}</span>
+      ) : null}
     </div>
   </div>
 );
@@ -47,9 +55,9 @@ const Pill = ({ active, children, onRemove }) => (
   >
     {children}
     {onRemove && (
-    <button type="button">
-      <XMarkIcon className="ml-1 h-4 w-5 text-white" onClick={onRemove}/>
-    </button>
+      <button type="button">
+        <XMarkIcon className="ml-1 h-4 w-5 text-white" onClick={onRemove} />
+      </button>
     )}
   </span>
 );
@@ -83,7 +91,8 @@ const MultiSelect = ({
   };
 
   const allVisibleIds = filtered.map((o) => o.value);
-  const allSelected = allVisibleIds.every((oid) => ids.has(oid)) && allVisibleIds.length > 0;
+  const allSelected =
+    allVisibleIds.every((oid) => ids.has(oid)) && allVisibleIds.length > 0;
 
   const handleToggleAll = () => {
     const next = new Set(ids);
@@ -110,9 +119,7 @@ const MultiSelect = ({
   return (
     <div className="w-full" id={id}>
       {label ? (
-        <label className="block text-sm font-medium   mb-1">
-          {label}
-        </label>
+        <label className="block text-sm font-medium   mb-1">{label}</label>
       ) : null}
       <button
         type="button"
@@ -193,7 +200,11 @@ const MultiSelect = ({
         <div className="mt-2 flex flex-wrap gap-2">
           {value.slice(0, 5).map((v) => {
             const found = options.find((o) => o.value === v);
-            return <Pill key={v} active onRemove={()=> toggleOption(v)}>{found ? found.label : v}</Pill>;
+            return (
+              <Pill key={v} active onRemove={() => toggleOption(v)}>
+                {found ? found.label : v}
+              </Pill>
+            );
           })}
           {value.length > 5 && <Pill>+{value.length - 5} more</Pill>}
         </div>
@@ -228,27 +239,21 @@ export default function BlockLeaveDates({ employeeId }) {
         setLoading(true);
         // Replace with your endpoints
         const [projRes, ltRes, ltIdsRes] = await Promise.all([
-          axios.get(`${PMS_BASE_URL}/api/projects/owner/${employeeId}`,
-            {
-                headers: {
-                    Authorization:`Bearer ${localStorage.getItem("token")}`,
-                }
-            }
-          ),
-          axios.get(`${BASE_URL}/api/leave/types`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                }
-            }
-          ),
-          axios.get(`${BASE_URL}/api/leave/get-all-leave-type-ids`,
-            {
-              headers: {
-                Authorization:`Bearer ${localStorage.getItem("token")}`,
-              }
-            }
-          ),
+          axios.get(`${PMS_BASE_URL}/api/projects/owner/${employeeId}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }),
+          axios.get(`${BASE_URL}/api/leave/types`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }),
+          axios.get(`${BASE_URL}/api/leave/get-all-leave-type-ids`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }),
         ]);
         const projJson = projRes.data || [];
         const ltJson = ltRes.data || [];
@@ -256,18 +261,19 @@ export default function BlockLeaveDates({ employeeId }) {
 
         if (!active) return;
         const leaveIdMap = new Map(
-          ltIdsJson.map(item => [item.leaveName, item.leaveTypeId])
+          ltIdsJson.map((item) => [item.leaveName, item.leaveTypeId])
         );
-        const mergedLeaveTypes = ltJson.map(leaveType => ({
-          // Use the label from this array
-          label: leaveType.label,
-          // Use the name to find the corresponding ID from our map
-          value: leaveIdMap.get(leaveType.name) 
-        }));
+        const mergedLeaveTypes = ltJson
+          .filter((leaveType) => leaveIdMap.get(leaveType.name) !== undefined)
+          .map((leaveType) => ({
+            label: leaveType.label,
+            value: leaveIdMap.get(leaveType.name),
+          }));
+
         setProjects(projJson);
         setLeaveTypes(mergedLeaveTypes);
       } catch (e) {
-        toast.error(e.message ||"Failed to fetch initial data");
+        toast.error(e.message || "Failed to fetch initial data");
       } finally {
         if (active) setLoading(false);
       }
@@ -303,16 +309,19 @@ export default function BlockLeaveDates({ employeeId }) {
       setSelectedMembers([]);
       if (!projectId) return;
       try {
-        const res = await axios.get(`${PMS_BASE_URL}/api/projects/${projectId}/members`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                }
-            }
+        const res = await axios.get(
+          `${PMS_BASE_URL}/api/projects/${projectId}/members`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
         const json = await res.data;
         if (!active) return;
-        setMembers((json || []).map((m) => ({ value: m.id, label: `${m.name}` })));
+        setMembers(
+          (json || []).map((m) => ({ value: m.id, label: `${m.name}` }))
+        );
       } catch (e) {
         toast.error(e.message || "Failed to fetch project members");
       }
@@ -330,7 +339,7 @@ export default function BlockLeaveDates({ employeeId }) {
     startDate &&
     endDate &&
     new Date(endDate) >= new Date(startDate);
-  
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -339,7 +348,9 @@ export default function BlockLeaveDates({ employeeId }) {
     try {
       const payload = {
         projectId,
-        members: blockAllMembers ? members.map(m => m.value) : selectedMembers,
+        members: blockAllMembers
+          ? members.map((m) => m.value)
+          : selectedMembers,
         leaveTypeIds: selectedLeaveTypes,
         startDate,
         endDate,
@@ -347,13 +358,15 @@ export default function BlockLeaveDates({ employeeId }) {
         reason: "Blocked by manager",
         year: new Date().getFullYear(),
       };
-      const res = await axios.post(`${BASE_URL}/api/leave-block/block`,
+      const res = await axios.post(
+        `${BASE_URL}/api/leave-block/block`,
         payload,
         {
-            headers: {
-               Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-        });
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       if (!res.data.success) {
         throw new Error(res.data.message || "Failed to create leave block");
       }
@@ -364,78 +377,80 @@ export default function BlockLeaveDates({ employeeId }) {
       setEndDate("");
       toast.success(res.data.message || "Leave block created successfully");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Could not save. Please try again.");
+      toast.error(
+        err?.response?.data?.message || "Could not save. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const DateRange = ({ start, end, setStart, setEnd, label, required }) => {
-  const handleStartChange = (date) => {
-    if (end && date && new Date(end) < new Date(date)) {
-      toast.warn("End date cannot be before start date.");
-      setEnd("");
-    }
-    setStart(format(date, "yyyy-MM-dd"));
-  };
+    const handleStartChange = (date) => {
+      if (end && date && new Date(end) < new Date(date)) {
+        toast.warn("End date cannot be before start date.");
+        setEnd("");
+      }
+      setStart(format(date, "yyyy-MM-dd"));
+    };
 
-  const handleEndChange = (date) => {
-    if (start && date && new Date(date) < new Date(start)) {
-      toast.error("End date cannot be before start date.");
-      return;
-    }
-    setEnd(format(date, "yyyy-MM-dd"));
-  };
+    const handleEndChange = (date) => {
+      if (start && date && new Date(date) < new Date(start)) {
+        toast.error("End date cannot be before start date.");
+        return;
+      }
+      setEnd(format(date, "yyyy-MM-dd"));
+    };
 
-  return (
-    <div className="w-full">
-      {label && (
-        <label className="block text-sm font-medium mb-2">{label}</label>
-      )}
+    return (
+      <div className="w-full">
+        {label && (
+          <label className="block text-sm font-medium mb-2">{label}</label>
+        )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Start Date Picker */}
-        <DateRangePicker
-          label={
-            <>
-              Start Date <span className="text-red-500">*</span>
-            </>
-          }
-          defaultDate={start ? new Date(start) : undefined}
-          onChange={handleStartChange}
-          disabledDays={[
-            { dayOfWeek: [0,6] },
-            { before: new Date() }, // disable past dates if you want
-            ...holidays,
-          ]}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Start Date Picker */}
+          <DateRangePicker
+            label={
+              <>
+                Start Date <span className="text-red-500">*</span>
+              </>
+            }
+            defaultDate={start ? new Date(start) : undefined}
+            onChange={handleStartChange}
+            disabledDays={[
+              { dayOfWeek: [0, 6] },
+              { before: new Date() }, // disable past dates if you want
+              ...holidays,
+            ]}
+          />
 
-        {/* End Date Picker */}
-        <DateRangePicker
-          label={
-            <>
-              End Date <span className="text-red-500">*</span>
-            </>
-          }
-          defaultDate={end ? new Date(end) : undefined}
-          onChange={handleEndChange}
-          disabledDays={[
-            { dayOfWeek: [0, 6] }, // disable weekends
-            { before: start ? new Date(start) : new Date() },
-            ...holidays,
-          ]}
-          align="right"
-        />
+          {/* End Date Picker */}
+          <DateRangePicker
+            label={
+              <>
+                End Date <span className="text-red-500">*</span>
+              </>
+            }
+            defaultDate={end ? new Date(end) : undefined}
+            onChange={handleEndChange}
+            disabledDays={[
+              { dayOfWeek: [0, 6] }, // disable weekends
+              { before: start ? new Date(start) : new Date() },
+              ...holidays,
+            ]}
+            align="right"
+          />
+        </div>
+
+        {start && end && new Date(end) < new Date(start) && (
+          <p className="mt-1 text-sm text-red-600">
+            End date cannot be before start date.
+          </p>
+        )}
       </div>
-
-      {start && end && new Date(end) < new Date(start) && (
-        <p className="mt-1 text-sm text-red-600">
-          End date cannot be before start date.
-        </p>
-      )}
-    </div>
-  );
-};
+    );
+  };
 
   const projectOptions = projects.map((p) => ({ value: p.id, label: p.name }));
 
@@ -445,15 +460,20 @@ export default function BlockLeaveDates({ employeeId }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold">
-                Block Leave Dates
-              </h1>
+              <h1 className="text-xl font-semibold">Block Leave Dates</h1>
               <p className="mt-1 text-xs">
-                Choose a project, select employees and leave types, then apply a date range.
+                Choose a project, select employees and leave types, then apply a
+                date range.
               </p>
             </div>
             <div>
-                <button type="button" onClick={()=> navigate(-1)} className="text-blue-600 hover:text-blue-800"><ArrowLeftCircleIcon className="mr-2 h-10 w-9" /></button>
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <ArrowLeftCircleIcon className="mr-2 h-10 w-9" />
+              </button>
             </div>
           </div>
         </div>
@@ -472,7 +492,8 @@ export default function BlockLeaveDates({ employeeId }) {
                     Project and members
                   </h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Start by picking a project to manage its members’ leave availability.
+                    Start by picking a project to manage its members’ leave
+                    availability.
                   </p>
                   <div className="mt-4 space-y-4">
                     {/* Project */}
@@ -512,7 +533,13 @@ export default function BlockLeaveDates({ employeeId }) {
                         hint="When enabled, the block applies to every member in the selected project."
                       />
 
-                      <div className={blockAllMembers ? "opacity-50 pointer-events-none" : ""}>
+                      <div
+                        className={
+                          blockAllMembers
+                            ? "opacity-50 pointer-events-none"
+                            : ""
+                        }
+                      >
                         {projectId ? (
                           <MultiSelect
                             id="members-multiselect"
@@ -521,7 +548,9 @@ export default function BlockLeaveDates({ employeeId }) {
                             value={selectedMembers}
                             onChange={setSelectedMembers}
                             placeholder={
-                              members.length ? "Select members" : "No members available"
+                              members.length
+                                ? "Select members"
+                                : "No members available"
                             }
                           />
                         ) : (
@@ -538,11 +567,10 @@ export default function BlockLeaveDates({ employeeId }) {
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                  <h2 className="text-base font-semibold  ">
-                    Leave types
-                  </h2>
+                  <h2 className="text-base font-semibold  ">Leave types</h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Choose which leave types will be unavailable to apply for within the range.
+                    Choose which leave types will be unavailable to apply for
+                    within the range.
                   </p>
                   <div className="mt-4">
                     {loading ? (
@@ -561,11 +589,10 @@ export default function BlockLeaveDates({ employeeId }) {
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                  <h2 className="text-base font-semibold  ">
-                    Date range
-                  </h2>
+                  <h2 className="text-base font-semibold  ">Date range</h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Select the start and end dates for the block. Applicants cannot choose these dates.
+                    Select the start and end dates for the block. Applicants
+                    cannot choose these dates.
                   </p>
                   <div className="mt-4">
                     <DateRange
@@ -611,24 +638,32 @@ export default function BlockLeaveDates({ employeeId }) {
 
           <aside className="lg:col-span-1">
             <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white shadow-sm p-6">
-              <h3 className="text-sm font-semibold  ">
-                Summary
-              </h3>
+              <h3 className="text-sm font-semibold  ">Summary</h3>
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-start justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Project</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Project
+                  </span>
                   <span className=" ">
-                    {projectOptions.find((p) => p.value.toString() === projectId)?.label|| "—"}
+                    {projectOptions.find(
+                      (p) => p.value.toString() === projectId
+                    )?.label || "—"}
                   </span>
                 </div>
                 <div className="flex items-start justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Scope</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Scope
+                  </span>
                   <span className=" ">
-                    {blockAllMembers ? "All members" : `${selectedMembers.length} selected`}
+                    {blockAllMembers
+                      ? "All members"
+                      : `${selectedMembers.length} selected`}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Leave types</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Leave types
+                  </span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedLeaveTypes.length === 0 ? (
                       <span className=" ">—</span>
@@ -644,9 +679,12 @@ export default function BlockLeaveDates({ employeeId }) {
                   </div>
                 </div>
                 <div className="flex items-start justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Dates</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Dates
+                  </span>
                   <span className=" ">
-                    {startDate && endDate ? `${new Date(startDate).toLocaleDateString("en-US", {
+                    {startDate && endDate
+                      ? `${new Date(startDate).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
@@ -654,7 +692,8 @@ export default function BlockLeaveDates({ employeeId }) {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
-                        })}` : "—"}
+                        })}`
+                      : "—"}
                   </span>
                 </div>
               </div>

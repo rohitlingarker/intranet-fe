@@ -8,7 +8,6 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
-import { se } from "date-fns/locale/se";
 
 const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState(null);
@@ -60,7 +59,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
         setCreatedDate(task.createdAt ? task.createdAt.split("T")[0] : null);
 
-        // ✅ Prefill all form values properly
+        // ✅ Corrected: use `task.billable` instead of `task.isBillable`
         setFormData({
           title: task.title || "",
           description: task.description || "",
@@ -72,7 +71,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           storyId: task.story?.id || "",
           assigneeName: task.assignee?.name || "",
           reporterName: task.reporter?.name || "",
-          isBillable: Boolean(task.isBillable) // ✅ Fix
+          isBillable: Boolean(task.billable),
         });
       } catch (error) {
         console.error("Error loading task data:", error);
@@ -87,31 +86,33 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
 
   // ---------- Handle Change ----------
   const handleChange = (e) => {
-  const { name, value } = e.target;
+    const { name, value } = e.target;
 
-  setFormData((prev) => {
-    let updated = {
-      ...prev,
-      [name]:
-        ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId"].includes(name)
-          ? value
-            ? Number(value)
-            : null
-          : name === "isBillable"
-          ? value === "true"
-          : value,
-    };
+    setFormData((prev) => {
+      let updated = {
+        ...prev,
+        [name]:
+          ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId"].includes(
+            name
+          )
+            ? value
+              ? Number(value)
+              : null
+            : name === "isBillable"
+            ? value === "true"
+            : value,
+      };
 
-    // 🧩 Auto-fill sprint when a story is selected
-    if (name === "storyId" && value) {
-      const selectedStory = stories.find((s) => s.id === Number(value));
-      updated.sprintId = selectedStory?.sprint?.id || selectedStory?.sprintId || null;
-    }
+      // 🧩 Auto-fill sprint when a story is selected
+      if (name === "storyId" && value) {
+        const selectedStory = stories.find((s) => s.id === Number(value));
+        updated.sprintId =
+          selectedStory?.sprint?.id || selectedStory?.sprintId || null;
+      }
 
-    return updated;
-  });
-};
-
+      return updated;
+    });
+  };
 
   // ---------- Validation ----------
   const validateForm = () => {
@@ -133,32 +134,26 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     if (!formData) return;
     if (!validateForm()) return;
 
-    const selectedAssignee = users.find(
-      (u) => u.name === formData.assigneeName
-    );
-    const selectedReporter = users.find(
-      (u) => u.name === formData.reporterName
-    );
+    const selectedAssignee = users.find((u) => u.name === formData.assigneeName);
+    const selectedReporter = users.find((u) => u.name === formData.reporterName);
 
     const payload = {
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
       status: formData.status,
-      storyPoints: formData.storyPoints
-        ? Number(formData.storyPoints)
-        : null,
+      storyPoints: formData.storyPoints ? Number(formData.storyPoints) : null,
       dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       sprintId: formData.sprintId || null,
       storyId: formData.storyId || null,
       projectId: Number(projectId),
       assigneeId: selectedAssignee ? selectedAssignee.id : null,
       reporterId: selectedReporter ? selectedReporter.id : null,
-      billable: formData.isBillable === "true", // ✅ send boolean to backend
+      billable: formData.isBillable === true, // ✅ boolean sent correctly
     };
 
     try {
-      const response = await axios.put(
+      await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
         payload,
         axiosConfig
@@ -314,7 +309,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
             <FormSelect
               label="Billable"
               name="isBillable"
-              value={String(formData.isBillable)} // ✅ always "true"/"false"
+              value={String(formData.isBillable)}
               onChange={handleChange}
               options={[
                 { label: "Yes", value: "true" },

@@ -8,7 +8,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 const CompOffBalanceRequests = ({ managerId }) => {
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const token = localStorage.getItem('token');
+  // const token = localStorage.getItem('token');
 
   // Fetch comp-off requests for the manager
   const fetchCompOffs = async () => {
@@ -17,7 +17,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
         `${BASE_URL}/api/compoff/pending`,
         { managerId},
         {headers:{
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${localStorage.getItem("token")}`
         }}
       );
       setPendingCompOffs(
@@ -40,7 +40,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
         compoffId,
       },
       {headers:{
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       }});
       toast.success("Comp-Off approved.");
       fetchCompOffs();
@@ -58,7 +58,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
       await axios.put(`${BASE_URL}/api/compoff/reject`,
         { managerId, compoffId },
         {headers:{
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${localStorage.getItem("token")}`
         }}
       );
       toast.success("Comp-Off rejected.");

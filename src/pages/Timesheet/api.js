@@ -454,13 +454,24 @@ export const handleBulkReview = async (
       }
     );
 
-    if (!response.ok) throw new Error("Failed to review timesheets");
-    showStatusToast(
-      `Timesheets ${status.toLowerCase()} successfully`,
-      "success"
-    );
+    // Read the response body as JSON
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = data?.message || "Failed to review timesheets";
+      throw new Error(message);
+    }
+
+    // ✅ Show the exact message returned from backend
+    const message =
+      data?.message || `Timesheets ${status.toLowerCase()} successfully`;
+    showStatusToast(message, "success");
   } catch (err) {
-    console.error("Error reviewing timesheets:", err);
-    showStatusToast("Failed to update timesheet status", "error");
+    console.error("❌ Error reviewing timesheets:", err);
+    showStatusToast(
+      err.message || "Failed to update timesheet status",
+      "error"
+    );
   }
 };
+
