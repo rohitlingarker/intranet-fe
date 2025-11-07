@@ -93,35 +93,18 @@ const Board = ({ projectId, projectName }) => {
   };
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchBoardData = async () => {
       setLoading(true);
       try {
-        const [storiesRes, tasksRes, sprintsRes] = await Promise.all([
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-            { headers }
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
-            { headers }
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-            { headers }
-          ),
-        ]);
+        // 1️⃣ Fetch active sprints for the project
+        const sprintsRes = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/active/project/${projectId}`,
+          { headers }
+        );
 
-        const storiesData = storiesRes.data;
-        const tasksData = tasksRes.data;
-        const sprintsData = sprintsRes.data;
+        const activeSprints = sprintsRes.data;
 
-        setSprints(sprintsData);
-        setStories(storiesData);
-
-        const activeSprint =
-          sprintsData.find((s) => s.status === "ACTIVE") || null;
-
-        if (!activeSprint) {
+        if (!activeSprints || activeSprints.length === 0) {
           console.warn("No active sprint found for this project");
           setCurrentSprint(null);
           setTasks([]);
@@ -129,41 +112,44 @@ const Board = ({ projectId, projectName }) => {
           return;
         }
 
+        // Assume only one active sprint per project (your backend ensures this)
+        const activeSprint = activeSprints[0];
+
         setCurrentSprint({
           id: activeSprint.id,
           name: activeSprint.name || `Sprint ${activeSprint.id}`,
         });
 
-        // ✅ Corrected story filter: use story.sprintId === activeSprint.id
-        const sprintStoryIds = storiesData
-          .filter((story) => story.sprintId === activeSprint.id)
-          .map((story) => story.id);
+        // 2️⃣ Fetch tasks for that active sprint
+        const tasksRes = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${activeSprint.id}/tasks`,
+          { headers }
+        );
 
-        // ✅ Normalize and filter tasks by those stories
-        const normalizedTasks = tasksData
-          .map((task) => ({
-            ...task,
-            status:
-              task.status === "TODO"
-                ? "TO_DO"
-                : task.status === "IN_PROGRESS"
-                ? "IN_PROGRESS"
-                : task.status === "DONE"
-                ? "DONE"
-                : "TO_DO",
-          }))
-          .filter((task) => sprintStoryIds.includes(task.storyId));
+        // 3️⃣ Normalize task statuses
+        const normalizedTasks = tasksRes.data.map((task) => ({
+          ...task,
+          status:
+            task.status === "TODO"
+              ? "TO_DO"
+              : task.status === "IN_PROGRESS"
+              ? "IN_PROGRESS"
+              : "DONE",
+        }));
 
         setTasks(normalizedTasks);
       } catch (error) {
-        console.error("Error loading tasks:", error);
+        console.error("Error loading board data:", error);
+        setCurrentSprint(null);
+        setTasks([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAll();
+    fetchBoardData();
   }, [projectId, token]);
+
 
   const handleDrop = async (taskId, newStatus) => {
     const task = tasks.find((t) => t.id === taskId);
