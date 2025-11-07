@@ -446,7 +446,7 @@ const LeaveHistory = () => {
                         title="Cancel Approved Leave" 
                         onClick={() => handleModalOpen(leave.leaveId)}
                       >
-                        <XCircle className="text-orange-500 text-sm" />
+                        <XCircle className="text-orange-500 text-sm hover:text-orange-800" />
                       </button>
                     )}
                   </td>
