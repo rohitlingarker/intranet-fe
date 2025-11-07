@@ -176,7 +176,7 @@ const SprintBoard = ({ projectId, projectName }) => {
           </select>
 
           {/* ✅ Debug Reload Button */}
-          <Button
+          {/* <Button
             onClick={() => {
               fetchSprints();
               fetchStories();
@@ -184,7 +184,7 @@ const SprintBoard = ({ projectId, projectName }) => {
             className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
             🔄 Reload Data
-          </Button>
+          </Button> */}
         </div>
 
         {/* ===== Sprint Columns ===== */}
@@ -207,7 +207,7 @@ const SprintBoard = ({ projectId, projectName }) => {
           ) : (
             <p className="text-gray-600 font-medium mt-4">
               {filter === "ALL"
-                ? "No sprints found for this project."
+                ? "loading..."
                 : `No ${filter.toLowerCase()} sprints found.`}
             </p>
           )}
