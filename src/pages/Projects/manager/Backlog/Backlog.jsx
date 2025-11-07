@@ -83,22 +83,17 @@ const Backlog = ({ projectId, projectName }) => {
         { headers }
       )
       .then(() => {
-        // ✅ Update story’s sprintId locally
-        setStories(prev =>
-          prev.map(s =>
-            s.id === storyId ? { ...s, sprintId } : s
-          )
+        setStories((prev) =>
+          prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
         );
 
-        // ✅ Optional: remove it from no-epic list if you maintain it separately
-        setNoEpicStories(prev => prev.filter(s => s.id !== storyId));
+        setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
       })
-      .catch(err => console.error("Failed to assign story to sprint", err));
-    };
+      .catch((err) => console.error("Failed to assign story to sprint", err));
+  };
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
-  // ✅ Navigate to Issue Tracker
   const goToIssueTracker = () => {
     navigate(`/projects/${projectId}/issuetracker`, {
       state: { projectId },
@@ -108,10 +103,14 @@ const Backlog = ({ projectId, projectName }) => {
   const filteredNoEpicStories = noEpicStories || [];
   const filteredStories = stories || [];
 
-  // ✅ Sort sprints by createdAt (latest first)
-  const sortedSprints = [...sprints].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  // ✅ Filter and sort sprints
+  const sortedSprints = [...sprints]
+    .filter(
+      (s) =>
+        s.status?.toUpperCase() === "ACTIVE" ||
+        s.status?.toUpperCase() === "PLANNING"
+    )
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -174,7 +173,7 @@ const Backlog = ({ projectId, projectName }) => {
                 onClick={handleCloseForms}
                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
               >
-               
+                <X size={22} />
               </button>
               <CreateSprint onClose={handleCloseForms} projectId={projectId} />
             </div>
@@ -205,20 +204,25 @@ const Backlog = ({ projectId, projectName }) => {
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Assign to Sprint
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {sortedSprints.map((sprint) => (
-              <SprintColumn
-                key={sprint.id}
-                sprint={sprint}
-                stories={filteredStories.filter(
-                  (s) => s.sprintId === sprint.id
-                )}
-                onDropStory={handleDropStory}
-
-                onChangeStatus={() => {}}
-              />
-            ))}
-          </div>
+          {sortedSprints.length === 0 ? (
+            <p className="text-gray-400 italic">
+              No active or planning sprints available.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {sortedSprints.map((sprint) => (
+                <SprintColumn
+                  key={sprint.id}
+                  sprint={sprint}
+                  stories={filteredStories.filter(
+                    (s) => s.sprintId === sprint.id
+                  )}
+                  onDropStory={handleDropStory}
+                  onChangeStatus={() => {}}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </DndProvider>
