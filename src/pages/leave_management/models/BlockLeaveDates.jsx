@@ -229,6 +229,7 @@ export default function BlockLeaveDates({ employeeId }) {
   const [endDate, setEndDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [holidays, setHolidays] = useState([]);
+  const [reason, setReason] = useState("");
   const navigate = useNavigate();
 
   // Fetch initial data
@@ -338,7 +339,8 @@ export default function BlockLeaveDates({ employeeId }) {
     selectedLeaveTypes.length > 0 &&
     startDate &&
     endDate &&
-    new Date(endDate) >= new Date(startDate);
+    new Date(endDate) >= new Date(startDate) &&
+    reason;
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -355,7 +357,7 @@ export default function BlockLeaveDates({ employeeId }) {
         startDate,
         endDate,
         managerId: employeeId,
-        reason: "Blocked by manager",
+        reason: reason,
         year: new Date().getFullYear(),
       };
       const res = await axios.post(
@@ -605,6 +607,21 @@ export default function BlockLeaveDates({ employeeId }) {
                     />
                   </div>
                 </div>
+
+                <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+                  <h2 className="text-base font-semibold">
+                    Reason <span className="text-red-500">*</span>
+                  </h2>
+                  <textarea
+                    cols="30"
+                    rows="2"
+                    maxLength={200}
+                    required
+                    onChange={(e) => setReason(e.target.value)}
+                    value={reason}
+                    className="w-full rounded-lg h-auto"
+                  ></textarea>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800  px-6 py-4 rounded-b-xl">
@@ -616,6 +633,7 @@ export default function BlockLeaveDates({ employeeId }) {
                     setSelectedLeaveTypes([]);
                     setStartDate("");
                     setEndDate("");
+                    setReason("");
                   }}
                   className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-700 bg-white  px-4 py-2 text-sm font-medium text-gray-700 dark:text-blue-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
@@ -694,6 +712,14 @@ export default function BlockLeaveDates({ employeeId }) {
                           year: "numeric",
                         })}`
                       : "—"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-4">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Reason
+                  </span>
+                  <span className="break-words max-w-full line-clamp-1">
+                    {reason}
                   </span>
                 </div>
               </div>

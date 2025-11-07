@@ -774,7 +774,7 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
     if (unblockedRequests?.length)
       payload.unblockedRequests = unblockedRequests;
 
-    console.log("📌 Final API Payload →", payload);
+    // console.log("📌 Final API Payload →", payload);
 
     try {
       await axios.patch(

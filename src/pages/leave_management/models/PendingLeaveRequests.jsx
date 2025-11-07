@@ -7,6 +7,7 @@ import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
+import NoPendingLeaves from "../../../components/icons/clean-up.svg";
 
 const ITEMS_PER_PAGE = 5;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -111,12 +112,14 @@ const PendingLeaveRequests = ({ refreshKey }) => {
   return (
     <>
       {loading ? (
-        <SkeletonTable rows={3} columns={6} />
+        <SkeletonTable rows={5} columns={6} />
       ) : error ? (
         <p className="text-red-500">{error}</p>
       ) : pendingLeaves.length === 0 ? (
         <div className="flex items-center justify-center h-32">
-          <div className="text-3xl leading-none">🎉</div>
+          <div className="text-3xl leading-none">
+            <img src={NoPendingLeaves} alt="No Pending Leaves" className="w-20" />
+          </div>
           <div className="pl-4 leading-snug">
             <h2 className="text-xl font-semibold">
               Cheers! No pending leave requests.
