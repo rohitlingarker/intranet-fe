@@ -32,11 +32,21 @@ const CreateIssueForm = ({
   const [tasks, setTasks] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [loading, setLoading] = useState(false);
- 
+  const [selectedStorySprint, setSelectedStorySprint] = useState(null);
+
   const token = localStorage.getItem("token");
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   };
+  const handleStoryChange = (storyId) => {
+    const story = stories.find(s => s.id === storyId);
+    if (story && story.sprint) {
+      setSelectedStorySprint(story.sprint.id);
+    } else {
+      setSelectedStorySprint(null);
+    }
+  };
+
  
   // ---------- Fetch Projects & Users ----------
   useEffect(() => {
@@ -93,24 +103,33 @@ const CreateIssueForm = ({
   }, [formData.projectId]);
  
   // ---------- Handle Change ----------
-   // ---------- Handle Change ----------
-const handleChange = (e) => {
+  const handleChange = (e) => {
   const { name, value } = e.target;
 
-  setFormData((prev) => ({
-    ...prev,
-    [name]:
-      // convert IDs to numbers
-      ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId", "taskId"].includes(name)
-        ? value
-          ? Number(value)
-          : null
-        // ✅ convert "true"/"false" to boolean for isBillable
-        : name === "isBillable"
-        ? value === "true"
-        : value,
-  }));
+  setFormData((prev) => {
+    const updated = {
+      ...prev,
+      [name]:
+        ["projectId", "epicId", "storyId", "sprintId", "reporterId", "assigneeId"].includes(name)
+          ? value
+            ? Number(value)
+            : null
+          : name === "isBillable"
+          ? value === "true"
+          : value,
+    };
+
+    // 🧩 Auto-set sprintId when a story is selected
+    if (name === "storyId" && value) {
+      const selectedStory = stories.find((s) => s.id === Number(value));
+      updated.sprintId = selectedStory ? selectedStory.sprintId || null : null;
+    }
+
+    return updated;
+  });
 };
+
+
 
  
   // ---------- Handle Submit ----------
@@ -163,7 +182,7 @@ const handleChange = (e) => {
     reporterId: formData.reporterId ? Number(formData.reporterId) : null,
     assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
     storyId: formData.storyId || null,
-    sprintId: formData.sprintId || null,
+    sprintId: formData.sprintId || selectedStorySprint || null,
     epicId: formData.epicId || null,
     estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
     actualHours: formData.actualHours ? Number(formData.actualHours) : null,
@@ -207,8 +226,12 @@ const handleChange = (e) => {
         onClose?.();
       }, 800);
     } catch (error) {
+      if(error.response && error.response.data && error.response.data.message) {
+        toast.error(`Error: ${error.response.data.message}`);
+      } else {
       console.error("Error creating issue:", error);
       toast.error(`Failed to create ${issueType}.`);
+      }
     }
   };
  
@@ -218,7 +241,7 @@ const handleChange = (e) => {
   return (
     <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
       <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-        <X size={20} />
+        {/* <X size={20} /> */}
       </button>
  
       <ToastContainer />

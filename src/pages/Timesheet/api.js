@@ -64,7 +64,7 @@ export const reviewTimesheet = async (timesheetId, comment, status) => {
 export async function updateTimesheet(timesheetId, payload) {
   try {
     const res = await fetch(
-      `${apiEndpoint}/api/timesheet/update/${timesheetId}`,
+      `${apiEndpoint}/api/timesheet/updateEntries/${timesheetId}`,
       {
         method: "PUT",
         headers: {
@@ -80,9 +80,8 @@ export async function updateTimesheet(timesheetId, payload) {
       throw new Error(errorData.message || "Failed to update timesheet");
     }
 
-    const data = res;
-    showStatusToast("Timesheet updated successfully", "success");
-    console.log("Update successful:", data);
+    const data = await res.text();
+    showStatusToast(data, "success");
 
     return data;
   } catch (err) {

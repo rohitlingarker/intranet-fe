@@ -102,9 +102,9 @@ export default function EditUserRoleForm() {
       <div className="bg-white p-6 rounded-2xl shadow-lg">
         {/* Modal Header */}
         <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
-          Edit Roles for{" "}
+          Edit Roles for{" "} gadu
           <span className="text-blue-600">
-            {user.first_name} {user.last_name}
+            {user.first_name} {user.last_name} {'gadu'}
           </span>
         </h2>
         <p className="mb-4 text-gray-500 text-center">

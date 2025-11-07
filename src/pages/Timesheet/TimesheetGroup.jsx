@@ -6,6 +6,7 @@ import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
 import { submitWeeklyTimesheet, fetchCalendarHolidays } from "./api";
 
+
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
   if (!open) return null;
 
@@ -89,6 +90,7 @@ const calculateTotalHours = (entries) => {
       } else {
         start = new Date(entry.fromTime);
       }
+      
 
       if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(entry.toTime)) {
         const [endHours, endMinutes, endSeconds] = entry.toTime.split(":");
@@ -128,6 +130,7 @@ const TimesheetGroup = ({
   approvers = [
     { approverName: "Dummy Approver1", status: "Pending" },
     { approverName: "Dummy Approver2", status: "Approved" },
+    
   ],
 }) => {
   // Handle both old daily format and new weekly format
@@ -183,6 +186,8 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
+  
+
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -260,10 +265,11 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
-    
+  
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
+  
 
   const toggleDateChange = (e) => {
     if (status?.toLowerCase() === "approved") return; // prevent date change if approved
@@ -272,15 +278,16 @@ const TimesheetGroup = ({
 
   const handleConfirmDelete = async () => {
     setIsConfirmOpen(false);
+    let responseText = ""; // ✅ use let (mutable)
+
     try {
-      // For weekly format, we need to delete from multiple timesheets
+      // For weekly format, delete from multiple timesheets
       if (isWeeklyFormat) {
-        // Delete entries from all timesheets in the week
         for (const timesheet of weekData.timesheets) {
           const response = await fetch(
             `${
               import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-            }/api/timesheet/entries`,
+            }/api/timesheet/deleteEntries/${timesheet.timesheetId}`,
             {
               method: "DELETE",
               headers: {
@@ -288,18 +295,25 @@ const TimesheetGroup = ({
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
               body: JSON.stringify({
-                timesheetId: timesheet.timesheetId,
                 entryIds: selectedEntryIds,
               }),
             }
           );
-          if (!response.ok) throw new Error("Failed to delete entries");
+
+          const data = await response.text();
+
+          if (!response.ok) {
+            throw new Error(data || "Failed to delete entries");
+          }
+
+          responseText = data; // ✅ capture latest response message
         }
       } else {
+        // Single timesheet delete
         const response = await fetch(
           `${
             import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-          }/api/timesheet/entries`,
+          }/api/timesheet/deleteEntries/${timesheetId}`,
           {
             method: "DELETE",
             headers: {
@@ -307,31 +321,44 @@ const TimesheetGroup = ({
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
             body: JSON.stringify({
-              timesheetId: timesheetId,
               entryIds: selectedEntryIds,
             }),
           }
         );
-        if (!response.ok) throw new Error("Failed to delete entries");
+
+        const data = await response.text();
+
+        if (!response.ok) {
+          throw new Error(data || "Failed to delete entries");
+        }
+
+        responseText = data; // ✅ set backend response
       }
+
+      console.log("✅ Delete response:", responseText);
+      showStatusToast(responseText, "success"); // ✅ show backend message in toast
+
       setSelectedEntryIds([]);
-      showStatusToast("Entries deleted successfully", "success");
       if (refreshData) await refreshData();
     } catch (error) {
-      showStatusToast("Error deleting entries", "error");
+      console.error("❌ Error deleting entries:", error);
+      showStatusToast(error.message || "Error deleting entries", "error");
     }
   };
+
 
   const handleCancelDelete = () => {
     setIsConfirmOpen(false);
   };
 
+ 
   const handleSelect = () => {
     setMenuOpen(false);
     setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
     setSelectedEntryIds([]); // clear previous selection
   };
 
+  
   const approveStatus = approvers.every(
     (a) => a.status?.toUpperCase() === "APPROVED"
   );
