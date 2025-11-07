@@ -39,6 +39,22 @@ const AccessPointForm = () => {
         location.pathname ===
         "/user-management/access-points/admin/access-point-mapping",
     },
+    {
+      name: "Access Point Create Bulk",
+      onClick: () => navigate("/user-management/access-points/create-bulk"),
+      isActive:
+        location.pathname === "/user-management/access-points/create-bulk",
+    },
+    {
+      name: "Access Permission Mapping Bulk",
+      onClick: () =>
+        navigate(
+          "/user-management/access-point-map-permission-bulk"
+        ),
+      isActive:
+        location.pathname ===
+        "/user-management/access-point-map-permission-bulk",
+    },
   ];
 
   // Validate endpoint path (should start with / and contain valid URL characters)
