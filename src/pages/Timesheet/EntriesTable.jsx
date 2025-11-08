@@ -7,16 +7,37 @@ import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 import Button from "../../components/Button/Button";
 
-// safely render '01:30' or '16:30:00' as '01:30' or '16:30'
+// ✅ Robust time formatter for both UTC and local ISO strings
+// ✅ Converts UTC timestamps (from backend) to local time before displaying
 const prettyTime = (time) => {
   if (!time) return "";
-  const date = new Date(time.slice(-1) === "Z" ? time : time+"Z"); // treat as UTC
-  if (isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+
+  try {
+    // Case 1: raw "HH:mm" strings (local form inputs)
+    if (/^\d{2}:\d{2}$/.test(time)) {
+      const [h, m] = time.split(":");
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+
+    // Case 2: ISO datetime from backend ("2025-10-31T23:30:00" or "2025-10-31T23:30:00Z")
+    const date = new Date(time.endsWith("Z") ? time : time + "Z");
+
+    // Convert UTC -> Local automatically (Date object does this inherently)
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
+    console.error("prettyTime error:", time, err);
+    return "";
+  }
 };
 
 const EntriesTable = ({
@@ -270,9 +291,9 @@ const EntriesTable = ({
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
     if (!isValid(addData)) return;
-    const newStart = new Date(`${workDate}T${addData.fromTime}`);
-    const newEnd = new Date(`${workDate}T${addData.toTime}`);
-    if (hasOverlap(newStart, newEnd)) {
+    // const newStart = new Date(`${workDate}T${addData.fromTime}`);
+    // const newEnd = new Date(`${workDate}T${addData.toTime}`);
+    if (hasOverlap(addData.fromTime, addData.toTime)) {
       showStatusToast("Time overlap detected with another entry!", "error");
       return;
     }
@@ -282,8 +303,8 @@ const EntriesTable = ({
         ...addData,
         projectId: parseInt(addData.projectId),
         taskId: parseInt(addData.taskId),
-        fromTime: newStart.toISOString(),
-        toTime: newEnd.toISOString(),
+        fromTime: addData.fromTime,
+        toTime: addData.toTime,
         isBillable: addData.isBillable === "Yes",
         workLocation: addData.workType,
       },
@@ -545,7 +566,15 @@ const EntriesTable = ({
                       await addEntryToTimesheet(
                         timesheetId,
                         workDate,
-                        pendingEntries
+                        pendingEntries.map((entry) => ({
+                          ...entry,
+                          fromTime: new Date(
+                            `${workDate}T${entry.fromTime}`
+                          ).toISOString(),
+                          toTime: new Date(
+                            `${workDate}T${entry.toTime}`
+                          ).toISOString(),
+                        }))
                       );
                       setPendingEntries([]);
                       refreshData();

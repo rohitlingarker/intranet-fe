@@ -63,7 +63,7 @@ export const reviewTimesheet = async (timesheetId, comment, status) => {
 
 export async function updateTimesheet(timesheetId, payload) {
   try {
-    const res = await fetch(
+    const response = await fetch(
       `${apiEndpoint}/api/timesheet/updateEntries/${timesheetId}`,
       {
         method: "PUT",
@@ -75,20 +75,41 @@ export async function updateTimesheet(timesheetId, payload) {
       }
     );
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to update timesheet");
+    // Try parsing JSON first; if not possible, fallback to text
+    const contentType = response.headers.get("content-type");
+    let responseData;
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
     }
 
-    const data = await res.text();
-    showStatusToast(data, "success");
+    // ✅ Success handling
+    if (response.ok) {
+      const message =
+        typeof responseData === "string"
+          ? responseData
+          : responseData.message || "Timesheet updated successfully.";
+      showStatusToast(message, "success");
+      return responseData;
+    }
 
-    return data;
+    // ❌ Error handling (server responded with 4xx or 5xx)
+    const errorMessage =
+      typeof responseData === "string"
+        ? responseData
+        : responseData.message || "Failed to update timesheet.";
+    showStatusToast(errorMessage, "error");
+    throw new Error(errorMessage);
   } catch (err) {
-    showStatusToast(err.message || "Update failed", "error");
+    // 🧠 Network / unexpected errors
+    const message = err.message || "Unexpected error while updating timesheet.";
+    showStatusToast(message, "error");
     throw err;
   }
 }
+
+
 
 export async function fetchTimesheetHistory() {
   try {
