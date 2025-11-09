@@ -725,14 +725,11 @@ const ManagerApprovalTable = ({
             },
           }
         ),
-        fetch(
-          `${import.meta.env.VITE_BASE_URL}/api/holidays/month/${currentMonth}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        ),
+        fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/holidays/currentMonth`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }),
       ]);
 
       if (!usersRes.ok || !holidaysRes.ok)
@@ -1076,7 +1073,7 @@ const ManagerApprovalTable = ({
                           <option value="">-- Select Holiday --</option>
                           {monthlyHolidays.map((h) => (
                             <option key={h.holidayId} value={h.holidayDate}>
-                              {h.holidayDate} - {h.holidayDescription}
+                              {h.holidayDate} - {h.holidayName}
                             </option>
                           ))}
                         </select>
