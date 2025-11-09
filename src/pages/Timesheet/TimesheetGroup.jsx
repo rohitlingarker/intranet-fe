@@ -4,7 +4,26 @@ import EntriesTable from "./EntriesTable";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
-import { submitWeeklyTimesheet, fetchCalendarHolidays } from "./api";
+import { submitWeeklyTimesheet } from "./api";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
+import { addDays, startOfMonth, endOfMonth } from "date-fns";
+
+// Converts a "YYYY-MM-DD" string safely to a Date object in local Indian time
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  // month is 0-based
+  return new Date(year, month - 1, day, 0, 0, 0);
+};
+
+// Formats a Date to "YYYY-MM-DD" in local (India) time
+const toLocalISODate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
@@ -592,62 +611,91 @@ const TimesheetGroup = ({
             {editDateIndex === timesheetId &&
             emptyTimesheet &&
             status?.toLowerCase() !== "approved" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  min={firstDateOfMonth}
-                  // max={todaysDate}
-                  max={lastDateOfMonth}
-                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                  value={normalize(date)}
-                  onChange={(e) => {
-                    const selected = e.target.value;
-                    // enforce month range
-                    if (
-                      selected < firstDateOfMonth ||
-                      selected > lastDateOfMonth
-                    ) {
-                      showStatusToast(
-                        "Select a date within the current month",
-                        "error"
-                      );
-                      return;
-                    }
-                    const holiday = holidaysMap[selected];
+              <div className="relative">
+                <DatePicker
+                  selected={date ? parseLocalDate(date) : null}
+                  onChange={(selectedDate) => {
+                    if (!selectedDate) return;
+
+                    const iso = toLocalISODate(selectedDate); // ✅ Local-safe conversion
+                    const holiday = holidaysMap[iso];
+
+                    // 🚫 Prevent selecting blocked holidays
                     if (holiday && holiday.submitTimesheet === false) {
-                      // block selection for holidays that are not allowed
                       showStatusToast(
                         `Holiday: ${holiday.holidayName} — timesheet not allowed`,
                         "error"
                       );
                       return;
                     }
+
+                    setDate(iso);
                     setEditDateIndex(null);
-                    setDate(selected);
+                  }}
+                  // ✅ Popover calendar — not inline
+                  open
+                  onClickOutside={() => setEditDateIndex(null)}
+                  calendarClassName="shadow-lg rounded-xl border border-gray-200 p-2 z-[9999]"
+                  popperClassName="z-[9999]"
+                  shouldCloseOnSelect={true}
+                  showPopperArrow={false}
+                  popperPlacement="bottom-start"
+                  minDate={startOfMonth(
+                    parseLocalDate(toLocalISODate(new Date()))
+                  )}
+                  maxDate={endOfMonth(
+                    parseLocalDate(toLocalISODate(new Date()))
+                  )}
+                  calendarStartDay={1} // Start week on Monday (Indian convention)
+                  renderCustomHeader={({ date }) => (
+                    <div className="text-center font-semibold text-indigo-600 mb-1">
+                      {date.toLocaleDateString("en-IN", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                  )}
+                  dayClassName={(dateObj) => {
+                    const iso = toLocalISODate(dateObj);
+                    const holiday = holidaysMap[iso];
+                    if (holiday) {
+                      return holiday.submitTimesheet
+                        ? "relative bg-green-200 text-green-800 rounded-full font-semibold hover:bg-green-300 transition-all"
+                        : "relative bg-red-200 text-red-800 rounded-full font-semibold hover:bg-red-300 transition-all";
+                    }
+                    return "hover:bg-blue-100 text-gray-700 transition-all";
+                  }}
+                  // ✅ Tooltip on hover
+                  renderDayContents={(day, dateObj) => {
+                    const iso = toLocalISODate(dateObj);
+                    const holiday = holidaysMap[iso];
+                    return (
+                      <div
+                        className="relative group cursor-pointer"
+                        title={holiday ? holiday.holidayName : ""}
+                      >
+                        {day}
+                        {holiday && (
+                          <div className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[9999]">
+                            {holiday.holidayDescription || holiday.holidayName}
+                          </div>
+                        )}
+                      </div>
+                    );
                   }}
                 />
-                {/* holiday dot + tooltip for selected date */}
-                {holidaysMap[normalize(date)] && (
-                  <div className="ml-1">
-                    {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip
-                      content={
-                        holidaysMap[normalize(date)].submitTimesheet
-                          ? "Working on Holiday"
-                          : "Holiday - timesheet not allowed"
-                      }
-                    >
-                      <span
-                        className={`inline-block w-3 h-3 rounded-full ${
-                          holidaysMap[normalize(date)].submitTimesheet
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                        title={holidaysMap[normalize(date)].holidayName}
-                      />
-                    </Tooltip>
+
+                {/* ✅ Legend below calendar */}
+                <div className="mt-2 flex gap-4 text-xs justify-center">
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full bg-green-400"></span>
+                    <span>Allowed</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full bg-red-400"></span>
+                    <span>Blocked</span>
+                  </div>
+                </div>
               </div>
             ) : (
               <div
