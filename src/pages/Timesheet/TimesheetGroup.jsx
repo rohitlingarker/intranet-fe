@@ -127,10 +127,10 @@ const TimesheetGroup = ({
   refreshData,
   projectInfo,
   getWeeklyStatusColor,
+  holidaysMap = {}, // ✅ Add this prop
   approvers = [
     { approverName: "Dummy Approver1", status: "Pending" },
     { approverName: "Dummy Approver2", status: "Approved" },
-    
   ],
 }) => {
   // Handle both old daily format and new weekly format
@@ -145,7 +145,6 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [addingNewEntry, setAddingNewEntry] = useState(false);
-  const [holidaysMap, setHolidaysMap] = useState({}); // keyed by 'YYYY-MM-DD'
   const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
@@ -166,9 +165,8 @@ const TimesheetGroup = ({
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
-    
+
     // console.log({weekGroup});
-    
 
     // Disabled if already approved or partially approved
     if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
@@ -186,8 +184,6 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
-  
-
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -240,7 +236,7 @@ const TimesheetGroup = ({
 
       if (isOutsideAllMenus) {
         // console.log({isOutsideAllMenus});
-        
+
         // setMenuOpen(false);
         setOpenMenuId(null);
       }
@@ -256,7 +252,7 @@ const TimesheetGroup = ({
 
   const handleAddEntry = () => {
     setMenuOpen(false);
-    
+
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
@@ -265,11 +261,10 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
-  
+
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
-  
 
   const toggleDateChange = (e) => {
     if (status?.toLowerCase() === "approved") return; // prevent date change if approved
@@ -346,19 +341,16 @@ const TimesheetGroup = ({
     }
   };
 
-
   const handleCancelDelete = () => {
     setIsConfirmOpen(false);
   };
 
- 
   const handleSelect = () => {
     setMenuOpen(false);
     setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
     setSelectedEntryIds([]); // clear previous selection
   };
 
-  
   const approveStatus = approvers.every(
     (a) => a.status?.toUpperCase() === "APPROVED"
   );
@@ -387,7 +379,7 @@ const TimesheetGroup = ({
         case "rejected":
           return "bg-red-100 text-red-800 border-red-300";
         default:
-          return "bg-gray-100 text-gray-800 border-gray-300"
+          return "bg-gray-100 text-gray-800 border-gray-300";
       }
     };
 
@@ -527,7 +519,7 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
-  const todaysDate = today.toISOString().split("T")[0];  
+  const todaysDate = today.toISOString().split("T")[0];
 
   // helper to normalize date string to yyyy-mm-dd
   const normalize = (d) => {
@@ -535,30 +527,6 @@ const TimesheetGroup = ({
     return new Date(d).toISOString().split("T")[0];
   };
 
-  useEffect(() => {
-    let mounted = true;
-    const loadHolidays = async () => {
-      try {
-        setLoadingHolidays(true);
-        const data = await fetchCalendarHolidays();
-        if (!mounted || !data) return;
-        const map = {};
-        data.forEach((h) => {
-          const key = normalize(h.holidayDate);
-          map[key] = h;
-        });
-        setHolidaysMap(map);
-      } catch (err) {
-        console.error("Failed to load holidays", err);
-      } finally {
-        setLoadingHolidays(false);
-      }
-    };
-    loadHolidays();
-    return () => {
-      mounted = false;
-    };
-  }, []);
   return (
     <div
       className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs`}
