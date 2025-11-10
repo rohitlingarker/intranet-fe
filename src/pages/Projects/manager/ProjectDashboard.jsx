@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import CreateProjectModal from "./CreateProjectModal";
 import Button from "../../../components/Button/Button";
 import ThreeCard from "../../../components/Cards/ThreeCards";
+import { useAuth } from "../../../contexts/AuthContext";
 import {
   Bell,
   ListTodo,
@@ -31,7 +32,12 @@ const ProjectDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [reminders, setReminders] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
- 
+  //  const user = JSON.parse(localStorage.getItem("user"));
+  const { user } = useAuth();
+
+  // ✅ Fetch all projects (Owner + Member)
+  const employeeId = user?.user_id;
+
   const navigate = useNavigate();
  
   const fetchProjects = async () => {
@@ -132,6 +138,9 @@ const ProjectDashboard = () => {
 <div className="flex items-center justify-between mb-6">
 <h1 className="text-3xl font-bold">Project Dashboard</h1>
 <div className="flex gap-3">
+<Button onClick={() => navigate(`/block-leave-dates/${employeeId}`)} variant="secondary" size="medium">
+            Manage Leave Blocks
+          </Button>
 <Button onClick={() => navigate("/projects/list")} variant="secondary">
              Project List
 </Button>
