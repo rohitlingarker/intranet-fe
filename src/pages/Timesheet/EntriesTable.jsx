@@ -133,7 +133,7 @@ const EntriesTable = ({
       toTime: new Date(entry.toTime).toISOString().slice(11, 16),
       workType: entry.workType,
       description: entry.description,
-      isBillable: entry.isBillable ? "Yes" : "No",
+      isBillable: entry.billable, // true/false
     });
   };
 
@@ -141,7 +141,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({ workType: "Office", isBillable: "Yes" });
+    setAddData({ workType: "Office", isBillable: true });
   };
 
   const handleChange = (e) => {
@@ -236,17 +236,20 @@ const EntriesTable = ({
         workDate,
         status,
         entries: [
-          {
-            ...editData,
-            projectId: parseInt(editData.projectId),
-            taskId: parseInt(editData.taskId),
-            fromTime: newStart.toISOString(),
-            toTime: newEnd.toISOString(),
-            isBillable: editData.isBillable === "Yes",
-            workLocation: editData.workType,
-            description: editData.description,
-            id: editData.timesheetEntryId,
-          },
+          (() => {
+            const entry = {
+              ...editData,
+              projectId: parseInt(editData.projectId),
+              taskId: parseInt(editData.taskId),
+              fromTime: newStart.toISOString(),
+              toTime: newEnd.toISOString(),
+              billable: editData.isBillable,
+              workLocation: editData.workType,
+              description: editData.description,
+              id: editData.timesheetEntryId,
+            };
+            return entry;
+          })(),
         ],
       });
       setEditIndex(null);
@@ -299,15 +302,18 @@ const EntriesTable = ({
     }
     setPendingEntries((prev) => [
       ...prev,
-      {
-        ...addData,
-        projectId: parseInt(addData.projectId),
-        taskId: parseInt(addData.taskId),
-        fromTime: addData.fromTime,
-        toTime: addData.toTime,
-        isBillable: addData.isBillable === "Yes",
-        workLocation: addData.workType,
-      },
+      (() => {
+        const newEntry = {
+          ...addData,
+          projectId: parseInt(addData.projectId),
+          taskId: parseInt(addData.taskId),
+          fromTime: addData.fromTime,
+          toTime: addData.toTime,
+          billable: !!addData.isBillable,
+          workLocation: addData.workType,
+        };
+        return newEntry;
+      })(),
     ]);
     // hide add-row and reset
     setAddingNewEntry(false);
@@ -426,7 +432,15 @@ const EntriesTable = ({
                   />
                 </td>
                 <td className="px-4 py-2">
-                  {editData.isBillable}
+                  <td className="px-4 py-2">
+                    {(
+                      editData.isBillable !== undefined
+                        ? editData.isBillable
+                        : entry.isBillable
+                    )
+                      ? "Yes"
+                      : "No"}
+                  </td>
                 </td>
                 {window.location.pathname !== "/managerapproval" && (
                   <td className="px-4 py-2">
