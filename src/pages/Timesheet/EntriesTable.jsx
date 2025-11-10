@@ -6,6 +6,9 @@ import { addEntryToTimesheet, updateTimesheet } from "./api";
 import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 import Button from "../../components/Button/Button";
+// inside EntriesTable component (place near other helpers)
+
+
 
 // ✅ Robust time formatter for both UTC and local ISO strings
 // ✅ Converts UTC timestamps (from backend) to local time before displaying
@@ -39,6 +42,29 @@ const prettyTime = (time) => {
     return "";
   }
 };
+const safeCombineDateTime = (dateString, timeString) => {
+  try {
+    // Case 1: If timeString is already an ISO string
+    if (timeString.includes("T")) {
+      const date = new Date(timeString);
+      if (!isNaN(date)) return date;
+    }
+
+    // Case 2: If timeString is plain "HH:mm"
+    if (/^\d{2}:\d{2}$/.test(timeString)) {
+      return new Date(`${dateString}T${timeString}:00`);
+    }
+
+    // Case 3: If something else (fallback)
+    const fallback = new Date(timeString);
+    if (!isNaN(fallback)) return fallback;
+
+    throw new Error(`Invalid time format: ${timeString}`);
+  } catch (err) {
+    console.error("safeCombineDateTime error:", dateString, timeString, err);
+    return null;
+  }
+};
 
 const EntriesTable = ({
   entries,
@@ -61,6 +87,119 @@ const EntriesTable = ({
     isBillable: false,
   });
   const [pendingEntries, setPendingEntries] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  // Submit pending entries one-by-one and avoid duplicates
+  const submitPendingEntries = async () => {
+    if (pendingEntries.length === 0) {
+      showStatusToast("No new entries to submit.", "info");
+      return;
+    }
+
+    setSubmitting(true);
+
+    // Make a shallow copy so we can update state as we go
+    let currentPending = [...pendingEntries];
+
+    // We'll collect tempIds of successes to remove later
+    const succeededTempIds = [];
+    const failedTempIds = [];
+
+    for (const entry of currentPending) {
+      // only attempt entries that are new or previously failed
+      if (!entry._isNew && !entry._failedOnce) continue;
+
+      // prevent double-submit for same tempId
+      if (entry._submitting) continue;
+
+      // mark as submitting in state
+      setPendingEntries((prev) =>
+        prev.map((p) =>
+          p._tempId === entry._tempId ? { ...p, _submitting: true } : p
+        )
+      );
+
+      // safe combine times
+      const from = safeCombineDateTime(workDate, entry.fromTime);
+      const to = safeCombineDateTime(workDate, entry.toTime);
+
+      if (!from || !to) {
+        // invalid — mark failed and continue
+        failedTempIds.push(entry._tempId);
+        setPendingEntries((prev) =>
+          prev.map((p) =>
+            p._tempId === entry._tempId
+              ? { ...p, _failedOnce: true, _submitting: false }
+              : p
+          )
+        );
+        continue;
+      }
+
+      const payload = {
+        ...entry,
+        fromTime: from.toISOString(),
+        toTime: to.toISOString(),
+      };
+
+      try {
+        // Call API for one entry at a time so failures don't block others.
+        // If your backend supports batch create, you can adjust to send a small batch.
+        await addEntryToTimesheet(timesheetId, workDate, [
+          {
+            projectId: parseInt(payload.projectId),
+            taskId: parseInt(payload.taskId),
+            fromTime: payload.fromTime,
+            toTime: payload.toTime,
+            billable: !!payload.billable,
+            workLocation: payload.workLocation,
+            description: payload.description || "",
+          },
+        ]);
+
+        succeededTempIds.push(entry._tempId);
+
+        // remove this entry from pendingEntries immediately
+        setPendingEntries((prev) =>
+          prev.filter((p) => p._tempId !== entry._tempId)
+        );
+      } catch (err) {
+        console.error("submit entry failed:", entry._tempId, err);
+        failedTempIds.push(entry._tempId);
+
+        // mark failed so user can retry
+        setPendingEntries((prev) =>
+          prev.map((p) =>
+            p._tempId === entry._tempId
+              ? { ...p, _failedOnce: true, _submitting: false }
+              : p
+          )
+        );
+      }
+    }
+
+    setSubmitting(false);
+
+    if (succeededTempIds.length > 0) {
+      showStatusToast(
+        `Submitted ${succeededTempIds.length} entr${
+          succeededTempIds.length > 1 ? "ies" : "y"
+        } successfully`,
+        "success"
+      );
+    }
+
+    if (failedTempIds.length > 0) {
+      showStatusToast(
+        `${failedTempIds.length} entr${
+          failedTempIds.length > 1 ? "ies" : "y"
+        } failed to submit — please correct and retry.`,
+        "error"
+      );
+    }
+
+    // After attempts, refresh the data (successful ones will now be in backend)
+    if (succeededTempIds.length > 0) await refreshData();
+  };
 
   // ✅ Converts a backend UTC datetime string (e.g. "2025-11-10T04:30:00Z")
   //    to a local "HH:mm" string that will show correctly in <input type="time">
@@ -130,26 +269,46 @@ const EntriesTable = ({
 
   const handleEditClick = (idx) => {
     if (addingNewEntry || status?.toLowerCase() === "approved") return;
-    const entry = entries[idx];
+
+    const combined = [...entries, ...pendingEntries];
+    const entry = combined[idx];
+
+    if (!entry) return;
+
     setEditIndex(idx);
     setAddingNewEntry(false);
+
     setEditData({
       timesheetEntryId: entry.timesheetEntryId,
+      _isNew: entry._isNew || false,
+      _tempId: entry._tempId,
       projectId: entry.projectId,
       taskId: entry.taskId,
-      fromTime: toLocalTimeString(entry.fromTime),
-      toTime: toLocalTimeString(entry.toTime),
-      workType: entry.workType,
+      fromTime: entry._isNew
+        ? entry.fromTime
+        : toLocalTimeString(entry.fromTime),
+      toTime: entry._isNew ? entry.toTime : toLocalTimeString(entry.toTime),
+      workType: entry.workLocation || entry.workType,
       description: entry.description,
-      isBillable: entry.billable, // true/false
+      isBillable: entry.billable ?? entry.isBillable,
     });
   };
 
   const handleCancel = () => {
+    // If editing a new pending entry → remove it entirely
+    if (editData._isNew) {
+      setPendingEntries((prev) =>
+        prev.filter((p) => p._tempId !== editData._tempId)
+      );
+    }
+
+    // Reset editing state
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({ workType: "Office", isBillable: true });
+
+    // Also hide the submit button if no pending entries left
+    if (pendingEntries.length <= 1) setPendingEntries([]);
   };
 
   const handleChange = (e) => {
@@ -233,85 +392,93 @@ const EntriesTable = ({
 
   const handleSave = async () => {
     if (!isValid(editData)) return;
-    try {
-      await updateTimesheet(timesheetId, {
-        workDate,
-        status,
-        entries: [
-          (() => {
-            const entry = {
-              ...editData,
-              projectId: parseInt(editData.projectId),
-              taskId: parseInt(editData.taskId),
-              fromTime: newStart.toISOString(),
-              toTime: newEnd.toISOString(),
-              billable: editData.isBillable,
-              workLocation: editData.workType,
-              description: editData.description,
-              id: editData.timesheetEntryId,
-            };
-            return entry;
-          })(),
-        ],
-      });
-      setEditIndex(null);
-      setEditData({});
-      refreshData();
-    } catch (err) {
-      showStatusToast("Failed to update entry", "error");
-    }
-  };
 
-  function parseToLocalTime(datetimeString) {
-    if (!datetimeString) return null;
+    const newStart = new Date(`${workDate}T${editData.fromTime}`);
+    const newEnd = new Date(`${workDate}T${editData.toTime}`);
+
+    const payloadEntry = {
+      projectId: parseInt(editData.projectId),
+      taskId: parseInt(editData.taskId),
+      fromTime: newStart.toISOString(),
+      toTime: newEnd.toISOString(),
+      billable: !!editData.isBillable,
+      workLocation: editData.workType,
+      description: editData.description,
+    };
 
     try {
-      // If it's just a time string (HH:MM:SS or HH:MM:SS.mmm), treat it as today's time
-      if (/^\d{2}:\d{2}:\d{2}(\.\d{3})?$/.test(datetimeString)) {
-        const today = new Date();
-        const [hours, minutes, seconds] = datetimeString.split(":");
-        const date = new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          today.getDate(),
-          parseInt(hours),
-          parseInt(minutes),
-          parseInt(seconds.split(".")[0])
+      if (editData._isNew) {
+        // 🟡 Update local entry or add new — but keep `_failedOnce` if it already existed
+        setPendingEntries((prev) => {
+          const updated = prev.map((p) =>
+            p._tempId === editData._tempId
+              ? {
+                  ...p,
+                  ...payloadEntry,
+                  _isNew: true,
+                  _failedOnce: p._failedOnce || false, // ✅ preserve failed state
+                }
+              : p
+          );
+
+          const exists = prev.some((p) => p._tempId === editData._tempId);
+          return exists
+            ? updated
+            : [
+                ...prev,
+                {
+                  ...payloadEntry,
+                  _isNew: true,
+                  _failedOnce: false,
+                  _tempId: `temp-${Date.now()}`,
+                },
+              ];
+        });
+
+        showStatusToast(
+          "Entry saved locally. Click 'Submit Timesheet' to sync.",
+          "info"
         );
-        return date;
+      } else {
+        // 🟩 Existing backend entry → update immediately
+        await updateTimesheet(timesheetId, {
+          workDate,
+          status,
+          entries: [
+            {
+              ...payloadEntry,
+              id: editData.timesheetEntryId,
+            },
+          ],
+        });
+        showStatusToast("Entry updated successfully", "success");
+        refreshData();
       }
 
-      // If the string doesn't end with 'Z' or a timezone offset, assume it's UTC and add 'Z'
-      const normalized = /Z$|[+-]\d{2}:\d{2}$/.test(datetimeString)
-        ? datetimeString
-        : datetimeString + "Z";
-
-      return new Date(normalized);
-    } catch (error) {
-      console.error("Error parsing time:", datetimeString, error);
-      return null;
+      setEditIndex(null);
+      setEditData({});
+    } catch (err) {
+      showStatusToast("Failed to save entry locally.", "error");
     }
-  }
+  };
 
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
     if (!isValid(addData)) return;
-    setPendingEntries((prev) => [
-      ...prev,
-      (() => {
-        const newEntry = {
-          ...addData,
-          projectId: parseInt(addData.projectId),
-          taskId: parseInt(addData.taskId),
-          fromTime: addData.fromTime,
-          toTime: addData.toTime,
-          billable: !!addData.isBillable,
-          workLocation: addData.workType,
-        };
-        return newEntry;
-      })(),
-    ]);
-    // hide add-row and reset
+
+    const newEntry = {
+      ...addData,
+      projectId: parseInt(addData.projectId),
+      taskId: parseInt(addData.taskId),
+      fromTime: addData.fromTime,
+      toTime: addData.toTime,
+      billable: !!addData.isBillable,
+      workLocation: addData.workType,
+      _isNew: true, // 👈 mark this as new (unsaved)
+      _tempId: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    };
+
+    setPendingEntries((prev) => [...prev, newEntry]);
     setAddingNewEntry(false);
     setAddData({ workType: "Office", isBillable: "Yes" });
   };
@@ -358,7 +525,7 @@ const EntriesTable = ({
       <tbody>
         {[...entries, ...pendingEntries].map((entry, idx) => (
           <tr
-            key={entry.timesheetEntryId || `new-${idx}`}
+            key={entry.timesheetEntryId ?? entry._tempId ?? `new-${idx}`}
             className={`text-sm ${
               idx % 2 === 0 ? "bg-white" : "bg-gray-50"
             } hover:bg-blue-50 transition`}
@@ -571,30 +738,10 @@ const EntriesTable = ({
               <div className="flex justify-end py-1">
                 <Button
                   size="small"
-                  onClick={async () => {
-                    try {
-                      await addEntryToTimesheet(
-                        timesheetId,
-                        workDate,
-                        pendingEntries.map((entry) => ({
-                          ...entry,
-                          fromTime: new Date(
-                            `${workDate}T${entry.fromTime}`
-                          ).toISOString(),
-                          toTime: new Date(
-                            `${workDate}T${entry.toTime}`
-                          ).toISOString(),
-                        }))
-                      );
-                      setPendingEntries([]);
-                      refreshData();
-                      showStatusToast("Timesheet submitted!", "success");
-                    } catch (err) {
-                      showStatusToast("Failed to submit timesheet", "error");
-                    }
-                  }}
+                  disabled={submitting}
+                  onClick={submitPendingEntries}
                 >
-                  Submit Timesheet
+                  {submitting ? "Submitting..." : "Submit Timesheet"}
                 </Button>
               </div>
             </td>
