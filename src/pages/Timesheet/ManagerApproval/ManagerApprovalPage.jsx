@@ -151,8 +151,8 @@ const handleResetFilters = () => {
 
   // ✅ Add this function inside ManagerApprovalPage component, before return()
   const handleTableRefresh = async () => {
-    await fetchGroupedTimesheets(); // refresh approval table
-    await fetchDashboardData(); // refresh dashboard summary
+     fetchGroupedTimesheets(); // refresh approval table
+     fetchDashboardData(); // refresh dashboard summary
   };
 
   if (loading && loadingDashboard) {
