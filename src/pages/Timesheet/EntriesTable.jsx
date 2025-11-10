@@ -62,20 +62,28 @@ const EntriesTable = ({
   });
   const [pendingEntries, setPendingEntries] = useState([]);
 
-  // ✅ Add this helper here
-  // const isCurrentMonth = (dateStr) => {
-  //   const today = new Date();
-  //   const work = new Date(dateStr);
-  //   return (
-  //     work.getMonth() === today.getMonth() &&
-  //     work.getFullYear() === today.getFullYear()
-  //   );
-  //};
-  //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
+  // ✅ Converts a backend UTC datetime string (e.g. "2025-11-10T04:30:00Z")
+  //    to a local "HH:mm" string that will show correctly in <input type="time">
+  const toLocalTimeString = (utcString) => {
+    if (!utcString) return "";
+    try {
+      // Ensure it's treated as UTC — even if backend sends without "Z"
+      const utcDate = utcString.endsWith("Z")
+        ? new Date(utcString)
+        : new Date(utcString + "Z");
+
+      const localHours = utcDate.getHours().toString().padStart(2, "0");
+      const localMinutes = utcDate.getMinutes().toString().padStart(2, "0");
+      return `${localHours}:${localMinutes}`;
+    } catch (err) {
+      console.error("Error converting UTC to local:", utcString, err);
+      return "";
+    }
+  };
 
   useEffect(() => {
     // console.log({addingNewEntry});
-    
+
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
@@ -129,8 +137,8 @@ const EntriesTable = ({
       timesheetEntryId: entry.timesheetEntryId,
       projectId: entry.projectId,
       taskId: entry.taskId,
-      fromTime: new Date(entry.fromTime).toISOString().slice(11, 16),
-      toTime: new Date(entry.toTime).toISOString().slice(11, 16),
+      fromTime: toLocalTimeString(entry.fromTime),
+      toTime: toLocalTimeString(entry.toTime),
       workType: entry.workType,
       description: entry.description,
       isBillable: entry.billable, // true/false
@@ -225,12 +233,6 @@ const EntriesTable = ({
 
   const handleSave = async () => {
     if (!isValid(editData)) return;
-    const newStart = new Date(`${workDate}T${editData.fromTime}`);
-    const newEnd = new Date(`${workDate}T${editData.toTime}`);
-    if (hasOverlap(newStart, newEnd, editData.timesheetEntryId)) {
-      showStatusToast("Time overlap detected with another entry!", "error");
-      return;
-    }
     try {
       await updateTimesheet(timesheetId, {
         workDate,
@@ -294,12 +296,6 @@ const EntriesTable = ({
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
     if (!isValid(addData)) return;
-    // const newStart = new Date(`${workDate}T${addData.fromTime}`);
-    // const newEnd = new Date(`${workDate}T${addData.toTime}`);
-    if (hasOverlap(addData.fromTime, addData.toTime)) {
-      showStatusToast("Time overlap detected with another entry!", "error");
-      return;
-    }
     setPendingEntries((prev) => [
       ...prev,
       (() => {
