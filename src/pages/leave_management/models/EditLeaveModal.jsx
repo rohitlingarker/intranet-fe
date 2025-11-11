@@ -32,7 +32,7 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
       availableText =
         (balance.remainingLeaves % 1 === 0
           ? balance.remainingLeaves
-          : balance.remainingLeaves.toFixed(1)) + " days available";
+          : balance.remainingLeaves), " days available";
     } else {
       availableText = "Not Available";
     }
@@ -43,7 +43,7 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
       availableText,
       availableDays: isInfinite ? Infinity : balance.remainingLeaves,
       isInfinite,
-      disabled: !isInfinite && balance.remainingLeaves <= 0,
+      disabled: (!isInfinite && balance.remainingLeaves <= 0) || balance.isBlocked,
       allowHalfDay: !!balance.leaveType.allowHalfDay,
       requiresDocumentation: !!balance.leaveType.requiresDocumentation,
     };

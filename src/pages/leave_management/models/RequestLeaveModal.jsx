@@ -60,7 +60,7 @@ function mapLeaveBalancesToDropdown(balances) {
       availableText,
       availableDays: isInfinite ? Infinity : balance.remainingLeaves,
       isInfinite,
-      disabled: !isInfinite && (balance.remainingLeaves <= 0 || balance.isBlocked),
+      disabled: (!isInfinite && balance.remainingLeaves <= 0) || balance.isBlocked,
       allowHalfDay: !!balance.leaveType.allowHalfDay,
       requiresDocumentation: !!balance.leaveType.requiresDocumentation,
       raw: balance,
