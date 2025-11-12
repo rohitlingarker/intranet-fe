@@ -22,13 +22,16 @@ const ManagerApprovalTable = ({
   const [holidayLoading, setHolidayLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-
   // 🆕 Update User feature hooks — moved here to fix undefined error
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [selectedUpdateRecord, setSelectedUpdateRecord] = useState(null);
   const [updateHoliday, setUpdateHoliday] = useState("");
   const [updateReason, setUpdateReason] = useState("");
   const updateSectionRef = React.useRef(null);
+
+  const [actionLoadingUser, setActionLoadingUser] = useState(null);
+  const [userLevelLoading, setUserLevelLoading] = useState(null); // for Approve/Reject All Weeks
+  const [weekLevelLoading, setWeekLevelLoading] = useState({}); // for per-week Approve/Reject
 
   // -----------------------------
   // Fetch project info
@@ -154,133 +157,199 @@ const ManagerApprovalTable = ({
   };
 
   // -----------------------------
+  // Bulk Approve/Reject All Weeks for a User
+  // -----------------------------
+  const handleSelectAllWeeks = async (user, status) => {
+    try {
+      // 🧠 Filter only SUBMITTED weeks and Pattially Approved
+      const submittedWeeks = user.weeklySummary.filter((week) => {
+        const status = week.weeklyStatus?.toUpperCase();
+        return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
+      });
+
+      if (submittedWeeks.length === 0) {
+        showStatusToast(
+          `No submitted weeks found to ${status.toLowerCase()} for ${
+            user.userName
+          }`,
+          "info"
+        );
+        return;
+      }
+
+      // 🧩 Build request payload with only submitted weeks
+      const requestPayload = submittedWeeks.map((week) => ({
+        userId: user.userId,
+        timesheetIds: week.timesheets.map((t) => t.timesheetId),
+        status,
+        comments: status === "APPROVED" ? "approved" : "rejected",
+      }));
+
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/timesheets/review_multiple_users`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(requestPayload),
+        }
+      );
+
+      if (!res.ok) throw new Error("Bulk review failed");
+
+      showStatusToast(
+        `All submitted weeks ${status.toLowerCase()} successfully for ${
+          user.userName
+        }`,
+        "success"
+      );
+
+       onRefresh?.();
+    } catch (err) {
+      console.error("Error approving all weeks:", err);
+      showStatusToast(`Failed to ${status.toLowerCase()} all weeks`, "error");
+    }
+  };
+
+  // -----------------------------
   // Export Logic (CSV / PDF)
   // -----------------------------
-   
-// 🧮 Helper: Get month-wise week and date range
-const getMonthWeekRange = (date) => {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = d.getMonth();
 
-  const firstOfMonth = new Date(year, month, 1);
-  const lastOfMonth = new Date(year, month + 1, 0);
+  // 🧮 Helper: Get month-wise week and date range
+  const getMonthWeekRange = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = d.getMonth();
 
-  const weeks = [];
-  let start = new Date(firstOfMonth);
-  while (start <= lastOfMonth) {
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    if (end > lastOfMonth) end.setDate(lastOfMonth.getDate());
-    weeks.push({ start: new Date(start), end: new Date(end) });
-    start.setDate(start.getDate() + 7);
-  }
+    const firstOfMonth = new Date(year, month, 1);
+    const lastOfMonth = new Date(year, month + 1, 0);
 
-  for (let i = 0; i < weeks.length; i++) {
-    if (d >= weeks[i].start && d <= weeks[i].end) {
-      return {
-        weekNumber: i + 1,
-        dateRange: `${weeks[i].start.toLocaleDateString()} - ${weeks[i].end.toLocaleDateString()}`,
-      };
+    const weeks = [];
+    let start = new Date(firstOfMonth);
+    while (start <= lastOfMonth) {
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      if (end > lastOfMonth) end.setDate(lastOfMonth.getDate());
+      weeks.push({ start: new Date(start), end: new Date(end) });
+      start.setDate(start.getDate() + 7);
     }
-  }
-  return { weekNumber: "-", dateRange: "-" };
-};
 
-const exportCSV = () => {
-  const rows = [
-    [
-      "User ID",
-      "User Name",
-      "Week",
-      "Date Range",
-      "Total Hours",
-      "Billable Hours",
-      "Date",
-      "Project",
-      "Task",
-      "Start Time",
-      "End Time",
-      "Hours Worked",
-      "Work Type",
-      "Description",
-      "Status",
-    ],
-  ];
+    for (let i = 0; i < weeks.length; i++) {
+      if (d >= weeks[i].start && d <= weeks[i].end) {
+        return {
+          weekNumber: i + 1,
+          dateRange: `${weeks[i].start.toLocaleDateString()} - ${weeks[
+            i
+          ].end.toLocaleDateString()}`,
+        };
+      }
+    }
+    return { weekNumber: "-", dateRange: "-" };
+  };
 
-  enrichedGroupedData.forEach((user) => {
-    let userPrinted = false;
+  const exportCSV = () => {
+    const rows = [
+      [
+        "User ID",
+        "User Name",
+        "Week",
+        "Date Range",
+        "Total Hours",
+        "Billable Hours",
+        "Date",
+        "Project",
+        "Task",
+        "Start Time",
+        "End Time",
+        "Hours Worked",
+        "Work Type",
+        "Description",
+        "Status",
+      ],
+    ];
 
-    user.weeklySummary.forEach((week) => {
-      // Get week details based on calendar month
-      const allDates = week.timesheets.flatMap((t) => t.entries.map((e) => new Date(t.workDate)));
-      const firstEntryDate = allDates[0];
-      const { weekNumber, dateRange } = getMonthWeekRange(firstEntryDate);
+    enrichedGroupedData.forEach((user) => {
+      let userPrinted = false;
 
-      // Calculate total hours for the week
-      const totalHours = week.timesheets.reduce(
-        (sum, sheet) => sum + sheet.entries.reduce((s, e) => s + (e.hoursWorked || 0), 0),
-        0
-      );
+      user.weeklySummary.forEach((week) => {
+        // Get week details based on calendar month
+        const allDates = week.timesheets.flatMap((t) =>
+          t.entries.map((e) => new Date(t.workDate))
+        );
+        const firstEntryDate = allDates[0];
+        const { weekNumber, dateRange } = getMonthWeekRange(firstEntryDate);
 
-      // 🧮 Calculate Billable Hours based on `billable === "Yes"` (or true)
-      const billableHours = week.timesheets.reduce(
-        (sum, sheet) =>
-          sum +
-          sheet.entries
-            .filter((e) => e.billable === "Yes" || e.billable === true)
-            .reduce((s, e) => s + (e.hoursWorked || 0), 0),
-        0
-      );
+        // Calculate total hours for the week
+        const totalHours = week.timesheets.reduce(
+          (sum, sheet) =>
+            sum + sheet.entries.reduce((s, e) => s + (e.hoursWorked || 0), 0),
+          0
+        );
 
-      let weekPrinted = false;
+        // 🧮 Calculate Billable Hours based on `billable === "Yes"` (or true)
+        const billableHours = week.timesheets.reduce(
+          (sum, sheet) =>
+            sum +
+            sheet.entries
+              .filter((e) => e.billable === "Yes" || e.billable === true)
+              .reduce((s, e) => s + (e.hoursWorked || 0), 0),
+          0
+        );
 
-      week.timesheets.forEach((sheet) =>
-        sheet.entries.forEach((entry) => {
-          const userId = !userPrinted ? user.userId : "";
-          const userName = !userPrinted ? user.userName : "";
-          const weekLabel = !weekPrinted ? `Week ${weekNumber}` : "";
-          const dateRangeValue = !weekPrinted ? dateRange : "";
-          const totalHoursValue = !weekPrinted ? totalHours.toFixed(2) : "";
-          const billableHoursValue = !weekPrinted ? billableHours.toFixed(2) : "";
+        let weekPrinted = false;
 
-          rows.push([
-            userId,
-            userName,
-            weekLabel,
-            dateRangeValue,
-            totalHoursValue,
-            billableHoursValue,
-            new Date(sheet.workDate).toLocaleDateString(),
-            entry.projectName,
-            entry.taskName,
-            new Date(entry.fromTime).toLocaleTimeString(),
-            new Date(entry.toTime).toLocaleTimeString(),
-            entry.hoursWorked?.toFixed(2) || 0,
-            entry.workLocation || "-",
-            entry.description || "",
-            sheet.status,
-          ]);
+        week.timesheets.forEach((sheet) =>
+          sheet.entries.forEach((entry) => {
+            const userId = !userPrinted ? user.userId : "";
+            const userName = !userPrinted ? user.userName : "";
+            const weekLabel = !weekPrinted ? `Week ${weekNumber}` : "";
+            const dateRangeValue = !weekPrinted ? dateRange : "";
+            const totalHoursValue = !weekPrinted ? totalHours.toFixed(2) : "";
+            const billableHoursValue = !weekPrinted
+              ? billableHours.toFixed(2)
+              : "";
 
-          userPrinted = true;
-          weekPrinted = true;
-        })
-      );
+            rows.push([
+              userId,
+              userName,
+              weekLabel,
+              dateRangeValue,
+              totalHoursValue,
+              billableHoursValue,
+              new Date(sheet.workDate).toLocaleDateString(),
+              entry.projectName,
+              entry.taskName,
+              new Date(entry.fromTime).toLocaleTimeString(),
+              new Date(entry.toTime).toLocaleTimeString(),
+              entry.hoursWorked?.toFixed(2) || 0,
+              entry.workLocation || "-",
+              entry.description || "",
+              sheet.status,
+            ]);
+
+            userPrinted = true;
+            weekPrinted = true;
+          })
+        );
+      });
     });
-  });
 
-  // Download CSV
-  const csvContent =
-    "data:text/csv;charset=utf-8," +
-    rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    // Download CSV
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
 
-  const link = document.createElement("a");
-  link.href = encodeURI(csvContent);
-  link.download = "manager_timesheets_with_billable_hours.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = "manager_timesheets_with_billable_hours.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -346,16 +415,21 @@ const exportCSV = () => {
           {/* Manager actions */}
           {week.weeklyStatus === "SUBMITTED" && (
             <div className="p-4 border-t flex gap-3 justify-end items-center">
-              {actionLoading ? (
+              {weekLevelLoading?.[`${user.userId}-${week.weekId}`] ? (
                 <LoadingSpinner text="Processing..." />
               ) : (
                 <>
                   <Button
                     variant="success"
                     size="medium"
-                    disabled={actionLoading}
+                    disabled={Object.values(weekLevelLoading || {}).some(
+                      Boolean
+                    )}
                     onClick={async () => {
-                      setActionLoading(true);
+                      setWeekLevelLoading((prev) => ({
+                        ...prev,
+                        [`${user.userId}-${week.weekId}`]: true,
+                      }));
                       try {
                         const timesheetIds = week.timesheets.map(
                           (t) => t.timesheetId
@@ -366,18 +440,17 @@ const exportCSV = () => {
                           "APPROVED",
                           "approved"
                         );
-                        // showStatusToast(
-                        //   "Timesheets approved successfully!",
-                        //   "success"
-                        // );
-                        await onRefresh?.();
+                         onRefresh?.();
                       } catch (err) {
                         showStatusToast(
                           "Failed to approve timesheets",
                           "error"
                         );
                       } finally {
-                        setActionLoading(false);
+                        setWeekLevelLoading((prev) => ({
+                          ...prev,
+                          [`${user.userId}-${week.weekId}`]: false,
+                        }));
                       }
                     }}
                   >
@@ -387,7 +460,9 @@ const exportCSV = () => {
                   <Button
                     variant="danger"
                     size="medium"
-                    disabled={actionLoading}
+                    disabled={Object.values(weekLevelLoading || {}).some(
+                      Boolean
+                    )}
                     onClick={() => {
                       setShowCommentBox({ [user.userId]: week.weekId });
                       setRejectionComments((prev) => ({
@@ -465,7 +540,7 @@ const exportCSV = () => {
                         ...prev,
                         [user.userId]: null,
                       }));
-                      await onRefresh?.();
+                       onRefresh?.();
                     } catch (err) {
                       console.error("Error rejecting timesheets:", err);
                       showStatusToast("Failed to reject timesheets", "error");
@@ -650,14 +725,11 @@ const exportCSV = () => {
             },
           }
         ),
-        fetch(
-          `${import.meta.env.VITE_BASE_URL}/api/holidays/month/${currentMonth}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        ),
+        fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/holidays/currentMonth`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }),
       ]);
 
       if (!usersRes.ok || !holidaysRes.ok)
@@ -757,9 +829,54 @@ const exportCSV = () => {
                 key={user.userId}
                 className="bg-white rounded-xl shadow-md border p-4"
               >
-                <h2 className="text-xl font-bold mb-3 text-gray-800">
-                  {user.userName} (ID: {user.userId})
-                </h2>
+                {/* ✅ One-line layout for username and action buttons */}
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {user.userName} (ID: {user.userId})
+                  </h2>
+
+                  <div className="flex gap-3">
+                    {userLevelLoading === user.userId ? (
+                      <LoadingSpinner text="Processing..." />
+                    ) : (
+                      <>
+                        <Button
+                          variant="success"
+                          size="small"
+                          disabled={userLevelLoading !== null}
+                          onClick={async () => {
+                            setUserLevelLoading(user.userId);
+                            try {
+                              await handleSelectAllWeeks(user, "APPROVED");
+                            } finally {
+                              setUserLevelLoading(null);
+                            }
+                          }}
+                        >
+                          Approve All Weeks
+                        </Button>
+
+                        <Button
+                          variant="danger"
+                          size="small"
+                          disabled={userLevelLoading !== null}
+                          onClick={async () => {
+                            setUserLevelLoading(user.userId);
+                            try {
+                              await handleSelectAllWeeks(user, "REJECTED");
+                            } finally {
+                              setUserLevelLoading(null);
+                            }
+                          }}
+                        >
+                          Reject All Weeks
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <hr className="my-3 border-gray-200" />
                 {renderUserWeeks(user)}
               </div>
             ))
@@ -956,7 +1073,7 @@ const exportCSV = () => {
                           <option value="">-- Select Holiday --</option>
                           {monthlyHolidays.map((h) => (
                             <option key={h.holidayId} value={h.holidayDate}>
-                              {h.holidayDate} - {h.holidayDescription}
+                              {h.holidayDate} - {h.holidayName}
                             </option>
                           ))}
                         </select>

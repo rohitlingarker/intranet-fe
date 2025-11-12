@@ -3,11 +3,15 @@ import ManagerApprovalTable from "./ManagerApprovalTable";
 import Button from "../../../components/Button/Button";
 import ManagerDashboard from "../ManagerDashboard";
 import TimesheetHeader from "../TimesheetHeader";
+import { getManagerDashboardData } from "../api";
+import { useMemo } from "react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const ManagerApprovalPage = () => {
   const [groupedTimesheets, setGroupedTimesheets] = useState([]);
-  const [filteredTimesheets, setFilteredTimesheets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
 
   // ✅ Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,14 +48,29 @@ const ManagerApprovalPage = () => {
       setLoading(false);
     }
   };
+  const fetchDashboardData = async () => {
+    setLoadingDashboard(true);
+    try {
+      const data = await getManagerDashboardData(); // ✅ imported from api.js
+      setDashboardData(data);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoadingDashboard(false);
+    }
+  };
 
   useEffect(() => {
-    fetchGroupedTimesheets();
+    const loadInitialData = async () => {
+      await Promise.all([fetchGroupedTimesheets(), fetchDashboardData()]);
+    };
+    loadInitialData();
   }, []);
 
-  // ✅ Apply filters for deeply nested structure
-  useEffect(() => {
-    if (!groupedTimesheets.length) return;
+  // ✅ Apply filters for deeply nested structureimport { useMemo } from "react";
+
+  const filteredTimesheets = useMemo(() => {
+    if (!groupedTimesheets.length) return [];
 
     // Start with all users' timesheets
     let filtered = [...groupedTimesheets];
@@ -115,26 +134,50 @@ const ManagerApprovalPage = () => {
       return true; // ✅ include this user
     });
 
-    setFilteredTimesheets(filtered);
+    return filtered;
   }, [statusFilter, userFilter, selectedDate, searchTerm, groupedTimesheets]);
 
+const handleResetFilters = () => {
+  setSearchTerm("");
+  setSelectedDate("");
+  setUserFilter("All Users");
+  setStatusFilter("All");
 
-  // ✅ Reset Filters
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedDate("");
-    setUserFilter("All Users");
-    setStatusFilter("All");
-    setFilteredTimesheets(groupedTimesheets);
+  // Smoothly scroll down to the timesheet table after resetting filters
+  if (entriesTableRef.current) {
+    entriesTableRef.current.scrollIntoView({ behavior: "smooth" });
+  }
+};
+
+  // ✅ Add this function inside ManagerApprovalPage component, before return()
+  const handleTableRefresh = async () => {
+     fetchGroupedTimesheets(); // refresh approval table
+     fetchDashboardData(); // refresh dashboard summary
   };
+
+  if (loading && loadingDashboard) {
+    return (
+      <div className="flex justify-center mt-10">
+        <LoadingSpinner text="Loading Manager View..." />
+      </div>
+    );
+  }
+
 
   return (
     <div className="max-w-7xl mx-auto p-6">
       <TimesheetHeader />
       <ManagerDashboard
+        data={dashboardData}
+        loading={loadingDashboard}
         setStatusFilter={setStatusFilter}
         handleScroll={handleScroll}
       />
+      {!loadingDashboard && !dashboardData && (
+        <div className="text-center text-red-600 my-4">
+          Failed to load dashboard summary. Please refresh the page.
+        </div>
+      )}
 
       {/* ✅ Filter Header */}
       <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-3 mb-6">
@@ -198,7 +241,7 @@ const ManagerApprovalPage = () => {
         groupedData={filteredTimesheets}
         statusFilter={statusFilter}
         ref={entriesTableRef}
-        onRefresh={fetchGroupedTimesheets}
+        onRefresh={handleTableRefresh}
       />
     </div>
   );
