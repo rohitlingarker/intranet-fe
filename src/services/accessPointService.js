@@ -50,4 +50,28 @@ export const assignPermissionToAccessPoint = (accessPointId, permissionId) =>
     `${ACCESS_POINT_URL}${accessPointId}/map-permission/${permissionId}`
   );
 
+export const uploadBulkPermissionMappingFile = (formData) =>
+  axiosInstance.post(
+    `/admin/access-points/bulk-permission-mapping-upload`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+
+export const mapPermissionBulkFile = (formData) =>
+  axiosInstance.post(
+    `/admin/access-points/access-point-map-permission-bulk`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+
 // console.log(`${ACCESS_POINT_URL}${accessPointId}/map-permission/${permissionId}`);

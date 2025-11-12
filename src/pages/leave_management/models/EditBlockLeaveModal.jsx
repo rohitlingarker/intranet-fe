@@ -28,16 +28,16 @@ export default function EditBlockLeaveModal({
       setStartDate(block.startDate || "");
       setEndDate(block.endDate || "");
 
-      // build initial state from block.blockedMappings and members/leaveType lists
+      // build initial state from block.blockedMappings and using ALL leave types
       const init = {};
       const members = block.memberIds || [];
-      const leaveTypeIds = block.leaveTypeIds || [];
 
-      // create structure
+      // create structure: for every member, create entry for every leave type we have
       members.forEach((emp) => {
         init[emp] = {};
-        leaveTypeIds.forEach((lt) => {
-          init[emp][lt] = false; // default to false (INACTIVE)
+        (allLeaveTypes || []).forEach((lt) => {
+          // default to false (INACTIVE / Free)
+          init[emp][String(lt.value)] = false;
         });
       });
 
@@ -56,7 +56,13 @@ export default function EditBlockLeaveModal({
       setStartDate("");
       setEndDate("");
     }
-  }, [block]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [block, allLeaveTypes]); // include allLeaveTypes so newly loaded leave types are picked up
+
+  // Now show ALL leave types in the table columns (not only block.leaveTypeIds)
+  const leaveTypesInBlock = useMemo(() => {
+    return allLeaveTypes || [];
+  }, [allLeaveTypes]);
 
   const membersInBlock = useMemo(() => {
     const memberIds = new Set(block?.memberIds || []);
@@ -64,13 +70,6 @@ export default function EditBlockLeaveModal({
       memberIds.has(String(m.value))
     );
   }, [block, allProjectMembers]);
-
-  const leaveTypesInBlock = useMemo(() => {
-    const leaveTypeIds = new Set(block?.leaveTypeIds || []);
-    return (allLeaveTypes || []).filter((lt) =>
-      leaveTypeIds.has(String(lt.value))
-    );
-  }, [block, allLeaveTypes]);
 
   const getCellStatus = (empId, ltId) =>
     !!(statusState?.[empId] && statusState[empId][ltId]);
@@ -92,7 +91,7 @@ export default function EditBlockLeaveModal({
         const updated = { ...(prev || {}) };
         updated[empId] = { ...(updated[empId] || {}) };
         (leaveTypesInBlock || []).forEach((lt) => {
-          updated[empId][lt.value] = false;
+          updated[empId][String(lt.value)] = false;
         });
         return updated;
       });
@@ -108,7 +107,7 @@ export default function EditBlockLeaveModal({
   };
 
   const getEmployeeCheckState = (empId) => {
-    const ltIds = leaveTypesInBlock.map((lt) => lt.value);
+    const ltIds = leaveTypesInBlock.map((lt) => String(lt.value));
     const current = statusState[empId] || {};
     const checkedCount = ltIds.filter((lt) => !!current[lt]).length;
     if (checkedCount === 0) return false;
@@ -117,146 +116,105 @@ export default function EditBlockLeaveModal({
   };
 
   // compute diffs and build payload; then call onSave(payload)
-const handleSaveClick = async () => {
-  if (!block) return;
-  setSubmitting(true);
+  const handleSaveClick = async () => {
+    if (!block) return;
+    setSubmitting(true);
 
-  try {
-    const payload = { blockId: block.id };
-    let hasNormalUpdates = false;
-    let hasUnblocks = false;
+    try {
+      const payload = { blockId: block.id };
+      let hasNormalUpdates = false;
+      let hasUnblocks = false;
 
-    /* ---------------------- 1) DATE + REASON CHANGES ---------------------- */
-    const dateChanged =
-      (startDate || "") !== (block.startDate || "") ||
-      (endDate || "") !== (block.endDate || "");
-    const reasonChanged = (reason || "") !== (block.reason || "");
+      /* ---------------------- 1) DATE + REASON CHANGES ---------------------- */
+      const dateChanged =
+        (startDate || "") !== (block.startDate || "") ||
+        (endDate || "") !== (block.endDate || "");
+      const reasonChanged = (reason || "") !== (block.reason || "");
 
-    if (dateChanged || reasonChanged) {
-      hasNormalUpdates = true;
-      payload.updates = {};
-      if (dateChanged) {
-        payload.updates.startDate = startDate;
-        payload.updates.endDate = endDate;
-      }
-      if (reasonChanged) {
-        payload.updates.reason = reason;
-      }
-    }
-
-    /* ---------------------- 2) MAPPING CHANGES (TOGGLES) ---------------------- */
-    const unblockedMapTemp = {};
-    const updatedMappings = [];
-
-    const members = membersInBlock || [];
-    const lts = leaveTypesInBlock || [];
-
-    members.forEach((member) => {
-      const empId = String(member.value);
-      lts.forEach((lt) => {
-        const ltId = String(lt.value);
-
-        const initial = !!(initialStatusState?.[empId]?.[ltId]);
-        const current = !!(statusState?.[empId]?.[ltId]);
-
-        if (initial !== current) {
-          if (initial === true && current === false) {
-            // ACTIVE → INACTIVE = unblock request
-            hasUnblocks = true;
-            if (!unblockedMapTemp[empId]) unblockedMapTemp[empId] = [];
-            unblockedMapTemp[empId].push(ltId);
-          } else {
-            // INACTIVE → ACTIVE or other change
-            hasNormalUpdates = true;
-            updatedMappings.push({
-              employeeId: empId,
-              leaveTypeId: ltId,
-              status: current ? "ACTIVE" : "INACTIVE",
-            });
-          }
+      if (dateChanged || reasonChanged) {
+        hasNormalUpdates = true;
+        payload.updates = {};
+        if (dateChanged) {
+          payload.updates.startDate = startDate;
+          payload.updates.endDate = endDate;
         }
+        if (reasonChanged) {
+          payload.updates.reason = reason;
+        }
+      }
+
+      /* ---------------------- 2) MAPPING CHANGES (TOGGLES) ---------------------- */
+      const unblockedMapTemp = {};
+      const updatedMappings = [];
+
+      const members = membersInBlock || [];
+      const lts = leaveTypesInBlock || [];
+
+      members.forEach((member) => {
+        const empId = String(member.value);
+        lts.forEach((lt) => {
+          const ltId = String(lt.value);
+
+          const initial = !!(initialStatusState?.[empId]?.[ltId]);
+          const current = !!(statusState?.[empId]?.[ltId]);
+
+          if (initial !== current) {
+            if (initial === true && current === false) {
+              // ACTIVE → INACTIVE = unblock request
+              hasUnblocks = true;
+              if (!unblockedMapTemp[empId]) unblockedMapTemp[empId] = [];
+              unblockedMapTemp[empId].push(ltId);
+            } else {
+              // INACTIVE → ACTIVE or other change (this includes newly added blocks)
+              hasNormalUpdates = true;
+              updatedMappings.push({
+                employeeId: empId,
+                leaveTypeId: ltId,
+                status: current ? "ACTIVE" : "INACTIVE",
+              });
+            }
+          }
+        });
       });
-    });
 
-    if (updatedMappings.length > 0) {
-      payload.mappingUpdates = updatedMappings;
-    }
+      if (updatedMappings.length > 0) {
+        payload.mappingUpdates = updatedMappings;
+      }
 
-    const unblockRequests = Object.entries(unblockedMapTemp).map(
-      ([employeeId, leaveTypeIds]) => ({ employeeId, leaveTypeIds })
-    );
+      const unblockRequests = Object.entries(unblockedMapTemp).map(
+        ([employeeId, leaveTypeIds]) => ({ employeeId, leaveTypeIds })
+      );
 
-    if (unblockRequests.length > 0) {
-      payload.unblockedRequests = unblockRequests;
-    }
+      if (unblockRequests.length > 0) {
+        payload.unblockedRequests = unblockRequests;
+      }
 
-    /* ---------------------- 3) SET TYPE FIELD ---------------------- */
-    if (hasUnblocks && !hasNormalUpdates) {
-      payload.type = "UNBLOCK";
-    } else {
-      payload.type = "UPDATE"; // default if updating OR mixed
-    }
+      /* ---------------------- 3) SET TYPE FIELD ---------------------- */
+      if (hasUnblocks && !hasNormalUpdates) {
+        payload.type = "UNBLOCK";
+      } else {
+        payload.type = "UPDATE"; // default if updating OR mixed
+      }
 
-    /* ---------------------- 4) Prevent Empty Submit ---------------------- */
-    if (Object.keys(payload).length === 2 && payload.type === "UPDATE") {
-      toast.info("No changes detected.");
+      /* ---------------------- 4) Prevent Empty Submit ---------------------- */
+      // We expect at least blockId + something else (type only is not a change)
+      const meaningfulKeys = Object.keys(payload).filter((k) => k !== "blockId");
+      if (meaningfulKeys.length === 0) {
+        toast.info("No changes detected.");
+        setSubmitting(false);
+        return;
+      }
+
+      /* ---------------------- 5) Send to Parent Handler ---------------------- */
+      onSave(payload);
+      onClose();
+    } catch (err) {
+      console.error("Modal save error:", err);
+      toast.error("Failed to prepare changes. Try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    /* ---------------------- 5) Send to Parent Handler ---------------------- */
-    onSave(payload);
-    onClose();
-
-  } catch (err) {
-    console.error("Modal save error:", err);
-    toast.error("Failed to prepare changes. Try again.");
-  } finally {
-    setSubmitting(false);
-  }
-};
-
-
-
-  // const handleSaveClick = async () => {
-  //   if (!block) return;
-  //   setSubmitting(true);
-
-  //   try {
-  //     // Build mappingUpdates: all rows, not only changed
-  //     const mappingUpdates = membersInBlock.flatMap((member) => {
-  //       const empId = String(member.value);
-  //       return leaveTypesInBlock.map((lt) => {
-  //         const ltId = String(lt.value);
-  //         const status = statusState?.[empId]?.[ltId] ? "ACTIVE" : "INACTIVE";
-  //         return {
-  //           employeeId: empId,
-  //           leaveTypeId: ltId,
-  //           status,
-  //         };
-  //       });
-  //     });
-
-  //     const payload = {
-  //       blockId: block.id,
-  //       startDate,
-  //       endDate,
-  //       reason,
-  //       status: "ACTIVE", // keeping same status unless UI allows edit
-  //       mappingUpdates,
-  //     };
-
-  //     console.log("🟦 Final Update Payload:", payload);
-
-  //     onSave(payload);
-  //     onClose();
-  //   } catch (err) {
-  //     console.error("Modal save error:", err);
-  //     toast.error("Failed to prepare update payload. Try again.");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // };
+  };
 
   if (!isOpen || !block) return null;
 
@@ -402,28 +360,43 @@ const handleSaveClick = async () => {
                             {leaveTypesInBlock.map((lt) => {
                               const ltId = String(lt.value);
                               const checked = getCellStatus(empId, ltId);
+                              const initiallyBlocked = !!(
+                                initialStatusState?.[empId]?.[ltId]
+                              );
+                              const isNewlyBlocked = checked && !initiallyBlocked;
+
                               return (
                                 <td
                                   key={ltId}
                                   className="px-4 py-3 text-center text-sm"
                                 >
-                                  <div className="flex justify-center items-center gap-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={checked}
-                                      onChange={(e) =>
-                                        handleCellToggle(
-                                          empId,
-                                          ltId,
-                                          e.target.checked
-                                        )
-                                      }
-                                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                                    />
+                                  <div className="flex justify-center items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={(e) =>
+                                          handleCellToggle(
+                                            empId,
+                                            ltId,
+                                            e.target.checked
+                                          )
+                                        }
+                                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                      />
+                                    </div>
+
+                                    {/* Labels: Blocked (existing) = red, New Block = yellow, Free = green */}
                                     {checked ? (
-                                      <span className="text-xs text-red-500 font-medium">
-                                        Blocked
-                                      </span>
+                                      initiallyBlocked ? (
+                                        <span className="text-xs text-red-500 font-medium">
+                                          Blocked
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-yellow-600 font-semibold">
+                                          New Block
+                                        </span>
+                                      )
                                     ) : (
                                       <span className="text-xs text-green-500 font-medium">
                                         Free

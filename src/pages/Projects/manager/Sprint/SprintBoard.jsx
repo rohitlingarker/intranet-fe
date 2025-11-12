@@ -18,41 +18,75 @@ const SprintBoard = ({ projectId, projectName }) => {
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
-
+  /** ==============================
+   * Fetch Stories
+   ============================== */
   const fetchStories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers });
-      setStories(Array.isArray(res.data) ? res.data : []);
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+        { headers }
+      );
+
+      console.log("📘 Stories API Response:", res.data);
+      const storyList = Array.isArray(res.data)
+        ? res.data
+        : res.data.content || res.data.stories || [];
+
+      setStories(Array.isArray(storyList) ? storyList : []);
     } catch (err) {
-      console.error('Failed to load stories:', err);
+      console.error('❌ Failed to load stories:', err.response?.data || err.message);
+      toast.error('Failed to load stories. Check console for details.');
       setStories([]);
     }
   };
 
+  /** ==============================
+   * Fetch Sprints
+   ============================== */
   const fetchSprints = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, { headers });
-      setSprints(Array.isArray(res.data) ? res.data : []);
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+        { headers }
+      );
+
+      console.log("🏃 Sprint API Response:", res.data);
+
+      // Handle multiple possible backend response formats
+      const sprintList = Array.isArray(res.data)
+        ? res.data
+        : res.data.content || res.data.sprints || [];
+
+      setSprints(Array.isArray(sprintList) ? sprintList : []);
     } catch (err) {
-      console.error('Failed to load sprints:', err);
+      console.error('❌ Failed to load sprints:', err.response?.data || err.message);
+      toast.error('Failed to load sprints. Check console for details.');
       setSprints([]);
     }
   };
 
-  useEffect(() => {
-    fetchStories();
-    fetchSprints();
-  }, [projectId]);
-
+  /** ==============================
+   * Assign Story to Sprint (Drag & Drop)
+   ============================== */
   const handleDropStory = async (storyId, sprintId) => {
     try {
-      await axios.put(`${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`, { sprintId }, { headers });
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
+        { sprintId },
+        { headers }
+      );
+      toast.success('Story assigned to sprint successfully!');
       await fetchStories();
     } catch (err) {
-      console.error('Error assigning story to sprint:', err);
+      console.error('Error assigning story to sprint:', err.response?.data || err.message);
+      toast.error('Failed to assign story to sprint.');
     }
   };
 
+  /** ==============================
+   * Change Sprint Status
+   ============================== */
   const handleStatusChange = async (sprintId, action) => {
     try {
       const response = await axios.put(
@@ -60,17 +94,16 @@ const SprintBoard = ({ projectId, projectName }) => {
         {},
         { headers }
       );
-      const updatedSprint = response.data;
 
+      const updatedSprint = response.data;
       setSprints(prev =>
         prev.map(s => (s.id === sprintId ? updatedSprint : s))
       );
 
+      toast.success(`Sprint ${action === 'start' ? 'started' : 'completed'} successfully!`);
       await fetchStories();
     } catch (error) {
-      console.error(`Failed to ${action} sprint:`, error);
-
-      // Show toast if sprint cannot be completed
+      console.error(`❌ Failed to ${action} sprint:`, error.response?.data || error.message);
       const message =
         error.response?.data?.message ||
         "Cannot complete sprint. Some stories or tasks are not done.";
@@ -82,20 +115,33 @@ const SprintBoard = ({ projectId, projectName }) => {
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-        progress: undefined,
       });
     }
   };
 
-  const filteredSprints = filter === 'ALL'
-    ? sprints
-    : sprints.filter(s => s.status === filter);
+  /** ==============================
+   * Lifecycle
+   ============================== */
+  useEffect(() => {
+    fetchSprints();
+    fetchStories();
+  }, [projectId]);
 
+  /** ==============================
+   * Filtered Sprints
+   ============================== */
+  const filteredSprints =
+    filter === 'ALL' ? sprints : sprints.filter(s => s.status === filter);
+
+  /** ==============================
+   * Render
+   ============================== */
   return (
     <DndProvider backend={HTML5Backend}>
       <ToastContainer />
       <div className="p-6 space-y-6">
-        {/* Page Header */}
+
+        {/* ===== Page Header ===== */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-indigo-900">
             Sprint Planning of {projectName}
@@ -108,7 +154,7 @@ const SprintBoard = ({ projectId, projectName }) => {
           </Button>
         </div>
 
-        {/* Filter Dropdown */}
+        {/* ===== Filter Dropdown ===== */}
         <div className="flex items-center gap-3">
           <label
             htmlFor="sprintFilter"
@@ -128,39 +174,51 @@ const SprintBoard = ({ projectId, projectName }) => {
             <option value="ACTIVE">ACTIVE</option>
             <option value="COMPLETED">COMPLETED</option>
           </select>
+
+          {/* ✅ Debug Reload Button */}
+          {/* <Button
+            onClick={() => {
+              fetchSprints();
+              fetchStories();
+            }}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            🔄 Reload Data
+          </Button> */}
         </div>
 
-
-        {/* Sprint Columns */}
+        {/* ===== Sprint Columns ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative">
           {filteredSprints.length > 0 ? (
-            filteredSprints.map(sprint => (
+            filteredSprints.map((sprint) => (
               <div key={sprint.id} className="bg-white rounded-2xl shadow p-6">
                 <SprintColumn
                   sprint={sprint}
-                  stories={stories.filter(story => story.sprintId === sprint.id)}
+                  stories={stories.filter(
+                    (story) =>
+                      story.sprintId === sprint.id ||
+                      story.sprint?.id === sprint.id // fallback for nested sprint reference
+                  )}
                   onDropStory={handleDropStory}
                   onChangeStatus={handleStatusChange}
                 />
               </div>
             ))
           ) : (
-            // Show message ONLY when filter is not ALL and sprints are loaded
-            filter !== 'ALL' && sprints.length > 0 && (
-              <p className="absolute left-0 text-gray-600 font-medium mt-2">
-                No {filter.toLowerCase()} sprints found.
-              </p>
-            )
+            <p className="text-gray-600 font-medium mt-4">
+              {filter === "ALL"
+                ? "loading..."
+                : `No ${filter.toLowerCase()} sprints found.`}
+            </p>
           )}
         </div>
 
-
-        {/* Modal */}
+        {/* ===== Create Sprint Modal ===== */}
         <CreateSprintModal
           projectId={projectId}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          onCreated={(newSprint) => setSprints(prev => [...prev, newSprint])}
+          onCreated={(newSprint) => setSprints((prev) => [...prev, newSprint])}
         />
       </div>
     </DndProvider>

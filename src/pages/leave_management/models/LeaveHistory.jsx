@@ -5,6 +5,8 @@ import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import { XCircle } from "lucide-react";
+import CancellationModal from "./CancellationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -26,7 +28,9 @@ const LeaveHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const itemsPerPage = 8;
-  const token = localStorage.getItem("token");
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -35,13 +39,13 @@ const LeaveHistory = () => {
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }),
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }),
     ])
@@ -64,7 +68,7 @@ const LeaveHistory = () => {
       // if (!isOpen) return;
       try {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setLeaveTypes(res.data);
       } catch (err) {
@@ -73,7 +77,7 @@ const LeaveHistory = () => {
     };
 
     fetchLeaveTypes();
-  }, [token]);
+  }, [localStorage.getItem("token")]);
 
   // function mapLeaveBalancesToDropdown(balances, leaveTypes) {
   //   return balances.map((balance) => {
@@ -209,6 +213,44 @@ const LeaveHistory = () => {
     return match ? match.label : leaveName.replace(/^L-/, ""); // fallback to raw or cleaned name
   };
 
+  const handleModalOpen = (leaveId) => {
+    setSelectedLeaveId(leaveId);
+    setIsCancelModalOpen(true);
+  }
+
+  const handleModalClose = () => {
+    setSelectedLeaveId(null);
+    setIsCancelModalOpen(false);
+    setIsCancelling(false);
+  }
+
+  const handleConfirmCancellation = async (reason) => {
+    if(!reason) {
+      toast.error("Reason is required");
+      return;
+    }
+    setIsCancelling(true);
+    try {
+      const res = await axios.post(`${BASE_URL}/api/leave-revoke/revoke`, 
+        {
+          leaveRequestId: selectedLeaveId,
+          reason: reason
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+        }
+      );
+      toast.success(res?.data?.message || "Leave request revoked successfully!");
+      handleModalClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to revoke leave request.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-10 text-gray-600 text-lg">
@@ -326,16 +368,17 @@ const LeaveHistory = () => {
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
             <thead className="bg-gray-100 text-xs uppercase text-gray-600">
-              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
-                <th className="text-left px-4 py-3 text-xs">Leave Type</th>
-                <th className="text-left px-4 py-3 text-xs">Requested by</th>
-                <th className="text-left px-4 py-3 text-xs">From</th>
-                <th className="text-left px-4 py-3 text-xs">To</th>
-                <th className="text-left px-4 py-3 text-xs">Days</th>
-                <th className="text-left px-4 py-3 text-xs">Status</th>
-                <th className="text-left px-4 py-3 text-xs">Reason</th>
-                <th className="text-left px-4 py-3 text-xs">Comment</th>
-                <th className="text-left px-4 py-3 text-xs">Approved By</th>
+              <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm text-center">
+                <th className="px-4 py-3 text-xs">Leave Type</th>
+                <th className="px-4 py-3 text-xs">Requested by</th>
+                <th className="px-4 py-3 text-xs">From</th>
+                <th className="px-4 py-3 text-xs">To</th>
+                <th className="px-4 py-3 text-xs">Days</th>
+                <th className="px-4 py-3 text-xs">Status</th>
+                <th className="px-4 py-3 text-xs">Reason</th>
+                <th className="px-4 py-3 text-xs">Comment</th>
+                <th className="px-4 py-3 text-xs">Approved By</th>
+                <th className="px-4 py-3 text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -344,7 +387,7 @@ const LeaveHistory = () => {
                   key={leave.leaveId || index}
                   className={`${
                     index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-gray-100 transition`}
+                  } hover:bg-gray-100 transition text-center`}
                 >
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {getLeaveLabel(leave.leaveType?.leaveName)}
@@ -396,6 +439,17 @@ const LeaveHistory = () => {
                   <td className="p-3 text-gray-700 font-medium text-xs">
                     {leave.approvedBy?.fullName || "-"}
                   </td>
+                  <td className="p-3">
+                    {leave.status === "APPROVED" && (
+                      <button 
+                        type="button" 
+                        title="Cancel Approved Leave" 
+                        onClick={() => handleModalOpen(leave.leaveId)}
+                      >
+                        <XCircle className="text-orange-500 text-sm hover:text-orange-800" />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -418,6 +472,13 @@ const LeaveHistory = () => {
           <p className={Fonts.caption}>No leave history found.</p>
         </div>
       )}
+      <CancellationModal
+        isOpen={isCancelModalOpen}
+        onCancel={handleModalClose}
+        onConfirm={handleConfirmCancellation}
+        isLoading={isCancelling}
+        confirmText="Confirm"
+      />
     </div>
   );
 };

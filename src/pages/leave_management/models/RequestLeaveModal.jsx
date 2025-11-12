@@ -24,7 +24,7 @@ function mapLeaveBalancesToDropdown(balances) {
       });
       setLeaveTypes(res.data);
     } catch (err) {
-      toast.error(err);
+      toast.error(response?.data?.message || err || "Failed to load leave type details.");
     }
   };
   useEffect(() => {
@@ -42,14 +42,14 @@ function mapLeaveBalancesToDropdown(balances) {
 
     let availableText;
     let isInfinite = false;
-    if (leaveTypeId === "L-UPL" || leaveName.toLowerCase().includes("unpaid")) {
+    if (leaveTypeId === "L-UP" || leaveName.toLowerCase().includes("unpaid")) {
       availableText = "infinite balance";
       isInfinite = true;
     } else if (balance.remainingLeaves > 0) {
       availableText =
         (balance.remainingLeaves % 1 === 0
           ? balance.remainingLeaves
-          : balance.remainingLeaves.toFixed(1)) + " days available";
+          : balance.remainingLeaves), " days available";
     } else {
       availableText = "Not Available";
     }
@@ -60,7 +60,7 @@ function mapLeaveBalancesToDropdown(balances) {
       availableText,
       availableDays: isInfinite ? Infinity : balance.remainingLeaves,
       isInfinite,
-      disabled: !isInfinite && balance.remainingLeaves <= 0,
+      disabled: (!isInfinite && balance.remainingLeaves <= 0) || balance.isBlocked,
       allowHalfDay: !!balance.leaveType.allowHalfDay,
       requiresDocumentation: !!balance.leaveType.requiresDocumentation,
       raw: balance,
@@ -526,7 +526,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
             </label>
             {loadingBalances ? (
               <div className="flex items-center justify-center p-4 text-gray-500 text-sm rounded-xl bg-gray-50">
-                <span className="animate-pulse mr-2">⏳</span> Loading...
+                <span className="animate-pulse mr-2 rotate-45">⏳</span> Loading...
               </div>
             ) : balanceError ? (
               <div className="text-red-600 text-sm bg-red-50 rounded-xl p-2">

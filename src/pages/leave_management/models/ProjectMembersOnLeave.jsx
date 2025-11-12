@@ -83,7 +83,7 @@ const ProjectMembersOnLeave = ({ employeeId, leaveId }) => {
         // 1️⃣ Fetch active projects of the employee
         const projectsRes = await axios.get(
           `${PMS_BASE_URL}/api/projects/member/${employeeId}/active-projects`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         const projects = projectsRes.data || [];
 
@@ -95,7 +95,7 @@ const ProjectMembersOnLeave = ({ employeeId, leaveId }) => {
         // 2️⃣ Fetch current leave dates
         const empLeaveRes = await axios.get(
           `${BASE_URL}/api/leave-requests/${leaveId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         const currentLeave = empLeaveRes.data?.data;
         if (!currentLeave) {
@@ -109,7 +109,7 @@ const ProjectMembersOnLeave = ({ employeeId, leaveId }) => {
           projects.map(async (project) => {
             const empRes = await axios.get(
               `${PMS_BASE_URL}/api/projects/${project.id}/members`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             );
             const employees = empRes.data || [];
 
@@ -125,7 +125,7 @@ const ProjectMembersOnLeave = ({ employeeId, leaveId }) => {
                     const leaveRes = await axios.get(
                       `${BASE_URL}/api/leave-requests/employee/pendingAndApproved-leave/${emp.id}`,
                       {
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                         params: { startDate, endDate },
                       }
                     );

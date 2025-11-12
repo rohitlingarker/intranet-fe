@@ -232,10 +232,7 @@ const ProjectDashboard = () => {
           <FileText className="w-4 h-4 text-green-600" />
           {reminders?.todoStoryCount ?? 0} stories are in TODO
         </li>
-        <li className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-600" />
-          {reminders?.unassignedProjectCount ?? 0} projects have no assigned owner
-        </li>
+        
         <li className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-purple-600" />
           {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon

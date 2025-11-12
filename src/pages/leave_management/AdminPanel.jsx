@@ -5,6 +5,9 @@ import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceReq
 import HandleLeaveRequestAndApprovals from "../leave_management/models/HandleLeaveRequestAndApprovals";
 import { useAuth } from "../../contexts/AuthContext";
 import Button from "../../components/Button/Button";
+import RevokeLeaveRequests from "./models/RevokeLeaveRequests";
+import { toast } from "react-toastify";
+import { se } from "date-fns/locale";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -14,6 +17,7 @@ const AdminPanel = ({ employeeId }) => {
   // const [selectedRequests, setSelectedRequests] = useState([]);
   // const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [resultMsg, setResultMsg] = useState(null);
+  const [revokeRequests, setRevokeRequests] = useState([]);
   const token = localStorage.getItem("token");
   const { user } = useAuth();
   const permissions = user?.permissions || [];
@@ -59,6 +63,36 @@ const AdminPanel = ({ employeeId }) => {
       return () => clearTimeout(timer);
     }
   }, [resultMsg]);
+
+  const fetchRevokeRequests = async () => {
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/leave-revoke/pending/${employeeId}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+
+      if (res.data.success && Array.isArray(res.data.data)) {
+        const revokeRequests = res.data.data; 
+        setRevokeRequests(revokeRequests);
+
+        // Notify parent if callback exists
+        // if (onPendingRequestsChange) {
+        //   onPendingRequestsChange(pending);
+        // }
+      } else {
+        setRevokeRequests([]);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to fetch Revoke Requests.");
+      setRevokeRequests([]);
+    }
+  };
+
+  useEffect( () => {
+    fetchRevokeRequests();
+  },[]);
 
   // const filteredAdminRequests = adminLeaveRequests.filter((request) => {
   //   const matchesSearch =
@@ -168,10 +202,15 @@ const AdminPanel = ({ employeeId }) => {
       </div> */}
 
       {/* Comp-Off Balance Requests Section */}
-      {permissions.includes("See_CompOffBalanceRequest") && (
+      {permissions.includes("VIEW_PENDING_COMPOFF_REQUESTS") && (
         <CompOffBalanceRequests managerId={employeeId} />
       )}
       {/* <CompOffBalanceRequests managerId={employeeId} /> */}
+       
+      {revokeRequests.length > 0 && (
+        <RevokeLeaveRequests revokeRequests={revokeRequests} onActionSuccess={fetchRevokeRequests} />
+      )}
+
 
       {/* Search and Filter Section */}
       <HandleLeaveRequestAndApprovals employeeId={employeeId} />
