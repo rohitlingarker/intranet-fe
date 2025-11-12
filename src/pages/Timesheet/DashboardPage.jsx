@@ -90,12 +90,12 @@ const DashboardPage = () => {
 
     setBillableData([
       {
-        name: "Billable Tasks",
-        value: dashboardSummary.billableActivity?.billableTasks || 0,
+        name: "Billable Hours",
+        value: dashboardSummary.billableActivity?.billableHours || 0,
       },
       {
-        name: "Non-Billable Tasks",
-        value: dashboardSummary.billableActivity?.nonBillableTasks || 0,
+        name: "Non-Billable Hours",
+        value: dashboardSummary.billableActivity?.nonBillableHours || 0,
       },
     ]);
   }, [dashboardSummary]);
@@ -120,7 +120,7 @@ const DashboardPage = () => {
           <Card>
             <CardContent className="flex flex-col items-center ">
               <div className="text-md text-center font-semibold mb-2">
-                Billable %
+                Billable Hours
               </div>
               <div className="text-3xl font-black text-green-600">
                 {dashboardSummary?.billableActivity?.billablePercentage || 0}%
@@ -220,7 +220,7 @@ const DashboardPage = () => {
           <Card>
             <CardContent>
               <h3 className="text-lg font-semibold mb-3">
-                Billable vs Non-Billable Tasks
+                Billable vs Non-Billable Hours
               </h3>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>

@@ -55,11 +55,17 @@ const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
 
 const formatDate = (dateStr) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+  const dayOfWeek = date.getDay();
+  return {
+    // The original formatted string
+    text: date.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }),
+    // Check if day is Sunday (0) or Saturday (6)
+    isWeekend: dayOfWeek === 0 || dayOfWeek === 6 
+  };
 };
 
 const formatWeekRange = (weekRange) => {
@@ -152,6 +158,7 @@ const TimesheetGroup = ({
     { approverName: "Dummy Approver2", status: "Approved" },
   ],
 }) => {
+  // console.log("Refresh Data :", refreshData);
   // Handle both old daily format and new weekly format
   const isWeeklyFormat = weekGroup && weekGroup.timesheets;
   const weekData = isWeeklyFormat ? weekGroup : null;
@@ -376,7 +383,7 @@ const TimesheetGroup = ({
 
   // Get current status and date display
   const currentStatus = isWeeklyFormat ? weekData.status : status;
-  const currentDate = isWeeklyFormat ? weekData.weekRange : formatDate(date);
+  const currentDate = isWeeklyFormat ? weekData.weekRange : formatDate(date).text;
 
   // Get week number and month for weekly format
   const weekNumber = isWeeklyFormat ? weekData.weekNumber : null;
@@ -397,6 +404,8 @@ const TimesheetGroup = ({
           return "bg-green-100 text-green-800 border-green-300";
         case "rejected":
           return "bg-red-100 text-red-800 border-red-300";
+        case "weekend":
+          return "bg-yellow-100 text-yellow-800 border-yellow-300";
         default:
           return "bg-gray-100 text-gray-800 border-gray-300";
       }
@@ -786,7 +795,7 @@ const TimesheetGroup = ({
                   currentStatus?.toLowerCase() === "approved" ||
                   currentStatus?.toLowerCase() === "partially approved"
                     ? "Cannot edit approved timesheet"
-                    : "More optionssssssss"
+                    : "More options"
                 }
               >
                 <MoreVertical size={22} />
@@ -829,19 +838,20 @@ const TimesheetGroup = ({
                 className="bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 shadow-sm overflow-visible"
               >
                 {/* Individual Day Header */}
-                <div className="bg-white border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible">
-                  <div className="flex items-center gap-3">
+                <div className={`${formatDate(timesheet.workDate).isWeekend ? "bg-yellow-100 cursor-not-allowed" : (timesheet.defaultHolidayTimesheet ? "bg-red-200 cursor-not-allowed" :  "")} border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible`}>
+                  <div className={`flex items-center gap-3`}>
                     <div className="text-sm font-semibold text-gray-700">
-                      {formatDate(timesheet.workDate)}
+                      {formatDate(timesheet.workDate).text}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {calculateTotalHours(timesheet.entries)} hrs
+                      {timesheet.hoursWorked} hrs
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 relative overflow-visible">
-                    {timesheet.isHoliday && (
+                  {!timesheet.defaultHolidayTimesheet ? (
+                    <div className="flex items-center gap-2 relative overflow-visible">
+                    {/* {timesheet.isHoliday && (
                       <CustomStatusBadge label="Holiday" size="sm" />
-                    )}
+                    )} */}
                     <CustomStatusBadge label={timesheet.status} size="sm" />
                     {/* Show approval status tooltip if available */}
                     {timesheet.actionStatus &&
@@ -943,9 +953,15 @@ const TimesheetGroup = ({
                       </div>
                     )}
                   </div>
+                  ) : formatDate(timesheet.workDate).isWeekend ? (
+                    <CustomStatusBadge label="WeekEnd" size="sm" />
+                  ) : (
+                    <CustomStatusBadge label="Holiday" size="sm" />
+                  )}
                 </div>
 
                 {/* Entries Table */}
+                {!timesheet.defaultHolidayTimesheet && (
                 <div className="p-2">
                   <EntriesTable
                     entries={timesheet.entries}
@@ -962,6 +978,7 @@ const TimesheetGroup = ({
                     selectionMode={showSelectionCheckboxes}
                   />
                 </div>
+                )}  
               </div>
             ))}
 
