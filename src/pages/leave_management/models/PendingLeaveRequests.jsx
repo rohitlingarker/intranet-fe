@@ -7,7 +7,7 @@ import { Fonts } from "../../../components/Fonts/Fonts";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
-// import NoPendingLeaves from "../../../components/icons/clean-up.svg";
+import NoPendingLeaves from "../../../components/icons/no_pending_leaves.svg";
 
 const ITEMS_PER_PAGE = 5;
 const BASE_URL = import.meta.env.VITE_BASE_URL;

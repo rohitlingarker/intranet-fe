@@ -1,249 +1,344 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "../../../contexts/AuthContext";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import "react-toastify/dist/ReactToastify.css";
 import Button from "../../../components/Button/Button";
-import ThreeCard from "../../../components/Cards/ThreeCards";
-import { jwtDecode } from "jwt-decode";
 
-const ProjectDashboard = () => {
-  const [projects, setProjects] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [stories, setStories] = useState([]);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [reminders, setReminders] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+const ReadOnlyDashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const userId = user?.id || user?.user_id;
+  const userName = user?.name || "User";
+
+  const [projects, setProjects] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [expandedProjects, setExpandedProjects] = useState(null);
+  const [expandedStories, setExpandedStories] = useState(null);
+  const [expandedTasks, setExpandedTasks] = useState(null);
+
+  // Filters
+  const [projectFilter, setProjectFilter] = useState("ALL");
+  const [storyFilter, setStoryFilter] = useState("ALL");
+  const [taskFilter, setTaskFilter] = useState("ALL");
+
   const token = localStorage.getItem("token");
 
-  // Decode token to get userId
-  const decodedToken = jwtDecode(token);
-  const userId = decodedToken.user_id;
+  const axiosInstance = axios.create({
+    baseURL: import.meta.env.VITE_PMS_BASE_URL,
+    headers: { "Content-Type": "application/json" },
+  });
 
-  const axiosConfig = {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  };
+  axiosInstance.interceptors.request.use((config) => {
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
 
-  // ✅ Fetch projects where user is a member
-  const fetchUserProjects = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/member/${userId}`,
-        axiosConfig
-      );
-      const data = res.data.content || res.data;
-      setProjects(data);
-    } catch (err) {
-      console.error("Failed to load user projects:", err);
-      setError("Failed to load your projects.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Fetch tasks assigned to the user
-  const fetchUserTasks = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/assignee/${userId}`,
-        axiosConfig
-      );
-      const data = res.data.content || res.data;
-      setTasks(data);
-    } catch (err) {
-      console.error("Failed to load user tasks:", err);
-      setError("Failed to load your tasks.");
-    }
-  };
-
-  // ✅ Fetch stories assigned to the user
-  const fetchUserStories = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/assignee/${userId}`,
-        axiosConfig
-      );
-      const data = res.data.content || res.data;
-      setStories(data);
-    } catch (err) {
-      console.error("Failed to load user stories:", err);
-      setError("Failed to load your stories.");
-    }
-  };
-
-  // ✅ Fetch dashboard summary data
-  const fetchDashboard = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/${userId}`,
-        axiosConfig
-      );
-      setDashboardData(res.data);
-    } catch (err) {
-      console.error("Failed to fetch dashboard data:", err);
-    } finally {
-      setDashboardLoading(false);
-    }
-  };
-
-  // ✅ Fetch reminders (Fixed URL)
-  const fetchReminders = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders/`,
-        axiosConfig
-      );
-      setReminders(res.data);
-    } catch (err) {
-      console.error("Failed to fetch reminders:", err);
-    }
-  };
-
-  // Load all data on mount
   useEffect(() => {
-    if (userId) {
-      fetchUserProjects();
-      fetchDashboard();
-      fetchReminders();
-      fetchUserTasks();
-      fetchUserStories();
+    if (!userId) {
+      setError("User not logged in or token missing");
+      return;
     }
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [projectRes, storyRes, taskRes] = await Promise.all([
+          axiosInstance.get(`/api/projects/member/${userId}`),
+          axiosInstance.get(`/api/stories/assignee/${userId}`),
+          axiosInstance.get(`/api/tasks/assignee/${userId}`),
+        ]);
+
+        setProjects(Array.isArray(projectRes.data) ? projectRes.data : []);
+        setStories(Array.isArray(storyRes.data) ? storyRes.data : []);
+        setTasks(Array.isArray(taskRes.data) ? taskRes.data : []);
+      } catch (err) {
+        console.error("Error fetching data:", err.response || err);
+        setError("Failed to load user data");
+        toast.error("Failed to load user data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [userId]);
 
-  const goToProjectTab = (projectId) => navigate(`/projects/user/${projectId}`);
-  const goToMyProfile = () => navigate("/projects/user/myprofile");
+  const toggleExpand = (id, type) => {
+    if (type === "project")
+      setExpandedProjects(expandedProjects === id ? null : id);
+    if (type === "story") setExpandedStories(expandedStories === id ? null : id);
+    if (type === "task") setExpandedTasks(expandedTasks === id ? null : id);
+  };
+
+  // 🔹 PROJECT RENDER
+  const renderProject = (project) => (
+    <li key={project.id} className="bg-white rounded-xl shadow p-4">
+      <div
+        className="flex justify-between items-center cursor-pointer"
+        onClick={() => toggleExpand(project.id, "project")}
+      >
+        <div className="flex items-center gap-2">
+          {expandedProjects === project.id ? <ChevronDown /> : <ChevronRight />}
+          <h2 className="text-xl font-semibold">{project.name}</h2>
+          <span className="text-gray-500 text-sm">({project.projectKey})</span>
+        </div>
+      </div>
+      {expandedProjects === project.id && (
+        <div className="mt-4 border-t pt-4 text-gray-700 text-sm space-y-2">
+          {project.description && (
+            <p>
+              <strong>Description:</strong> {project.description}
+            </p>
+          )}
+          <p>
+            <strong>Status:</strong> {project.status}
+          </p>
+          {project.owner && (
+            <p>
+              <strong>Owner:</strong> {project.owner.name}
+            </p>
+          )}
+          {project.members && project.members.length > 0 && (
+            <p>
+              <strong>Members:</strong>{" "}
+              {project.members.map((m) => m.name).join(", ")}
+            </p>
+          )}
+          {project.createdAt && (
+            <p>
+              <strong>Created At:</strong>{" "}
+              {new Date(project.createdAt).toLocaleString()}
+            </p>
+          )}
+          {project.updatedAt && (
+            <p>
+              <strong>Updated At:</strong>{" "}
+              {new Date(project.updatedAt).toLocaleString()}
+            </p>
+          )}
+
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => navigate(`/projects/user/${project.id}`)}
+            >
+              Go to Project Tabs
+            </Button>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+
+  // 🔹 STORY RENDER
+  const renderStory = (story) => {
+    // get project id from story.project or story.epic.project if exists
+    const projectId =
+      story?.project?.id || story?.epic?.project?.id || story?.epic?.projectId;
+
+    return (
+      <li key={story.id} className="bg-white rounded-xl shadow p-4">
+        <div
+          className="flex justify-between items-center cursor-pointer"
+          onClick={() => toggleExpand(story.id, "story")}
+        >
+          <div className="flex items-center gap-2">
+            {expandedStories === story.id ? <ChevronDown /> : <ChevronRight />}
+            <h2 className="text-lg font-semibold">{story.title}</h2>
+            <span className="text-gray-500 text-sm">({story.status})</span>
+          </div>
+        </div>
+        {expandedStories === story.id && (
+          <div className="mt-2 border-t pt-2 text-gray-700 text-sm space-y-1">
+            <p>
+              <strong>Description:</strong> {story.description || "—"}
+            </p>
+            {story.epic && (
+              <p>
+                <strong>Epic:</strong> {story.epic.title}
+              </p>
+            )}
+            {story.reporter && (
+              <p>
+                <strong>Reporter:</strong> {story.reporter.name}
+              </p>
+            )}
+            {story.assignee && (
+              <p>
+                <strong>Assignee:</strong> {story.assignee.name}
+              </p>
+            )}
+
+            {projectId && (
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => navigate(`/projects/${projectId}`)}
+                >
+                  Go to Project Tabs
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  // 🔹 TASK RENDER
+  const renderTask = (task) => {
+    // get project id from task.story.project or directly from task.project if available
+    const projectId =
+      task?.story?.project?.id || task?.project?.id || task?.story?.projectId;
+
+    return (
+      <li key={task.id} className="bg-white rounded-xl shadow p-4">
+        <div
+          className="flex justify-between items-center cursor-pointer"
+          onClick={() => toggleExpand(task.id, "task")}
+        >
+          <div className="flex items-center gap-2">
+            {expandedTasks === task.id ? <ChevronDown /> : <ChevronRight />}
+            <h2 className="text-lg font-semibold">{task.title}</h2>
+            <span className="text-gray-500 text-sm">({task.status})</span>
+          </div>
+        </div>
+        {expandedTasks === task.id && (
+          <div className="mt-2 border-t pt-2 text-gray-700 text-sm space-y-1">
+            <p>
+              <strong>Description:</strong> {task.description || "—"}
+            </p>
+            {task.story && (
+              <p>
+                <strong>Story:</strong> {task.story.title}
+              </p>
+            )}
+            {task.assignee && (
+              <p>
+                <strong>Assignee:</strong> {task.assignee.name}
+              </p>
+            )}
+            {task.reporter && (
+              <p>
+                <strong>Reporter:</strong> {task.reporter.name}
+              </p>
+            )}
+
+            {projectId && (
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => navigate(`/projects/${projectId}`)}
+                >
+                  Go to Project Tabs
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  // Filtered lists
+  const filteredProjects = projects.filter(
+    (p) => projectFilter === "ALL" || p.status === projectFilter
+  );
+  const filteredStories = stories.filter(
+    (s) => storyFilter === "ALL" || s.status === storyFilter
+  );
+  const filteredTasks = tasks.filter(
+    (t) => taskFilter === "ALL" || t.status === taskFilter
+  );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <div className="flex gap-3">
-          <Button onClick={goToMyProfile} variant="primary">
-            My Profile
-          </Button>
+      <ToastContainer />
+      <h1 className="text-2xl font-bold mb-4 text-indigo-900">{userName} Your projects</h1>
+
+      {loading && <p className="text-gray-600">Loading data...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+
+      {/* PROJECTS */}
+      <section className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold">Projects</h2>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+          >
+            <option value="ALL">All</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ARCHIVED">Archived</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="ON_HOLD">On Hold</option>
+          </select>
         </div>
-      </div>
+        {filteredProjects.length === 0 ? (
+          <p className="text-gray-500">No projects found.</p>
+        ) : (
+          <ul className="space-y-3">{filteredProjects.map(renderProject)}</ul>
+        )}
+      </section>
 
-      {dashboardLoading ? (
-        <p className="text-gray-600">Loading summary...</p>
-      ) : dashboardData ? (
-        <>
-          {/* 🔹 Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-            <ThreeCard
-              title="Projects Involved"
-              value={projects.length}
-              textColor="text-indigo-900"
-            />
-            <ThreeCard
-              title="Tasks"
-              value={tasks.length}
-              textColor="text-green-700"
-            />
-            <ThreeCard
-              title="Stories"
-              value={stories.length}
-              textColor="text-orange-600"
-            />
-          </div>
+      {/* STORIES */}
+      <section className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold">Stories</h2>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={storyFilter}
+            onChange={(e) => setStoryFilter(e.target.value)}
+          >
+            <option value="ALL">All</option>
+            <option value="TO_DO">To Do</option>
+            <option value="BACKLOG">Backlog</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+          </select>
+        </div>
+        {filteredStories.length === 0 ? (
+          <p className="text-gray-500">No stories found.</p>
+        ) : (
+          <ul className="space-y-3">{filteredStories.map(renderStory)}</ul>
+        )}
+      </section>
 
-          {/* 🔸 Status Count Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {["taskStatus", "storyStatus"].map((key) => (
-              <div key={key} className="bg-white rounded-2xl shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                  {key
-                    .replace("Status", " Status")
-                    .replace(/([a-z])([A-Z])/g, "$1 $2")}
-                </h3>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  {Object.entries(dashboardData[key] || {}).map(
-                    ([status, count]) => (
-                      <li key={status} className="flex justify-between">
-                        <span>{status.replace("_", " ")}</span>
-                        <span className="font-semibold">{count}</span>
-                      </li>
-                    )
-                  )}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          {/* 🔔 Reminders */}
-          <div className="mb-6">
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                Reminders
-              </h3>
-              {reminders ? (
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>
-                    🔔 {reminders?.taskDueSoonCount ?? 0} tasks are due in the
-                    next 2 days
-                  </li>
-                  <li>📌 {reminders?.todoTaskCount ?? 0} tasks are in TODO</li>
-                  <li>📝 {reminders?.todoStoryCount ?? 0} stories are in TODO</li>
-                  <li>
-                    🚩 {reminders?.unassignedProjectCount ?? 0} projects have no
-                    owner
-                  </li>
-                  <li>
-                    🕒 {reminders?.sprintsEndingSoonCount ?? 0} sprints are ending soon
-                  </li>
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">Loading reminders...</p>
-              )}
-            </div>
-          </div>
-
-          {/* 📌 User's Projects */}
-          <div className="mb-6">
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
-                My Projects
-              </h3>
-
-              {loading ? (
-                <p>Loading your projects...</p>
-              ) : projects.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {projects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => goToProjectTab(project.id)}
-                      className="cursor-pointer hover:shadow-md transition-all border p-4 rounded-xl bg-gray-50"
-                    >
-                      <h4 className="font-semibold text-indigo-700 text-lg">
-                        {project.name}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        Key: {project.projectKey}
-                      </p>
-                      <p className="text-xs text-gray-400">{project.status}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600">
-                  You’re not assigned to any project yet.
-                </p>
-              )}
-            </div>
-          </div>
-        </>
-      ) : (
-        <p className="text-red-600">Dashboard data not available</p>
-      )}
+      {/* TASKS */}
+      <section className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold">Tasks</h2>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={taskFilter}
+            onChange={(e) => setTaskFilter(e.target.value)}
+          >
+            <option value="ALL">All</option>
+            <option value="TO_DO">To Do</option>
+            <option value="BACKLOG">Backlog</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+          </select>
+        </div>
+        {filteredTasks.length === 0 ? (
+          <p className="text-gray-500">No tasks found.</p>
+        ) : (
+          <ul className="space-y-3">{filteredTasks.map(renderTask)}</ul>
+        )}
+      </section>
     </div>
   );
 };
 
-export default ProjectDashboard;
+export default ReadOnlyDashboard;

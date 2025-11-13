@@ -54,7 +54,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             description: epic.description || "",
             status: epic.status || "OPEN",
             priority: epic.priority || "MEDIUM",
-            progressPercentage: epic.progressPercentage || 0,
+            // progressPercentage: epic.progressPercentage || 0,
             dueDate: epic.dueDate ? epic.dueDate.split("T")[0] : "",
             projectId: epic.project?.id || projectId || "",
           });
@@ -233,7 +233,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            <FormInput
+            {/* <FormInput
               label="Progress (%)"
               name="progressPercentage"
               type="number"
@@ -241,7 +241,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
               max="100"
               value={formData.progressPercentage || ""}
               onChange={handleChange}
-            />
+            /> */}
 
             <FormDatePicker
               label="Due Date"

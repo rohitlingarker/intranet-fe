@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Pagination from "../../components/Pagination/pagination";
 import { TimesheetGroup } from "./TimesheetGroup";
 import Button from "../../components/Button/Button";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { fetchCalendarHolidays } from "./api";
 
 const TimesheetTable = ({
   loading,
@@ -11,11 +12,35 @@ const TimesheetTable = ({
   currentPage,
   setCurrentPage,
   mapWorkType,
-  refreshData, // Callback to refresh data after save
+  refreshData,
   projectInfo,
   getWeeklyStatusColor,
 }) => {
   const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
+  const [holidaysMap, setHolidaysMap] = useState({});
+
+  useEffect(() => {
+    const loadHolidays = async () => {
+      try {
+        const data = await fetchCalendarHolidays();
+        if (!data) return;
+        const map = {};
+        data.forEach((h) => {
+          const [year, month, day] = h.holidayDate.split("-").map(Number);
+          const localDate = new Date(year, month - 1, day, 0, 0, 0);
+          const key = `${localDate.getFullYear()}-${String(
+            localDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(localDate.getDate()).padStart(2, "0")}`;
+          map[key] = h;
+        });
+        setHolidaysMap(map);
+
+      } catch (err) {
+        console.error("❌ Failed to load holidays:", err);
+      }
+    };
+    loadHolidays();
+  }, []);
 
   return (
     <div
@@ -35,10 +60,9 @@ const TimesheetTable = ({
       >
         + New Timesheet
       </Button>
+
       {addingNewTimesheet && (
         <div style={{ marginBottom: "20px" }}>
-          {" "}
-          {/* Added margin for spacing */}
           <TimesheetGroup
             emptyTimesheet={true}
             workDate={new Date().toISOString().split("T")[0]}
@@ -52,9 +76,11 @@ const TimesheetTable = ({
             addingNewTimesheet={addingNewTimesheet}
             setAddingNewTimesheet={setAddingNewTimesheet}
             projectInfo={projectInfo}
+            holidaysMap={holidaysMap} // ✅ Pass holidays map here
           />
         </div>
       )}
+
       {loading ? (
         <LoadingSpinner text="Loading timesheet entries..." />
       ) : data.length === 0 ? (
@@ -72,6 +98,7 @@ const TimesheetTable = ({
               projectInfo={projectInfo}
               approvers={weekGroup.actionStatus}
               getWeeklyStatusColor={getWeeklyStatusColor}
+              holidaysMap={holidaysMap} // ✅ Pass holidays map here too
             />
           ))}
 
