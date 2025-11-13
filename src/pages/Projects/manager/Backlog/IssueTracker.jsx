@@ -86,6 +86,7 @@ const IssueTracker = () => {
         billable: t.billable || false,
       }));
 
+
       const bugsData = bugsRes.data.map((b) => ({
         ...b,
         type: "Bug",

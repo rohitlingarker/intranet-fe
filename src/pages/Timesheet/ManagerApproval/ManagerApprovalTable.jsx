@@ -208,7 +208,7 @@ const ManagerApprovalTable = ({
         "success"
       );
 
-      await onRefresh?.();
+       onRefresh?.();
     } catch (err) {
       console.error("Error approving all weeks:", err);
       showStatusToast(`Failed to ${status.toLowerCase()} all weeks`, "error");
@@ -440,7 +440,7 @@ const ManagerApprovalTable = ({
                           "APPROVED",
                           "approved"
                         );
-                        await onRefresh?.();
+                         onRefresh?.();
                       } catch (err) {
                         showStatusToast(
                           "Failed to approve timesheets",
@@ -540,7 +540,7 @@ const ManagerApprovalTable = ({
                         ...prev,
                         [user.userId]: null,
                       }));
-                      await onRefresh?.();
+                       onRefresh?.();
                     } catch (err) {
                       console.error("Error rejecting timesheets:", err);
                       showStatusToast("Failed to reject timesheets", "error");
