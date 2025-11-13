@@ -73,10 +73,11 @@ const IssueTracker = () => {
       const tasksData = tasksRes.data.map((t) => ({
         ...t,
         type: "Task",
-        reporterName: t.reporter?.name || t.reporter?.username || "",
-        assigneeName: t.assignee?.name || t.assignee?.username || "",
+        reporterName: t.reporterName || "",
+        assigneeName: t.assigneeName || "",
         projectName: t.project?.name || "",
       }));
+
 
       const bugsData = bugsRes.data.map((b) => ({
         ...b,

@@ -3,6 +3,7 @@ import axios from "axios";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { ClipboardList } from "lucide-react";
+import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const getColumnStyles = () => ({
@@ -42,12 +43,17 @@ const KanbanCard = ({ task }) => {
 };
 
 // ========== KANBAN COLUMN ==========
-const KanbanColumn = ({ status, tasks, onDrop }) => {
+const KanbanColumn = ({ status, tasks, onDrop, validTransitions }) => {
   const { header, body, container } = getColumnStyles();
 
   const [{ isOver }, dropRef] = useDrop({
     accept: "TASK",
     drop: (item) => {
+      const allowed = validTransitions[item.status]?.includes(status);
+      if (!allowed) {
+        toast.error(`Invalid transition: ${item.status} → ${status}`);
+        return;
+      }
       if (item.status !== status) {
         onDrop(item.id, status);
         item.status = status;
@@ -75,10 +81,8 @@ const KanbanColumn = ({ status, tasks, onDrop }) => {
 // ========== MAIN BOARD ==========
 const Board = ({ projectId, projectName }) => {
   const [tasks, setTasks] = useState([]);
-  const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSprint, setCurrentSprint] = useState(null);
-  const [sprints, setSprints] = useState([]);
 
   const token = localStorage.getItem("token");
   const headers = {
@@ -92,11 +96,18 @@ const Board = ({ projectId, projectName }) => {
     DONE: "DONE",
   };
 
+  // Allowed transitions map
+  const validTransitions = {
+    TO_DO: ["IN_PROGRESS"],
+    IN_PROGRESS: ["DONE"],
+    DONE: [], // Completed tasks cannot move
+  };
+
   useEffect(() => {
     const fetchBoardData = async () => {
       setLoading(true);
       try {
-        // 1️⃣ Fetch active sprints for the project
+        // 1️⃣ Fetch active sprint
         const sprintsRes = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/active/project/${projectId}`,
           { headers }
@@ -105,14 +116,12 @@ const Board = ({ projectId, projectName }) => {
         const activeSprints = sprintsRes.data;
 
         if (!activeSprints || activeSprints.length === 0) {
-          console.warn("No active sprint found for this project");
           setCurrentSprint(null);
           setTasks([]);
           setLoading(false);
           return;
         }
 
-        // Assume only one active sprint per project (your backend ensures this)
         const activeSprint = activeSprints[0];
 
         setCurrentSprint({
@@ -120,7 +129,7 @@ const Board = ({ projectId, projectName }) => {
           name: activeSprint.name || `Sprint ${activeSprint.id}`,
         });
 
-        // 2️⃣ Fetch tasks for that active sprint
+        // 2️⃣ Fetch tasks
         const tasksRes = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${activeSprint.id}/tasks`,
           { headers }
@@ -130,11 +139,13 @@ const Board = ({ projectId, projectName }) => {
         const normalizedTasks = tasksRes.data.map((task) => ({
           ...task,
           status:
-            task.status === "TODO"
+            task.status === "BACKLOG" || task.status === "TODO"
               ? "TO_DO"
               : task.status === "IN_PROGRESS"
               ? "IN_PROGRESS"
-              : "DONE",
+              : task.status === "DONE"
+              ? "DONE"
+              : "TO_DO",
         }));
 
         setTasks(normalizedTasks);
@@ -150,24 +161,35 @@ const Board = ({ projectId, projectName }) => {
     fetchBoardData();
   }, [projectId, token]);
 
-
+  // ========== Handle Task Drop ==========
   const handleDrop = async (taskId, newStatus) => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const updatedTask = { ...task, status: newStatus };
+    // Validate frontend transition
+    if (!validTransitions[task.status]?.includes(newStatus)) {
+      toast.error(`Invalid transition: ${task.status} → ${newStatus}`);
+      return;
+    }
+
+    const backendStatus = backendStatusMap[newStatus];
 
     try {
-      await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
-        { ...updatedTask, status: backendStatusMap[newStatus] },
+      // Update backend
+      await axios.patch(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/status`,
+        { status: backendStatus },
         { headers }
       );
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? updatedTask : t))
-      );
+
+      // Update UI immediately
+      const updatedTask = { ...task, status: newStatus };
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+
+      toast.success("Task status updated successfully!");
     } catch (err) {
       console.error("Failed to update task:", err);
+      toast.error("Failed to update task status");
     }
   };
 
@@ -210,6 +232,7 @@ const Board = ({ projectId, projectName }) => {
               status={status}
               tasks={grouped[status]}
               onDrop={handleDrop}
+              validTransitions={validTransitions}
             />
           ))}
         </div>
