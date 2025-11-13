@@ -25,8 +25,8 @@ const LeaveHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
   const [filterStatus, setFilterStatus] = useState("APPROVED");
-  const [currentPage, setCurrentPage] = useState(1);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);

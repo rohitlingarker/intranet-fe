@@ -1,0 +1,386 @@
+.report-container {
+  background: #f9fafb;
+  padding: 16px;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.report-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.subtitle {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+.month {
+  font-size: 0.8rem;
+  color: #475569;
+}
+.month span { font-weight: 600; color: #0f172a; }
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+}
+.export-btn:hover { background: #1e40af; transform: translateY(-1px); }
+
+/* ------------------- TOP STATS ------------------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.stat-card .icon {
+  margin-bottom: 2px;
+  opacity: 0.9;
+}
+.stat-card p {
+  font-size: 0.8rem;
+  color: #475569;
+  margin: 0;
+}
+.stat-card h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Icon Colors Only */
+.text-blue { color: #2563eb; }
+.text-green { color: #16a34a; }
+.text-amber { color: #f59e0b; }
+.text-indigo { color: #4f46e5; }
+
+/* ------------------- SECTIONS ------------------- */
+.section-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e8f0;
+}
+.section-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* ------------------- HOURS SUMMARY ------------------- */
+.hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.hours-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+.hours-card:hover {
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.hours-card h4 {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.85rem;
+}
+.hours-card span {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.card-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.border-green { border-left: 3px solid #16a34a; }
+.border-orange { border-left: 3px solid #ea580c; }
+.border-red { border-left: 3px solid #dc2626; }
+.border-blue { border-left: 3px solid #2563eb; }
+.green-text { color: #16a34a; }
+.orange-text { color: #ea580c; }
+.red-text { color: #dc2626; }
+.blue-text { color: #2563eb; }
+
+/* ------------------- TABLES ------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: center;
+}
+thead {
+  background: #f1f5f9;
+}
+th, td {
+  padding: 6px 8px;
+  border-top: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+th:first-child, td:first-child {
+  text-align: left;
+}
+tbody tr:hover { background: #f8fafc; }
+
+.badge-green, .badge-blue {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.badge-green { background: #dcfce7; color: #166534; }
+.badge-blue { background: #dbeafe; color: #1e3a8a; }
+
+/* ------------------- PROJECTS ------------------- */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+.project-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+}
+.project-card:hover {
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.project-card h4 {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.85rem;
+}
+.project-card p {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+.project-card span {
+  font-weight: 700;
+  color: #2563eb;
+  font-size: 0.9rem;
+}
+.card-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+/* ------------------- NOTES ------------------- */
+.notes-card {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+.notes-card h4 {
+  color: #1d4ed8;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.notes-card ul {
+  list-style-type: disc;
+  margin-left: 16px;
+}
+.notes-card li {
+  margin-bottom: 2px;
+}
+
+/* Hover Motion */
+.hover-lift {
+  transition: all 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  gap: 10px;
+  color: #475569;
+  font-weight: 500;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Compact top stats without background */
+.compact-stats .stat-card {
+  background: none;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 8px;
+  color: #0f172a;
+}
+.compact-stats .stat-card h2 {
+  color: #0f172a;
+  font-weight: 700;
+}
+.compact-stats .stat-card p {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+/* Center table content */
+table th, table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  gap: 8px;
+}
+.pagination button {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pagination button:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+.filter-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600; /* Makes it stand out a bit */
+  color: #0056b3; /* Or your app's primary color */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  transition: background-color 0.2s;
+}
+
+.filter-toggle-btn:hover {
+  background-color: #f0f0f0; /* Light background on hover */
+}
+
+/* This is the container for the filters, same as before */
+.report-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  /* Add animation for appearing */
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* This styles the small "Apply" button next to the dropdowns */
+.report-filters .apply-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.report-filters .apply-btn:hover {
+  background-color: #0056b3;
+}
+
+.report-filters select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 14px;
+}
+
+/* Simple fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
