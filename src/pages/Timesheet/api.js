@@ -497,7 +497,7 @@ export const handleBulkReview = async (
 };
 export async function fetchDashboardLastMonth() {
   try {
-    const response = await fetch(`${apiEndpoint}/api/dashboard/summary`, {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/lastMonth`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -525,7 +525,7 @@ export async function fetchDashboardLastMonth() {
 }
 export async function fetchDashboardLast3Months() {
   try {
-    const response = await fetch(`${apiEndpoint}/api/dashboard/summary`, {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/last3Months`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

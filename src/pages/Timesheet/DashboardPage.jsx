@@ -133,7 +133,7 @@ const DashboardPage = () => {
       <TimesheetHeader />
 
       {/* 🔹 Dropdown for Month Selection */}
-      <div className="flex justify-end items-center mb-4 mr-6">
+      <div className="flex justify-end items-center mr-6">
         <label className="mr-2 text-sm font-medium text-gray-700">
           Select Range:
         </label>
@@ -154,7 +154,7 @@ const DashboardPage = () => {
       {loading ? (
         <LoadingSpinner text={`${selectedMonth} Dashboard...`} />
       ) : (
-        <div className="px-6 pt-8 pb-2 bg-gray-50 font-sans text-base">
+        <div className="px-6 pb-2 bg-gray-50 font-sans text-base">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-2">
             <Card>
