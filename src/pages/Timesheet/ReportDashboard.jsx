@@ -226,7 +226,7 @@ export default function ReportDashboard() {
         <div className="stat-card white-card hover-lift">
           <Users size={22} className="icon text-indigo" />
           <p>Total Employees</p>
-          <h2>{(data.employeeBreakdown || []).length}</h2>
+          <h2>{data.totalEmployees || 0}</h2>
         </div>
       </div>
 
