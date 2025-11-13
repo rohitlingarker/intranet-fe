@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
 
@@ -123,14 +123,33 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         payload,
         axiosConfig
       );
-      toast.success("Story updated successfully!");
+
+      toast.success("Story updated successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "colored",
+      });
+
+      // ✅ Wait slightly longer before closing to ensure toast is visible
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
-      }, 800);
+      }, 1500);
     } catch (error) {
       console.error("Error updating story:", error);
-      toast.error("Failed to update story.");
+
+      const backendMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update story. Please try again.";
+
+      toast.error(backendMessage, {
+        position: "top-right",
+        autoClose: 4000,
+        theme: "colored",
+      });
+
+      // ❌ Keep modal open so user can fix input
     } finally {
       setLoading(false);
     }
@@ -150,8 +169,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
       >
         <X size={22} />
       </button>
-
-      <ToastContainer />
 
       {/* Header */}
       <h2 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
@@ -189,7 +206,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           ]}
         />
 
-        {/* Priority & Status in Two Columns */}
+        {/* Priority & Status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormSelect
             label="Priority *"
@@ -217,7 +234,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           />
         </div>
 
-        {/* Story Points & Sprint in Two Columns */}
+        {/* Story Points & Sprint */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormInput
             label="Story Points"
@@ -248,7 +265,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           placeholder="Define what success looks like for this story..."
         />
 
-        {/* Assignee & Reporter in Two Columns */}
+        {/* Assignee & Reporter */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormSelect
             label="Assignee"

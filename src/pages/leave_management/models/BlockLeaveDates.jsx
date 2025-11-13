@@ -214,6 +214,7 @@ const MultiSelect = ({
 };
 
 export default function BlockLeaveDates({ employeeId }) {
+  console.log("BlockLeaveDates Employee ID:", employeeId);
   // Data state
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
