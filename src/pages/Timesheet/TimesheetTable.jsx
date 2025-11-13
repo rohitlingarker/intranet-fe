@@ -54,11 +54,11 @@ const TimesheetTable = ({
     >
       <Button
         size="small"
-        variant="primary"
+        variant={addingNewTimesheet ? "secondary" : "primary"}
         className="mb-4"
-        onClick={() => setAddingNewTimesheet((s) => !s)}
+        onClick={() => setAddingNewTimesheet((s) => !s) }
       >
-        + New Timesheet
+        {addingNewTimesheet ? "Cancel Timesheet" : "+ New Timesheet"}
       </Button>
 
       {addingNewTimesheet && (
