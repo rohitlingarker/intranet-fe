@@ -256,16 +256,16 @@ export default function ReportDashboard() {
               color: "orange",
             },
             {
-              icon: <Calendar size={18} />,
-              label: "Leave Hours",
-              value: data.hoursBreakdown?.leaveHours,
-              color: "red",
-            },
-            {
               icon: <Clock size={18} />,
               label: "Total Hours",
               value: data.hoursBreakdown?.totalHours,
               color: "blue",
+            },
+            {
+              icon: <Calendar size={18} />,
+              label: "Leave Hours",
+              value: data.hoursBreakdown?.leaveHours,
+              color: "red",
             },
           ].map((item, idx) => (
             <div
@@ -285,7 +285,7 @@ export default function ReportDashboard() {
       {/* Employee Breakdown */}
       <div className="section-card">
         <h3>
-          <Users size={18} /> Employee Breakdown
+          <Users size={18} /> Employee HoursWise Breakdown
         </h3>
         <table>
           <thead>
@@ -375,7 +375,7 @@ export default function ReportDashboard() {
       {/* Employee leaveHoursBreakdown */}
       <div className="section-card">
         <h3>
-          <TrendingUp size={18} /> Employee leaveHoursBreakdown
+          <Calendar size={18} /> Employee leaveHoursBreakdown
         </h3>
         <table>
           <thead>
