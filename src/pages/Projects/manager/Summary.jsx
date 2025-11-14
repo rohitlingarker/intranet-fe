@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   PieChart,
@@ -16,6 +16,9 @@ import {
   Legend,
 } from "recharts";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+
+// Note: Ensure useMemo is imported from 'react' at the top:
+// import React, { useEffect, useState, useMemo } from "react";
 
 const COLORS = [
   "#312e81", "#4338ca", "#4f46e5", "#6366f1",
@@ -47,10 +50,23 @@ const stageColorMap = {
   COMPLETED: "linear-gradient(90deg, #22c55e, #86efac)",
 };
 
+// Map issue types to a distinct color for the distribution bars
+const typeBarColorMap = {
+    Task: "#4f46e5", // Indigo
+    Story: "#10b981", // Emerald
+    Subtask: "#0ea5e9", // Sky
+    Epic: "#9333ea", // Violet
+    Bug: "#ef4444", // Red
+    Other: "#6b7280", // Gray
+};
+
+
 const Summary = ({ projectId, projectName }) => {
   const [epics, setEpics] = useState([]);
   const [stories, setStories] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  // NOTE: If your tasks array includes subtasks, you'll need to separate them.
+  // For this code, we'll assume a field like 'isSubtask' or 'type' exists on the task object
+  const [tasks, setTasks] = useState([]); 
   const [bugs, setBugs] = useState([]);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +85,8 @@ const Summary = ({ projectId, projectName }) => {
 
         // Fetch project details (to get stage)
         const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
-        const stage = projectRes.data.currentStage || projectRes.data.currentStage || "INITIATION";
+        // Cleaned up the redundant currentStage check
+        const stage = projectRes.data.currentStage || "INITIATION"; 
         const upperStage = stage?.toUpperCase();
 
         setProjectStage(upperStage);
@@ -136,9 +153,46 @@ const Summary = ({ projectId, projectName }) => {
     fetchAll();
   }, [projectId, token]);
 
-  /** ---------- Chart Data Preparation ---------- **/
+  /** ---------- Chart Data Preparation (Memoized) ---------- **/
 
-  const prepareTasksByAssigneeData = () => {
+  // NEW: Function to prepare data for the "Types of work" distribution chart
+  const workItemDistributionData = useMemo(() => {
+    // Separate Tasks and Subtasks from the 'tasks' array (assuming a 'type' field)
+    const taskItems = tasks.filter(t => t.type?.toLowerCase() === 'task' || !t.type);
+    const subtaskItems = tasks.filter(t => t.type?.toLowerCase() === 'subtask');
+    
+    // Get the raw counts
+    const counts = {
+      Task: taskItems.length,
+      Story: stories.length,
+      Subtask: subtaskItems.length,
+      Epic: epics.length,
+      Bug: bugs.length,
+    };
+
+    // Calculate the total number of work items
+    const totalItems = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+    if (totalItems === 0) return [];
+
+    // Calculate percentages and format the data
+    const distribution = Object.entries(counts)
+      .filter(([, count]) => count > 0) // Only show types that have items
+      .map(([type, count]) => {
+        const percentage = ((count / totalItems) * 100);
+        return {
+          type: type,
+          count: count,
+          percentage: Math.round(percentage),
+        };
+      });
+
+    // Sort by percentage for cleaner display
+    return distribution.sort((a, b) => b.percentage - a.percentage);
+  }, [epics, stories, tasks, bugs]);
+
+
+  const prepareTasksByAssigneeData = useMemo(() => {
     if (!tasks.length) return [];
     const grouped = {};
     tasks.forEach((task) => {
@@ -152,9 +206,9 @@ const Summary = ({ projectId, projectName }) => {
     return Object.entries(grouped)
       .map(([name, value]) => ({ name: `${name} (${value})`, value }))
       .sort((a, b) => b.value - a.value);
-  };
+  }, [tasks]);
 
-  const preparePriorityData = () => {
+  const preparePriorityData = useMemo(() => {
     const groupByPriority = (items) => {
       const result = {};
       items.forEach((i) => {
@@ -178,7 +232,7 @@ const Summary = ({ projectId, projectName }) => {
       Stories: storyData[p] || 0,
       Bugs: bugData[p] || 0,
     }));
-  };
+  }, [tasks, stories, bugs]);
 
   const groupComments = (data) => {
     const parentComments = data.filter((c) => !c.parentId);
@@ -189,10 +243,11 @@ const Summary = ({ projectId, projectName }) => {
     }));
   };
 
-  const filteredComments =
-    filter === "All"
+  const filteredComments = useMemo(() => {
+    return filter === "All"
       ? comments
       : comments.filter((c) => c.type === filter);
+  }, [comments, filter]);
 
   if (loading) {
     return (
@@ -210,7 +265,7 @@ const Summary = ({ projectId, projectName }) => {
         Project Summary: {projectName}
       </h2>
 
-      {/* Project Stage Progress Bar */}
+      { /* Project Stage Progress Bar */}
       <div className="bg-white shadow rounded-lg p-4 mb-8">
         <div className="flex justify-between items-center mb-2">
           <h4 className="font-semibold text-indigo-900">Project Stage</h4>
@@ -246,20 +301,62 @@ const Summary = ({ projectId, projectName }) => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1  md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+        
+        {/* NEW: Types of Work Distribution Section */}
+        <div className="bg-white shadow rounded-lg p-5 hover:shadow-xl transition">
+          <h4 className="text-xl font-bold mb-4 text-indigo-900">Types of work</h4>
+          <p className="text-sm text-gray-500 mb-4">
+            Get a breakdown of work items by their types. <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">View all items</a>
+          </p>
+
+          <div className="space-y-4">
+            {workItemDistributionData.map((item) => (
+              <div key={item.type} className="flex flex-col">
+                {/* Type Label and Percentage */}
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center space-x-2 text-gray-700">
+                    {/* Dynamic Icons based on type */}
+                    {item.type === "Task" && <span className="text-blue-500">☑️</span>}
+                    {item.type === "Story" && <span className="text-green-600">📜</span>}
+                    {item.type === "Subtask" && <span className="text-sky-500">🔗</span>}
+                    {item.type === "Epic" && <span className="text-purple-600">⚡</span>}
+                    {item.type === "Bug" && <span className="text-red-600">🐞</span>}
+                    <span className="font-medium">{item.type}</span>
+                  </div>
+                  <span className="font-semibold text-gray-800">{item.percentage}%</span>
+                </div>
+                
+                {/* Progress Bar (Distribution) */}
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="h-2.5 rounded-full transition-all duration-500"
+                    // Use type-specific color defined in typeBarColorMap
+                    style={{ 
+                        width: `${item.percentage}%`,
+                        backgroundColor: typeBarColorMap[item.type] || typeBarColorMap['Other']
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Priority Distribution */}
         <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
           <h4 className="font-semibold text-indigo-900 mb-3">Priority Distribution</h4>
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={preparePriorityData()}>
+            {/* Using memoized data */}
+            <BarChart data={preparePriorityData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="priority" />
               <YAxis />
               <Tooltip />
               <Legend />
               <Bar dataKey="Tasks" fill="#312e81" />
-<Bar dataKey="Stories" fill="#831843" />
-<Bar dataKey="Bugs" fill="#1d4ed8" /> 
+              <Bar dataKey="Stories" fill="#831843" />
+              <Bar dataKey="Bugs" fill="#1d4ed8" /> 
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -288,40 +385,41 @@ const Summary = ({ projectId, projectName }) => {
 
         {/* Tasks by Assignee */}
         <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-  <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
+          <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
 
-  <ResponsiveContainer width="100%" height={300}>
-    <PieChart>
-      <Pie
-        data={prepareTasksByAssigneeData()}
-        cx="50%"
-        cy="50%"
-        outerRadius={120}
-        labelLine={false}
-        label={({ name }) => name}
-        dataKey="value"
-      >
-        {prepareTasksByAssigneeData().map((_, i) => (
-          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-        ))}
-      </Pie>
-      <Tooltip formatter={(value) => `${value} Tasks`} />
-    </PieChart>
-  </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={300}>
+            {/* Using memoized data */}
+            <PieChart>
+              <Pie
+                data={prepareTasksByAssigneeData}
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                labelLine={false}
+                label={({ name }) => name}
+                dataKey="value"
+              >
+                {prepareTasksByAssigneeData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => `${value} Tasks`} />
+            </PieChart>
+          </ResponsiveContainer>
 
-  {/* Custom legend below chart */}
-  <div className="flex flex-wrap justify-center gap-3 mt-4">
-    {prepareTasksByAssigneeData().map((entry, i) => (
-      <div key={i} className="flex items-center space-x-2">
-        <div
-          className="w-3 h-3 rounded-full"
-          style={{ backgroundColor: COLORS[i % COLORS.length] }}
-        />
-        <span className="text-sm text-gray-700">{entry.name}</span>
-      </div>
-    ))}
-  </div>
-</div>
+          {/* Custom legend below chart */}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            {prepareTasksByAssigneeData.map((entry, i) => (
+              <div key={i} className="flex items-center space-x-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                />
+                <span className="text-sm text-gray-700">{entry.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
       </div>
 

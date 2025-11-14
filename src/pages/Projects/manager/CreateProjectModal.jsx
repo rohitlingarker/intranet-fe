@@ -66,6 +66,12 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
     }));
   };
 
+  const [searchQuery, setSearchQuery] = useState(""); // 🟩 Added for search
+  const filteredUsers = users.filter((user) =>
+  user.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+
   // ✅ Handle Member checkboxes
   const handleMemberCheckboxChange = (userId) => {
     if (userId.toString() === formData.ownerId.toString()) return;
@@ -146,7 +152,16 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
+        <div className="flex justify-between items-center mb-4">
+  <h2 className="text-xl font-semibold">Create New Project</h2>
+  <button
+    type="button"
+    onClick={onClose}
+    className="text-gray-500 hover:text-gray-800 text-2xl font-bold"
+  >
+    &times;
+  </button>
+</div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -285,18 +300,27 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
           {/* 🟩 Members */}
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members (Optional):</p>
+<input
+  type="text"
+  placeholder="Search users..."
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  className="w-full border px-3 py-2 rounded mb-3"
+/>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-              {users.map((user) => (
-                <label key={user.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.memberIds.includes(user.id)}
-                    onChange={() => handleMemberCheckboxChange(user.id)}
-                    disabled={formData.ownerId.toString() === user.id.toString()}
-                  />
-                  {user.name} ({user.roles.join(", ")})
-                </label>
-              ))}
+              {filteredUsers.map((user) => (
+  <label key={user.id} className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={formData.memberIds.includes(user.id)}
+      onChange={() => handleMemberCheckboxChange(user.id)}
+      disabled={formData.ownerId.toString() === user.id.toString()}
+    />
+    {user.name} ({user.roles.join(", ")})
+  </label>
+))}
+
+            
             </div>
           </div>
 
