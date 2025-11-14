@@ -2,12 +2,22 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+<<<<<<< HEAD
 
+=======
+import { X } from "lucide-react";
+ 
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
 import FormInput from "../../../../components/forms/FormInput";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
+<<<<<<< HEAD
 
+=======
+import { set } from "date-fns";
+ 
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
 const CreateIssueForm = ({
   issueType: initialIssueType = "Epic",
   initialData = {},
@@ -22,7 +32,7 @@ const CreateIssueForm = ({
     projectId: initialProjectId,
     ...initialData,
   });
-
+ 
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [epics, setEpics] = useState([]);
@@ -32,7 +42,7 @@ const CreateIssueForm = ({
   const [statusList, setStatusList] = useState([]); // ✅ NEW (for status master)
   const [loading, setLoading] = useState(false);
   const [selectedStorySprint, setSelectedStorySprint] = useState(null);
-
+ 
   const token = localStorage.getItem("token");
   const axiosConfig = {
     headers: {
@@ -40,6 +50,7 @@ const CreateIssueForm = ({
       "Content-Type": "application/json",
     },
   };
+<<<<<<< HEAD
 
   // ---------------------------
   // Fetch Status Master
@@ -63,6 +74,9 @@ const CreateIssueForm = ({
   // ---------------------------
   // Story → auto-select sprint
   // ---------------------------
+=======
+ 
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
   const handleStoryChange = (storyId) => {
     const story = stories.find((s) => s.id === storyId);
     if (story && story.sprint) {
@@ -71,10 +85,15 @@ const CreateIssueForm = ({
       setSelectedStorySprint(null);
     }
   };
+<<<<<<< HEAD
 
   // ---------------------------
   // Fetch Projects & Users
   // ---------------------------
+=======
+ 
+  // ---------- Fetch Projects & Users ----------
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
   useEffect(() => {
     const pid = initialProjectId;
     const fetchInitialData = async () => {
@@ -99,10 +118,15 @@ const CreateIssueForm = ({
     };
     fetchInitialData();
   }, []);
+<<<<<<< HEAD
 
   // ---------------------------
   // Fetch epics, stories, tasks, sprints
   // ---------------------------
+=======
+ 
+  // ---------- Fetch Dependent Data ----------
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
   useEffect(() => {
     const loadProjectData = async () => {
       if (!formData.projectId) {
@@ -112,7 +136,7 @@ const CreateIssueForm = ({
         setSprints([]);
         return;
       }
-
+ 
       setLoading(true);
       try {
         const [epicRes, storyRes, taskRes, sprintRes] = await Promise.all([
@@ -148,13 +172,18 @@ const CreateIssueForm = ({
 
     loadProjectData();
   }, [formData.projectId]);
+<<<<<<< HEAD
 
   // ---------------------------
   // Handle Form Change
   // ---------------------------
+=======
+ 
+  // ---------- Handle Change ----------
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+ 
     setFormData((prev) => {
       const updated = {
         ...prev,
@@ -175,28 +204,37 @@ const CreateIssueForm = ({
             ? value === "true"
             : value,
       };
-
+ 
       if (name === "storyId" && value) {
         const selectedStory = stories.find((s) => s.id === Number(value));
         updated.sprintId = selectedStory ? selectedStory.sprintId || null : null;
       }
-
+ 
       return updated;
     });
   };
+<<<<<<< HEAD
 
   // ---------------------------
   // Handle Submit
   // ---------------------------
+=======
+ 
+  // ---------- Handle Submit ----------
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     let endpoint = "";
     let payload = {};
+<<<<<<< HEAD
 
     // ---------------------------
     // EPIC (uses ENUM)
     // ---------------------------
+=======
+ 
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
     if (issueType === "Epic") {
       endpoint = "/api/epics";
       payload = {
@@ -204,16 +242,20 @@ const CreateIssueForm = ({
         description: formData.description || "",
         status: formData.status || "OPEN",
         priority: formData.priority || "MEDIUM",
-        progressPercentage: Number(formData.progressPercentage || 0),
+        // progressPercentage: Number(formData.progressPercentage || 0),
         projectId: Number(formData.projectId),
         reporterId: formData.reporterId || null,
         dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       };
     }
+<<<<<<< HEAD
 
     // ---------------------------
     // STORY (uses statusId)
     // ---------------------------
+=======
+ 
+>>>>>>> 9406d8c9d6981a01affef6ba16b86a8131c06392
     if (issueType === "Story") {
       endpoint = "/api/stories";
       payload = {
@@ -287,7 +329,7 @@ const CreateIssueForm = ({
         attachments: formData.attachments,
       };
     }
-
+ 
     try {
       await axios.post(
         `${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`,
@@ -308,7 +350,7 @@ const CreateIssueForm = ({
       );
     }
   };
-
+ 
   const selectedProject = projects.find((p) => p.id === formData.projectId);
   const today = new Date().toISOString().split("T")[0];
 
@@ -321,7 +363,7 @@ const CreateIssueForm = ({
       >
         ✕
       </button>
-
+ 
       <ToastContainer />
 
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
@@ -348,7 +390,7 @@ const CreateIssueForm = ({
           { label: "Bug", value: "Bug" },
         ]}
       />
-
+ 
       <form onSubmit={handleSubmit} className="space-y-6 mt-4">
         {/* Project */}
         <div>
@@ -775,7 +817,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         <button
           type="submit"
           disabled={loading}
@@ -787,5 +829,5 @@ const CreateIssueForm = ({
     </div>
   );
 };
-
+ 
 export default CreateIssueForm;

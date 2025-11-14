@@ -495,4 +495,59 @@ export const handleBulkReview = async (
     );
   }
 };
+export async function fetchDashboardLastMonth() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/lastMonth`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        errorData || `Error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    showStatusToast({
+      type: "error",
+      message: "Failed to fetch dashboard summary. Please try again.",
+    });
+    console.error("Fetch dashboard summary error:", error);
+    return null; // Return null so calling code can check for loading/error
+  }
+}
+export async function fetchDashboardLast3Months() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/last3Months`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        errorData || `Error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    showStatusToast({
+      type: "error",
+      message: "Failed to fetch dashboard summary. Please try again.",
+    });
+    console.error("Fetch dashboard summary error:", error);
+    return null; // Return null so calling code can check for loading/error
+  }
+}

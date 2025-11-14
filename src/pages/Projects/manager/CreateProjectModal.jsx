@@ -266,7 +266,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
               <label className="block text-sm font-medium mb-1">Start Date *</label>
               <input
                 type="date"
-                name="startDate"
+                name="startDate *"
                 className={`w-full border px-4 py-2 rounded ${
                   dateError ? "border-red-500" : ""
                 }`}
@@ -281,13 +281,14 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
               <label className="block text-sm font-medium mb-1">End Date</label>
               <input
                 type="date"
-                name="endDate"
+                name="endDate *"
                 className={`w-full border px-4 py-2 rounded ${
                   dateError ? "border-red-500" : ""
                 }`}
                 value={formData.endDate}
                 onChange={handleInputChange}
                 onKeyDown={(e) => e.preventDefault()}
+                required
               />
             </div>
           </div>

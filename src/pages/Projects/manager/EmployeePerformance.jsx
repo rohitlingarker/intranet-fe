@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
 
-const COLORS = ['#4c1d95', '#9d174d', '#6366f1', '#10b981', '#f59e0b'];
 const ITEMS_PER_PAGE = 5;
 
 const EmployeePerformance = () => {
@@ -59,34 +55,6 @@ const EmployeePerformance = () => {
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-  // Overall task status aggregation
-  const getOverallTaskStatus = () => {
-    const statusMap = {};
-    filtered.forEach(emp => {
-      const total = emp.totalTasks || 0;
-      const completed = emp.tasksCompleted || 0;
-      const inProgress = emp.tasksInProgress || 0;
-      const overdue = emp.tasksOverdue || 0;
-      if (total > 0) {
-        statusMap['Total Tasks'] = (statusMap['Total Tasks'] || 0) + total;
-        statusMap['Completed'] = (statusMap['Completed'] || 0) + completed;
-        statusMap['In Progress'] = (statusMap['In Progress'] || 0) + inProgress;
-        statusMap['Overdue'] = (statusMap['Overdue'] || 0) + overdue;
-      }
-    });
-    return Object.entries(statusMap).map(([name, value]) => ({ name, value }));
-  };
-
-  // Task completion per employee
-  const getTaskCompletionData = () => {
-    return filtered.map(emp => ({
-      name: emp.employeeName,
-      Completed: emp.tasksCompleted || 0,
-      'In Progress': emp.tasksInProgress || 0,
-      Overdue: emp.tasksOverdue || 0,
-    }));
-  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -236,39 +204,6 @@ const EmployeePerformance = () => {
           </section>
         ) : null
       )}
-
-      {/* Charts */}
-      <section className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mt-10">
-        {/* Overall Task Status */}
-        <div className="bg-white shadow rounded-lg p-5 flex flex-col">
-          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Overall Task Status</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={getOverallTaskStatus()}>
-              <XAxis dataKey="name" tick={{ fill: '#4b5563', fontWeight: '600' }} />
-              <YAxis tick={{ fill: '#4b5563' }} />
-              <Tooltip formatter={(value) => [value, 'Tasks']} />
-              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }} />
-              <Bar dataKey="value" fill="#4f46e5" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Task Completion Per Employee */}
-        <div className="bg-white shadow rounded-lg p-5 flex flex-col">
-          <h3 className="text-lg font-semibold mb-4 text-indigo-900">Task Completion by Employee</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={getTaskCompletionData()}>
-              <XAxis dataKey="name" tick={{ fill: '#4b5563', fontWeight: '600' }} />
-              <YAxis tick={{ fill: '#4b5563' }} />
-              <Tooltip />
-              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }} />
-              <Bar dataKey="Completed" fill="#10b981" />
-              <Bar dataKey="In Progress" fill="#f59e0b" />
-              <Bar dataKey="Overdue" fill="#ef4444" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
     </div>
   );
 };

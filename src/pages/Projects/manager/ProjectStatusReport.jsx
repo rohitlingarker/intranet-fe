@@ -323,7 +323,7 @@ export default function ProjectStatusReport({ projectData }) {
               <table className="min-w-full divide-y">
                 <thead className="text-xs text-gray-600 uppercase">
                   <tr>
-                    <th className="px-3 py-2 text-left">ID</th>
+                    {/* <th className="px-3 py-2 text-left">ID</th> */}
                     <th className="px-3 py-2 text-left">Title</th>
                     <th className="px-3 py-2 text-left">Assignee</th>
                     <th className="px-3 py-2 text-left">Type</th>
@@ -336,7 +336,7 @@ export default function ProjectStatusReport({ projectData }) {
                 <tbody className="text-sm">
                   {filteredIssues.map(i => (
                     <tr key={`${i.id}-${i.type}`} className="border-t">
-                      <td className="px-3 py-2">{i.id ?? '-'}</td>
+                      {/* <td className="px-3 py-2">{i.id ?? '-'}</td> */}
                       <td className="px-3 py-2">{i.title ?? '-'}</td>
                       <td className="px-3 py-2">{i.assignee?.name || i.assignee || '-'}</td>
                       <td className="px-3 py-2">{i.type ?? '-'}</td>
