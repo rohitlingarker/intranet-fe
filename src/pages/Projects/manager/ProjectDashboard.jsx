@@ -8,6 +8,8 @@ import ThreeCard from "../../../components/Cards/ThreeCards";
 import Pagination from "../../../components/Pagination/pagination";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { MoreVertical } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 import {
   Bell,
   ListTodo,
@@ -18,6 +20,51 @@ import {
   Pencil,
   Trash,
 } from "lucide-react";
+
+// Add this at the very top of your file, after imports, but before `const ProjectDashboard = () => {`
+const ProjectMenu = ({ project, onEdit, onDelete }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="absolute top-3 right-3">
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // ⛔ Prevent card navigation
+          setOpen((prev) => !prev);
+        }}
+        className="p-1 rounded-full hover:bg-gray-100"
+      >
+        <MoreVertical className="h-5 w-5 text-gray-600" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // ⛔ Prevent card navigation
+              onEdit(project);
+              setOpen(false);
+            }}
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // ⛔ Prevent card navigation
+              onDelete(project.id);
+              setOpen(false);
+            }}
+            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -31,7 +78,7 @@ const ProjectDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [projectsPerPage] = useState(5);
+  const [projectsPerPage] = useState(6);
 
   const [dashboardData, setDashboardData] = useState(null);
   const [reminders, setReminders] = useState(null);
@@ -239,7 +286,7 @@ const ProjectDashboard = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Project Dashboard</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex gap-3">
           <Button
             onClick={() => navigate(`/block-leave-dates/${user?.user_id}`)}
@@ -249,12 +296,28 @@ const ProjectDashboard = () => {
             Manage Leave Blocks
           </Button>
           <Button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              // Reset form for creating a new project
+              setFormData({
+                name: "",
+                projectKey: "",
+                description: "",
+                status: "PLANNING",
+                currentStage: "INITIATION",
+                ownerId: "",
+                memberIds: [],
+                startDate: "",
+                endDate: "",
+              });
+              setEditingProjectId(null); // make sure it’s not in edit mode
+              setIsCreateModalOpen(true); // open modal
+            }}
             variant="primary"
             size="medium"
           >
             + Create Project
           </Button>
+
         </div>
       </div>
 
@@ -298,7 +361,7 @@ const ProjectDashboard = () => {
       )} */}
 
       {/* PROJECT LIST SECTION */}
-      <div className="bg-white rounded-2xl shadow p-6">
+      <div className="bg-gray-50 rounded-2xl shadow-none p-6">
         <h2 className="text-2xl font-semibold mb-4">All Projects</h2>
 
         {/* Search + Filter */}
@@ -323,121 +386,74 @@ const ProjectDashboard = () => {
           </select>
         </div>
 
-        {/* List */}
+       {/* List */}
         {loading ? (
-          <p className="text-gray-600">Loading projects...</p>
+          <LoadingSpinner text="Loading projects..." />
         ) : currentProjects.length === 0 ? (
           <p className="text-gray-600">No projects found.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentProjects.map((project) => (
-              <div key={project.id} className="bg-gray-50 rounded-xl p-4">
-                <div
-                  className="flex justify-between items-center cursor-pointer"
-                  onClick={() => toggleExpand(project.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    {expandedId === project.id ? <ChevronDown /> : <ChevronRight />}
-                    <h3 className="text-lg font-semibold">{project.name}</h3>
-                    <span className="text-gray-500 text-sm">
-                      ({project.projectKey})
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="small"
-                      className="bg-transparent hover:bg-transparent"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEdit(project);
-                      }}
-                    >
-                      <Pencil className="text-blue-600" size={14} />
-                    </Button>
-                    <Button
-                      size="small"
-                      className="bg-transparent hover:bg-transparent"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(project.id);
-                      }}
-                    >
-                      <Trash className="text-red-500" size={14} />
-                    </Button>
-                  </div>
+              <div
+                key={project.id}
+                onClick={() => navigate(`/projects/${project.id}`)}
+                className="relative bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-5 border border-gray-100 flex flex-col justify-between"
+              >
+                {/* 3 Dots Menu */}
+                {project.status !== "COMPLETED" && (
+                  <ProjectMenu
+                    project={project}
+                    onEdit={(p) => {
+                      startEdit(p);        // set the editing project
+                      setIsCreateModalOpen(true); // open the modal
+                    }}
+                    onDelete={handleDelete}
+                  />
+                )}
+
+
+
+                {/* Project Info */}
+                <div>
+                  <h3 className="text-xl font-semibold text-indigo-700 mb-1">
+                    {project.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-3">Key: {project.projectKey}</p>
+                  <p className="text-gray-700 text-sm line-clamp-3">
+                    {project.description || "No description available."}
+                  </p>
                 </div>
 
-                {/* Expanded Section */}
-                {expandedId === project.id && (
-                  <div className="mt-3 border-t pt-3 text-sm text-gray-700">
-                    {editingProjectId === project.id ? (
-                      <>
-                        <input
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className="border px-2 py-1 rounded w-full mb-2"
-                          placeholder="Project Name"
-                        />
-                        <textarea
-                          name="description"
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          className="border px-2 py-1 rounded w-full mb-2"
-                          placeholder="Description"
-                        />
-                        <select
-                          name="status"
-                          value={formData.status}
-                          onChange={handleInputChange}
-                          className="border px-2 py-1 rounded w-full mb-2"
-                        >
-                          <option value="ACTIVE">Active</option>
-                          <option value="PLANNING">Planning</option>
-                          <option value="ARCHIVED">Archived</option>
-                          <option value="COMPLETED">Completed</option>
-                        </select>
+                {/* Status + View Button */}
+                <div className="mt-4 flex justify-between items-center">
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full font-medium ${
+                      project.status === "ACTIVE"
+                        ? "bg-green-100 text-green-700"
+                        : project.status === "PLANNING"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : project.status === "COMPLETED"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {project.status}
+                  </span>
 
-                        <div className="flex justify-end gap-2">
-                          <Button variant="secondary" size="small" onClick={cancelEdit}>
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="small"
-                            onClick={() => submitEdit(project.id)}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? "Saving..." : "Save"}
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p><strong>Description:</strong> {project.description || "—"}</p>
-                        <p><strong>Status:</strong> {project.status}</p>
-                        <p><strong>Owner:</strong> {project.owner?.name || "—"}</p>
-                        <p><strong>Members:</strong>{" "}
-                          {project.members?.length
-                            ? project.members.map((m) => m.name).join(", ")
-                            : "None"}
-                        </p>
-                        <Button
-                          variant="primary"
-                          size="small"
-                          className="mt-3"
-                          onClick={() => navigate(`/projects/${project.id}`)}
-                        >
-                          Open Project
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
+                  {/* <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  >
+                    View
+                  </Button> */}
+                </div>
               </div>
             ))}
+
           </div>
         )}
+
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -454,6 +470,9 @@ const ProjectDashboard = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onProjectCreated={() => fetchProjects(filterStatus)}
+        formData={formData}           // pass current form data
+        setFormData={setFormData}     // allow modal to update it
+        editingProjectId={editingProjectId}
       />
       <ToastContainer position="top-right" />
     </div>
