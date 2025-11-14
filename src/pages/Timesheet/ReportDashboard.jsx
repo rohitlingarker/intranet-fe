@@ -593,6 +593,14 @@ export default function ReportDashboard() {
             Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
             hours × 100
           </li>
+          <li>
+            Employee leaveHoursBreakdown Contribution =
+            (leaveHours/totalLeaveHours) × 100
+          </li>
+          <li>
+            Employee projectUserHoursBreakdown Contribution =
+            (totalHours/totalProjectHours) × 100
+          </li>
           {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
           <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>
           <li>Target utilization rate: 75% for sustainable productivity</li>
