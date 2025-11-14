@@ -6,7 +6,7 @@ import {
   PieChart,
   Pie,
   Cell,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -15,45 +15,535 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import LoadingSpinner from "../../../components/LoadingSpinner";
+import {
+  FiCheckSquare,
+  FiBookmark,
+  FiZap,
+  FiLink,
+  FiUser,
+} from "react-icons/fi";
+import { FaBug } from "react-icons/fa";
+import { Card, Avatar, Typography, Spin } from "antd";
+import { motion } from "framer-motion";
+const { Title, Text, Link } = Typography;
 
-const COLORS = [
-  "#312e81", "#4338ca", "#4f46e5", "#6366f1",
-  "#831843", "#9d174d", "#be185d", "#db2777",
-  "#e879f9", "#c026d3",
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.12,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.36, ease: "easeOut" },
+  },
+};
+
+const generateColors = (numColors) => {
+  const colors = [];
+  for (let i = 0; i < numColors; i++) {
+    const hue = (i * 360) / Math.max(1, numColors);
+    colors.push(`hsl(${hue}, 70%, 50%)`);
+  }
+  return colors;
+};
+
+/* --- DistributionBar: slim compact -- */
+const DistributionBar = ({ percentage }) => {
+  const percentLabel = `${Math.round(percentage)}%`;
+  return (
+    <div className="w-full bg-gray-200 rounded h-4" title={percentLabel}>
+      <motion.div
+        className="bg-gray-600 h-4 rounded flex items-center px-2 text-xs text-white font-semibold"
+        initial={{ width: 0 }}
+        animate={{ width: `${percentage}%` }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <span>{percentLabel}</span>
+      </motion.div>
+    </div>
+  );
+};
+
+/* --- Scope & Progress (compact) --- */
+const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
+  const allWorkItems = [...stories, ...tasks, ...bugs];
+  const totalItems = allWorkItems.length;
+  const completedItems = allWorkItems.filter(
+    (item) =>
+      item.status &&
+      typeof item.status.name === "string" &&
+      item.status.name.toLowerCase() === "done"
+  ).length;
+
+  const progressPercentage =
+    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+  const progressData = [
+    { name: "Completed", value: progressPercentage },
+    { name: "Remaining", value: 100 - progressPercentage },
+  ];
+
+  const statItems = [
+  { 
+    name: "Epics", 
+    count: epics.length, 
+    icon: <FiZap className="text-purple-500 text-xl" /> 
+  },
+  { 
+    name: "User Stories", 
+    count: stories.length, 
+    icon: <FiBookmark className="text-green-500 text-xl" /> 
+  },
+  { 
+    name: "Tasks", 
+    count: tasks.length, 
+    icon: <FiCheckSquare className="text-blue-500 text-xl" /> 
+  },
+  { 
+    name: "Bugs", 
+    count: bugs.length, 
+    icon: <FaBug className="text-red-500 text-xl" /> 
+  },
 ];
 
-const stageProgressMap = {
-  INITIATION: 5,
-  PLANNING: 15,
-  DESIGN: 30,
-  DEVELOPMENT: 65,
-  TESTING: 80,
-  DEPLOYMENT: 90,
-  MAINTENANCE: 98,
-  COMPLETED: 100,
+
+  return (
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Scope & Progress</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+        header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
+        body:{ padding: 20, paddingTop: 0 }
+        }}
+      >
+        {/* compact grid: left stat column + right donut */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap- items-center">
+          {/* Left: small stat tiles stacked */}
+          <div className="grid grid-cols-4 gap-3">
+  {statItems.map((item) => (
+    <div 
+      key={item.name} 
+      className="bg-gray-50 rounded p-3 flex flex-col items-center justify-center"
+    >
+      <div className="text-2xl mb-1">{item.icon}</div>
+      <Text 
+        type="secondary" 
+        className="text-xs uppercase tracking-wide font-semibold text-center"
+      >
+        {item.name}
+      </Text>
+      <Title 
+        level={4} 
+        className="!mb-0 !text-indigo-600 font-bold text-center"
+      >
+        {item.count}
+      </Title>
+    </div>
+  ))}
+</div>
+
+
+
+          {/* Right: smaller donut + small label */}
+          <div className="flex flex-col items-center justify-center">
+            <Text strong className="mb-2 text-xs uppercase tracking-wide font-bold">Overall Progress</Text>
+            <div className="w-36 h-36 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={progressData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={65}
+                    startAngle={90}
+                    endAngle={450}
+                    dataKey="value"
+                  >
+                    <Cell key="completed" fill="#4f46e5" />
+                    <Cell key="remaining" fill="#e5e7eb" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.12, duration: 0.28 }}
+                  className="text-center"
+                >
+                  <Title level={4} className="!mb-0 !text-indigo-600 font-bold">{progressPercentage}%</Title>
+                  <Text type="secondary" className="text-xs font-semibold">{completedItems} / {totalItems}</Text>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
 };
 
-const stageColorMap = {
-  INITIATION: "linear-gradient(90deg, #6366f1, #818cf8)",
-  PLANNING: "linear-gradient(90deg, #4338ca, #6366f1)",
-  DESIGN: "linear-gradient(90deg, #2563eb, #60a5fa)",
-  DEVELOPMENT: "linear-gradient(90deg, #4f46e5, #818cf8)",
-  TESTING: "linear-gradient(90deg, #9333ea, #c084fc)",
-  DEPLOYMENT: "linear-gradient(90deg, #16a34a, #86efac)",
-  MAINTENANCE: "linear-gradient(90deg, #eab308, #facc15)",
-  COMPLETED: "linear-gradient(90deg, #22c55e, #86efac)",
+/* --- StatusOverview --- */
+const StatusOverview = ({ workItems, statuses }) => {
+  const [chartData, setChartData] = useState([]);
+  const totalItems = workItems.length;
+
+  useEffect(() => {
+    const statusMap = new Map(statuses.map(s => [s.id, { ...s, count: 0 }]));
+    workItems.forEach(item => {
+      if (item.status && statusMap.has(item.status.id)) {
+        statusMap.get(item.status.id).count++;
+      }
+    });
+    const colors = generateColors(Math.max(1, statusMap.size));
+    const data = Array.from(statusMap.values()).map((status, index) => ({
+      name: status.name,
+      value: status.count,
+      color: colors[index % colors.length],
+    }));
+    setChartData(data);
+  }, [workItems, statuses]);
+
+  if (!totalItems && chartData.every(d => d.value === 0)) return null;
+
+  return (
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Status overview</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+        header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
+        body:{ padding: 40, paddingTop: 0 }
+        }}
+      >
+        <Text type="secondary" className="block mb-3 text-sm">
+                Get a snapshot of the status of your work items.
+        </Text>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div className="relative h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={110}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={`cell-${entry.name}`}
+                      fill={entry.value > 0 ? entry.color : "#f3f4f6"}
+                    />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(value, name) => [`${name}: ${value}`, null]}
+                  contentStyle={{
+                    background: "white",
+                    border: "1px solid #ddd",
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                  }}
+                  cursor={{ fill: "transparent" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <Title level={4} className="!mb-0 font-bold">{totalItems}</Title>
+              <Text type="secondary" className="text-xs font-semibold">Total work items</Text>
+            </div>
+          </div>
+
+          <div className="space-y-2 self-center">
+            {chartData.map((item) => (
+              <div key={item.name} className="flex items-center">
+                <span className="w-3 h-3 rounded-sm mr-2" style={{ backgroundColor: item.value > 0 ? item.color : "#f3f4f6" }} />
+                <Text className="text-sm font-medium">{item.name}: {item.value}</Text>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
 };
 
+/* --- TypesOfWork --- */
+const TypesOfWork = ({ tasks, stories, epics, bugs }) => {
+  const workTypes = [
+    { name: "Tasks", items: tasks, icon: <FiCheckSquare className="text-blue-500" /> },
+    { name: "Stories", items: stories, icon: <FiBookmark className="text-green-500" /> },
+    { name: "Epics", items: epics, icon: <FiZap className="text-purple-500" /> },
+    { name: "Bugs", items: bugs, icon: <FaBug className="text-red-500" /> },
+  ];
+
+  const totalItems = workTypes.reduce((sum, type) => sum + type.items.length, 0);
+  if (!totalItems) return null;
+
+  return (
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Types of work</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+        header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
+        body:{ padding: 40, paddingTop: 0 }
+        }}
+        // extra={<Link href="#" className="font-semibold">View all items</Link>}
+      >
+        <Text type="secondary" className="block mb-3 text-sm">Get a breakdown of work items by their types.</Text>
+
+        <div className="flex justify-between mb-2">
+          <Text strong className="text-gray-500 w-2/5 text-xs">Type</Text>
+          <Text strong className="text-gray-500 w-3/5 text-xs">Distribution</Text>
+        </div>
+
+        <div className="space-y-3">
+          {workTypes.map((type) => {
+            const percentage = totalItems > 0 ? (type.items.length / totalItems) * 100 : 0;
+            if (type.items.length === 0) return null;
+            return (
+              <div key={type.name} className="flex items-center">
+                <div className="w-2/5 flex items-center">
+                  <span className="mr-3 text-lg">{type.icon}</span>
+                  <Text className="text-sm font-medium">{type.name}</Text>
+                </div>
+                <div className="w-3/5">
+                  <DistributionBar percentage={percentage} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+/* --- TeamWorkload --- */
+const TeamWorkload = ({ workItems, users }) => {
+  const [workloadData, setWorkloadData] = useState([]);
+  const totalItems = workItems.length;
+
+  useEffect(() => {
+    const userMap = new Map(users.map(u => [u.id, { ...u, count: 0 }]));
+
+    // Default Unassigned bucket
+    const unassigned = {
+      id: null,
+      name: "Unassigned",
+      count: 0,
+      color: "#9ca3af",
+      initials: <FiUser />
+    };
+
+    // FIX: detect assignee by assigneeId OR assignee.id
+    workItems.forEach(item => {
+      const assignedTo = item.assigneeId || item.assignee?.id;
+
+      if (assignedTo && userMap.has(assignedTo)) {
+        userMap.get(assignedTo).count++;
+      } else {
+        unassigned.count++;
+      }
+    });
+
+    // Only show users who have at least 1 assignment
+    const assignedUsers = Array.from(userMap.values()).filter(u => u.count > 0);
+
+    // Put Unassigned at the top if it has items
+    const allAssignees = unassigned.count > 0
+      ? [unassigned, ...assignedUsers]
+      : assignedUsers;
+
+    const colors = generateColors(Math.max(1, assignedUsers.length));
+
+    // Build workload array
+    const data = allAssignees.map((user, index) => {
+      const percentage =
+        totalItems > 0 ? (user.count / totalItems) * 100 : 0;
+
+      const initials = user.id
+        ? (user.name?.split(" ").map(n => n[0]).join("").toUpperCase() || "?")
+        : <FiUser />;
+
+      return {
+        ...user,
+        percentage,
+        initials,
+        color: user.id ? colors[index % colors.length] : "#9ca3af"
+      };
+    });
+
+    setWorkloadData(data);
+  }, [workItems, users]);
+
+  if (!totalItems) return null;
+
+  return (
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={
+          <Title level={4} className="!mb-0 font-bold">
+            Team workload
+          </Title>
+        }
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+          header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
+          body: { padding: 40, paddingTop: 0 }
+        }}
+      >
+        <Text type="secondary" className="block !mt-0 !mb-1 text-sm">
+          Monitor the capacity of your team.
+        </Text>
+
+        <div className="flex justify-between mb-2">
+          <Text strong className="text-gray-500 w-2/5 text-xs">
+            Assignee
+          </Text>
+          <Text strong className="text-gray-500 w-3/5 text-xs">
+            Work distribution
+          </Text>
+        </div>
+
+        <div className="space-y-3">
+          {workloadData.map(user => (
+            <div key={user.name} className="flex items-center">
+              <div className="w-2/5 flex items-center">
+                <Avatar
+                  size="small"
+                  style={{
+                    backgroundColor: user.color,
+                    marginRight: 12,
+                    fontWeight: "bold"
+                  }}
+                >
+                  {user.initials}
+                </Avatar>
+                <Text className="text-sm font-medium">
+                  {user.name || user.email || "Unassigned"}
+                </Text>
+              </div>
+              <div className="w-3/5">
+                <DistributionBar percentage={user.percentage} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+
+/* --- PriorityDistribution --- */
+const PriorityDistribution = ({ tasks, stories, bugs }) => {
+  const preparePriorityData = () => {
+    const allPriorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNSPECIFIED"];
+    const dataMap = new Map(allPriorities.map(p => [p, { priority: p, Tasks: 0, Stories: 0, Bugs: 0 }]));
+
+    const allItems = [
+      ...tasks.map(item => ({ ...item, type: 'Tasks' })),
+      ...stories.map(item => ({ ...item, type: 'Stories' })),
+      ...bugs.map(item => ({ ...item, type: 'Bugs' })),
+    ];
+
+    allItems.forEach(item => {
+      const p = item.priority?.toUpperCase() || "UNSPECIFIED";
+      if (dataMap.has(p) && item.type) {
+        dataMap.get(p)[item.type]++;
+      }
+    });
+
+    return Array.from(dataMap.values()).filter(entry => entry.Tasks > 0 || entry.Stories > 0 || entry.Bugs > 0);
+  };
+
+  const data = preparePriorityData();
+
+  const CustomPriorityTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-2 bg-indigo-900 text-white text-sm rounded-lg shadow-lg"
+        >
+          <p className="font-bold text-sm mb-1">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={`item-${index}`} style={{ color: entry.color }} className="font-semibold">
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </motion.div>
+      );
+    }
+    return null;
+  };
+
+  if (!data.length) return null;
+
+  return (
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Priority Distribution</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+        header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
+        body:{ padding: 40, paddingTop: 0 }
+        }}
+      >
+        <Text type="secondary" className="block mb-3 text-sm uppercase tracking-wide font-semibold">Breakdown by priority</Text>
+
+        <div className="w-full" >
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={data} margin={{ top: 8, right: 10, left: 8, bottom: 6 }} barGap={6} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 70, 229, 0.06)" />
+              <XAxis dataKey="priority" tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }} />
+              <YAxis allowDecimals={false} tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }} />
+              <RechartsTooltip content={<CustomPriorityTooltip />} cursor={{ fill: 'rgba(79, 70, 229, 0.03)' }} />
+              <Legend wrapperStyle={{ paddingTop: 6, fontWeight: 600, fontSize: 13 }} />
+              <Bar dataKey="Tasks" fill="#4f46e5" radius={[6, 6, 0, 0]} barSize={28} />
+              <Bar dataKey="Stories" fill="#7c3aed" radius={[6, 6, 0, 0]} barSize={28} />
+              <Bar dataKey="Bugs" fill="#06b6d4" radius={[6, 6, 0, 0]} barSize={28} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+/* --- Main Summary Component (compact, single page scroll) --- */
 const Summary = ({ projectId, projectName }) => {
-  const [epics, setEpics] = useState([]);
-  const [stories, setStories] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [bugs, setBugs] = useState([]);
+  const [projectData, setProjectData] = useState({
+    epics: [],
+    stories: [],
+    tasks: [],
+    bugs: [],
+    statuses: [],
+    users: [],
+    stage: "INITIATION",
+  });
   const [loading, setLoading] = useState(true);
-  const [projectStage, setProjectStage] = useState("");
-  const [projectProgress, setProjectProgress] = useState(0);
-  const token = localStorage.getItem("token");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -62,24 +552,25 @@ const Summary = ({ projectId, projectName }) => {
         const headers = { Authorization: `Bearer ${token}` };
         const base = import.meta.env.VITE_PMS_BASE_URL;
 
-        const projectRes = await axios.get(`${base}/api/projects/${projectId}`, { headers });
-        const stage = projectRes.data.currentStage || "INITIATION";
-        const upperStage = stage.toUpperCase();
-
-        setProjectStage(upperStage);
-        setProjectProgress(stageProgressMap[upperStage] || 0);
-
-        const [epicRes, storyRes, taskRes, bugRes] = await Promise.all([
+        const [projRes, epicRes, storyRes, taskRes, bugRes, statusRes, userRes] = await Promise.all([
+          axios.get(`${base}/api/projects/${projectId}`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/epics`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/stories`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/tasks`, { headers }),
           axios.get(`${base}/api/bugs/project/${projectId}`, { headers }),
+          axios.get(`${base}/api/projects/${projectId}/statuses`, { headers }),
+          axios.get(`${base}/api/projects/${projectId}/members`, { headers }),
         ]);
 
-        setEpics(epicRes.data);
-        setStories(storyRes.data);
-        setTasks(taskRes.data);
-        setBugs(bugRes.data);
+        setProjectData({
+          epics: epicRes.data || [],
+          stories: storyRes.data || [],
+          tasks: taskRes.data || [],
+          bugs: bugRes.data || [],
+          statuses: statusRes.data || [],
+          users: userRes.data || [],
+          stage: projRes.data?.currentStage || "INITIATION",
+        });
       } catch (err) {
         console.error("Failed to fetch project summary:", err);
       } finally {
@@ -87,259 +578,86 @@ const Summary = ({ projectId, projectName }) => {
       }
     };
 
-    fetchAll();
+    if (projectId && token) {
+      fetchAll();
+    } else {
+      // If no projectId or token, stop loading to show empty state
+      setLoading(false);
+    }
   }, [projectId, token]);
-
-  /** ---------- Chart Data Preparation ---------- **/
-
-  const prepareTasksByAssigneeData = () => {
-    if (!tasks.length) return [];
-    const grouped = {};
-    tasks.forEach((task) => {
-      const name =
-        task.assignee?.username ||
-        task.assignee?.name ||
-        task.assigneeName ||
-        "Unassigned";
-      grouped[name] = (grouped[name] || 0) + 1;
-    });
-    return Object.entries(grouped)
-      .map(([name, value]) => ({ name: `${name} (${value})`, value }))
-      .sort((a, b) => b.value - a.value);
-  };
-
-  const preparePriorityData = () => {
-    const groupByPriority = (items) => {
-      const result = {};
-      items.forEach((i) => {
-        const p = i.priority || "Unspecified";
-        result[p] = (result[p] || 0) + 1;
-      });
-      return result;
-    };
-
-    const taskData = groupByPriority(tasks);
-    const storyData = groupByPriority(stories);
-    const bugData = groupByPriority(bugs);
-
-    const allPriorities = Array.from(
-      new Set([...Object.keys(taskData), ...Object.keys(storyData), ...Object.keys(bugData)])
-    );
-
-    return allPriorities.map((p) => ({
-      priority: p,
-      Tasks: taskData[p] || 0,
-      Stories: storyData[p] || 0,
-      Bugs: bugData[p] || 0,
-    }));
-  };
-
-  /** ---------- ✅ Updated Types of Work Data (Done vs Remaining) ---------- **/
-  const prepareWorkTypeData = () => {
-    const getDoneAndRemaining = (items) => {
-      if (!items.length) return { done: 0, remaining: 0 };
-      const done = items.filter(
-        (i) =>
-          i.status?.toUpperCase() === "DONE" ||
-          i.status?.toUpperCase() === "CLOSED" ||
-          i.status?.toUpperCase() === "COMPLETED"
-      ).length;
-      const total = items.length;
-      return {
-        done: done,
-        remaining:total-done,
-      };
-    };
-
-    // const epicData = getDoneAndRemaining(epics);
-    const storyData = getDoneAndRemaining(stories);
-    const taskData = getDoneAndRemaining(tasks);
-    const bugData = getDoneAndRemaining(bugs);
-
-    return [
-      // { type: "Epics", Done: parseFloat(epicData.done), Remaining: parseFloat(epicData.remaining) },
-      { type: "Stories", Done: parseFloat(storyData.done), Remaining: parseFloat(storyData.remaining) },
-      { type: "Tasks", Done: parseFloat(taskData.done), Remaining: parseFloat(taskData.remaining) },
-      { type: "Bugs", Done: parseFloat(bugData.done), Remaining: parseFloat(bugData.remaining) },
-    ];
-  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <LoadingSpinner text="Loading Project Summary..." />
+      <div className="flex justify-center items-center w-full" style={{ minHeight: "220px" }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+        >
+          <Spin size="large" tip="Loading Project Summary..." />
+        </motion.div>
       </div>
     );
   }
 
-  const progressBarColor =
-    stageColorMap[projectStage] || "linear-gradient(90deg, #4f46e5, #818cf8)";
+  const allWorkItems = [...projectData.tasks, ...projectData.stories, ...projectData.bugs];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-2 text-indigo-900">
-        Project Summary: {projectName}
-      </h2>
-
-      {/* Project Stage Progress Bar */}
-      <div className="bg-white shadow rounded-lg p-4 mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-semibold text-indigo-900">Project Stage</h4>
-          <span className="text-sm font-medium text-gray-600">
-            {projectStage} ({projectProgress}%)
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full">
-          <div
-            className="h-4 rounded-full transition-all duration-700"
-            style={{
-              width: `${projectProgress}%`,
-              background: progressBarColor,
-            }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Epics", value: epics.length },
-          { label: "Stories", value: stories.length },
-          { label: "Tasks", value: tasks.length },
-          { label: "Bugs", value: bugs.length },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="bg-white shadow rounded-lg p-4 text-center hover:shadow-lg transition"
-          >
-            <div className="text-gray-500 font-medium">{item.label}</div>
-            <div className="text-3xl font-bold text-indigo-900">
-              {item.value}
-            </div>
+    <motion.div
+      className="px-6 bg-white mt-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.36 }}
+      style={{ minHeight: "calc(100vh - 120px)" }} // change 120px to match your header/navbar
+    >
+      {/* Top header row (kept minimal to avoid extra space) */}
+      {/* <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Title level={3} className="!mb-0 !text-gray-800 font-bold">{projectName || "Project"}</Title>
           </div>
-        ))}
+          <div>
+            <Text type="secondary" className="text-sm">Stage: {projectData.stage}</Text>
+          </div>
+        
+        </div>
+      </div> */}
+
+      {/* Section 1: ScopeAndProgress (compact) */}
+      <div className="mb-4">
+        <ScopeAndProgress
+          epics={projectData.epics}
+          stories={projectData.stories}
+          bugs={projectData.bugs}
+          tasks={projectData.tasks}
+        />
       </div>
 
-     {/* Charts Section - 2x2 Grid Layout */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-  {/* Priority Distribution */}
-  <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-    <h4 className="font-semibold text-indigo-900 mb-3">Priority Distribution</h4>
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart
-        data={preparePriorityData()}
-        margin={{ top: 20, right: 20, left: 10, bottom: 40 }}
-        barGap={6}
-        barCategoryGap="25%"
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          dataKey="priority"
-          tick={{ fontSize: 12, fill: "#374151" }}
-          interval={0}
-          angle={-20}
-          textAnchor="end"
-        />
-        <YAxis allowDecimals={false} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="Tasks" fill="#312e81" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Stories" fill="#9d174d" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Bugs" fill="#1d4ed8" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
+      {/* Section 2: StatusOverview */}
+      <div className="mb-4">
+        <StatusOverview workItems={allWorkItems} statuses={projectData.statuses} />
+      </div>
 
-  {/* Epic Progress */}
-  <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-  <h4 className="font-semibold text-indigo-900 mb-3">Epic Progress</h4>
-  <ResponsiveContainer width="100%" height={Math.max(300, epics.length * 50)}>
-    <BarChart
-      layout="vertical"
-      data={epics.map((epic) => ({
-        Epic: epic.name,
-        Progress: Number(epic.progressPercentage) || 0,
-      }))}
-      margin={{ top: 10, right: 30, left: 100, bottom: 10 }}
-    >
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis type="number" domain={[0, 100]} unit="%" />
-      <YAxis
-        dataKey="Epic"
-        type="category"
-        width={120}
-        tick={{ fontSize: 12 }}
-      />
-      <Tooltip formatter={(v) => [`${v}%`, "Progress"]} />
-      <Bar dataKey="Progress" fill="#4f46e5" barSize={25} />
-    </BarChart>
-  </ResponsiveContainer>
-</div>
-
-  {/* Tasks by Assignee */}
-  <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-    <h4 className="font-semibold text-indigo-900 mb-3">Tasks by Assignee</h4>
-    <ResponsiveContainer width="100%" height={280}>
-      <PieChart>
-        <Pie
-          data={prepareTasksByAssigneeData()}
-          cx="50%"
-          cy="50%"
-          outerRadius={100}
-          labelLine={false}
-          dataKey="value"
-        >
-          {prepareTasksByAssigneeData().map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip formatter={(v) => `${v} Tasks`} />
-      </PieChart>
-    </ResponsiveContainer>
-    <div className="flex flex-wrap justify-center gap-2 mt-2">
-      {prepareTasksByAssigneeData().map((entry, i) => (
-        <div key={i} className="flex items-center space-x-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: COLORS[i % COLORS.length] }}
+      {/* Section 3: Bottom grid - these will appear below and page will scroll naturally if needed */}
+      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4" variants={containerVariants} initial="hidden" animate="visible">
+        <div>
+          <PriorityDistribution
+            tasks={projectData.tasks}
+            stories={projectData.stories}
+            bugs={projectData.bugs}
           />
-          <span className="text-xs text-gray-700">{entry.name}</span>
         </div>
-      ))}
-    </div>
-  </div>
 
-  {/* Types of Work (Done vs Remaining) */}
-  <div className="bg-white rounded-lg shadow p-5 hover:shadow-xl transition">
-  <h4 className="font-semibold text-indigo-900 mb-3">
-    Types of Work (Done vs Remaining)
-  </h4>
-  <ResponsiveContainer width="100%" height={300}>
-    <BarChart
-      layout="vertical"
-      data={prepareWorkTypeData()} // data should have { type, Done, Remaining, Total }
-      margin={{ top: 10, right: 20, left: 80, bottom: 10 }}
-    >
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis type="number" allowDecimals={false} />
-      <YAxis dataKey="type" type="category" />
-      <Tooltip
-        formatter={(value, name, props) => [
-          `${value} tasks`,
-          name === "Done" ? "Completed" : "Remaining",
-        ]}
-        labelFormatter={(label) => `Type: ${label}`}
-      />
-      <Legend />
-      <Bar dataKey="Done" stackId="a" fill="#312e81" barSize={25} /> {/* indigo-900 */}
-      <Bar dataKey="Remaining" stackId="a" fill="#831843" barSize={25} /> {/* pink-900 */}
-    </BarChart>
-  </ResponsiveContainer>
-</div>
-</div>
-
-
-    </div>
+        <div className="flex flex-col gap-4">
+          <TypesOfWork
+            tasks={projectData.tasks}
+            stories={projectData.stories}
+            epics={projectData.epics}
+            bugs={projectData.bugs}
+          />
+          <TeamWorkload workItems={allWorkItems} users={projectData.users} />
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
