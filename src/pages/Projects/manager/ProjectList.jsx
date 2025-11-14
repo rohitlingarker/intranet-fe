@@ -214,7 +214,7 @@ const ProjectList = () => {
     );
 
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
-    toast.success("✅ Project deleted successfully!");
+    toast.success(" Project deleted successfully!");
   } catch (err) {
     console.error("❌ Failed to delete project:", err);
 

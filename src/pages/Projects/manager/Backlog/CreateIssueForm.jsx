@@ -3,13 +3,13 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
-
+ 
 import FormInput from "../../../../components/forms/FormInput";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import { set } from "date-fns";
-
+ 
 const CreateIssueForm = ({
   issueType: initialIssueType = "Epic",
   initialData = {},
@@ -24,7 +24,7 @@ const CreateIssueForm = ({
     projectId: initialProjectId,
     ...initialData,
   });
-
+ 
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [epics, setEpics] = useState([]);
@@ -33,12 +33,12 @@ const CreateIssueForm = ({
   const [sprints, setSprints] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedStorySprint, setSelectedStorySprint] = useState(null);
-
+ 
   const token = localStorage.getItem("token");
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   };
-
+ 
   const handleStoryChange = (storyId) => {
     const story = stories.find((s) => s.id === storyId);
     if (story && story.sprint) {
@@ -47,7 +47,7 @@ const CreateIssueForm = ({
       setSelectedStorySprint(null);
     }
   };
-
+ 
   // ---------- Fetch Projects & Users ----------
   useEffect(() => {
     const pid = initialProjectId;
@@ -66,7 +66,7 @@ const CreateIssueForm = ({
     };
     fetchInitialData();
   }, []);
-
+ 
   // ---------- Fetch Dependent Data ----------
   useEffect(() => {
     const loadProjectData = async () => {
@@ -77,7 +77,7 @@ const CreateIssueForm = ({
         setSprints([]);
         return;
       }
-
+ 
       setLoading(true);
       try {
         const [epicRes, storyRes, taskRes, sprintRes] = await Promise.all([
@@ -99,11 +99,11 @@ const CreateIssueForm = ({
     };
     loadProjectData();
   }, [formData.projectId]);
-
+ 
   // ---------- Handle Change ----------
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+ 
     setFormData((prev) => {
       const updated = {
         ...prev,
@@ -116,22 +116,22 @@ const CreateIssueForm = ({
             ? value === "true"
             : value,
       };
-
+ 
       if (name === "storyId" && value) {
         const selectedStory = stories.find((s) => s.id === Number(value));
         updated.sprintId = selectedStory ? selectedStory.sprintId || null : null;
       }
-
+ 
       return updated;
     });
   };
-
+ 
   // ---------- Handle Submit ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     let endpoint = "/api/tasks";
     let payload = {};
-
+ 
     if (issueType === "Epic") {
       endpoint = "/api/epics";
       payload = {
@@ -139,13 +139,13 @@ const CreateIssueForm = ({
         description: formData.description || "",
         status: formData.status || "OPEN",
         priority: formData.priority || "MEDIUM",
-        progressPercentage: Number(formData.progressPercentage || 0),
+        // progressPercentage: Number(formData.progressPercentage || 0),
         projectId: Number(formData.projectId),
         reporterId: formData.reporterId ? Number(formData.reporterId) : null,
         dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
       };
     }
-
+ 
     if (issueType === "Story") {
       endpoint = "/api/stories";
       payload = {
@@ -164,7 +164,7 @@ const CreateIssueForm = ({
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
       };
     }
-
+ 
     if (issueType === "Task") {
       endpoint = "/api/tasks";
       payload = {
@@ -183,7 +183,7 @@ const CreateIssueForm = ({
         billable: formData.isBillable,
       };
     }
-
+ 
     if (issueType === "Bug") {
       endpoint = "/api/bugs";
       payload = {
@@ -205,7 +205,7 @@ const CreateIssueForm = ({
         attachments: formData.attachments || "",
       };
     }
-
+ 
     try {
       await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, payload, axiosConfig);
       toast.success(`${issueType} created successfully!`);
@@ -222,24 +222,24 @@ const CreateIssueForm = ({
       }
     }
   };
-
+ 
   const selectedProject = projects.find((p) => p.id === formData.projectId);
   const today = new Date().toISOString().split("T")[0]; // ✅ current date
-
+ 
   // ---------- Render ----------
   return (
     <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
       <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
         {/* <X size={20} /> */}
       </button>
-
+ 
       <ToastContainer />
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
         Create {issueType}
       </h2>
-
+ 
       {loading && <p className="text-sm text-gray-500 mb-3">Loading project data...</p>}
-
+ 
       <FormSelect
         label="Issue Type"
         name="issueType"
@@ -255,7 +255,7 @@ const CreateIssueForm = ({
           { label: "Bug", value: "Bug" },
         ]}
       />
-
+ 
       <form onSubmit={handleSubmit} className="space-y-6 mt-4">
         <div>
           <label className="block text-gray-700 font-semibold mb-2">Project *</label>
@@ -266,7 +266,7 @@ const CreateIssueForm = ({
             className="w-full border rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
           />
         </div>
-
+ 
         {/* ---------- Epic ---------- */}
         {issueType === "Epic" && (
           <>
@@ -296,13 +296,13 @@ const CreateIssueForm = ({
                 { label: "Critical", value: "CRITICAL" },
               ]}
             />
-            <FormInput
+            {/* <FormInput
               label="Progress (%)"
               name="progressPercentage"
               type="number"
               value={formData.progressPercentage || ""}
               onChange={handleChange}
-            />
+            /> */}
             <FormDatePicker
               label="Due Date"
               name="dueDate"
@@ -312,7 +312,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         {/* ---------- Story ---------- */}
         {issueType === "Story" && (
           <>
@@ -364,7 +364,7 @@ const CreateIssueForm = ({
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId || ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
           </>
         )}
-
+ 
         {/* ---------- Task ---------- */}
         {issueType === "Task" && (
           <>
@@ -410,7 +410,7 @@ const CreateIssueForm = ({
             />
           </>
         )}
-
+ 
         {/* ---------- Bug ---------- */}
         {issueType === "Bug" && (
           <>
@@ -464,7 +464,7 @@ const CreateIssueForm = ({
             <FormInput label="Attachments" name="attachments" value={formData.attachments || ""} onChange={handleChange} placeholder="Paste file URL or path" />
           </>
         )}
-
+ 
         <button
           type="submit"
           disabled={loading}
@@ -476,5 +476,5 @@ const CreateIssueForm = ({
     </div>
   );
 };
-
+ 
 export default CreateIssueForm;
