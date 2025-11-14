@@ -133,6 +133,7 @@ export default function ReportDashboard() {
   const employeeBreakdown = data.employeeBreakdown || [];
   const employeeProductivity = data.employeeProductivity || [];
   const projectBreakdown = data.projectBreakdown || [];
+  const leaveHoursBreakdown = data.leaveHoursBreakdown || [];
 
   // Base pagination on the main list, e.g., employeeBreakdown
   const totalPages = Math.ceil(employeeBreakdown.length / itemsPerPage);
@@ -149,6 +150,11 @@ export default function ReportDashboard() {
   );
 
   const paginatedProjectBreakdown = projectBreakdown.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const paginatedleaveHoursBreakdown = leaveHoursBreakdown.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -347,6 +353,49 @@ export default function ReportDashboard() {
                 <td>{p.totalHours ?? "-"}</td>
                 <td>
                   <span className="badge-blue">{p.productivity ?? "-"}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {totalPages > 1 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              onNext={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Employee leaveHoursBreakdown */}
+      <div className="section-card">
+        <h3>
+          <TrendingUp size={18} /> Employee leaveHoursBreakdown
+        </h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Employee Name</th>
+              <th>Leave Days</th>
+              <th>Leave Hours</th>
+              <th>Contribution</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedleaveHoursBreakdown.map((p, i) => (
+              <tr key={i}>
+                <td>{p.userId ?? "-"}</td>
+                <td>{p.userName ?? "-"}</td>
+                <td>{p.noOfDays ?? "-"}</td>
+                <td>{p.leaveHours ?? "-"}</td>
+                <td>
+                  <span className="badge-yellow">{p.contribution ?? "-"}</span>
                 </td>
               </tr>
             ))}

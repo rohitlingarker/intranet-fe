@@ -169,7 +169,7 @@ th:first-child, td:first-child {
 }
 tbody tr:hover { background: #f8fafc; }
 
-.badge-green, .badge-blue {
+.badge-green, .badge-blue, .badge-yellow {
   display: inline-block;
   padding: 2px 6px;
   border-radius: 4px;
@@ -178,6 +178,7 @@ tbody tr:hover { background: #f8fafc; }
 }
 .badge-green { background: #dcfce7; color: #166534; }
 .badge-blue { background: #dbeafe; color: #1e3a8a; }
+.badge-yellow { background: #fef9c3; color: #f505a5; }
 
 /* ------------------- PROJECTS ------------------- */
 .projects-grid {
