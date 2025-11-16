@@ -7,6 +7,7 @@ import {
   Pie,
   Cell,
   Tooltip as RechartsTooltip,
+  Sector,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -25,7 +26,8 @@ import {
 import { FaBug } from "react-icons/fa";
 // Added Tooltip from antd
 import { Card, Avatar, Typography, Spin, Tooltip } from "antd"; 
-import { motion } from "framer-motion";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 const { Title, Text, Link } = Typography;
 
 const containerVariants = {
@@ -48,41 +50,69 @@ const itemVariants = {
   },
 };
 
-const generateColors = (numColors) => {
-  const colors = [];
-  for (let i = 0; i < numColors; i++) {
-    const hue = (i * 360) / Math.max(1, numColors);
-    colors.push(`hsl(${hue}, 70%, 50%)`);
-  }
-  return colors;
-};
+const DASHBOARD_COLORS = [
+  "#4f46e5", // Indigo 600
+  "#7c3aed", // Purple 600
+  "#0d9488", // Teal 600
+  "#db2777", // Pink 600
+  "#ea580c", // Orange 600
+  "#2563eb", // Blue 600
+  "#be185d", // Fuchsia 700
+  "#65a30d", // Lime 600
+  "#0891b2", // Cyan 600
+  "#c026d3", // Fuchsia 600
+  "#d97706", // Amber 600
+  "#4338ca", // Indigo 700
+];
 
 /* --- DistributionBar: slim compact -- */
-const DistributionBar = ({ percentage }) => {
+const DistributionBar = ({ percentage, count, total, isInteractive = true }) => {
   const percentLabel = `${Math.round(percentage)}%`;
-  return (
-    <div className="w-full bg-gray-200 rounded h-4" title={percentLabel}>
-      <motion.div
-        className="bg-gray-600 h-4 rounded flex items-center px-2 text-xs text-white font-semibold"
-        initial={{ width: 0 }}
-        animate={{ width: `${percentage}%` }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-      >
-        <span>{percentLabel}</span>
-      </motion.div>
-    </div>
+  const tooltipTitle = `${count} / ${total} items`;
+
+  const bar = (
+    <div className={`w-full bg-gray-200 rounded h-4 flex items-center ${isInteractive ? 'cursor-pointer' : ''}`}>
+        <motion.div
+          className="bg-gray-600 h-4 rounded flex items-center px-2 text-xs text-white font-semibold origin-left"
+          initial={{ width: 0 }}
+          whileInView={{ width: `${percentage}%` }}
+          whileHover={isInteractive ? { scaleY: 1.2 } : {}}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        >
+          <span>{percentLabel}</span>
+        </motion.div>
+      </div>
   );
+
+  return isInteractive ? <Tooltip title={tooltipTitle}>{bar}</Tooltip> : bar;
 };
 
 /* --- Scope & Progress (compact) --- */
-const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
+const ScopeAndProgress = ({ epics, stories, bugs, tasks, statuses }) => {
   const allWorkItems = [...stories, ...tasks, ...bugs];
   const totalItems = allWorkItems.length;
+
+  const doneStatusId = React.useMemo(() => {
+    if (!statuses || statuses.length === 0) {
+      return null;
+    }
+    // The "done" status is the one with the highest sortOrder
+    const doneStatus = statuses.reduce(
+      (max, status) => (status.sortOrder > max.sortOrder ? status : max),
+      statuses[0]
+    );
+    return doneStatus?.id;
+  }, [statuses]);
+
   const completedItems = allWorkItems.filter(
-    (item) =>
-      item.status &&
-      typeof item.status.name === "string" &&
-      item.status.name.toLowerCase() === "done"
+    (item) => {
+      if (doneStatusId) {
+        return item.status?.id === doneStatusId;
+      }
+      // Fallback to original logic if statuses aren't available
+      return item.status?.name?.toLowerCase() === "done";
+    }
   ).length;
 
   const progressPercentage =
@@ -124,7 +154,7 @@ const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
         className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
         styles={{
         header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
-        body:{ padding: 20, paddingTop: 0 }
+        body:{ padding: "0 24px 24px 24px" }
         }}
       >
         {/* compact grid: left stat column + right donut */}
@@ -134,7 +164,7 @@ const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
   {statItems.map((item) => (
     <div 
       key={item.name} 
-      className="bg-gray-50 rounded p-3 flex flex-col items-center justify-center"
+      className="bg-gray-50 rounded p-3 flex flex-col items-center justify-center transition-all duration-200 hover:bg-gray-100 hover:-translate-y-0.5"
     >
       <div className="text-2xl mb-1">{item.icon}</div>
       <Text 
@@ -157,7 +187,7 @@ const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
 
           {/* Right: smaller donut + small label */}
           <div className="flex flex-col items-center justify-center">
-            <Text strong className="mb-2 text-xs uppercase tracking-wide font-bold">Overall Progress</Text>
+            <Text strong className="mb-2 text-xs uppercase tracking-wide font-bold">Overall Progress</Text> 
             <div className="w-36 h-36 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -196,9 +226,26 @@ const ScopeAndProgress = ({ epics, stories, bugs, tasks }) => {
   );
 };
 
+// A simple status bar for the StatusOverview component
+const StatusBar = ({ percentage, color }) => (
+  <div className="w-full bg-gray-200 rounded-full h-2">
+    <motion.div
+      className="h-2 rounded-full"
+      style={{ backgroundColor: color }}
+      initial={{ width: 0 }}
+      whileInView={{ width: `${percentage}%` }}
+      viewport={{ once: true, amount: 0.8 }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+    />
+  </div>
+);
+
 /* --- StatusOverview --- */
 const StatusOverview = ({ workItems, statuses }) => {
   const [chartData, setChartData] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isPieHovered, setIsPieHovered] = useState(false);
   const totalItems = workItems.length;
 
   useEffect(() => {
@@ -208,14 +255,55 @@ const StatusOverview = ({ workItems, statuses }) => {
         statusMap.get(item.status.id).count++;
       }
     });
-    const colors = generateColors(Math.max(1, statusMap.size));
-    const data = Array.from(statusMap.values()).map((status, index) => ({
-      name: status.name,
-      value: status.count,
-      color: colors[index % colors.length],
-    }));
+    const data = Array.from(statusMap.values())
+      .sort((a, b) => a.sortOrder - b.sortOrder) // Sort by status order
+      .map((status, index) => ({
+        name: status.name,
+        value: status.count,
+        percentage: totalItems > 0 ? (status.count / totalItems) * 100 : 0,
+        color: DASHBOARD_COLORS[index % DASHBOARD_COLORS.length],
+      }));
     setChartData(data);
   }, [workItems, statuses]);
+
+  const onPieClick = (data, index) => {
+    setActiveIndex(activeIndex === index ? null : index);
+    setHoveredIndex(null); // Stop hovering when a slice is clicked
+  };
+
+  const onPieEnter = (_, index) => {
+    setIsPieHovered(true);
+    setHoveredIndex(index);
+  };
+
+  const onPieLeave = () => {
+    setIsPieHovered(false);
+    setHoveredIndex(null);
+  };
+
+  // Custom shape for the hovered/active slice to make it "zoom"
+  const ActiveSliceShape = (props) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, ...rest } = props;
+
+    return (
+      <g>
+        <text x={cx} y={cy - 15} dy={8} textAnchor="middle" fill="#374151" className="font-bold text-base">
+          {payload.name}
+        </text>
+        <motion.g
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.07 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          style={{ transformOrigin: `${cx}px ${cy}px` }}
+        >
+          <Sector
+            {...rest} cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius}
+            startAngle={startAngle} endAngle={endAngle} fill={fill}
+          />
+        </motion.g>
+      </g>
+    );
+  };
 
   if (!totalItems && chartData.every(d => d.value === 0)) return null;
 
@@ -226,15 +314,15 @@ const StatusOverview = ({ workItems, statuses }) => {
         className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
         styles={{
         header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
-        body:{ padding: 40, paddingTop: 0 }
+        body:{ padding: "0 32px 32px 32px" }
         }}
       >
-        <Text type="secondary" className="block mb-3 text-sm">
+        <Text type="secondary" className="block mb-6 text-sm">
                 Get a snapshot of the status of your work items.
         </Text>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          <div className="relative h-64">
+          <div className="relative h-64 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -245,38 +333,54 @@ const StatusOverview = ({ workItems, statuses }) => {
                   outerRadius={110}
                   paddingAngle={4}
                   dataKey="value"
+                    onClick={onPieClick}
+                    onMouseEnter={onPieEnter}
+                    onMouseLeave={onPieLeave}
+                    activeIndex={activeIndex !== null ? activeIndex : hoveredIndex}
+                    activeShape={isPieHovered || activeIndex !== null ? <ActiveSliceShape /> : undefined}
                >
-                  {chartData.map((entry) => (
+                  {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${entry.name}`}
                       fill={entry.value > 0 ? entry.color : "#f3f4f6"}
+                      style={{ cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                      opacity={
+                        (activeIndex !== null && activeIndex !== index) || (hoveredIndex !== null && hoveredIndex !== index) ? 0.4 : 1
+                      }
                     />
                   ))}
-                </Pie>
-                <RechartsTooltip
-                  formatter={(value, name) => [`${name}: ${value}`, null]}
-                  contentStyle={{
-                    background: "white",
-                    border: "1px solid #ddd",
-                    borderRadius: 6,
-                    padding: "6px 10px",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                  }}
-                  cursor={{ fill: "transparent" }}
-                />
+                </Pie> 
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <motion.div 
+              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: isPieHovered || activeIndex !== null ? 0 : 1 }}
+              transition={{ duration: 0.2 }}
+            >
               <Title level={4} className="!mb-0 font-bold">{totalItems}</Title>
               <Text type="secondary" className="text-xs font-semibold">Total work items</Text>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="space-y-2 self-center">
-            {chartData.map((item) => (
-              <div key={item.name} className="flex items-center">
-                <span className="w-3 h-3 rounded-sm mr-2" style={{ backgroundColor: item.value > 0 ? item.color : "#f3f4f6" }} />
-                <Text className="text-sm font-medium">{item.name}: {item.value}</Text>
+          <div className="space-y-3 self-center w-full" onMouseLeave={() => setHoveredIndex(null)}>
+            {chartData.map((item, index) => (
+              <div 
+                key={item.name} 
+                onMouseEnter={() => setHoveredIndex(index)}
+                onClick={() => onPieClick(item, index)}
+                className={`p-2 -m-1 rounded-md transition-all duration-200 cursor-pointer ${
+                  activeIndex === index ? 'bg-indigo-50 scale-[1.02]' :
+                  hoveredIndex === index ? 'bg-gray-100 scale-[1.02]' : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.value > 0 ? item.color : "#f3f4f6" }} />
+                    <Text className="text-m font-medium ml-2">{item.name}</Text>
+                  </div>
+                  <Text type="secondary" className="text-m font-semibold">{item.value} ({Math.round(item.percentage)}%)</Text>
+                </div>
               </div>
             ))}
           </div>
@@ -299,16 +403,16 @@ const TypesOfWork = ({ tasks, stories, epics, bugs }) => {
   if (!totalItems) return null;
 
   return (
-    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+    <motion.div variants={itemVariants}>
       <Card
         title={<Title level={4} className="!mb-0 font-bold">Types of work</Title>}
         className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
         styles={{
           header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
-          body: { padding: 40, paddingTop: 0 }
+          body: { padding: "0 32px 32px 32px" }
         }}
       >
-        <Text type="secondary" className="block mb-3 text-sm">
+        <Text type="secondary" className="block mb-6 text-sm">
           Get a breakdown of work items by their types.
         </Text>
 
@@ -324,7 +428,7 @@ const TypesOfWork = ({ tasks, stories, epics, bugs }) => {
 
             // ALWAYS show the row, even if count is 0
             return (
-              <div key={type.name} className="flex items-center">
+              <div key={type.name} className="flex items-center p-1 -m-1 rounded-md transition-colors hover:bg-gray-50">
                 <div className="w-2/5 flex items-center">
                   <span className="mr-3 text-lg">{type.icon}</span>
                   <Text className="text-sm font-medium">
@@ -332,7 +436,11 @@ const TypesOfWork = ({ tasks, stories, epics, bugs }) => {
                   </Text>
                 </div>
                 <div className="w-3/5">
-                  <DistributionBar percentage={percentage} />
+                  <DistributionBar 
+                    percentage={percentage} 
+                    count={type.items.length} 
+                    total={totalItems} 
+                  />
                 </div>
               </div>
             );
@@ -379,8 +487,6 @@ const TeamWorkload = ({ workItems, users }) => {
       ? [unassigned, ...assignedUsers]
       : assignedUsers;
 
-    const colors = generateColors(Math.max(1, assignedUsers.length));
-
     // Build workload array
     const data = allAssignees.map((user, index) => {
       const percentage =
@@ -394,7 +500,7 @@ const TeamWorkload = ({ workItems, users }) => {
         ...user,
         percentage,
         initials,
-        color: user.id ? colors[index % colors.length] : "#9ca3af"
+        color: user.id ? DASHBOARD_COLORS[index % DASHBOARD_COLORS.length] : "#9ca3af"
       };
     });
 
@@ -404,7 +510,7 @@ const TeamWorkload = ({ workItems, users }) => {
   if (!totalItems) return null;
 
   return (
-    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+    <motion.div variants={itemVariants}>
       <Card
         title={
           <Title level={4} className="!mb-0 font-bold">
@@ -414,10 +520,10 @@ const TeamWorkload = ({ workItems, users }) => {
         className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
         styles={{
           header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
-          body: { padding: 40, paddingTop: 0 }
+          body: { padding: "0 32px 32px 32px" }
         }}
       >
-        <Text type="secondary" className="block !mt-0 !mb-1 text-sm">
+        <Text type="secondary" className="block !mt-0 !mb-6 text-sm">
           Monitor the capacity of your team.
         </Text>
 
@@ -432,7 +538,7 @@ const TeamWorkload = ({ workItems, users }) => {
 
         <div className="space-y-3">
           {workloadData.map(user => (
-            <div key={user.name} className="flex items-center">
+            <div key={user.name} className="flex items-center p-1 -m-1 rounded-md transition-colors hover:bg-gray-50">
               <div className="w-2/5 flex items-center">
                 <Avatar
                   size="small"
@@ -449,7 +555,12 @@ const TeamWorkload = ({ workItems, users }) => {
                 </Text>
               </div>
               <div className="w-3/5">
-                <DistributionBar percentage={user.percentage} />
+                <DistributionBar 
+                  percentage={user.percentage} 
+                  count={user.count}
+                  total={totalItems}
+                  isInteractive={false} 
+                />
               </div>
             </div>
           ))}
@@ -483,6 +594,9 @@ const PriorityDistribution = ({ tasks, stories, bugs }) => {
   };
 
   const data = preparePriorityData();
+  const ref = React.useRef(null);
+  // Animate only when the component is in view
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
 
   const CustomPriorityTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -507,28 +621,28 @@ const PriorityDistribution = ({ tasks, stories, bugs }) => {
   if (!data.length) return null;
 
   return (
-    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+    <motion.div ref={ref} variants={itemVariants} className="h-full">
       <Card
         title={<Title level={4} className="!mb-0 font-bold">Priority Distribution</Title>}
-        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 h-full flex flex-col"
         styles={{
         header:{ marginBottom: 0,borderBottom: "none", paddingBottom: 0 },
-        body:{ padding: 40, paddingTop: 0 }
+        body:{ padding: "0 32px 32px 32px", flex: '1 1 auto', display: 'flex', flexDirection: 'column' }
         }}
       >
-        <Text type="secondary" className="block mb-3 text-sm uppercase tracking-wide font-semibold">Breakdown by priority</Text>
+        <Text type="secondary" className="block mb-6 text-sm uppercase tracking-wide font-semibold">Breakdown by priority</Text>
 
-        <div className="w-full" >
-          <ResponsiveContainer width="100%" height={240}>
+        <div className="w-full flex-grow min-h-0" >
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 8, right: 10, left: 8, bottom: 6 }} barGap={6} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 70, 229, 0.06)" />
               <XAxis dataKey="priority" tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }} />
               <YAxis allowDecimals={false} tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }} />
               <RechartsTooltip content={<CustomPriorityTooltip />} cursor={{ fill: 'rgba(79, 70, 229, 0.03)' }} />
               <Legend wrapperStyle={{ paddingTop: 6, fontWeight: 600, fontSize: 13 }} />
-              <Bar dataKey="Tasks" fill="#4f46e5" radius={[6, 6, 0, 0]} barSize={28} />
-              <Bar dataKey="Stories" fill="#7c3aed" radius={[6, 6, 0, 0]} barSize={28} />
-              <Bar dataKey="Bugs" fill="#06b6d4" radius={[6, 6, 0, 0]} barSize={28} />
+              <Bar dataKey="Tasks" fill="#4f46e5" radius={[6, 6, 0, 0]} barSize={28} animationDuration={isInView ? 800 : 0} />
+              <Bar dataKey="Stories" fill="#7c3aed" radius={[6, 6, 0, 0]} barSize={28} animationDuration={isInView ? 800 : 0} animationDelay={100} />
+              <Bar dataKey="Bugs" fill="#06b6d4" radius={[6, 6, 0, 0]} barSize={28} animationDuration={isInView ? 800 : 0} animationDelay={200} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -617,30 +731,30 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
   if (!epicProgressData.length) return null;
 
   return (
-    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+    <motion.div variants={itemVariants}>
       <Card
         title={<Title level={4} className="!mb-0 font-bold">Epic progress</Title>}
         className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
         styles={{
           header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
-          body: { padding: "20px 40px 40px 40px", paddingTop: 0 }
+          body: { padding: "0 32px 32px 32px" }
         }}
       >
-        <Text type="secondary" className="block mb-3 text-sm">
+        <Text type="secondary" className="block mb-6 text-sm">
           See how your epics are progressing at a glance.
         </Text>
         
         {/* Legend */}
         <div className="flex items-center gap-6 mb-4">
-          <div className="flex items-center">
+          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
             <span className="w-3 h-3 bg-green-600 rounded-sm mr-2" />
             <Text className="text-xs font-semibold">Done</Text>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
             <span className="w-3 h-3 bg-blue-500 rounded-sm mr-2" />
             <Text className="text-xs font-semibold">In progress</Text>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
             <span className="w-3 h-3 bg-gray-600 rounded-sm mr-2" />
             <Text className="text-xs font-semibold">To do</Text>
           </div>
@@ -654,10 +768,12 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
                 title={<EpicTooltipContent epic={epic} />} 
                 placement="top"
                 arrow={false}
-                overlayInnerStyle={{ 
-                  backgroundColor: 'rgba(23, 23, 23, 0.9)', 
-                  borderRadius: '6px', 
-                  padding: '8px 10px' 
+                styles={{
+                  popup: {
+                    backgroundColor: 'rgba(23, 23, 23, 0.9)', 
+                    borderRadius: '6px', 
+                    padding: '8px 10px' 
+                  }
                 }}
               >
                 <div className="flex items-center gap-2 mb-1 cursor-default">
@@ -672,8 +788,9 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
                 <motion.div
                   className="bg-green-300 flex items-center justify-center"
                   initial={{ width: 0 }}
-                  animate={{ width: `${epic.percentDone}%` }}
+                  whileInView={{ width: `${epic.percentDone}%` }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
+                  viewport={{ once: true, amount: 0.5 }}
                 >
                   {epic.percentDone > 10 && (
                     <span className="text-xs font-semibold px-1">
@@ -684,8 +801,9 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
                 <motion.div
                   className="bg-blue-300 flex items-center justify-center"
                   initial={{ width: 0 }}
-                  animate={{ width: `${epic.percentInProgress}%` }}
+                  whileInView={{ width: `${epic.percentInProgress}%` }}
                   transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                  viewport={{ once: true, amount: 0.5 }}
                 >
                   {epic.percentInProgress > 10 && (
                     <span className="text-xs font-semibold px-1">
@@ -696,8 +814,9 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
                 <motion.div
                   className="bg-gray-500 flex items-center justify-center"
                   initial={{ width: 0 }}
-                  animate={{ width: `${epic.percentToDo}%` }}
+                  whileInView={{ width: `${epic.percentToDo}%` }}
                   transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  viewport={{ once: true, amount: 0.5 }}
                 >
                   {epic.percentToDo > 10 && (
                     <span className="text-xs font-semibold text-white px-1">
@@ -713,6 +832,82 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
     </motion.div>
   );
 };
+
+/* --- Skeleton Loader --- */
+const SkeletonBlock = ({ className }) => (
+  <div className={`bg-gray-200 rounded animate-pulse ${className}`} />
+);
+
+const SummarySkeleton = () => (
+  <div className="bg-white mt-2">
+    {/* Header Skeleton */}
+    <div className="mb-6 px-1">
+      <div className="flex items-center justify-between">
+        <div>
+          <SkeletonBlock className="h-8 w-48 mb-2" />
+          <SkeletonBlock className="h-4 w-64" />
+        </div>
+        <div>
+          <SkeletonBlock className="h-7 w-32 rounded-full" />
+        </div>
+      </div>
+    </div>
+
+    {/* ScopeAndProgress Skeleton */}
+    <div className="mb-4 p-5 border border-gray-200 rounded-lg">
+      <SkeletonBlock className="h-6 w-40 mb-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        <div className="grid grid-cols-4 gap-3">
+          <SkeletonBlock className="h-24" />
+          <SkeletonBlock className="h-24" />
+          <SkeletonBlock className="h-24" />
+          <SkeletonBlock className="h-24" />
+        </div>
+        <div className="flex justify-center items-center">
+          <SkeletonBlock className="h-36 w-36 rounded-full" />
+        </div>
+      </div>
+    </div>
+
+    {/* StatusOverview Skeleton */}
+    <div className="mb-4 p-10 border border-gray-200 rounded-lg">
+      <SkeletonBlock className="h-6 w-48 mb-3" />
+      <SkeletonBlock className="h-4 w-72 mb-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        <SkeletonBlock className="h-64 w-64 rounded-full mx-auto" />
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i}>
+              <div className="flex justify-between items-center mb-2">
+                <SkeletonBlock className="h-4 w-24" />
+                <SkeletonBlock className="h-4 w-12" />
+              </div>
+              <SkeletonBlock className="h-2 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Bottom Grid Skeleton */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="p-10 border border-gray-200 rounded-lg">
+        <SkeletonBlock className="h-6 w-56 mb-8" />
+        <SkeletonBlock className="h-60 w-full" />
+      </div>
+      <div className="flex flex-col gap-4">
+        <div className="p-10 border border-gray-200 rounded-lg">
+          <SkeletonBlock className="h-6 w-48 mb-8" />
+          <SkeletonBlock className="h-24 w-full" />
+        </div>
+        <div className="p-10 border border-gray-200 rounded-lg">
+          <SkeletonBlock className="h-6 w-48 mb-8" />
+          <SkeletonBlock className="h-24 w-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 
 /* --- Main Summary Component (compact, single page scroll) --- */
@@ -771,46 +966,50 @@ const Summary = ({ projectId, projectName }) => {
   }, [projectId, token]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center w-full" style={{ minHeight: "220px" }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
-        >
-          <Spin size="large" tip="Loading Project Summary..." />
-        </motion.div>
-      </div>
-    );
+    return <SummarySkeleton />;
   }
 
   const allWorkItems = [...projectData.tasks, ...projectData.stories, ...projectData.bugs];
 
   return (
     <motion.div
-      className="px-6 bg-white mt-2"
+      className="bg-white mt-2 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.36 }}
-      style={{ minHeight: "calc(100vh - 120px)" }} // change 120px to match your header/navbar
+//       style={{ minHeight: "calc(100vh - 120px)" }} // change 120px to match your header/navbar
     >
-      {/* Top header row (kept minimal to avoid extra space) */}
-      {/* <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Title level={3} className="!mb-0 !text-gray-800 font-bold">{projectName || "Project"}</Title>
-          </div>
-          <div>
-    OS           <Text type="secondary" className="text-sm">Stage: {projectData.stage}</Text>
-          </div>
-        
-        </div>
-      </div> */}
+{/*       Top header row (kept minimal to avoid extra space) */}
+      <div className="mb-6 px-1">
+  <div className="flex items-center justify-between">
+    
+    {/* Left: Project Title */}
+    <div>
+      <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">
+        {projectName || "Project"}
+      </h1>
+      <p className="text-sm text-slate-500 mt-0.5">
+        Overview & progress at a glance
+      </p>
+    </div>
+
+    {/* Right: Stage Badge */}
+    <div>
+      <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+        Stage: {projectData.stage}
+      </span>
+    </div>
+
+  </div>
+</div>
+
 
       {/* Section 1: ScopeAndProgress (compact) */}
       <div className="mb-4">
         <ScopeAndProgress
           epics={projectData.epics}
           stories={projectData.stories}
+          statuses={projectData.statuses}
           bugs={projectData.bugs}
           tasks={projectData.tasks}
         />
@@ -822,8 +1021,8 @@ const Summary = ({ projectId, projectName }) => {
      </div>
 
       {/* Section 3: Bottom grid - these will appear below and page will scroll naturally if needed */}
-      <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4" variants={containerVariants} initial="hidden" animate="visible">
-        <div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="h-full">
           <PriorityDistribution
             tasks={projectData.tasks}
             stories={projectData.stories}
@@ -836,11 +1035,11 @@ const Summary = ({ projectId, projectName }) => {
             tasks={projectData.tasks}
             stories={projectData.stories}
             epics={projectData.epics}
-            bugs={projectData.bugs}
+            bugs={projectData.bugs} 
            />
           <TeamWorkload workItems={allWorkItems} users={projectData.users} />
         </div>
-      </motion.div>
+      </div>
       
       {/* Section 4: Epic Progress (NEW) */}
       <div className="my-4">
