@@ -33,13 +33,11 @@ export default function RoleForm({ roles, setRoles, onRoleUpdate, refreshRoles }
   });
 
   useEffect(() => {
-    if (roles?.length) {
-      setLocalRoles(roles);
-      setFilteredRoles(roles);
-    } else {
-      fetchRoles();
-    }
-  }, []);
+  if (roles?.length) {
+    setLocalRoles(roles);
+    setFilteredRoles(roles);
+  }
+}, [roles]);
 
   useEffect(() => {
     setFilteredRoles(

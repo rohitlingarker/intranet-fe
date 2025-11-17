@@ -101,7 +101,7 @@ const Dashboard = () => {
     const fetchTasksCount = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/status/done/count`,
+          `${import.meta.env.VITE_PMS_BASE_URL}/status/done/count`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
