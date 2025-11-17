@@ -255,10 +255,10 @@ const UserProfile = () => {
     (p) => projectFilter === "ALL" || p.status === projectFilter
   );
   const filteredStories = stories.filter(
-    (s) => storyFilter === "ALL" || s.status === storyFilter
+    (s) => storyFilter === "ALL" || s.status === storyFilter || s.statusName === storyFilter || s.status?.name === storyFilter
   );
   const filteredTasks = tasks.filter(
-    (t) => taskFilter === "ALL" || t.status === taskFilter
+    (t) => taskFilter === "ALL" || t.status === taskFilter || t.statusName === taskFilter
   );
 
   return (

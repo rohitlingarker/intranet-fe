@@ -109,7 +109,7 @@ export default function PermissionManagement() {
       const payload = {
         permission_code: newPermission,
         description,
-        group_uuid: selectedGroup
+        group_uuid: selectedGroup 
       };
  
       const endpoint = "/admin/permissions/group";
@@ -416,4 +416,3 @@ export default function PermissionManagement() {
     </div>
   );
 }
- 

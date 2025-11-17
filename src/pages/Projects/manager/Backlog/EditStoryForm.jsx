@@ -12,19 +12,22 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    acceptanceCriteria: "",
+    storyPoints: null,
     priority: "MEDIUM",
-    status: "BACKLOG",
+
+    epicId: null,
+    sprintId: null,
+    statusId: null,
+
     assigneeId: null,
     reporterId: null,
-    sprintId: null,
-    epicId: null,
-    storyPoints: null,
-    acceptanceCriteria: "",
   });
 
   const [users, setUsers] = useState([]);
   const [epics, setEpics] = useState([]);
   const [sprints, setSprints] = useState([]);
+  const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
@@ -35,62 +38,83 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     },
   };
 
-  // ---------- Fetch Data ----------
+  // ========== FETCH DATA ==========
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const [storyRes, userRes, epicRes, sprintRes] = await Promise.all([
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-            axiosConfig
-          ),
-        ]);
+        const [storyRes, userRes, epicRes, sprintRes, statusRes] =
+          await Promise.all([
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
+              axiosConfig
+            ),
+          ]);
+
+        const data = storyRes.data;
 
         setFormData({
-          title: storyRes.data.title || "",
-          description: storyRes.data.description || "",
-          priority: storyRes.data.priority || "MEDIUM",
-          status: storyRes.data.status || "BACKLOG",
-          assigneeId: storyRes.data.assigneeId || null,
-          reporterId: storyRes.data.reporterId || null,
-          sprintId: storyRes.data.sprint?.id || null,
-          epicId: storyRes.data.epic?.id || null,
-          storyPoints: storyRes.data.storyPoints || null,
-          acceptanceCriteria: storyRes.data.acceptanceCriteria || "",
+          title: data.title || "",
+          description: data.description || "",
+          acceptanceCriteria: data.acceptanceCriteria || "",
+          storyPoints: data.storyPoints || "",
+
+          priority: data.priority || "MEDIUM",
+
+          epicId: data.epicId || "",
+          sprintId: data.sprintId || "",
+          statusId: data.statusId || "",
+
+          assigneeId: data.assigneeId || "",
+          reporterId: data.reporterId || "",
         });
 
         setUsers(userRes.data.content || userRes.data || []);
         setEpics(epicRes.data || []);
         setSprints(sprintRes.data || []);
+        setStatuses(statusRes.data || []);
       } catch (error) {
-        console.error("Error loading story data:", error);
+        console.error("Error loading story:", error);
         toast.error("Failed to load story details.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (storyId && projectId) fetchData();
+    if (storyId && projectId) loadData();
   }, [storyId, projectId]);
 
-  // ---------- Handle Input Change ----------
+  // ========== INPUT HANDLER ==========
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    const numericFields = [
+      "epicId",
+      "sprintId",
+      "assigneeId",
+      "reporterId",
+      "storyPoints",
+      "statusId",
+    ];
+
     setFormData((prev) => ({
       ...prev,
-      [name]: ["epicId", "sprintId", "assigneeId", "reporterId", "storyPoints"].includes(name)
+      [name]: numericFields.includes(name)
         ? value
           ? Number(value)
           : null
@@ -98,23 +122,23 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     }));
   };
 
-  // ---------- Handle Submit ----------
+  // ========== SUBMIT ==========
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     const payload = {
       title: formData.title,
-      description: formData.description || "",
-      priority: formData.priority || "MEDIUM",
-      status: formData.status || "BACKLOG",
-      assigneeId: formData.assigneeId || null,
-      reporterId: formData.reporterId || null,
-      sprintId: formData.sprintId || null,
-      epicId: formData.epicId || null,
-      storyPoints: formData.storyPoints || null,
-      acceptanceCriteria: formData.acceptanceCriteria || "",
+      description: formData.description,
+      acceptanceCriteria: formData.acceptanceCriteria,
+      storyPoints: formData.storyPoints,
+      assigneeId: formData.assigneeId,
+      reporterId: formData.reporterId,
       projectId: Number(projectId),
+      epicId: formData.epicId,
+      sprintId: formData.sprintId,
+      statusId: formData.statusId,
+      priority: formData.priority,
     };
 
     try {
@@ -126,41 +150,39 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
       toast.success("Story updated successfully!", {
         position: "top-right",
-        autoClose: 3000,
+        autoClose: 2500,
         theme: "colored",
       });
 
-      // ✅ Wait slightly longer before closing to ensure toast is visible
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error("Error updating story:", error);
 
-      const backendMessage =
+      const msg =
         error.response?.data?.message ||
         error.message ||
-        "Failed to update story. Please try again.";
+        "Failed to update story";
 
-      toast.error(backendMessage, {
+      toast.error(msg, {
         position: "top-right",
         autoClose: 4000,
-        theme: "colored",
       });
-
-      // ❌ Keep modal open so user can fix input
     } finally {
       setLoading(false);
     }
   };
 
   if (loading)
-    return <p className="text-gray-600 text-center py-6">Loading story details...</p>;
+    return (
+      <p className="text-gray-600 text-center py-6">Loading story details...</p>
+    );
 
-  // ---------- Render ----------
+  // ========== UI ==========
   return (
-    <div className="relative bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto border border-gray-100">
+    <div className="relative bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto border border-gray-200">
       {/* Close Button */}
       <button
         type="button"
@@ -170,7 +192,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         <X size={22} />
       </button>
 
-      {/* Header */}
       <h2 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
         Edit User Story
       </h2>
@@ -191,12 +212,11 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           name="description"
           value={formData.description}
           onChange={handleChange}
-          placeholder="Enter a short summary or details about the story..."
         />
 
         {/* Epic */}
         <FormSelect
-          label="Epic (optional)"
+          label="Epic"
           name="epicId"
           value={formData.epicId || ""}
           onChange={handleChange}
@@ -206,10 +226,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           ]}
         />
 
-        {/* Priority & Status */}
+        {/* Priority + Status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormSelect
-            label="Priority *"
+            label="Priority"
             name="priority"
             value={formData.priority}
             onChange={handleChange}
@@ -220,21 +240,23 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               { label: "Critical", value: "CRITICAL" },
             ]}
           />
+
           <FormSelect
             label="Status *"
-            name="status"
-            value={formData.status}
+            name="statusId"
+            value={formData.statusId || ""}
             onChange={handleChange}
             options={[
-              { label: "Backlog", value: "BACKLOG" },
-              { label: "To Do", value: "TODO" },
-              { label: "In Progress", value: "IN_PROGRESS" },
-              { label: "Done", value: "DONE" },
+              { label: "Select Status", value: "" },
+              ...statuses.map((s) => ({
+                label: s.name,
+                value: s.id,
+              })),
             ]}
           />
         </div>
 
-        {/* Story Points & Sprint */}
+        {/* Story Points + Sprint */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormInput
             label="Story Points"
@@ -242,10 +264,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             type="number"
             value={formData.storyPoints || ""}
             onChange={handleChange}
-            placeholder="Enter points (optional)"
           />
+
           <FormSelect
-            label="Sprint (optional)"
+            label="Sprint"
             name="sprintId"
             value={formData.sprintId || ""}
             onChange={handleChange}
@@ -262,10 +284,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           name="acceptanceCriteria"
           value={formData.acceptanceCriteria}
           onChange={handleChange}
-          placeholder="Define what success looks like for this story..."
         />
 
-        {/* Assignee & Reporter */}
+        {/* Assignee + Reporter */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <FormSelect
             label="Assignee"
@@ -277,8 +298,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               ...users.map((u) => ({ label: u.name, value: u.id })),
             ]}
           />
+
           <FormSelect
-            label="Reporter *"
+            label="Reporter"
             name="reporterId"
             value={formData.reporterId || ""}
             onChange={handleChange}
@@ -289,16 +311,14 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           />
         </div>
 
-        {/* Submit Button */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition disabled:opacity-50"
-          >
-            {loading ? "Saving..." : "Update Story"}
-          </button>
-        </div>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow hover:bg-indigo-700 transition disabled:opacity-50"
+        >
+          {loading ? "Saving..." : "Update Story"}
+        </button>
       </form>
     </div>
   );
