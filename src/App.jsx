@@ -508,6 +508,8 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/leave-policies" element={<Navigate to="https://celebrated-renewal-07a16fae8e.strapiapp.com" replace />} />
         </Route>
       </Routes>
       <SaveLastPath />
