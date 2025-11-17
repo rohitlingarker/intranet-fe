@@ -113,12 +113,12 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 
     try {
       setIsSubmitting(true);
-      await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload, {
+      const response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       toast.success(" Project created successfully!");
-      if (onProjectCreated) onProjectCreated();
+      if (onProjectCreated) onProjectCreated(response.data);
 
       setFormData({
         name: "",
@@ -132,7 +132,6 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         endDate: "",
       });
       setDateError(false);
-      onClose();
     } catch (error) {
       console.error("Failed to create project:", error.response?.data || error);
       toast.error(error.response?.data?.message || " Failed to create project.");

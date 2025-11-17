@@ -7,6 +7,7 @@ import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
+import BacklogAndSprints from "./BacklogAndSprints";
 
 import Navbar from "../../../components/Navbar/Navbar";
 
@@ -66,6 +67,8 @@ const ProjectTabs = () => {
         return <SprintBoard projectId={pid} projectName={projectName} />;
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
+      case "newone":
+        return <BacklogAndSprints projectId={pid}/>
       default:
         return null;
     }
@@ -85,6 +88,7 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
     { name: "Sprints", tab: "sprint" },
     { name: "Status Report", tab: "status-report" },
+    {name: "newone", tab: "newone" }
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
@@ -94,24 +98,23 @@ const ProjectTabs = () => {
   }));
 
   return (
-    <div>
-      {/* Project-specific Navbar */}
-      <header className="bg-white mb-4">
-  {/* Project Title */}
-  {/* <div className="px-4 pt-3 pb-2">
-    <h2 className="text-lg font-semibold text-indigo-900 leading-none">
-      {projectName}
-    </h2>
-  </div> */}
+    <div className="flex flex-col h-screen">
+      {/* ✅ Fixed Navbar (always visible) */}
+      <header className="sticky top-0 z-50 border-b bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
+            {projectName}
+          </h2>
+          <Navbar logo={null} navItems={navItemsWithActive} />
+        </div>
+      </header>
 
-  {/* Tabs Navbar — full width separate row */}
-  <Navbar logo={null} navItems={navItemsWithActive} />
-</header>
-
-
-      {/* Content area for the active tab */}
-      {/* This content will now scroll within the main layout's scrollbar */}
-      <div>{renderTabContent()}</div>
+      {/* ✅ Content below navbar */}
+      <main className="flex-1 overflow-auto bg-slate-50">
+        <div className="max-w-7xl mx-auto w-full px-4 py-4">
+          {renderTabContent()}
+        </div>
+      </main>
     </div>
   );
 };
