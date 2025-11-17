@@ -20,13 +20,13 @@ const StoryCard = ({ story, sprints = [], onAddToSprint }) => {
       ref={dragRef}
       className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-move flex justify-between items-start transition"
     >
-      {/* Story Info */}
       <div>
         <p className="text-sm font-semibold text-indigo-900">{story.title}</p>
-        <p className="text-xs text-pink-800">Status: {story.status}</p>
+        <p className="text-xs text-pink-800">
+          Status: {story.statusText || story.status?.name || story.statusName}
+        </p>
       </div>
 
-      {/* Three-dot menu */}
       <div className="relative">
         <button
           onClick={() => setShowMenu((prev) => !prev)}

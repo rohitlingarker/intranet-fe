@@ -14,7 +14,9 @@ const getColumnStyles = () => ({
     "rounded-2xl h-auto shadow-lg border border-gray-300 flex flex-col flex-1",
 });
 
-// ========== KANBAN CARD ==========
+// --------------------
+// Kanban Card
+// --------------------
 const KanbanCard = ({ task }) => {
   const [{ isDragging }, dragRef] = useDrag({
     type: "TASK",
@@ -42,7 +44,9 @@ const KanbanCard = ({ task }) => {
   );
 };
 
-// ========== KANBAN COLUMN ==========
+// --------------------
+// Kanban Column
+// --------------------
 const KanbanColumn = ({ status, tasks, onDrop, validTransitions }) => {
   const { header, body, container } = getColumnStyles();
 
@@ -78,9 +82,13 @@ const KanbanColumn = ({ status, tasks, onDrop, validTransitions }) => {
   );
 };
 
-// ========== MAIN BOARD ==========
+// --------------------
+// MAIN BOARD
+// --------------------
 const Board = ({ projectId, projectName }) => {
   const [tasks, setTasks] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+  const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentSprint, setCurrentSprint] = useState(null);
 
@@ -90,67 +98,65 @@ const Board = ({ projectId, projectName }) => {
     "Content-Type": "application/json",
   };
 
-  const backendStatusMap = {
-    TO_DO: "TODO",
-    IN_PROGRESS: "IN_PROGRESS",
-    DONE: "DONE",
-  };
-
-  // Allowed transitions map
-  const validTransitions = {
-    TO_DO: ["IN_PROGRESS"],
-    IN_PROGRESS: ["DONE"],
-    DONE: [], // Completed tasks cannot move
-  };
-
   useEffect(() => {
     const fetchBoardData = async () => {
       setLoading(true);
       try {
-        // 1️⃣ Fetch active sprint
-        const sprintsRes = await axios.get(
+        // Fetch statuses (dynamic)
+        const statusRes = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
+          { headers }
+        );
+
+        const sortedStatuses = statusRes.data.sort(
+          (a, b) => a.sortOrder - b.sortOrder
+        );
+
+        // Extract names
+        const statusNames = sortedStatuses.map((s) => s.name);
+        setStatuses(statusNames);
+
+        // Map: statusName → statusId
+        const map = {};
+        sortedStatuses.forEach((s) => {
+          map[s.name] = s.id;
+        });
+        setStatusMap(map);
+
+        // Fetch active sprint
+        const sprintRes = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/active/project/${projectId}`,
           { headers }
         );
 
-        const activeSprints = sprintsRes.data;
-
-        if (!activeSprints || activeSprints.length === 0) {
+        const active = sprintRes.data;
+        if (!active || active.length === 0) {
           setCurrentSprint(null);
           setTasks([]);
           setLoading(false);
           return;
         }
 
-        const activeSprint = activeSprints[0];
-
+        const sprint = active[0];
         setCurrentSprint({
-          id: activeSprint.id,
-          name: activeSprint.name || `Sprint ${activeSprint.id}`,
+          id: sprint.id,
+          name: sprint.name || `Sprint ${sprint.id}`,
         });
 
-        // 2️⃣ Fetch tasks
+        // Fetch tasks inside sprint
         const tasksRes = await axios.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${activeSprint.id}/tasks`,
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprint.id}/tasks`,
           { headers }
         );
 
-        // 3️⃣ Normalize task statuses
-        const normalizedTasks = tasksRes.data.map((task) => ({
-          ...task,
-          status:
-            task.status === "BACKLOG" || task.status === "TODO"
-              ? "TO_DO"
-              : task.status === "IN_PROGRESS"
-              ? "IN_PROGRESS"
-              : task.status === "DONE"
-              ? "DONE"
-              : "TO_DO",
+        const normalized = tasksRes.data.map((t) => ({
+          ...t,
+          status: t.status, // backend sends correct status name
         }));
 
-        setTasks(normalizedTasks);
-      } catch (error) {
-        console.error("Error loading board data:", error);
+        setTasks(normalized);
+      } catch (err) {
+        console.error("Error loading board:", err);
         setCurrentSprint(null);
         setTasks([]);
       } finally {
@@ -161,43 +167,59 @@ const Board = ({ projectId, projectName }) => {
     fetchBoardData();
   }, [projectId, token]);
 
-  // ========== Handle Task Drop ==========
+  // --------------------
+  // Auto-generate transitions based on sortOrder
+  // --------------------
+  const validTransitions = {};
+  statuses.forEach((status, index) => {
+    validTransitions[status] =
+      index < statuses.length - 1 ? [statuses[index + 1]] : [];
+  });
+
+  // --------------------
+  // Handle DROP
+  // --------------------
   const handleDrop = async (taskId, newStatus) => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    // Validate frontend transition
     if (!validTransitions[task.status]?.includes(newStatus)) {
       toast.error(`Invalid transition: ${task.status} → ${newStatus}`);
       return;
     }
 
-    const backendStatus = backendStatusMap[newStatus];
+    const statusId = statusMap[newStatus];
+    if (!statusId) {
+      toast.error("Could not find statusId for update");
+      return;
+    }
 
     try {
-      // Update backend
+      // PATCH backend
       await axios.patch(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/status`,
-        { status: backendStatus },
+        { statusId },
         { headers }
       );
 
-      // Update UI immediately
-      const updatedTask = { ...task, status: newStatus };
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+      // UI update
+      const updated = tasks.map((t) =>
+        t.id === taskId ? { ...t, status: newStatus } : t
+      );
+      setTasks(updated);
 
-      toast.success("Task status updated successfully!");
+      toast.success("Task status updated");
     } catch (err) {
-      console.error("Failed to update task:", err);
-      toast.error("Failed to update task status");
+      console.error("Update error:", err);
+      toast.error("Failed to update status");
     }
   };
 
-  const grouped = {
-    TO_DO: tasks.filter((t) => t.status === "TO_DO"),
-    IN_PROGRESS: tasks.filter((t) => t.status === "IN_PROGRESS"),
-    DONE: tasks.filter((t) => t.status === "DONE"),
-  };
+  // Group tasks dynamically
+  const grouped = {};
+  statuses.forEach((status) => {
+    grouped[status] = tasks.filter((t) => t.status === status);
+  });
 
   if (loading)
     return (
@@ -225,12 +247,12 @@ const Board = ({ projectId, projectName }) => {
           </p>
         )}
 
-        <div className="grid h-auto grid-cols-1 md:grid-cols-3 gap-6">
-          {["TO_DO", "IN_PROGRESS", "DONE"].map((status) => (
+        <div className={`grid h-auto grid-cols-1 md:grid-cols-${statuses.length} gap-6`}>
+          {statuses.map((status) => (
             <KanbanColumn
               key={status}
               status={status}
-              tasks={grouped[status]}
+              tasks={grouped[status] || []}
               onDrop={handleDrop}
               validTransitions={validTransitions}
             />

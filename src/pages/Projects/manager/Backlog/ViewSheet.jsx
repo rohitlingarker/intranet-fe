@@ -123,7 +123,7 @@ const ViewSheet = () => {
         {/* Grid of details */}
         <dl className="grid grid-cols-2 gap-x-8 gap-y-5 text-sm">
           <Detail label="Status">
-            <Badge color="blue">{issue.status || "Unknown"}</Badge>
+            <Badge color="blue">{issue.status || issue.statusName || s.status?.name === storyFilter || "Unknown"}</Badge>
           </Detail>
           <Detail label="Priority">
             <Badge color="red">{issue.priority || "Not set"}</Badge>

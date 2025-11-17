@@ -13,6 +13,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
   const [users, setUsers] = useState([]);
   const [epics, setEpics] = useState([]);
   const [sprints, setSprints] = useState([]);
+  const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   if (!storyId || !projectId) return null;
@@ -25,11 +26,11 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     },
   };
 
-  // ---------- Fetch Data ----------
+  // ---------- FETCH DATA ----------
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAll = async () => {
       try {
-        const [storyRes, userRes, epicRes, sprintRes] = await Promise.all([
+        const [storyRes, userRes, epicRes, sprintRes, statusRes] = await Promise.all([
           axios.get(
             `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
             axiosConfig
@@ -46,6 +47,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
             axiosConfig
           ),
+          axios.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
+            axiosConfig
+          ),
         ]);
 
         const story = storyRes.data;
@@ -54,60 +59,66 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         setUsers(allUsers);
         setEpics(epicRes.data || []);
         setSprints(sprintRes.data || []);
+        setStatuses(statusRes.data || []);
 
         setFormData({
-          title: story.title || "",
-          description: story.description || "",
+          title: story.title,
+          description: story.description,
+          acceptanceCriteria: story.acceptanceCriteria,
+          storyPoints: story.storyPoints || 0,
+          assigneeId: story.assigneeId || "",
+          reporterId: story.reporterId || "",
+
+          epicId: story.epic?.id || "",
+          sprintId: story.sprint?.id || "",
+
+          // IMPORTANT: using statusId now
+          statusId: story.status?.id || "",
+
           priority: story.priority || "MEDIUM",
-          status: story.status || "BACKLOG",
-          assigneeId: story.assigneeId || null,
-          reporterId: story.reporterId || null,
-          sprintId: story.sprint?.id || null,
-          epicId: story.epic?.id || null,
-          storyPoints: story.storyPoints || null,
-          acceptanceCriteria: story.acceptanceCriteria || "",
         });
-      } catch (error) {
-        console.error("Error loading story data:", error);
-        toast.error("Failed to load story details.");
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load story details");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchAll();
   }, [storyId, projectId]);
 
-  // ---------- Handle Input Change ----------
+  // ---------- HANDLE INPUT ----------
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: ["epicId", "sprintId", "assigneeId", "reporterId", "storyPoints"].includes(name)
-        ? value
-          ? Number(value)
-          : null
+      [name]: ["epicId", "sprintId", "assigneeId", "reporterId", "storyPoints", "statusId"].includes(name)
+        ? value ? Number(value) : ""
         : value,
     }));
   };
 
-  // ---------- Submit ----------
+  // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData) return;
 
-    setLoading(true);
     const payload = {
       title: formData.title,
-      description: formData.description || "",
-      priority: formData.priority || "MEDIUM",
-      status: formData.status || "BACKLOG",
+      description: formData.description,
+      acceptanceCriteria: formData.acceptanceCriteria,
+      storyPoints: formData.storyPoints || 0,
+
       assigneeId: formData.assigneeId || null,
       reporterId: formData.reporterId || null,
-      sprintId: formData.sprintId || null,
+
       epicId: formData.epicId || null,
-      storyPoints: formData.storyPoints || null,
-      acceptanceCriteria: formData.acceptanceCriteria || "",
+      sprintId: formData.sprintId || null,
+
+      statusId: formData.statusId, // important
+
+      priority: formData.priority,
       projectId: Number(projectId),
     };
 
@@ -119,35 +130,32 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
       );
 
       toast.success("Story updated successfully!");
+
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
       }, 500);
     } catch (error) {
-      console.error("Error updating story:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to update story. Please try again."
-      );
-    } finally {
-      setLoading(false);
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to update story");
     }
   };
 
-  // ---------- Loading State ----------
+  // ---------- LOADING ----------
   if (loading || !formData) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg text-center">
-          <p className="text-gray-600">Loading story details...</p>
+        <div className="bg-white p-6 rounded-xl shadow text-center">
+          <p>Loading story...</p>
         </div>
       </div>
     );
   }
 
-  // ---------- Render ----------
+  // ---------- FORM ----------
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="bg-white rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
@@ -157,10 +165,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
         <div className="p-8">
           <ToastContainer />
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Story</h2>
+          <h2 className="text-2xl font-bold mb-6">Edit Story</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
+
             <FormInput
               label="Title *"
               name="title"
@@ -169,7 +177,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               required
             />
 
-            {/* Description */}
             <FormTextArea
               label="Description"
               name="description"
@@ -177,11 +184,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Epic */}
             <FormSelect
               label="Epic"
               name="epicId"
-              value={formData.epicId || ""}
+              value={formData.epicId}
               onChange={handleChange}
               options={[
                 { label: "Select Epic", value: "" },
@@ -189,9 +195,8 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Priority & Status */}
             <FormSelect
-              label="Priority *"
+              label="Priority"
               name="priority"
               value={formData.priority}
               onChange={handleChange}
@@ -203,32 +208,30 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
+            {/* NEW: STATUS FROM API */}
             <FormSelect
               label="Status *"
-              name="status"
-              value={formData.status}
+              name="statusId"
+              value={formData.statusId}
               onChange={handleChange}
               options={[
-                { label: "Backlog", value: "BACKLOG" },
-                { label: "To Do", value: "TODO" },
-                { label: "In Progress", value: "IN_PROGRESS" },
-                { label: "Done", value: "DONE" },
+                { label: "Select Status", value: "" },
+                ...statuses.map((st) => ({ label: st.name, value: st.id })),
               ]}
             />
 
-            {/* Story Points & Sprint */}
             <FormInput
               label="Story Points"
               name="storyPoints"
               type="number"
-              value={formData.storyPoints || ""}
+              value={formData.storyPoints}
               onChange={handleChange}
             />
 
             <FormSelect
               label="Sprint"
               name="sprintId"
-              value={formData.sprintId || ""}
+              value={formData.sprintId}
               onChange={handleChange}
               options={[
                 { label: "Select Sprint", value: "" },
@@ -236,7 +239,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* Acceptance Criteria */}
             <FormTextArea
               label="Acceptance Criteria"
               name="acceptanceCriteria"
@@ -244,11 +246,10 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
             />
 
-            {/* Assignee & Reporter */}
             <FormSelect
               label="Assignee"
               name="assigneeId"
-              value={formData.assigneeId || ""}
+              value={formData.assigneeId}
               onChange={handleChange}
               options={[
                 { label: "Select Assignee", value: "" },
@@ -257,9 +258,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             />
 
             <FormSelect
-              label="Reporter *"
+              label="Reporter"
               name="reporterId"
-              value={formData.reporterId || ""}
+              value={formData.reporterId}
               onChange={handleChange}
               options={[
                 { label: "Select Reporter", value: "" },
@@ -278,9 +279,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
               >
-                {loading ? "Saving..." : "Save Changes"}
+                Save Changes
               </button>
             </div>
           </form>
@@ -290,12 +291,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-          }
-          .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            display: none;
           }
         `}
       </style>
