@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import CreateProjectModal from "./CreateProjectModal";
+import ManageStatusesModal from "./ManageStatusesModal";
 import Button from "../../../components/Button/Button";
 import ThreeCard from "../../../components/Cards/ThreeCards";
 import Pagination from "../../../components/Pagination/pagination";
@@ -73,6 +74,8 @@ const ProjectDashboard = () => {
   const [formData, setFormData] = useState({});
   const [users, setUsers] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -265,6 +268,14 @@ const ProjectDashboard = () => {
       console.error("❌ Delete failed", err);
       toast.error("Failed to delete project.");
     }
+  };
+
+  // ✅ Handle successful project creation
+  const handleProjectCreated = (newProject) => {
+    fetchProjects(filterStatus); // Refresh the project list
+    setIsCreateModalOpen(false); // Close the create modal
+    setSelectedProjectId(newProject.id); // Set the ID for the status modal
+    setIsStatusModalOpen(true); // Open the status modal
   };
 
   // ✅ Filter + Pagination
@@ -469,10 +480,12 @@ const ProjectDashboard = () => {
       <CreateProjectModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onProjectCreated={() => fetchProjects(filterStatus)}
-        formData={formData}           // pass current form data
-        setFormData={setFormData}     // allow modal to update it
-        editingProjectId={editingProjectId}
+        onProjectCreated={handleProjectCreated}
+      />
+      <ManageStatusesModal
+        isOpen={isStatusModalOpen}
+        onClose={() => setIsStatusModalOpen(false)}
+        projectId={selectedProjectId}
       />
       <ToastContainer position="top-right" />
     </div>

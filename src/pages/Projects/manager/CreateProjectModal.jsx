@@ -124,7 +124,6 @@ const CreateProjectModal = ({
       }
 
       setDateError(false);
-      onClose();
     } catch (error) {
       console.error("Failed to submit project:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Failed to submit project.");

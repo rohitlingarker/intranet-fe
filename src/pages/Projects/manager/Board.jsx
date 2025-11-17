@@ -149,7 +149,7 @@ const TaskDetailModal = ({ open, onClose, task, statuses, onSaved }) => {
         return;
       }
 
-      await axios.patch(`${BASE}/api/tasks/${task.id}`, payload, { headers: headersWithToken() });
+      await axios.patch(`${BASE}/api/tasks/${task.id}/status`, payload, { headers: headersWithToken() });
       toast.success("Saved");
       onSaved({ ...task, ...payload, status: payload.statusId ? { id: payload.statusId } : task.status });
       onClose();
@@ -538,7 +538,7 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
       });
       setTasks(merged);
 
-      await axios.patch(`${BASE}/api/tasks/${draggableId}`, { statusId: Number(destStatusId) }, { headers: headersWithToken() });
+      await axios.patch(`${BASE}/api/tasks/${draggableId}/status`, { statusId: Number(destStatusId) }, { headers: headersWithToken() });
       toast.success("Task moved");
     } catch (err) {
       console.error(err);
