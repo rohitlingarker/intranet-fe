@@ -30,7 +30,7 @@ const TimesheetHeader = () => {
         <Button
           variant="secondary"
           size="medium"
-          onClick={() => navigate("/timesheets/reportdashboard")}
+          onClick={() => navigate("/timesheets/monthlyreportdashboard")}
         >
           Reports
         </Button>        
