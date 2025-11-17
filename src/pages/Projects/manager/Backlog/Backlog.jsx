@@ -194,8 +194,10 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
               {filteredNoEpicStories.map((story) => (
                 <StoryCard
                   key={story.id}
-                  story={{ ...story, status: "BACKLOG" }}
-                  onOpen={setSelectedStoryId}
+                  story={{
+                    ...story,
+                    statusText: story.status?.name || "BACKLOG",
+                  }}
                 />
               ))}
             </div>
