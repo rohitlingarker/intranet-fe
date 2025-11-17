@@ -47,7 +47,7 @@ export default function ReportDashboard() {
   const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  // projectId -> current page
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [projectPages, setProjectPages] = useState({});
   const membersPerPage = 8;
 
@@ -185,7 +185,7 @@ export default function ReportDashboard() {
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
               <span>
-                {data.month},{data.year}
+                {data.month && monthOptions.find((m) => m.value === data.month)?.name},{data.year}
               </span>
             </button>
           </p>
@@ -430,18 +430,34 @@ export default function ReportDashboard() {
         <h3>
           <Briefcase size={18} /> Project-wise Breakdown
         </h3>
-        <div className="projects-grid">
-          {paginatedProjectBreakdown.map((p, i) => (
-            <div key={i} className="project-card hover-lift">
-              <div className="card-top">
-                <Users size={18} className="text-blue" />
-                <h4>{p.projectName ?? p.name}</h4>
+          <div className="projects-grid">
+            {paginatedProjectBreakdown.map((p, i) => (
+              <div
+                key={i}
+                /* MODIFIED: Add onClick handler */
+                onClick={() =>
+                  setSelectedProjectId((prevId) =>
+                    prevId === p.projectId ? null : p.projectId
+                  )
+                }
+                /* MODIFIED: Add a dynamic class for styling the selected card */
+                className={`project-card hover-lift ${
+                  selectedProjectId === p.projectId ? "is-selected" : ""
+                }`}
+              >
+                <div className="card-top">
+                  <Users size={18} className="text-blue" />
+                  <h4>{p.projectName ?? p.name}</h4>
+                </div>
+                <div className="grid grid-cols-2">
+                  <p>{p.teamMembers ?? "-"} team members</p>
+                  <span className="text-right">
+                    {p.totalHours ?? p.hours} hrs
+                  </span>
+                </div>
               </div>
-              <p>{p.teamMembers ?? "-"} team members</p>
-              <span>{p.totalHours ?? p.hours} hrs</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
       </div>
       {/* Project User Hours Breakdown */}
       <div className="section-card">
@@ -450,124 +466,138 @@ export default function ReportDashboard() {
         </h3>
 
         {data.projectUserHoursBreakdown?.length > 0 ? (
-          data.projectUserHoursBreakdown.map((project) => {
-            const currentPage = projectPages[project.projectId] || 1;
-            const totalPages = Math.ceil(
-              project.members.length / membersPerPage
-            );
+          <>
+            {(() => {
+              {
+                /* MODIFIED: Find the *one* selected project */
+              }
+              const project = data.projectUserHoursBreakdown.find(
+                (p) => p.projectId === selectedProjectId
+              );
 
-            const paginatedMembers = project.members.slice(
-              (currentPage - 1) * membersPerPage,
-              currentPage * membersPerPage
-            );
+              {
+                /* MODIFIED: If no project is selected, show a prompt */
+              }
+              if (!project) {
+                return (
+                  <p>
+                    Select a project from the breakdown above to see details.
+                  </p>
+                );
+              }
+              const currentPage = projectPages[project.projectId] || 1;
+              const totalPages = Math.ceil(
+                project.members.length / membersPerPage
+              );
+              const paginatedMembers = project.members.slice(
+                (currentPage - 1) * membersPerPage,
+                currentPage * membersPerPage
+              );
 
-            return (
-              <div key={project.projectId} className="project-user-breakdown">
-                {/* Header */}
-                {/* Project Header With Top Performers */}
-                {(() => {
-                  const members = project.members || [];
+              return (
+                <div key={project.projectId} className="project-user-breakdown">
+                  {/* Header */}
+                  {(() => {
+                    const members = project.members || [];
+                    const parsedMembers = members.map((m) => ({
+                      ...m,
+                      contributionValue: parseFloat(
+                        m.contribution?.replace("%", "") || 0
+                      ),
+                    }));
+                    const maxContribution = Math.max(
+                      ...parsedMembers.map((m) => m.contributionValue)
+                    );
+                    const topPerformers =
+                      maxContribution > 0
+                        ? parsedMembers
+                            .filter(
+                              (m) => m.contributionValue === maxContribution
+                            )
+                            .map((m) => `${m.memberName} (${m.contribution})`)
+                        : [];
 
-                  // Convert contribution "42.86%" -> 42.86
-                  const parsedMembers = members.map((m) => ({
-                    ...m,
-                    contributionValue: parseFloat(
-                      m.contribution?.replace("%", "") || 0
-                    ),
-                  }));
-
-                  const maxContribution = Math.max(
-                    ...parsedMembers.map((m) => m.contributionValue)
-                  );
-
-                  const topPerformers =
-                    maxContribution > 0
-                      ? parsedMembers
-                          .filter(
-                            (m) => m.contributionValue === maxContribution
-                          )
-                          .map((m) => `${m.memberName} (${m.contribution})`)
-                      : [];
-
-                  return (
-                    <div className="project-header-3col">
-                      <h4 className="project-title">{project.projectName}</h4>
-
-                      <div className="project-owner">
-                        <strong>Owner:</strong> {project.ownerName ?? "-"}
+                    return (
+                      <div className="project-header-3col">
+                        <h4 className="project-title">{project.projectName}</h4>
+                        <div className="project-owner mr-3">
+                          <strong>Owner:</strong> <span className="top-performer-highlight">{project.ownerName ?? "-"}</span>
+                        </div>
+                        <div
+                          className="project-top-performers"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              topPerformers.length > 0
+                                ? `<strong>Top Performers:</strong> ` +
+                                  topPerformers
+                                    .map(
+                                      (p) =>
+                                        `<span class='top-performer-highlight'>${p}</span>`
+                                    )
+                                    .join(" ")
+                                : "<strong>Top Performers:</strong> No significant contributions",
+                          }}
+                        />
                       </div>
+                    );
+                  })()}
 
-                      <div
-                        className="project-top-performers"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            topPerformers.length > 0
-                              ? `<strong>Top Performers:</strong> ` +
-                                topPerformers
-                                  .map(
-                                    (p) =>
-                                      `<span class='top-performer-highlight'>${p}</span>`
-                                  )
-                                  .join(" ")
-                              : "<strong>Top Performers:</strong> No significant contributions",
-                        }}
+                  {/* Members Table */}
+                  <table className="mt-2">
+                    {/* ... thead ... */}
+                    <thead>
+                      <tr>
+                        <th>Member ID</th>
+                        <th>Member Name</th>
+                        <th>Billable Hours</th>
+                        <th>Non-Billable Hours</th>
+                        <th>Total Hours</th>
+                        <th>Contribution</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedMembers.map((m) => (
+                        <tr key={m.memberId}>
+                          <td>{m.memberId}</td>
+                          <td>{m.memberName}</td>
+                          <td>{m.billableHours}</td>
+                          <td>{m.nonBillableHours}</td>
+                          <td>{m.totalHours}</td>
+                          <td>
+                            <span className="badge-yellow">
+                              {m.contribution}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination for THIS project only */}
+                  {totalPages > 1 && (
+                    <div className="mb-4 mt-2">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPrevious={() =>
+                          handleProjectPageChange(
+                            project.projectId,
+                            Math.max(currentPage - 1, 1)
+                          )
+                        }
+                        onNext={() =>
+                          handleProjectPageChange(
+                            project.projectId,
+                            Math.min(currentPage + 1, totalPages)
+                          )
+                        }
                       />
                     </div>
-                  );
-                })()}
-
-                {/* Members Table */}
-                <table className="mt-2">
-                  <thead>
-                    <tr>
-                      <th>Member ID</th>
-                      <th>Member Name</th>
-                      <th>Billable Hours</th>
-                      <th>Non-Billable Hours</th>
-                      <th>Total Hours</th>
-                      <th>Contribution</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedMembers.map((m) => (
-                      <tr key={m.memberId}>
-                        <td>{m.memberId}</td>
-                        <td>{m.memberName}</td>
-                        <td>{m.billableHours}</td>
-                        <td>{m.nonBillableHours}</td>
-                        <td>{m.totalHours}</td>
-                        <td>
-                          <span className="badge-yellow">{m.contribution}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Pagination for THIS project only */}
-                {totalPages > 1 && (
-                  <div className="mb-4 mt-2">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPrevious={() =>
-                        handleProjectPageChange(
-                          project.projectId,
-                          Math.max(currentPage - 1, 1)
-                        )
-                      }
-                      onNext={() =>
-                        handleProjectPageChange(
-                          project.projectId,
-                          Math.min(currentPage + 1, totalPages)
-                        )
-                      }
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })
+                  )}
+                </div>
+              );
+            })()}
+          </>
         ) : (
           <p>No project user hour data available.</p>
         )}
