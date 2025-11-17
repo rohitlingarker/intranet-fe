@@ -4,7 +4,26 @@ import EntriesTable from "./EntriesTable";
 import { CheckCircle, XCircle, Clock, MoreVertical } from "lucide-react";
 import Tooltip from "../../components/status/Tooltip";
 import { showStatusToast } from "../../components/toastfy/toast";
-import { submitWeeklyTimesheet, fetchCalendarHolidays } from "./api";
+import { submitWeeklyTimesheet } from "./api";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
+import { addDays, startOfMonth, endOfMonth } from "date-fns";
+
+// Converts a "YYYY-MM-DD" string safely to a Date object in local Indian time
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  // month is 0-based
+  return new Date(year, month - 1, day, 0, 0, 0);
+};
+
+// Formats a Date to "YYYY-MM-DD" in local (India) time
+const toLocalISODate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
@@ -36,11 +55,17 @@ const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
 
 const formatDate = (dateStr) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+  const dayOfWeek = date.getDay();
+  return {
+    // The original formatted string
+    text: date.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }),
+    // Check if day is Sunday (0) or Saturday (6)
+    isWeekend: dayOfWeek === 0 || dayOfWeek === 6 
+  };
 };
 
 const formatWeekRange = (weekRange) => {
@@ -127,12 +152,13 @@ const TimesheetGroup = ({
   refreshData,
   projectInfo,
   getWeeklyStatusColor,
+  holidaysMap = {}, // ✅ Add this prop
   approvers = [
     { approverName: "Dummy Approver1", status: "Pending" },
     { approverName: "Dummy Approver2", status: "Approved" },
-    
   ],
 }) => {
+  // console.log("Refresh Data :", refreshData);
   // Handle both old daily format and new weekly format
   const isWeeklyFormat = weekGroup && weekGroup.timesheets;
   const weekData = isWeeklyFormat ? weekGroup : null;
@@ -145,7 +171,6 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [addingNewEntry, setAddingNewEntry] = useState(false);
-  const [holidaysMap, setHolidaysMap] = useState({}); // keyed by 'YYYY-MM-DD'
   const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
@@ -166,9 +191,8 @@ const TimesheetGroup = ({
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
-    
+
     // console.log({weekGroup});
-    
 
     // Disabled if already approved or partially approved
     if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
@@ -186,8 +210,6 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
-  
-
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -240,7 +262,7 @@ const TimesheetGroup = ({
 
       if (isOutsideAllMenus) {
         // console.log({isOutsideAllMenus});
-        
+
         // setMenuOpen(false);
         setOpenMenuId(null);
       }
@@ -256,7 +278,7 @@ const TimesheetGroup = ({
 
   const handleAddEntry = () => {
     setMenuOpen(false);
-    
+
     setAddingNewEntry(true); // open inline entry form inside EntriesTable
   };
 
@@ -265,11 +287,10 @@ const TimesheetGroup = ({
       alert("No entries selected for deletion.");
       return;
     }
-  
+
     setMenuOpen(false);
     setIsConfirmOpen(true);
   };
-  
 
   const toggleDateChange = (e) => {
     if (status?.toLowerCase() === "approved") return; // prevent date change if approved
@@ -346,26 +367,23 @@ const TimesheetGroup = ({
     }
   };
 
-
   const handleCancelDelete = () => {
     setIsConfirmOpen(false);
   };
 
- 
   const handleSelect = () => {
     setMenuOpen(false);
     setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
     setSelectedEntryIds([]); // clear previous selection
   };
 
-  
   const approveStatus = approvers.every(
     (a) => a.status?.toUpperCase() === "APPROVED"
   );
 
   // Get current status and date display
   const currentStatus = isWeeklyFormat ? weekData.status : status;
-  const currentDate = isWeeklyFormat ? weekData.weekRange : formatDate(date);
+  const currentDate = isWeeklyFormat ? weekData.weekRange : formatDate(date).text;
 
   // Get week number and month for weekly format
   const weekNumber = isWeeklyFormat ? weekData.weekNumber : null;
@@ -386,8 +404,10 @@ const TimesheetGroup = ({
           return "bg-green-100 text-green-800 border-green-300";
         case "rejected":
           return "bg-red-100 text-red-800 border-red-300";
+        case "weekend":
+          return "bg-yellow-100 text-yellow-800 border-yellow-300";
         default:
-          return "bg-gray-100 text-gray-800 border-gray-300"
+          return "bg-gray-100 text-gray-800 border-gray-300";
       }
     };
 
@@ -527,7 +547,7 @@ const TimesheetGroup = ({
   const lastDateOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     .toISOString()
     .split("T")[0];
-  const todaysDate = today.toISOString().split("T")[0];  
+  const todaysDate = today.toISOString().split("T")[0];
 
   // helper to normalize date string to yyyy-mm-dd
   const normalize = (d) => {
@@ -535,30 +555,6 @@ const TimesheetGroup = ({
     return new Date(d).toISOString().split("T")[0];
   };
 
-  useEffect(() => {
-    let mounted = true;
-    const loadHolidays = async () => {
-      try {
-        setLoadingHolidays(true);
-        const data = await fetchCalendarHolidays();
-        if (!mounted || !data) return;
-        const map = {};
-        data.forEach((h) => {
-          const key = normalize(h.holidayDate);
-          map[key] = h;
-        });
-        setHolidaysMap(map);
-      } catch (err) {
-        console.error("Failed to load holidays", err);
-      } finally {
-        setLoadingHolidays(false);
-      }
-    };
-    loadHolidays();
-    return () => {
-      mounted = false;
-    };
-  }, []);
   return (
     <div
       className={`mb-6 bg-white rounded-xl shadow-lg border-2 ${getBorderColor()} hover:border-opacity-80 transition-colors duration-200 text-xs`}
@@ -624,62 +620,139 @@ const TimesheetGroup = ({
             {editDateIndex === timesheetId &&
             emptyTimesheet &&
             status?.toLowerCase() !== "approved" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  min={firstDateOfMonth}
-                  // max={todaysDate}
-                  max={lastDateOfMonth}
-                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                  value={normalize(date)}
-                  onChange={(e) => {
-                    const selected = e.target.value;
-                    // enforce month range
-                    if (
-                      selected < firstDateOfMonth ||
-                      selected > lastDateOfMonth
-                    ) {
-                      showStatusToast(
-                        "Select a date within the current month",
-                        "error"
-                      );
-                      return;
+              <div className="relative">
+                <DatePicker
+                  selected={date ? parseLocalDate(date) : null}
+                  onChange={(selectedDate) => {
+                    if (!selectedDate) return;
+
+                    const iso = toLocalISODate(selectedDate);
+                    const holiday = holidaysMap[iso];
+                    const day = selectedDate.getDay(); // 0=Sunday, 6=Saturday
+
+                    // 🧩 Weekend check (Saturday/Sunday)
+                    if (day === 0 || day === 6) {
+                      // Weekend, but check if allowed in holiday list
+                      if (!holiday || holiday.submitTimesheet === false) {
+                        showStatusToast(
+                          "Weekend — Timesheet not allowed",
+                          "error"
+                        );
+                        return;
+                      }
                     }
-                    const holiday = holidaysMap[selected];
+
+                    // 🧩 Regular holiday check
                     if (holiday && holiday.submitTimesheet === false) {
-                      // block selection for holidays that are not allowed
                       showStatusToast(
                         `Holiday: ${holiday.holidayName} — timesheet not allowed`,
                         "error"
                       );
                       return;
                     }
+
+                    // ✅ If allowed, set date
+                    setDate(iso);
                     setEditDateIndex(null);
-                    setDate(selected);
+                  }}
+                  open
+                  onClickOutside={() => setEditDateIndex(null)}
+                  calendarClassName="shadow-lg rounded-xl border border-gray-200 p-2 z-[9999]"
+                  popperClassName="z-[9999]"
+                  shouldCloseOnSelect={true}
+                  showPopperArrow={false}
+                  popperPlacement="top-start"
+                  minDate={startOfMonth(
+                    parseLocalDate(toLocalISODate(new Date()))
+                  )}
+                  maxDate={endOfMonth(
+                    parseLocalDate(toLocalISODate(new Date()))
+                  )}
+                  calendarStartDay={1} // Monday first (Indian style)
+                  renderCustomHeader={({ date }) => (
+                    <div className="text-center font-semibold text-indigo-600 mb-1">
+                      {date.toLocaleDateString("en-IN", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                  )}
+                  // ✅ Determine background color dynamically
+                  dayClassName={(dateObj) => {
+                    const iso = toLocalISODate(dateObj);
+                    const holiday = holidaysMap[iso];
+                    const day = dateObj.getDay(); // 0=Sunday, 6=Saturday
+
+                    // --- 1️⃣ Weekends ---
+                    if (day === 0 || day === 6) {
+                      // Check if weekend has holiday override
+                      if (holiday && holiday.submitTimesheet === true) {
+                        return "bg-green-200 text-green-800 rounded-full font-semibold hover:bg-green-300 transition-all";
+                      } else {
+                        return "bg-yellow-100 text-yellow-800 rounded-full font-semibold hover:bg-yellow-200 transition-all cursor-not-allowed";
+                      }
+                    }
+
+                    // --- 2️⃣ Holidays ---
+                    if (holiday && holiday.submitTimesheet === false) {
+                      return "bg-red-200 text-red-800 rounded-full font-semibold hover:bg-red-300 transition-all cursor-not-allowed";
+                    }
+                    if (holiday && holiday.submitTimesheet === true) {
+                      return "bg-green-200 text-green-800 rounded-full font-semibold hover:bg-green-300 transition-all";
+                    }
+
+                    // --- 3️⃣ Default ---
+                    return "hover:bg-blue-100 text-gray-700 transition-all";
+                  }}
+                  // ✅ Tooltip (hover)
+                  renderDayContents={(day, dateObj) => {
+                    const iso = toLocalISODate(dateObj);
+                    const holiday = holidaysMap[iso];
+                    const dayName = dateObj.toLocaleDateString("en-IN", {
+                      weekday: "long",
+                    });
+                    const isWeekend =
+                      dateObj.getDay() === 0 || dateObj.getDay() === 6;
+
+                    let tooltipText = "";
+                    if (holiday) {
+                      tooltipText =
+                        holiday.holidayDescription || holiday.holidayName;
+                    } else if (isWeekend) {
+                      tooltipText = `${dayName} — Weekend`;
+                    }
+
+                    return (
+                      <div
+                        className="relative group cursor-pointer"
+                        title={tooltipText}
+                      >
+                        {day}
+                        {tooltipText && (
+                          <div className="absolute -bottom-7 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[9999]">
+                            {tooltipText}
+                          </div>
+                        )}
+                      </div>
+                    );
                   }}
                 />
-                {/* holiday dot + tooltip for selected date */}
-                {holidaysMap[normalize(date)] && (
-                  <div className="ml-1">
-                    {/* <Tooltip content={holidaysMap[normalize(date)].holidayName}> */}
-                    <Tooltip
-                      content={
-                        holidaysMap[normalize(date)].submitTimesheet
-                          ? "Working on Holiday"
-                          : "Holiday - timesheet not allowed"
-                      }
-                    >
-                      <span
-                        className={`inline-block w-3 h-3 rounded-full ${
-                          holidaysMap[normalize(date)].submitTimesheet
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                        title={holidaysMap[normalize(date)].holidayName}
-                      />
-                    </Tooltip>
+
+                {/* ✅ Legend */}
+                <div className="mt-2 flex gap-4 text-xs justify-center">
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full bg-green-400"></span>
+                    <span>Allowed</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full bg-red-400"></span>
+                    <span>Blocked</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full bg-yellow-300"></span>
+                    <span>Weekend</span>
+                  </div>
+                </div>
               </div>
             ) : (
               <div
@@ -722,7 +795,7 @@ const TimesheetGroup = ({
                   currentStatus?.toLowerCase() === "approved" ||
                   currentStatus?.toLowerCase() === "partially approved"
                     ? "Cannot edit approved timesheet"
-                    : "More optionssssssss"
+                    : "More options"
                 }
               >
                 <MoreVertical size={22} />
@@ -765,19 +838,20 @@ const TimesheetGroup = ({
                 className="bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 shadow-sm overflow-visible"
               >
                 {/* Individual Day Header */}
-                <div className="bg-white border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible">
-                  <div className="flex items-center gap-3">
+                <div className={`${formatDate(timesheet.workDate).isWeekend ? "bg-yellow-100 cursor-not-allowed" : (timesheet.defaultHolidayTimesheet ? "bg-red-200 cursor-not-allowed" :  "")} border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible`}>
+                  <div className={`flex items-center gap-3`}>
                     <div className="text-sm font-semibold text-gray-700">
-                      {formatDate(timesheet.workDate)}
+                      {formatDate(timesheet.workDate).text}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {calculateTotalHours(timesheet.entries)} hrs
+                      {timesheet.hoursWorked} hrs
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 relative overflow-visible">
-                    {timesheet.isHoliday && (
+                  {!timesheet.defaultHolidayTimesheet ? (
+                    <div className="flex items-center gap-2 relative overflow-visible">
+                    {/* {timesheet.isHoliday && (
                       <CustomStatusBadge label="Holiday" size="sm" />
-                    )}
+                    )} */}
                     <CustomStatusBadge label={timesheet.status} size="sm" />
                     {/* Show approval status tooltip if available */}
                     {timesheet.actionStatus &&
@@ -879,9 +953,15 @@ const TimesheetGroup = ({
                       </div>
                     )}
                   </div>
+                  ) : formatDate(timesheet.workDate).isWeekend ? (
+                    <CustomStatusBadge label="WeekEnd" size="sm" />
+                  ) : (
+                    <CustomStatusBadge label="Holiday" size="sm" />
+                  )}
                 </div>
 
                 {/* Entries Table */}
+                {!timesheet.defaultHolidayTimesheet && (
                 <div className="p-2">
                   <EntriesTable
                     entries={timesheet.entries}
@@ -898,6 +978,7 @@ const TimesheetGroup = ({
                     selectionMode={showSelectionCheckboxes}
                   />
                 </div>
+                )}  
               </div>
             ))}
 

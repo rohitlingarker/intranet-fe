@@ -15,7 +15,7 @@ const Navbar = ({ logo, navItems = [] }) => {
     <nav
       ref={navRef}
       className="border-b px-6 py-4  bg-white"
-      style={{ top: offsetTop, zIndex: 50 }}
+      style={{ top: offsetTop, zIndex: 39 }}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="text-lg font-bold text-indigo-900">{logo}</div>

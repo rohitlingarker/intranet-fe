@@ -6,6 +6,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { XCircle } from "lucide-react";
+import CancellationModal from "./CancellationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -24,10 +25,12 @@ const LeaveHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
   const [filterStatus, setFilterStatus] = useState("APPROVED");
-  const [currentPage, setCurrentPage] = useState(1);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-  const token = localStorage.getItem("token");
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -36,13 +39,13 @@ const LeaveHistory = () => {
       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
         withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }),
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }),
     ])
@@ -65,7 +68,7 @@ const LeaveHistory = () => {
       // if (!isOpen) return;
       try {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setLeaveTypes(res.data);
       } catch (err) {
@@ -74,7 +77,7 @@ const LeaveHistory = () => {
     };
 
     fetchLeaveTypes();
-  }, [token]);
+  }, [localStorage.getItem("token")]);
 
   // function mapLeaveBalancesToDropdown(balances, leaveTypes) {
   //   return balances.map((balance) => {
@@ -208,6 +211,44 @@ const LeaveHistory = () => {
     if (!leaveName) return "-";
     const match = leaveTypes.find((lt) => lt.name === leaveName);
     return match ? match.label : leaveName.replace(/^L-/, ""); // fallback to raw or cleaned name
+  };
+
+  const handleModalOpen = (leaveId) => {
+    setSelectedLeaveId(leaveId);
+    setIsCancelModalOpen(true);
+  }
+
+  const handleModalClose = () => {
+    setSelectedLeaveId(null);
+    setIsCancelModalOpen(false);
+    setIsCancelling(false);
+  }
+
+  const handleConfirmCancellation = async (reason) => {
+    if(!reason) {
+      toast.error("Reason is required");
+      return;
+    }
+    setIsCancelling(true);
+    try {
+      const res = await axios.post(`${BASE_URL}/api/leave-revoke/revoke`, 
+        {
+          leaveRequestId: selectedLeaveId,
+          reason: reason
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+        }
+      );
+      toast.success(res?.data?.message || "Leave request revoked successfully!");
+      handleModalClose();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to revoke leave request.");
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   if (loading) {
@@ -400,8 +441,12 @@ const LeaveHistory = () => {
                   </td>
                   <td className="p-3">
                     {leave.status === "APPROVED" && (
-                      <button type="button" title="Cancel Approved Leave">
-                        <XCircle className="text-orange-500 text-sm" />
+                      <button 
+                        type="button" 
+                        title="Cancel Approved Leave" 
+                        onClick={() => handleModalOpen(leave.leaveId)}
+                      >
+                        <XCircle className="text-orange-500 text-sm hover:text-orange-800" />
                       </button>
                     )}
                   </td>
@@ -427,6 +472,13 @@ const LeaveHistory = () => {
           <p className={Fonts.caption}>No leave history found.</p>
         </div>
       )}
+      <CancellationModal
+        isOpen={isCancelModalOpen}
+        onCancel={handleModalClose}
+        onConfirm={handleConfirmCancellation}
+        isLoading={isCancelling}
+        confirmText="Confirm"
+      />
     </div>
   );
 };

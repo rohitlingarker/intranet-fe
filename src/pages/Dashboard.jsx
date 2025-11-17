@@ -86,7 +86,6 @@ const Dashboard = () => {
         // Directly use the count from API
         const count = res.data ?? 0;
         setProjectsCount(count);
-        //console.log("Projects count fetched:", count);
       } catch (error) {
         console.error("Error fetching projects count:", error);
       }
@@ -251,7 +250,7 @@ const Dashboard = () => {
       color: "bg-[#b22a4f]",
       stats: pendingApprovals
         ? `${pendingApprovals} pending approvals`
-        : "Loading...",
+        : "-",
     },
     {
       title: "Timesheets",

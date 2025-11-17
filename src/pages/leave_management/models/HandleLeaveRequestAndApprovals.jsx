@@ -657,7 +657,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     className="hover:bg-gray-50 transition-colors text-xs"
                   >
                     {/* Your existing <td> elements go here, no changes needed inside the map */}
-                    <td className="sticky left-0 z-10 bg-white">
+                    <td className="sticky left-1 z-10 bg-white">
                       <input
                         type="checkbox"
                         checked={selectedRequests.includes(request.leaveId)}
@@ -672,7 +672,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                         ].includes(request.status.toLowerCase())}
                       />
                     </td>
-                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[3.5%] z-10 bg-white">
+                    <td className="cursor-pointer text-blue-600 hover:underline sticky left-[4.5%] z-10 bg-white">
                       <button
                         onClick={() =>
                           setLeaveBalaceModel({

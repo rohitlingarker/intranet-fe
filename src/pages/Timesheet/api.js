@@ -63,7 +63,7 @@ export const reviewTimesheet = async (timesheetId, comment, status) => {
 
 export async function updateTimesheet(timesheetId, payload) {
   try {
-    const res = await fetch(
+    const response = await fetch(
       `${apiEndpoint}/api/timesheet/updateEntries/${timesheetId}`,
       {
         method: "PUT",
@@ -75,20 +75,41 @@ export async function updateTimesheet(timesheetId, payload) {
       }
     );
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to update timesheet");
+    // Try parsing JSON first; if not possible, fallback to text
+    const contentType = response.headers.get("content-type");
+    let responseData;
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
     }
 
-    const data = await res.text();
-    showStatusToast(data, "success");
+    // ✅ Success handling
+    if (response.ok) {
+      const message =
+        typeof responseData === "string"
+          ? responseData
+          : responseData.message || "Timesheet updated successfully.";
+      showStatusToast(message, "success");
+      return responseData;
+    }
 
-    return data;
+    // ❌ Error handling (server responded with 4xx or 5xx)
+    const errorMessage =
+      typeof responseData === "string"
+        ? responseData
+        : responseData.message || "Failed to update timesheet.";
+    showStatusToast(errorMessage, "error");
+    throw new Error(errorMessage);
   } catch (err) {
-    showStatusToast(err.message || "Update failed", "error");
+    // 🧠 Network / unexpected errors
+    const message = err.message || "Unexpected error while updating timesheet.";
+    showStatusToast(message, "error");
     throw err;
   }
 }
+
+
 
 export async function fetchTimesheetHistory() {
   try {
@@ -454,13 +475,79 @@ export const handleBulkReview = async (
       }
     );
 
-    if (!response.ok) throw new Error("Failed to review timesheets");
-    showStatusToast(
-      `Timesheets ${status.toLowerCase()} successfully`,
-      "success"
-    );
+    // Read the response body as JSON
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = data?.message || "Failed to review timesheets";
+      throw new Error(message);
+    }
+
+    // ✅ Show the exact message returned from backend
+    const message =
+      data?.message || `Timesheets ${status.toLowerCase()} successfully`;
+    showStatusToast(message, "success");
   } catch (err) {
-    console.error("Error reviewing timesheets:", err);
-    showStatusToast("Failed to update timesheet status", "error");
+    console.error("❌ Error reviewing timesheets:", err);
+    showStatusToast(
+      err.message || "Failed to update timesheet status",
+      "error"
+    );
   }
 };
+export async function fetchDashboardLastMonth() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/lastMonth`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        errorData || `Error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    showStatusToast({
+      type: "error",
+      message: "Failed to fetch dashboard summary. Please try again.",
+    });
+    console.error("Fetch dashboard summary error:", error);
+    return null; // Return null so calling code can check for loading/error
+  }
+}
+export async function fetchDashboardLast3Months() {
+  try {
+    const response = await fetch(`${apiEndpoint}/api/dashboard/summary/last3Months`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(
+        errorData || `Error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    showStatusToast({
+      type: "error",
+      message: "Failed to fetch dashboard summary. Please try again.",
+    });
+    console.error("Fetch dashboard summary error:", error);
+    return null; // Return null so calling code can check for loading/error
+  }
+}

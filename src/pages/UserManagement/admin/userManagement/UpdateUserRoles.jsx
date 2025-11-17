@@ -203,14 +203,18 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
   const [selectedRoleIds, setSelectedRoleIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
- 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const token = localStorage.getItem("token");
-  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
- 
+  const authHeader = {
+    headers: { Authorization: `Bearer ${token}` },
+  };
+
   useEffect(() => {
+    console.log("EditUserRoleModal mounted for userId:", user_uuId);
     if (!user_uuId) return;
     let mounted = true;
- 
+
     const loadData = async () => {
       setLoading(true);
       try {
@@ -219,13 +223,15 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
           axiosInstance.get(`/admin/roles`, authHeader),
           axiosInstance.get(`/admin/users/uuid/${user_uuId}/roles`, authHeader),
         ]);
- 
+        console.log("Fetched user, roles, assigned:", userRes, rolesRes, assignedRes);
+
         if (!mounted) return;
- 
+
         setUser(userRes.data);
         setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
- 
+
         let assignedIds = [];
+
         if (assignedRes.data?.roles && Array.isArray(assignedRes.data.roles)) {
           const roleNameToId = rolesRes.data.reduce((acc, r) => {
             acc[r.role_name] = r.role_uuid;
@@ -235,7 +241,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
             .map((roleName) => roleNameToId[roleName])
             .filter(Boolean);
         }
- 
+
         setSelectedRoleIds(assignedIds);
       } catch (err) {
         console.error("Failed to load roles", err);
@@ -244,13 +250,13 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         if (mounted) setLoading(false);
       }
     };
- 
+
     loadData();
     return () => {
       mounted = false;
     };
   }, [user_uuId, axiosInstance]);
- 
+
   const toggleRole = (roleId) => {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId)
@@ -258,7 +264,7 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         : [...prev, roleId]
     );
   };
- 
+
   const handleSave = async () => {
     if (!user_uuId) return;
     setSaving(true);
@@ -268,16 +274,19 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
         { role_ids: selectedRoleIds },
         authHeader
       );
- 
+
       const updatedRoleNames = roles
         .filter((r) => selectedRoleIds.includes(r.role_uuid))
         .map((r) => r.role_name);
- 
+
+      console.log(response);
+
       showStatusToast(
         response?.data?.message || "Roles updated successfully!",
         "success"
       );
       if (typeof onSaved === "function") onSaved(updatedRoleNames);
+      console.log("Updated roles:", updatedRoleNames);
       onClose();
     } catch (err) {
       console.error("Failed to update roles", err);
@@ -286,7 +295,14 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
       setSaving(false);
     }
   };
- 
+
+  // ✅ Filter roles dynamically using search term
+  const filteredRoles = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return roles;
+    return roles.filter((r) => r.role_name.toLowerCase().includes(term));
+  }, [roles, searchTerm]);
+
   return (
     <Modal isOpen={true} onClose={onClose}>
       <div className="p-4 max-w-lg">
@@ -300,28 +316,43 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
                 {user?.first_name} {user?.last_name}
               </span>
             </h2>
- 
+
             <p className="text-gray-500 mb-4">
               Select or deselect roles below:
             </p>
- 
-            <div className="grid grid-cols-2 gap-3 mb-6 max-h-72 overflow-y-auto">
-              {roles.map((role) => (
-                <label
-                  key={role.role_uuid}
-                  className="flex items-center gap-3 text-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRoleIds.includes(role.role_uuid)}
-                    onChange={() => toggleRole(role.role_uuid)}
-                    className="accent-blue-600 w-4 h-4"
-                  />
-                  <span>{role.role_name}</span>
-                </label>
-              ))}
+
+            {/* ✅ Role search input */}
+            <SearchInput
+              placeholder="Search roles..."
+              value={searchTerm}
+              onSearch={(val) => setSearchTerm(val)}
+              delay={300}
+              className="mb-4"
+            />
+
+            <div className="grid grid-cols-2 gap-3 mb-6 max-h-40 overflow-y-auto">
+              {filteredRoles.length > 0 ? (
+                filteredRoles.map((role) => (
+                  <label
+                    key={role.role_uuid}
+                    className="flex items-center gap-3 text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRoleIds.includes(role.role_uuid)}
+                      onChange={() => toggleRole(role.role_uuid)}
+                      className="accent-blue-600 w-4 h-4"
+                    />
+                    <span>{role.role_name}</span>
+                  </label>
+                ))
+              ) : (
+                <div className="col-span-2 text-gray-400 italic">
+                  No roles found.
+                </div>
+              )}
             </div>
- 
+
             <div className="flex justify-end gap-4">
               <Button
                 onClick={handleSave}
@@ -341,4 +372,3 @@ function EditUserRoleModal({ user_uuId, onClose, axiosInstance, onSaved }) {
     </Modal>
   );
 }
- 

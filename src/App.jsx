@@ -27,6 +27,7 @@ import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprov
 import DashboardPage from "./pages/Timesheet/DashboardPage";  
 import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
+import ReportDashboard from "./pages/Timesheet/ReportDashboard";
 
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
@@ -65,7 +66,8 @@ import AccessPointDetails from "./pages/UserManagement/admin/accessPointManageme
 import AccessPointEdit from "./pages/UserManagement/admin/accessPointManagement/AccessPointEdit";
 import AccessPointMapping from "./pages/UserManagement/admin/accessPointManagement/AccessPointMapping";
 import AccessPointManagement from "./pages/UserManagement/admin/accessPointManagement/AccessPointManagement";
-
+import BulkAccessPointCreate from "./pages/UserManagement/admin/accessPointManagement/BulkAccessPointCreate";
+import BulkPermissionMapping from "./pages/UserManagement/admin/accessPointManagement/BulkPermissionMapping";
 import Profile from "./pages/UserManagement/user/Profile";
 import EditProfile from "./pages/UserManagement/user/EditProfile";
 
@@ -234,6 +236,7 @@ useEffect(() => {
           <Route path="/managerapproval" element={<ManagerApprovalPage />} />
           <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
+          <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
@@ -329,6 +332,16 @@ useEffect(() => {
             path="/user-management/access-points/admin/access-point-mapping"
             element={<AccessPointMapping />}
           />
+          <Route
+            path="/user-management/access-points/create-bulk"
+            element={<BulkAccessPointCreate />}
+          />
+
+          <Route
+            path="/user-management/access-point-map-permission-bulk"
+            element={<BulkPermissionMapping />}
+          />
+
 
           {/* <Route
             path="/user-management/users"

@@ -7,16 +7,37 @@ import { Pencil, Check, X } from "lucide-react";
 import { showStatusToast } from "../../components/toastfy/toast";
 import Button from "../../components/Button/Button";
 
-// safely render '01:30' or '16:30:00' as '01:30' or '16:30'
+// ✅ Robust time formatter for both UTC and local ISO strings
+// ✅ Converts UTC timestamps (from backend) to local time before displaying
 const prettyTime = (time) => {
   if (!time) return "";
-  const date = new Date(time.slice(-1) === "Z" ? time : time+"Z"); // treat as UTC
-  if (isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+
+  try {
+    // Case 1: raw "HH:mm" strings (local form inputs)
+    if (/^\d{2}:\d{2}$/.test(time)) {
+      const [h, m] = time.split(":");
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+
+    // Case 2: ISO datetime from backend ("2025-10-31T23:30:00" or "2025-10-31T23:30:00Z")
+    const date = new Date(time.endsWith("Z") ? time : time + "Z");
+
+    // Convert UTC -> Local automatically (Date object does this inherently)
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
+    console.error("prettyTime error:", time, err);
+    return "";
+  }
 };
 
 const EntriesTable = ({
@@ -41,20 +62,28 @@ const EntriesTable = ({
   });
   const [pendingEntries, setPendingEntries] = useState([]);
 
-  // ✅ Add this helper here
-  // const isCurrentMonth = (dateStr) => {
-  //   const today = new Date();
-  //   const work = new Date(dateStr);
-  //   return (
-  //     work.getMonth() === today.getMonth() &&
-  //     work.getFullYear() === today.getFullYear()
-  //   );
-  //};
-  //const editable = isCurrentMonth(workDate) && status !== "Approved";  //added
+  // ✅ Converts a backend UTC datetime string (e.g. "2025-11-10T04:30:00Z")
+  //    to a local "HH:mm" string that will show correctly in <input type="time">
+  const toLocalTimeString = (utcString) => {
+    if (!utcString) return "";
+    try {
+      // Ensure it's treated as UTC — even if backend sends without "Z"
+      const utcDate = utcString.endsWith("Z")
+        ? new Date(utcString)
+        : new Date(utcString + "Z");
+
+      const localHours = utcDate.getHours().toString().padStart(2, "0");
+      const localMinutes = utcDate.getMinutes().toString().padStart(2, "0");
+      return `${localHours}:${localMinutes}`;
+    } catch (err) {
+      console.error("Error converting UTC to local:", utcString, err);
+      return "";
+    }
+  };
 
   useEffect(() => {
     // console.log({addingNewEntry});
-    
+
     if (!addingNewEntry) setEditIndex(null);
   }, [addingNewEntry]);
 
@@ -108,11 +137,11 @@ const EntriesTable = ({
       timesheetEntryId: entry.timesheetEntryId,
       projectId: entry.projectId,
       taskId: entry.taskId,
-      fromTime: new Date(entry.fromTime).toISOString().slice(11, 16),
-      toTime: new Date(entry.toTime).toISOString().slice(11, 16),
+      fromTime: toLocalTimeString(entry.fromTime),
+      toTime: toLocalTimeString(entry.toTime),
       workType: entry.workType,
       description: entry.description,
-      isBillable: entry.isBillable ? "Yes" : "No",
+      isBillable: entry.billable, // true/false
     });
   };
 
@@ -120,7 +149,7 @@ const EntriesTable = ({
     setEditIndex(null);
     setEditData({});
     setAddingNewEntry(false);
-    setAddData({ workType: "Office", isBillable: "Yes" });
+    setAddData({ workType: "Office", isBillable: true });
   };
 
   const handleChange = (e) => {
@@ -204,28 +233,25 @@ const EntriesTable = ({
 
   const handleSave = async () => {
     if (!isValid(editData)) return;
-    const newStart = new Date(`${workDate}T${editData.fromTime}`);
-    const newEnd = new Date(`${workDate}T${editData.toTime}`);
-    if (hasOverlap(newStart, newEnd, editData.timesheetEntryId)) {
-      showStatusToast("Time overlap detected with another entry!", "error");
-      return;
-    }
     try {
       await updateTimesheet(timesheetId, {
         workDate,
         status,
         entries: [
-          {
-            ...editData,
-            projectId: parseInt(editData.projectId),
-            taskId: parseInt(editData.taskId),
-            fromTime: newStart.toISOString(),
-            toTime: newEnd.toISOString(),
-            isBillable: editData.isBillable === "Yes",
-            workLocation: editData.workType,
-            description: editData.description,
-            id: editData.timesheetEntryId,
-          },
+          (() => {
+            const entry = {
+              ...editData,
+              projectId: parseInt(editData.projectId),
+              taskId: parseInt(editData.taskId),
+              fromTime: newStart.toISOString(),
+              toTime: newEnd.toISOString(),
+              billable: editData.isBillable,
+              workLocation: editData.workType,
+              description: editData.description,
+              id: editData.timesheetEntryId,
+            };
+            return entry;
+          })(),
         ],
       });
       setEditIndex(null);
@@ -270,23 +296,20 @@ const EntriesTable = ({
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
     if (!isValid(addData)) return;
-    const newStart = new Date(`${workDate}T${addData.fromTime}`);
-    const newEnd = new Date(`${workDate}T${addData.toTime}`);
-    if (hasOverlap(newStart, newEnd)) {
-      showStatusToast("Time overlap detected with another entry!", "error");
-      return;
-    }
     setPendingEntries((prev) => [
       ...prev,
-      {
-        ...addData,
-        projectId: parseInt(addData.projectId),
-        taskId: parseInt(addData.taskId),
-        fromTime: newStart.toISOString(),
-        toTime: newEnd.toISOString(),
-        isBillable: addData.isBillable === "Yes",
-        workLocation: addData.workType,
-      },
+      (() => {
+        const newEntry = {
+          ...addData,
+          projectId: parseInt(addData.projectId),
+          taskId: parseInt(addData.taskId),
+          fromTime: addData.fromTime,
+          toTime: addData.toTime,
+          billable: !!addData.isBillable,
+          workLocation: addData.workType,
+        };
+        return newEntry;
+      })(),
     ]);
     // hide add-row and reset
     setAddingNewEntry(false);
@@ -405,7 +428,15 @@ const EntriesTable = ({
                   />
                 </td>
                 <td className="px-4 py-2">
-                  {editData.isBillable}
+                  <td className="px-4 py-2">
+                    {(
+                      editData.isBillable !== undefined
+                        ? editData.isBillable
+                        : entry.isBillable
+                    )
+                      ? "Yes"
+                      : "No"}
+                  </td>
                 </td>
                 {window.location.pathname !== "/managerapproval" && (
                   <td className="px-4 py-2">
@@ -545,7 +576,15 @@ const EntriesTable = ({
                       await addEntryToTimesheet(
                         timesheetId,
                         workDate,
-                        pendingEntries
+                        pendingEntries.map((entry) => ({
+                          ...entry,
+                          fromTime: new Date(
+                            `${workDate}T${entry.fromTime}`
+                          ).toISOString(),
+                          toTime: new Date(
+                            `${workDate}T${entry.toTime}`
+                          ).toISOString(),
+                        }))
                       );
                       setPendingEntries([]);
                       refreshData();

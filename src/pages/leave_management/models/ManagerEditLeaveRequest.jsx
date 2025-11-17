@@ -36,7 +36,7 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
       const days =
         remainingLeaves % 1 === 0
           ? remainingLeaves
-          : remainingLeaves.toFixed(1);
+          : remainingLeaves;
       availableText = `${days} days available`;
     } else {
       availableText = "Not Available";
@@ -46,7 +46,7 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
       leaveTypeId,
       leaveName,
       availableText,
-      disabled: !isInfinite && remainingLeaves <= 0,
+      disabled: (!isInfinite && balance.remainingLeaves <= 0) || balance.isBlocked,
       allowHalfDay: !!leaveType.allowHalfDay, // Pass allowHalfDay property
       requiresDocumentation: !!leaveType.requiresDocumentation,
     };
