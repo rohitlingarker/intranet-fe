@@ -18,6 +18,7 @@ const ReadOnlyDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
   const [expandedProjects, setExpandedProjects] = useState(null);
   const [expandedStories, setExpandedStories] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState(null);
@@ -71,8 +72,7 @@ const ReadOnlyDashboard = () => {
   }, [userId]);
 
   const toggleExpand = (id, type) => {
-    if (type === "project")
-      setExpandedProjects(expandedProjects === id ? null : id);
+    if (type === "project") setExpandedProjects(expandedProjects === id ? null : id);
     if (type === "story") setExpandedStories(expandedStories === id ? null : id);
     if (type === "task") setExpandedTasks(expandedTasks === id ? null : id);
   };
@@ -90,6 +90,7 @@ const ReadOnlyDashboard = () => {
           <span className="text-gray-500 text-sm">({project.projectKey})</span>
         </div>
       </div>
+
       {expandedProjects === project.id && (
         <div className="mt-4 border-t pt-4 text-gray-700 text-sm space-y-2">
           {project.description && (
@@ -97,30 +98,32 @@ const ReadOnlyDashboard = () => {
               <strong>Description:</strong> {project.description}
             </p>
           )}
+
           <p>
             <strong>Status:</strong> {project.status}
           </p>
+
           {project.owner && (
             <p>
               <strong>Owner:</strong> {project.owner.name}
             </p>
           )}
-          {project.members && project.members.length > 0 && (
+
+          {project.members?.length > 0 && (
             <p>
-              <strong>Members:</strong>{" "}
-              {project.members.map((m) => m.name).join(", ")}
+              <strong>Members:</strong> {project.members.map((m) => m.name).join(", ")}
             </p>
           )}
+
           {project.createdAt && (
             <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(project.createdAt).toLocaleString()}
+              <strong>Created At:</strong> {new Date(project.createdAt).toLocaleString()}
             </p>
           )}
+
           {project.updatedAt && (
             <p>
-              <strong>Updated At:</strong>{" "}
-              {new Date(project.updatedAt).toLocaleString()}
+              <strong>Updated At:</strong> {new Date(project.updatedAt).toLocaleString()}
             </p>
           )}
 
@@ -140,9 +143,10 @@ const ReadOnlyDashboard = () => {
 
   // 🔹 STORY RENDER
   const renderStory = (story) => {
-    // get project id from story.project or story.epic.project if exists
     const projectId =
-      story?.project?.id || story?.epic?.project?.id || story?.epic?.projectId;
+      story?.project?.id ||
+      story?.epic?.project?.id ||
+      story?.epic?.projectId;
 
     return (
       <li key={story.id} className="bg-white rounded-xl shadow p-4">
@@ -156,21 +160,25 @@ const ReadOnlyDashboard = () => {
             <span className="text-gray-500 text-sm">({story.status})</span>
           </div>
         </div>
+
         {expandedStories === story.id && (
           <div className="mt-2 border-t pt-2 text-gray-700 text-sm space-y-1">
             <p>
               <strong>Description:</strong> {story.description || "—"}
             </p>
+
             {story.epic && (
               <p>
                 <strong>Epic:</strong> {story.epic.title}
               </p>
             )}
+
             {story.reporter && (
               <p>
                 <strong>Reporter:</strong> {story.reporter.name}
               </p>
             )}
+
             {story.assignee && (
               <p>
                 <strong>Assignee:</strong> {story.assignee.name}
@@ -196,9 +204,10 @@ const ReadOnlyDashboard = () => {
 
   // 🔹 TASK RENDER
   const renderTask = (task) => {
-    // get project id from task.story.project or directly from task.project if available
     const projectId =
-      task?.story?.project?.id || task?.project?.id || task?.story?.projectId;
+      task?.story?.project?.id ||
+      task?.project?.id ||
+      task?.story?.projectId;
 
     return (
       <li key={task.id} className="bg-white rounded-xl shadow p-4">
@@ -212,21 +221,25 @@ const ReadOnlyDashboard = () => {
             <span className="text-gray-500 text-sm">({task.status})</span>
           </div>
         </div>
+
         {expandedTasks === task.id && (
           <div className="mt-2 border-t pt-2 text-gray-700 text-sm space-y-1">
             <p>
               <strong>Description:</strong> {task.description || "—"}
             </p>
+
             {task.story && (
               <p>
                 <strong>Story:</strong> {task.story.title}
               </p>
             )}
+
             {task.assignee && (
               <p>
                 <strong>Assignee:</strong> {task.assignee.name}
               </p>
             )}
+
             {task.reporter && (
               <p>
                 <strong>Reporter:</strong> {task.reporter.name}
@@ -250,21 +263,40 @@ const ReadOnlyDashboard = () => {
     );
   };
 
-  // Filtered lists
+  // 🔹 FILTERING — FIXED & CLEANED
   const filteredProjects = projects.filter(
     (p) => projectFilter === "ALL" || p.status === projectFilter
   );
-  const filteredStories = stories.filter(
-    (s) => storyFilter === "ALL" || s.status === storyFilter
-  );
-  const filteredTasks = tasks.filter(
-    (t) => taskFilter === "ALL" || t.status === taskFilter
-  );
+
+  const filteredStories = stories.filter((s) => {
+    if (storyFilter === "ALL") return true;
+
+    return (
+      s.status === storyFilter ||
+      s.statusName === storyFilter ||
+      s.statusId === storyFilter ||
+      s.status?.name === storyFilter ||
+      s.storyName === storyFilter
+    );
+  });
+
+  const filteredTasks = tasks.filter((t) => {
+    if (taskFilter === "ALL") return true;
+
+    return (
+      t.status === taskFilter ||
+      t.statusName === taskFilter ||
+      t.statusId === taskFilter
+    );
+  });
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <ToastContainer />
-      <h1 className="text-2xl font-bold mb-4 text-indigo-900">{userName} Your projects</h1>
+
+      <h1 className="text-2xl font-bold mb-4 text-indigo-900">
+        {userName} — Your Projects
+      </h1>
 
       {loading && <p className="text-gray-600">Loading data...</p>}
       {error && <p className="text-red-500">{error}</p>}
@@ -285,6 +317,7 @@ const ReadOnlyDashboard = () => {
             <option value="ON_HOLD">On Hold</option>
           </select>
         </div>
+
         {filteredProjects.length === 0 ? (
           <p className="text-gray-500">No projects found.</p>
         ) : (
@@ -302,12 +335,13 @@ const ReadOnlyDashboard = () => {
             onChange={(e) => setStoryFilter(e.target.value)}
           >
             <option value="ALL">All</option>
-            <option value="TO_DO">To Do</option>
             <option value="BACKLOG">Backlog</option>
+            <option value="TO_DO">To Do</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="DONE">Done</option>
           </select>
         </div>
+
         {filteredStories.length === 0 ? (
           <p className="text-gray-500">No stories found.</p>
         ) : (
@@ -325,12 +359,13 @@ const ReadOnlyDashboard = () => {
             onChange={(e) => setTaskFilter(e.target.value)}
           >
             <option value="ALL">All</option>
-            <option value="TO_DO">To Do</option>
             <option value="BACKLOG">Backlog</option>
+            <option value="TO_DO">To Do</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="DONE">Done</option>
           </select>
         </div>
+
         {filteredTasks.length === 0 ? (
           <p className="text-gray-500">No tasks found.</p>
         ) : (
