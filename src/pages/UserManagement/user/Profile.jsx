@@ -40,7 +40,7 @@ export default function Profile() {
       <Button
         type="button"
         variant="secondary"
-        onClick={() => navigate("/user-management/users")}
+        onClick={() => navigate("/dashboard")}
         className="mb-4"
       >
         ← Back

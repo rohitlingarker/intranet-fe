@@ -286,18 +286,27 @@ const CreateProjectModal = ({
           {/* Members */}
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members (Optional):</p>
+<input
+  type="text"
+  placeholder="Search users..."
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  className="w-full border px-3 py-2 rounded mb-3"
+/>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-              {users.map((user) => (
-                <label key={user.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.memberIds.includes(user.id)}
-                    onChange={() => handleMemberCheckboxChange(user.id)}
-                    disabled={formData.ownerId.toString() === user.id.toString()}
-                  />
-                  {user.name} ({user.roles.join(", ")})
-                </label>
-              ))}
+              {filteredUsers.map((user) => (
+  <label key={user.id} className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={formData.memberIds.includes(user.id)}
+      onChange={() => handleMemberCheckboxChange(user.id)}
+      disabled={formData.ownerId.toString() === user.id.toString()}
+    />
+    {user.name} ({user.roles.join(", ")})
+  </label>
+))}
+
+            
             </div>
           </div>
 
