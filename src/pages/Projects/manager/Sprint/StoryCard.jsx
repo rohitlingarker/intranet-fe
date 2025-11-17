@@ -2,23 +2,22 @@ import React, { useState } from "react";
 import { useDrag } from "react-dnd";
 import { MoreVertical } from "lucide-react";
 
-const StoryCard = ({ story, sprints = [], onAddToSprint }) => {
+const StoryCard = ({ story, onOpen }) => {
   const [, dragRef] = useDrag({
     type: "STORY",
     item: { id: story.id },
   });
 
-  const [showMenu, setShowMenu] = useState(false);
-
-  const handleSelectSprint = (sprintId) => {
-    onAddToSprint(story.id, sprintId);
-    setShowMenu(false);
-  };
+  const handleClick = (e) => {
+    e.stopPropagation();
+    onOpen(story.id);
+  }
 
   return (
     <div
       ref={dragRef}
-      className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-move flex justify-between items-start transition"
+      onClick={handleClick}
+      className="bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer"
     >
       {/* Story Info */}
       <div>
