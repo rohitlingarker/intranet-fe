@@ -30,6 +30,7 @@ const DateRangePicker = ({
         params: { state: "All", country: "India" },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
+      console.log("Holidays fetched:", res.data);
       const holidayDates = res.data.map((holiday) => {
         const [y, m, d] = holiday.holidayDate.split("-").map(Number);
         return new Date(y, (m ?? 1) - 1, d ?? 1);
@@ -60,6 +61,8 @@ const DateRangePicker = ({
   useEffect(() => {
     fetchHolidays();
   }, []);
+
+  // changes selected date if defaultDate prop changes
 
   useEffect(() => {
     setSelected(defaultDate);

@@ -10,14 +10,16 @@ import SprintColumn from "../Sprint/SprintColumn";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Button from "../../../../components/Button/Button";
+import StoryDetailsPanel from "../Sprint/StoryDetailsPanel";
 
-const Backlog = ({ projectId, projectName }) => {
+const Backlog = ({ projectId, projectName, stories: initialStories }) => {
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintForm, setShowSprintForm] = useState(false);
-  const [stories, setStories] = useState([]);
+  const [stories, setStories] = useState(initialStories || []);
   const [sprints, setSprints] = useState([]);
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [selectedStoryId, setSelectedStoryId] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -227,6 +229,13 @@ const Backlog = ({ projectId, projectName }) => {
             </div>
           )}
         </div>
+        {selectedStoryId && (
+          <StoryDetailsPanel
+            storyId={selectedStoryId}
+            onClose={() => setSelectedStoryId(null)}
+          />
+        )}
+
       </div>
     </DndProvider>
   );

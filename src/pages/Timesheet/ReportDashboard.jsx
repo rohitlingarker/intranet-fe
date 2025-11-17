@@ -47,6 +47,16 @@ export default function ReportDashboard() {
   const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // projectId -> current page
+  const [projectPages, setProjectPages] = useState({});
+  const membersPerPage = 8;
+
+  const handleProjectPageChange = (projectId, newPage) => {
+    setProjectPages((prev) => ({
+      ...prev,
+      [projectId]: newPage,
+    }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,6 +143,7 @@ export default function ReportDashboard() {
   const employeeBreakdown = data.employeeBreakdown || [];
   const employeeProductivity = data.employeeProductivity || [];
   const projectBreakdown = data.projectBreakdown || [];
+  const leaveHoursBreakdown = data.leaveHoursBreakdown || [];
 
   // Base pagination on the main list, e.g., employeeBreakdown
   const totalPages = Math.ceil(employeeBreakdown.length / itemsPerPage);
@@ -149,6 +160,11 @@ export default function ReportDashboard() {
   );
 
   const paginatedProjectBreakdown = projectBreakdown.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const paginatedleaveHoursBreakdown = leaveHoursBreakdown.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -250,16 +266,16 @@ export default function ReportDashboard() {
               color: "orange",
             },
             {
-              icon: <Calendar size={18} />,
-              label: "Leave Hours",
-              value: data.hoursBreakdown?.leaveHours,
-              color: "red",
-            },
-            {
               icon: <Clock size={18} />,
               label: "Total Hours",
               value: data.hoursBreakdown?.totalHours,
               color: "blue",
+            },
+            {
+              icon: <Calendar size={18} />,
+              label: "Leave Hours",
+              value: data.hoursBreakdown?.leaveHours,
+              color: "red",
             },
           ].map((item, idx) => (
             <div
@@ -279,7 +295,7 @@ export default function ReportDashboard() {
       {/* Employee Breakdown */}
       <div className="section-card">
         <h3>
-          <Users size={18} /> Employee Breakdown
+          <Users size={18} /> Employee HoursWise Breakdown
         </h3>
         <table>
           <thead>
@@ -366,6 +382,49 @@ export default function ReportDashboard() {
         )}
       </div>
 
+      {/* Employee leaveHoursBreakdown */}
+      <div className="section-card">
+        <h3>
+          <Calendar size={18} /> Employee leaveHoursBreakdown
+        </h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Employee Name</th>
+              <th>Leave Days</th>
+              <th>Leave Hours</th>
+              <th>Contribution</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedleaveHoursBreakdown.map((p, i) => (
+              <tr key={i}>
+                <td>{p.userId ?? "-"}</td>
+                <td>{p.userName ?? "-"}</td>
+                <td>{p.noOfDays ?? "-"}</td>
+                <td>{p.leaveHours ?? "-"}</td>
+                <td>
+                  <span className="badge-yellow">{p.contribution ?? "-"}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {totalPages > 1 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              onNext={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+            />
+          </div>
+        )}
+      </div>
+
       {/* Project Breakdown */}
       <div className="section-card">
         <h3>
@@ -383,6 +442,135 @@ export default function ReportDashboard() {
             </div>
           ))}
         </div>
+      </div>
+      {/* Project User Hours Breakdown */}
+      <div className="section-card">
+        <h3>
+          <TrendingUp size={18} /> Project User Hours Breakdown
+        </h3>
+
+        {data.projectUserHoursBreakdown?.length > 0 ? (
+          data.projectUserHoursBreakdown.map((project) => {
+            const currentPage = projectPages[project.projectId] || 1;
+            const totalPages = Math.ceil(
+              project.members.length / membersPerPage
+            );
+
+            const paginatedMembers = project.members.slice(
+              (currentPage - 1) * membersPerPage,
+              currentPage * membersPerPage
+            );
+
+            return (
+              <div key={project.projectId} className="project-user-breakdown">
+                {/* Header */}
+                {/* Project Header With Top Performers */}
+                {(() => {
+                  const members = project.members || [];
+
+                  // Convert contribution "42.86%" -> 42.86
+                  const parsedMembers = members.map((m) => ({
+                    ...m,
+                    contributionValue: parseFloat(
+                      m.contribution?.replace("%", "") || 0
+                    ),
+                  }));
+
+                  const maxContribution = Math.max(
+                    ...parsedMembers.map((m) => m.contributionValue)
+                  );
+
+                  const topPerformers =
+                    maxContribution > 0
+                      ? parsedMembers
+                          .filter(
+                            (m) => m.contributionValue === maxContribution
+                          )
+                          .map((m) => `${m.memberName} (${m.contribution})`)
+                      : [];
+
+                  return (
+                    <div className="project-header-3col">
+                      <h4 className="project-title">{project.projectName}</h4>
+
+                      <div className="project-owner">
+                        <strong>Owner:</strong> {project.ownerName ?? "-"}
+                      </div>
+
+                      <div
+                        className="project-top-performers"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            topPerformers.length > 0
+                              ? `<strong>Top Performers:</strong> ` +
+                                topPerformers
+                                  .map(
+                                    (p) =>
+                                      `<span class='top-performer-highlight'>${p}</span>`
+                                  )
+                                  .join(" ")
+                              : "<strong>Top Performers:</strong> No significant contributions",
+                        }}
+                      />
+                    </div>
+                  );
+                })()}
+
+                {/* Members Table */}
+                <table className="mt-2">
+                  <thead>
+                    <tr>
+                      <th>Member ID</th>
+                      <th>Member Name</th>
+                      <th>Billable Hours</th>
+                      <th>Non-Billable Hours</th>
+                      <th>Total Hours</th>
+                      <th>Contribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedMembers.map((m) => (
+                      <tr key={m.memberId}>
+                        <td>{m.memberId}</td>
+                        <td>{m.memberName}</td>
+                        <td>{m.billableHours}</td>
+                        <td>{m.nonBillableHours}</td>
+                        <td>{m.totalHours}</td>
+                        <td>
+                          <span className="badge-yellow">{m.contribution}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination for THIS project only */}
+                {totalPages > 1 && (
+                  <div className="mb-4 mt-2">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPrevious={() =>
+                        handleProjectPageChange(
+                          project.projectId,
+                          Math.max(currentPage - 1, 1)
+                        )
+                      }
+                      onNext={() =>
+                        handleProjectPageChange(
+                          project.projectId,
+                          Math.min(currentPage + 1, totalPages)
+                        )
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p>No project user hour data available.</p>
+        )}
       </div>
 
       {/* Report Notes */}
@@ -404,6 +592,14 @@ export default function ReportDashboard() {
           <li>
             Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
             hours × 100
+          </li>
+          <li>
+            Employee leaveHoursBreakdown Contribution =
+            (leaveHours/totalLeaveHours) × 100
+          </li>
+          <li>
+            Employee projectUserHoursBreakdown Contribution =
+            (totalHours/totalProjectHours) × 100
           </li>
           {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
           <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>

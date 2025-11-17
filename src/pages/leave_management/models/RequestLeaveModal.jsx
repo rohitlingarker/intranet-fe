@@ -422,6 +422,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setSuccess("Leave request submitted!");
+      toast.success("Leave request submitted successfully.");
       onSuccess?.();
 
       setTimeout(() => {
@@ -431,6 +432,9 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
       setError(
         "Failed to submit leave request: " +
           (err.response?.data?.message || err.message)
+      );
+      toast.error(
+        "Failed to submit leave request: "
       );
     } finally {
       setSubmitting(false);

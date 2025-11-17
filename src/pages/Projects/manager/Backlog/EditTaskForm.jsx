@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
 
@@ -8,15 +8,25 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 
-const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
-  const [formData, setFormData] = useState(null);
+const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    storyId: "",
+    priority: "MEDIUM",
+    status: "BACKLOG",
+    sprintId: "",
+    assigneeId: "",
+    reporterId: "",
+    isBillable: "false",
+  });
   const [users, setUsers] = useState([]);
-  const [epics, setEpics] = useState([]);
+  const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  if (!storyId || !projectId) return null;
+  if (!taskId || !projectId) return null;
 
   const token = localStorage.getItem("token");
   const axiosConfig = {
@@ -53,11 +63,11 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           ),
         ]);
 
-        const story = storyRes.data;
+        const task = taskRes.data;
         const allUsers = userRes.data.content || userRes.data || [];
 
         setUsers(allUsers);
-        setEpics(epicRes.data || []);
+        setStories(storyRes.data || []);
         setSprints(sprintRes.data || []);
         setStatuses(statusRes.data || []);
 
@@ -120,6 +130,11 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
       priority: formData.priority,
       projectId: Number(projectId),
+      reporterId: formData.reporterId ? Number(formData.reporterId) : null,
+      assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
+      storyId: formData.storyId || null,
+      sprintId: formData.sprintId || null,
+      billable: formData.isBillable === "true",
     };
 
     try {
@@ -134,7 +149,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
-      }, 500);
+      }, 600);
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to update story");
@@ -286,7 +301,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             </div>
           </form>
         </div>
-      </div>
 
       <style>
         {`
@@ -296,7 +310,8 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         `}
       </style>
     </div>
+    </div>
   );
-};
+}
 
-export default EditStoryForm;
+export default EditTaskForm;
