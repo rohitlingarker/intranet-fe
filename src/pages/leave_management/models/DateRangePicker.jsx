@@ -4,11 +4,11 @@ import "react-day-picker/dist/style.css";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
-import axios from "axios"; // Added import
+import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL; // Added BASE_URL
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-// Style for holidays, mimicking your Calendar's red-100/red-700
+// Style for holidays
 const holidayStyleRed = { backgroundColor: "#fee2e2", color: "#b91c1c" };
 
 const DateRangePicker = ({
@@ -20,7 +20,7 @@ const DateRangePicker = ({
   align = "left",
 }) => {
   const [selected, setSelected] = useState(defaultDate);
-  const [ holidaysDays, setHolidaysDays] = useState([]); // This is now used for styling
+  const [holidaysDays, setHolidaysDays] = useState([]);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -30,11 +30,12 @@ const DateRangePicker = ({
         params: { state: "All", country: "India" },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      console.log("Holidays fetched:", res.data);
+
       const holidayDates = res.data.map((holiday) => {
         const [y, m, d] = holiday.holidayDate.split("-").map(Number);
         return new Date(y, (m ?? 1) - 1, d ?? 1);
       });
+
       setHolidaysDays(holidayDates);
     } catch (err) {
       toast.error("Could not load company holidays");
@@ -57,21 +58,16 @@ const DateRangePicker = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch holidays just once on mount
   useEffect(() => {
     fetchHolidays();
   }, []);
-
-  // changes selected date if defaultDate prop changes
 
   useEffect(() => {
     setSelected(defaultDate);
   }, [defaultDate]);
 
-  // Calculate year range for the dropdown
   const currentYear = new Date().getFullYear();
-  const fromYear = currentYear - 2; // e.g. 2023
-  const toYear = currentYear + 3; // e.g. 2028 (5 year span)  
+  const toYear = currentYear + 3;
 
   return (
     <div className="flex flex-col space-y-2 w-full" ref={ref}>
@@ -93,28 +89,29 @@ const DateRangePicker = ({
 
         {open && (
           <div
-            className={`absolute z-20 mt-2 bg-white border rounded-lg shadow-lg p-2 ${
+            className={`absolute z-20 mt-2 origin-top-left scale-75 ${
               align === "right" ? "right-0" : "left-0"
             }`}
           >
-            <DayPicker
-              mode="single"
-              selected={selected}
-              onSelect={handleSelect}
-              defaultMonth={defaultMonth}
-              disabled={disabledDays}
-              // --- UI CHANGES START ---
-              captionLayout="dropdown-buttons"
-              // fromYear={fromYear}
-              toYear={toYear}
-              modifiers={{ holiday: holidaysDays }}
-              modifiersStyles={{ holiday: holidayStyleRed }}
-              modifiersClassNames={{
-                selected: "bg-indigo-600 text-white rounded-md",
-                today: "font-bold text-indigo-600",
-                disabled: "opacity-50 line-through", // Style for disabled days
-              }}
-            />
+            <div className="bg-white border rounded-lg shadow-lg p-2 w-fit">
+              <DayPicker
+                className="rdp-compact"
+                mode="single"
+                selected={selected}
+                onSelect={handleSelect}
+                defaultMonth={defaultMonth}
+                disabled={disabledDays}
+                captionLayout="dropdown-buttons"
+                toYear={toYear}
+                modifiers={{ holiday: holidaysDays }}
+                modifiersStyles={{ holiday: holidayStyleRed }}
+                modifiersClassNames={{
+                  selected: "bg-indigo-600 text-white rounded-md",
+                  today: "font-bold text-indigo-600",
+                  disabled: "opacity-50 line-through",
+                }}
+              />
+            </div>
           </div>
         )}
       </div>

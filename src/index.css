@@ -35,3 +35,39 @@
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out forwards;
 }
+
+
+/* Remove all extra padding */
+.rdp-compact .rdp {
+  padding: 0 !important;
+}
+
+/* Remove container min width (this is what makes it huge) */
+.rdp-compact .rdp-months {
+  min-width: 0 !important;
+}
+
+/* Reduce gaps between header and grid */
+.rdp-compact .rdp-caption {
+  padding: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Reduce table size */
+.rdp-compact .rdp-table {
+  width: auto !important;
+}
+
+/* Reduce cell padding */
+.rdp-compact .rdp-cell {
+  padding: 0.15rem !important;
+}
+
+/* Reduce day number size slightly to fit layout */
+.rdp-compact .rdp-day {
+  font-size: 0.85rem !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+}
+
+
