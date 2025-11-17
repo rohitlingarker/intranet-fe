@@ -17,11 +17,12 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 import LoginPage from "./pages/LoginPage";
-import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 // Timesheets
+
+import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
 import DashboardPage from "./pages/Timesheet/DashboardPage";  
@@ -86,6 +87,7 @@ import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
 import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
+
 
 import { showStatusToast } from "./components/toastfy/toast";
 
@@ -210,7 +212,6 @@ useEffect(() => {
 
  
 
-
   return (
     <>
       <Routes>
@@ -284,7 +285,6 @@ useEffect(() => {
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
-          
           <Route
             path="/user-management/users/create"
             element={<CreateUser />}
@@ -523,6 +523,8 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/leave-policies" element={<Navigate to="https://celebrated-renewal-07a16fae8e.strapiapp.com" replace />} />
         </Route>
       </Routes>
       <SaveLastPath />
@@ -545,6 +547,7 @@ function App() {
     <>
       <ToastContainer position="top-right" autoClose={3000} />
       <Router>
+        <></>
         <AuthProvider>
           <NotificationProvider>
             <div className="min-h-screen bg-gray-50">

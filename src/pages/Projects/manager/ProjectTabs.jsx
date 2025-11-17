@@ -7,6 +7,7 @@ import Backlog from "./Backlog/Backlog";
 import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
+import BacklogAndSprints from "./BacklogAndSprints";
 
 import Navbar from "../../../components/Navbar/Navbar";
 
@@ -66,6 +67,8 @@ const ProjectTabs = () => {
         return <SprintBoard projectId={pid} projectName={projectName} />;
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
+      case "newone":
+        return <BacklogAndSprints projectId={pid}/>
       default:
         return null;
     }
@@ -85,6 +88,7 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
     { name: "Sprints", tab: "sprint" },
     { name: "Status Report", tab: "status-report" },
+    {name: "newone", tab: "newone" }
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
