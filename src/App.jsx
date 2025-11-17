@@ -28,6 +28,7 @@ import DashboardPage from "./pages/Timesheet/DashboardPage";
 import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
 import ReportDashboard from "./pages/Timesheet/ReportDashboard";
+import MonthlyTSReport from "./pages/Timesheet/MonthlyTSReport";
 
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
@@ -237,6 +238,7 @@ useEffect(() => {
           <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
+          <Route path="/timesheets/monthlyreportdashboard" element={<MonthlyTSReport />} />
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
