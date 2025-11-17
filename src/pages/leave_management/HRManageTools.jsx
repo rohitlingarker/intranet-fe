@@ -23,7 +23,8 @@ const HRManageTools = ({ employeeId }) => {
     useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [effectiveDeactivationDate, setEffectiveDeactivationDate] = useState("");
+  const [effectiveDeactivationDate, setEffectiveDeactivationDate] =
+    useState("");
   const [isEffectiveModalOpen, setIsEffectiveModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -55,7 +56,10 @@ const HRManageTools = ({ employeeId }) => {
 
   const executeDelete = async () => {
     setIsDeleting(true);
-    await handleDeleteLeaveType(selectedLeaveTypeIdToDelete, effectiveDeactivationDate);
+    await handleDeleteLeaveType(
+      selectedLeaveTypeIdToDelete,
+      effectiveDeactivationDate
+    );
     setIsDeleting(false);
     setIsEffectiveModalOpen(false);
     setEffectiveDeactivationDate("");
@@ -71,7 +75,7 @@ const HRManageTools = ({ employeeId }) => {
           },
           data: {
             deactivationEffectiveDate: effectiveDeactivationDate,
-          }
+          },
         }
       );
       toast.success(res.data?.message || "Leave type deleted successfully");
@@ -126,6 +130,18 @@ const HRManageTools = ({ employeeId }) => {
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
         >
           Edit Holidays
+        </button>
+        <button
+          onClick={() =>
+            window.open(
+              "https://celebrated-renewal-07a16fae8e.strapiapp.com",
+              "_blank",
+              "noopener noreferrer"
+            )
+          }
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Leave Policies
         </button>
       </div>
       {isLoading ? (
@@ -228,7 +244,7 @@ const HRManageTools = ({ employeeId }) => {
           setIsAddLeaveTypeModalOpen(false);
         }}
       />
-      <EffectiveDeactivationDate 
+      <EffectiveDeactivationDate
         isOpen={isEffectiveModalOpen}
         onConfirm={executeDelete}
         onCancel={() => setIsEffectiveModalOpen(false)}
