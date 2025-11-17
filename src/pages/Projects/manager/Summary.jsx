@@ -578,9 +578,9 @@ const PriorityDistribution = ({ tasks, stories, bugs }) => {
     const dataMap = new Map(allPriorities.map(p => [p, { priority: p, Tasks: 0, Stories: 0, Bugs: 0 }]));
 
     const allItems = [
-      ...tasks.map(item => ({ ...item, type: 'Tasks' })),
-      ...stories.map(item => ({ ...item, type: 'Stories' })),
-      ...bugs.map(item => ({ ...item, type: 'Bugs' })),
+      ...(tasks || []).map(item => ({ ...item, type: 'Tasks' })),
+      ...(stories || []).map(item => ({ ...item, type: 'Stories' })),
+      ...(bugs || []).map(item => ({ ...item, type: 'Bugs' })),
     ];
 
     allItems.forEach(item => {
