@@ -291,7 +291,7 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
     setLoading(true);
     try {
       const statusReq = axios.get(`${BASE}/api/projects/${projectId}/statuses`, { headers: headersWithToken() });
-      const tasksUrl = sprintId ? `${BASE}/api/sprints/${sprintId}/tasks` : `${BASE}/api/projects/${projectId}/tasks`;
+      const tasksUrl = sprintId ? `${BASE}/api/projects/sprint/${sprintId}/tasks` : `${BASE}/api/projects/${projectId}/tasks`;
       const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
 
       // try members endpoint but don't fail board if missing

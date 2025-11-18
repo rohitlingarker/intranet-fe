@@ -397,7 +397,7 @@ const IssueTracker = () => {
             <React.Fragment>
               <tr>
                 <td colSpan={7} className="pt-4 pb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Unassigned Stories</h3>
+                  <h3 className="text-sm font-semibold text-gray-700">Stories Unassigned to Epics</h3>
                 </td>
               </tr>
               {orphanStories.map((story) => (
@@ -422,7 +422,7 @@ const IssueTracker = () => {
             <React.Fragment>
               <tr>
                 <td colSpan={7} className="pt-4 pb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Unassigned Tasks</h3>
+                  <h3 className="text-sm font-semibold text-gray-700">Tasks Unassigned to stories</h3>
                 </td>
               </tr>
               {orphanTasks.map((task) => (
