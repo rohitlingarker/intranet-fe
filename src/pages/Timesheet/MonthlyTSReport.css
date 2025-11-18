@@ -392,6 +392,27 @@ body {
 .donut-chart-container {
     margin-bottom: 3rem;
 }
+.donut-hover-info {
+  pointer-events: none !important;
+}
+.donut-legend-items {
+  position: relative;
+  z-index: 1;
+}
+.donut-hover-info {
+  position: absolute;
+  z-index: 9999;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none !important;
+}
+
+.tooltip-left {
+    left: -260px;
+}
+.tooltip-right {
+    right: -260px;
+}
 
 .donut-chart-grid {
     display: grid;

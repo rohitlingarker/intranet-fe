@@ -31,25 +31,25 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
   return (
     <div
       ref={dropRef}
-      className={`border rounded-xl shadow p-4 transition ${
+      className={`border border-white    p-4 transition ${
         isOver ? 'bg-pink-100' : isCompleted ? 'bg-gray-100' : 'bg-white'
       } ${isCompleted ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3
+          {/* <h3
             className={`text-lg font-semibold ${
               isCompleted ? 'text-gray-600' : 'text-indigo-900'
             }`}
           >
             {sprint.name}
-          </h3>
+          </h3> */}
           <p
             className={`text-sm ${
               isCompleted ? 'text-gray-400' : 'text-gray-500'
             }`}
           >
-            {sprint.startDate} → {sprint.endDate}
+            {/* {sprint.startDate} → {sprint.endDate} */}
           </p>
         </div>
 
