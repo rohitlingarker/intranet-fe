@@ -7,6 +7,7 @@ import ProjectDonutChart from "./ProjectDonutChart";
 import DayOfWeekBarChart from "./DayOfWeekBarChart";
 import WeeklySummaryCard from "./WeeklySummaryCard";
 import "./MonthlyTSReport.css";
+import LoadingSpinner from "../../components/LoadingSpinner.jsx"
 
 const TS_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
@@ -26,6 +27,30 @@ const MonthlyTSReport = () => {
   // Allow these to be controlled later via UI
   const [month, setMonth] = useState(11);
   const [year, setYear] = useState(2025);
+ const [projectInfo, setProjectInfo] = useState([]);
+
+useEffect(() => {
+  const loadProjectInfo = async () => {
+    try {
+      const res = await fetch(`${TS_BASE_URL}/api/project-info`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      setProjectInfo(data);
+    } catch (err) {
+      console.error("Failed to load project info", err);
+    }
+  };
+
+  loadProjectInfo();
+}, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,6 +78,7 @@ const MonthlyTSReport = () => {
     };
     fetchData();
   }, [month, year]);
+
 
   useEffect(() => {
     if (!apiData) return;
@@ -221,7 +247,7 @@ const MonthlyTSReport = () => {
   if (loading) {
     return (
       <div className="timesheet-container">
-        <div className="timesheet-wrapper">Loading…</div>
+        <div className="timesheet-wrapper"><LoadingSpinner text="Loading..." /></div>
       </div>
     );
   }
@@ -251,7 +277,7 @@ const MonthlyTSReport = () => {
               </p>
             </div>
             <button className="download-btn" onClick={handleDownloadPDF}>
-              ⬇️ Download PDF
+              Download 
             </button>
           </div>
         </header>
@@ -272,7 +298,7 @@ const MonthlyTSReport = () => {
           </div>
           <div className="space-y-4">
             {(apiData.weeklySummaryHistory || []).map((week, idx) => (
-              <WeeklySummaryCard key={idx} week={week} />
+              <WeeklySummaryCard key={idx} week={week} projectInfo={projectInfo}/>
             ))}
           </div>
         </section>

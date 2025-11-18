@@ -5,7 +5,7 @@ const apiEndpoint = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
 export const fetchProjectTaskInfo = async () => {
   try {
-    const response = await fetch(`${apiEndpoint}/api/timesheet/project-info`, {
+    const response = await fetch(`${apiEndpoint}/api/project-info`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
