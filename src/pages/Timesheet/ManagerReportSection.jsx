@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import ManagerDashboard from "./ManagerDashboard";
+import ManagerMonthlyReport from "./ManagerMonthlyReport";
 import ReportDashboard from "./ReportDashboard";
 
 export default function ManagerReportSection() {
@@ -83,7 +83,7 @@ export default function ManagerReportSection() {
               transition={{ duration: 0.3 }}
               className="absolute w-full"
             >
-              <ManagerDashboard />
+              <ManagerMonthlyReport />
             </motion.div>
           )}
 
