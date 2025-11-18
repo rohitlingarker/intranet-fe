@@ -93,84 +93,73 @@ const ProjectDashboard = () => {
 
   // ✅ Fetch Projects (Owner + Member)
   const fetchProjects = async (status) => {
-    setLoading(true);
-    try {
-      const base = import.meta.env.VITE_PMS_BASE_URL;
-      const headers = { Authorization: `Bearer ${token}` };
+  setLoading(true);
+  try {
+    const base = import.meta.env.VITE_PMS_BASE_URL;
+    const headers = { Authorization: `Bearer ${token}` };
 
-      const ownerUrl =
-        status && status !== "All"
-          ? `${base}/api/projects/owner?status=${status}`
-          : `${base}/api/projects/owner`;
-      const ownerRes = await axios.get(ownerUrl, { headers });
+    let url = `${base}/api/projects/access`;
+    if (status && status !== "All") url += `?status=${status}`;
 
-      let memberRes = { data: [] };
-      if (user?.user_id) {
-        const memberUrl = `${base}/api/projects/member/${user.user_id}`;
-        memberRes = await axios.get(memberUrl, { headers });
-      }
+    const { data } = await axios.get(url, { headers });
 
-      const allProjects = [...ownerRes.data, ...memberRes.data];
-      const uniqueProjects = Array.from(
-        new Map(allProjects.map((p) => [p.id, p])).values()
-      );
+    setProjects(data);
+  } catch (error) {
+    console.error("❌ Failed to load projects", error);
+    toast.error("Failed to load projects.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      setProjects(uniqueProjects);
-    } catch (error) {
-      console.error("❌ Failed to fetch projects", error);
-      toast.error("Failed to load projects.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ✅ Fetch Users
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setUsers(data);
-    } catch (err) {
-      console.error("❌ Failed to fetch users", err);
-    }
-  };
+  // const fetchUsers = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     const data = Array.isArray(res.data) ? res.data : res.data.content || [];
+  //     setUsers(data);
+  //   } catch (err) {
+  //     console.error("❌ Failed to fetch users", err);
+  //   }
+  // };
 
   // ✅ Fetch Dashboard Summary
-  const fetchDashboard = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary/`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setDashboardData(res.data);
-    } catch (err) {
-      console.error("Failed to fetch dashboard data:", err);
-    } finally {
-      setDashboardLoading(false);
-    }
-  };
+  // const fetchDashboard = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/summary/`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setDashboardData(res.data);
+  //   } catch (err) {
+  //     console.error("Failed to fetch dashboard data:", err);
+  //   } finally {
+  //     setDashboardLoading(false);
+  //   }
+  // };
 
   // ✅ Fetch Reminders
-  const fetchReminders = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders/`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setReminders(res.data);
-    } catch (err) {
-      console.error("Failed to fetch reminders:", err);
-    }
-  };
+  // const fetchReminders = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${import.meta.env.VITE_PMS_BASE_URL}/api/dashboard/reminders/`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setReminders(res.data);
+  //   } catch (err) {
+  //     console.error("Failed to fetch reminders:", err);
+  //   }
+  // };
 
   useEffect(() => {
     fetchProjects();
-    fetchUsers();
-    fetchDashboard();
-    fetchReminders();
+    // fetchUsers();
+    // fetchDashboard();
+    // fetchReminders();
   }, []);
 
   useEffect(() => {
