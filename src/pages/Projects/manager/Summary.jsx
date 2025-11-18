@@ -673,60 +673,63 @@ const EpicTooltipContent = ({ epic }) => (
   </div>
 );
 
-const EpicProgress = ({ epics, stories, tasks, bugs }) => {
+const EpicProgress = ({ epics, stories, tasks, bugs, statuses }) => {
   const [epicProgressData, setEpicProgressData] = useState([]);
+  const [sortedStatuses, setSortedStatuses] = useState([]);
 
   useEffect(() => {
+    if (!statuses || statuses.length === 0) {
+      setEpicProgressData([]);
+      setSortedStatuses([]);
+      return;
+    }
+
+    const localSortedStatuses = [...statuses]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((status, index) => ({
+        ...status,
+        color: DASHBOARD_COLORS[index % DASHBOARD_COLORS.length],
+      }));
+    setSortedStatuses(localSortedStatuses);
+
+    const statusMap = new Map(localSortedStatuses.map(s => [s.id, s]));
+
     const allWorkItems = [...stories, ...tasks, ...bugs];
     
     const processedData = epics.map(epic => {
-      // Find all children of this epic
       const children = allWorkItems.filter(
         item => item.epicId === epic.id || item.epic?.id === epic.id
       );
-      
-      let done = 0;
-      let todo = 0;
-      let inProgress = 0;
 
-      // Categorize children based on status name
+      const statusCounts = new Map(localSortedStatuses.map(s => [s.id, 0]));
+
       children.forEach(child => {
-        const statusName = child.status?.name?.toLowerCase();
-        if (statusName === 'done') {
-          done++;
-        } else if (statusName === 'to do' || statusName === 'backlog') {
-          todo++;
-        } else if (statusName) {
-          // Any other defined status is "In Progress"
-          inProgress++;
-        } else {
-          // Default to "To Do" if status is missing
-          todo++;
-        }
+        const statusId = child.status?.id;
+        if (statusId && statusCounts.has(statusId)) {
+          statusCounts.set(statusId, statusCounts.get(statusId) + 1);
+        }
       });
 
       const total = children.length;
-      
-      // Calculate percentages
-      const percentDone = total > 0 ? (done / total) * 100 : 0;
-      const percentInProgress = total > 0 ? (inProgress / total) * 100 : 0;
-      const percentToDo = total > 0 ? (todo / total) * 100 : 0;
+
+      const statusDistribution = localSortedStatuses.map(status => ({
+        id: status.id,
+        name: status.name,
+        color: status.color,
+        count: statusCounts.get(status.id) || 0,
+        percentage: total > 0 ? ((statusCounts.get(status.id) || 0) / total) * 100 : 0,
+      }));
 
       return {
         ...epic,
-        done,
-        todo,
-        inProgress,
         total,
-        percentDone,
-        percentInProgress,
-        percentToDo,
+        statusDistribution,
       };
     });
 
     // Only show epics that have at least one child item
     setEpicProgressData(processedData.filter(e => e.total > 0));
-  }, [epics, stories, tasks, bugs]);
+  }, [epics, stories, tasks, bugs, statuses]);
 
   if (!epicProgressData.length) return null;
 
@@ -745,19 +748,13 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
         </Text>
         
         {/* Legend */}
-        <div className="flex items-center gap-6 mb-4">
-          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
-            <span className="w-3 h-3 bg-green-600 rounded-sm mr-2" />
-            <Text className="text-xs font-semibold">Done</Text>
-          </div>
-          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
-            <span className="w-3 h-3 bg-blue-500 rounded-sm mr-2" />
-            <Text className="text-xs font-semibold">In progress</Text>
-          </div>
-          <div className="flex items-center p-1 -m-1 rounded transition-colors hover:bg-gray-100">
-            <span className="w-3 h-3 bg-gray-600 rounded-sm mr-2" />
-            <Text className="text-xs font-semibold">To do</Text>
-          </div>
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mb-4">
+          {sortedStatuses.map(status => (
+            <div key={status.id} className="flex items-center">
+              <span className="w-3 h-3 rounded-sm mr-2" style={{ backgroundColor: status.color }} />
+              <Text className="text-xs font-semibold">{status.name}</Text>
+            </div>
+          ))}
         </div>
 
         {/* Epic List */}
@@ -785,45 +782,23 @@ const EpicProgress = ({ epics, stories, tasks, bugs }) => {
               
               {/* Stacked Progress Bar */}
               <div className="w-full h-6 flex rounded overflow-hidden text-gray-800">
-                <motion.div
-                  className="bg-green-300 flex items-center justify-center"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${epic.percentDone}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  viewport={{ once: true, amount: 0.5 }}
-                >
-                  {epic.percentDone > 10 && (
-                    <span className="text-xs font-semibold px-1">
-                      {Math.round(epic.percentDone)}%
-                    </span>
-                  )}
-                </motion.div>
-                <motion.div
-                  className="bg-blue-300 flex items-center justify-center"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${epic.percentInProgress}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                >
-                  {epic.percentInProgress > 10 && (
-                    <span className="text-xs font-semibold px-1">
-                      {Math.round(epic.percentInProgress)}%
-                    </span>
-                  )}
-                </motion.div>
-                <motion.div
-                  className="bg-gray-500 flex items-center justify-center"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${epic.percentToDo}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                >
-                  {epic.percentToDo > 10 && (
-                    <span className="text-xs font-semibold text-white px-1">
-                      {Math.round(epic.percentToDo)}%
-                    </span>
-                  )}
-                </motion.div>
+                {epic.statusDistribution.map((status, index) => (
+                  <motion.div
+                    key={status.id}
+                    className="flex items-center justify-center"
+                    style={{ backgroundColor: status.color }}
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${status.percentage}%` }}
+                    transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.05 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                  >
+                    {status.percentage > 10 && (
+                      <span className="text-xs font-semibold text-white px-1">
+                        {Math.round(status.percentage)}%
+                      </span>
+                    )}
+                  </motion.div>
+                ))}
               </div>
             </div>
           ))}
@@ -1048,6 +1023,7 @@ const Summary = ({ projectId, projectName }) => {
           stories={projectData.stories}
           tasks={projectData.tasks}
           bugs={projectData.bugs}
+          statuses={projectData.statuses}
          />
       </div>
     </motion.div>
