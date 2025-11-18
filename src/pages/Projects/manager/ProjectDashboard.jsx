@@ -480,6 +480,8 @@ const ProjectDashboard = () => {
       <CreateProjectModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        editingProjectId={editingProjectId}
+        formData={editingProjectId ? formData : null}
         onProjectCreated={handleProjectCreated}
       />
       <ManageStatusesModal

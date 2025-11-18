@@ -164,10 +164,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               return (
                 <div
                   key={sprint.id}
-                  className="border rounded-xl bg-white shadow-sm overflow-hidden"
+                  className="border rounded-xl bg-white shadow hover:shadow-md transition overflow-hidden"
                 >
                   <div
-                    className="flex justify-between items-center px-4 py-3 cursor-pointer hover:bg-gray-50"
+                    className="flex justify-between items-center px-5 py-4 cursor-pointer bg-white-50 hover:bg-white-100 transition"
                     onClick={() =>
                       setExpandedSprint(isExpanded ? null : sprint.id)
                     }
@@ -176,23 +176,26 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                       <h3 className="text-lg font-semibold text-indigo-900">
                         {sprint.name}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-600">
                         {sprint.startDate} → {sprint.endDate}
                       </p>
                     </div>
                     {isExpanded ? <ChevronUp /> : <ChevronDown />}
                   </div>
 
-                  {isExpanded && (
-                    <div className="p-4 border-t bg-gray-50">
-                      <SprintColumn
-                        sprint={sprint}
-                        stories={sprintStories}
-                        onDropStory={handleDropStory}
-                        onChangeStatus={handleSprintStatus}
-                      />
-                    </div>
-                  )}
+                  {/* SprintColumn always rendered for drag/drop */}
+                  <div
+                    className={`transition-all ${
+                      isExpanded ? "p-4 bg-gray-50" : "h-4 overflow-hidden"
+                    }`}
+                  >
+                    <SprintColumn
+                      sprint={sprint}
+                      stories={sprintStories}
+                      onDropStory={handleDropStory}
+                      onChangeStatus={handleSprintStatus}
+                    />
+                  </div>
                 </div>
               );
             })
@@ -213,7 +216,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                   key={story.id}
                   story={story}
                   sprints={activeAndPlanningSprints}
-                  onAddToSprint={handleDropStory} // new handler
+                  onAddToSprint={handleDropStory} // enables drag from backlog to sprint
                 />
               ))}
             </div>

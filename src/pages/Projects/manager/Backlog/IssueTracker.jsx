@@ -376,7 +376,7 @@ const IssueTracker = () => {
         </Modal>
       )}
 
-      <Routes>
+      {/* <Routes>
         <Route
           path={`/projects/:projectId/issues/:type/:id/view`}
           element={
@@ -385,7 +385,7 @@ const IssueTracker = () => {
             </Modal>
           }
         />
-      </Routes>
+      </Routes> */}
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { X } from "lucide-react";
 
 import FormInput from "../../../../components/forms/FormInput";
@@ -12,14 +11,15 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    storyId: "",
     priority: "MEDIUM",
-    status: "BACKLOG",
+    statusId: "",
     sprintId: "",
     assigneeId: "",
     reporterId: "",
+    storyId: "",
     isBillable: "false",
   });
+
   const [users, setUsers] = useState([]);
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
@@ -36,115 +36,86 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     },
   };
 
-  // ---------- FETCH DATA ----------
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchData = async () => {
       try {
-        const [storyRes, userRes, epicRes, sprintRes, statusRes] = await Promise.all([
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-            axiosConfig
-          ),
-          axios.get(
-            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
-            axiosConfig
-          ),
-        ]);
+        const [taskRes, userRes, storyRes, sprintRes, statusRes] =
+          await Promise.all([
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+              axiosConfig
+            ),
+            axios.get(
+              `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
+              axiosConfig
+            ),
+          ]);
 
         const task = taskRes.data;
-        const allUsers = userRes.data.content || userRes.data || [];
+        setFormData({
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          statusId: task.status?.id || "",
+          sprintId: task.sprint?.id || "",
+          assigneeId: task.assignee?.id || "",
+          reporterId: task.reporter?.id || "",
+          storyId: task.story?.id || "",
+          isBillable: task.billable ? "true" : "false",
+        });
 
-        setUsers(allUsers);
+        setUsers(userRes.data.content || userRes.data || []);
         setStories(storyRes.data || []);
         setSprints(sprintRes.data || []);
         setStatuses(statusRes.data || []);
-
-        setFormData({
-          title: story.title,
-          description: story.description,
-          acceptanceCriteria: story.acceptanceCriteria,
-          storyPoints: story.storyPoints || 0,
-          assigneeId: story.assigneeId || "",
-          reporterId: story.reporterId || "",
-
-          epicId: story.epic?.id || "",
-          sprintId: story.sprint?.id || "",
-
-          // IMPORTANT: using statusId now
-          statusId: story.status?.id || "",
-
-          priority: story.priority || "MEDIUM",
-        });
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load story details");
+        toast.error("Failed to load task details");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAll();
-  }, [storyId, projectId]);
+    fetchData();
+  }, [taskId, projectId]);
 
-  // ---------- HANDLE INPUT ----------
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
-      [name]: ["epicId", "sprintId", "assigneeId", "reporterId", "storyPoints", "statusId"].includes(name)
+      [name]: ["sprintId", "assigneeId", "reporterId", "storyId", "statusId"].includes(name)
         ? value ? Number(value) : ""
         : value,
     }));
   };
 
-  // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const payload = {
-      title: formData.title,
-      description: formData.description,
-      acceptanceCriteria: formData.acceptanceCriteria,
-      storyPoints: formData.storyPoints || 0,
-
-      assigneeId: formData.assigneeId || null,
-      reporterId: formData.reporterId || null,
-
-      epicId: formData.epicId || null,
-      sprintId: formData.sprintId || null,
-
-      statusId: formData.statusId, // important
-
-      priority: formData.priority,
+      ...formData,
+      isBillable: formData.isBillable === "true",
       projectId: Number(projectId),
-      reporterId: formData.reporterId ? Number(formData.reporterId) : null,
-      assigneeId: formData.assigneeId ? Number(formData.assigneeId) : null,
-      storyId: formData.storyId || null,
-      sprintId: formData.sprintId || null,
-      billable: formData.isBillable === "true",
     };
 
     try {
       await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
         payload,
         axiosConfig
       );
-
-      toast.success("Story updated successfully!");
+      toast.success("Task updated successfully!");
 
       setTimeout(() => {
         onUpdated?.();
@@ -152,25 +123,23 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
       }, 600);
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Failed to update story");
+      toast.error(error.response?.data?.message || "Failed to update task");
     }
   };
 
-  // ---------- LOADING ----------
-  if (loading || !formData) {
+  if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
         <div className="bg-white p-6 rounded-xl shadow text-center">
-          <p>Loading story...</p>
+          <p>Loading task...</p>
         </div>
       </div>
     );
   }
 
-  // ---------- FORM ----------
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="bg-white rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
@@ -179,36 +148,11 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
         </button>
 
         <div className="p-8">
-          <ToastContainer />
-          <h2 className="text-2xl font-bold mb-6">Edit Story</h2>
+          <h2 className="text-2xl font-bold mb-6">Edit Task</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-
-            <FormInput
-              label="Title *"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-            />
-
-            <FormTextArea
-              label="Description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-            />
-
-            <FormSelect
-              label="Epic"
-              name="epicId"
-              value={formData.epicId}
-              onChange={handleChange}
-              options={[
-                { label: "Select Epic", value: "" },
-                ...epics.map((e) => ({ label: e.name, value: e.id })),
-              ]}
-            />
+            <FormInput label="Title *" name="title" value={formData.title} onChange={handleChange} required />
+            <FormTextArea label="Description" name="description" value={formData.description} onChange={handleChange} />
 
             <FormSelect
               label="Priority"
@@ -223,7 +167,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            {/* NEW: STATUS FROM API */}
             <FormSelect
               label="Status *"
               name="statusId"
@@ -233,14 +176,6 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
                 { label: "Select Status", value: "" },
                 ...statuses.map((st) => ({ label: st.name, value: st.id })),
               ]}
-            />
-
-            <FormInput
-              label="Story Points"
-              name="storyPoints"
-              type="number"
-              value={formData.storyPoints}
-              onChange={handleChange}
             />
 
             <FormSelect
@@ -254,11 +189,15 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               ]}
             />
 
-            <FormTextArea
-              label="Acceptance Criteria"
-              name="acceptanceCriteria"
-              value={formData.acceptanceCriteria}
+            <FormSelect
+              label="Story"
+              name="storyId"
+              value={formData.storyId}
               onChange={handleChange}
+              options={[
+                { label: "Select Story", value: "" },
+                ...stories.map((story) => ({ label: story.title, value: story.id })),
+              ]}
             />
 
             <FormSelect
@@ -267,8 +206,8 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               value={formData.assigneeId}
               onChange={handleChange}
               options={[
-                { label: "Select Assignee", value: "" },
-                ...users.map((u) => ({ label: u.name, value: u.id })),
+                { label: "Unassigned", value: "" },
+                ...users.map((user) => ({ label: user.name, value: user.id })),
               ]}
             />
 
@@ -279,39 +218,23 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Select Reporter", value: "" },
-                ...users.map((u) => ({ label: u.name, value: u.id })),
+                ...users.map((user) => ({ label: user.name, value: user.id })),
               ]}
             />
 
             <div className="flex justify-end space-x-3 mt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
-              >
+              <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              >
+              <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                 Save Changes
               </button>
             </div>
           </form>
         </div>
-
-      <style>
-        {`
-          .no-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}
-      </style>
-    </div>
+      </div>
     </div>
   );
-}
+};
 
 export default EditTaskForm;
