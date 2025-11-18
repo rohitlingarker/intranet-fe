@@ -20,6 +20,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     isBillable: "false",
   });
 
+  const [originalData, setOriginalData] = useState(null);
   const [users, setUsers] = useState([]);
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
@@ -36,6 +37,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     },
   };
 
+  // 🔥 Fetch Task + Dropdowns
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -64,17 +66,25 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           ]);
 
         const task = taskRes.data;
-        setFormData({
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
-          statusId: task.status?.id || "",
-          sprintId: task.sprint?.id || "",
-          assigneeId: task.assignee?.id || "",
-          reporterId: task.reporter?.id || "",
-          storyId: task.story?.id || "",
-          isBillable: task.billable ? "true" : "false",
-        });
+
+        // 🔥 Ensure all IDs are strings (VERY IMPORTANT for prefill)
+        const normalized = {
+  title: task.title ?? "",
+  description: task.description ?? "",
+  priority: task.priority ?? "MEDIUM",
+
+  statusId: task.statusId ? String(task.statusId) : "",
+  storyId: task.storyId ? String(task.storyId) : "",
+  sprintId: task.sprintId ? String(task.sprintId) : "",
+  assigneeId: task.assigneeId ? String(task.assigneeId) : "",
+  reporterId: task.reporterId ? String(task.reporterId) : "",
+
+  isBillable: task.billable ? "true" : "false",
+};
+
+
+        setOriginalData(normalized);
+        setFormData(normalized);
 
         setUsers(userRes.data.content || userRes.data || []);
         setStories(storyRes.data || []);
@@ -91,36 +101,58 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     fetchData();
   }, [taskId, projectId]);
 
+  // 🔥 Handle Input Change (Keep values as STRING)
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: ["sprintId", "assigneeId", "reporterId", "storyId", "statusId"].includes(name)
-        ? value ? Number(value) : ""
-        : value,
+      [name]: value, // keep as string always
     }));
   };
 
+  // 🔥 Build Changed Fields Only
+  const buildUpdatedPayload = () => {
+    const payload = {};
+    if (!originalData) return formData;
+
+    Object.keys(formData).forEach((key) => {
+      if (String(formData[key]) !== String(originalData[key])) {
+        if (key === "isBillable") {
+          payload[key] = formData[key] === "true";
+        } else {
+          // convert only here for backend
+          const numericKeys = ["statusId", "sprintId", "assigneeId", "reporterId", "storyId"];
+          payload[key] = numericKeys.includes(key) && formData[key] !== ""
+            ? Number(formData[key])
+            : formData[key];
+        }
+      }
+    });
+
+    return payload;
+  };
+
+  // 🔥 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      ...formData,
-      isBillable: formData.isBillable === "true",
-      projectId: Number(projectId),
-    };
+
+    const updatedPayload = buildUpdatedPayload();
+    updatedPayload.projectId = Number(projectId);
 
     try {
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}`,
-        payload,
+        updatedPayload,
         axiosConfig
       );
-      toast.success("Task updated successfully!");
+
+   
 
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
-      }, 600);
+      }, 500);
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to update task");
@@ -137,6 +169,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
     );
   }
 
+  // UI
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
@@ -151,8 +184,20 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
           <h2 className="text-2xl font-bold mb-6">Edit Task</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput label="Title *" name="title" value={formData.title} onChange={handleChange} required />
-            <FormTextArea label="Description" name="description" value={formData.description} onChange={handleChange} />
+            <FormInput
+              label="Title *"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+            />
+
+            <FormTextArea
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+            />
 
             <FormSelect
               label="Priority"
@@ -174,7 +219,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Select Status", value: "" },
-                ...statuses.map((st) => ({ label: st.name, value: st.id })),
+                ...statuses.map((st) => ({ label: st.name, value: String(st.id) })),
               ]}
             />
 
@@ -185,7 +230,7 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Select Sprint", value: "" },
-                ...sprints.map((s) => ({ label: s.name, value: s.id })),
+                ...sprints.map((s) => ({ label: s.name, value: String(s.id) })),
               ]}
             />
 
@@ -196,7 +241,10 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Select Story", value: "" },
-                ...stories.map((story) => ({ label: story.title, value: story.id })),
+                ...stories.map((story) => ({
+                  label: story.title,
+                  value: String(story.id),
+                })),
               ]}
             />
 
@@ -207,7 +255,10 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Unassigned", value: "" },
-                ...users.map((user) => ({ label: user.name, value: user.id })),
+                ...users.map((user) => ({
+                  label: user.name,
+                  value: String(user.id),
+                })),
               ]}
             />
 
@@ -218,15 +269,27 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated }) => {
               onChange={handleChange}
               options={[
                 { label: "Select Reporter", value: "" },
-                ...users.map((user) => ({ label: user.name, value: user.id })),
+                ...users.map((user) => ({
+                  label: user.name,
+                  value: String(user.id),
+                })),
               ]}
             />
 
             <div className="flex justify-end space-x-3 mt-6">
-              <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
+              >
                 Cancel
               </button>
-              <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
                 Save Changes
               </button>
             </div>
