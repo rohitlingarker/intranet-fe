@@ -108,6 +108,32 @@ const ManagerMonthlyReport = () => {
   const [apiData, setApiData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [projectInfo, setProjectInfo] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(`${TS_BASE_URL}/api/project-info/all`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      .then((res) => {
+        setProjectInfo(res.data);
+      });
+  }, []);
+
+  const getProjectName = (pid) => {
+    const p = projectInfo.find((x) => x.projectId == pid);
+    return p?.project || `Project ID: ${pid}`;
+  };
+
+  const getTaskName = (tid) => {
+    for (const p of projectInfo) {
+      const t = p.tasks.find((x) => x.taskId == tid);
+      if (t) return t.task;
+    }
+    return `Task ID: ${tid}`;
+  };
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -1585,7 +1611,7 @@ const ManagerMonthlyReport = () => {
                                     : week.weeklyStatus === "REJECTED"
                                     ? "bg-red-100 text-red-800"
                                     : "bg-yellow-100 text-yellow-800"
-                                  }
+                                }
                                 `}
                               >
                                 {week.weeklyStatus}
@@ -1606,8 +1632,8 @@ const ManagerMonthlyReport = () => {
                                 // Note: API gives IDs (projectId: 12).
                                 // Ideally, you need a lookup function here to show names.
                                 // For now, showing ID or basic text.
-                                const project = `Project ID: ${entry.projectId}`;
-                                const task = `Task ID: ${entry.taskId}`;
+                                const project = getProjectName(entry.projectId);
+                                const task = getTaskName(entry.taskId);
 
                                 // Format Time: Extract HH:MM from "2025-11-10T04:30:00"
                                 const formatTime = (isoString) =>
