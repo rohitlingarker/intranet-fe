@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import CreateIssueForm from "./Backlog/CreateIssueForm"
 import axios from "axios";
 import {
   DragDropContext,
@@ -285,52 +286,107 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
   const [selectedPriorities, setSelectedPriorities] = useState(new Set());
   const [selectedStatusesFilter, setSelectedStatusesFilter] = useState(new Set());
   const [selectedSprints, setSelectedSprints] = useState(new Set());
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [selectedStatusId, setSelectedStatusId] = useState(null);
 
   // load data
-  const loadBoard = useCallback(async () => {
-    setLoading(true);
+
+  
+ const loadBoard = useCallback(async () => {
+  setLoading(true);
+  
+  try {
+    let sprintId = null;
+
+    // --- GET ACTIVE SPRINT ---------------------------------------------------
     try {
-      const statusReq = axios.get(`${BASE}/api/projects/${projectId}/statuses`, { headers: headersWithToken() });
-      const tasksUrl = sprintId ? `${BASE}/api/projects/sprint/${sprintId}/tasks` : `${BASE}/api/projects/${projectId}/tasks`;
-      const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
+      const res = await axios.get(
+        `${BASE}/api/sprints/active/project/${projectId}`,
+        { headers: headersWithToken() }
+      );
 
-      // try members endpoint but don't fail board if missing
-      const membersReq = axios.get(`${BASE}/api/projects/${projectId}/members`, { headers: headersWithToken() }).catch(() => ({ data: [] }));
+      sprintId = res.data.id;
+      console.log("Sprint ID:", sprintId);
 
-      const [sRes, tRes, mRes] = await Promise.all([statusReq, tasksReq, membersReq]);
-
-      const statusData = Array.isArray(sRes.data) ? sRes.data : (sRes.data?.content ?? []);
-      const ordered = statusData.slice().sort((a,b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      setStatuses(ordered);
-
-      let tasksData = [];
-      if (Array.isArray(tRes.data)) tasksData = tRes.data;
-      else if (Array.isArray(tRes.data?.content)) tasksData = tRes.data.content;
-      else if (Array.isArray(tRes.data?.tasks)) tasksData = tRes.data.tasks;
-      else tasksData = [];
-      setTasks(tasksData);
-
-      // members: if members endpoint returned array use it, otherwise infer from tasks
-      if (Array.isArray(mRes.data) && mRes.data.length > 0) {
-        setMembers(mRes.data.map(m => ({ id: m.id, name: m.fullName ?? m.name })));
-      } else {
-        // infer assignees from tasks
-        const map = {};
-        tasksData.forEach(t => {
-          const aid = t.assigneeId ?? t.assignee?.id;
-          const aname = t.assigneeName ?? t.assignee?.name ?? t.assignee?.fullName;
-          if (aid != null) map[aid] = aname ?? `User ${aid}`;
-        });
-        setMembers(Object.entries(map).map(([id, name]) => ({ id: Number(id), name })));
-      }
     } catch (err) {
-      console.error("Load board failed", err);
-      toast.error("Failed to load board");
-      setStatuses([]);
-      setTasks([]);
-      setMembers([]);
-    } finally { setLoading(false); }
-  }, [projectId, sprintId]);
+      console.error("API error:", err.response?.data || err.message);
+    }
+
+    // --- FETCH STATUSES + TASKS + MEMBERS IN PARALLEL -----------------------
+    const statusReq = axios.get(
+      `${BASE}/api/projects/${projectId}/statuses`,
+      { headers: headersWithToken() }
+    );
+
+    const tasksUrl = sprintId
+      ? `${BASE}/api/sprints/${sprintId}/tasks`
+      : `${BASE}/api/projects/${projectId}/tasks`;
+
+    const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
+
+    const membersReq = axios
+      .get(`${BASE}/api/projects/${projectId}/members`, {
+        headers: headersWithToken()
+      })
+      .catch(() => ({ data: [] })); // fail-safe
+
+    const [sRes, tRes, mRes] = await Promise.all([
+      statusReq,
+      tasksReq,
+      membersReq
+    ]);
+
+    // --- PROCESS STATUSES -----------------------------------------------------
+    const statusData = Array.isArray(sRes.data)
+      ? sRes.data
+      : sRes.data?.content ?? [];
+
+    const ordered = statusData
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+    setStatuses(ordered);
+
+    // --- PROCESS TASKS --------------------------------------------------------
+    let tasksData = [];
+
+    if (Array.isArray(tRes.data)) tasksData = tRes.data;
+    else if (Array.isArray(tRes.data?.content)) tasksData = tRes.data.content;
+    else if (Array.isArray(tRes.data?.tasks)) tasksData = tRes.data.tasks;
+
+    setTasks(tasksData);
+
+    // --- PROCESS MEMBERS ------------------------------------------------------
+    if (Array.isArray(mRes.data) && mRes.data.length > 0) {
+      setMembers(
+        mRes.data.map(m => ({ id: m.id, name: m.fullName ?? m.name }))
+      );
+    } else {
+      const map = {};
+
+      tasksData.forEach(t => {
+        const aid = t.assigneeId ?? t.assignee?.id;
+        const aname = t.assigneeName ?? t.assignee?.name ?? t.assignee?.fullName;
+
+        if (aid != null) map[aid] = aname ?? `User ${aid}`;
+      });
+
+      setMembers(
+        Object.entries(map).map(([id, name]) => ({ id: Number(id), name }))
+      );
+    }
+  } catch (err) {
+    console.error("Load board failed", err);
+    toast.error("Failed to load board");
+
+    setStatuses([]);
+    setTasks([]);
+    setMembers([]);
+  } finally {
+    setLoading(false);
+  }
+}, [projectId]);
+
 
   useEffect(() => { loadBoard(); }, [loadBoard]);
 
@@ -583,10 +639,22 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
 
   // open create modal
   const openCreateForStatus = (statusId) => {
-    setCreateDefaultStatusId(statusId);
-    setIsCreateOpen(true);
-  };
-  const handleTaskCreated = (created) => setTasks(prev => [...prev, created]);
+  setSelectedStatusId(statusId);
+  setOpenCreateModal(true);
+};
+
+const closeCreateModal = () => {
+  setSelectedStatusId(null);
+  setOpenCreateModal(false);
+};
+
+  const handleTaskCreated = async (created) => {
+  // Optimistic add then refresh to ensure shapes are consistent OR just reload board
+  setTasks(prev => [...prev, created]);
+  // ensure board is consistent: reload the board (status mapping, counts)
+  try { await loadBoard(); } catch(e){ console.error(e); }
+};
+
 
   // open task modal
   const openTaskModal = (task) => { setSelectedTask(task); setIsTaskModalOpen(true); };
@@ -804,7 +872,7 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
 
                         <div className="mt-3">
                           <button onClick={()=>openCreateForStatus(status.id)} className="text-indigo-600 hover:underline text-sm flex items-center gap-1">
-                            <Plus className="w-4 h-4" /> Add Task
+                            {/* <Plus className="w-4 h-4" /> Add Task */}
                           </button>
                         </div>
                       </div>
