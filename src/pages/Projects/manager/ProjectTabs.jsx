@@ -60,15 +60,14 @@ const ProjectTabs = () => {
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
-        return <Backlog projectId={pid} projectName={projectName} />;
+        return <BacklogAndSprints projectId={pid}/>
+     
       case "board":
         return <Board projectId={pid} projectName={projectName} />;
-      case "sprint":
-        return <SprintBoard projectId={pid} projectName={projectName} />;
+      
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
-      case "newone":
-        return <BacklogAndSprints projectId={pid}/>
+      
       default:
         return null;
     }
@@ -86,9 +85,9 @@ const ProjectTabs = () => {
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
-    { name: "Sprints", tab: "sprint" },
+
     { name: "Status Report", tab: "status-report" },
-    {name: "newone", tab: "newone" }
+   
   ];
 
   const navItemsWithActive = navItems.map((item) => ({

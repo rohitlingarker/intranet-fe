@@ -243,21 +243,61 @@ const ProjectDashboard = () => {
     }
   };
 
-  // ✅ Delete Project
-  const handleDelete = async (projectId) => {
-    if (!window.confirm("🗑️ Delete this project?")) return;
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      toast.success("Project deleted successfully!");
-    } catch (err) {
-      console.error("❌ Delete failed", err);
-      toast.error("Failed to delete project.");
-    }
+  // ⭐ ADD THIS ABOVE handleDelete
+  const confirmDeleteToast = (onConfirm) => {
+    toast.warn(
+      ({ closeToast }) => (
+        <div className="flex flex-col gap-3">
+          <p className="font-semibold text-red-600"> Delete this project?</p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 rounded bg-gray-200"
+              onClick={closeToast}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 rounded bg-red-600 text-white"
+              onClick={() => {
+                onConfirm();
+                closeToast();
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        closeOnClick: false,
+        autoClose: false,
+        position: "top-center",
+      }
+    );
   };
+
+
+  // ✅ Delete Project
+  // ⭐ REPLACE handleDelete WITH THIS
+  const handleDelete = (projectId) => {
+    confirmDeleteToast(async () => {
+      try {
+        await axios.delete(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        toast.success("Project deleted successfully!");
+      } catch (err) {
+        console.error("❌ Delete failed", err);
+        toast.error("Failed to delete project.",err);
+      }
+    });
+  };
+
 
   // ✅ Handle successful project creation
   const handleProjectCreated = (newProject) => {
@@ -376,7 +416,7 @@ const ProjectDashboard = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border px-3 py-2 rounded-xl"
+            className="border w-40 h-10 px-3 py-2 rounded-xl"
           >
             <option value="All">All</option>
             <option value="ACTIVE">Active</option>
