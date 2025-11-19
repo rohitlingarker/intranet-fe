@@ -10,7 +10,9 @@ import SprintColumn from "../Sprint/SprintColumn";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Button from "../../../../components/Button/Button";
+import RightSidePanel from "../Sprint/RightSidePanel";
 import StoryDetailsPanel from "../Sprint/StoryDetailsPanel";
+import TaskDetailsPanel from "../Sprint/TaskDetailsPanel";
 
 const Backlog = ({ projectId, projectName, stories: initialStories }) => {
   const [showIssueForm, setShowIssueForm] = useState(false);
@@ -20,6 +22,7 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
   const [noEpicStories, setNoEpicStories] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedStoryId, setSelectedStoryId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -88,24 +91,19 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
         setStories((prev) =>
           prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
         );
-
         setNoEpicStories((prev) => prev.filter((s) => s.id !== storyId));
       })
       .catch((err) => console.error("Failed to assign story to sprint", err));
   };
 
   const selectedProject = projects.find((p) => p.id === projectId);
-
   const goToIssueTracker = () => {
-    navigate(`/projects/${projectId}/issuetracker`, {
-      state: { projectId },
-    });
+    navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } });
   };
 
   const filteredNoEpicStories = noEpicStories || [];
   const filteredStories = stories || [];
 
-  // ✅ Filter and sort sprints
   const sortedSprints = [...sprints]
     .filter(
       (s) =>
@@ -113,6 +111,21 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
         s.status?.toUpperCase() === "PLANNING"
     )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const openStory = (id) => {
+    setSelectedTaskId(null);
+    setSelectedStoryId(id);
+  };
+
+  const openTask = (id) => {
+    setSelectedStoryId(null);
+    setSelectedTaskId(id);
+  };
+
+  const closePanel = () => {
+    setSelectedStoryId(null);
+    setSelectedTaskId(null);
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -131,7 +144,6 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
             >
               <List size={18} /> Issue Tracker
             </Button>
-
             <Button
               size="medium"
               variant="primary"
@@ -143,7 +155,7 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
           </div>
         </div>
 
-        {/* ✅ Modal: Create Issue */}
+        {/* Create Issue Modal */}
         {showIssueForm && (
           <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
             <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 overflow-y-auto max-h-[90vh]">
@@ -167,7 +179,7 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
           </div>
         )}
 
-        {/* ✅ Modal: Create Sprint */}
+        {/* Create Sprint Modal */}
         {showSprintForm && (
           <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
             <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6 overflow-y-auto max-h-[90vh]">
@@ -182,7 +194,7 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
           </div>
         )}
 
-        {/* ✅ Unassigned (Backlog) Stories Section */}
+        {/* Backlog Stories */}
         <div className="bg-white border p-4 rounded-lg shadow-sm min-h-[120px]">
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Backlog Stories
@@ -192,19 +204,25 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
           ) : (
             <div className="space-y-2">
               {filteredNoEpicStories.map((story) => (
-                <StoryCard
+                <div
                   key={story.id}
-                  story={{
-                    ...story,
-                    statusText: story.status?.name || "BACKLOG",
-                  }}
-                />
+                  onClick={() => openStory(story.id)}
+                  className="cursor-pointer"
+                >
+                  <StoryCard
+                    story={{
+                      ...story,
+                      statusText: story.status?.name || "BACKLOG",
+                    }}
+                    onClick={() => openStory(story.id)}
+                  />
+                </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* ✅ Sprint List Section */}
+        {/* Sprint List */}
         <div>
           <h2 className="text-base font-medium text-indigo-900 mb-3">
             Assign to Sprint
@@ -224,17 +242,35 @@ const Backlog = ({ projectId, projectName, stories: initialStories }) => {
                   )}
                   onDropStory={handleDropStory}
                   onChangeStatus={() => {}}
+                  onStoryClick={openStory}
+                  onTaskClick={openTask}
                 />
               ))}
             </div>
           )}
         </div>
-        {selectedStoryId && (
-          <StoryDetailsPanel
-            storyId={selectedStoryId}
-            onClose={() => setSelectedStoryId(null)}
-          />
-        )}
+
+        {/* Right-side Sliding Panel */}
+        <RightSidePanel
+          isOpen={Boolean(selectedStoryId || selectedTaskId)}
+          onClose={closePanel}
+        >
+          {selectedStoryId && (
+            <StoryDetailsPanel
+              storyId={selectedStoryId}
+              projectId={projectId}
+              onClose={closePanel}
+              onUpdated={fetchStories}
+            />
+          )}
+
+          {selectedTaskId && (
+            <TaskDetailsPanel
+              taskId={selectedTaskId}
+              onClose={closePanel}
+            />
+          )}
+        </RightSidePanel>
 
       </div>
     </DndProvider>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useDrop } from 'react-dnd';
 import StoryCard from './StoryCard';
 
-const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
+const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus, onStoryClick }) => {
   const isCompleted = sprint.status === 'COMPLETED';
 
   // Only enable drop if sprint is not completed
@@ -79,7 +79,7 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus }) => {
           <p className="text-gray-400 italic">No stories</p>
         ) : (
           sortedStories.map((story) => (
-            <StoryCard key={story.id} story={story} isCompleted={isCompleted} />
+            <StoryCard key={story.id} story={story} isCompleted={isCompleted} onClick={() => onStoryClick(story.id)} />
           ))
         )}
       </div>
