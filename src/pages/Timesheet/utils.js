@@ -58,3 +58,16 @@ export const formatDate = (dateStr) => {
         day: 'numeric' 
     });
 };
+
+export const convertUTCtoLocalTime = (utcString) => {
+  if (!utcString) return "";
+
+  // Treat backend time as UTC
+  const date = new Date(utcString + "Z");
+
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true, // change to true if you want 12-hour format
+  });
+};
