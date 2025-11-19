@@ -406,13 +406,16 @@ export async function submitWeeklyTimesheet(timesheetIds) {
 
 export async function fetchCalendarHolidays() {
   try {
-    const response = await fetch(`${apiEndpoint}/api/holidays/currentMonth`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+    const response = await fetch(
+      `${apiEndpoint}/api/holidays/currentMonthLeaves`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Error ${response.status}: ${response.statusText}`);
