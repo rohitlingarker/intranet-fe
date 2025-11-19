@@ -81,31 +81,33 @@ useEffect(() => {
 
 
   useEffect(() => {
-    if (!apiData) return;
-    const total = Number(apiData.totalHoursWorked || 0);
-    const billable = Number(apiData.billableHours || 0);
-    const nonBillable = Number(
-      apiData.nonBillableHours || Math.max(0, total - billable)
-    );
-    const billPct =
-      total > 0 ? Number(((billable / total) * 100).toFixed(1)) : 0;
-    const nonPct =
-      total > 0 ? Number(((nonBillable / total) * 100).toFixed(1)) : 0;
-    setKpis({
-      monthlyTotalAdjusted: total,
-      monthlyBillableHours: billable,
-      billableRatio: billPct,
-      nonBillableRatio: nonPct,
-      activeProjectsCount: Number(apiData.activeProjectsCount || 0),
-      leaves: {
-        days: Number(apiData.leavesAndHolidays?.totalLeavesDays || 0),
-        hours: Number(apiData.leavesAndHolidays?.totalLeavesHours || 0),
-      },
-      holidays: {
-        days: Number(apiData.leavesAndHolidays?.totalHolidays || 0),
-      },
-    });
-  }, [apiData]);
+  if (!apiData) return;
+
+  const total = apiData.totalHoursWorked;        // use as-is
+  const billable = apiData.billableHours;        // use as-is
+  const nonBillable = apiData.nonBillableHours;  // use as-is
+
+  const billPct =
+    total > 0 ? ((billable / total) * 100).toFixed(1) : "0";
+
+  const nonPct =
+    total > 0 ? ((nonBillable / total) * 100).toFixed(1) : "0";
+
+  setKpis({
+    monthlyTotalAdjusted: total,
+    monthlyBillableHours: billable,
+    billableRatio: billable,
+    nonBillableRatio: nonBillable, 
+    activeProjectsCount: apiData.activeProjectsCount,
+    leaves: {
+      days: apiData.leavesAndHolidays?.totalLeavesDays,
+      hours: apiData.leavesAndHolidays?.totalLeavesHours,
+    },
+    holidays: {
+      days: apiData.leavesAndHolidays?.totalHolidays,
+    },
+  });
+}, [apiData]);
 
   const allEntries = useMemo(() => {
     if (!apiData) return [];
@@ -285,7 +287,7 @@ useEffect(() => {
         <KPICards kpis={kpis} />
 
         {/* Donut from per-entry aggregation; alternatively you can render from projectSummaries */}
-        <ProjectDonutChart entries={allEntries} />
+        <ProjectDonutChart entries={apiData.projectSummaries.projects} />
 
         <DayOfWeekBarChart
           entries={allEntries}
