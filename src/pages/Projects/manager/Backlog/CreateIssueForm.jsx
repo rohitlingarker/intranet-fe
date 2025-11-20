@@ -333,7 +333,7 @@ const CreateIssueForm = ({
   return (
     <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-lg relative">
       <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-        <X size={20} />
+       
       </button>
 
       <ToastContainer />
@@ -594,7 +594,7 @@ const CreateIssueForm = ({
           disabled={loading}
           className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
         >
-          {loading ? "Saving..." : `Create ${issueType}`}
+          {loading ? "loading..." : `Create ${issueType}`}
         </button>
       </form>
     </div>
