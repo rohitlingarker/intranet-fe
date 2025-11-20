@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-// REMOVED: import { WEEKS, MOCK_DATA } from "./constants";
+import { XCircle } from "lucide-react";
 import KPICards from "./KPICards";
 import ProjectDonutChart from "./ProjectDonutChart";
 import DayOfWeekBarChart from "./DayOfWeekBarChart";
 import WeeklySummaryCard from "./WeeklySummaryCard";
 import "./MonthlyTSReport.css";
-import LoadingSpinner from "../../components/LoadingSpinner.jsx"
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
+import axios from "axios";
+import { toast } from "react-toastify";
+import Button from "../../components/Button/Button.jsx";
 
 const TS_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
@@ -23,92 +26,115 @@ const MonthlyTSReport = () => {
     holidays: { days: 0 },
   });
   const [loading, setLoading] = useState(false);
+  const [mailLoading, setMailLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Allow these to be controlled later via UI
-  const [month, setMonth] = useState(11);
-  const [year, setYear] = useState(2025);
- const [projectInfo, setProjectInfo] = useState([]);
+  const [projectInfo, setProjectInfo] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const monthOptions = [
+    { name: "January", value: 1 },
+    { name: "February", value: 2 },
+    { name: "March", value: 3 },
+    { name: "April", value: 4 },
+    { name: "May", value: 5 },
+    { name: "June", value: 6 },
+    { name: "July", value: 7 },
+    { name: "August", value: 8 },
+    { name: "September", value: 9 },
+    { name: "October", value: 10 },
+    { name: "November", value: 11 },
+    { name: "December", value: 12 },
+  ];
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear - 1];
 
-useEffect(() => {
-  const loadProjectInfo = async () => {
+  useEffect(() => {
+    const loadProjectInfo = async () => {
+      try {
+        const res = await fetch(`${TS_BASE_URL}/api/project-info`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        setProjectInfo(data);
+      } catch (err) {
+        console.error("Failed to load project info", err);
+      }
+    };
+
+    loadProjectInfo();
+  }, []);
+
+  const fetchData = async () => {
     try {
-      const res = await fetch(`${TS_BASE_URL}/api/project-info`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
+      setLoading(true);
+      setError(null);
+      const res = await fetch(
+        `${TS_BASE_URL}/api/report/user_monthly?month=${month}&year=${year}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       const data = await res.json();
-      setProjectInfo(data);
-    } catch (err) {
-      console.error("Failed to load project info", err);
+      setApiData(data);
+    } catch (e) {
+      setError(e.message || "Failed to load");
+    } finally {
+      setLoading(false);
     }
   };
 
-  loadProjectInfo();
-}, []);
-
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(
-          `${TS_BASE_URL}/api/report/user_monthly?month=${month}&year=${year}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setApiData(data);
-      } catch (e) {
-        setError(e.message || "Failed to load");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, [month, year]);
-
+  const handleFilterApply = () => {
+    setMonth(selectedMonth);
+    setYear(selectedYear);
+    setIsFilterOpen(false);
+    // fetchData();
+  };
 
   useEffect(() => {
-  if (!apiData) return;
+    if (!apiData) return;
 
-  const total = apiData.totalHoursWorked;        // use as-is
-  const billable = apiData.billableHours;        // use as-is
-  const nonBillable = apiData.nonBillableHours;  // use as-is
+    const total = apiData.totalHoursWorked; // use as-is
+    const billable = apiData.billableHours; // use as-is
+    const nonBillable = apiData.nonBillableHours; // use as-is
 
-  const billPct =
-    total > 0 ? ((billable / total) * 100).toFixed(1) : "0";
+    const billPct = total > 0 ? ((billable / total) * 100).toFixed(1) : "0";
 
-  const nonPct =
-    total > 0 ? ((nonBillable / total) * 100).toFixed(1) : "0";
+    const nonPct = total > 0 ? ((nonBillable / total) * 100).toFixed(1) : "0";
 
-  setKpis({
-    monthlyTotalAdjusted: total,
-    monthlyBillableHours: billable,
-    monthlyNonBillableHours: nonBillable,
-    billableRatio: billPct,
-    nonBillableRatio: nonPct, 
-    activeProjectsCount: apiData.activeProjectsCount,
-    leaves: {
-      days: apiData.leavesAndHolidays?.totalLeavesDays,
-      hours: apiData.leavesAndHolidays?.totalLeavesHours,
-    },
-    holidays: {
-      days: apiData.leavesAndHolidays?.totalHolidays,
-    },
-  });
-}, [apiData]);
+    setKpis({
+      monthlyTotalAdjusted: total,
+      monthlyBillableHours: billable,
+      monthlyNonBillableHours: nonBillable,
+      billableRatio: billPct,
+      nonBillableRatio: nonPct,
+      activeProjectsCount: apiData.activeProjectsCount,
+      leaves: {
+        days: apiData.leavesAndHolidays?.totalLeavesDays,
+        hours: apiData.leavesAndHolidays?.totalLeavesHours,
+      },
+      holidays: {
+        days: apiData.leavesAndHolidays?.totalHolidays,
+      },
+    });
+  }, [apiData]);
 
   const allEntries = useMemo(() => {
     if (!apiData) return [];
@@ -247,10 +273,32 @@ useEffect(() => {
     pdf.save(`Monthly_Timesheet_${monthLabel.replace(" ", "_")}.pdf`);
   };
 
+  const sendMailPDF = async () => {
+    setMailLoading(true);
+    try {
+      const res = await axios.get(`${TS_BASE_URL}/api/report/userMonthlyPdf`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        params: {
+          month: month,
+          year: year,
+        },
+      });
+      toast.success(res?.data || "Mail sent successfully");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to send mail");
+    } finally {
+      setMailLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="timesheet-container">
-        <div className="timesheet-wrapper"><LoadingSpinner text="Loading..." /></div>
+        <div className="timesheet-wrapper">
+          <LoadingSpinner text="Loading..." />
+        </div>
       </div>
     );
   }
@@ -263,9 +311,9 @@ useEffect(() => {
   }
   if (!apiData) return null;
 
-  const monthLabelUI = new Date(
-    `${year}-${String(month).padStart(2, "0")}-01`
-  ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  // const monthLabelUI = new Date(
+  //   `${year}-${String(month).padStart(2, "0")}-01`
+  // ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
     <div className="timesheet-container">
@@ -273,15 +321,81 @@ useEffect(() => {
         <header className="timesheet-header">
           <div className="header-content">
             <div>
-              <h1 className="timesheet-title">{`Monthly Timesheet: ${monthLabelUI}`}</h1>
-              <p className="employee-name">Employee: {apiData.employeeName}</p>
+              <h1 className="timesheet-title">
+                Monthly Timesheet :
+                <button
+                  className="filter-toggle-btn"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                >
+                  {isFilterOpen ? (
+                    <div
+                      className="ml-15 report-filters"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) =>
+                          setSelectedMonth(Number(e.target.value))
+                        }
+                      >
+                        {monthOptions.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={selectedYear}
+                        onChange={(e) =>
+                          setSelectedYear(Number(e.target.value))
+                        }
+                      >
+                        {yearOptions.map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button className="apply-btn" onClick={handleFilterApply}>
+                        Apply
+                      </button>
+                      <XCircle
+                        className="close-icon"
+                        onClick={() => setIsFilterOpen(false)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-teal-500 font-semibold">
+                      {monthOptions.find((m) => m.value === month)?.name} {year}
+                    </div>
+                  )}
+                  {/* <span className="text-teal-600 font-semibold">
+                    {monthOptions.find((m) => m.value === month)?.name} {" "}
+                    {year}
+                  </span> */}
+                </button>
+              </h1>
               <p className="employee-details">
-                Employee ID: {apiData.employeeId} 
+                Employee ID: {apiData.employeeId}
               </p>
+              <p className="employee-name">Employee: {apiData.employeeName}</p>
             </div>
-            <button className="download-btn" onClick={handleDownloadPDF}>
-              Download 
-            </button>
+            <div>
+              <button className="download-btn" onClick={handleDownloadPDF}>
+                Download
+              </button>
+              <Button
+                variant="secondary"
+                size="medium"
+                className={`ml-3 ${mailLoading ? "is-sending" : ""}`}
+                onClick={sendMailPDF}
+                disabled={mailLoading}
+              >
+                {mailLoading ? "Sending..." : "Send Report via Email"}
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -301,7 +415,11 @@ useEffect(() => {
           </div>
           <div className="space-y-4">
             {(apiData.weeklySummaryHistory || []).map((week, idx) => (
-              <WeeklySummaryCard key={idx} week={week} projectInfo={projectInfo}/>
+              <WeeklySummaryCard
+                key={idx}
+                week={week}
+                projectInfo={projectInfo}
+              />
             ))}
           </div>
         </section>

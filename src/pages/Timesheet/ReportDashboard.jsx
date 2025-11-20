@@ -16,6 +16,8 @@ import html2canvas from "html2canvas";
 import axios from "axios";
 import Pagination from "../../components/Pagination/pagination";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import Button from "../../components/Button/Button.jsx";
+import { toast } from "react-toastify";
 
 const monthOptions = [
   { name: "January", value: 1 },
@@ -49,6 +51,7 @@ export default function ReportDashboard() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [projectPages, setProjectPages] = useState({});
+  const [mailLoading, setMailLoading] = useState(false);
   const membersPerPage = 8;
 
   const handleProjectPageChange = (projectId, newPage) => {
@@ -87,6 +90,26 @@ export default function ReportDashboard() {
     };
     fetchData();
   }, [TS_BASE_URL, appliedMonth, appliedYear]);
+
+  const sendMailPDF = async () => {
+    setMailLoading(true);
+    try {
+      const res = await axios.get(`${TS_BASE_URL}/api/report/userMonthlyPdf`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        params: {
+          month: appliedMonth,
+          year: appliedYear,
+        },
+      });
+      toast.success(res?.data || "Mail sent successfully");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to send mail");
+    } finally {
+      setMailLoading(false);
+    }
+  };
 
   const handleFilterApply = () => {
     setAppliedYear(selectedYear);
@@ -219,9 +242,20 @@ export default function ReportDashboard() {
             </div>
           )}
         </div>
-        <button className="export-btn" onClick={handleExportPDF}>
-          <FileDown size={16} /> Export PDF
-        </button>
+        <div className="flex gap-4">
+          <button className="export-btn" onClick={handleExportPDF}>
+            <FileDown size={16} /> Export PDF
+          </button>
+          <Button
+            variant="secondary"
+            size="medium"
+            className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}` }
+            onClick={sendMailPDF}
+            disabled={mailLoading}
+          >
+            {mailLoading ? "Sending..." : "Send PDF via Email"}
+          </Button>
+        </div>
       </div>
 
       {/* Top Stats */}

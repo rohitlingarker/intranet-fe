@@ -22,6 +22,8 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2"; // <-- Removed 'Line'
 import LoadingSpinner from "../../components/LoadingSpinner";
+import Button from "../../components/Button/Button.jsx";
+import { toast } from "react-toastify";
 
 ChartJS.register(
   ArcElement,
@@ -114,6 +116,7 @@ const ManagerMonthlyReport = () => {
   const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [mailLoading, setMailLoading] = useState(false);
 
   useEffect(() => {
     axios
@@ -190,10 +193,6 @@ const ManagerMonthlyReport = () => {
   ];
   const currentYear = new Date().getFullYear();
   const yearOptions = [currentYear, currentYear - 1];
-  // --- MOCK DATA REMOVED ---
-
-  // --- DERIVED STATE FROM API DATA ---
-  // These useMemo hooks now depend on `apiData`
 
   const totalBillable = apiData?.billableHours ?? 0;
   const totalNonBillable = apiData?.nonBillableHours ?? 0;
@@ -258,6 +257,26 @@ const ManagerMonthlyReport = () => {
       dispatch({ type: "SET_PENDING", payload: pending });
     }
   }, [apiData]);
+
+  const sendMailPDF = async () => {
+    setMailLoading(true);
+    try {
+      const res = await axios.get(`${TS_BASE_URL}/api/report/managerMonthlyPdf`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        params: {
+          month: appliedMonth,
+          year: appliedYear,
+        },
+      });
+      toast.success(res?.data || "Mail sent successfully");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to send mail");
+    } finally {
+      setMailLoading(false);
+    }
+  };
 
   // weekly selection state (No longer used for modal, but keeping structure if needed)
   // const [selectedWeekIdx, setSelectedWeekIdx] = useState(null);
@@ -522,7 +541,7 @@ const ManagerMonthlyReport = () => {
         {
           label: "Billable",
           data: [Number(((totalBillable / total) * 100).toFixed(1))],
-          backgroundColor: "blue",
+          backgroundColor: "#C9B59C",
           rawHours: totalBillable,
         },
         {
@@ -911,7 +930,7 @@ const ManagerMonthlyReport = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <header className="mb-6">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -924,7 +943,7 @@ const ManagerMonthlyReport = () => {
                 Data for: {apiData.dateRange.startDate} to{" "}
                 {apiData.dateRange.endDate}
               </p> */}
-              <p className="month pt-1">
+              <p className="month pt-1 font-semibold text-red-500">
                 Report Month:
                 <button
                   className="filter-toggle-btn"
@@ -966,6 +985,17 @@ const ManagerMonthlyReport = () => {
                   </button>
                 </div>
               )}
+            </div>
+            <div>
+              <Button
+                variant="secondary"
+                size="medium"
+                className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}` }
+                onClick={sendMailPDF}
+                disabled={mailLoading}
+              >
+                {mailLoading ? "Sending..." : "Send Report via Email"}
+              </Button>
             </div>
           </div>
         </header>

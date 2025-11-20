@@ -15,7 +15,7 @@ const KPICards = ({ kpis }) => {
       <div className="kpi-card kpi-card-green">
         <p className="kpi-label">Billable vs Non-Billable</p>
         <p className="kpi-value kpi-value-green">
-          {kpis.monthlyBillableHours.toFixed(1)} / {kpis.monthlyNonBillableHours.toFixed(1)} hours
+          {kpis.monthlyBillableHours} / {kpis.monthlyNonBillableHours} hours
         </p>
         {/* <span className="kpi-meta kpi-meta-gray">
           {kpis.monthlyBillableHours.toFixed(1)} Billable hrs
