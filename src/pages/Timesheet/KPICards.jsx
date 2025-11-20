@@ -8,14 +8,14 @@ const KPICards = ({ kpis }) => {
     <div className="kpi-grid">
       <div className="kpi-card kpi-card-indigo">
         <p className="kpi-label">Total Hours Logged</p>
-        <p className="kpi-value kpi-value-indigo">{kpis.monthlyTotalAdjusted.toFixed(1)} hrs</p>
+        <p className="kpi-value kpi-value-indigo">{kpis.monthlyTotalAdjusted.toFixed(1)} hours</p>
         {/* <span className="kpi-meta kpi-meta-green">Goal: 160 hrs</span> */}
       </div>
 
       <div className="kpi-card kpi-card-green">
         <p className="kpi-label">Billable vs Non-Billable</p>
         <p className="kpi-value kpi-value-green">
-          {kpis.billableRatio} / {kpis.nonBillableRatio}
+          {kpis.monthlyBillableHours} / {kpis.monthlyNonBillableHours} hours
         </p>
         {/* <span className="kpi-meta kpi-meta-gray">
           {kpis.monthlyBillableHours.toFixed(1)} Billable hrs

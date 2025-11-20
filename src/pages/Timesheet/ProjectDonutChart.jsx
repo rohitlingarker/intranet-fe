@@ -9,40 +9,19 @@ const ProjectDonutChart = ({ entries }) => {
   // PREPARE DATA
   // -------------------------------
   const projectData = useMemo(() => {
-    const map = {};
+  if (!entries) return [];
 
-    entries.forEach((e) => {
-      if (!e) return;
-      const project = e.project || "Unknown";
+  return entries.map((e) => ({
+    name: e.projectName,
+    totalHours: e.totalHours,
+    billableHours: e.billableHours,
+    nonBillableHours: e.nonBillableHours,
+    percentage: e.contribution,
+    billablePercentage: ((e.billableHours / e.totalHours) * 100).toFixed(1),
+    nonBillablePercentage: ((e.nonBillableHours / e.totalHours) * 100).toFixed(1),
+  }));
+}, [entries]);
 
-      if (!map[project]) {
-        map[project] = {
-          name: project,
-          totalHours: 0,
-          billableHours: 0,
-          nonBillableHours: 0,
-        };
-      }
-
-      map[project].totalHours += Number(e.hours || 0);
-      if (e.type === "Billable") map[project].billableHours += Number(e.hours || 0);
-      else map[project].nonBillableHours += Number(e.hours || 0);
-    });
-
-    const arr = Object.values(map).sort((a, b) => b.totalHours - a.totalHours);
-    const totalHours = arr.reduce((s, p) => s + p.totalHours, 0);
-
-    return arr.map((p) => ({
-      ...p,
-      percentage: totalHours ? ((p.totalHours / totalHours) * 100).toFixed(1) : 0,
-      billablePercentage: p.totalHours
-        ? ((p.billableHours / p.totalHours) * 100).toFixed(1)
-        : 0,
-      nonBillablePercentage: p.totalHours
-        ? ((p.nonBillableHours / p.totalHours) * 100).toFixed(1)
-        : 0,
-    }));
-  }, [entries]);
 
   const colors = [
     { main: "#4f46e5", light: "#818cf8" },

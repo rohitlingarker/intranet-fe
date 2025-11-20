@@ -22,6 +22,8 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2"; // <-- Removed 'Line'
 import LoadingSpinner from "../../components/LoadingSpinner";
+import Button from "../../components/Button/Button.jsx";
+import { toast } from "react-toastify";
 
 ChartJS.register(
   ArcElement,
@@ -109,6 +111,12 @@ const ManagerMonthlyReport = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [projectInfo, setProjectInfo] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
+  const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [mailLoading, setMailLoading] = useState(false);
 
   useEffect(() => {
     axios
@@ -138,17 +146,24 @@ const ManagerMonthlyReport = () => {
   // --- DATA FETCHING ---
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         // Fetch data from the endpoint
         const response = await axios.get(
-          `${TS_BASE_URL}/api/report/managerMonthly?month=11&year=2025`,
+          `${TS_BASE_URL}/api/report/managerMonthly`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
+            params: {
+              month: appliedMonth,
+              year: appliedYear,
+            },
           }
         );
         setApiData(response.data);
+        setSelectedMonth(response.data.month);
+        setSelectedYear(response.data.year);
       } catch (err) {
         setError(err);
       } finally {
@@ -156,12 +171,28 @@ const ManagerMonthlyReport = () => {
       }
     };
     fetchData();
-  }, []);
-
-  // --- MOCK DATA REMOVED ---
-
-  // --- DERIVED STATE FROM API DATA ---
-  // These useMemo hooks now depend on `apiData`
+  }, [appliedMonth, appliedYear]);
+  const handleFilterApply = () => {
+    setAppliedMonth(selectedMonth); // update API month
+    setAppliedYear(selectedYear); // update API year
+    setIsFilterOpen(false); // close dropdown
+  };
+  const monthOptions = [
+    { name: "January", value: 1 },
+    { name: "February", value: 2 },
+    { name: "March", value: 3 },
+    { name: "April", value: 4 },
+    { name: "May", value: 5 },
+    { name: "June", value: 6 },
+    { name: "July", value: 7 },
+    { name: "August", value: 8 },
+    { name: "September", value: 9 },
+    { name: "October", value: 10 },
+    { name: "November", value: 11 },
+    { name: "December", value: 12 },
+  ];
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear - 1];
 
   const totalBillable = apiData?.billableHours ?? 0;
   const totalNonBillable = apiData?.nonBillableHours ?? 0;
@@ -226,6 +257,26 @@ const ManagerMonthlyReport = () => {
       dispatch({ type: "SET_PENDING", payload: pending });
     }
   }, [apiData]);
+
+  const sendMailPDF = async () => {
+    setMailLoading(true);
+    try {
+      const res = await axios.get(`${TS_BASE_URL}/api/report/managerMonthlyPdf`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        params: {
+          month: appliedMonth,
+          year: appliedYear,
+        },
+      });
+      toast.success(res?.data || "Mail sent successfully");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to send mail");
+    } finally {
+      setMailLoading(false);
+    }
+  };
 
   // weekly selection state (No longer used for modal, but keeping structure if needed)
   // const [selectedWeekIdx, setSelectedWeekIdx] = useState(null);
@@ -490,7 +541,7 @@ const ManagerMonthlyReport = () => {
         {
           label: "Billable",
           data: [Number(((totalBillable / total) * 100).toFixed(1))],
-          backgroundColor: "blue",
+          backgroundColor: "#C9B59C",
           rawHours: totalBillable,
         },
         {
@@ -879,19 +930,72 @@ const ManagerMonthlyReport = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <header className="mb-6">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Manager Dashboard — Team View
               </h1>
-              <p className="text-sm text-gray-600">
+              {/* <p className="text-sm text-gray-600">
                 Generated: {new Date().toLocaleString()}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 Data for: {apiData.dateRange.startDate} to{" "}
                 {apiData.dateRange.endDate}
+              </p> */}
+              <p className="month pt-1 font-semibold text-red-500">
+                Report Month:
+                <button
+                  className="filter-toggle-btn"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                >
+                  <span>
+                    {monthOptions.find((m) => m.value === appliedMonth)?.name},
+                    {appliedYear}
+                  </span>
+                </button>
               </p>
+
+              {isFilterOpen && (
+                <div className="report-filters">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  >
+                    {monthOptions.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  >
+                    {yearOptions.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button className="apply-btn" onClick={handleFilterApply}>
+                    Apply
+                  </button>
+                </div>
+              )}
+            </div>
+            <div>
+              <Button
+                variant="secondary"
+                size="medium"
+                className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}` }
+                onClick={sendMailPDF}
+                disabled={mailLoading}
+              >
+                {mailLoading ? "Sending..." : "Send Report via Email"}
+              </Button>
             </div>
           </div>
         </header>
