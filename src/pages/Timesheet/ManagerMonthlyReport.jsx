@@ -6,7 +6,7 @@ import React, {
   useRef,
   useEffect,
 } from "react";
-import axios from "axios"; // <-- Added import
+import axios from "axios";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -16,14 +16,16 @@ import {
   LinearScale,
   BarElement,
   Title,
-  // PointElement and LineElement are no longer used by <Line>
   PointElement,
   LineElement,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2"; // <-- Removed 'Line'
+import { Bar, Doughnut } from "react-chartjs-2";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import Button from "../../components/Button/Button.jsx";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 
 ChartJS.register(
   ArcElement,
@@ -117,6 +119,10 @@ const ManagerMonthlyReport = () => {
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mailLoading, setMailLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const canViewFinance = user?.permissions?.includes("VIEW_FINANCE_REPORT");
 
   useEffect(() => {
     axios
@@ -261,15 +267,18 @@ const ManagerMonthlyReport = () => {
   const sendMailPDF = async () => {
     setMailLoading(true);
     try {
-      const res = await axios.get(`${TS_BASE_URL}/api/report/managerMonthlyPdf`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        params: {
-          month: appliedMonth,
-          year: appliedYear,
-        },
-      });
+      const res = await axios.get(
+        `${TS_BASE_URL}/api/report/managerMonthlyPdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          params: {
+            month: appliedMonth,
+            year: appliedYear,
+          },
+        }
+      );
       toast.success(res?.data || "Mail sent successfully");
     } catch (err) {
       toast.error(err.response?.data || "Failed to send mail");
@@ -929,8 +938,18 @@ const ManagerMonthlyReport = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {!canViewFinance && (
+          <div>
+            <button
+              className="flex gap-1 text-lg text-blue-500 hover:text-blue-700"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft size={20} className="mt-1" /> Back
+            </button>
+          </div>
+        )}
         {/* Header */}
-        <header className="mb-6">
+        <header className="mb-6 mt-2">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -990,7 +1009,9 @@ const ManagerMonthlyReport = () => {
               <Button
                 variant="secondary"
                 size="medium"
-                className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}` }
+                className={`${
+                  mailLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 onClick={sendMailPDF}
                 disabled={mailLoading}
               >
@@ -1565,7 +1586,7 @@ const ManagerMonthlyReport = () => {
         </div>
 
         {/* Footer */}
-        <footer className="bg-gray-100 rounded-xl p-6 text-center">
+        {/* <footer className="bg-gray-100 rounded-xl p-6 text-center">
           <p className="text-xs text-gray-600">
             <strong className="text-gray-900">
               Manager Dashboard — Team View
@@ -1575,6 +1596,45 @@ const ManagerMonthlyReport = () => {
           <p className="text-xs text-gray-500 mt-2">
             Confidential • For internal management use only
           </p>
+        </footer> */}
+        <footer>
+          <div className="notes-card">
+            <h4>Report Notes</h4>
+            <ul>
+              <li>
+                Billable Hours = Total hours spent on tasks classified as
+                billable across all projects.
+              </li>
+              <li>
+                Standard holiday hours = (Mon-Fri calculated 8 hrs/holiday).
+              </li>
+              <li>
+                Non-Billable Hours = Sum of all task hours marked as
+                non-billable across all projects + Standard holiday hours.
+              </li>
+              <li>Total Hours = Billable Hours + Non-Billable Hours</li>
+              <li>
+                Billable Utilization% = Billable Hours ÷ Total Hours × 100
+              </li>
+              <li>Minimum Monthly hours = 176</li>
+              <li>
+                Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
+                hours × 100
+              </li>
+              <li>
+                Employee leaveHoursBreakdown Contribution =
+                (leaveHours/totalLeaveHours) × 100
+              </li>
+              <li>
+                Employee projectUserHoursBreakdown Contribution =
+                (totalHours/totalProjectHours) × 100
+              </li>
+              {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
+              <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>
+              <li>Target utilization rate: 75% for sustainable productivity</li>
+              <li>Productivity = (Total Hours / 160) × 100</li> */}
+            </ul>
+          </div>
         </footer>
       </div>
 
@@ -1628,7 +1688,6 @@ const ManagerMonthlyReport = () => {
                       {selectedEmployee.userName} - Monthly Timesheet
                     </h3>
                   </div>
-                  {console.log("Selected Employee:", selectedEmployee)}
                   <div className="flex items-center gap-3 mt-4 md:mt-0">
                     <button
                       onClick={() => closeEmployeeTimesheet()}
