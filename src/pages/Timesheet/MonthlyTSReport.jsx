@@ -96,8 +96,9 @@ useEffect(() => {
   setKpis({
     monthlyTotalAdjusted: total,
     monthlyBillableHours: billable,
-    billableRatio: billable,
-    nonBillableRatio: nonBillable, 
+    monthlyNonBillableHours: nonBillable,
+    billableRatio: billPct,
+    nonBillableRatio: nonPct, 
     activeProjectsCount: apiData.activeProjectsCount,
     leaves: {
       days: apiData.leavesAndHolidays?.totalLeavesDays,
