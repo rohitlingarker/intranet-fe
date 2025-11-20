@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { XCircle } from "lucide-react";
+import { XCircle, ArrowLeft } from "lucide-react";
 import KPICards from "./KPICards";
 import ProjectDonutChart from "./ProjectDonutChart";
 import DayOfWeekBarChart from "./DayOfWeekBarChart";
@@ -11,6 +11,7 @@ import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button/Button.jsx";
+import { useNavigate } from "react-router-dom";
 
 const TS_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
@@ -29,6 +30,7 @@ const MonthlyTSReport = () => {
   const [mailLoading, setMailLoading] = useState(false);
   const [error, setError] = useState(null);
   const [projectInfo, setProjectInfo] = useState([]);
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -318,6 +320,14 @@ const MonthlyTSReport = () => {
   return (
     <div className="timesheet-container">
       <div className="timesheet-wrapper">
+        <div>
+          <button
+            className="flex gap-1 text-lg text-blue-500 hover:text-blue-700"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft size={20} className="mt-1" /> Back
+          </button>
+        </div>
         <header className="timesheet-header">
           <div className="header-content">
             <div>
@@ -414,13 +424,16 @@ const MonthlyTSReport = () => {
             Month (Week-wise)
           </div>
           <div className="space-y-4">
-            {(apiData.weeklySummaryHistory || []).map((week, idx) => (
-              <WeeklySummaryCard
-                key={idx}
+            {(apiData.weeklySummaryHistory).length === 0 ? (
+              <p className="text-gray-500 text-sm font-semibold italic">No timesheet data available.</p>
+            ) : (
+              (apiData.weeklySummaryHistory || []).map((week, idx) => (
+                <WeeklySummaryCard
+                    key={idx}
                 week={week}
                 projectInfo={projectInfo}
               />
-            ))}
+            )))}
           </div>
         </section>
 
@@ -429,6 +442,41 @@ const MonthlyTSReport = () => {
           <span className="footer-value">
             {kpis.monthlyTotalAdjusted.toFixed(1)} hrs
           </span>
+        </div>
+        <div className="notes-card mt-5">
+          <h4>Report Notes</h4>
+          <ul>
+            <li>
+              Billable Hours = Total hours spent on tasks classified as billable
+              across all projects.
+            </li>
+            <li>
+              Standard holiday hours = (Mon-Fri calculated 8 hrs/holiday).
+            </li>
+            <li>
+              Non-Billable Hours = Sum of all task hours marked as non-billable
+              across all projects + Standard holiday hours.
+            </li>
+            <li>Total Hours = Billable Hours + Non-Billable Hours</li>
+            <li>Billable Utilization% = Billable Hours ÷ Total Hours × 100</li>
+            <li>Minimum Monthly hours = 176</li>
+            <li>
+              Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
+              hours × 100
+            </li>
+            <li>
+              Employee leaveHoursBreakdown Contribution =
+              (leaveHours/totalLeaveHours) × 100
+            </li>
+            <li>
+              Employee projectUserHoursBreakdown Contribution =
+              (totalHours/totalProjectHours) × 100
+            </li>
+            {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
+          <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>
+          <li>Target utilization rate: 75% for sustainable productivity</li>
+          <li>Productivity = (Total Hours / 160) × 100</li> */}
+          </ul>
         </div>
       </div>
     </div>
