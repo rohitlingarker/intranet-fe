@@ -153,7 +153,7 @@ const getTaskName = (taskId) => {
                     <CustomStatusBadge label={ts.status} />
                     {ts.actionStatus?.length > 0 && (
                       <div className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
-                        {ts.actionStatus.length} approver
+                        {/* {ts.actionStatus.length} approver */}
                         {ts.actionStatus.length > 1 ? "s" : ""}
                       </div>
                     )}
