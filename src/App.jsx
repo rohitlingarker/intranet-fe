@@ -243,6 +243,9 @@ useEffect(() => {
           <Route path="/timesheets/managerreport" element={<ManagerReportSection />} />
           <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
           <Route path="/timesheets/managermonthlyreport" element={<ManagerMonthlyReport />} />
+          <Route path="/timesheets/monthlytsreport" element={<MonthlyTSReport />} />
+
+          
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
