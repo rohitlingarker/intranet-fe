@@ -540,15 +540,23 @@ doc.setFontSize(10);
 doc.setTextColor(55, 65, 81);
 
 const notes = [
-  "Billable Hours – Total hours spent on tasks classified as billable across all projects.",
-  "Standard Holiday Hours – 8 hours per weekday holiday.",
-  "Non-Billable Hours – Includes non-billable + holiday hours.",
-  "Total Hours – Billable + Non-Billable Hours.",
-  "Billable Utilization % – Billable Hours ÷ Total Hours × 100.",
-  "Minimum Monthly Hours – Expected contribution: 176 hrs.",
-  "Leaves – Approved leave days counted this month.",
-  "Project-wise Hours Distribution % – Contribution relative to total hours."
+  "Billable Hours = Total hours spent on tasks classified as billable across all projects.",
+  "Standard Holiday Hours = (Mon–Fri calculated at 8 hours per holiday).",
+  "Non-Billable Hours = Sum of all task hours marked as non-billable across all projects + Standard holiday hours.",
+  "Total Hours = Billable Hours + Non-Billable Hours.",
+  "Billable Utilization % = Billable Hours ÷ Total Hours × 100.",
+  "Minimum Monthly Hours = 176.",
+  "Leaves / Holidays = Sum of approved leave days + company-declared holidays in the selected month.",
+  "Current Active Projects = Number of projects where the employee logged hours during the month.",
+  "Project-wise Hour Distribution = Proportion of total hours dedicated to each project relative to all projects combined.",
+  "Daily Hours Breakdown = Shows how the employee distributed work hours across each day of the week throughout the month.",
+  "Weekly Timesheet Summary = Displays weekly logged hours, approval status, and detailed daily tasks.",
+  "Draft / Submitted / Approved / Rejected Status = Draft (saved), Submitted (pending approval), Approved (reviewed), Rejected (requires correction).",
+  "Monthly Minimum Hours Requirement = Expected minimum working hours: 176 hours (22 working days × 8 hours/day).",
+  "Missing Timesheets = Weeks with zero entries indicate unfilled or unsubmitted timesheets.",
+  "Hour Accuracy = Hours displayed are based on submitted timesheets; incomplete or delayed entries may affect totals.",
 ];
+
 
 let noteY = y + 22;
 
