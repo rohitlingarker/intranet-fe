@@ -119,7 +119,6 @@ const MonthlyTSReport = () => {
     const nonBillable = apiData.nonBillableHours; // use as-is
 
     const billPct = total > 0 ? ((billable / total) * 100).toFixed(1) : "0";
-
     const nonPct = total > 0 ? ((nonBillable / total) * 100).toFixed(1) : "0";
 
     setKpis({
@@ -179,34 +178,396 @@ const MonthlyTSReport = () => {
     }));
   }, [apiData]);
 
-  const downloadPdf = async () => {
-    setPdfLoading(true);
-    try {
-      const response = await fetch(
-        `${TS_BASE_URL}/api/report/downloadMonthlyPdf?month=11&year=2025`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+  // -------------------- UPDATED PDF GENERATION (Option A) --------------------
+  const handleDownloadPDF = () => {
+    if (!apiData) return;
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Monthly_Report.pdf";
-      a.click();
+    const monthLabel = new Date(
+      `${year}-${String(month).padStart(2, "0")}-01`
+    ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-      window.URL.revokeObjectURL(url);
-      toast.success("PDF downloaded successfully");
-    } catch (err) {
-      toast.error("Failed to download PDF");
-    } finally {
-      setPdfLoading(false);
+    const totalHours = Number(apiData.totalHoursWorked || 0);
+    const billableHours = Number(apiData.billableHours || 0);
+    const nonBillableHours = Number(apiData.nonBillableHours || 0);
+    const activeProjects = Number(apiData.activeProjectsCount || 0);
+    const leavesDays = Number(apiData.leavesAndHolidays?.totalLeavesDays || 0);
+    const leavesHours = Number(apiData.leavesAndHolidays?.totalLeavesHours || 0);
+    const holidaysDays = Number(apiData.leavesAndHolidays?.totalHolidays || 0);
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return "";
+      if (dateStr.length >= 10) return dateStr.slice(0, 10);
+      return dateStr;
+    };
+
+    const resolveStatus = (week) => {
+  return (
+    week.statusLabel ||
+    week.timesheetStatus ||
+    week.approvalStatus ||
+    week.status ||
+    "No Timesheets"
+  );
+};
+const getWeeklyStatus = (week) => {
+  if (week.weeklyStatus) return week.weeklyStatus;
+
+  // fallback logic
+  if (!week.timesheets || week.timesheets.length === 0) return "No Timesheets";
+
+  return "SUBMITTED";
+};
+
+
+
+    const formatDateTime = (dtStr) => {
+      if (!dtStr) return "";
+      if (dtStr.length >= 16) return dtStr.slice(0, 16);
+      return dtStr;
+    };
+
+    const ensureSpace = (neededY, currentY) => {
+      const pageHeight = doc.internal.pageSize.getHeight();
+      if (currentY + neededY > pageHeight - 10) {
+        doc.addPage();
+        return 20;
+      }
+      return currentY;
+    };
+
+    // ---------------- PAGE 1: Title + Header Card ----------------
+    // ---------------- PAGE 1: Title + Header Card ----------------
+let y = 20;
+
+// Title
+doc.setFont("helvetica", "bold");
+doc.setFontSize(20);
+doc.setTextColor(15, 23, 42);
+doc.text("User Monthly Report", 14, y);
+
+y += 10;
+doc.setFont("helvetica", "normal");
+doc.setFontSize(12);
+doc.text(`Report for ${monthLabel}`, 14, y);
+
+// Header card background
+y += 10; // increased spacing
+const cardX = 14;
+const cardY = y;
+const cardWidth = pageWidth - 28;
+const cardHeight = 70; // taller for proper spacing
+
+doc.setFillColor(228, 235, 245); 
+doc.rect(cardX, cardY, cardWidth, cardHeight, "F");
+
+// ---------------- Card Content ----------------
+let textY = cardY + 12;
+
+// Employee name
+doc.setFont("helvetica", "bold");
+doc.setFontSize(14);
+doc.setTextColor(15, 23, 42);
+doc.text(apiData.employeeName || "-", cardX + 6, textY);
+
+// Forward spacing
+textY += 12;
+doc.setFont("helvetica", "normal");
+doc.setFontSize(11);
+
+// Hours
+doc.text(`Total Hours Worked: ${totalHours.toFixed(2)}`, cardX + 6, textY);
+textY += 6;
+doc.text(`Billable Hours: ${billableHours.toFixed(2)}`, cardX + 6, textY);
+textY += 6;
+doc.text(`Non-Billable Hours: ${nonBillableHours.toFixed(2)}`, cardX + 6, textY);
+
+// ------------- Divider (MUST COME AFTER ACTIVE PROJECTS) -------------
+textY += 6;
+doc.text(`Active Projects: ${activeProjects}`, cardX + 6, textY);
+
+// Divider line
+const dividerY = textY + 4;
+doc.setDrawColor(180, 190, 205);
+doc.setLineWidth(0.3);
+doc.line(cardX + 6, dividerY, cardX + cardWidth - 6, dividerY);
+
+// ------------- Bottom section (Leaves + Holidays) -------------
+let bottomY = dividerY + 6;
+
+doc.text(
+  `Total Leaves: ${leavesDays} days (${leavesHours} hrs)`,
+  cardX + 6,
+  bottomY
+);
+
+bottomY += 6;
+
+doc.text(`Total Holidays: ${holidaysDays} days`, cardX + 6, bottomY);
+
+// Update global y for next sections
+y = cardY + cardHeight + 15;
+
+
+    // ---------------- Daywise Summary ----------------
+    y = ensureSpace(40, y);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Daywise Summary", 14, y);
+
+    const daySummaryRows = [];
+    const orderedDays = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+    if (apiData.dayWiseSummary) {
+      orderedDays.forEach((d) => {
+        const label = d.charAt(0).toUpperCase() + d.slice(1);
+        const val = Number(apiData.dayWiseSummary[d] || 0);
+        daySummaryRows.push([label, val.toString()]);
+      });
     }
+
+    autoTable(doc, {
+      head: [["Day", "Hours"]],
+      body: daySummaryRows,
+      startY: y + 4,
+      styles: { fontSize: 10 },
+      theme: "grid",
+      headStyles: {
+        fillColor: [243, 244, 246],
+        textColor: [15, 23, 42],
+        halign: "left",
+      },
+    });
+
+    y = (doc.lastAutoTable?.finalY || y + 10) + 10;
+
+    // ---------------- Project Contributions ----------------
+    y = ensureSpace(50, y);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Project Contributions", 14, y);
+
+    const projectRows = [];
+    const projects = apiData.projectSummaries?.projects || [];
+    projects.forEach((p) => {
+      const name =
+        p.projectName || (p.projectId ? `Project ${p.projectId}` : "-");
+      projectRows.push([
+        name,
+        Number(p.totalHours || 0).toFixed(2),
+        Number(p.billableHours || 0).toFixed(2),
+        Number(p.nonBillableHours || 0).toFixed(2),
+        `${Number(p.contributionPercentage || 0).toFixed(2)}%`,
+      ]);
+    });
+
+    autoTable(doc, {
+      head: [["Project", "Total Hrs", "Billable", "Non-Billable", "Contribution %"]],
+      body: projectRows,
+      startY: y + 4,
+      theme: "grid",
+      styles: { fontSize: 10 },
+      headStyles: {
+        fillColor: [243, 244, 246],
+        textColor: [15, 23, 42],
+        halign: "left",
+      },
+    });
+
+    // ---------------- PAGE 2+: Weekly Summary ----------------
+    doc.addPage();
+    y = 20;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Weekly Summary", 14, y);
+    y += 8;
+
+    const weeklyHistory = [...(apiData.weeklySummaryHistory || [])];
+
+    // latest week first (matches sample)
+    weeklyHistory.sort((a, b) => {
+      const da = new Date(a.startDate);
+      const db = new Date(b.startDate);
+      return db - da;
+    });
+
+    weeklyHistory.forEach((week) => {
+      y = ensureSpace(25, y);
+
+      const weekLabelParts = [];
+      if (week.weekNumber != null) {
+        weekLabelParts.push(`Week ${week.weekNumber}`);
+      }
+      if (week.startDate && week.endDate) {
+        weekLabelParts.push(
+          `(${formatDate(week.startDate)} to ${formatDate(week.endDate)})`
+        );
+      }
+      const hoursPart = `— ${Number(week.totalHours || 0).toFixed(2)} hrs`;
+      const weekHeaderText = `${weekLabelParts.join(" ")} ${hoursPart}`;
+      const statusText = `[Status: ${getWeeklyStatus(week)}]`;
+
+
+      // yellow header bar
+      doc.setFillColor(254, 243, 199);
+      doc.setDrawColor(254, 243, 199);
+      doc.rect(14, y, pageWidth - 28, 10, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text(weekHeaderText, 18, y + 7);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(37, 99, 235);
+      doc.text(statusText, pageWidth - 14 - 70, y + 7);
+
+      y += 12;
+
+      const timesheets = week.timesheets || [];
+      const hasEntries =
+        timesheets.some(
+          (ts) =>
+            ts.defaultHolidayTimesheet ||
+            (Array.isArray(ts.entries) && ts.entries.length > 0)
+        ) && Number(week.totalHours || 0) > 0;
+
+      if (!hasEntries) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(107, 114, 128);
+        y = ensureSpace(10, y);
+        doc.text("No Timesheets Submitted", 18, y + 5);
+        y += 12;
+        return;
+      }
+
+      const weeklyRows = [];
+      timesheets.forEach((ts) => {
+        if (ts.defaultHolidayTimesheet) {
+          weeklyRows.push([
+            formatDate(ts.workDate),
+            "",
+            "",
+            "",
+            "",
+            Number(ts.hoursWorked || 0).toFixed(2),
+            "",
+            "Auto/Holiday Entry",
+          ]);
+        } else if (Array.isArray(ts.entries)) {
+          ts.entries.forEach((e) => {
+            weeklyRows.push([
+              formatDate(ts.workDate),
+              e.projectName || (e.projectId ? `Project ${e.projectId}` : ""),
+              e.taskName || (e.taskId != null ? String(e.taskId) : ""),
+              formatDateTime(e.startTime || ""),
+              formatDateTime(e.endTime || ""),
+              Number(e.hoursWorked || 0).toFixed(2),
+              e.isBillable ? "Yes" : "No",
+              e.description || "",
+            ]);
+          });
+        }
+      });
+
+      y = ensureSpace(30, y);
+      autoTable(doc, {
+        head: [
+          [
+            "Date",
+            "Project",
+            "Task",
+            "Start",
+            "End",
+            "Hours",
+            "Billable",
+            "Description",
+          ],
+        ],
+        body: weeklyRows,
+        startY: y,
+        theme: "grid",
+        styles: { fontSize: 9 },
+        headStyles: {
+          fillColor: [243, 244, 246],
+          textColor: [15, 23, 42],
+          halign: "left",
+        },
+      });
+
+      y = (doc.lastAutoTable?.finalY || y + 10) + 10;
+    });
+
+    // ---------------- Report Notes ----------------
+    // ---------------- Stylish Report Notes Box (Option A) ----------------
+y = ensureSpace(80, y);
+
+const notesX = 14;
+const notesWidth = pageWidth - 28;
+const notesHeight = 80;
+
+// Background (light blue)
+doc.setFillColor(228, 235, 245);
+doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "F");
+
+// Border
+doc.setDrawColor(190, 200, 210);
+doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "S");
+
+// Title
+doc.setFont("helvetica", "bold");
+doc.setFontSize(14);
+doc.setTextColor(15, 23, 42);
+doc.text("Report Notes", notesX + 6, y + 12);
+
+// Notes content
+doc.setFont("helvetica", "normal");
+doc.setFontSize(10);
+doc.setTextColor(55, 65, 81);
+
+const notes = [
+  "Billable Hours – Total hours spent on tasks classified as billable across all projects.",
+  "Standard Holiday Hours – 8 hours per weekday holiday.",
+  "Non-Billable Hours – Includes non-billable + holiday hours.",
+  "Total Hours – Billable + Non-Billable Hours.",
+  "Billable Utilization % – Billable Hours ÷ Total Hours × 100.",
+  "Minimum Monthly Hours – Expected contribution: 176 hrs.",
+  "Leaves – Approved leave days counted this month.",
+  "Project-wise Hours Distribution % – Contribution relative to total hours."
+];
+
+let noteY = y + 22;
+
+notes.forEach((line) => {
+  doc.text(`• ${line}`, notesX + 8, noteY);
+  noteY += 7;
+});
+
+// Footer message
+y = y + notesHeight + 10;
+doc.setFont("helvetica", "italic");
+doc.setFontSize(10);
+doc.text(
+  `Report generated on ${new Date().toISOString().slice(0, 19)}.`,
+  notesX,
+  y
+);
+
+    doc.save(`User_Monthly_Report_${monthLabel.replace(" ", "_")}.pdf`);
   };
 
   const sendMailPDF = async () => {
@@ -246,10 +607,6 @@ const MonthlyTSReport = () => {
     );
   }
   if (!apiData) return null;
-
-  // const monthLabelUI = new Date(
-  //   `${year}-${String(month).padStart(2, "0")}-01`
-  // ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
     <div className="timesheet-container">
@@ -315,10 +672,6 @@ const MonthlyTSReport = () => {
                       {monthOptions.find((m) => m.value === month)?.name} {year}
                     </div>
                   )}
-                  {/* <span className="text-teal-600 font-semibold">
-                    {monthOptions.find((m) => m.value === month)?.name} {" "}
-                    {year}
-                  </span> */}
                 </button>
               </h1>
               <p className="employee-details">
