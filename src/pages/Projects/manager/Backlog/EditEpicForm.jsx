@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { X } from "lucide-react";
-
+ 
 import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 import FormDatePicker from "../../../../components/forms/FormDatePicker";
-
+ 
 const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -17,21 +17,21 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
     dueDate: "",
     projectId: projectId,
   });
-
+ 
   const [projectName, setProjectName] = useState("");
   const [statuses, setStatuses] = useState([]);
   const [createdDate, setCreatedDate] = useState(null);
   const [loading, setLoading] = useState(true);
-
+ 
   const token = localStorage.getItem("token");
-
+ 
   const axiosConfig = {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
   };
-
+ 
   // =====================================================
   // FETCH DATA
   // =====================================================
@@ -48,7 +48,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             axiosConfig
           ),
         ];
-
+ 
         // If editing, also fetch epic
         if (epicId) {
           requests.push(
@@ -58,21 +58,21 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             )
           );
         }
-
+ 
         const responses = await Promise.all(requests);
-
+ 
         // Project Name
         const projectData = responses[0].data;
         setProjectName(projectData.name || "");
-
+ 
         // Statuses
         const statusData = responses[1].data;
         setStatuses(statusData || []);
-
+ 
         // Epic Data (if editing)
         if (epicId && responses[2]) {
           const epic = responses[2].data;
-
+ 
           setFormData({
             name: epic.name || "",
             description: epic.description || "",
@@ -81,7 +81,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             dueDate: epic.dueDate ? epic.dueDate.split("T")[0] : "",
             projectId: Number(epic.project?.id || projectId),
           });
-
+ 
           setCreatedDate(
             epic.createdAt ? epic.createdAt.split("T")[0] : null
           );
@@ -96,18 +96,18 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         setLoading(false);
       }
     };
-
+ 
     loadData();
   }, [epicId, projectId]);
-
+ 
   // =====================================================
   // HANDLE CHANGE
   // =====================================================
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+ 
     const numericFields = ["statusId"];
-
+ 
     setFormData((prev) => ({
       ...prev,
       [name]: numericFields.includes(name)
@@ -118,6 +118,15 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
     }));
   };
 
+  // Handle outside click
+  const handleOutsideClick = (e) => {
+    // if clicked background (this div), close modal
+    if (e.target.classList.contains("overlay-bg")) {
+      onClose?.();
+    }
+  };
+
+ 
   // =====================================================
   // VALIDATION
   // =====================================================
@@ -126,29 +135,29 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
       toast.error("Epic name is required.");
       return false;
     }
-
+ 
     if (createdDate && formData.dueDate) {
       const due = new Date(formData.dueDate);
       const created = new Date(createdDate);
-
+ 
       if (due < created) {
         toast.error("Due date cannot be earlier than the created date.");
         return false;
       }
     }
-
+ 
     return true;
   };
-
+ 
   // =====================================================
   // SUBMIT
   // =====================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+ 
     setLoading(true);
-
+ 
     const payload = {
       name: formData.name,
       description: formData.description || null,
@@ -157,7 +166,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
       projectId: Number(formData.projectId),
       dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null,
     };
-
+ 
     try {
       if (epicId) {
         await axios.put(
@@ -165,7 +174,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
           payload,
           axiosConfig
         );
-        toast.success("Epic updated successfully!");
+        //toast.success("Epic updated successfully!");
       } else {
         await axios.post(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/epics`,
@@ -174,7 +183,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         );
         toast.success("Epic created successfully!");
       }
-
+ 
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
@@ -188,7 +197,7 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
       setLoading(false);
     }
   };
-
+ 
   // =====================================================
   // LOADING UI
   // =====================================================
@@ -201,133 +210,127 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
       </div>
     );
   }
-
+ 
   // =====================================================
   // RENDER FORM
   // =====================================================
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-        >
-          <X size={20} />
-        </button>
+  <div
+    className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 overlay-bg"
+    onClick={handleOutsideClick}
+  >
+    <div
+      className="bg-white rounded-xl shadow-lg w-full max-w-lg relative max-h-[90vh] flex flex-col"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+      >
+        <X size={20} />
+      </button>
 
-        <h2 className="text-xl font-bold mb-6 text-gray-800">
-          {epicId ? "Edit Epic" : "Create Epic"}
-        </h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800 px-8 pt-8">
+        {epicId ? "Edit Epic" : "Create Epic"}
+      </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Project Name */}
-          <FormInput
-            label="Project"
-            name="projectName"
-            value={projectName}
-            readOnly
-            disabled
-          />
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col flex-1 overflow-y-auto no-scrollbar px-8 pt-2"
+      >
+        {/* Project Name */}
+        <FormInput
+          label="Project"
+          name="projectName"
+          value={projectName}
+          readOnly
+          disabled
+        />
 
-          {/* Epic Name */}
-          <FormInput
-            label="Epic Name *"
-            name="name"
-            value={formData.name}
+        {/* Epic Name */}
+        <FormInput
+          label="Epic Name *"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+        />
+
+        <FormTextArea
+          label="Description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormSelect
+            label="Priority"
+            name="priority"
+            value={formData.priority}
             onChange={handleChange}
-            required
+            options={[
+              { label: "Low", value: "LOW" },
+              { label: "Medium", value: "MEDIUM" },
+              { label: "High", value: "HIGH" },
+              { label: "Critical", value: "CRITICAL" },
+            ]}
           />
 
-          {/* Description */}
-          <FormTextArea
-            label="Description"
-            name="description"
-            value={formData.description}
+          <FormSelect
+            label="Status *"
+            name="statusId"
+            value={formData.statusId || ""}
             onChange={handleChange}
+            options={[
+              { label: "Select Status", value: "" },
+              ...statuses.map((s) => ({
+                label: s.name,
+                value: s.id,
+              })),
+            ]}
           />
+        </div>
 
-          {/* Priority + Status */}
-          <div className="grid grid-cols-2 gap-4">
-            <FormSelect
-              label="Priority"
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              options={[
-                { label: "Low", value: "LOW" },
-                { label: "Medium", value: "MEDIUM" },
-                { label: "High", value: "HIGH" },
-                { label: "Critical", value: "CRITICAL" },
-              ]}
-            />
+        <FormDatePicker
+          label="Due Date"
+          name="dueDate"
+          value={formData.dueDate}
+          onChange={handleChange}
+        />
+        {createdDate && (
+          <p className="text-sm text-gray-600 -mt-3">
+            Created On: {createdDate}
+          </p>
+        )}
 
-            <FormSelect
-              label="Status *"
-              name="statusId"
-              value={formData.statusId || ""}
-              onChange={handleChange}
-              options={[
-                { label: "Select Status", value: "" },
-                ...statuses.map((s) => ({
-                  label: s.name,
-                  value: s.id,
-                })),
-              ]}
-            />
-          </div>
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 bg-white py-4 mt-4 flex justify-end gap-3 border-t">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
 
-          {/* Due Date */}
-          <FormDatePicker
-            label="Due Date"
-            name="dueDate"
-            value={formData.dueDate}
-            onChange={handleChange}
-          />
-          {createdDate && (
-            <p className="text-sm text-gray-600 -mt-3">
-              Created On: {createdDate}
-            </p>
-          )}
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading
-                ? "Saving..."
-                : epicId
-                ? "Save Changes"
-                : "Create Epic"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Hide Scrollbar */}
-      <style>
-        {`
-          .no-scrollbar::-webkit-scrollbar {
-            width: 0px;
-          }
-          .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-        `}
-      </style>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {loading
+              ? "Saving..."
+              : epicId
+              ? "Save Changes"
+              : "Create Epic"}
+          </button>
+        </div>
+      </form>
     </div>
-  );
-};
+  </div>
+);
 
+};
+ 
 export default EditEpicForm;
