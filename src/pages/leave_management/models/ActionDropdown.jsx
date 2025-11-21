@@ -44,7 +44,7 @@ const ActionDropdown = ({
         setIsBalancesLoading(true);
         try {
           const res = await axios.get(
-            `${BASE_URL}/api/leave-balance/employee/${employeeId}`,
+            `${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setEmployeeLeaveBalances(res.data || []);
