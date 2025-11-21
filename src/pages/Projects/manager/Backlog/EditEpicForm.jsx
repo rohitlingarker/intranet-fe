@@ -49,7 +49,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
           ),
         ];
 
-        // If editing, also fetch epic
         if (epicId) {
           requests.push(
             axios.get(
@@ -61,15 +60,12 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
 
         const responses = await Promise.all(requests);
 
-        // Project Name
         const projectData = responses[0].data;
         setProjectName(projectData.name || "");
 
-        // Statuses
         const statusData = responses[1].data;
         setStatuses(statusData || []);
 
-        // Epic Data (if editing)
         if (epicId && responses[2]) {
           const epic = responses[2].data;
 
@@ -86,7 +82,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             epic.createdAt ? epic.createdAt.split("T")[0] : null
           );
         } else {
-          // new epic
           setCreatedDate(new Date().toISOString().split("T")[0]);
         }
       } catch (err) {
@@ -175,10 +170,11 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         toast.success("Epic created successfully!");
       }
 
-      setTimeout(() => {
-        onUpdated?.();
-        onClose?.();
-      }, 1000);
+      setLoading(false);
+
+      // Updated fix: Close immediately, no modal flash again
+      onUpdated?.();
+      onClose?.();
     } catch (err) {
       console.error("Error saving epic:", err);
       toast.error(
@@ -220,7 +216,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Project Name */}
           <FormInput
             label="Project"
             name="projectName"
@@ -229,7 +224,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             disabled
           />
 
-          {/* Epic Name */}
           <FormInput
             label="Epic Name *"
             name="name"
@@ -238,7 +232,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             required
           />
 
-          {/* Description */}
           <FormTextArea
             label="Description"
             name="description"
@@ -246,7 +239,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             onChange={handleChange}
           />
 
-          {/* Priority + Status */}
           <div className="grid grid-cols-2 gap-4">
             <FormSelect
               label="Priority"
@@ -276,20 +268,19 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
             />
           </div>
 
-          {/* Due Date */}
           <FormDatePicker
             label="Due Date"
             name="dueDate"
             value={formData.dueDate}
             onChange={handleChange}
           />
+
           {createdDate && (
             <p className="text-sm text-gray-600 -mt-3">
               Created On: {createdDate}
             </p>
           )}
 
-          {/* Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
@@ -314,7 +305,6 @@ const EditEpicForm = ({ epicId, projectId, onClose, onUpdated }) => {
         </form>
       </div>
 
-      {/* Hide Scrollbar */}
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
