@@ -28,6 +28,7 @@ const MonthlyTSReport = () => {
   });
   const [loading, setLoading] = useState(false);
   const [mailLoading, setMailLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState(null);
   const [projectInfo, setProjectInfo] = useState([]);
   const navigate = useNavigate();
@@ -178,101 +179,34 @@ const MonthlyTSReport = () => {
     }));
   }, [apiData]);
 
-  const handleDownloadPDF = () => {
-    if (!apiData) return;
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const monthLabel = new Date(
-      `${year}-${String(month).padStart(2, "0")}-01`
-    ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-    // Header
-    pdf.setFontSize(18);
-    pdf.text(`Monthly Timesheet: ${monthLabel}`, 14, 20);
-    pdf.setFontSize(12);
-    pdf.text(`Employee: ${apiData.employeeName || "-"}`, 14, 28);
-    pdf.text(
-      `Employee ID: ${
-        apiData.employeeId || "-"
-      } | Department: Product Development`,
-      14,
-      34
-    );
-
-    // KPI Summary
-    pdf.setFontSize(14);
-    pdf.text("KPI Summary", 14, 44);
-    pdf.setFontSize(12);
-    pdf.text(
-      `Monthly Total Adjusted: ${kpis.monthlyTotalAdjusted.toFixed(1)} hrs`,
-      14,
-      52
-    );
-    pdf.text(
-      `Monthly Billable Hours: ${kpis.monthlyBillableHours.toFixed(1)} hrs`,
-      14,
-      58
-    );
-    pdf.text(`Billable Ratio: ${kpis.billableRatio}%`, 14, 64);
-    pdf.text(`Non-Billable Ratio: ${kpis.nonBillableRatio}%`, 14, 70);
-
-    // Detailed Log Table
-    const tableData = [];
-    const weeks = (apiData.weeklySummaryHistory || [])
-      .slice()
-      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
-    weeks.forEach((week, idx) => {
-      for (const ts of week.timesheets || []) {
-        if (ts.defaultHolidayTimesheet) {
-          tableData.push([
-            ts.workDate,
-            "-",
-            "Holiday/Default",
-            Number(ts.hoursWorked || 0),
-            "-",
-          ]);
-          continue;
+  const downloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const response = await fetch(
+        `${TS_BASE_URL}/api/report/downloadMonthlyPdf?month=11&year=2025`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-        for (const e of ts.entries || []) {
-          tableData.push([
-            ts.workDate,
-            e.projectName || `Project ${e.projectId ?? ""}`,
-            e.isBillable ? "Billable" : "Non-Billable",
-            Number(e.hoursWorked || 0),
-            e.description || "",
-          ]);
-        }
-      }
-      tableData.push([
-        `Week ${idx + 1} Total`,
-        "",
-        "",
-        Number(week.totalHours || 0),
-        "",
-      ]);
-    });
+      );
 
-    autoTable(pdf, {
-      head: [["Date", "Project", "Type", "Hours", "Description"]],
-      body: tableData,
-      startY: 80,
-      theme: "grid",
-      headStyles: { fillColor: [41, 128, 185] },
-      styles: { fontSize: 10 },
-    });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
 
-    const finalY = pdf.lastAutoTable?.finalY || 80;
-    pdf.setFontSize(12);
-    pdf.text(
-      `MONTHLY TOTAL LOGGED (ADJUSTED): ${kpis.monthlyTotalAdjusted.toFixed(
-        1
-      )} hrs`,
-      14,
-      finalY + 10
-    );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Monthly_Report.pdf";
+      a.click();
 
-    pdf.save(`Monthly_Timesheet_${monthLabel.replace(" ", "_")}.pdf`);
+      window.URL.revokeObjectURL(url);
+      toast.success("PDF downloaded successfully");
+    } catch (err) {
+      toast.error("Failed to download PDF");
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const sendMailPDF = async () => {
@@ -393,12 +327,20 @@ const MonthlyTSReport = () => {
               <p className="employee-name">Employee: {apiData.employeeName}</p>
             </div>
             <div>
-              <button className="download-btn" onClick={handleDownloadPDF}>
-                Download
-              </button>
+              <Button
+                className={`download-btn ${
+                  pdfLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={downloadPdf}
+                variant="primary"
+                size="small"
+                disabled={pdfLoading}
+              >
+                {pdfLoading ? "Downloading..." : "Download PDF Report"}
+              </Button>
               <Button
                 variant="secondary"
-                size="medium"
+                size="small"
                 className={`ml-3 ${mailLoading ? "is-sending" : ""}`}
                 onClick={sendMailPDF}
                 disabled={mailLoading}
@@ -450,29 +392,69 @@ const MonthlyTSReport = () => {
           <h4>Report Notes</h4>
           <ul>
             <li>
-              Billable Hours = Total hours spent on tasks classified as billable
-              across all projects.
+              <strong>Billable Hours</strong> = Total hours spent on tasks
+              classified as billable across all projects.
             </li>
             <li>
-              Standard holiday hours = (Mon-Fri calculated 8 hrs/holiday).
+              <strong>Standard Holiday Hours</strong> = (Mon-Fri calculated 8 hrs/holiday).
             </li>
             <li>
-              Non-Billable Hours = Sum of all task hours marked as non-billable
-              across all projects + Standard holiday hours.
+              <strong>Non-Billable Hours</strong> = Sum of all task hours marked
+              as non-billable across all projects + Standard holiday hours.
             </li>
-            <li>Total Hours = Billable Hours + Non-Billable Hours</li>
-            <li>Billable Utilization% = Billable Hours ÷ Total Hours × 100</li>
-            <li>Minimum Monthly hours = 176</li>
-            <li>Leaves = Count of leave days approved during this month</li>
             <li>
-              Project-wise Hours Distribution % = Represents the proportion of
-               effort dedicated to this project in relation to the overall
-              project hours.
+              <strong>Total Hours</strong> = Billable Hours + Non-Billable Hours
             </li>
-            {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
-          <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>
-          <li>Target utilization rate: 75% for sustainable productivity</li>
-          <li>Productivity = (Total Hours / 160) × 100</li> */}
+            <li>
+              <strong>Billable Utilization%</strong> = Billable Hours ÷ Total
+              Hours × 100
+            </li>
+            <li>
+              <strong>Minimum Monthly hours</strong> = 176
+            </li>
+            <li>
+              <strong>Leaves / Holidays:</strong> Sum of approved leave days and
+              company-declared holidays during the selected month.
+            </li>
+            <li>
+              <strong>Current Active Projects:</strong> Number of projects in
+              which the employee logged hours during the month.
+            </li>
+            <li>
+              <strong>Project-wise Hour Distribution:</strong> Represents the
+              proportion of total hours dedicated to each project relative to
+              all projects combined.
+            </li>
+            <li>
+              <strong>Daily Hours Breakdown:</strong> Shows how the employee
+              distributed their work hours across each day of the week
+              throughout the month.
+            </li>
+            <li>
+              <strong>Weekly Timesheet Summary:</strong> Each week block
+              displays hours logged, approval status, and detailed daily tasks
+              submitted by the employee.
+            </li>
+            <li>
+              <strong>Draft / Submitted / Approved / Rejected Status:</strong>
+              Draft = Saved but not submitted. Submitted = Pending manager
+              approval. Approved = Reviewed and confirmed. Rejected = Timesheet
+              reviewed and declined; corrections required before resubmission.
+            </li>
+            <li>
+              <strong>Monthly Minimum Hours Requirement:</strong> Expected
+              monthly working hours are 176 hours (22 working days × 8
+              hours/day).
+            </li>
+            <li>
+              <strong>Missing Timesheets:</strong> Weeks with zero entries
+              indicate timesheets were not filled or submitted.
+            </li>
+            <li>
+              <strong>Hour Accuracy:</strong> Hours displayed are based on
+              submitted timesheets; incomplete or delayed entries may affect
+              totals.
+            </li>
           </ul>
         </div>
       </div>
