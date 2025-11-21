@@ -684,7 +684,7 @@ doc.text(
                 className={`download-btn ${
                   pdfLoading ? "opacity-50 cursor-not-allowed" : ""
                 }`}
-                onClick={downloadPdf}
+                onClick={handleDownloadPDF}
                 variant="primary"
                 size="small"
                 disabled={pdfLoading}
