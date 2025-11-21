@@ -1602,37 +1602,65 @@ const ManagerMonthlyReport = () => {
             <h4>Report Notes</h4>
             <ul>
               <li>
-                Billable Hours = Total hours spent on tasks classified as
-                billable across all projects.
+                <strong>Billable Hours:</strong> Total hours spent by team
+                members on tasks classified as billable across all assigned
+                projects.
               </li>
               <li>
-                Standard holiday hours = (Mon-Fri calculated 8 hrs/holiday).
+                <strong>Non-Billable Hours:</strong> Total hours logged on tasks
+                marked as non-billable across all projects.
               </li>
               <li>
-                Non-Billable Hours = Sum of all task hours marked as
-                non-billable across all projects + Standard holiday hours.
-              </li>
-              <li>Total Hours = Billable Hours + Non-Billable Hours</li>
-              <li>
-                Billable Utilization% = Billable Hours ÷ Total Hours × 100
-              </li>
-              <li>Minimum Monthly hours = 176</li>
-              <li>
-                Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
-                hours × 100
+                <strong>Total Hours:</strong> Sum of Billable Hours +
+                Non-Billable Hours.
               </li>
               <li>
-                Employee leaveHoursBreakdown Contribution =
-                (leaveHours/totalLeaveHours) × 100
+                <strong>Billable Utilization (%):</strong> (Billable Hours ÷
+                Total Hours) × 100.
               </li>
               <li>
-                Employee projectUserHoursBreakdown Contribution =
-                (totalHours/totalProjectHours) × 100
+                <strong>Minimum Monthly Hours Requirement:</strong> 176 hours
+                per employee (22 working days × 8 hours/day).
               </li>
-              {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
-              <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>
-              <li>Target utilization rate: 75% for sustainable productivity</li>
-              <li>Productivity = (Total Hours / 160) × 100</li> */}
+              <li>
+                <strong>Active Projects:</strong> Count of all projects that had
+                at least one time entry in the selected month.
+              </li>
+              <li>
+                <strong>Project Allocation Hours:</strong> Total number of hours
+                contributed to each project by all assigned team members.
+              </li>
+              <li>
+                <strong>Daily Contribution:</strong> Distribution of total hours
+                logged by the team for each day of the selected month.
+              </li>
+              <li>
+                <strong>Billable vs Non-Billable (Overall):</strong> Normalized
+                ratio showing how the team's total hours split across billable
+                and non-billable work.
+              </li>
+              <li>
+                <strong>Underutilized Employees:</strong> Team members whose
+                logged hours are below the expected minimum monthly threshold.
+              </li>
+              <li>
+                <strong>Overworked Employees:</strong> Team members whose hours
+                exceed acceptable capacity (e.g., &gt; 176 hours/month).
+              </li>
+              <li>
+                <strong>Pending Timesheets:</strong> Number of employees who
+                have not submitted timesheets for last 15 days within the
+                selected month.
+              </li>
+              <li>
+                <strong>Billing Data Accuracy:</strong> Hours in this report are
+                based on submitted timesheets only;
+              </li>
+              <li>
+                <strong>Average Billable Percentage:</strong> Average of the
+                billable percentage values of all projects for the selected
+                month.
+              </li>
             </ul>
           </div>
         </footer>

@@ -1,6 +1,6 @@
 // File: src/pages/leave_management/EmployeeDashboard.jsx
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import WeeklyPattern from "./charts/WeeklyPattern";
 import MonthlyStats from "./charts/MonthlyStats";
 import RequestLeaveModal from "./models/RequestLeaveModal";
@@ -18,6 +18,13 @@ import UpcomingHolidays from "./charts/UpcomingHolidays";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+// import { over } from "stompjs";
+// import SockJS from "sockjs-client";
+
+import { useWebSocket } from "./websockets/WebSocketProvider.jsx";
+import { set } from "date-fns";
+
+// let stompClient = null;
 
 // This component now holds everything from the "Employee View"
 const EmployeeDashboard = ({ employeeId }) => {
@@ -35,6 +42,7 @@ const EmployeeDashboard = ({ employeeId }) => {
   const userPermissions = user?.permissions || [];
   const compOffPageRef = useRef();
   const navigate = useNavigate();
+  const { subscribe } = useWebSocket();
 
   // const handleCompOffSubmit = async (modalData) => {
   //   console.log("Submitting comp-off request from EmployeeDashboard:", modalData);
@@ -60,7 +68,7 @@ const EmployeeDashboard = ({ employeeId }) => {
         toast.success(
           res?.data?.message || "Comp-Off request submitted successfully!"
         );
-        setrefreshKeys((prev) => prev + 1);
+        setrefreshKeys((prev) => (typeof prev === "number" ? prev + 1 : 1));
         try {
           await fetchRequests();
         } catch (err) {
@@ -72,14 +80,25 @@ const EmployeeDashboard = ({ employeeId }) => {
         return false;
       }
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to submit comp-off request.");
+      toast.error(
+        err?.response?.data?.message || "Failed to submit comp-off request."
+      );
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchRequests = async () => {
+  // fetchRequests now wrapped in useCallback so it can be used by effects safely
+  const inFlightRef = useRef(false); // prevents concurrent fetches / loops
+  const isMountedRef = useRef(true);
+
+  const fetchRequests = useCallback(async () => {
+    // guard: don't run if no employeeId, or already fetching
+    if (!employeeId) return;
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
     try {
       const res = await axios.get(
         `${BASE_URL}/api/compoff/employee/${employeeId}`,
@@ -88,26 +107,108 @@ const EmployeeDashboard = ({ employeeId }) => {
         }
       );
 
-      if (res.data.success) {
-        const allRequests = res.data.data; // Full array
+      if (res.data && res.data.success) {
+        const allRequests = Array.isArray(res.data.data) ? res.data.data : [];
         const pending = allRequests.filter((item) => item.status === "PENDING");
 
-        setPendingRequests(pending);
+        if (isMountedRef.current) {
+          setPendingRequests(pending);
 
-        // Notify parent if callback exists
-        if (onPendingRequestsChange) {
-          onPendingRequestsChange(pending);
+          // Notify parent if callback exists
+          if (onPendingRequestsChange) {
+            onPendingRequestsChange(pending);
+          }
+        }
+      } else {
+        if (isMountedRef.current) {
+          setPendingRequests([]);
         }
       }
     } catch (err) {
       console.error("Failed to fetch comp-off requests:", err);
+    } finally {
+      // small delay to avoid tight loops when multiple events arrive quickly
+      setTimeout(() => {
+        inFlightRef.current = false;
+      }, 300);
     }
-  };
+  }, [BASE_URL, employeeId]);
 
   // Use it in useEffect
   useEffect(() => {
+    isMountedRef.current = true;
     fetchRequests();
-  }, [employeeId]);
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [employeeId, fetchRequests]);
+
+  // ---------------------------
+  // WEBSOCKET REAL-TIME LISTENER
+  // ---------------------------
+  // useEffect(() => {
+  //   let isMounted = true;
+
+  //   const socket = new SockJS(`${BASE_URL}/ws`);
+  //   stompClient = over(socket);
+
+  //   stompClient.connect(
+  //     {},
+  //     () => {
+  //       console.log("Connected to WebSocket (EmployeeDashboard)");
+
+  //       if (!isMounted) return;
+
+  //       stompClient.subscribe("/topic/data-updated", () => {
+  //         console.log("Update received → refreshing pending requests");
+  //         fetchRequests(); // works now
+  //       });
+  //     },
+  //     (error) => {
+  //       console.error("WebSocket error:", error);
+  //     }
+  //   );
+
+  //   return () => {
+  //     isMounted = false;
+
+  //     if (stompClient && stompClient.connected) {
+  //       stompClient.disconnect(() =>
+  //         console.log("WebSocket disconnected (cleanup)")
+  //       );
+  //     }
+  //   };
+  // }, []);
+
+  useEffect(() => {
+    if (!subscribe) return; // safety
+
+    // Prevent multiple refresh calls
+    const handleUpdate = () => {
+      console.log("WS EVENT → refreshing pending requests");
+      // setrefreshKeys((prev) => prev + 1);
+      if (!inFlightRef.current) return; // already running → ignore
+
+      if (!inFlightRef.current) {
+        inFlightRef.current = true;
+
+        fetchRequests().finally(() => {
+          setTimeout(() => {
+            inFlightRef.current = false;
+          }, 800);
+        });
+      }
+    };
+
+    // subscribe for both events
+    const unsub1 = subscribe("data-updated", handleUpdate);
+    const unsub2 = subscribe("leave-update", handleUpdate);
+
+    return () => {
+      if (typeof unsub1 === "function") unsub1();
+      if (typeof unsub2 === "function") unsub2();
+    };
+  }, [subscribe, fetchRequests]);
 
   // const holidayData = axios.get(`${process.env.REACT_APP_API_URL}/api/holidays/all`)
   // .then((res)=> res.data).catch((err) => {
@@ -194,7 +295,7 @@ const EmployeeDashboard = ({ employeeId }) => {
       <LeaveDashboard employeeId={employeeId} refreshKey={refreshKeys} />
 
       <h2 className="text-small font-semibold m-4">Leave History</h2>
-      <LeaveHistory employeeId={employeeId} />
+      <LeaveHistory employeeId={employeeId} refreshKey={refreshKeys} />
 
       <RequestLeaveModal
         isOpen={isRequestLeaveModalOpen}
@@ -202,7 +303,6 @@ const EmployeeDashboard = ({ employeeId }) => {
         employeeId={employeeId}
         onSuccess={() => setrefreshKeys((prev) => !prev)} // Trigger refresh of pending leaves
       />
-
 
       {/* <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <Calendar />
@@ -220,3 +320,191 @@ const EmployeeDashboard = ({ employeeId }) => {
 };
 
 export default EmployeeDashboard;
+
+// File: src/pages/leave_management/EmployeeDashboard.jsx
+
+// import React, { useState, useRef, useEffect } from "react";
+// import WeeklyPattern from "./charts/WeeklyPattern";
+// import MonthlyStats from "./charts/MonthlyStats";
+// import RequestLeaveModal from "./models/RequestLeaveModal";
+// import LeaveDashboard from "./charts/LeaveDashboard";
+// import LeaveHistory from "./models/LeaveHistory";
+// import CustomActiveShapePieChart from "./charts/CustomActiveShapePieChart";
+// import PendingLeaveRequests from "./models/PendingLeaveRequests";
+// import CompOffPage from "./models/CompOffPage";
+// import ActionButtons from "./models/ActionButtons";
+// import CompOffRequestModal from "./models/CompOffRequestModal";
+// import Button from "../../components/Button/Button";
+// import { useNavigate } from "react-router-dom";
+// import UpcomingHolidays from "./charts/UpcomingHolidays";
+// import { toast } from "react-toastify";
+// import axios from "axios";
+// import { useWebSocket } from "./websockets/WebSocketProvider.jsx";
+
+// let stompClient = null;
+
+// // This component now holds everything from the "Employee View"
+// const EmployeeDashboard = ({ employeeId }) => {
+//   const [isRequestLeaveModalOpen, setIsRequestLeaveModalOpen] = useState(false);
+//   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [refreshKeys, setrefreshKeys] = useState(false);
+//   const [pendingRequests, setPendingRequests] = useState([]);
+//   const onPendingRequestsChange = (newRequests) => {
+//     setPendingRequests(newRequests);
+//   };
+
+//   const BASE_URL = import.meta.env.VITE_BASE_URL;
+//   const user = JSON.parse(localStorage.getItem("user"));
+//   const userPermissions = user?.permissions || [];
+//   const compOffPageRef = useRef();
+//   const navigate = useNavigate();
+//   const { subscribe } = useWebSocket();
+
+//   const fetchRequests = async () => {
+//     try {
+//       const res = await axios.get(
+//         `${BASE_URL}/api/compoff/employee/${employeeId}`,
+//         {
+//           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+//         }
+//       );
+
+//       if (res.data.success) {
+//         const allRequests = res.data.data;
+//         const pending = allRequests.filter((item) => item.status === "PENDING");
+//         setPendingRequests(pending);
+
+//         if (onPendingRequestsChange) {
+//           onPendingRequestsChange(pending);
+//         }
+//       }
+//     } catch (err) {
+//       console.error("Failed to fetch comp-off requests:", err);
+//     }
+//   };
+
+//   // Load on first mount ONLY (no infinite loop)
+//   useEffect(() => {
+//     fetchRequests();
+//   }, []); // ← Empty dependency (fixes infinite refresh)
+
+//   // Prevent continuous refresh loop
+//   const isRefreshing = useRef(false);
+
+//   useEffect(() => {
+//     const unsub = subscribe("data-updated", () => {
+//       if (isRefreshing.current) return;
+
+//       isRefreshing.current = true;
+//       console.log("WS → refreshing pending requests");
+
+//       fetchRequests().finally(() => {
+//         setTimeout(() => {
+//           isRefreshing.current = false;
+//         }, 800); // Allow next refresh safely
+//       });
+//     });
+
+//     return unsub;
+//   }, []);
+
+//   const handleCompOffSubmit = async (payload) => {
+//     console.log("Submitting comp-off request from EmployeeDashboard:", payload);
+//     setIsLoading(true);
+//     try {
+//       payload = { ...payload, employeeId };
+
+//       const res = await axios.post(`${BASE_URL}/api/compoff/request`, payload, {
+//         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+//       });
+
+//       if (res.data.success) {
+//         toast.success(
+//           res?.data?.message || "Comp-Off request submitted successfully!"
+//         );
+
+//         // SAFE manual refresh
+//         setrefreshKeys((prev) => prev + 1);
+//         await fetchRequests();
+//         return true;
+//       } else {
+//         toast.error(res.data.message || "Failed to submit comp-off request.");
+//         return false;
+//       }
+//     } catch (err) {
+//       toast.error(
+//         err?.response?.data?.message || "Failed to submit comp-off request."
+//       );
+//       return false;
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   return (
+//     <>
+//       <div className="m-6 flex flex-col sm:flex-row sm:justify-end gap-2">
+//         <ActionButtons
+//           onRequestLeave={() => setIsRequestLeaveModalOpen(true)}
+//           onRequestCompOff={() => setIsCompOffModalOpen(true)}
+//         />
+
+//         <button
+//           onClick={() => navigate(`/leave-policy`)}
+//           className="text-white rounded-xl font-semibold bg-indigo-900 hover:bg-indigo-800 text-xs px-3 "
+//         >
+//           Leave Policy
+//         </button>
+//       </div>
+
+//       <h2 className="text-small font-semibold m-4">Pending Leave Requests</h2>
+
+//       <div className="flex gap-4 flex-col md:flex-row">
+//         {/* Pending Leave Requests */}
+//         <div className="bg-white p-6 rounded-lg shadow-sm md:w-full lg:w-[65%]">
+//           <PendingLeaveRequests employeeId={employeeId} refreshKey={refreshKeys} />
+//         </div>
+
+//         {/* Upcoming Holidays */}
+//         <div className="md:w-full lg:w-[35%]">
+//           <UpcomingHolidays />
+//         </div>
+//       </div>
+
+//       {pendingRequests.length > 0 && (
+//         <>
+//           <CompOffPage
+//             ref={compOffPageRef}
+//             employeeId={employeeId}
+//             onPendingRequestsChange={setPendingRequests}
+//             refreshKey={refreshKeys}
+//           />
+//         </>
+//       )}
+
+//       {isCompOffModalOpen && (
+//         <CompOffRequestModal
+//           loading={isLoading}
+//           onSubmit={handleCompOffSubmit}
+//           onClose={() => setIsCompOffModalOpen(false)}
+//         />
+//       )}
+
+//       <h2 className="text-small font-semibold m-4">My Leave Stats</h2>
+//       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//         <WeeklyPattern employeeId={employeeId} refreshKey={refreshKeys} />
+//         <CustomActiveShapePieChart employeeId={employeeId} refreshKey={refreshKeys} />
+//         <MonthlyStats employeeId={employeeId} refreshKey={refreshKeys} />
+//       </div>
+
+//       <h2 className="text-small font-semibold m-4">Leave Balances</h2>
+//       <LeaveDashboard employeeId={employeeId} refreshKey={refreshKeys} />
+
+//       <h2 className="text-small font-semibold m-4">Leave History</h2>
+//       <LeaveHistory employeeId={employeeId} />
+//     </>
+//   );
+// };
+
+// export default EmployeeDashboard;

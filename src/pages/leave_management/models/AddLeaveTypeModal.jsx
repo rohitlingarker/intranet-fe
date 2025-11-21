@@ -4,20 +4,32 @@ import axios from "axios";
 import { Listbox, Transition } from "@headlessui/react";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
- 
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const useLeavelables = () => {
   const [leavelables, setLeavelables] = useState([]);
   const [loading, setLoading] = useState(true);
- 
+  const [accrualFrequency, setaccrualFrequency] = useState([]);
+
   useEffect(() => {
     const fetchLeavelables = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        console.log("res", res);
+        const accfre = await axios.get(
+          `${BASE_URL}/api/leave/accrual-frequencies`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setaccrualFrequency(accfre.data || []);
+        // console.log("res", res);
+        // console.log("accfre", accfre);
+        // console.log("freq", accrualFrequency);
         const types = res.data?.data || res.data || [];
         setLeavelables(types); // store full {name, label} objects
       } catch (err) {
@@ -30,9 +42,8 @@ const useLeavelables = () => {
     fetchLeavelables();
   }, []);
 
-  return { leavelables, loading };
+  return { leavelables, loading, accrualFrequency };
 };
-
 
 const defaultForm = {
   leaveTypeId: "",
@@ -41,6 +52,7 @@ const defaultForm = {
   maxDaysPerYear: "",
   maxCarryForwardPerYear: "",
   maxCarryForward: "",
+  accrualFrequency: "",
   requiresDocumentation: false,
   expiryDays: "",
   waitingPeriodDays: "",
@@ -54,11 +66,15 @@ const defaultForm = {
   effectiveStartDate: "",
   // deactivationEffectiveDate: "",
 };
- 
+
 const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
-  const { leavelables, loading: loadinglables } = useLeavelables();
+  const {
+    leavelables,
+    loading: loadinglables,
+    accrualFrequency,
+  } = useLeavelables();
   // const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -143,7 +159,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
   };
 
   if (!isOpen) return null;
- 
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg sm:max-w-xl max-h-[90vh] overflow-y-auto relative">
@@ -152,7 +168,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <LoadingSpinner text="Submitting..." />
           </div>
         )}
- 
+
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <FileText className="w-6 h-6 text-green-600 mr-3" />
@@ -169,7 +185,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             <X className="w-6 h-6" />
           </button>
         </div>
- 
+
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
           {/* Leave Name Dropdown */}
           {/* Leave Name Dropdown */}
@@ -270,6 +286,71 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
             </div> */}
           </div>
 
+          {/* accrualFrequency */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Accrual Frequency <span className="text-red-500">*</span>
+            </label>
+
+            <Listbox
+              value={formData.accrualFrequency}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, accrualFrequency: value }))
+              }
+            >
+              <div className="relative mt-1">
+                <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-300 bg-white py-3 pl-4 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-green-500 sm:text-sm">
+                  <span className="block truncate">
+                    {formData.accrualFrequency || "Select Frequency"}
+                  </span>
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  </span>
+                </Listbox.Button>
+
+                <Transition
+                  as={Fragment}
+                  leave="transition ease-in duration-100"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+                >
+                  <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                    {accrualFrequency.map((freq, index) => (
+                      <Listbox.Option
+                        key={index}
+                        value={freq}
+                        className={({ active }) =>
+                          `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                            active
+                              ? "bg-green-100 text-green-900"
+                              : "text-gray-900"
+                          }`
+                        }
+                      >
+                        {({ selected }) => (
+                          <>
+                            <span
+                              className={`block truncate ${
+                                selected ? "font-medium" : "font-normal"
+                              }`}
+                            >
+                              {freq}
+                            </span>
+                            {selected && (
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-green-600">
+                                <Check className="w-5 h-5" />
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </Transition>
+              </div>
+            </Listbox>
+          </div>
+
           {/* Numeric Fields */}
           <div className="grid gap-4 sm:grid-cols-2">
             {[
@@ -296,7 +377,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </div>
             ))}
           </div>
- 
+
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -340,7 +421,7 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
               </div>
             ))}
           </div>
- 
+
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
             <button
@@ -368,5 +449,5 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     </div>
   );
 };
- 
+
 export default AddLeaveTypeModal;
