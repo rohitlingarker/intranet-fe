@@ -7,29 +7,50 @@ const CreateProjectModal = ({
   isOpen,
   onClose,
   onProjectCreated,
-  formData,
-  setFormData,
+  formData: initialFormData,
   editingProjectId,
 }) => {
+  const defaultFormData = {
+    name: "",
+    projectKey: "",
+    description: "",
+    status: "PLANNING",
+    currentStage: "INITIATION",
+    ownerId: "",
+    memberIds: [],
+    startDate: "",
+    endDate: "",
+  };
+  const [formData, setFormData] = useState(defaultFormData);
   const [users, setUsers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateError, setDateError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      if (editingProjectId && initialFormData) {
+        setFormData(initialFormData);
+      } else {
+        setFormData(defaultFormData);
+      }
+    }
 
     axios
       .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        const content = res.data.content;
-        if (Array.isArray(content)) setUsers(content);
+        // Handle both paginated and non-paginated user list responses
+        const userList = Array.isArray(res.data) ? res.data : res.data?.content;
+        if (Array.isArray(userList)) {
+          setUsers(userList.filter(Boolean)); // Filter out any null/undefined entries
+        }
       })
       .catch((err) => console.error("Error fetching users:", err));
-  }, [isOpen, token]);
+  }, [isOpen, token, editingProjectId, initialFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -67,8 +88,14 @@ const CreateProjectModal = ({
     });
   };
 
-  const handleStatusChange = (e) => setFormData({ ...formData, status: e.target.value });
-  const handleStageChange = (e) => setFormData({ ...formData, currentStage: e.target.value });
+  const handleStatusChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleStageChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,38 +120,27 @@ const CreateProjectModal = ({
     try {
       setIsSubmitting(true);
 
+      let response;
       if (editingProjectId) {
-        await axios.put(
+        response = await axios.put(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${editingProjectId}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         toast.success("Project updated successfully!");
+        if (onProjectCreated) onProjectCreated(); // Signal a refresh
       } else {
-        await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload, {
+        response = await axios.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success("Project created successfully!");
+        if (onProjectCreated) onProjectCreated(response.data); // Pass new project data
       }
-
-      if (onProjectCreated) onProjectCreated();
-
       if (!editingProjectId) {
-        setFormData({
-          name: "",
-          projectKey: "",
-          description: "",
-          status: "PLANNING",
-          currentStage: "INITIATION",
-          ownerId: "",
-          memberIds: [],
-          startDate: "",
-          endDate: "",
-        });
+        setFormData(defaultFormData);
       }
 
       setDateError(false);
-      onClose();
     } catch (error) {
       console.error("Failed to submit project:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Failed to submit project.");
@@ -134,6 +150,13 @@ const CreateProjectModal = ({
   };
 
   if (!isOpen) return null;
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user &&
+      user.name &&
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
    return (
   <div
@@ -229,9 +252,9 @@ const CreateProjectModal = ({
               required
             >
               <option value="">Select Owner</option>
-              {users.map((user) => (
+              {users.map((user) => user && (
                 <option key={user.id} value={user.id}>
-                  {user.name} ({user.roles.join(", ")})
+                  {user.name} ({user.roles?.join(", ") || "No Role"})
                 </option>
               ))}
             </select>
@@ -294,7 +317,7 @@ const CreateProjectModal = ({
   onChange={(e) => setSearchQuery(e.target.value)}
   className="w-full border px-3 py-2 rounded mb-3"
 />
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-2">
               {filteredUsers.map((user) => (
   <label key={user.id} className="flex items-center gap-2">
     <input
@@ -303,7 +326,7 @@ const CreateProjectModal = ({
       onChange={() => handleMemberCheckboxChange(user.id)}
       disabled={formData.ownerId.toString() === user.id.toString()}
     />
-    {user.name} ({user.roles.join(", ")})
+    {user.name} ({user.roles?.join(", ")})
   </label>
 ))}
 

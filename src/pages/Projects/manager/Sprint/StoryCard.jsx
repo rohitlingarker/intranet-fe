@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDrag } from "react-dnd";
 import { MoreVertical } from "lucide-react";
 
-const StoryCard = ({ story, sprints = [], onAddToSprint }) => {
+const StoryCard = ({ story, sprints = [], onAddToSprint, onClick }) => {
   const [, dragRef] = useDrag({
     type: "STORY",
     item: { id: story.id },
@@ -11,14 +11,18 @@ const StoryCard = ({ story, sprints = [], onAddToSprint }) => {
   const [showMenu, setShowMenu] = useState(false);
 
   const handleSelectSprint = (sprintId) => {
-    onAddToSprint(story.id, sprintId);
+    onAddToSprint?.(story.id, sprintId);
     setShowMenu(false);
   };
 
   return (
     <div
       ref={dragRef}
-      className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-move flex justify-between items-start transition"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) onClick();
+      }}
+      className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer flex justify-between items-start transition"
     >
       <div>
         <p className="text-sm font-semibold text-indigo-900">{story.title}</p>
@@ -29,7 +33,10 @@ const StoryCard = ({ story, sprints = [], onAddToSprint }) => {
 
       <div className="relative">
         <button
-          onClick={() => setShowMenu((prev) => !prev)}
+          onClick={(e) => {
+            e.stopPropagation(); // prevent this from opening the story panel
+            setShowMenu((prev) => !prev);
+          }}
           className="p-1 rounded hover:bg-gray-100"
         >
           <MoreVertical size={16} />

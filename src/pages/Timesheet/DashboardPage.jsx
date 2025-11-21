@@ -40,8 +40,8 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(false);
   const monthOptions = [
     { label: "Current Month", value: "Current Month" },
-    { label: "Last Month", value: "Last Month" },
-    { label: "Last 3 Months", value: "Last 3 Months" },
+    { label: "Last-Current Month", value: "Last Month" },
+    { label: "Last 2-Cur Months", value: "Last 3 Months" },
   ];
   const [selectedMonth, setSelectedMonth] = useState("current");
 

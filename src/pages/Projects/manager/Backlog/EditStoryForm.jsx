@@ -182,146 +182,135 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
 
   // ========== UI ==========
   return (
-    <div className="relative bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto border border-gray-200">
-      {/* Close Button */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition"
-      >
-        <X size={22} />
-      </button>
+  <div className="p-1 w-full">
+    <h2 className="text-xl font-semibold mb-4">Edit User Story</h2>
 
-      <h2 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
-        Edit User Story
-      </h2>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Title */}
+      <FormInput
+        label="Title *"
+        name="title"
+        value={formData.title}
+        onChange={handleChange}
+        required
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
-        <FormInput
-          label="Title *"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          required
-        />
+      {/* Description */}
+      <FormTextArea
+        label="Description"
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+      />
 
-        {/* Description */}
-        <FormTextArea
-          label="Description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-        />
+      {/* Epic */}
+      <FormSelect
+        label="Epic"
+        name="epicId"
+        value={formData.epicId || ""}
+        onChange={handleChange}
+        options={[
+          { label: "Select Epic", value: "" },
+          ...epics.map((e) => ({ label: e.name, value: e.id })),
+        ]}
+      />
 
-        {/* Epic */}
+      {/* Priority + Status */}
+      <div className="grid grid-cols-2 gap-4">
         <FormSelect
-          label="Epic"
-          name="epicId"
-          value={formData.epicId || ""}
+          label="Priority"
+          name="priority"
+          value={formData.priority}
           onChange={handleChange}
           options={[
-            { label: "Select Epic", value: "" },
-            ...epics.map((e) => ({ label: e.name, value: e.id })),
+            { label: "Low", value: "LOW" },
+            { label: "Medium", value: "MEDIUM" },
+            { label: "High", value: "HIGH" },
+            { label: "Critical", value: "CRITICAL" },
           ]}
         />
 
-        {/* Priority + Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <FormSelect
-            label="Priority"
-            name="priority"
-            value={formData.priority}
-            onChange={handleChange}
-            options={[
-              { label: "Low", value: "LOW" },
-              { label: "Medium", value: "MEDIUM" },
-              { label: "High", value: "HIGH" },
-              { label: "Critical", value: "CRITICAL" },
-            ]}
-          />
+        <FormSelect
+          label="Status *"
+          name="statusId"
+          value={formData.statusId || ""}
+          onChange={handleChange}
+          options={[
+            { label: "Select Status", value: "" },
+            ...statuses.map((s) => ({
+              label: s.name,
+              value: s.id,
+            })),
+          ]}
+        />
+      </div>
 
-          <FormSelect
-            label="Status *"
-            name="statusId"
-            value={formData.statusId || ""}
-            onChange={handleChange}
-            options={[
-              { label: "Select Status", value: "" },
-              ...statuses.map((s) => ({
-                label: s.name,
-                value: s.id,
-              })),
-            ]}
-          />
-        </div>
-
-        {/* Story Points + Sprint */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <FormInput
-            label="Story Points"
-            name="storyPoints"
-            type="number"
-            value={formData.storyPoints || ""}
-            onChange={handleChange}
-          />
-
-          <FormSelect
-            label="Sprint"
-            name="sprintId"
-            value={formData.sprintId || ""}
-            onChange={handleChange}
-            options={[
-              { label: "Select Sprint", value: "" },
-              ...sprints.map((s) => ({ label: s.name, value: s.id })),
-            ]}
-          />
-        </div>
-
-        {/* Acceptance Criteria */}
-        <FormTextArea
-          label="Acceptance Criteria"
-          name="acceptanceCriteria"
-          value={formData.acceptanceCriteria}
+      {/* Story Points + Sprint */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormInput
+          label="Story Points"
+          name="storyPoints"
+          type="number"
+          value={formData.storyPoints || ""}
           onChange={handleChange}
         />
 
-        {/* Assignee + Reporter */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <FormSelect
-            label="Assignee"
-            name="assigneeId"
-            value={formData.assigneeId || ""}
-            onChange={handleChange}
-            options={[
-              { label: "Select Assignee", value: "" },
-              ...users.map((u) => ({ label: u.name, value: u.id })),
-            ]}
-          />
+        <FormSelect
+          label="Sprint"
+          name="sprintId"
+          value={formData.sprintId || ""}
+          onChange={handleChange}
+          options={[
+            { label: "Select Sprint", value: "" },
+            ...sprints.map((s) => ({ label: s.name, value: s.id })),
+          ]}
+        />
+      </div>
 
-          <FormSelect
-            label="Reporter"
-            name="reporterId"
-            value={formData.reporterId || ""}
-            onChange={handleChange}
-            options={[
-              { label: "Select Reporter", value: "" },
-              ...users.map((u) => ({ label: u.name, value: u.id })),
-            ]}
-          />
-        </div>
+      {/* Acceptance Criteria */}
+      <FormTextArea
+        label="Acceptance Criteria"
+        name="acceptanceCriteria"
+        value={formData.acceptanceCriteria}
+        onChange={handleChange}
+      />
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow hover:bg-indigo-700 transition disabled:opacity-50"
-        >
-          {loading ? "Saving..." : "Update Story"}
-        </button>
-      </form>
-    </div>
-  );
+      {/* Assignee + Reporter */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormSelect
+          label="Assignee"
+          name="assigneeId"
+          value={formData.assigneeId || ""}
+          onChange={handleChange}
+          options={[
+            { label: "Select Assignee", value: "" },
+            ...users.map((u) => ({ label: u.name, value: u.id })),
+          ]}
+        />
+
+        <FormSelect
+          label="Reporter"
+          name="reporterId"
+          value={formData.reporterId || ""}
+          onChange={handleChange}
+          options={[
+            { label: "Select Reporter", value: "" },
+            ...users.map((u) => ({ label: u.name, value: u.id })),
+          ]}
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow hover:bg-indigo-700 transition disabled:opacity-50"
+      >
+        {loading ? "Saving..." : "Update Story"}
+      </button>
+    </form>
+  </div>
+);
+
 };
 
 export default EditStoryForm;
