@@ -13,6 +13,8 @@ import StoryCard from "./Sprint/StoryCard";
 import SprintColumn from "./Sprint/SprintColumn";
 import CreateSprintModal from "./Sprint/CreateSprintModal";
 import CreateIssueForm from "./Backlog/CreateIssueForm";
+import StoryDetailsPanel from "./Sprint/StoryDetailsPanel";
+import RightSidePanel from "./Sprint/RightSidePanel";
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintModal, setShowSprintModal] = useState(false);
   const [expandedSprint, setExpandedSprint] = useState(null);
+  const [selectedStoryId, setSelectedStoryId] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -194,6 +197,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                       stories={sprintStories}
                       onDropStory={handleDropStory}
                       onChangeStatus={handleSprintStatus}
+                      onStoryClick={(storyId) => setSelectedStoryId(storyId)}
                     />
                   </div>
                 </div>
@@ -217,6 +221,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                   story={story}
                   sprints={activeAndPlanningSprints}
                   onAddToSprint={handleDropStory} // enables drag from backlog to sprint
+                  onClick={() => setSelectedStoryId(story.id)}
                 />
               ))}
             </div>
@@ -257,6 +262,20 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         onClose={() => setShowSprintModal(false)}
         onCreated={(newSprint) => setSprints((prev) => [...prev, newSprint])}
       />
+      <RightSidePanel
+        isOpen={Boolean(selectedStoryId)}
+        onClose={() => setSelectedStoryId(null)}
+      >
+        {selectedStoryId && (
+          <StoryDetailsPanel
+            storyId={selectedStoryId}
+            projectId={projectId}
+            onClose={() => setSelectedStoryId(null)}
+            onUpdated={fetchStories}
+          />
+        )}
+      </RightSidePanel>
+
     </DndProvider>
   );
 };
