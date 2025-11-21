@@ -42,7 +42,7 @@ const fetchData = async (
       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
-      axios.get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, {
+      axios.get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`, {
         withCredentials: true,
         headers: { Authorization: `Bearer ${token}` },
       }),

@@ -424,16 +424,19 @@ const MonthlyTSReport = () => {
             Month (Week-wise)
           </div>
           <div className="space-y-4">
-            {(apiData.weeklySummaryHistory).length === 0 ? (
-              <p className="text-gray-500 text-sm font-semibold italic">No timesheet data available.</p>
+            {apiData.weeklySummaryHistory.length === 0 ? (
+              <p className="text-gray-500 text-sm font-semibold italic">
+                No timesheet data available.
+              </p>
             ) : (
               (apiData.weeklySummaryHistory || []).map((week, idx) => (
                 <WeeklySummaryCard
-                    key={idx}
-                week={week}
-                projectInfo={projectInfo}
-              />
-            )))}
+                  key={idx}
+                  week={week}
+                  projectInfo={projectInfo}
+                />
+              ))
+            )}
           </div>
         </section>
 
@@ -460,17 +463,11 @@ const MonthlyTSReport = () => {
             <li>Total Hours = Billable Hours + Non-Billable Hours</li>
             <li>Billable Utilization% = Billable Hours ÷ Total Hours × 100</li>
             <li>Minimum Monthly hours = 176</li>
+            <li>Leaves = Count of leave days approved during this month</li>
             <li>
-              Productivity% = (Total Hours − Holiday Hours) ÷ Minimum Monthly
-              hours × 100
-            </li>
-            <li>
-              Employee leaveHoursBreakdown Contribution =
-              (leaveHours/totalLeaveHours) × 100
-            </li>
-            <li>
-              Employee projectUserHoursBreakdown Contribution =
-              (totalHours/totalProjectHours) × 100
+              Project-wise Hours Distribution % = Represents the proportion of
+               effort dedicated to this project in relation to the overall
+              project hours.
             </li>
             {/* <li>Billable Rate = (Billable Hours / Total Available Hours) × 100</li>
           <li>Total Available Hours = Working Days × 8 hours - Leave Hours</li>

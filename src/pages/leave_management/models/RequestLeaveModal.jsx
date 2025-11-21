@@ -326,7 +326,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     if (!isOpen) return;
     setLoadingBalances(true);
     axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}`, {
+      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((response) => {
