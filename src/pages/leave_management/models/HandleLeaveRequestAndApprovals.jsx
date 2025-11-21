@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle } from "react";
 import { Check, X, Search, Pencil, XCircle } from "lucide-react";
 import axios from "axios";
 import Pagination from "../../../components/Pagination/pagination";
@@ -30,7 +31,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 //   return count;
 // }
 
-const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
+const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   const [adminLeaveRequests, setAdminLeaveRequests] = useState([]);
   const [allLeaveTypes, setAllLeaveTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,13 +42,15 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   const [comments, setComments] = useState({}); // manager comments keyed by leaveId
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth()+1));
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
   const token = localStorage.getItem("token");
   const [editingRequest, setEditingRequest] = useState(null);
   const itemsPerPage = 8;
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
+  const isMountedRef = useRef(false);
+  
 
   // const { user } = useAuth();
   // const permissions = user?.permissions || [];
@@ -76,20 +79,59 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
   //   driveLink: raw.driveLink || undefined,
   // });
 
-  useEffect(() => {
-    if (managerId) {
-      fetchData();
-    }
-  }, [managerId, selectedYear, selectedMonth, selectedStatus]); // selectedStatus (can be added)
+  // const refreshData = useCallback(() => {
+  //   fetchData();
+  // }, []);
 
-  const fetchData = async () => {
+  // const fetchData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const payload = {
+  //       managerId,
+  //       status: selectedStatus !== "All" ? selectedStatus : null,
+  //       year: selectedYear || null, // from your year dropdown
+  //       month: selectedMonth || null, // from your month dropdown
+  //     };
+
+  //     const res = await axios.post(
+  //       `${BASE_URL}/api/leave-requests/manager/history`,
+  //       payload,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
+
+  //     const types = await axios.get(
+  //       `${BASE_URL}/api/leave/get-all-leave-types`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
+
+  //     const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
+  //     setAdminLeaveRequests(arr);
+  //     setAllLeaveTypes(types.data || []);
+  //   } catch (err) {
+  //     toast.error("Error fetching leave data:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Component to handle long reason text with "View More"/"View Less"
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const payload = {
         managerId,
         status: selectedStatus !== "All" ? selectedStatus : null,
-        year: selectedYear || null, // from your year dropdown
-        month: selectedMonth || null, // from your month dropdown
+        year: selectedYear || null,
+        month: selectedMonth || null,
       };
 
       const res = await axios.post(
@@ -115,13 +157,39 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       setAdminLeaveRequests(arr);
       setAllLeaveTypes(types.data || []);
     } catch (err) {
-      toast.error("Error fetching leave data:", err);
+      toast.error("Error fetching leave data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [managerId, selectedStatus, selectedYear, selectedMonth]);
 
-  // Component to handle long reason text with "View More"/"View Less"
+  useEffect(() => {
+    // 1. Skip the second render caused by Strict Mode
+    if (isMountedRef.current) {
+      // This is the dependency change logic (status, year, month change)
+      if (managerId) fetchData();
+      return;
+    }
+
+    // 2. Initial Mount Logic (runs on 1st mount and 1st remount)
+    if (managerId) {
+      fetchData();
+      // 3. Mark as fetched after the first successful execution
+      isMountedRef.current = true;
+    }
+
+    // The cleanup function (return) is not strictly necessary here since there is no timer/subscription
+    // that needs cleanup on unmount, but leave it if you add one later.
+  }, [fetchData, managerId]); // Still include the dependencies
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      refreshData: fetchData,
+    }),
+    [fetchData]
+  );
+
   const LeaveReasonCell = ({ reason }) => {
     const [expanded, setExpanded] = useState(false);
 
@@ -487,16 +555,14 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       //     : "You don’t have permission to approve requests"
                       // }
                       title="Approve all selected leave requests"
-      //                 className={`px-3 py-1 rounded-md transition
-      // ${
-      //   canApprove
-      //     ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-      //     : "bg-gray-300 text-gray-500 cursor-not-allowed"
-      // }`}                
+                      //                 className={`px-3 py-1 rounded-md transition
+                      // ${
+                      //   canApprove
+                      //     ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                      //     : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      // }`}
                       className={`px-3 py-1 rounded-md transition
-                      ${
-                        "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                      }`}
+                      ${"bg-green-600 hover:bg-green-700 text-white cursor-pointer"}`}
                     >
                       Accept All
                     </button>
@@ -518,9 +584,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                       //     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       // }`}
                       className={`px-3 py-1 rounded-md transition
-                      ${
-                        "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-                      }`}
+                      ${"bg-red-600 hover:bg-red-700 text-white cursor-pointer"}`}
                     >
                       Reject All
                     </button>
@@ -639,11 +703,11 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                 </td>
               </tr>
             ) : filteredRequests.length === 0 ? (
-                <tr>
-                  <td className="text-center text-gray-500 py-12" colSpan="13">
-                    No leaves found matching {searchTerm}.
-                  </td>
-                </tr>
+              <tr>
+                <td className="text-center text-gray-500 py-12" colSpan="13">
+                  No leaves found matching {searchTerm}.
+                </td>
+              </tr>
             ) : (
               // State 3: Render the data rows if data exists
               paginatedRequests.map((request) => {
@@ -691,41 +755,43 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                     {/* ... other <td> cells for your data ... */}
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900 whitespace-nowrap">
-                          {request.startDate
-                            ? new Date(request.startDate).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )
-                            : "-"}
-                            <div className="text-gray-500">
-                              {request.startSession && request.startSession !== "none" && request.startSession !== "fullday" && (
-                                ` (${request.startSession})`
-                              )}
-                            </div>
+                        {request.startDate
+                          ? new Date(request.startDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )
+                          : "-"}
+                        <div className="text-gray-500">
+                          {request.startSession &&
+                            request.startSession !== "none" &&
+                            request.startSession !== "fullday" &&
+                            ` (${request.startSession})`}
                         </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900 whitespace-nowrap">
-                          {request.endDate
-                            ? new Date(request.endDate).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )
-                            : "-"}
-                            <div className="text-gray-500">
-                              {request.endSession && request.endSession !== "none" && request.endSession !== "fullday" && (
-                                ` (${request.endSession})`
-                              )}
-                            </div>
+                        {request.endDate
+                          ? new Date(request.endDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )
+                          : "-"}
+                        <div className="text-gray-500">
+                          {request.endSession &&
+                            request.endSession !== "none" &&
+                            request.endSession !== "fullday" &&
+                            ` (${request.endSession})`}
                         </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
@@ -812,8 +878,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               //     ? "text-green-600 hover:text-green-800"
                               //     : "text-gray-400 cursor-not-allowed"
                               // } disabled:opacity-50 disabled:cursor-not-allowed`}
-                              className={`p-1 transition-colors ${
-                                "text-green-600 hover:text-green-800"}`}
+                              className={`p-1 transition-colors ${"text-green-600 hover:text-green-800"}`}
                               onClick={() =>
                                 //canApprove &&
                                 setConfirmation({
@@ -863,7 +928,7 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
                               // }
                               title="Edit"
                               onClick={() =>
-                                //canEdit && 
+                                //canEdit &&
                                 setEditingRequest(request)
                               }
                               aria-label="Edit Request"
@@ -1019,6 +1084,6 @@ const HandleLeaveRequestAndApprovals = ({ employeeId }) => {
       </div>
     </div>
   );
-};
+});
 
 export default HandleLeaveRequestAndApprovals;
