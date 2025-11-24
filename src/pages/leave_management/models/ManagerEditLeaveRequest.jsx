@@ -266,7 +266,7 @@ export default function ManagerEditLeaveRequest({
         try {
           const [balancesRes, typesRes, holidays] = await Promise.all([
             axios.get(
-              `${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}`,
+              `${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}/${new Date().getFullYear()}`,
               { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             ),
             axios.get(`${BASE_URL}/api/leave/types`, {
