@@ -156,9 +156,10 @@ const EntriesTable = ({
   };
 
   const handleEditClick = (idx) => {
+  // console.log("Attempting to edit index:", idx);
     if (addingNewEntry || status?.toLowerCase() === "approved") return;
     const entry = [...entries, ...pendingEntries][idx]; 
-console.log("Editing entry:", entry);
+    
     
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -172,6 +173,7 @@ console.log("Editing entry:", entry);
       description: entry.description,
       isBillable: entry.billable, 
     });
+    
   };
 
   const handleDeleteClick = async (tsId) => {
@@ -299,6 +301,18 @@ console.log("Editing entry:", entry);
 
   const handleSave = async () => {
     if (!isValid(editData, true)) return; 
+
+    // if (entry.timesheetEntryId.toString().startsWith("pending-")) {
+    //   setPendingEntries((prev) =>
+    //     prev.map((e) =>
+    //       e.timesheetEntryId === entry.timesheetEntryId ? entry : e
+    //     )
+    //   );
+
+    //   setEditIndex(null);
+    //   setEditData({});
+    //   return;  // ⛔ STOP — don't call backend
+    // }
     
     try {
         // IMPORTANT: Convert HH:mm back to full ISO datetime string before API call

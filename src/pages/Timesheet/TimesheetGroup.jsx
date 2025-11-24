@@ -159,7 +159,7 @@ const TimesheetGroup = ({
   ],
 }) => {
     
-  const isWeeklyFormat = weekGroup && weekGroup.timesheets;
+  const isWeeklyFormat = weekGroup && weekGroup.timesheets; // && (weekGroup.timesheets).length > 0;
   const weekData = isWeeklyFormat ? weekGroup : null;
   const dailyData = !isWeeklyFormat
     ? { timesheetId, workDate, entries, status }
@@ -169,7 +169,6 @@ const TimesheetGroup = ({
     isWeeklyFormat ? [] : entries
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
-  // 🛑 FIX 1: Localize the adding state to the ID of the timesheet currently adding an entry
   const [timesheetIdAdding, setTimesheetIdAdding] = useState(null); 
   
   const [loadingHolidays, setLoadingHolidays] = useState(false);
@@ -189,15 +188,13 @@ const TimesheetGroup = ({
 
   // Check if submit button should be disabled
   const isSubmitDisabled = () => {
+    // console.log("isWeeklyFormat:", isWeeklyFormat);
+    // console.log("weekData:", weekData);
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
 
-    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
-      return true;
-    }
-
-    if (weeklyStatus === "SUBMITTED") {
+    if (weeklyStatus === "SUBMITTED" || weeklyStatus === "PARTIALLY APPROVED" || weeklyStatus === "APPROVED") {
       const allSubmitted = weekData.timesheets.every(
         (ts) => ts.status?.toUpperCase() !== "DRAFT"
       );
@@ -206,6 +203,38 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
+// const isSubmitDisabled = (isWeeklyFormat, weekData) => {
+//     console.log("isWeeklyFormat:", isWeeklyFormat);
+//     console.log("weekData:", weekData);
+
+//     // Initial check for required data
+//     if (!isWeeklyFormat || !weekData) {
+//         return true;
+//     }
+
+//     const weeklyStatus = weekData.status?.toUpperCase();
+
+//     // Check if any underlying timesheet requires resubmission (DRAFT or REJECTED)
+//     const needsResubmission = weekData.timesheets.some(
+//         (ts) => ['DRAFT', 'REJECTED'].includes(ts.status?.toUpperCase())
+//     );
+//     console.log("needsResubmission:", needsResubmission);
+
+//     // 2. If overall week is SUBMITTED, we check if any TS needs action.
+//     if (weeklyStatus === "SUBMITTED" || weeklyStatus === "PARTIALLY APPROVED" || weeklyStatus === "APPROVED") {
+//         // If resubmission is needed (Draft or Rejected TS found), the button is ENABLED (return false).
+//         if (needsResubmission) {
+//             return false;
+//         }
+
+//         // If no resubmission is needed (all underlying TS are submitted/pending approval), the button is DISABLED (return true).
+//         return true;
+//     }
+
+//     // 3. For DRAFT status (or any other status allowing initial submission), the button is ENABLED.
+//     // If it's a DRAFT status, 'needsResubmission' is almost certainly true, so this is the final general case.
+//     return false;
+// };
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -225,6 +254,37 @@ const TimesheetGroup = ({
 
     return "SUBMIT WEEK";
   };
+// const getSubmitButtonText = (isWeeklyFormat, weekData) => {
+//     if (!isWeeklyFormat || !weekData) {
+//         return "SUBMIT WEEK";
+//     }
+
+//     const weeklyStatus = weekData.status?.toUpperCase();
+
+//     // Check if any underlying timesheet requires resubmission (DRAFT or REJECTED)
+//     const needsResubmission = weekData.timesheets.some(
+//         (ts) => ['DRAFT', 'REJECTED'].includes(ts.status?.toUpperCase())
+//     );
+
+//     // If resubmission is needed (including when weeklyStatus is DRAFT), show the submit action.
+//     if (needsResubmission) {
+//         return "SUBMIT WEEK";
+//     }
+
+//     // If no resubmission is needed, show the status message.
+//     if (weeklyStatus === "APPROVED") {
+//         return "Week Already Approved";
+//     }
+//     if (weeklyStatus === "PARTIALLY APPROVED") {
+//         return "Week Partially Approved";
+//     }
+//     if (weeklyStatus === "SUBMITTED") {
+//         return "Week Already Submitted";
+//     }
+
+//     // Default return for initial DRAFT or unknown status when timesheets array is empty/settled.
+//     return "SUBMIT WEEK";
+// };
 
   // Handle weekly submission
   const handleSubmitWeek = async () => {
@@ -243,7 +303,7 @@ const TimesheetGroup = ({
       await submitWeeklyTimesheet(timesheetIds);
       if (refreshData) await refreshData();
     } catch (error) {
-      console.error("Failed to submit weekly timesheet:", error);
+      showStatusToast("Failed to submit weekly timesheet", "error");    
     } finally {
       setIsSubmittingWeek(false);
     }
@@ -352,14 +412,13 @@ const TimesheetGroup = ({
           throw new Error(data || "Failed to delete entries");
         }
 
-        responseText = data; // ✅ set backend response
+        responseText = data; 
       }
-      showStatusToast(responseText, "success"); // ✅ show backend message in toast
+      showStatusToast(responseText, "success"); 
 
       setSelectedEntryIds([]);
       if (refreshData) await refreshData();
     } catch (error) {
-      console.error("❌ Error deleting entries:", error);
       showStatusToast(error.message || "Error deleting entries", "error");
     }
   };
@@ -801,7 +860,7 @@ const TimesheetGroup = ({
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
                 <button
-                  onClick={handleAddEntryDaily} // 🛑 FIX 1: Use specific daily handler
+                  onClick={handleAddEntryDaily} 
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Add Entry
