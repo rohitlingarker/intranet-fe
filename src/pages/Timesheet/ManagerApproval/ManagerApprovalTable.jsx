@@ -1052,7 +1052,7 @@ const ManagerApprovalTable = ({
                           value={selectedAddUser}
                           onChange={(e) => setSelectedAddUser(e.target.value)}
                         >
-                          <option value="">-- Select User --</option>
+                          <option value="">-- Select Employee --</option>
                           {managerUsers.map((u) => (
                             <option key={u.id} value={u.id}>
                               {u.id} - {u.fullName}
