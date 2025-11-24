@@ -89,6 +89,7 @@ import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
 import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
+import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -528,6 +529,13 @@ useEffect(() => {
                 <LeaveDetailsPage />
               </ProtectedRoute>
             }
+          />
+
+          <Route path="/approval-rules" element={
+              <ProtectedRoute allowedRoles={["HR","Hr-Manager"]}>
+                <ApprovalRulesPage />
+              </ProtectedRoute>
+            } 
           />
 
           <Route path="/leave-policies" element={<Navigate to="https://celebrated-renewal-07a16fae8e.strapiapp.com" replace />} />
