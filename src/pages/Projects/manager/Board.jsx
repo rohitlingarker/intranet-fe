@@ -397,7 +397,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
       const tasksUrl = activeSprintId
         ? `${BASE}/api/projects/sprint/${activeSprintId}/tasks`
         : `${BASE}/api/projects/${projectId}/tasks`;
-
+       
       const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
 
       // NEW: fetch stories only if we have an active sprint
@@ -471,7 +471,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
       setLoading(false);
     }
   }, [projectId]);
-
+   console.log("sprintId in board:",activeSprintId);
   useEffect(() => { loadBoard(); }, [loadBoard]);
 
   // safe arrays & grouping (original grouping)
