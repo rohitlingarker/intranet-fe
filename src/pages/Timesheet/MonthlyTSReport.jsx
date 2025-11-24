@@ -77,6 +77,18 @@ const MonthlyTSReport = () => {
     loadProjectInfo();
   }, []);
 
+const getProjectName = (id) => {
+  const p = projectInfo.find(x => x.projectId === id);
+  return p ? p.project : `Project ${id}`;
+};
+
+const getTaskName = (projectId, taskId) => {
+  const p = projectInfo.find(x => x.projectId === projectId);
+  if (!p) return taskId ? `Task ${taskId}` : "-";
+  const t = p.tasks?.find(x => x.taskId === taskId);
+  return t ? t.task : (taskId ? `Task ${taskId}` : "-");
+};
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -148,7 +160,7 @@ const MonthlyTSReport = () => {
           for (const e of ts.entries) {
             rows.push({
               date: workDate,
-              project: e.projectName || `Project ${e.projectId ?? ""}`,
+              project: getProjectName(e.projectId) || `Project ${e.projectId ?? ""}`,
               type: e.isBillable ? "Billable" : "Non-Billable",
               hours: Number(e.hoursWorked || 0),
               description: e.description || "",
@@ -178,6 +190,7 @@ const MonthlyTSReport = () => {
     }));
   }, [apiData]);
 
+
   // -------------------- UPDATED PDF GENERATION (Option A) --------------------
   const handleDownloadPDF = () => {
     if (!apiData) return;
@@ -203,15 +216,15 @@ const MonthlyTSReport = () => {
       return dateStr;
     };
 
-    const resolveStatus = (week) => {
-  return (
-    week.statusLabel ||
-    week.timesheetStatus ||
-    week.approvalStatus ||
-    week.status ||
-    "No Timesheets"
-  );
-};
+//     const resolveStatus = (week) => {
+//   return (
+//     week.statusLabel ||
+//     week.timesheetStatus ||
+//     week.approvalStatus ||
+//     week.status ||
+//     "No Timesheets"
+//   );
+// };
 const getWeeklyStatus = (week) => {
   if (week.weeklyStatus) return week.weeklyStatus;
 
@@ -220,8 +233,6 @@ const getWeeklyStatus = (week) => {
 
   return "SUBMITTED";
 };
-
-
 
     const formatDateTime = (dtStr) => {
       if (!dtStr) return "";
@@ -238,7 +249,6 @@ const getWeeklyStatus = (week) => {
       return currentY;
     };
 
-    // ---------------- PAGE 1: Title + Header Card ----------------
     // ---------------- PAGE 1: Title + Header Card ----------------
 let y = 20;
 
@@ -362,13 +372,13 @@ y = cardY + cardHeight + 15;
     const projects = apiData.projectSummaries?.projects || [];
     projects.forEach((p) => {
       const name =
-        p.projectName || (p.projectId ? `Project ${p.projectId}` : "-");
+        getProjectName(p.projectId) || (p.projectId ? `Project ${p.projectId}` : "-");
       projectRows.push([
         name,
         Number(p.totalHours || 0).toFixed(2),
         Number(p.billableHours || 0).toFixed(2),
         Number(p.nonBillableHours || 0).toFixed(2),
-        `${Number(p.contributionPercentage || 0).toFixed(2)}%`,
+        `${Number(p.contribution || 0).toFixed(2)}%`,
       ]);
     });
 
@@ -472,8 +482,8 @@ y = cardY + cardHeight + 15;
           ts.entries.forEach((e) => {
             weeklyRows.push([
               formatDate(ts.workDate),
-              e.projectName || (e.projectId ? `Project ${e.projectId}` : ""),
-              e.taskName || (e.taskId != null ? String(e.taskId) : ""),
+              getProjectName(e.projectId) || (e.projectId ? `Project ${e.projectId}` : ""),
+              getTaskName(e.projectId, e.taskId) || (e.taskId != null ? String(e.taskId) : ""),
               formatDateTime(e.startTime || ""),
               formatDateTime(e.endTime || ""),
               Number(e.hoursWorked || 0).toFixed(2),
@@ -513,32 +523,21 @@ y = cardY + cardHeight + 15;
     });
 
     // ---------------- Report Notes ----------------
-    // ---------------- Stylish Report Notes Box (Option A) ----------------
-y = ensureSpace(80, y);
+// ---------------- Dynamic Stylish Report Notes Box ----------------
+y = ensureSpace(20, y);
 
 const notesX = 14;
 const notesWidth = pageWidth - 28;
-const notesHeight = 80;
 
-// Background (light blue)
-doc.setFillColor(228, 235, 245);
-doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "F");
-
-// Border
-doc.setDrawColor(190, 200, 210);
-doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "S");
-
-// Title
 doc.setFont("helvetica", "bold");
 doc.setFontSize(14);
 doc.setTextColor(15, 23, 42);
-doc.text("Report Notes", notesX + 6, y + 12);
 
-// Notes content
-doc.setFont("helvetica", "normal");
-doc.setFontSize(10);
-doc.setTextColor(55, 65, 81);
+// Title height = 12 px
+const titleHeight = 12;
+let tempY = y + titleHeight + 6;
 
+// Prepare notes list
 const notes = [
   "Billable Hours = Total hours spent on tasks classified as billable across all projects.",
   "Standard Holiday Hours = (Mon–Fri calculated at 8 hours per holiday).",
@@ -552,27 +551,64 @@ const notes = [
   "Daily Hours Breakdown = Shows how the employee distributed work hours across each day of the week throughout the month.",
   "Weekly Timesheet Summary = Displays weekly logged hours, approval status, and detailed daily tasks.",
   "Draft / Submitted / Approved / Rejected Status = Draft (saved), Submitted (pending approval), Approved (reviewed), Rejected (requires correction).",
-  "Monthly Minimum Hours Requirement = Expected minimum working hours: 176 hours (22 working days × 8 hours/day).",
+  "Monthly Minimum Hours Requirement = Expected minimum monthly working hours: 176 hours (22 working days × 8 hours/day).",
   "Missing Timesheets = Weeks with zero entries indicate unfilled or unsubmitted timesheets.",
-  "Hour Accuracy = Hours displayed are based on submitted timesheets; incomplete or delayed entries may affect totals.",
+  "Hour Accuracy = Hours displayed are based on submitted timesheets; incomplete or delayed entries may affect totals."
 ];
 
+// ---------------- Calculate total dynamic height ----------------
+doc.setFont("helvetica", "normal");
+doc.setFontSize(10);
 
-let noteY = y + 22;
+let totalTextHeight = 0;
 
 notes.forEach((line) => {
-  doc.text(`• ${line}`, notesX + 8, noteY);
-  noteY += 7;
+  const split = doc.splitTextToSize(line, notesWidth - 20);
+  totalTextHeight += split.length * 6; // 6px per line
+  totalTextHeight += 2; // padding
 });
 
-// Footer message
-y = y + notesHeight + 10;
+// Final box height
+const notesHeight = titleHeight + 10 + totalTextHeight + 10;
+
+// Ensure page space before drawing box
+y = ensureSpace(notesHeight + 20, y);
+
+// Draw background box
+doc.setFillColor(228, 235, 245);
+doc.roundedRect(notesX, y, notesWidth, notesHeight, 6, 6, "F");
+
+// Draw border
+doc.setDrawColor(180, 190, 205);
+doc.roundedRect(notesX, y, notesWidth, notesHeight, 6, 6, "S");
+
+// Title
+doc.setFont("helvetica", "bold");
+doc.setFontSize(14);
+doc.setTextColor(15, 23, 42);
+doc.text("Report Notes", notesX + 10, y + 14);
+
+// Render notes
+doc.setFont("helvetica", "normal");
+doc.setFontSize(10);
+doc.setTextColor(55, 65, 81);
+
+let lineY = y + 24;
+
+notes.forEach((line) => {
+  const wrapped = doc.splitTextToSize(line, notesWidth - 20);
+  doc.text(`• `, notesX + 10, lineY);
+  doc.text(wrapped, notesX + 16, lineY);
+  lineY += wrapped.length * 6 + 2;
+});
+
+// Footer
 doc.setFont("helvetica", "italic");
 doc.setFontSize(10);
 doc.text(
-  `Report generated on ${new Date().toISOString().slice(0, 19)}.`,
-  notesX,
-  y
+  `Report generated on ${new Date().toISOString().slice(0, 10)}.`,
+  notesX + 10,
+  y + notesHeight - 6
 );
 
     doc.save(`User_Monthly_Report_${monthLabel.replace(" ", "_")}.pdf`);
