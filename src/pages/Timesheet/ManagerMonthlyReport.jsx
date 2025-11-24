@@ -1498,7 +1498,7 @@ const ManagerMonthlyReport = () => {
                     Underutilized
                   </h3>
                 </div>
-                <div className="mb-3">
+                <div className={`mb-3 ${underutilized.length > 5 ? "h-24 overflow-y-auto" : ""}`}>
                   {underutilized.length > 0 ? (
                     <ul className="text-sm text-gray-700 space-y-1">
                       {underutilized.map((u, idx) => (
@@ -1527,7 +1527,7 @@ const ManagerMonthlyReport = () => {
                     Overworked
                   </h3>
                 </div>
-                <div className="mb-3">
+                <div className={`mb-3 ${overworked.length > 5 ? "h-24 overflow-y-auto" : ""}`}>
                   {overworked.length > 0 ? (
                     <ul className="text-sm text-gray-700 space-y-1">
                       {overworked.map((o, idx) => (
