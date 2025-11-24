@@ -159,7 +159,7 @@ const TimesheetGroup = ({
   ],
 }) => {
     
-  const isWeeklyFormat = weekGroup && weekGroup.timesheets;
+  const isWeeklyFormat = weekGroup && weekGroup.timesheets; // && (weekGroup.timesheets).length > 0;
   const weekData = isWeeklyFormat ? weekGroup : null;
   const dailyData = !isWeeklyFormat
     ? { timesheetId, workDate, entries, status }
@@ -169,7 +169,6 @@ const TimesheetGroup = ({
     isWeeklyFormat ? [] : entries
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
-  // 🛑 FIX 1: Localize the adding state to the ID of the timesheet currently adding an entry
   const [timesheetIdAdding, setTimesheetIdAdding] = useState(null); 
   
   const [loadingHolidays, setLoadingHolidays] = useState(false);
@@ -189,15 +188,12 @@ const TimesheetGroup = ({
 
   // Check if submit button should be disabled
   const isSubmitDisabled = () => {
+
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
 
-    if (weeklyStatus === "APPROVED" || weeklyStatus === "PARTIALLY APPROVED") {
-      return true;
-    }
-
-    if (weeklyStatus === "SUBMITTED") {
+    if (weeklyStatus === "SUBMITTED" || weeklyStatus === "PARTIALLY APPROVED" || weeklyStatus === "APPROVED") {
       const allSubmitted = weekData.timesheets.every(
         (ts) => ts.status?.toUpperCase() !== "DRAFT"
       );
@@ -243,7 +239,7 @@ const TimesheetGroup = ({
       await submitWeeklyTimesheet(timesheetIds);
       if (refreshData) await refreshData();
     } catch (error) {
-      console.error("Failed to submit weekly timesheet:", error);
+      showStatusToast("Failed to submit weekly timesheet", "error");    
     } finally {
       setIsSubmittingWeek(false);
     }
@@ -352,14 +348,13 @@ const TimesheetGroup = ({
           throw new Error(data || "Failed to delete entries");
         }
 
-        responseText = data; // ✅ set backend response
+        responseText = data; 
       }
-      showStatusToast(responseText, "success"); // ✅ show backend message in toast
+      showStatusToast(responseText, "success"); 
 
       setSelectedEntryIds([]);
       if (refreshData) await refreshData();
     } catch (error) {
-      console.error("❌ Error deleting entries:", error);
       showStatusToast(error.message || "Error deleting entries", "error");
     }
   };
@@ -801,7 +796,7 @@ const TimesheetGroup = ({
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-50 border">
                 <button
-                  onClick={handleAddEntryDaily} // 🛑 FIX 1: Use specific daily handler
+                  onClick={handleAddEntryDaily} 
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Add Entry
