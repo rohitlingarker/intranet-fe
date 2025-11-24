@@ -377,13 +377,13 @@ body {
 }
 
 .footer-label {
-    font-size: 1.25rem;
+    font-size: 1.0 rem;
     font-weight: 800;
     color: white;
 }
 
 .footer-value {
-    font-size: 1.875rem;
+    font-size: 1.25 rem;
     font-weight: 800;
     color: white;
 }

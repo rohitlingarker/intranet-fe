@@ -219,7 +219,8 @@ const CreateIssueForm = ({
       payload = {
         name: formData.name,
         description: formData.description || null,
-        status: formData.status || "OPEN",
+        statusId: Number(formData.statusId),
+
         priority: formData.priority || "MEDIUM",
         projectId: Number(formData.projectId),
         reporterId: normalizeIdValue(formData.reporterId),
@@ -253,6 +254,38 @@ const CreateIssueForm = ({
         priority: formData.priority || "LOW",
       };
     }
+    // EPIC payload (must include name/title, projectId, statusId)
+if (issueType === "Epic") {
+  if (!formData.name) {
+    toast.error("Epic Name is required.");
+    return;
+  }
+  if (!formData.statusId) {
+    toast.error("Status is required for Epic.");
+    return;
+  }
+  if (!formData.projectId) {
+    toast.error("Project is required for Epic.");
+    return;
+  }
+
+  endpoint = "/api/epics";
+  payload = {
+    name: formData.name,
+    description: formData.description || null,
+    statusId: Number(formData.statusId),
+    priority: formData.priority || "MEDIUM",
+    projectId: Number(formData.projectId),
+    reporterId: normalizeIdValue(formData.reporterId),
+    assigneeId: normalizeIdValue(formData.assigneeId),
+    dueDate: formData.dueDate
+      ? new Date(formData.dueDate).toISOString()
+      : null,
+  };
+}
+
+
+
 
     // TASK payload (must include statusId, projectId, title)
     if (issueType === "Task") {
@@ -395,17 +428,14 @@ const CreateIssueForm = ({
 
             {/* ENUM Status */}
             <FormSelect
-              label="Status"
-              name="status"
-              value={formData.status || "OPEN"}
-              onChange={handleChange}
-              options={[
-                { label: "Open", value: "OPEN" },
-                { label: "In Progress", value: "IN_PROGRESS" },
-                { label: "Completed", value: "COMPLETED" },
-                { label: "On Hold", value: "ON_HOLD" },
-              ]}
-            />
+  label="Status *"
+  name="statusId"
+  value={formData.statusId ?? ""}
+  onChange={handleChange}
+  options={statuses.map((s) => ({ label: s.name, value: s.id }))}
+  required
+/>
+
 
             <FormSelect
               label="Priority"

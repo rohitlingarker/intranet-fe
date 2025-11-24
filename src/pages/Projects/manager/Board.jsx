@@ -20,6 +20,8 @@ import {
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EditTaskForm from "./Backlog/EditTaskForm";
+import RightSidePanel from "./Sprint/RightSidePanel";
 import CreateTaskForm from "./Backlog/CreateTask";
 import CreateStoryForm from "./Backlog/CreateStory";
 /* -------------------
@@ -802,24 +804,29 @@ const Board = ({ projectId, sprintId, projectName }) => {
 
   // open create modal (legacy single)
   const openCreateForStatus = (statusId) => {
-    setSelectedStatusId(statusId);
-    setOpenCreateModal(true);
-  };
+      setSelectedStatusId(statusId);
+      setOpenCreateModal(true);
+    };
 
-  const closeCreateModal = () => {
-    setSelectedStatusId(null);
-    setOpenCreateModal(false);
-  };
+    const closeCreateModal = () => {
+      setSelectedStatusId(null);
+      setOpenCreateModal(false);
+    };
 
   const handleTaskCreated = async (created) => {
     // Optimistic add then refresh to ensure shapes are consistent OR just reload board
-    setTasks(prev => [...prev, created]);
-    // ensure board is consistent: reload the board (status mapping, counts)
-    try { await loadBoard(); } catch(e){ console.error(e); }
-  };
+      setTasks(prev => [...prev, created]);
+      // ensure board is consistent: reload the board (status mapping, counts)
+      try { await loadBoard(); } catch(e){ console.error(e); }
+    };
 
   // open task modal
-  const openTaskModal = (task) => { setSelectedTask(task); setIsTaskModalOpen(true); };
+  const openTaskPanel = (task) => {
+    setSelectedTask(task);
+    setIsTaskPanelOpen(true);
+  };
+  const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
+
   const handleTaskSaved = (updated) => setTasks(prev => prev.map(t => String(t.id) === String(updated.id) ? { ...t, ...updated } : t));
 
   // clicking outside filter dropdown closes it
@@ -1065,7 +1072,8 @@ const Board = ({ projectId, sprintId, projectName }) => {
                               {taskItems.map((task, tIdx) => (
                                 <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={tIdx + storyItems.length} type="ITEM">
                                   {(taskProvided, taskSnapshot) => (
-                                    <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} onClick={()=>openTaskModal(task)} className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${taskSnapshot.isDragging ? "opacity-80" : ""}`}>
+                                    <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} onClick={() => openTaskPanel(task)}
+                                      className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${taskSnapshot.isDragging ? "opacity-80" : ""}`}>
                                       <div className="flex items-center justify-between">
                                         <div className="relative group">
                                           <span className="text-green-600 text-sm cursor-default">☑️</span>
@@ -1135,7 +1143,34 @@ const Board = ({ projectId, sprintId, projectName }) => {
       {/* Modals */}
       {/* Legacy create modal (kept for compatibility) */}
       <CreateTaskModal open={isCreateOpen} onClose={()=>setIsCreateOpen(false)} defaultStatusId={createDefaultStatusId} projectId={projectId} onCreated={handleTaskCreated} />
-      <TaskDetailModal open={isTaskModalOpen} onClose={()=>setIsTaskModalOpen(false)} task={selectedTask} statuses={statuses} onSaved={handleTaskSaved} />
+      <RightSidePanel
+        isOpen={isTaskPanelOpen}
+        onClose={() => {
+          setIsTaskPanelOpen(false);
+          setSelectedTask(null);
+        }}
+        panelMode="board"   // 👈 IMPORTANT
+      >
+        {isTaskPanelOpen && selectedTask && (
+          <EditTaskForm
+            taskId={selectedTask.id}
+            projectId={projectId}
+            onClose={() => {
+              setIsTaskPanelOpen(false);
+              setSelectedTask(null);
+            }}
+            onUpdated={async () => {
+              await loadBoard();
+              setIsTaskPanelOpen(false);
+            }}
+          />
+        )}
+      </RightSidePanel>
+
+
+
+
+      
       <DeleteStatusModal open={isDeleteModalOpen} onClose={()=>setIsDeleteModalOpen(false)} statusToDelete={statusToDelete} otherStatuses={deleteModalOtherStatuses} onConfirm={confirmDeleteWithMigration} />
 
       {/* New: Create Story Modal */}
