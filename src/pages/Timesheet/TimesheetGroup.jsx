@@ -188,8 +188,7 @@ const TimesheetGroup = ({
 
   // Check if submit button should be disabled
   const isSubmitDisabled = () => {
-    // console.log("isWeeklyFormat:", isWeeklyFormat);
-    // console.log("weekData:", weekData);
+
     if (!isWeeklyFormat || !weekData) return true;
 
     const weeklyStatus = weekData.status?.toUpperCase();
@@ -203,38 +202,6 @@ const TimesheetGroup = ({
 
     return false; // Enabled for DRAFT or other statuses
   };
-// const isSubmitDisabled = (isWeeklyFormat, weekData) => {
-//     console.log("isWeeklyFormat:", isWeeklyFormat);
-//     console.log("weekData:", weekData);
-
-//     // Initial check for required data
-//     if (!isWeeklyFormat || !weekData) {
-//         return true;
-//     }
-
-//     const weeklyStatus = weekData.status?.toUpperCase();
-
-//     // Check if any underlying timesheet requires resubmission (DRAFT or REJECTED)
-//     const needsResubmission = weekData.timesheets.some(
-//         (ts) => ['DRAFT', 'REJECTED'].includes(ts.status?.toUpperCase())
-//     );
-//     console.log("needsResubmission:", needsResubmission);
-
-//     // 2. If overall week is SUBMITTED, we check if any TS needs action.
-//     if (weeklyStatus === "SUBMITTED" || weeklyStatus === "PARTIALLY APPROVED" || weeklyStatus === "APPROVED") {
-//         // If resubmission is needed (Draft or Rejected TS found), the button is ENABLED (return false).
-//         if (needsResubmission) {
-//             return false;
-//         }
-
-//         // If no resubmission is needed (all underlying TS are submitted/pending approval), the button is DISABLED (return true).
-//         return true;
-//     }
-
-//     // 3. For DRAFT status (or any other status allowing initial submission), the button is ENABLED.
-//     // If it's a DRAFT status, 'needsResubmission' is almost certainly true, so this is the final general case.
-//     return false;
-// };
 
   // Get the button text based on status
   const getSubmitButtonText = () => {
@@ -254,37 +221,6 @@ const TimesheetGroup = ({
 
     return "SUBMIT WEEK";
   };
-// const getSubmitButtonText = (isWeeklyFormat, weekData) => {
-//     if (!isWeeklyFormat || !weekData) {
-//         return "SUBMIT WEEK";
-//     }
-
-//     const weeklyStatus = weekData.status?.toUpperCase();
-
-//     // Check if any underlying timesheet requires resubmission (DRAFT or REJECTED)
-//     const needsResubmission = weekData.timesheets.some(
-//         (ts) => ['DRAFT', 'REJECTED'].includes(ts.status?.toUpperCase())
-//     );
-
-//     // If resubmission is needed (including when weeklyStatus is DRAFT), show the submit action.
-//     if (needsResubmission) {
-//         return "SUBMIT WEEK";
-//     }
-
-//     // If no resubmission is needed, show the status message.
-//     if (weeklyStatus === "APPROVED") {
-//         return "Week Already Approved";
-//     }
-//     if (weeklyStatus === "PARTIALLY APPROVED") {
-//         return "Week Partially Approved";
-//     }
-//     if (weeklyStatus === "SUBMITTED") {
-//         return "Week Already Submitted";
-//     }
-
-//     // Default return for initial DRAFT or unknown status when timesheets array is empty/settled.
-//     return "SUBMIT WEEK";
-// };
 
   // Handle weekly submission
   const handleSubmitWeek = async () => {
