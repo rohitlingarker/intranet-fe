@@ -174,9 +174,11 @@ const IssueTracker = () => {
   const handleEdit = (issue) => setEditModal({ visible: true, type: issue.type, id: issue.id });
   const handleUpdated = (msg) => {
     setEditModal({ visible: false });
+    setTimeout(() => {
     setOpenEpics([]);
     setOpenStories([]);
     fetchIssues();
+    }, 300);
     toast.success(`${msg} updated`);
   };
 
@@ -590,6 +592,7 @@ const IssueTracker = () => {
             <EditStoryForm
               storyId={editModal.id}
               projectId={projectId}
+              mode="modal"
               onClose={() => setEditModal({ visible: false })}
               onUpdated={() => handleUpdated("Story")}
             />
@@ -598,6 +601,7 @@ const IssueTracker = () => {
             <EditTaskForm
               taskId={editModal.id}
               projectId={projectId}
+              mode="modal"
               onClose={() => setEditModal({ visible: false })}
               onUpdated={() => handleUpdated("Task")}
             />
@@ -628,8 +632,8 @@ const IssueTracker = () => {
 };
 
 const Modal = ({ children, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-    <div className="bg-white rounded-2xl shadow-xl p-6 w-auto max-w-4xl relative max-h-[90vh] overflow-y-auto">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm" onClick={onClose}>
+    <div className="bg-white rounded-2xl shadow-xl p-6 w-auto max-w-4xl relative max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
       <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-black">
         <FiX />
       </button>

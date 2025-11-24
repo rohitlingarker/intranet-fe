@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import CreateIssueForm from "./Backlog/CreateIssueForm"
+import CreateIssueForm from "./Backlog/CreateIssueForm";
 import axios from "axios";
 import {
   DragDropContext,
@@ -20,7 +20,10 @@ import {
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import EditTaskForm from "./Backlog/EditTaskForm";
+import RightSidePanel from "./Sprint/RightSidePanel";
+import CreateTaskForm from "./Backlog/CreateTask";
+import CreateStoryForm from "./Backlog/CreateStory";
 /* -------------------
   Config & helpers
 -------------------- */
@@ -105,6 +108,73 @@ const CreateTaskModal = ({ open, onClose, defaultStatusId, projectId, onCreated 
           <label className="block mb-2">
             <div className="text-sm font-medium">Description</div>
             <textarea value={description} onChange={(e)=>setDescription(e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" rows={4} />
+          </label>
+          <div className="flex justify-end gap-2 mt-3">
+            <button type="button" onClick={onClose} className="px-3 py-2 rounded border">Cancel</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 rounded bg-indigo-600 text-white">{submitting ? "Creating..." : "Create"}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* -------------------
+  Create Story Modal (minimal)
+--------------------*/
+const CreateStoryModal = ({ open, onClose, defaultStatusId, projectId, onCreated }) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("MEDIUM");
+  const [submitting, setSubmitting] = useState(false);
+  
+
+  useEffect(() => { if (open) { setTitle(""); setDescription(""); setPriority("MEDIUM"); } }, [open]);
+
+  if (!open) return null;
+
+  const handleCreate = async (e) => {
+    e?.preventDefault();
+    if (!title.trim()) { toast.error("Title required"); return; }
+    setSubmitting(true);
+    try {
+      const res = await axios.post(`${BASE}/api/stories`, {
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        projectId,
+        statusId: defaultStatusId,
+      }, { headers: headersWithToken() });
+      onCreated(res.data);
+      toast.success("Story created");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create story");
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-lg w-full max-w-lg p-5">
+        <h3 className="text-lg font-semibold mb-3">Create story</h3>
+        <form onSubmit={handleCreate}>
+          <label className="block mb-2">
+            <div className="text-sm font-medium">Title</div>
+            <input value={title} onChange={(e)=>setTitle(e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
+          </label>
+          <label className="block mb-2">
+            <div className="text-sm font-medium">Description</div>
+            <textarea value={description} onChange={(e)=>setDescription(e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" rows={4} />
+          </label>
+          <label className="block mb-2">
+            <div className="text-sm font-medium">Priority</div>
+            <select value={priority} onChange={(e)=>setPriority(e.target.value)} className="mt-1 block w-full border rounded px-3 py-2">
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
           </label>
           <div className="flex justify-end gap-2 mt-3">
             <button type="button" onClick={onClose} className="px-3 py-2 rounded border">Cancel</button>
@@ -248,10 +318,11 @@ const DeleteStatusModal = ({ open, onClose, statusToDelete, otherStatuses, onCon
 /* -------------------
   Main Board
 --------------------*/
-const Board = ({ projectId, sprintId = null, projectName }) => {
+const Board = ({ projectId, sprintId, projectName }) => {
   // data
   const [statuses, setStatuses] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [stories, setStories] = useState([]); // NEW: stories for active sprint
   const [members, setMembers] = useState([]); // for assignee filter
   const [loading, setLoading] = useState(true);
 
@@ -260,8 +331,12 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
   const [newStatusName, setNewStatusName] = useState("");
   const [creatingStatus, setCreatingStatus] = useState(false);
 
-  // modals
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // modals & create menu
+  const [createMenuFor, setCreateMenuFor] = useState(null); // status id for which menu is open
+  const [openCreateTaskModal, setOpenCreateTaskModal] = useState(null); // { statusId, projectId } or null
+  const [openCreateStoryModal, setOpenCreateStoryModal] = useState(null); // { statusId, projectId } or null
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false); // legacy (kept for compatibility)
   const [createDefaultStatusId, setCreateDefaultStatusId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -288,110 +363,121 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
   const [selectedSprints, setSelectedSprints] = useState(new Set());
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [selectedStatusId, setSelectedStatusId] = useState(null);
+  const [activeSprintId, setActiveSprintId] = useState(null);
 
   // load data
+  const loadBoard = useCallback(async () => {
+    setLoading(true);
 
-  
- const loadBoard = useCallback(async () => {
-  setLoading(true);
-  
-  try {
-    let sprintId = null;
-
-    // --- GET ACTIVE SPRINT ---------------------------------------------------
     try {
-      const res = await axios.get(
-        `${BASE}/api/sprints/active/project/${projectId}`,
+      let activeSprintId = null;
+
+      // --- GET ACTIVE SPRINT ---------------------------------------------------
+      try {
+        const res = await axios.get(
+          `${BASE}/api/sprints/active/project/${projectId}`,
+          { headers: headersWithToken() }
+        );
+
+        activeSprintId = res.data[0]?.id;
+        // console.log("res",res.data);
+        console.log("Sprint ID:", activeSprintId);
+        setActiveSprintId(activeSprintId); 
+
+      } catch (err) {
+        console.error("API error:", err?.response?.data || err?.message || err);
+      }
+
+      // --- FETCH STATUSES + TASKS + MEMBERS IN PARALLEL -----------------------
+      const statusReq = axios.get(
+        `${BASE}/api/projects/${projectId}/statuses`,
         { headers: headersWithToken() }
       );
 
-      sprintId = res.data.id;
-      console.log("Sprint ID:", sprintId);
+      const tasksUrl = activeSprintId
+        ? `${BASE}/api/projects/sprint/${activeSprintId}/tasks`
+        : `${BASE}/api/projects/${projectId}/tasks`;
 
+      const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
+
+      // NEW: fetch stories only if we have an active sprint
+      const storiesReq = activeSprintId
+        ? axios.get(`${BASE}/api/stories/sprint/${activeSprintId}`, { headers: headersWithToken() }).catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] });
+
+      const membersReq = axios
+        .get(`${BASE}/api/projects/${projectId}/members`, {
+          headers: headersWithToken()
+        })
+        .catch(() => ({ data: [] })); // fail-safe
+
+      const [sRes, tRes, stRes, mRes] = await Promise.all([statusReq, tasksReq, storiesReq, membersReq]);
+
+      // --- PROCESS STATUSES -----------------------------------------------------
+      const statusData = Array.isArray(sRes.data)
+        ? sRes.data
+        : sRes.data?.content ?? [];
+
+      const ordered = statusData
+        .slice()
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+      setStatuses(ordered);
+
+      // --- PROCESS TASKS --------------------------------------------------------
+      let tasksData = [];
+
+      if (Array.isArray(tRes.data)) tasksData = tRes.data;
+      else if (Array.isArray(tRes.data?.content)) tasksData = tRes.data.content;
+      else if (Array.isArray(tRes.data?.tasks)) tasksData = tRes.data.tasks;
+
+      setTasks(tasksData);
+
+      // --- PROCESS STORIES ------------------------------------------------------
+      let storiesData = [];
+      if (stRes && Array.isArray(stRes.data)) storiesData = stRes.data;
+      else if (stRes && Array.isArray(stRes.data?.content)) storiesData = stRes.data.content;
+      else if (stRes && Array.isArray(stRes.data?.stories)) storiesData = stRes.data.stories;
+      setStories(storiesData);
+
+      // --- PROCESS MEMBERS ------------------------------------------------------
+      if (Array.isArray(mRes.data) && mRes.data.length > 0) {
+        setMembers(
+          mRes.data.map(m => ({ id: m.id, name: m.fullName ?? m.name }))
+        );
+      } else {
+        const map = {};
+
+        tasksData.forEach(t => {
+          const aid = t.assigneeId ?? t.assignee?.id;
+          const aname = t.assigneeName ?? t.assignee?.name ?? t.assignee?.fullName;
+
+          if (aid != null) map[aid] = aname ?? `User ${aid}`;
+        });
+
+        setMembers(
+          Object.entries(map).map(([id, name]) => ({ id: Number(id), name }))
+        );
+      }
     } catch (err) {
-      console.error("API error:", err.response?.data || err.message);
+      console.error("Load board failed", err);
+      toast.error("Failed to load board");
+
+      setStatuses([]);
+      setTasks([]);
+      setStories([]);
+      setMembers([]);
+    } finally {
+      setLoading(false);
     }
-
-    // --- FETCH STATUSES + TASKS + MEMBERS IN PARALLEL -----------------------
-    const statusReq = axios.get(
-      `${BASE}/api/projects/${projectId}/statuses`,
-      { headers: headersWithToken() }
-    );
-
-    const tasksUrl = sprintId
-      ? `${BASE}/api/sprints/${sprintId}/tasks`
-      : `${BASE}/api/projects/${projectId}/tasks`;
-
-    const tasksReq = axios.get(tasksUrl, { headers: headersWithToken() });
-
-    const membersReq = axios
-      .get(`${BASE}/api/projects/${projectId}/members`, {
-        headers: headersWithToken()
-      })
-      .catch(() => ({ data: [] })); // fail-safe
-
-    const [sRes, tRes, mRes] = await Promise.all([
-      statusReq,
-      tasksReq,
-      membersReq
-    ]);
-
-    // --- PROCESS STATUSES -----------------------------------------------------
-    const statusData = Array.isArray(sRes.data)
-      ? sRes.data
-      : sRes.data?.content ?? [];
-
-    const ordered = statusData
-      .slice()
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
-    setStatuses(ordered);
-
-    // --- PROCESS TASKS --------------------------------------------------------
-    let tasksData = [];
-
-    if (Array.isArray(tRes.data)) tasksData = tRes.data;
-    else if (Array.isArray(tRes.data?.content)) tasksData = tRes.data.content;
-    else if (Array.isArray(tRes.data?.tasks)) tasksData = tRes.data.tasks;
-
-    setTasks(tasksData);
-
-    // --- PROCESS MEMBERS ------------------------------------------------------
-    if (Array.isArray(mRes.data) && mRes.data.length > 0) {
-      setMembers(
-        mRes.data.map(m => ({ id: m.id, name: m.fullName ?? m.name }))
-      );
-    } else {
-      const map = {};
-
-      tasksData.forEach(t => {
-        const aid = t.assigneeId ?? t.assignee?.id;
-        const aname = t.assigneeName ?? t.assignee?.name ?? t.assignee?.fullName;
-
-        if (aid != null) map[aid] = aname ?? `User ${aid}`;
-      });
-
-      setMembers(
-        Object.entries(map).map(([id, name]) => ({ id: Number(id), name }))
-      );
-    }
-  } catch (err) {
-    console.error("Load board failed", err);
-    toast.error("Failed to load board");
-
-    setStatuses([]);
-    setTasks([]);
-    setMembers([]);
-  } finally {
-    setLoading(false);
-  }
-}, [projectId]);
-
+  }, [projectId]);
 
   useEffect(() => { loadBoard(); }, [loadBoard]);
 
   // safe arrays & grouping (original grouping)
   const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeStories = Array.isArray(stories) ? stories : [];
+
   const tasksByStatusId = useMemo(() => {
     const acc = {};
     statuses.forEach(s => acc[String(s.id)] = []);
@@ -404,6 +490,19 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
     return acc;
   }, [safeTasks, statuses]);
 
+  // NEW: stories grouped by status
+  const storiesByStatusId = useMemo(() => {
+    const acc = {};
+    statuses.forEach(s => acc[String(s.id)] = []);
+    safeStories.forEach(st => {
+      const sid = st?.status?.id ?? st?.statusId ?? null;
+      const key = sid !== null ? String(sid) : null;
+      if (key && acc[key]) acc[key].push(st);
+      else if (statuses.length) acc[String(statuses[0].id)].push(st);
+    });
+    return acc;
+  }, [safeStories, statuses]);
+
   // ---------- Filtering logic ----------
   const filterCount = useMemo(() => {
     const c = (selectedAssignees.size ? selectedAssignees.size : 0)
@@ -413,7 +512,7 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
     return c;
   }, [selectedAssignees, selectedPriorities, selectedStatusesFilter, selectedSprints]);
 
-  // apply filters: returns tasksByStatusId but only including tasks matching filters (if any filter active)
+  // apply filters for tasks and stories
   const filteredTasksByStatusId = useMemo(() => {
     const active = filterCount > 0;
     if (!active) return tasksByStatusId;
@@ -446,6 +545,33 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
     });
     return res;
   }, [tasksByStatusId, selectedAssignees, selectedPriorities, selectedStatusesFilter, selectedSprints, filterCount]);
+
+  const filteredStoriesByStatusId = useMemo(() => {
+    const active = filterCount > 0;
+    if (!active) return storiesByStatusId;
+
+    const res = {};
+    Object.keys(storiesByStatusId).forEach(statusId => {
+      res[statusId] = storiesByStatusId[statusId].filter(st => {
+        // For stories, apply only sprint/status-based filters where applicable
+        if (selectedStatusesFilter.size > 0) {
+          const sId = (st.status?.id ?? st.statusId);
+          if (!selectedStatusesFilter.has(String(sId))) return false;
+        }
+        if (selectedSprints.size > 0) {
+          const sp = (st.sprintId ?? st.sprint?.id);
+          if (!selectedSprints.has(String(sp))) return false;
+        }
+        // assignee/priority not typically on story - skip unless present
+        if (selectedAssignees.size > 0) {
+          const aid = st.assigneeId ?? st.assignee?.id;
+          if (!selectedAssignees.has(String(aid))) return false;
+        }
+        return true;
+      });
+    });
+    return res;
+  }, [storiesByStatusId, selectedAssignees, selectedStatusesFilter, selectedSprints, filterCount]);
 
   // helper to toggle sets
   const toggleSet = (setStateFn, setRef, val) => {
@@ -489,7 +615,9 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
 
   // delete action entry: decide direct delete or show modal
   const handleDeleteClick = (status) => {
-    const assigned = safeTasks.filter(t => (t?.status?.id ?? t?.statusId) === Number(status.id));
+    const assignedTasks = safeTasks.filter(t => (t?.status?.id ?? t?.statusId) === Number(status.id));
+    const assignedStories = safeStories.filter(s => (s?.status?.id ?? s?.statusId) === Number(status.id));
+    const assigned = assignedTasks.concat(assignedStories);
     if (assigned.length === 0) {
       // direct delete
       doDirectDelete(status.id);
@@ -573,29 +701,66 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
         return;
       }
 
-      // TASK move
+      // ITEM move (could be a task or a story)
       const srcStatusId = source.droppableId;
       const destStatusId = destination.droppableId;
       if (srcStatusId === destStatusId && source.index === destination.index) return;
 
-      const srcList = Array.from(filteredTasksByStatusId[String(srcStatusId)] || []);
-      const destList = Array.from(filteredTasksByStatusId[String(destStatusId)] || []);
-      const [moved] = srcList.splice(source.index, 1);
-      if (!moved) return;
+      // Detect type by draggableId prefix
+      if (String(draggableId).startsWith("task-")) {
+        // Task move
+        const taskId = Number(String(draggableId).replace("task-", ""));
+        // optimistic update: remove from source list and insert in dest
+        const srcList = Array.from(filteredTasksByStatusId[String(srcStatusId)] || []);
+        const destList = Array.from(filteredTasksByStatusId[String(destStatusId)] || []);
+        const taskIndex = srcList.findIndex(t => String(t.id) === String(taskId));
+        let moved = null;
+        if (taskIndex !== -1) moved = srcList.splice(taskIndex, 1)[0];
+        else {
+          // If not found in filtered list, try to locate in full tasks
+          const fallbackIdx = safeTasks.findIndex(t => String(t.id) === String(taskId));
+          if (fallbackIdx !== -1) moved = safeTasks[fallbackIdx];
+        }
+        if (!moved) return;
 
-      const movedUpdated = { ...moved, status: { id: Number(destStatusId) } };
-      destList.splice(destination.index, 0, movedUpdated);
-      // flatten to tasks array for optimistic UI
-      const merged = [];
-      Object.keys(filteredTasksByStatusId).forEach(k => {
-        if (String(k) === String(srcStatusId)) merged.push(...srcList);
-        else if (String(k) === String(destStatusId)) merged.push(...destList);
-        else merged.push(...filteredTasksByStatusId[k]);
-      });
-      setTasks(merged);
+        const movedUpdated = { ...moved, status: { id: Number(destStatusId) } };
+        destList.splice(destination.index, 0, movedUpdated);
 
-      await axios.patch(`${BASE}/api/tasks/${draggableId}/status`, { statusId: Number(destStatusId) }, { headers: headersWithToken() });
-      toast.success("Task moved");
+        // update tasks state: replace moved task
+        setTasks(prev => prev.map(t => String(t.id) === String(taskId) ? { ...t, status: { id: Number(destStatusId) } } : t));
+
+        await axios.patch(`${BASE}/api/tasks/${taskId}/status`, { statusId: Number(destStatusId) }, { headers: headersWithToken() });
+        toast.success("Task moved");
+        return;
+      }
+
+      if (String(draggableId).startsWith("story-")) {
+        // Story move
+        const storyId = Number(String(draggableId).replace("story-", ""));
+
+        const srcList = Array.from(filteredStoriesByStatusId[String(srcStatusId)] || []);
+        const destList = Array.from(filteredStoriesByStatusId[String(destStatusId)] || []);
+        const storyIndex = srcList.findIndex(s => String(s.id) === String(storyId));
+        let moved = null;
+        if (storyIndex !== -1) moved = srcList.splice(storyIndex, 1)[0];
+        else {
+          const fallbackIdx = safeStories.findIndex(s => String(s.id) === String(storyId));
+          if (fallbackIdx !== -1) moved = safeStories[fallbackIdx];
+        }
+        if (!moved) return;
+
+        const movedUpdated = { ...moved, status: { id: Number(destStatusId) } };
+        destList.splice(destination.index, 0, movedUpdated);
+
+        // update stories state: replace moved story
+        setStories(prev => prev.map(s => String(s.id) === String(storyId) ? { ...s, status: { id: Number(destStatusId) } } : s));
+
+        await axios.patch(`${BASE}/api/stories/${storyId}/status`, { statusId: Number(destStatusId) }, { headers: headersWithToken() });
+        toast.success("Story moved");
+        return;
+      }
+
+      // fallback: unknown draggable id
     } catch (err) {
       console.error(err);
       toast.error("Move failed, reloading");
@@ -637,27 +802,31 @@ const Board = ({ projectId, sprintId = null, projectName }) => {
     });
   };
 
-  // open create modal
+  // open create modal (legacy single)
   const openCreateForStatus = (statusId) => {
-  setSelectedStatusId(statusId);
-  setOpenCreateModal(true);
-};
+      setSelectedStatusId(statusId);
+      setOpenCreateModal(true);
+    };
 
-const closeCreateModal = () => {
-  setSelectedStatusId(null);
-  setOpenCreateModal(false);
-};
+    const closeCreateModal = () => {
+      setSelectedStatusId(null);
+      setOpenCreateModal(false);
+    };
 
   const handleTaskCreated = async (created) => {
-  // Optimistic add then refresh to ensure shapes are consistent OR just reload board
-  setTasks(prev => [...prev, created]);
-  // ensure board is consistent: reload the board (status mapping, counts)
-  try { await loadBoard(); } catch(e){ console.error(e); }
-};
-
+    // Optimistic add then refresh to ensure shapes are consistent OR just reload board
+      setTasks(prev => [...prev, created]);
+      // ensure board is consistent: reload the board (status mapping, counts)
+      try { await loadBoard(); } catch(e){ console.error(e); }
+    };
 
   // open task modal
-  const openTaskModal = (task) => { setSelectedTask(task); setIsTaskModalOpen(true); };
+  const openTaskPanel = (task) => {
+    setSelectedTask(task);
+    setIsTaskPanelOpen(true);
+  };
+  const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
+
   const handleTaskSaved = (updated) => setTasks(prev => prev.map(t => String(t.id) === String(updated.id) ? { ...t, ...updated } : t));
 
   // clicking outside filter dropdown closes it
@@ -808,8 +977,10 @@ const closeCreateModal = () => {
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps} className="flex gap-4 overflow-x-auto pb-4">
               {statuses.map((status, idx) => {
-                const items = filteredTasksByStatusId[String(status.id)] || [];
-                const showWipWarn = items.length > WIP_WARNING_THRESHOLD;
+                const storyItems = filteredStoriesByStatusId[String(status.id)] || [];
+                const taskItems = filteredTasksByStatusId[String(status.id)] || [];
+                const itemsCount = storyItems.length + taskItems.length;
+                const showWipWarn = itemsCount > WIP_WARNING_THRESHOLD;
                 const colorCls = stableColorClass(status.id ?? status.name);
 
                 return (
@@ -840,25 +1011,84 @@ const closeCreateModal = () => {
                           </div>
                         </div>
 
-                        {showWipWarn && <div className="text-sm text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2">⚠️ Column has {items.length} tasks (over {WIP_WARNING_THRESHOLD})</div>}
+                        {showWipWarn && <div className="text-sm text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2">⚠️ Column has {itemsCount} items (over {WIP_WARNING_THRESHOLD})</div>}
 
-                        <Droppable droppableId={String(status.id)} type="TASK">
+                        <Droppable droppableId={String(status.id)} type="ITEM">
                           {(dropProvided, snapshot) => (
                             <div ref={dropProvided.innerRef} {...dropProvided.droppableProps} className={`min-h-[120px] p-1 rounded ${snapshot.isDraggingOver ? "bg-indigo-50" : ""}`}>
-                              {items.map((task, tIdx) => (
-                                <Draggable key={String(task.id)} draggableId={String(task.id)} index={tIdx} type="TASK">
-                                  {(taskProvided, taskSnapshot) => (
-                                    <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} onClick={()=>openTaskModal(task)} className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${taskSnapshot.isDragging ? "opacity-80" : ""}`}>
+                              {/* STORIES rendered first */}
+                              {storyItems.map((story, sIdx) => (
+                                <Draggable
+                                  key={`story-${story.id}`}
+                                  draggableId={`story-${story.id}`}
+                                  index={sIdx}
+                                  type="ITEM"
+                                >
+                                  {(storyProvided, storySnapshot) => (
+                                    <div
+                                      ref={storyProvided.innerRef}
+                                      {...storyProvided.draggableProps}
+                                      {...storyProvided.dragHandleProps}
+                                      className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${storySnapshot.isDragging ? "opacity-80" : ""}`}
+                                      onClick={() => {
+                                        // open story detail if you have one (you didn't include a StoryDetail modal - placeholder)
+                                        // If you do have one, call e.g. openStoryModal(story)
+                                        // For now do nothing or console:
+                                        // console.log("Open story", story);
+                                      }}
+                                    >
                                       <div className="flex items-center justify-between">
-                                        <div className="font-medium text-gray-800 truncate">{task.title ?? task.name ?? `Task ${task.id}`}</div>
+                                        <div className="relative group">
+                                          <span className="text-blue-500 text-sm cursor-default">📑</span>
+
+                                          <span
+                                            className="absolute hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-md transform -translate-x-1/2 left-1/2 top-6 whitespace-nowrap transition-opacity duration-200 opacity-0 group-hover:opacity-100"
+                                          >
+                                            Story
+                                          </span>
+                                        </div>
+
+                                        <div className="font-medium text-gray-800 truncate ml-2">
+                                          {story.title ?? story.name ?? `Story ${story.id}`}
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                          {story.priority ?? ""}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex items-center gap-1"></div>
+
+                                        <div className="ml-auto text-xs text-gray-400">
+                                          {story.dueDate ? new Date(story.dueDate).toLocaleDateString() : ""}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+
+                              {/* TASKS */}
+                              {taskItems.map((task, tIdx) => (
+                                <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={tIdx + storyItems.length} type="ITEM">
+                                  {(taskProvided, taskSnapshot) => (
+                                    <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} onClick={() => openTaskPanel(task)}
+                                      className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${taskSnapshot.isDragging ? "opacity-80" : ""}`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="relative group">
+                                          <span className="text-green-600 text-sm cursor-default">☑️</span>
+
+                                          <span
+                                            className="absolute hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-md transform -translate-x-1/2 left-1/2 top-6 whitespace-nowrap transition-opacity duration-200 opacity-0 group-hover:opacity-100"
+                                          >
+                                            Task
+                                          </span>
+                                        </div>
+                                        <div className="font-medium text-gray-800 truncate ml-2">{task.title ?? task.name ?? `Task ${task.id}`}</div>
                                         <div className="text-xs text-gray-400">{task.priority ?? ""}</div>
                                       </div>
-                                      {task.description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</div>}
                                       <div className="flex items-center gap-2 mt-2">
-                                        <div className="flex items-center gap-1">
-                                          <Avatar name={task.assigneeName ?? task.assignee?.name ?? ""} />
-                                          <div className="text-xs text-gray-500">{task.assigneeName ?? task.assignee?.name}</div>
-                                        </div>
+                                        <div className="flex items-center gap-1"></div>
                                         <div className="ml-auto text-xs text-gray-400">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ""}</div>
                                       </div>
                                     </div>
@@ -870,10 +1100,34 @@ const closeCreateModal = () => {
                           )}
                         </Droppable>
 
-                        <div className="mt-3">
-                          <button onClick={()=>openCreateForStatus(status.id)} className="text-indigo-600 hover:underline text-sm flex items-center gap-1">
-                            {/* <Plus className="w-4 h-4" /> Add Task */}
+                        {/* Create dropdown - replaced the previous 'Add Task' button */}
+                        <div className="mt-3 relative">
+                          <button onClick={() => setCreateMenuFor(prev => prev === status.id ? null : status.id)} className="text-indigo-600 hover:underline text-sm flex items-center gap-1">
+                            <Plus className="w-4 h-4" /> Create
                           </button>
+                          
+                          {createMenuFor === status.id && (
+                            <div className="absolute left-0 mt-2 w-44 bg-white border rounded shadow z-50">
+                              <button
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                onClick={() => {
+                                  setCreateMenuFor(null);
+                                  setOpenCreateStoryModal({ projectId, statusId: status.id,activeSprintId});
+                                }}
+                              >
+                                Create Story
+                              </button>
+                              <button
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                                onClick={() => {
+                                  setCreateMenuFor(null);
+                                  setOpenCreateTaskModal({ projectId, statusId: status.id ,activeSprintId});
+                                }}
+                              >
+                                Create Task
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -887,9 +1141,105 @@ const closeCreateModal = () => {
       </DragDropContext>
 
       {/* Modals */}
+      {/* Legacy create modal (kept for compatibility) */}
       <CreateTaskModal open={isCreateOpen} onClose={()=>setIsCreateOpen(false)} defaultStatusId={createDefaultStatusId} projectId={projectId} onCreated={handleTaskCreated} />
-      <TaskDetailModal open={isTaskModalOpen} onClose={()=>setIsTaskModalOpen(false)} task={selectedTask} statuses={statuses} onSaved={handleTaskSaved} />
+      <RightSidePanel
+        isOpen={isTaskPanelOpen}
+        onClose={() => {
+          setIsTaskPanelOpen(false);
+          setSelectedTask(null);
+        }}
+        panelMode="board"   // 👈 IMPORTANT
+      >
+        {isTaskPanelOpen && selectedTask && (
+          <EditTaskForm
+            taskId={selectedTask.id}
+            projectId={projectId}
+            onClose={() => {
+              setIsTaskPanelOpen(false);
+              setSelectedTask(null);
+            }}
+            onUpdated={async () => {
+              await loadBoard();
+              setIsTaskPanelOpen(false);
+            }}
+          />
+        )}
+      </RightSidePanel>
+
+
+
+
+      
       <DeleteStatusModal open={isDeleteModalOpen} onClose={()=>setIsDeleteModalOpen(false)} statusToDelete={statusToDelete} otherStatuses={deleteModalOtherStatuses} onConfirm={confirmDeleteWithMigration} />
+
+      {/* New: Create Story Modal */}
+     {/* ===================== Story Modal ===================== */}
+{openCreateStoryModal && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+    {/* <div className="bg-white rounded-2xl shadow-lg p-6 w-[600px] max-w-full relative max-h-[90vh] overflow-y-auto"> */}
+      {/* Close Button */}
+      {/* <button
+        onClick={() => setOpenCreateStoryModal(null)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-900"
+      >
+        ✕
+      </button> */}
+
+      {/* Story Form */}
+      <CreateStoryForm
+        projectId={openCreateStoryModal.projectId}
+        defaultStatusId={openCreateStoryModal.statusId}
+        defaultSprintId={openCreateStoryModal.activeSprintId}
+        onClose={() => setOpenCreateStoryModal(null)}
+        onCreated={async (created) => {
+          setOpenCreateStoryModal(null);
+          // Optimistic add
+          setStories((prev) => [...prev, created]);
+          try {
+            await loadBoard();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+      />
+    </div>
+  // </div>
+)}
+
+{/* ===================== Task Modal ===================== */}
+{openCreateTaskModal && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+    {/* <div className="bg-white rounded-2xl shadow-lg p-6 w-[600px] max-w-full relative max-h-[90vh] overflow-y-auto"> */}
+      {/* Close Button */}
+      {/* <button
+        onClick={() => setOpenCreateTaskModal(null)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-900"
+      >
+        ✕
+      </button> */}
+
+      {/* Task Form */}
+      <CreateTaskForm
+        projectId={openCreateTaskModal.projectId}
+        defaultStatusId={openCreateTaskModal.statusId}
+        defaultSprintId={openCreateTaskModal.activeSprintId}
+        onClose={() => setOpenCreateTaskModal(null)}
+        onCreated={async (created) => {
+          setOpenCreateTaskModal(null);
+          // Optimistic add
+          setTasks((prev) => [...prev, created]);
+          try {
+            await loadBoard();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+      />
+    </div>
+  // </div>
+)}
+
     </div>
   );
 };

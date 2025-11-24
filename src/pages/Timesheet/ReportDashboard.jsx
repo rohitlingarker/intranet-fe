@@ -94,7 +94,7 @@ export default function ReportDashboard() {
   const sendMailPDF = async () => {
     setMailLoading(true);
     try {
-      const res = await axios.get(`${TS_BASE_URL}/api/report/userMonthlyPdf`, {
+      const res = await axios.get(`${TS_BASE_URL}/api/finance/report/monthly_pdf`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
