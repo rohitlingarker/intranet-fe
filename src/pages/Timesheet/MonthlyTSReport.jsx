@@ -139,6 +139,7 @@ const MonthlyTSReport = () => {
       billableRatio: billPct,
       nonBillableRatio: nonPct,
       activeProjectsCount: apiData.activeProjectsCount,
+      totalWorkingDays: apiData.leavesAndHolidays?.totalWorkingDays,
       leaves: {
         days: apiData.leavesAndHolidays?.totalLeavesDays,
         hours: apiData.leavesAndHolidays?.totalLeavesHours,
@@ -300,9 +301,16 @@ const MonthlyTSReport = () => {
       textY
     );
 
-    // ------------- Divider (MUST COME AFTER ACTIVE PROJECTS) -------------
-    textY += 6;
-    doc.text(`Active Projects: ${activeProjects}`, cardX + 6, textY);
+// ------------- Divider (MUST COME AFTER ACTIVE PROJECTS) -------------
+textY += 6;
+doc.text(`Active Projects: ${activeProjects}`, cardX + 6, textY);
+
+textY += 6;
+doc.text(
+  `Total Working Days: ${apiData.leavesAndHolidays?.totalWorkingDays || 0} days`,
+  cardX + 6,
+  textY
+);
 
     // Divider line
     const dividerY = textY + 4;
