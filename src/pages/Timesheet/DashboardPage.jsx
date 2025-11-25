@@ -111,8 +111,8 @@ const DashboardPage = () => {
     setProductivityTrend(
       dayOrder.map((day) => ({
         day: dayAbbr[day],
-        productivity:
-          dashboardSummary.productivityDetails?.[day]?.productivityScore || 0,
+        Billable:
+          dashboardSummary.billablePercentageDetails?.[day]?.billablePercentage || 0,
       }))
     );
 
@@ -243,7 +243,7 @@ const DashboardPage = () => {
             <Card>
               <CardContent>
                 <h3 className="text-lg font-semibold mb-3">
-                  Productivity Trend
+                  DayWise Billable Percentage
                 </h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={productivityTrend}>
@@ -259,7 +259,7 @@ const DashboardPage = () => {
                     <Tooltip />
                     <Line
                       type="monotone"
-                      dataKey="productivity"
+                      dataKey="Billable"
                       stroke="#16a34a"
                       strokeWidth={3}
                       dot={false}
