@@ -67,6 +67,8 @@ const ProjectTabs = () => {
       
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
+      // case "timelines":
+      //   return <TimeLines projectId={pid} />;
       
       default:
         return null;
@@ -87,6 +89,7 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
 
     { name: "Status Report", tab: "status-report" },
+    // {name:"Timelines", tab:"timelines"}
    
   ];
 

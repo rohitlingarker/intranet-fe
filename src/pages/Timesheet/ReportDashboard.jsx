@@ -60,6 +60,7 @@ export default function ReportDashboard() {
   const [projectPages, setProjectPages] = useState({});
   const [mailLoading, setMailLoading] = useState(false);
   const membersPerPage = 8;
+  const [leaveError, setLeaveError] = useState(false);
 
   const handleProjectPageChange = (projectId, newPage) => {
     setProjectPages((prev) => ({
@@ -113,8 +114,13 @@ export default function ReportDashboard() {
         setData(json);
         setSelectedMonth(json.month);
         setSelectedYear(json.year);
+        setLeaveError(false);
       } catch (err) {
         console.error("Error fetching data:", err);
+        toast.error(err.response?.data || "Failed to fetch data");
+        if(err.response?.status === 400) {
+          setLeaveError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -190,6 +196,14 @@ export default function ReportDashboard() {
         <LoadingSpinner text="Loading Reports..." />
       </div>
     );
+
+  if (leaveError && !data)
+    return (
+      <div className="report-container text-center font-semibold">
+        Pending Leaves needs to be reviewed.
+      </div>
+    );
+
   if (!data)
     return (
       <div className="report-container text-center font-semibold">
