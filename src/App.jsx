@@ -32,6 +32,7 @@ import ReportDashboard from "./pages/Timesheet/ReportDashboard";
 import MonthlyTSReport from "./pages/Timesheet/MonthlyTSReport";
 import ManagerReportSection from "./pages/Timesheet/ManagerReportSection";
 import ManagerMonthlyReport from "./pages/Timesheet/ManagerMonthlyReport";
+import TSAdminPanel from "./pages/Timesheet/Admin/TSAdminPannel.jsx";
 
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
@@ -238,7 +239,8 @@ useEffect(() => {
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-          <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
+          <Route path="/managerapproval" element={<TSAdminPanel/>} />
           <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/timesheets/managerreport" element={<ManagerReportSection />} />
