@@ -75,7 +75,7 @@ const AdminApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/api/holiday-exclude-users`,
+        }/api/holiday-exclude-users/all`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -718,18 +718,25 @@ const AdminApprovalTable = ({
       // Run both API calls in parallel and wait for both to finish
       const [usersRes, holidaysRes] = await Promise.all([
         fetch(
-          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holiday-exclude-users/allusers`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         ),
-        fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/holidays/currentMonth`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }),
+        fetch(
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holidays/currentMonth`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        ),
       ]);
 
       if (!usersRes.ok || !holidaysRes.ok)
@@ -953,6 +960,10 @@ const AdminApprovalTable = ({
                       <p className="text-sm text-gray-600 mt-1">
                         <span className="font-medium">Reason:</span>{" "}
                         {item.reason}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Excluded By:</span>{" "}
+                        {item.managerName} (User ID: {item.managerId})
                       </p>
                     </div>
                   ))}
