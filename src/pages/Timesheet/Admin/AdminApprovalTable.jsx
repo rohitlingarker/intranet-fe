@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import LoadingSpinner from "../../../components/LoadingSpinner";
-import { reviewTimesheet, handleBulkReview } from "../api";
+import { reviewTimesheet, handleBulkReviewAdmin } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
@@ -188,7 +188,7 @@ const AdminApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/api/timesheets/review/internal`,
+        }/timesheets/review/internal`,
         {
           method: "POST",
           headers: {
@@ -434,7 +434,7 @@ const AdminApprovalTable = ({
                         const timesheetIds = week.timesheets.map(
                           (t) => t.timesheetId
                         );
-                        await handleBulkReview(
+                        await handleBulkReviewAdmin(
                           user.userId,
                           timesheetIds,
                           "APPROVED",
@@ -526,7 +526,7 @@ const AdminApprovalTable = ({
                         (t) => t.timesheetId
                       );
                       const comment = rejectionComments[week.weekId] || "";
-                      await handleBulkReview(
+                      await handleBulkReviewAdmin(
                         user.userId,
                         timesheetIds,
                         "REJECTED",
