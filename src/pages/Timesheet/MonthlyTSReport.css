@@ -85,7 +85,7 @@ body {
 
 @media (min-width: 1024px) {
     .kpi-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -377,13 +377,13 @@ body {
 }
 
 .footer-label {
-    font-size: 1.25rem;
+    font-size: 1.0 rem;
     font-weight: 800;
     color: white;
 }
 
 .footer-value {
-    font-size: 1.875rem;
+    font-size: 1.25 rem;
     font-weight: 800;
     color: white;
 }
@@ -391,6 +391,27 @@ body {
 /* Donut Chart Styles */
 .donut-chart-container {
     margin-bottom: 3rem;
+}
+.donut-hover-info {
+  pointer-events: none !important;
+}
+.donut-legend-items {
+  position: relative;
+  z-index: 1;
+}
+.donut-hover-info {
+  position: absolute;
+  z-index: 9999;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none !important;
+}
+
+.tooltip-left {
+    left: -260px;
+}
+.tooltip-right {
+    right: -260px;
 }
 
 .donut-chart-grid {
@@ -620,6 +641,14 @@ body {
     background-color: #1e40af;
     transform: translateY(-1px);
 }
+
+.download-btn.is-sending {
+  background-color: #6c757d; /* A muted gray color */
+  border-color: #6c757d;
+  color: #fff; /* Keep text white */
+  opacity: 0.8; /* Slightly dim the button */
+  cursor: not-allowed; /* This is the standard for disabled elements */
+}
 /*  */weeklytimesheetStatus
 
 .weekly-status-container {
@@ -699,6 +728,8 @@ body {
   border: 1px solid #f1e4b3;
   margin-bottom: 10px;
 }
+
+
 
 .weekly-actions {
   display: flex;

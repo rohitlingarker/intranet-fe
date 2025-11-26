@@ -10,7 +10,7 @@ import CancellationModal from "./CancellationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const LeaveHistory = () => {
+const LeaveHistory = ({ employeeId, refreshKey }) => {
   const [leaves, setLeaves] = useState([]);
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const LeaveHistory = () => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
 
-  const employeeId = useAuth()?.user?.user_id;
+  // const employeeId = useAuth()?.user?.user_id;
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
   const [filterStatus, setFilterStatus] = useState("APPROVED");
@@ -61,7 +61,7 @@ const LeaveHistory = () => {
         toast.error("Failed to fetch leave history or types.");
         setLoading(false);
       });
-  }, []);
+  }, [refreshKey, employeeId]);
 
   useEffect(() => {
     const fetchLeaveTypes = async () => {

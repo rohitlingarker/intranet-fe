@@ -74,7 +74,7 @@ export default function LeaveDashboard({ employeeId, refreshKey }) {
     return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
   }, [leaveData, leaveTypes, getDisplayName]);
 
-  if (loading) return <p className="text-center"><LoadingSpinner text="Loading Balances..."/></p>;
+  if (loading) return <div className="text-center"><LoadingSpinner text="Loading Balances..."/></div>;
 
   const handleViewDetails = (leave, displayName) => {
     navigate(`/leave-details/${employeeId}/${leave.leaveType.leaveName}`, {

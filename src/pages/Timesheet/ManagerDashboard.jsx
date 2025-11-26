@@ -17,7 +17,6 @@ const ManagerDashboard = ({ data, loading, setStatusFilter, handleScroll }) => {
   const [weeklyData, setWeeklyData] = useState([]);
   const [reminding, setReminding] = useState(false);
 
-
   // Map server weekday names to short labels
   const dayMap = {
     MONDAY: "Mon",
@@ -61,12 +60,10 @@ const ManagerDashboard = ({ data, loading, setStatusFilter, handleScroll }) => {
   }
   // ✅ NEW: Handle "Remind" button click
   const handleRemind = async () => {
-    
     if (!stats || stats.missingTimesheets.length === 0) {
       showStatusToast("No users to remind 🎉", "info");
       return;
     }
-
 
     const emails = stats.missingTimesheets.map((u) => u.email);
 
@@ -198,16 +195,21 @@ const ManagerDashboard = ({ data, loading, setStatusFilter, handleScroll }) => {
           </button>
         </div>
         {stats.missingTimesheets.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-600 overflow-y-scroll max-h-30">
-            {stats.missingTimesheets.map((user, idx) => (
-              <li key={idx}>
-                <span title={user.email} className="font-medium">
-                  {user.fullName} - {user.email}
-                </span>
-                {/* <span className="text-sm text-gray-500">({user.email})</span> */}
-              </li>
-            ))}
-          </ul>
+          <div>
+            <ul className="list-disc list-inside text-gray-600 overflow-y-scroll max-h-30">
+              {stats.missingTimesheets.map((user, idx) => (
+                <li key={idx}>
+                  <span title={user.email} className="font-medium">
+                    {user.fullName} - {user.email}
+                  </span>
+                  {/* <span className="text-sm text-gray-500">({user.email})</span> */}
+                </li>
+              ))}
+            </ul>
+            <div className="text-gray-500 font-semibold text-xs mt-2 italic">
+              <span className="text-red-600">*</span>{" "} If the date is before the 15th, use 1st of month. If on/after the 15th, use the last 15 days.
+            </div>
+          </div>
         ) : (
           <p className="text-gray-500 text-sm">
             No missing timesheets today 🎉

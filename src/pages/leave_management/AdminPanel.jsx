@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import CompOffBalanceRequests from "../leave_management/models/CompOffBalanceRequests";
@@ -8,6 +8,7 @@ import Button from "../../components/Button/Button";
 import RevokeLeaveRequests from "./models/RevokeLeaveRequests";
 import { toast } from "react-toastify";
 import { se } from "date-fns/locale";
+import { useWebSocket } from "./websockets/WebSocketProvider.jsx";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -22,6 +23,9 @@ const AdminPanel = ({ employeeId }) => {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
   const navigate = useNavigate();
+  const { subscribe } = useWebSocket();
+  const leaveApprovalRef = useRef();
+  const refreshCooldown = useRef(false);
 
   // const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {};
   // const isManager = user?.role?.toLowerCase() === "manager";
@@ -64,7 +68,7 @@ const AdminPanel = ({ employeeId }) => {
     }
   }, [resultMsg]);
 
-  const fetchRevokeRequests = async () => {
+  const fetchRevokeRequests = useCallback(async () => {
     try {
       const res = await axios.get(
         `${BASE_URL}/api/leave-revoke/pending/${employeeId}`,
@@ -74,7 +78,7 @@ const AdminPanel = ({ employeeId }) => {
       );
 
       if (res.data.success && Array.isArray(res.data.data)) {
-        const revokeRequests = res.data.data; 
+        const revokeRequests = res.data.data;
         setRevokeRequests(revokeRequests);
 
         // Notify parent if callback exists
@@ -85,14 +89,60 @@ const AdminPanel = ({ employeeId }) => {
         setRevokeRequests([]);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to fetch Revoke Requests.");
+      toast.error(
+        err.response?.data?.message || "Failed to fetch Revoke Requests."
+      );
       setRevokeRequests([]);
     }
-  };
+  }, [employeeId]);
 
-  useEffect( () => {
+  useEffect(() => {
     fetchRevokeRequests();
-  },[]);
+  }, [fetchRevokeRequests]);
+  // Subscribe to WebSocket for real-time updates
+  // In AdminPanel.js
+  console.log("leavered", leaveApprovalRef.current);
+  // useEffect(() => {
+  //   const unsub = subscribe("data-updated", () => {
+  //     fetchRevokeRequests();
+  //     if (refreshCooldown.current) return; // ⛔ already refreshing
+
+  //     refreshCooldown.current = true;
+  //     console.log("WS EVENT → refreshing admin data");
+  //     leaveApprovalRef.current?.refreshData();
+
+  //     setTimeout(() => {
+  //       refreshCooldown.current = false;
+  //     }, 2000);
+  //   });
+
+  //   return unsub;
+  // }, [subscribe, fetchRevokeRequests]);
+
+  useEffect(()=>{
+    const sub1 = subscribe("leave-updated",()=>{
+      handleRefresh()
+    })
+    const sub2 = subscribe("data-updated",()=>{
+      handleRefresh()
+    })
+
+    return ()=>{
+      sub1();
+      sub2();
+    }
+  }, [subscribe, fetchRevokeRequests])
+  const handleRefresh = ()=>{
+    if (refreshCooldown.current) return; // ⛔ already refreshing
+    refreshCooldown.current = true;
+    fetchRevokeRequests()
+    console.log("WS EVENT → refreshing admin data");
+    leaveApprovalRef.current?.refreshData();
+
+    setTimeout(() => {
+      refreshCooldown.current = false;
+    }, 2000);
+  }
 
   // const filteredAdminRequests = adminLeaveRequests.filter((request) => {
   //   const matchesSearch =
@@ -143,7 +193,11 @@ const AdminPanel = ({ employeeId }) => {
           <p className="text-gray-600">Handle leave requests and approvals</p>
         </div>
         <div>
-          <Button onClick={() => navigate(`/block-leave-dates/${employeeId}`)} variant="secondary" size="medium">
+          <Button
+            onClick={() => navigate(`/block-leave-dates/${employeeId}`)}
+            variant="secondary"
+            size="medium"
+          >
             Manage Leave Blocks
           </Button>
         </div>
@@ -206,14 +260,19 @@ const AdminPanel = ({ employeeId }) => {
         <CompOffBalanceRequests managerId={employeeId} />
       )}
       {/* <CompOffBalanceRequests managerId={employeeId} /> */}
-       
+
       {revokeRequests.length > 0 && (
-        <RevokeLeaveRequests revokeRequests={revokeRequests} onActionSuccess={fetchRevokeRequests} />
+        <RevokeLeaveRequests
+          revokeRequests={revokeRequests}
+          onActionSuccess={fetchRevokeRequests}
+        />
       )}
 
-
       {/* Search and Filter Section */}
-      <HandleLeaveRequestAndApprovals employeeId={employeeId} />
+      <HandleLeaveRequestAndApprovals
+        employeeId={employeeId}
+        ref={leaveApprovalRef}
+      />
 
       {/* Modals */}
       {/* <AddEmployeeModal

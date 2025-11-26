@@ -16,6 +16,8 @@ import html2canvas from "html2canvas";
 import axios from "axios";
 import Pagination from "../../components/Pagination/pagination";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import Button from "../../components/Button/Button.jsx";
+import { toast } from "react-toastify";
 
 const monthOptions = [
   { name: "January", value: 1 },
@@ -39,8 +41,15 @@ export default function ReportDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const reportRef = useRef();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  // const [currentPage, setCurrentPage] = useState(1);
+  const [employeeBreakdownPage, setEmployeeBreakdownPage] = useState(1);
+  const [productivityPage, setProductivityPage] = useState(1);
+  const [projectBreakdownPage, setProjectBreakdownPage] = useState(1);
+  const [leavePage, setLeavePage] = useState(1);
+  const [employeeBreakdownPerPage, setEmployeeBreakdownPerPage] = useState(8);
+  const [productivityPerPage, setProductivityBreakdownPerPage] = useState(8);
+  const [projectBreakdownPerPage, setProjectBreakdownPerPage] = useState(8);
+  const [leaveHoursPerPage, setLeaveHoursPerPage] = useState(8);
   const TS_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -49,7 +58,9 @@ export default function ReportDashboard() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [projectPages, setProjectPages] = useState({});
+  const [mailLoading, setMailLoading] = useState(false);
   const membersPerPage = 8;
+  const [leaveError, setLeaveError] = useState(false);
 
   const handleProjectPageChange = (projectId, newPage) => {
     setProjectPages((prev) => ({
@@ -58,10 +69,34 @@ export default function ReportDashboard() {
     }));
   };
 
+  const itemsPerPageChangeEmployeeBreakdown = (event) => {
+    const newItemsPerPage = parseInt(event.target.value, 10);
+    setEmployeeBreakdownPerPage(newItemsPerPage);
+    setEmployeeBreakdownPage(1);
+  };
+  const itemsPerPageChangeProductivity = (event) => {
+    const newItemsPerPage = parseInt(event.target.value, 10);
+    setProductivityBreakdownPerPage(newItemsPerPage);
+    setProductivityPage(1);
+  };
+  const itemsPerPageChangeProjectBreakdown = (event) => {
+    const newItemsPerPage = parseInt(event.target.value, 10);
+    setProjectBreakdownPerPage(newItemsPerPage);
+    setProjectBreakdownPage(1);
+  };
+  const itemsPerPageChangeLeaveHours = (event) => {
+    const newItemsPerPage = parseInt(event.target.value, 10);
+    setLeaveHoursPerPage(newItemsPerPage);
+    setLeavePage(1);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setCurrentPage(1);
+      setEmployeeBreakdownPage(1);
+      setProductivityPage(1);
+      setLeavePage(1);
+      setProjectBreakdownPage(1);
       try {
         const res = await axios.get(
           `${TS_BASE_URL}/api/report/monthly_finance`,
@@ -79,8 +114,13 @@ export default function ReportDashboard() {
         setData(json);
         setSelectedMonth(json.month);
         setSelectedYear(json.year);
+        setLeaveError(false);
       } catch (err) {
         console.error("Error fetching data:", err);
+        toast.error(err.response?.data || "Failed to fetch data");
+        if(err.response?.status === 400) {
+          setLeaveError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -88,10 +128,33 @@ export default function ReportDashboard() {
     fetchData();
   }, [TS_BASE_URL, appliedMonth, appliedYear]);
 
+  const sendMailPDF = async () => {
+    setMailLoading(true);
+    try {
+      const res = await axios.get(
+        `${TS_BASE_URL}/api/finance/report/monthly_pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          params: {
+            month: appliedMonth,
+            year: appliedYear,
+          },
+        }
+      );
+      toast.success(res?.data || "Mail sent successfully");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to send mail");
+    } finally {
+      setMailLoading(false);
+    }
+  };
+
   const handleFilterApply = () => {
     setAppliedYear(selectedYear);
     setAppliedMonth(selectedMonth);
-    setIsFilterOpen(false); // <-- ADD THIS LINE
+    setIsFilterOpen(false);
   };
 
   const handleExportPDF = async () => {
@@ -133,6 +196,14 @@ export default function ReportDashboard() {
         <LoadingSpinner text="Loading Reports..." />
       </div>
     );
+
+  if (leaveError && !data)
+    return (
+      <div className="report-container text-center font-semibold">
+        Pending Leaves needs to be reviewed.
+      </div>
+    );
+
   if (!data)
     return (
       <div className="report-container text-center font-semibold">
@@ -146,27 +217,38 @@ export default function ReportDashboard() {
   const leaveHoursBreakdown = data.leaveHoursBreakdown || [];
 
   // Base pagination on the main list, e.g., employeeBreakdown
-  const totalPages = Math.ceil(employeeBreakdown.length / itemsPerPage);
+  const totalEmployeePages = Math.ceil(
+    employeeBreakdown.length / employeeBreakdownPerPage
+  );
+  const totalEmployeeProductivityPages = Math.ceil(
+    employeeProductivity.length / productivityPerPage
+  );
+  const totalProjectPages = Math.ceil(
+    projectBreakdown.length / projectBreakdownPerPage
+  );
+  const totalLeaveHoursPages = Math.ceil(
+    leaveHoursBreakdown.length / leaveHoursPerPage
+  );
 
   // Create paginated slices for EACH list you want to paginate
   const paginatedEmployeeBreakdown = employeeBreakdown.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (employeeBreakdownPage - 1) * employeeBreakdownPerPage,
+    employeeBreakdownPage * employeeBreakdownPerPage
   );
 
   const paginatedEmployeeProductivity = employeeProductivity.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (productivityPage - 1) * productivityPerPage,
+    productivityPage * productivityPerPage
   );
 
   const paginatedProjectBreakdown = projectBreakdown.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (projectBreakdownPage - 1) * projectBreakdownPerPage,
+    projectBreakdownPage * projectBreakdownPerPage
   );
 
   const paginatedleaveHoursBreakdown = leaveHoursBreakdown.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (leavePage - 1) * leaveHoursPerPage,
+    leavePage * leaveHoursPerPage
   );
 
   return (
@@ -185,7 +267,9 @@ export default function ReportDashboard() {
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
               <span>
-                {data.month && monthOptions.find((m) => m.value === data.month)?.name},{data.year}
+                {data.month &&
+                  monthOptions.find((m) => m.value === data.month)?.name}
+                ,{data.year}
               </span>
             </button>
           </p>
@@ -217,9 +301,20 @@ export default function ReportDashboard() {
             </div>
           )}
         </div>
-        <button className="export-btn" onClick={handleExportPDF}>
-          <FileDown size={16} /> Export PDF
-        </button>
+        <div className="flex gap-4">
+          <button className="export-btn" onClick={handleExportPDF}>
+            <FileDown size={16} /> Export PDF
+          </button>
+          <Button
+            variant="secondary"
+            size="medium"
+            className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={sendMailPDF}
+            disabled={mailLoading}
+          >
+            {mailLoading ? "Sending..." : "Send PDF via Email"}
+          </Button>
+        </div>
       </div>
 
       {/* Top Stats */}
@@ -294,9 +389,28 @@ export default function ReportDashboard() {
 
       {/* Employee Breakdown */}
       <div className="section-card">
-        <h3>
-          <Users size={18} /> Employee HoursWise Breakdown
-        </h3>
+        <div className="flex justify-between">
+          <h3>
+            <Users size={18} /> Employee Logged HoursBreakdown
+          </h3>
+          <p className="month pt-1 flex justify-end">
+            Records Per Page:
+            <select
+              name="userRange"
+              id="userRangeDropdown"
+              value={employeeBreakdownPerPage}
+              className="pr-6 py-0 border-none ml-2 mb-2 text-sm"
+              onChange={itemsPerPageChangeEmployeeBreakdown}
+            >
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </p>
+        </div>
         <table>
           <thead>
             <tr>
@@ -304,7 +418,7 @@ export default function ReportDashboard() {
               <th>Working Days</th>
               <th>Billable</th>
               <th>Non-Billable</th>
-              <th>Leave</th>
+              <th>AutoGenLoggedHrs</th>
               <th>Total</th>
               <th>Billable Utilization</th>
             </tr>
@@ -316,7 +430,7 @@ export default function ReportDashboard() {
                 <td>{e.workingDays}</td>
                 <td>{e.billableHours}</td>
                 <td>{e.nonBillableHours}</td>
-                <td>{e.leaveHours ?? "-"}</td>
+                <td>{e.autoGeneratedHours ?? "-"}</td>
                 <td>{e.totalHours}</td>
                 <td>
                   <span className="badge-green">{e.productivity ?? "-"}</span>
@@ -325,14 +439,18 @@ export default function ReportDashboard() {
             ))}
           </tbody>
         </table>
-        {totalPages > 1 && (
+        {totalEmployeePages > 1 && (
           <div className="mb-4">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              currentPage={employeeBreakdownPage}
+              totalPages={totalEmployeePages}
+              onPrevious={() =>
+                setEmployeeBreakdownPage((page) => Math.max(page - 1, 1))
+              }
               onNext={() =>
-                setCurrentPage((page) => Math.min(page + 1, totalPages))
+                setEmployeeBreakdownPage((page) =>
+                  Math.min(page + 1, totalEmployeePages)
+                )
               }
             />
           </div>
@@ -341,9 +459,28 @@ export default function ReportDashboard() {
 
       {/* Employee Productivity */}
       <div className="section-card">
-        <h3>
-          <TrendingUp size={18} /> Employee Productivity
-        </h3>
+        <div className="flex justify-between">
+          <h3>
+            <TrendingUp size={18} /> Employee Productivity
+          </h3>
+          <p className="month pt-1 flex justify-end">
+            Records Per Page:
+            <select
+              name="userRange"
+              id="userRangeDropdown"
+              value={productivityPerPage}
+              className="pr-6 py-0 border-none ml-2 mb-2 text-sm"
+              onChange={itemsPerPageChangeProductivity}
+            >
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </p>
+        </div>
         <table>
           <thead>
             <tr>
@@ -368,14 +505,18 @@ export default function ReportDashboard() {
             ))}
           </tbody>
         </table>
-        {totalPages > 1 && (
+        {totalEmployeeProductivityPages > 1 && (
           <div className="mb-4">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              currentPage={productivityPage}
+              totalPages={totalEmployeeProductivityPages}
+              onPrevious={() =>
+                setProductivityPage((page) => Math.max(page - 1, 1))
+              }
               onNext={() =>
-                setCurrentPage((page) => Math.min(page + 1, totalPages))
+                setProductivityPage((page) =>
+                  Math.min(page + 1, totalEmployeeProductivityPages)
+                )
               }
             />
           </div>
@@ -384,9 +525,28 @@ export default function ReportDashboard() {
 
       {/* Employee leaveHoursBreakdown */}
       <div className="section-card">
-        <h3>
-          <Calendar size={18} /> Employee leaveHoursBreakdown
-        </h3>
+        <div className="flex justify-between">
+          <h3>
+            <Calendar size={18} /> Employee leaveHoursBreakdown
+          </h3>
+          <p className="month pt-1 flex justify-end">
+            Records Per Page:
+            <select
+              name="userRange"
+              id="userRangeDropdown"
+              value={leaveHoursPerPage}
+              className="pr-6 py-0 border-none ml-2 mb-2 text-sm"
+              onChange={itemsPerPageChangeLeaveHours}
+            >
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </p>
+        </div>
         <table>
           <thead>
             <tr>
@@ -411,14 +571,14 @@ export default function ReportDashboard() {
             ))}
           </tbody>
         </table>
-        {totalPages > 1 && (
+        {totalLeaveHoursPages > 1 && (
           <div className="mb-4">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevious={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              currentPage={leavePage}
+              totalPages={totalLeaveHoursPages}
+              onPrevious={() => setLeavePage((page) => Math.max(page - 1, 1))}
               onNext={() =>
-                setCurrentPage((page) => Math.min(page + 1, totalPages))
+                setLeavePage((page) => Math.min(page + 1, totalLeaveHoursPages))
               }
             />
           </div>
@@ -427,37 +587,56 @@ export default function ReportDashboard() {
 
       {/* Project Breakdown */}
       <div className="section-card">
-        <h3>
-          <Briefcase size={18} /> Project-wise Breakdown
-        </h3>
-          <div className="projects-grid">
-            {paginatedProjectBreakdown.map((p, i) => (
-              <div
-                key={i}
-                /* MODIFIED: Add onClick handler */
-                onClick={() =>
-                  setSelectedProjectId((prevId) =>
-                    prevId === p.projectId ? null : p.projectId
-                  )
-                }
-                /* MODIFIED: Add a dynamic class for styling the selected card */
-                className={`project-card hover-lift ${
-                  selectedProjectId === p.projectId ? "is-selected" : ""
-                }`}
-              >
-                <div className="card-top">
-                  <Users size={18} className="text-blue" />
-                  <h4>{p.projectName ?? p.name}</h4>
-                </div>
-                <div className="grid grid-cols-2">
-                  <p>{p.teamMembers ?? "-"} team members</p>
-                  <span className="text-right">
-                    {p.totalHours ?? p.hours} hrs
-                  </span>
-                </div>
+        <div className="flex justify-between">
+          <h3>
+            <Briefcase size={18} /> Project-wise Breakdown
+          </h3>
+          <p className="month pt-1 flex justify-end">
+            Records Per Page:
+            <select
+              name="userRange"
+              id="userRangeDropdown"
+              value={projectBreakdownPerPage}
+              className="pr-6 py-0 border-none ml-2 mb-2 text-sm"
+              onChange={itemsPerPageChangeProjectBreakdown}
+            >
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </p>
+        </div>
+        <div className="projects-grid">
+          {paginatedProjectBreakdown.map((p, i) => (
+            <div
+              key={i}
+              /* MODIFIED: Add onClick handler */
+              onClick={() =>
+                setSelectedProjectId((prevId) =>
+                  prevId === p.projectId ? null : p.projectId
+                )
+              }
+              /* MODIFIED: Add a dynamic class for styling the selected card */
+              className={`project-card hover-lift ${
+                selectedProjectId === p.projectId ? "is-selected" : ""
+              }`}
+            >
+              <div className="card-top">
+                <Users size={18} className="text-blue" />
+                <h4>{p.projectName ?? p.name}</h4>
               </div>
-            ))}
-          </div>
+              <div className="grid grid-cols-2">
+                <p>{p.teamMembers ?? "-"} team members</p>
+                <span className="text-right">
+                  {p.totalHours ?? p.hours} hrs
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       {/* Project User Hours Breakdown */}
       <div className="section-card">
@@ -521,7 +700,10 @@ export default function ReportDashboard() {
                       <div className="project-header-3col">
                         <h4 className="project-title">{project.projectName}</h4>
                         <div className="project-owner mr-3">
-                          <strong>Owner:</strong> <span className="top-performer-highlight">{project.ownerName ?? "-"}</span>
+                          <strong>Owner:</strong>{" "}
+                          <span className="top-performer-highlight">
+                            {project.ownerName ?? "-"}
+                          </span>
                         </div>
                         <div
                           className="project-top-performers"
@@ -574,11 +756,11 @@ export default function ReportDashboard() {
                   </table>
 
                   {/* Pagination for THIS project only */}
-                  {totalPages > 1 && (
+                  {totalProjectPages > 1 && (
                     <div className="mb-4 mt-2">
                       <Pagination
                         currentPage={currentPage}
-                        totalPages={totalPages}
+                        totalPages={totalProjectPages}
                         onPrevious={() =>
                           handleProjectPageChange(
                             project.projectId,
@@ -588,7 +770,7 @@ export default function ReportDashboard() {
                         onNext={() =>
                           handleProjectPageChange(
                             project.projectId,
-                            Math.min(currentPage + 1, totalPages)
+                            Math.min(currentPage + 1, totalProjectPages)
                           )
                         }
                       />

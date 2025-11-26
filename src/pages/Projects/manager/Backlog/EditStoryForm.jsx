@@ -8,7 +8,13 @@ import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
 
-const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
+const EditStoryForm = ({
+  storyId,
+  projectId,
+  onClose,
+  onUpdated,
+  mode = "drawer",
+}) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -38,7 +44,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     },
   };
 
-  // ========== FETCH DATA ==========
+  // ===================== LOAD INITIAL DATA =====================
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -73,7 +79,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           description: data.description || "",
           acceptanceCriteria: data.acceptanceCriteria || "",
           storyPoints: data.storyPoints || "",
-
           priority: data.priority || "MEDIUM",
 
           epicId: data.epicId || "",
@@ -88,9 +93,9 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         setEpics(epicRes.data || []);
         setSprints(sprintRes.data || []);
         setStatuses(statusRes.data || []);
-      } catch (error) {
-        console.error("Error loading story:", error);
-        toast.error("Failed to load story details.");
+      } catch (err) {
+        console.error("Error loading story:", err);
+        toast.error("Failed to load story.");
       } finally {
         setLoading(false);
       }
@@ -99,7 +104,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     if (storyId && projectId) loadData();
   }, [storyId, projectId]);
 
-  // ========== INPUT HANDLER ==========
+  // ===================== HANDLE INPUT =====================
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -122,7 +127,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     }));
   };
 
-  // ========== SUBMIT ==========
+  // ===================== SUBMIT =====================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -148,19 +153,19 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
         axiosConfig
       );
 
-      toast.success("Story updated successfully!", {
-        position: "top-right",
-        autoClose: 2500,
-        theme: "colored",
-      });
+      // ⛔ Close immediately
+      onClose?.();
 
-      setTimeout(() => {
-        onUpdated?.();
-        onClose?.();
-      }, 1200);
+      // 🔥 Show toast after close
+      // toast.success("Story updated successfully!", {
+      //   position: "top-right",
+      //   autoClose: 2500,
+      // });
+
+      // Notify parent
+      onUpdated?.();
     } catch (error) {
-      console.error("Error updating story:", error);
-
+      console.error("Error updating:", error);
       const msg =
         error.response?.data?.message ||
         error.message ||
@@ -175,29 +180,54 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
     }
   };
 
-  if (loading)
+  // ===================== LOADING STATE =====================
+  if (loading) {
     return (
       <p className="text-gray-600 text-center py-6">Loading story details...</p>
     );
+  }
 
-  // ========== UI ==========
-  return (
-    <div className="relative bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto max-h-[85vh] overflow-y-auto border border-gray-200">
-      {/* Close Button */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition"
+  // ===================== WRAPPER =====================
+  const Wrapper = ({ children }) => {
+    if (mode === "modal") {
+      return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="absolute inset-0" onClick={onClose} />
+
+          <div
+            className="relative bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    // Drawer Mode
+    return (
+      <div
+        className="h-full w-full flex flex-col bg-white"
+        onClick={(e) => e.stopPropagation()}
       >
-        <X size={22} />
-      </button>
+        {children}
+      </div>
+    );
+  };
 
-      <h2 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
-        Edit User Story
-      </h2>
+  // ===================== UI =====================
+  return (
+    <Wrapper>
+      {/* HEADER */}
+      <div className="p-6 border-b flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Edit User Story</h2>
+        <button onClick={onClose}>
+          <X className="text-gray-600" />
+        </button>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
+      {/* BODY */}
+      <div className="p-6 flex-1 overflow-y-auto space-y-6">
         <FormInput
           label="Title *"
           name="title"
@@ -206,7 +236,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           required
         />
 
-        {/* Description */}
         <FormTextArea
           label="Description"
           name="description"
@@ -214,7 +243,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           onChange={handleChange}
         />
 
-        {/* Epic */}
         <FormSelect
           label="Epic"
           name="epicId"
@@ -226,8 +254,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           ]}
         />
 
-        {/* Priority + Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <FormSelect
             label="Priority"
             name="priority"
@@ -248,16 +275,12 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             onChange={handleChange}
             options={[
               { label: "Select Status", value: "" },
-              ...statuses.map((s) => ({
-                label: s.name,
-                value: s.id,
-              })),
+              ...statuses.map((s) => ({ label: s.name, value: s.id })),
             ]}
           />
         </div>
 
-        {/* Story Points + Sprint */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <FormInput
             label="Story Points"
             name="storyPoints"
@@ -278,7 +301,6 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           />
         </div>
 
-        {/* Acceptance Criteria */}
         <FormTextArea
           label="Acceptance Criteria"
           name="acceptanceCriteria"
@@ -286,8 +308,7 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
           onChange={handleChange}
         />
 
-        {/* Assignee + Reporter */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <FormSelect
             label="Assignee"
             name="assigneeId"
@@ -310,17 +331,28 @@ const EditStoryForm = ({ storyId, projectId, onClose, onUpdated }) => {
             ]}
           />
         </div>
+      </div>
 
-        {/* Submit */}
+      {/* FOOTER */}
+      <div className="sticky bottom-0 bg-white border-t p-4 flex justify-end gap-3">
         <button
-          type="submit"
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow hover:bg-indigo-700 transition disabled:opacity-50"
+          onClick={handleSubmit}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
         >
           {loading ? "Saving..." : "Update Story"}
         </button>
-      </form>
-    </div>
+      </div>
+    </Wrapper>
   );
 };
 

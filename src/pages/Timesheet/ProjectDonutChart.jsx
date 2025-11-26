@@ -1,275 +1,297 @@
-// ProjectDonutChart.jsx
+import React, { useState, useMemo, useRef } from "react";
 
-import React, { useState, useMemo } from 'react';
+const ProjectDonutChart = ({ entries }) => {
+  const [hoveredProject, setHoveredProject] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const wrapperRef = useRef(null);
 
-/**
- * Component for rendering a donut chart showing project-wise hours distribution
- * with billable/non-billable breakdown on hover
- */
-const ProjectDonutChart = ({ entries, globalTotalHours }) => {
-    const [hoveredProject, setHoveredProject] = useState(null);
-    // Calculate project-wise data
-    const projectData = useMemo(() => {
-        const projectMap = {};
+  // -------------------------------
+  // PREPARE DATA
+  // -------------------------------
+  const projectData = useMemo(() => {
+    if (!entries) return [];
 
-        entries.forEach(entry => {
-            // Skip weekends and leaves
-            if (entry.type === 'Weekend' || entry.type === 'Leave') return;
+    return entries.map((e) => ({
+      name: e.projectName,
+      totalHours: e.totalHours,
+      billableHours: e.billableHours,
+      nonBillableHours: e.nonBillableHours,
+      percentage: e.contribution,
+      billablePercentage: ((e.billableHours / e.totalHours) * 100).toFixed(1),
+      nonBillablePercentage: ((e.nonBillableHours / e.totalHours) * 100).toFixed(1),
+    }));
+  }, [entries]);
 
-            const project = entry.project;
-            if (!projectMap[project]) {
-                projectMap[project] = {
-                    name: project,
-                    totalHours: 0,
-                    billableHours: 0,
-                    nonBillableHours: 0
-                };
-            }
+  const colors = [
+    { main: "#4f46e5", light: "#818cf8" },
+    { main: "#16a34a", light: "#4ade80" },
+    { main: "#ea580c", light: "#fb923c" },
+    { main: "#0284c7", light: "#38bdf8" },
+    { main: "#dc2626", light: "#f87171" },
+    { main: "#7c3aed", light: "#a78bfa" },
+    { main: "#d97706", light: "#fbbf24" },
+    { main: "#059669", light: "#34d399" },
+  ];
 
-            projectMap[project].totalHours += entry.hours;
-            if (entry.type === 'Billable') {
-                projectMap[project].billableHours += entry.hours;
-            } else if (entry.type === 'Non-Billable') {
-                projectMap[project].nonBillableHours += entry.hours;
-            }
-        });
+  const totalHoursAll = projectData.reduce((s, p) => s + p.totalHours, 0);
 
-        // Convert to array and sort by total hours
-        const projectArray = Object.values(projectMap).sort((a, b) => b.totalHours - a.totalHours);
-
-        // Calculate percentages
-        const totalHours = projectArray.reduce((sum, p) => sum + p.totalHours, 0);
-        
-        return projectArray.map(project => ({
-            ...project,
-            percentage: totalHours > 0 ? ((project.totalHours / totalHours) * 100).toFixed(1) : 0,
-            billablePercentage: project.totalHours > 0 
-                ? ((project.billableHours / project.totalHours) * 100).toFixed(1) 
-                : 0,
-            nonBillablePercentage: project.totalHours > 0 
-                ? ((project.nonBillableHours / project.totalHours) * 100).toFixed(1) 
-                : 0
-        }));
-    }, [entries]);
-
-    // Color palette for projects
-    const colors = [
-        { main: '#4f46e5', light: '#818cf8', dark: '#3730a3' }, // Indigo
-        { main: '#16a34a', light: '#4ade80', dark: '#15803d' }, // Green
-        { main: '#ea580c', light: '#fb923c', dark: '#c2410c' }, // Orange
-        { main: '#0284c7', light: '#38bdf8', dark: '#075985' }, // Sky
-        { main: '#dc2626', light: '#f87171', dark: '#991b1b' }, // Red
-        { main: '#7c3aed', light: '#a78bfa', dark: '#5b21b6' }, // Violet
-        { main: '#d97706', light: '#fbbf24', dark: '#92400e' }, // Amber
-        { main: '#059669', light: '#34d399', dark: '#047857' }, // Emerald
-    ];
-
-    // Generate donut segments using simpler approach
-    const donutSegments = useMemo(() => {
-        let currentAngle = -90; // Start from top
-        const centerX = 100;
-        const centerY = 100;
-        const innerRadius = 50;
-        const outerRadius = 80;
-
-        return projectData.map((project, index) => {
-            const angle = (parseFloat(project.percentage) / 100) * 360;
-            const endAngle = currentAngle + angle;
-            
-            // Calculate start and end points
-            const startRad = (currentAngle * Math.PI) / 180;
-            const endRad = (endAngle * Math.PI) / 180;
-            
-            const x1 = centerX + outerRadius * Math.cos(startRad);
-            const y1 = centerY + outerRadius * Math.sin(startRad);
-            const x2 = centerX + outerRadius * Math.cos(endRad);
-            const y2 = centerY + outerRadius * Math.sin(endRad);
-            const x3 = centerX + innerRadius * Math.cos(endRad);
-            const y3 = centerY + innerRadius * Math.sin(endRad);
-            const x4 = centerX + innerRadius * Math.cos(startRad);
-            const y4 = centerY + innerRadius * Math.sin(startRad);
-            
-            const largeArcFlag = angle > 180 ? 1 : 0;
-            
-            const path = [
-                `M ${x1} ${y1}`,
-                `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                `L ${x3} ${y3}`,
-                `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}`,
-                'Z'
-            ].join(' ');
-            
-            const segment = {
-                project: project.name,
-                path,
-                color: colors[index % colors.length],
-                data: project
-            };
-            
-            currentAngle = endAngle;
-            return segment;
-        });
-    }, [projectData, colors]);
-
-    const totalHours = projectData.reduce((sum, p) => sum + p.totalHours, 0);
-
-    if (projectData.length === 0) {
-        return (
-            <div className="donut-chart-container">
-                <h2 className="section-title">Project-wise Hours Distribution</h2>
-                <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
-                    No project data available
-                </p>
-            </div>
-        );
+  // -------------------------------
+  // DONUT SEGMENTS (WITH SINGLE PROJECT FIX)
+  // -------------------------------
+  const donutSegments = useMemo(() => {
+    if (projectData.length === 1) {
+      // SINGLE PROJECT = FULL 360° RING
+      const project = projectData[0];
+      return [
+        {
+          project: project.name,
+          path: `
+            M 100 20
+            A 80 80 0 1 1 99.9 20
+            L 100 50
+            A 50 50 0 1 0 100 50
+            Z
+          `,
+          color: colors[0],
+          data: project,
+          midX: 160,
+          midY: 100,
+          midAngle: 180,
+        },
+      ];
     }
 
-    return (
-        <div className="donut-chart-container">
-            <h2 className="section-title">Project-wise Hours Distribution</h2>
-            
-            <div className="donut-chart-grid flex justify-between items-center gap-8">
-                {/* Donut Chart */}
-                <div className="donut-chart-wrapper flex-1 flex justify-center items-center relative">
-                    <svg 
-                        width="100%" 
-                        height="100%" 
-                        viewBox="0 0 200 200"
-                        className="donut-svg"
-                    >
-                        {donutSegments.map((segment, index) => (
-                            <path
-                            key={index}
-                            d={segment.path}
-                            fill={hoveredProject === segment.project ? segment.color.light : segment.color.main}
-                            stroke="white"
-                            strokeWidth="2"
-                            className="donut-segment transition-transform duration-300"
-                            // 🟢 This creates the upward “lift” effect on hover 
-                            transform={
-                                hoveredProject === segment.project
-                                ? `translate(${5 * Math.cos(((segment.data.percentage / 100) * 360 / 2) * Math.PI / 180)}, ${5 * Math.sin(((segment.data.percentage / 100) * 360 / 2) * Math.PI / 180)})`
-                                : ''
-                            }
-                            onMouseEnter={() => setHoveredProject(segment.project)}
-                            onMouseLeave={() => setHoveredProject(null)}
-                            />
-                        ))}
+    // MULTIPLE PROJECTS → REAL DONUT SLICES
+    let currentAngle = -90;
+    const center = 100;
+    const innerR = 50;
+    const outerR = 80;
 
-                        {/* Center circle with total hours */}
-                        <circle
-                            cx="100"
-                            cy="100"
-                            r="45"
-                            fill="white"
-                            stroke="#e5e7eb"
-                            strokeWidth="2"
-                        />
-                        <text
-                            x="100"
-                            y="95"
-                            textAnchor="middle"
-                            fontSize="12"
-                            fill="#6b7280"
-                            fontWeight="500"
-                        >
-                            Total Hours
-                        </text>
-                        <text
-                            x="100"
-                            y="115"
-                            textAnchor="middle"
-                            fontSize="18"
-                            fill="#111827"
-                            fontWeight="500"
-                        >
-                            {globalTotalHours ? globalTotalHours : 0} hrs
-                        </text>
-                    </svg>
+    return projectData.map((project, index) => {
+      const angle = (project.totalHours / totalHoursAll) * 360;
+      const endAngle = currentAngle + angle;
 
-                    {/* Hover Info Box */}
-                    {hoveredProject && (
-                        <div className="donut-hover-info">
-                            {(() => {
-                                const project = projectData.find(p => p.name === hoveredProject);
-                                const segment = donutSegments.find(s => s.project === hoveredProject);
-                                return (
-                                    <>
-                                        <div className="donut-hover-header">
-                                            <div 
-                                                className="donut-hover-color"
-                                                style={{ backgroundColor: segment.color.main }}
-                                            ></div>
-                                            <h3 className="donut-hover-title">
-                                                {hoveredProject}
-                                            </h3>
-                                        </div>
-                                        
-                                        <div className="donut-hover-details">
-                                            <div className="donut-hover-item donut-hover-total">
-                                                <span className="donut-hover-label">Total Hours:</span>
-                                                <span className="donut-hover-value">
-                                                    {project.totalHours.toFixed(1)} hrs ({project.percentage}%)
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="donut-hover-item donut-hover-billable">
-                                                <span className="donut-hover-label">Billable:</span>
-                                                <span className="donut-hover-value">
-                                                    {project.billableHours.toFixed(1)} hrs ({project.billablePercentage}%)
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="donut-hover-item donut-hover-nonbillable">
-                                                <span className="donut-hover-label">Non-Billable:</span>
-                                                <span className="donut-hover-value">
-                                                    {project.nonBillableHours.toFixed(1)} hrs ({project.nonBillablePercentage}%)
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </div>
+      const startRad = (currentAngle * Math.PI) / 180;
+      const endRad = (endAngle * Math.PI) / 180;
 
-                {/* Legend */}
-                <div className="donut-legend flex-1">
-                    <h3 className="donut-legend-title">Projects</h3>
-                    <div className="donut-legend-items">
-                        {donutSegments.map((segment, index) => (
-                            <div
-                                key={index}
-                                className={`donut-legend-item ${hoveredProject === segment.project ? 'donut-legend-item-active' : ''}`}
-                                onMouseEnter={() => setHoveredProject(segment.project)}
-                                onMouseLeave={() => setHoveredProject(null)}
-                            >
-                                <div 
-                                    className="donut-legend-color"
-                                    style={{ backgroundColor: segment.color.main }}
-                                ></div>
-                                <div className="donut-legend-content">
-                                    <div className="donut-legend-name">
-                                        {segment.project}
-                                    </div>
-                                    <div className="donut-legend-hours">
-                                        {segment.data.totalHours.toFixed(1)} hrs
-                                    </div>
-                                </div>
-                                <div 
-                                    className="donut-legend-percentage"
-                                    style={{ color: segment.color.dark }}
-                                >
-                                    {segment.data.percentage}%
-                                </div>
-                            </div>
-                        ))}
+      const midAngle = (currentAngle + endAngle) / 2;
+      const midRad = (midAngle * Math.PI) / 180;
+
+      const midX = center + (outerR + 12) * Math.cos(midRad);
+      const midY = center + (outerR + 12) * Math.sin(midRad);
+
+      const x1 = center + outerR * Math.cos(startRad);
+      const y1 = center + outerR * Math.sin(startRad);
+      const x2 = center + outerR * Math.cos(endRad);
+      const y2 = center + outerR * Math.sin(endRad);
+      const x3 = center + innerR * Math.cos(endRad);
+      const y3 = center + innerR * Math.sin(endRad);
+      const x4 = center + innerR * Math.cos(startRad);
+      const y4 = center + innerR * Math.sin(startRad);
+
+      const largeArcFlag = angle > 180 ? 1 : 0;
+
+      const path = `
+        M ${x1} ${y1}
+        A ${outerR} ${outerR} 0 ${largeArcFlag} 1 ${x2} ${y2}
+        L ${x3} ${y3}
+        A ${innerR} ${innerR} 0 ${largeArcFlag} 0 ${x4} ${y4}
+        Z
+      `;
+
+      const seg = {
+        project: project.name,
+        path,
+        color: colors[index % colors.length],
+        data: project,
+        midX,
+        midY,
+        midAngle,
+      };
+
+      currentAngle = endAngle;
+      return seg;
+    });
+  }, [projectData, totalHoursAll]);
+
+  const totalHours = projectData.reduce((s, p) => s + p.totalHours, 0);
+
+  const updateTooltipPos = (segment) => {
+    if (!wrapperRef.current) return;
+
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const tooltipWidth = 240;
+
+    let left =
+      segment.midAngle > 0
+        ? segment.midX + 20
+        : segment.midX - tooltipWidth - 20;
+
+    const minLeft = 10;
+    const maxLeft = rect.width - tooltipWidth - 10;
+
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+
+    setTooltipPos({
+      x: left,
+      y: segment.midY - 40,
+    });
+  };
+
+  return (
+    <div className="donut-chart-container relative" ref={wrapperRef}>
+      <h2 className="section-title">Project-wise Hours Distribution</h2>
+
+      <div className="flex gap-8 relative">
+        {/* Donut */}
+        <div className="relative" style={{ width: "350px", height: "350px" }}>
+          <svg width="100%" height="100%" viewBox="0 0 200 200">
+            {donutSegments.map((segment, idx) => (
+              <path
+                key={idx}
+                d={segment.path}
+                fill={
+                  hoveredProject === segment.project
+                    ? segment.color.light
+                    : segment.color.main
+                }
+                stroke="white"
+                strokeWidth="2"
+                opacity={hoveredProject === segment.project ? 1 : 0.88}
+                className="transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => {
+                  setHoveredProject(segment.project);
+                  updateTooltipPos(segment);
+                }}
+                onMouseLeave={() => setHoveredProject(null)}
+              />
+            ))}
+
+            {/* Inner white circle */}
+            <circle
+              cx="100"
+              cy="100"
+              r="45"
+              fill="white"
+              stroke="#e5e7eb"
+              strokeWidth="2"
+            />
+
+            {/* Total Hours */}
+            <text
+              x="100"
+              y="95"
+              textAnchor="middle"
+              fontSize="12"
+              fill="#6b7280"
+              fontWeight="500"
+            >
+              Total Hours
+            </text>
+            <text
+              x="100"
+              y="115"
+              textAnchor="middle"
+              fontSize="18"
+              fill="#111827"
+              fontWeight="600"
+            >
+              {totalHours.toFixed(1)}
+            </text>
+          </svg>
+
+          {hoveredProject && (
+            <div
+              className="absolute bg-white shadow-lg rounded-xl p-4 w-60"
+              style={{
+                top: tooltipPos.y,
+                left: tooltipPos.x,
+                pointerEvents: "none",
+                zIndex: 999,
+              }}
+            >
+              {(() => {
+                const p = projectData.find((x) => x.name === hoveredProject);
+                const seg = donutSegments.find((x) => x.project === hoveredProject);
+
+                return (
+                  <>
+                    <div className="flex items-center mb-2">
+                      <div
+                        className="w-4 h-4 rounded-sm mr-2"
+                        style={{ backgroundColor: seg.color.main }}
+                      ></div>
+                      <h3 className="font-semibold text-gray-800">
+                        {hoveredProject}
+                      </h3>
                     </div>
-                </div>
+
+                    <div className="text-sm text-gray-700">
+                      <div className="mb-2">
+                        <strong>Total Hours:</strong>{" "}
+                        {p.totalHours.toFixed(1)} hrs ({p.percentage}%)
+                      </div>
+
+                      <div className="p-2 bg-green-50 border border-green-200 rounded mb-2">
+                        <strong>Billable:</strong>{" "}
+                        {p.billableHours.toFixed(1)} hrs (
+                        {p.billablePercentage}%)
+                      </div>
+
+                      <div className="p-2 bg-orange-50 border border-orange-200 rounded">
+                        <strong>Non-Billable:</strong>{" "}
+                        {p.nonBillableHours.toFixed(1)} hrs (
+                        {p.nonBillablePercentage}%)
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
+          )}
         </div>
-    );
+
+        {/* Legend */}
+        <div className="flex-1">
+          <h3 className="font-semibold mb-2">Projects</h3>
+
+          {donutSegments.map((segment, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center gap-3 p-2 cursor-pointer rounded ${
+                hoveredProject === segment.project ? "bg-gray-100" : ""
+              }`}
+              onMouseEnter={() => {
+                setHoveredProject(segment.project);
+                updateTooltipPos(segment);
+              }}
+              onMouseLeave={() => setHoveredProject(null)}
+            >
+              <div
+                className="w-4 h-4 rounded"
+                style={{ backgroundColor: segment.color.main }}
+              ></div>
+
+              <div className="flex-1">
+                <div>{segment.project}</div>
+                <div className="text-gray-500 text-sm">
+                  {segment.data.totalHours.toFixed(1)} hrs
+                </div>
+              </div>
+
+              <div
+                className="font-semibold"
+                style={{ color: segment.color.main }}
+              >
+                {segment.data.percentage}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ProjectDonutChart;
