@@ -167,7 +167,7 @@ const handleResetFilters = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <TimesheetHeader />
+      {/* <TimesheetHeader /> */}
       {/* <ManagerDashboard
         data={dashboardData}
         loading={loadingDashboard}
@@ -179,6 +179,11 @@ const handleResetFilters = () => {
           Failed to load dashboard summary. Please refresh the page.
         </div>
       )} */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Admin Approvals
+        </h1>
+      </div>
 
       {/* ✅ Filter Header */}
       <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-3 mb-6">

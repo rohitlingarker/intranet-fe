@@ -33,6 +33,7 @@ import MonthlyTSReport from "./pages/Timesheet/MonthlyTSReport";
 import ManagerReportSection from "./pages/Timesheet/ManagerReportSection";
 import ManagerMonthlyReport from "./pages/Timesheet/ManagerMonthlyReport";
 import TSAdminPanel from "./pages/Timesheet/Admin/TSAdminPannel.jsx";
+import TimesheetHistory from "./pages/Timesheet/TimesheetHistory.jsx";
 
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
@@ -247,6 +248,7 @@ useEffect(() => {
           <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
           <Route path="/timesheets/managermonthlyreport" element={<ManagerMonthlyReport />} />
           <Route path="/timesheets/monthlytsreport" element={<MonthlyTSReport />} />
+          <Route path="/timesheets/history" element={<TimesheetHistory />} />
 
           
           <Route path="/intranet-form" element={<IntranetForm />} />
