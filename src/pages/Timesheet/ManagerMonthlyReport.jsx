@@ -761,7 +761,7 @@ const ManagerMonthlyReport = () => {
         name: u.name,
         hours: u.hours,
         rank: u.rank, // Hours not available in this API summary
-        meta: `• ${u.hours} hours less than 176 hours`,
+        meta: `• ${u.hours} hours less than monthly recommended hours`,
       }))
     );
   };
@@ -781,7 +781,7 @@ const ManagerMonthlyReport = () => {
         overworked.map((o) => ({
           name: o.name,
           hours: o.hours, // Hours not available in this API summary
-          meta: `• ${o.hours} hours over 176 hours`,
+          meta: `• ${o.hours} hours over than monthly recommended hours`,
         }))
       );
     }
