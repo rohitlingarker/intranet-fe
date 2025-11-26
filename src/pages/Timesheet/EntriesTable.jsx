@@ -451,7 +451,7 @@ const EntriesTable = ({
           <th className="text-left px-4 py-2">Work Location</th>
           <th className="text-left px-4 py-2">Description</th>
           <th className="text-left px-4 py-2">Billable</th>
-          {window.location.pathname !== "/managerapproval" && (
+          {window.location.pathname !== "/managerapproval" || window.location.pathname !== "/timesheets/history" (
             <th className="text-left px-4 py-2">Actions</th>
           )}
         </tr>
@@ -569,7 +569,7 @@ const EntriesTable = ({
                 <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
-                {window.location.pathname !== "/managerapproval" && (
+                {window.location.pathname !== "/managerapproval" || window.location.pathname !== "/timesheets/history" (
                   <td className="px-4 py-2">
                     {status?.toLowerCase() !== "approved" && (
                       <div className="flex gap-4">
