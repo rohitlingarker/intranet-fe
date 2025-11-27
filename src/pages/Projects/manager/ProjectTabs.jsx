@@ -7,6 +7,7 @@ import BacklogAndSprints from "./BacklogAndSprints";
 import Board from "./Board";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import Timeline from "./Timeline";
+
 import Navbar from "../../../components/Navbar/Navbar";
  
 // TEMPORARY PLACEHOLDER PAGE
