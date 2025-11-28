@@ -8,7 +8,7 @@ import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import BacklogAndSprints from "./BacklogAndSprints";
-
+import Calender from "./Calender";
 import Navbar from "../../../components/Navbar/Navbar";
 
 const ProjectTabs = () => {
@@ -67,6 +67,8 @@ const ProjectTabs = () => {
       
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
+      case "calender":
+        return <Calender projectId={pid} />;
       
       default:
         return null;
@@ -87,6 +89,7 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
 
     { name: "Status Report", tab: "status-report" },
+    {name: "Calender", tab: "calender"},
    
   ];
 
