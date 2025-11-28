@@ -9,13 +9,15 @@ import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import Timeline from "./Timeline";
 
 import Navbar from "../../../components/Navbar/Navbar";
+import TestManagement from "../Testmanagement/TestManagementHome";
  
 // TEMPORARY PLACEHOLDER PAGE
-const TestManagementHome = () => (
-<div className="p-6 text-slate-700 text-lg">
-    Test Management Module Coming Soon...
-</div>
-);
+// const TestManagementHome = () => (
+// <div className="p-6 text-slate-700 text-lg">
+    
+//     <TestManagement />
+// </div>
+// );
  
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -62,30 +64,53 @@ const ProjectTabs = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
  
-    switch (selectedTab) {
-      case "summary":
-        return <Summary projectId={pid} projectName={projectName} />;
+    // switch (selectedTab) {
+    //   case "summary":
+    //     return <Summary projectId={pid} projectName={projectName} />;
  
-      case "backlog":
-        return <BacklogAndSprints projectId={pid} />;
+    //   case "backlog":
+    //     return <BacklogAndSprints projectId={pid} />;
  
-      case "board":
-        return <Board projectId={pid} projectName={projectName} />;
+    //   case "board":
+    //     return <Board projectId={pid} projectName={projectName} />;
  
-      case "status-report":
-        return <ProjectStatusReportWrapper projectId={pid} />;
+    //   case "status-report":
+    //     return <ProjectStatusReportWrapper projectId={pid} />;
  
-      case "timelines":
-        return <Timeline projectId={pid} />;
+    //   case "timelines":
+    //     return <Timeline projectId={pid} />;
  
-      // ⭐ NEW TEST MANAGEMENT TAB
-      case "test-management":
-        return <TestManagementHome />;
- 
-      default:
-        return null;
+    //   // ⭐ NEW TEST MANAGEMENT TAB
+    //   // case "test-management":
+    //   //   return <TestManagementHome />;
+    //   // case "test-management":
+    //   //   return <TestManagement projectId={pid} />;
+    //   default:
+    //     return null;
+    // 
+    // }
+    if(selectedTab === "summary"){
+      return <Summary projectId={pid} projectName={projectName} />;
     }
+    if(selectedTab === "backlog"){
+      return <BacklogAndSprints projectId={pid} />;
+    }
+    if(selectedTab === "board"){
+      return <Board projectId={pid} projectName={projectName} />;
+    }
+    if(selectedTab === "status-report"){
+      return <ProjectStatusReportWrapper projectId={pid} />;
+    }
+    if(selectedTab === "timelines"){
+      return <Timeline projectId={pid} />;
+    }
+    // ⭐ NEW TEST MANAGEMENT TAB
+    if(selectedTab.startsWith("test-management")){
+      return <TestManagement projectId={pid} />;
+    }
+    return null;
   };
+  
  
   if (!projectId) {
     return <div className="p-6 text-slate-400">No project selected.</div>;
