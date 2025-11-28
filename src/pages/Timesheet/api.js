@@ -554,3 +554,49 @@ export async function fetchDashboardLast3Months() {
     return null; // Return null so calling code can check for loading/error
   }
 }
+
+
+export const handleBulkReviewAdmin = async (
+  userId,
+  timesheetIds,
+  status,
+  comments = ""
+) => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/timesheets/review/internal`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          userId,
+          timesheetIds,
+          status,
+          comments: comments || (status === "APPROVED" ? "approved" : ""),
+        }),
+      }
+    );
+
+    // Read the response body as JSON
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = data?.message || "Failed to review timesheets";
+      throw new Error(message);
+    }
+
+    // ✅ Show the exact message returned from backend
+    const message =
+      data?.message || `Timesheets ${status.toLowerCase()} successfully`;
+    showStatusToast(message, "success");
+  } catch (err) {
+    console.error("❌ Error reviewing timesheets:", err);
+    showStatusToast(
+      err.message || "Failed to update timesheet status",
+      "error"
+    );
+  }
+};

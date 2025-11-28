@@ -18,8 +18,10 @@ const TimesheetTable = ({
 }) => {
   const [addingNewTimesheet, setAddingNewTimesheet] = useState(false);
   const [holidaysMap, setHolidaysMap] = useState({});
+  const [holidayLoading, setHolidayLoading] = useState(false);
 
   useEffect(() => {
+    setHolidayLoading(true);
     const loadHolidays = async () => {
       try {
         const data = await fetchCalendarHolidays();
@@ -37,6 +39,8 @@ const TimesheetTable = ({
 
       } catch (err) {
         console.error("❌ Failed to load holidays:", err);
+      } finally {
+        setHolidayLoading(false);
       }
     };
     loadHolidays();
@@ -55,8 +59,9 @@ const TimesheetTable = ({
       <Button
         size="small"
         variant={addingNewTimesheet ? "secondary" : "primary"}
-        className="mb-4"
+        className={`mb-4 ${holidayLoading ? "opacity-15 cursor-not-allowed" : ""}`}
         onClick={() => setAddingNewTimesheet((s) => !s) }
+        disabled={holidayLoading}
       >
         {addingNewTimesheet ? "Cancel Timesheet" : "+ New Timesheet"}
       </Button>
@@ -90,16 +95,18 @@ const TimesheetTable = ({
       ) : (
         <>
           {data.map((weekGroup) => (
-            <TimesheetGroup
-              weekGroup={weekGroup}
-              key={weekGroup.weekStart}
-              mapWorkType={mapWorkType}
-              refreshData={refreshData}
-              projectInfo={projectInfo}
-              approvers={weekGroup.actionStatus}
-              getWeeklyStatusColor={getWeeklyStatusColor}
-              holidaysMap={holidaysMap} // ✅ Pass holidays map here too
-            />
+            weekGroup.timesheets.length > 0 && (
+              <TimesheetGroup
+                weekGroup={weekGroup}
+                key={weekGroup.weekStart}
+                mapWorkType={mapWorkType}
+                refreshData={refreshData}
+                projectInfo={projectInfo}
+                approvers={weekGroup.actionStatus}
+                getWeeklyStatusColor={getWeeklyStatusColor}
+                holidaysMap={holidaysMap} // ✅ Pass holidays map here too
+              />
+            )
           ))}
 
           <Pagination

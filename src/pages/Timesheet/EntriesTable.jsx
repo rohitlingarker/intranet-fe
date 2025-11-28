@@ -119,6 +119,44 @@ const EntriesTable = ({
   const handleCancelDelete = () => {
     setIsConfirmOpen(false);
   };
+  const handleLocalDelete = (tsId) => {
+    setPendingEntries((prev) =>
+        prev.filter((entry) => entry.timesheetEntryId !== tsId)
+    );
+    setIsConfirmOpen(false);
+    toast.success("Entry deleted successfully!");
+};
+
+  const handleDeleteClick = async (tsId) => {
+      setIsConfirmOpen(false); 
+      if (tsId && tsId.toString().startsWith("pending-")) {
+          handleLocalDelete(tsId);
+          return; 
+      }
+
+      if (!tsId) {
+          toast.error("Error: Entry ID is missing.");
+          return;
+      }
+      
+      setDeleteLoading(true);
+      try {
+          const deleteEntry = await axios.delete(`${TS_BASE_URL}/api/timesheet/deleteEntries/${timesheetId}`, {
+              headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`
+              },
+              data: {
+                  entryIds: [tsId]
+              }
+          });
+          refreshData();
+          toast.success(deleteEntry?.data || "Entry deleted successfully");
+      } catch (err) {
+          toast.error( err?.response?.data || "Failed to delete entry");
+      } finally {
+          setDeleteLoading(false);
+      }
+  };
 
   const workTypeOptions = [
     { label: "Office", value: "Office" },
@@ -156,9 +194,10 @@ const EntriesTable = ({
   };
 
   const handleEditClick = (idx) => {
+  // console.log("Attempting to edit index:", idx);
     if (addingNewEntry || status?.toLowerCase() === "approved") return;
     const entry = [...entries, ...pendingEntries][idx]; 
-console.log("Editing entry:", entry);
+    
     
     setEditIndex(idx);
     setAddingNewEntry(false);
@@ -166,34 +205,35 @@ console.log("Editing entry:", entry);
       timesheetEntryId: entry.timesheetEntryId,
       projectId: entry.projectId,
       taskId: entry.taskId,
-      fromTime: toLocalTimeString(entry.fromTime), 
-      toTime: toLocalTimeString(entry.toTime), 
+      fromTime: entry.fromTime || toLocalTimeString(entry.fromTime), 
+      toTime: entry.toTime || toLocalTimeString(entry.toTime), 
       workType: entry.workType,
       description: entry.description,
       isBillable: entry.billable, 
     });
+    
   };
 
-  const handleDeleteClick = async (tsId) => {
-    setIsConfirmOpen(false);
-    setDeleteLoading(true);
-    try {
-      const deleteEntry = await axios.delete(`${TS_BASE_URL}/api/timesheet/deleteEntries/${timesheetId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        },
-        data: {
-          entryIds: [tsId]
-        }
-      });
-      refreshData();
-      toast.success(deleteEntry?.data  || "Entry deleted successfully");
-    } catch (err) {
-      toast.error( err?.response?.data || "Failed to delete entry");
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
+  // const handleDeleteClick = async (tsId) => {
+  //   setIsConfirmOpen(false);
+  //   setDeleteLoading(true);
+  //   try {
+  //     const deleteEntry = await axios.delete(`${TS_BASE_URL}/api/timesheet/deleteEntries/${timesheetId}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`
+  //       },
+  //       data: {
+  //         entryIds: [tsId]
+  //       }
+  //     });
+  //     refreshData();
+  //     toast.success(deleteEntry?.data  || "Entry deleted successfully");
+  //   } catch (err) {
+  //     toast.error( err?.response?.data || "Failed to delete entry");
+  //   } finally {
+  //     setDeleteLoading(false);
+  //   }
+  // };
 
   const handleCancel = () => {
     setEditIndex(null);
@@ -297,41 +337,64 @@ console.log("Editing entry:", entry);
     return true;
   };
 
-  const handleSave = async () => {
-    if (!isValid(editData, true)) return; 
-    
-    try {
-        // IMPORTANT: Convert HH:mm back to full ISO datetime string before API call
+  const handleSave = async () => {
+    if (!isValid(editData, true)) return; 
+    const currentEntry = [...entries, ...pendingEntries][editIndex]; 
+
+    if (currentEntry.timesheetEntryId.toString().startsWith("pending-")) {
+        const updatedPendingEntry = {
+            timesheetEntryId: currentEntry.timesheetEntryId, 
+            projectId: parseInt(editData.projectId),
+            taskId: parseInt(editData.taskId),
+            fromTime: editData.fromTime, 
+            toTime: editData.toTime,     
+            workType: editData.workType,
+            description: editData.description,
+            billable: taskIdToBillablity[editData.taskId], 
+            workLocation: editData.workType,
+        };
+        setPendingEntries((prev) =>
+            prev.map((e) =>
+                e.timesheetEntryId === currentEntry.timesheetEntryId ? updatedPendingEntry : e
+            )
+        );
+        handleCancel();
+        showStatusToast("Entry updated successfully!", "success");
+        return; 
+    } 
+    // 3. LOGIC FOR UPDATING SAVED ENTRY (BACKEND API CALL)
+    try {
         const newStart = new Date(`${workDate}T${editData.fromTime}:00`).toISOString();
         const newEnd = new Date(`${workDate}T${editData.toTime}:00`).toISOString();
 
-      await updateTimesheet(timesheetId, {
-        workDate,
-        status,
-        entries: [
-          (() => {
-            const entry = {
-              ...editData,
-              projectId: parseInt(editData.projectId),
-              taskId: parseInt(editData.taskId),
-              fromTime: newStart, 
-              toTime: newEnd, 
-              billable: editData.isBillable,
-              workLocation: editData.workType,
-              description: editData.description,
-              id: editData.timesheetEntryId,
-            };
-            return entry;
-          })(),
-        ],
-      });
-      setEditIndex(null);
-      setEditData({});
-      refreshData();
-    } catch (err) {
-      showStatusToast("Failed to update entry", "error");
-    }
-  };
+        // The API call logic remains largely the same
+        await updateTimesheet(timesheetId, {
+            workDate,
+            status,
+            entries: [
+                {
+                    ...editData,
+                    projectId: parseInt(editData.projectId),
+                    taskId: parseInt(editData.taskId),
+                    fromTime: newStart, 
+                    toTime: newEnd, 
+                    billable: editData.isBillable,
+                    workLocation: editData.workType,
+                    description: editData.description,
+                    id: editData.timesheetEntryId,
+                },
+            ],
+        });
+        
+        // Close the inline edit mode and clear data, and refresh data from backend
+        setEditIndex(null);
+        setEditData({});
+        refreshData();
+        showStatusToast("Entry updated successfully", "success");
+    } catch (err) {
+        showStatusToast("Failed to update entry", "error");
+    }
+  };
 
   // Add-entry: validate and push to pendingEntries
   const handleAddEntry = () => {
@@ -352,7 +415,6 @@ console.log("Editing entry:", entry);
         return newEntry;
       })(),
     ]);
-    // hide add-row and reset
     setAddingNewEntry(false); 
     setAddData({ workType: "Office", isBillable: "Yes" });
   };
@@ -389,7 +451,7 @@ console.log("Editing entry:", entry);
           <th className="text-left px-4 py-2">Work Location</th>
           <th className="text-left px-4 py-2">Description</th>
           <th className="text-left px-4 py-2">Billable</th>
-          {window.location.pathname !== "/managerapproval" && (
+          {window.location.pathname !== "/managerapproval" || window.location.pathname !== "/timesheets/history" (
             <th className="text-left px-4 py-2">Actions</th>
           )}
         </tr>
@@ -507,7 +569,7 @@ console.log("Editing entry:", entry);
                 <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
-                {window.location.pathname !== "/managerapproval" && (
+                {window.location.pathname !== "/managerapproval" || window.location.pathname !== "/timesheets/history" (
                   <td className="px-4 py-2">
                     {status?.toLowerCase() !== "approved" && (
                       <div className="flex gap-4">

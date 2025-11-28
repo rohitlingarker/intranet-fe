@@ -9,19 +9,18 @@ const ProjectDonutChart = ({ entries }) => {
   // PREPARE DATA
   // -------------------------------
   const projectData = useMemo(() => {
-  if (!entries) return [];
+    if (!entries) return [];
 
-  return entries.map((e) => ({
-    name: e.projectName,
-    totalHours: e.totalHours,
-    billableHours: e.billableHours,
-    nonBillableHours: e.nonBillableHours,
-    percentage: e.contribution,
-    billablePercentage: ((e.billableHours / e.totalHours) * 100).toFixed(1),
-    nonBillablePercentage: ((e.nonBillableHours / e.totalHours) * 100).toFixed(1),
-  }));
-}, [entries]);
-
+    return entries.map((e) => ({
+      name: e.projectName,
+      totalHours: e.totalHours,
+      billableHours: e.billableHours,
+      nonBillableHours: e.nonBillableHours,
+      percentage: e.contribution,
+      billablePercentage: ((e.billableHours / e.totalHours) * 100).toFixed(1),
+      nonBillablePercentage: ((e.nonBillableHours / e.totalHours) * 100).toFixed(1),
+    }));
+  }, [entries]);
 
   const colors = [
     { main: "#4f46e5", light: "#818cf8" },
@@ -34,17 +33,42 @@ const ProjectDonutChart = ({ entries }) => {
     { main: "#059669", light: "#34d399" },
   ];
 
+  const totalHoursAll = projectData.reduce((s, p) => s + p.totalHours, 0);
+
   // -------------------------------
-  // DONUT SEGMENTS
+  // DONUT SEGMENTS (WITH SINGLE PROJECT FIX)
   // -------------------------------
   const donutSegments = useMemo(() => {
+    if (projectData.length === 1) {
+      // SINGLE PROJECT = FULL 360° RING
+      const project = projectData[0];
+      return [
+        {
+          project: project.name,
+          path: `
+            M 100 20
+            A 80 80 0 1 1 99.9 20
+            L 100 50
+            A 50 50 0 1 0 100 50
+            Z
+          `,
+          color: colors[0],
+          data: project,
+          midX: 160,
+          midY: 100,
+          midAngle: 180,
+        },
+      ];
+    }
+
+    // MULTIPLE PROJECTS → REAL DONUT SLICES
     let currentAngle = -90;
     const center = 100;
     const innerR = 50;
     const outerR = 80;
 
     return projectData.map((project, index) => {
-      const angle = (parseFloat(project.percentage) / 100) * 360;
+      const angle = (project.totalHours / totalHoursAll) * 360;
       const endAngle = currentAngle + angle;
 
       const startRad = (currentAngle * Math.PI) / 180;
@@ -88,13 +112,10 @@ const ProjectDonutChart = ({ entries }) => {
       currentAngle = endAngle;
       return seg;
     });
-  }, [projectData]);
+  }, [projectData, totalHoursAll]);
 
   const totalHours = projectData.reduce((s, p) => s + p.totalHours, 0);
 
-  // -------------------------------
-  // UPDATE TOOLTIP POSITION (B + boundary clamp)
-  // -------------------------------
   const updateTooltipPos = (segment) => {
     if (!wrapperRef.current) return;
 
@@ -103,10 +124,10 @@ const ProjectDonutChart = ({ entries }) => {
 
     let left =
       segment.midAngle > 0
-        ? segment.midX + 20 // right side
-        : segment.midX - tooltipWidth - 20; // left side
+        ? segment.midX + 20
+        : segment.midX - tooltipWidth - 20;
 
-    const minLeft = 10; // safe container padding
+    const minLeft = 10;
     const maxLeft = rect.width - tooltipWidth - 10;
 
     if (left < minLeft) left = minLeft;
@@ -137,7 +158,7 @@ const ProjectDonutChart = ({ entries }) => {
                 }
                 stroke="white"
                 strokeWidth="2"
-                opacity={hoveredProject === segment.project ? 1 : 0.85}
+                opacity={hoveredProject === segment.project ? 1 : 0.88}
                 className="transition-all duration-300 cursor-pointer"
                 onMouseEnter={() => {
                   setHoveredProject(segment.project);
@@ -147,16 +168,39 @@ const ProjectDonutChart = ({ entries }) => {
               />
             ))}
 
-            <circle cx="100" cy="100" r="45" fill="white" stroke="#e5e7eb" strokeWidth="2" />
-            <text x="100" y="95" textAnchor="middle" fontSize="12" fill="#6b7280" fontWeight="500">
+            {/* Inner white circle */}
+            <circle
+              cx="100"
+              cy="100"
+              r="45"
+              fill="white"
+              stroke="#e5e7eb"
+              strokeWidth="2"
+            />
+
+            {/* Total Hours */}
+            <text
+              x="100"
+              y="95"
+              textAnchor="middle"
+              fontSize="12"
+              fill="#6b7280"
+              fontWeight="500"
+            >
               Total Hours
             </text>
-            <text x="100" y="115" textAnchor="middle" fontSize="18" fill="#111827" fontWeight="600">
+            <text
+              x="100"
+              y="115"
+              textAnchor="middle"
+              fontSize="18"
+              fill="#111827"
+              fontWeight="600"
+            >
               {totalHours.toFixed(1)}
             </text>
           </svg>
 
-          {/* Tooltip */}
           {hoveredProject && (
             <div
               className="absolute bg-white shadow-lg rounded-xl p-4 w-60"
@@ -178,22 +222,26 @@ const ProjectDonutChart = ({ entries }) => {
                         className="w-4 h-4 rounded-sm mr-2"
                         style={{ backgroundColor: seg.color.main }}
                       ></div>
-                      <h3 className="font-semibold text-gray-800">{hoveredProject}</h3>
+                      <h3 className="font-semibold text-gray-800">
+                        {hoveredProject}
+                      </h3>
                     </div>
 
                     <div className="text-sm text-gray-700">
                       <div className="mb-2">
-                        <strong>Total Hours:</strong> {p.totalHours.toFixed(1)} hrs ({p.percentage}
-                        %)
+                        <strong>Total Hours:</strong>{" "}
+                        {p.totalHours.toFixed(1)} hrs ({p.percentage}%)
                       </div>
 
                       <div className="p-2 bg-green-50 border border-green-200 rounded mb-2">
-                        <strong>Billable:</strong> {p.billableHours.toFixed(1)} hrs (
+                        <strong>Billable:</strong>{" "}
+                        {p.billableHours.toFixed(1)} hrs (
                         {p.billablePercentage}%)
                       </div>
 
                       <div className="p-2 bg-orange-50 border border-orange-200 rounded">
-                        <strong>Non-Billable:</strong> {p.nonBillableHours.toFixed(1)} hrs (
+                        <strong>Non-Billable:</strong>{" "}
+                        {p.nonBillableHours.toFixed(1)} hrs (
                         {p.nonBillablePercentage}%)
                       </div>
                     </div>
@@ -232,7 +280,10 @@ const ProjectDonutChart = ({ entries }) => {
                 </div>
               </div>
 
-              <div className="font-semibold" style={{ color: segment.color.main }}>
+              <div
+                className="font-semibold"
+                style={{ color: segment.color.main }}
+              >
                 {segment.data.percentage}%
               </div>
             </div>

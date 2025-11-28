@@ -2,13 +2,13 @@ import React, { useMemo, useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import LoadingSpinner from "../../../components/LoadingSpinner";
-import { reviewTimesheet, handleBulkReview } from "../api";
+import { reviewTimesheet, handleBulkReviewAdmin } from "../api";
 import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
 import { MoreVertical, X } from "lucide-react";
 
-const ManagerApprovalTable = ({
+const AdminApprovalTable = ({
   loading,
   groupedData = [],
   statusFilter = "All",
@@ -75,7 +75,7 @@ const ManagerApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/api/holiday-exclude-users`,
+        }/api/holiday-exclude-users/all`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -188,7 +188,7 @@ const ManagerApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/api/timesheets/review_multiple_users`,
+        }/timesheets/review/internal`,
         {
           method: "POST",
           headers: {
@@ -434,7 +434,7 @@ const ManagerApprovalTable = ({
                         const timesheetIds = week.timesheets.map(
                           (t) => t.timesheetId
                         );
-                        await handleBulkReview(
+                        await handleBulkReviewAdmin(
                           user.userId,
                           timesheetIds,
                           "APPROVED",
@@ -526,7 +526,7 @@ const ManagerApprovalTable = ({
                         (t) => t.timesheetId
                       );
                       const comment = rejectionComments[week.weekId] || "";
-                      await handleBulkReview(
+                      await handleBulkReviewAdmin(
                         user.userId,
                         timesheetIds,
                         "REJECTED",
@@ -718,18 +718,25 @@ const ManagerApprovalTable = ({
       // Run both API calls in parallel and wait for both to finish
       const [usersRes, holidaysRes] = await Promise.all([
         fetch(
-          `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/manager/users`,
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holiday-exclude-users/allusers`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         ),
-        fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/holidays/currentMonth`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }),
+        fetch(
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holidays/currentMonth`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        ),
       ]);
 
       if (!usersRes.ok || !holidaysRes.ok)
@@ -800,7 +807,7 @@ const ManagerApprovalTable = ({
   return (
     <div className="space-y-6">
       {loading ? (
-        <LoadingSpinner text="Loading manager view..." />
+        <LoadingSpinner text="Loading Admin view..." />
       ) : (
         <>
           <div className="flex justify-end gap-3 mb-4">
@@ -953,6 +960,10 @@ const ManagerApprovalTable = ({
                       <p className="text-sm text-gray-600 mt-1">
                         <span className="font-medium">Reason:</span>{" "}
                         {item.reason}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        <span className="font-medium">Excluded By:</span>{" "}
+                        {item.managerName} (User ID: {item.managerId})
                       </p>
                     </div>
                   ))}
@@ -1235,4 +1246,4 @@ const ManagerApprovalTable = ({
   );
 };
 
-export default ManagerApprovalTable;
+export default AdminApprovalTable;

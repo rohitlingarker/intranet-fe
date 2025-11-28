@@ -32,13 +32,22 @@ const TimesheetHeader = () => {
       {/* --- Right Section: Buttons --- */}
       <div className="flex gap-4">
         {pathname === "/timesheets" && (
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={() => navigate("/timesheets/monthlytsreport")}
-          >
-            Reports
-          </Button>
+          <>
+            <Button
+              variant="primary"
+              size="medium"
+              onClick={() => navigate("/timesheets/history")}
+            >
+              Timesheet History
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={() => navigate("/timesheets/monthlytsreport")}
+            >
+              Reports
+            </Button>
+          </>
         )}
 
         {pathname === "/timesheet/dashboard" && (

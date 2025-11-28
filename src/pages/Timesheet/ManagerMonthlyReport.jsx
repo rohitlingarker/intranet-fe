@@ -761,7 +761,7 @@ const ManagerMonthlyReport = () => {
         name: u.name,
         hours: u.hours,
         rank: u.rank, // Hours not available in this API summary
-        meta: `• ${u.hours} hours less than 176 hours`,
+        meta: `• ${u.hours} hours less than monthly recommended hours`,
       }))
     );
   };
@@ -781,7 +781,7 @@ const ManagerMonthlyReport = () => {
         overworked.map((o) => ({
           name: o.name,
           hours: o.hours, // Hours not available in this API summary
-          meta: `• ${o.hours} hours over 176 hours`,
+          meta: `• ${o.hours} hours over than monthly recommended hours`,
         }))
       );
     }
@@ -1498,7 +1498,7 @@ const ManagerMonthlyReport = () => {
                     Underutilized
                   </h3>
                 </div>
-                <div className="mb-3">
+                <div className={`mb-3 ${underutilized.length > 5 ? "h-24 overflow-y-auto" : ""}`}>
                   {underutilized.length > 0 ? (
                     <ul className="text-sm text-gray-700 space-y-1">
                       {underutilized.map((u, idx) => (
@@ -1527,7 +1527,7 @@ const ManagerMonthlyReport = () => {
                     Overworked
                   </h3>
                 </div>
-                <div className="mb-3">
+                <div className={`mb-3 ${overworked.length > 5 ? "h-24 overflow-y-auto" : ""}`}>
                   {overworked.length > 0 ? (
                     <ul className="text-sm text-gray-700 space-y-1">
                       {overworked.map((o, idx) => (
