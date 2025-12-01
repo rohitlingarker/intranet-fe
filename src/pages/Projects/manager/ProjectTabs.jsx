@@ -11,6 +11,7 @@ import BacklogAndSprints from "./BacklogAndSprints";
 import Calender from "./Calender";
 import Timeline from "./Timeline";
 import Navbar from "../../../components/Navbar/Navbar";
+import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -58,6 +59,9 @@ const ProjectTabs = () => {
     const pid = parseInt(projectId, 10);
 
     switch (selectedTab) {
+      case "risk-management":
+        return <RiskRegisterPage projectId={pid} />;
+
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
@@ -87,10 +91,10 @@ const ProjectTabs = () => {
   }
 
   const navItems = [
+    { name: "Risk Management", tab: "risk-management" },
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
-
     { name: "Status Report", tab: "status-report" },
     {name: "Calender", tab: "calender"},
      {name:"Timelines", tab:"timelines"}

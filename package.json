@@ -47,6 +47,7 @@
     "react-pagination": "^1.0.0",
     "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^7.7.0",
+    "react-select": "^5.10.2",
     "react-spring": "^10.0.3",
     "react-toastify": "^11.0.5",
     "recharts": "^3.1.1",
