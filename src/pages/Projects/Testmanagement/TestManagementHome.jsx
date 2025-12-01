@@ -5,7 +5,9 @@ import { Outlet } from "react-router-dom";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
-// import TestDesign from "./TestDesign";
+import TestExecution from "./TestExecution";
+
+
 // import Execution from "./Execution";
 // import Reports from "./Reports";
 import { useEffect, useState } from "react";  
@@ -32,8 +34,8 @@ export default function TestManagement() {
       return <Overview />;
     }else if (selectedTab === "test-management/test-design") {
       return <TestDesign />;
-    }else if (selectedTab === "test-management/execution") {
-      return <Execution />;
+    }else if (selectedTab === "test-management/test-execution") {
+      return <TestExecution />;
     }else if (selectedTab === "reports") {
       return <Reports />;
     }else if (selectedTab === "test-management/test-plans") {
