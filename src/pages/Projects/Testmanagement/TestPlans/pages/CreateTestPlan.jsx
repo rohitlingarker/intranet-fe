@@ -8,19 +8,21 @@ import FormTextArea from "../../../../../components/forms/FormTextArea";
 
 const CreateTestPlan = ({ projectId, onClose, onSuccess, mode = "modal" }) => {
   const token = localStorage.getItem("token");
-
-  // Extract userId saved during login
   const createdBy = localStorage.getItem("userId");
-  console.log("Created By User ID:", localStorage.getItem("userId"));
+
   const [formData, setFormData] = useState({
     name: "",
     objective: "",
   });
- 
+
   const [loading, setLoading] = useState(false);
-  console.log("Project ID in CreateTestPlan:", projectId);
+
+  // 🚀 FIXED: Stable onChange handler (no "one-letter" issue)
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -42,7 +44,7 @@ const CreateTestPlan = ({ projectId, onClose, onSuccess, mode = "modal" }) => {
 
     try {
       await axios.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/create-plans`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans`,
         payload,
         {
           headers: {
@@ -63,7 +65,7 @@ const CreateTestPlan = ({ projectId, onClose, onSuccess, mode = "modal" }) => {
     }
   };
 
-  // ---------- WRAPPER (Same as EditTaskForm) ----------
+  // ⭐ Modal wrapper (clean + stable)
   const Wrapper = ({ children }) => {
     if (mode === "modal") {
       return (
@@ -80,18 +82,15 @@ const CreateTestPlan = ({ projectId, onClose, onSuccess, mode = "modal" }) => {
         </div>
       );
     }
-    return (
-      <div className="w-full h-full flex flex-col bg-white">{children}</div>
-    );
+
+    return <div className="w-full h-full bg-white flex flex-col">{children}</div>;
   };
 
-  // ---------- UI ----------
   return (
     <Wrapper>
       {/* HEADER */}
       <div className="flex justify-between items-center p-6 border-b">
         <h2 className="text-xl font-semibold">Create Test Plan</h2>
-
         <button onClick={onClose}>
           <X className="text-gray-600" />
         </button>
@@ -102,15 +101,19 @@ const CreateTestPlan = ({ projectId, onClose, onSuccess, mode = "modal" }) => {
         className="p-6 overflow-y-auto flex-1 space-y-6"
         onSubmit={handleSubmit}
       >
+        {/* Name Input */}
         <FormInput
           label="Test Plan Name *"
+          name="name"
           value={formData.name}
           onChange={(e) => handleChange("name", e.target.value)}
           required
         />
 
+        {/* Objective TextArea */}
         <FormTextArea
           label="Objective"
+          name="objective"
           value={formData.objective}
           onChange={(e) => handleChange("objective", e.target.value)}
           placeholder="What is the purpose of this test plan?"
