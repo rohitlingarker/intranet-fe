@@ -8,6 +8,7 @@ import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import BacklogAndSprints from "./BacklogAndSprints";
+import Calender from "./Calender";
 import Timeline from "./Timeline";
 import Navbar from "../../../components/Navbar/Navbar";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
@@ -71,6 +72,8 @@ const ProjectTabs = () => {
       
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
+      case "calender":
+        return <Calender projectId={pid} />;
       case "timelines":
         return <Timeline projectId={pid} />;
       
@@ -93,7 +96,12 @@ const ProjectTabs = () => {
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
     { name: "Status Report", tab: "status-report" },
+<<<<<<< HEAD
     {name:"Timelines", tab:"timelines"}
+=======
+    {name: "Calender", tab: "calender"},
+     {name:"Timelines", tab:"timelines"}
+>>>>>>> c2910f0a98978e281983847e02a4c111d2ebb3d6
    
   ];
 
