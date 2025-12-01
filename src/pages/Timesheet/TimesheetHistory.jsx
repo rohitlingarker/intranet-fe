@@ -273,7 +273,7 @@ const TimesheetHistory = () => {
                 onClick={() => handleToggleYear(year)}
                 className="w-full flex justify-between items-center px-4 py-2 text-left hover:bg-gray-50"
               >
-                <span className="font-semibold text-gray-800">{year}</span>
+                <span className="text-xl font-semibold text-gray-800">{year}</span>
                 <span className="text-xs text-gray-500">
                   {openYears[year] ? "Hide months" : "Show months"}
                 </span>
@@ -291,10 +291,10 @@ const TimesheetHistory = () => {
                           onClick={() => handleToggleMonth(year, month)}
                           className="w-full flex justify-between items-center px-4 py-2 text-left bg-gray-50 hover:bg-gray-100"
                         >
-                          <span className="font-medium text-gray-700">
+                          <span className="text-xl font-medium text-gray-700">
                             {month}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-sm text-gray-500">
                             {openMonths[monthKey] ? "Hide weeks" : "Show weeks"}
                           </span>
                         </button>
@@ -318,11 +318,11 @@ const TimesheetHistory = () => {
                                   >
                                     <div className="flex flex-col">
                                       
-                                      <span className="text-sm font-medium text-gray-800">
+                                      <span className="text-lg font-semibold text-gray-800">
                                         Week {weekGroup.weekId}
                                       </span>
                                       
-                                      <span className="text-xs text-gray-600">
+                                      <span className="text-sm text-gray-600">
                                         {weekGroup.weekRange}
                                       </span>
                                     </div>
@@ -334,13 +334,13 @@ const TimesheetHistory = () => {
                                     </span>
                                   </button>
                                   {openWeeks[openKey] && (
-                                    <div className="px-3 pb-3">
+                                    <div className="p-5">
                                       <TimesheetHistoryGroup
                                         weekGroup={weekGroup}
                                         refreshData={() =>
                                           fetchHistory(startDate, endDate)
                                         }
-                                        mapWorkType={mapWorkType} // 💡 CRITICAL FIX: Pass the populated projectInfo state
+                                        mapWorkType={mapWorkType} 
                                         projectInfo={projectInfo}
                                         holidaysMap={{}}
                                       />
