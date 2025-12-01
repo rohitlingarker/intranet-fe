@@ -96,12 +96,8 @@ const ProjectTabs = () => {
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
     { name: "Status Report", tab: "status-report" },
-<<<<<<< HEAD
-    {name:"Timelines", tab:"timelines"}
-=======
     {name: "Calender", tab: "calender"},
      {name:"Timelines", tab:"timelines"}
->>>>>>> c2910f0a98978e281983847e02a4c111d2ebb3d6
    
   ];
 

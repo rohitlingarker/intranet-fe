@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import CreateRiskModal from "./createRiskModal";
 
+import axios from "axios";
+
 /* Mock API functions */
 const MOCK_TOTAL_BY_TYPE = {
   All: 124,
@@ -131,6 +133,11 @@ function formatDate(timestamp) {
 export default function RiskRegisterPage({ projectId = "P-123" }) {
   const [showCreateRisk, setShowCreateRisk] = useState(false);
 
+  // ISSUE TYPE SUMMARY from backend (separate from issues list)
+  const [issueTypeSummary, setIssueTypeSummary] = useState([]);
+
+  // Keep your existing issues list & UI mocks unchanged
+  const [issues, setIssues] = useState([]);
   const ISSUE_TYPES = ["All", "Epics", "Stories", "Tasks", "Bugs"];
   const ISSUES_PAGE_SIZE = 10;
   const RISKS_PAGE_SIZE = 10;
@@ -150,6 +157,48 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
   const [isLoadingIssues, setIsLoadingIssues] = useState(false);
   const [isLoadingRisks, setIsLoadingRisks] = useState(false);
   const [showRiskModal, setShowRiskModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchSummary() {
+      try {
+        const token = localStorage.getItem("token");
+        const BASE_URL = import.meta.env.VITE_PMS_BASE_URL;
+
+        const res = await axios.get(
+          `${BASE_URL}/api/risk-links/${projectId}/risk-summary/by-issue-type`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // store backend summary into dedicated state
+        setIssueTypeSummary(res.data || []);
+
+        // helpful debug log (optional)
+        // console.log("Fetched issue type summary:", res.data);
+      } catch (error) {
+        console.error("Failed to fetch issue type summary", error);
+      }
+    }
+
+    fetchSummary();
+  }, [projectId]);
+
+  // derive UI cards (All + backend summary) from issueTypeSummary
+  const issueTypeCards = useMemo(() => {
+    const total = (issueTypeSummary || []).reduce(
+      (sum, i) => sum + (i.riskCount || 0),
+      0
+    );
+
+    return [
+      { issueType: "All", riskCount: total },
+      ...(issueTypeSummary || []).map((it) => ({
+        issueType: it.issueType,
+        riskCount: it.riskCount ?? 0,
+      })),
+    ];
+  }, [issueTypeSummary]);
 
   useEffect(() => {
     let cancelled = false;
@@ -229,6 +278,20 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
     return (sum / riskItems.length).toFixed(1);
   }, [riskItems]);
 
+  // helper to convert backend issueType into UI label (adds plural safely)
+  function issueTypeLabel(raw) {
+    if (!raw) return raw;
+    // If already ends with 's' (Epics/Bugs), keep as-is
+    if (raw.endsWith("s") || raw.endsWith("S")) return raw;
+    // otherwise add 's' (Epic -> Epics, Story -> Storys? handle Story -> Stories)
+    if (raw.toLowerCase() === "story") return "Stories";
+    if (raw.toLowerCase() === "epic") return "Epics";
+    if (raw.toLowerCase() === "task") return "Tasks";
+    if (raw.toLowerCase() === "bug") return "Bugs";
+    // fallback: append 's'
+    return `${raw}`;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -268,33 +331,37 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Issue type filter with visual cards */}
+        {/* Issue type filter with visual cards (BACKEND DRIVEN) */}
         <div className="grid grid-cols-5 gap-3">
-          {ISSUE_TYPES.map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setActiveIssueType(t);
-                setIssuePage(1);
-                setSelectedIssue(null);
-                setRiskPage(1);
-              }}
-              className={`p-4 rounded-lg transition-all transform hover:scale-105 ${
-                activeIssueType === t
-                  ? "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400"
-                  : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
-              }`}
-            >
-              <div className="font-semibold text-sm">{t}</div>
-              <div
-                className={`text-xs mt-1 ${
-                  activeIssueType === t ? "text-indigo-100" : "text-slate-500"
+          {issueTypeCards.map((t) => {
+            const label = issueTypeLabel(t.issueType);
+            const isActive = activeIssueType === label;
+            return (
+              <button
+                key={t.issueType}
+                onClick={() => {
+                  setActiveIssueType(label);
+                  setIssuePage(1);
+                  setSelectedIssue(null);
+                  setRiskPage(1);
+                }}
+                className={`p-4 rounded-lg transition-all transform hover:scale-105 ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400"
+                    : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
                 }`}
               >
-                {MOCK_TOTAL_BY_TYPE[t] ?? 0} items
-              </div>
-            </button>
-          ))}
+                <div className="font-semibold text-sm">{label}</div>
+                <div
+                  className={`text-xs mt-1 ${
+                    isActive ? "text-indigo-100" : "text-slate-500"
+                  }`}
+                >
+                  {t.riskCount ?? 0} items
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Main content grid */}
@@ -353,9 +420,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
               {isLoadingIssues ? (
                 <div className="p-6 text-center">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                  <p className="text-sm text-slate-500 mt-2">
-                    Loading issues...
-                  </p>
+                  <p className="text-sm text-slate-500 mt-2">Loading issues...</p>
                 </div>
               ) : issuesPageItems.length === 0 ? (
                 <div className="p-6 text-center text-slate-500">
@@ -499,9 +564,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
                 ) : isLoadingRisks ? (
                   <div className="p-8 text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    <p className="text-sm text-slate-500 mt-2">
-                      Loading risks...
-                    </p>
+                    <p className="text-sm text-slate-500 mt-2">Loading risks...</p>
                   </div>
                 ) : riskItems.length === 0 ? (
                   <div className="p-8 text-center text-slate-500">
@@ -525,9 +588,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <div
-                                  className={`text-lg font-bold ${colors.text}`}
-                                >
+                                <div className={`text-lg font-bold ${colors.text}`}>
                                   {score}
                                 </div>
                                 <div className={`text-xl ${colors.icon}`}>
@@ -600,9 +661,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white flex justify-between items-start">
               <div>
-                <div className="text-xs font-semibold opacity-90 mb-1">
-                  RISK DETAILS
-                </div>
+                <div className="text-xs font-semibold opacity-90 mb-1">RISK DETAILS</div>
                 <h3 className="text-xl font-bold">{selectedRisk.id}</h3>
               </div>
               <button
@@ -615,54 +674,24 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
             <div className="p-6 space-y-6">
               <div>
-                <h4 className="font-semibold text-slate-900 mb-2">
-                  {selectedRisk.title}
-                </h4>
-                <p className="text-sm text-slate-600">
-                  {selectedRisk.description}
-                </p>
+                <h4 className="font-semibold text-slate-900 mb-2">{selectedRisk.title}</h4>
+                <p className="text-sm text-slate-600">{selectedRisk.description}</p>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <div className="text-xs text-purple-600 font-semibold mb-1">
-                    PROBABILITY
-                  </div>
-                  <div className="text-2xl font-bold text-purple-700">
-                    {selectedRisk.prob}/5
-                  </div>
+                  <div className="text-xs text-purple-600 font-semibold mb-1">PROBABILITY</div>
+                  <div className="text-2xl font-bold text-purple-700">{selectedRisk.prob}/5</div>
                 </div>
                 <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                  <div className="text-xs text-orange-600 font-semibold mb-1">
-                    IMPACT
-                  </div>
-                  <div className="text-2xl font-bold text-orange-700">
-                    {selectedRisk.impact}/5
-                  </div>
+                  <div className="text-xs text-orange-600 font-semibold mb-1">IMPACT</div>
+                  <div className="text-2xl font-bold text-orange-700">{selectedRisk.impact}/5</div>
                 </div>
-                <div
-                  className={`p-3 rounded-lg border-2 ${
-                    getRiskColor(selectedRisk.score).bg
-                  }`}
-                >
-                  <div
-                    className="text-xs font-semibold mb-1"
-                    style={{
-                      color: getRiskColor(selectedRisk.score).text.split(
-                        "-"
-                      )[1],
-                    }}
-                  >
+                <div className={`p-3 rounded-lg border-2 ${getRiskColor(selectedRisk.score).bg}`}>
+                  <div className="text-xs font-semibold mb-1" style={{ color: getRiskColor(selectedRisk.score).text.split("-")[1] }}>
                     SCORE
                   </div>
-                  <div
-                    className="text-2xl font-bold"
-                    style={{
-                      color: getRiskColor(selectedRisk.score).text.split(
-                        "-"
-                      )[1],
-                    }}
-                  >
+                  <div className="text-2xl font-bold" style={{ color: getRiskColor(selectedRisk.score).text.split("-")[1] }}>
                     {selectedRisk.score}
                   </div>
                 </div>
@@ -670,48 +699,28 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
-                    STATUS
-                  </label>
-                  <div
-                    className={`mt-2 text-xs px-3 py-2 rounded inline-block ${getStatusColor(
-                      selectedRisk.status
-                    )}`}
-                  >
+                  <label className="text-xs font-semibold text-slate-600">STATUS</label>
+                  <div className={`mt-2 text-xs px-3 py-2 rounded inline-block ${getStatusColor(selectedRisk.status)}`}>
                     {selectedRisk.status}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-600">
-                    OWNER
-                  </label>
-                  <div className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedRisk.owner}
-                  </div>
+                  <label className="text-xs font-semibold text-slate-600">OWNER</label>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">{selectedRisk.owner}</div>
                 </div>
               </div>
 
               <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                 <h5 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-indigo-600" /> Mitigation
-                  Actions
+                  <AlertCircle className="w-4 h-4 text-indigo-600" /> Mitigation Actions
                 </h5>
-                <p className="text-sm text-slate-600">
-                  Add mitigation strategies, action plans, or link playbooks
-                  here.
-                </p>
-                <button className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
-                  + Add Mitigation
-                </button>
+                <p className="text-sm text-slate-600">Add mitigation strategies, action plans, or link playbooks here.</p>
+                <button className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">+ Add Mitigation</button>
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-slate-200">
-                <button className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium transition">
-                  Edit
-                </button>
-                <button className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition">
-                  Save Changes
-                </button>
+                <button className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium transition">Edit</button>
+                <button className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition">Save Changes</button>
               </div>
             </div>
           </div>
