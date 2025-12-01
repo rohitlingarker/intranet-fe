@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -32,6 +33,8 @@ import ReportDashboard from "./pages/Timesheet/ReportDashboard";
 import MonthlyTSReport from "./pages/Timesheet/MonthlyTSReport";
 import ManagerReportSection from "./pages/Timesheet/ManagerReportSection";
 import ManagerMonthlyReport from "./pages/Timesheet/ManagerMonthlyReport";
+import TSAdminPanel from "./pages/Timesheet/Admin/TSAdminPannel.jsx";
+import TimesheetHistory from "./pages/Timesheet/TimesheetHistory.jsx";
 
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
@@ -89,6 +92,9 @@ import LeavePolicy from "./pages/leave_management/models/LeavePolicy";
 import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
+import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
+
+import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -237,13 +243,15 @@ useEffect(() => {
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
-          <Route path="/managerapproval" element={<ManagerApprovalPage />} />
+          {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
+          <Route path="/managerapproval" element={<TSAdminPanel/>} />
           <Route path="/timesheet/dashboard" element={<DashboardPage />} />
           <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
           <Route path="/timesheets/managerreport" element={<ManagerReportSection />} />
           <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
           <Route path="/timesheets/managermonthlyreport" element={<ManagerMonthlyReport />} />
           <Route path="/timesheets/monthlytsreport" element={<MonthlyTSReport />} />
+          <Route path="/timesheets/history" element={<TimesheetHistory />} />
 
           
           <Route path="/intranet-form" element={<IntranetForm />} />
@@ -288,6 +296,8 @@ useEffect(() => {
            <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
 
           <Route path="/projects/:projectId/status-report" element={<ProjectStatusReportWrapper />} />
+
+          <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
@@ -528,6 +538,13 @@ useEffect(() => {
                 <LeaveDetailsPage />
               </ProtectedRoute>
             }
+          />
+
+          <Route path="/approval-rules" element={
+              <ProtectedRoute allowedRoles={["HR","Hr-Manager"]}>
+                <ApprovalRulesPage />
+              </ProtectedRoute>
+            } 
           />
 
           <Route path="/leave-policies" element={<Navigate to="https://celebrated-renewal-07a16fae8e.strapiapp.com" replace />} />

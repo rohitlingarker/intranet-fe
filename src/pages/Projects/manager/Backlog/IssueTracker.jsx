@@ -78,6 +78,7 @@ const IssueTracker = () => {
         assigneeName: e.assigneeName || e.assignee?.name || "Not Applicable",
         priority: (e.priority || "MEDIUM").toUpperCase(),
         status: e.status || "BACKLOG",
+        
       }));
 
       const storiesData = storiesRes.data.map((s) => ({

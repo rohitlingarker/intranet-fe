@@ -8,8 +8,10 @@ import Board from "./Board";
 import SprintBoard from "./Sprint/SprintBoard";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import BacklogAndSprints from "./BacklogAndSprints";
-
+import Calender from "./Calender";
+import Timeline from "./Timeline";
 import Navbar from "../../../components/Navbar/Navbar";
+import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -57,6 +59,9 @@ const ProjectTabs = () => {
     const pid = parseInt(projectId, 10);
 
     switch (selectedTab) {
+      case "risk-management":
+        return <RiskRegisterPage projectId={pid} />;
+
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
@@ -67,8 +72,11 @@ const ProjectTabs = () => {
         return <SprintBoard projectId={pid} projectName={projectName} />;
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
-      case "newone":
-        return <BacklogAndSprints projectId={pid}/>
+      case "calender":
+        return <Calender projectId={pid} />;
+      case "timelines":
+        return <Timeline projectId={pid} />;
+      
       default:
         return null;
     }
@@ -83,12 +91,14 @@ const ProjectTabs = () => {
   }
 
   const navItems = [
+    { name: "Risk Management", tab: "risk-management" },
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
-    { name: "Sprints", tab: "sprint" },
     { name: "Status Report", tab: "status-report" },
-    {name: "newone", tab: "newone" }
+    {name: "Calender", tab: "calender"},
+     {name:"Timelines", tab:"timelines"}
+   
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
@@ -98,25 +108,17 @@ const ProjectTabs = () => {
   }));
 
   return (
-    // <div className="flex flex-col h-screen">
-    //   {/* ✅ Fixed Navbar (always visible) */}
-    //   <header className="sticky top-0 z-50 border-b bg-white">
-    //     <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-    //       <h2 className="text-lg font-semibold text-indigo-900 leading-none mr-4">
-    //         {projectName}
-    <div>
+    <div >
+      {/* ✅ Fixed Navbar (always visible) */}
       <header className="bg-white mb-4">
-          {/* </h2> */}
           <Navbar logo={null} navItems={navItemsWithActive} />
-        {/* </div> */}
       </header>
 
       {/* ✅ Content below navbar */}
-      {/* <main className="flex-1 overflow-auto bg-slate-50"> */}
+      
         <div>
           {renderTabContent()}
         </div>
-      {/* </main> */}
     </div>
   );
 };

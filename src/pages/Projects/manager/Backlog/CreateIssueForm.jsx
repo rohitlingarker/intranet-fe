@@ -252,6 +252,8 @@ const CreateIssueForm = ({
         sprintId: normalizeIdValue(formData.sprintId),
         statusId: Number(formData.statusId),
         priority: formData.priority || "LOW",
+        startDate: formData.startDate? `${formData.startDate}T00:00:00` :null,
+        dueDate: formData.dueDate ? `${formData.dueDate}T00:00:00` : null
       };
     }
     // EPIC payload (must include name/title, projectId, statusId)
@@ -278,6 +280,7 @@ if (issueType === "Epic") {
     projectId: Number(formData.projectId),
     reporterId: normalizeIdValue(formData.reporterId),
     assigneeId: normalizeIdValue(formData.assigneeId),
+    startDate: formData.startDate,
     dueDate: formData.dueDate
       ? new Date(formData.dueDate).toISOString()
       : null,
@@ -449,6 +452,13 @@ if (issueType === "Epic") {
                 { label: "Critical", value: "CRITICAL" },
               ]}
             />
+             <FormDatePicker
+              label="Start Date"
+              name="startDate"
+              value={formData.startDate || ""}
+              onChange={handleChange}
+              min={today}
+            />
             <FormDatePicker
               label="Due Date"
               name="dueDate"
@@ -497,9 +507,9 @@ if (issueType === "Epic") {
             />
 
             <FormDatePicker
-              label="End Date"
-              name="endDate"
-              value={formData.endDate || ""}
+              label="Due Date"
+              name="dueDate"
+              value={formData.dueDate || ""}
               onChange={handleChange}
               min={today}
             />
@@ -540,9 +550,18 @@ if (issueType === "Epic") {
               ]}
             />
 
+
             <FormSelect label="Sprint" name="sprintId" value={formData.sprintId ?? ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
             <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId ?? ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId ?? ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
+             <FormDatePicker
+              label="Due Date"
+              name="dueDate"
+              value={formData.dueDate || ""}
+              onChange={handleChange}
+              min={today}
+            />
+
             <FormSelect
               label="Billable"
               name="isBillable"

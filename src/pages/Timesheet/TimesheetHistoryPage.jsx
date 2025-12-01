@@ -214,7 +214,6 @@ const TimesheetHistoryPage = () => {
       return [];
     }
   };
-
   // Function to calculate total hours for entries
   const calculateTotalHours = (entries) => {
     let totalMinutes = 0;
@@ -307,11 +306,11 @@ const TimesheetHistoryPage = () => {
 
   // Filter entries
   const filteredEntries = entries.filter((weekGroup) => {
-    const matchesSearch = weekGroup.timesheets.some((timesheet) => {
-      return timesheet.entries.some((entry) => {
+    const matchesSearch = weekGroup.timesheets.map((timesheet) => {
+      return timesheet?.entries.map((entry) => {  
         // Use the mapped project name instead of looking up by ID
         const projectName =
-          entry.projectName || projectIdToName[entry.projectId] || "";
+          entry?.projectName || projectIdToName[entry.projectId] || "";
         return projectName.toLowerCase().includes(searchText.toLowerCase());
       });
     });
@@ -429,4 +428,9 @@ const TimesheetHistoryPage = () => {
   );
 };
 
+// Named export for fetchAndStoreProjectTaskInfo
 export default TimesheetHistoryPage;
+
+
+
+

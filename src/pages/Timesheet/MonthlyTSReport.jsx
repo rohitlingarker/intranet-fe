@@ -77,25 +77,36 @@ const MonthlyTSReport = () => {
     loadProjectInfo();
   }, []);
 
+  const getProjectName = (id) => {
+    const p = projectInfo.find((x) => x.projectId === id);
+    return p ? p.project : `Project ${id}`;
+  };
+
+  const getTaskName = (projectId, taskId) => {
+    const p = projectInfo.find((x) => x.projectId === projectId);
+    if (!p) return taskId ? `Task ${taskId}` : "-";
+    const t = p.tasks?.find((x) => x.taskId === taskId);
+    return t ? t.task : taskId ? `Task ${taskId}` : "-";
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(
+      const res = await axios.get(
         `${TS_BASE_URL}/api/report/user_monthly?month=${month}&year=${year}`,
         {
-          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.data;
       setApiData(data);
     } catch (e) {
-      setError(e.message || "Failed to load");
+      console.log("Error msg :", e?.response?.data);
+      setError(e?.response?.data || "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -128,6 +139,7 @@ const MonthlyTSReport = () => {
       billableRatio: billPct,
       nonBillableRatio: nonPct,
       activeProjectsCount: apiData.activeProjectsCount,
+      totalWorkingDays: apiData.leavesAndHolidays?.totalWorkingDays,
       leaves: {
         days: apiData.leavesAndHolidays?.totalLeavesDays,
         hours: apiData.leavesAndHolidays?.totalLeavesHours,
@@ -148,7 +160,8 @@ const MonthlyTSReport = () => {
           for (const e of ts.entries) {
             rows.push({
               date: workDate,
-              project: e.projectName || `Project ${e.projectId ?? ""}`,
+              project:
+                getProjectName(e.projectId) || `Project ${e.projectId ?? ""}`,
               type: e.isBillable ? "Billable" : "Non-Billable",
               hours: Number(e.hoursWorked || 0),
               description: e.description || "",
@@ -194,7 +207,9 @@ const MonthlyTSReport = () => {
     const nonBillableHours = Number(apiData.nonBillableHours || 0);
     const activeProjects = Number(apiData.activeProjectsCount || 0);
     const leavesDays = Number(apiData.leavesAndHolidays?.totalLeavesDays || 0);
-    const leavesHours = Number(apiData.leavesAndHolidays?.totalLeavesHours || 0);
+    const leavesHours = Number(
+      apiData.leavesAndHolidays?.totalLeavesHours || 0
+    );
     const holidaysDays = Number(apiData.leavesAndHolidays?.totalHolidays || 0);
 
     const formatDate = (dateStr) => {
@@ -203,25 +218,24 @@ const MonthlyTSReport = () => {
       return dateStr;
     };
 
-    const resolveStatus = (week) => {
-  return (
-    week.statusLabel ||
-    week.timesheetStatus ||
-    week.approvalStatus ||
-    week.status ||
-    "No Timesheets"
-  );
-};
-const getWeeklyStatus = (week) => {
-  if (week.weeklyStatus) return week.weeklyStatus;
+    //     const resolveStatus = (week) => {
+    //   return (
+    //     week.statusLabel ||
+    //     week.timesheetStatus ||
+    //     week.approvalStatus ||
+    //     week.status ||
+    //     "No Timesheets"
+    //   );
+    // };
+    const getWeeklyStatus = (week) => {
+      if (week.weeklyStatus) return week.weeklyStatus;
 
-  // fallback logic
-  if (!week.timesheets || week.timesheets.length === 0) return "No Timesheets";
+      // fallback logic
+      if (!week.timesheets || week.timesheets.length === 0)
+        return "No Timesheets";
 
-  return "SUBMITTED";
-};
-
-
+      return "SUBMITTED";
+    };
 
     const formatDateTime = (dtStr) => {
       if (!dtStr) return "";
@@ -239,77 +253,86 @@ const getWeeklyStatus = (week) => {
     };
 
     // ---------------- PAGE 1: Title + Header Card ----------------
-    // ---------------- PAGE 1: Title + Header Card ----------------
-let y = 20;
+    let y = 20;
 
-// Title
-doc.setFont("helvetica", "bold");
-doc.setFontSize(20);
-doc.setTextColor(15, 23, 42);
-doc.text("User Monthly Report", 14, y);
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(15, 23, 42);
+    doc.text("User Monthly Report", 14, y);
 
-y += 10;
-doc.setFont("helvetica", "normal");
-doc.setFontSize(12);
-doc.text(`Report for ${monthLabel}`, 14, y);
+    y += 10;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text(`Report for ${monthLabel}`, 14, y);
 
-// Header card background
-y += 10; // increased spacing
-const cardX = 14;
-const cardY = y;
-const cardWidth = pageWidth - 28;
-const cardHeight = 70; // taller for proper spacing
+    // Header card background
+    y += 10; // increased spacing
+    const cardX = 14;
+    const cardY = y;
+    const cardWidth = pageWidth - 28;
+    const cardHeight = 70; // taller for proper spacing
 
-doc.setFillColor(228, 235, 245); 
-doc.rect(cardX, cardY, cardWidth, cardHeight, "F");
+    doc.setFillColor(228, 235, 245);
+    doc.rect(cardX, cardY, cardWidth, cardHeight, "F");
 
-// ---------------- Card Content ----------------
-let textY = cardY + 12;
+    // ---------------- Card Content ----------------
+    let textY = cardY + 12;
 
-// Employee name
-doc.setFont("helvetica", "bold");
-doc.setFontSize(14);
-doc.setTextColor(15, 23, 42);
-doc.text(apiData.employeeName || "-", cardX + 6, textY);
+    // Employee name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text(apiData.employeeName || "-", cardX + 6, textY);
 
-// Forward spacing
-textY += 12;
-doc.setFont("helvetica", "normal");
-doc.setFontSize(11);
+    // Forward spacing
+    textY += 12;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
 
-// Hours
-doc.text(`Total Hours Worked: ${totalHours.toFixed(2)}`, cardX + 6, textY);
-textY += 6;
-doc.text(`Billable Hours: ${billableHours.toFixed(2)}`, cardX + 6, textY);
-textY += 6;
-doc.text(`Non-Billable Hours: ${nonBillableHours.toFixed(2)}`, cardX + 6, textY);
+    // Hours
+    doc.text(`Total Hours Worked: ${totalHours.toFixed(2)}`, cardX + 6, textY);
+    textY += 6;
+    doc.text(`Billable Hours: ${billableHours.toFixed(2)}`, cardX + 6, textY);
+    textY += 6;
+    doc.text(
+      `Non-Billable Hours: ${nonBillableHours.toFixed(2)}`,
+      cardX + 6,
+      textY
+    );
 
 // ------------- Divider (MUST COME AFTER ACTIVE PROJECTS) -------------
 textY += 6;
 doc.text(`Active Projects: ${activeProjects}`, cardX + 6, textY);
 
-// Divider line
-const dividerY = textY + 4;
-doc.setDrawColor(180, 190, 205);
-doc.setLineWidth(0.3);
-doc.line(cardX + 6, dividerY, cardX + cardWidth - 6, dividerY);
-
-// ------------- Bottom section (Leaves + Holidays) -------------
-let bottomY = dividerY + 6;
-
+textY += 6;
 doc.text(
-  `Total Leaves: ${leavesDays} days (${leavesHours} hrs)`,
+  `Total Working Days: ${apiData.leavesAndHolidays?.totalWorkingDays || 0} days`,
   cardX + 6,
-  bottomY
+  textY
 );
 
-bottomY += 6;
+    // Divider line
+    const dividerY = textY + 4;
+    doc.setDrawColor(180, 190, 205);
+    doc.setLineWidth(0.3);
+    doc.line(cardX + 6, dividerY, cardX + cardWidth - 6, dividerY);
 
-doc.text(`Total Holidays: ${holidaysDays} days`, cardX + 6, bottomY);
+    // ------------- Bottom section (Leaves + Holidays) -------------
+    let bottomY = dividerY + 6;
 
-// Update global y for next sections
-y = cardY + cardHeight + 15;
+    doc.text(
+      `Total Leaves: ${leavesDays} days (${leavesHours} hrs)`,
+      cardX + 6,
+      bottomY
+    );
 
+    bottomY += 6;
+
+    doc.text(`Total Holidays: ${holidaysDays} days`, cardX + 6, bottomY);
+
+    // Update global y for next sections
+    y = cardY + cardHeight + 15;
 
     // ---------------- Daywise Summary ----------------
     y = ensureSpace(40, y);
@@ -362,18 +385,21 @@ y = cardY + cardHeight + 15;
     const projects = apiData.projectSummaries?.projects || [];
     projects.forEach((p) => {
       const name =
-        p.projectName || (p.projectId ? `Project ${p.projectId}` : "-");
+        getProjectName(p.projectId) ||
+        (p.projectId ? `Project ${p.projectId}` : "-");
       projectRows.push([
         name,
         Number(p.totalHours || 0).toFixed(2),
         Number(p.billableHours || 0).toFixed(2),
         Number(p.nonBillableHours || 0).toFixed(2),
-        `${Number(p.contributionPercentage || 0).toFixed(2)}%`,
+        `${Number(p.contribution || 0).toFixed(2)}%`,
       ]);
     });
 
     autoTable(doc, {
-      head: [["Project", "Total Hrs", "Billable", "Non-Billable", "Contribution %"]],
+      head: [
+        ["Project", "Total Hrs", "Billable", "Non-Billable", "Contribution %"],
+      ],
       body: projectRows,
       startY: y + 4,
       theme: "grid",
@@ -419,7 +445,6 @@ y = cardY + cardHeight + 15;
       const hoursPart = `— ${Number(week.totalHours || 0).toFixed(2)} hrs`;
       const weekHeaderText = `${weekLabelParts.join(" ")} ${hoursPart}`;
       const statusText = `[Status: ${getWeeklyStatus(week)}]`;
-
 
       // yellow header bar
       doc.setFillColor(254, 243, 199);
@@ -472,8 +497,10 @@ y = cardY + cardHeight + 15;
           ts.entries.forEach((e) => {
             weeklyRows.push([
               formatDate(ts.workDate),
-              e.projectName || (e.projectId ? `Project ${e.projectId}` : ""),
-              e.taskName || (e.taskId != null ? String(e.taskId) : ""),
+              getProjectName(e.projectId) ||
+                (e.projectId ? `Project ${e.projectId}` : ""),
+              getTaskName(e.projectId, e.taskId) ||
+                (e.taskId != null ? String(e.taskId) : ""),
               formatDateTime(e.startTime || ""),
               formatDateTime(e.endTime || ""),
               Number(e.hoursWorked || 0).toFixed(2),
@@ -513,67 +540,93 @@ y = cardY + cardHeight + 15;
     });
 
     // ---------------- Report Notes ----------------
-    // ---------------- Stylish Report Notes Box (Option A) ----------------
-y = ensureSpace(80, y);
+    // ---------------- Dynamic Stylish Report Notes Box ----------------
+    y = ensureSpace(20, y);
 
-const notesX = 14;
-const notesWidth = pageWidth - 28;
-const notesHeight = 80;
+    const notesX = 14;
+    const notesWidth = pageWidth - 28;
 
-// Background (light blue)
-doc.setFillColor(228, 235, 245);
-doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
 
-// Border
-doc.setDrawColor(190, 200, 210);
-doc.roundedRect(notesX, y, notesWidth, notesHeight, 4, 4, "S");
+    // Title height = 12 px
+    const titleHeight = 12;
+    let tempY = y + titleHeight + 6;
 
-// Title
-doc.setFont("helvetica", "bold");
-doc.setFontSize(14);
-doc.setTextColor(15, 23, 42);
-doc.text("Report Notes", notesX + 6, y + 12);
+    // Prepare notes list
+    const notes = [
+      "Billable Hours = Total hours spent on tasks classified as billable across all projects.",
+      "Standard Holiday Hours = (Mon–Fri calculated at 8 hours per holiday).",
+      "Non-Billable Hours = Sum of all task hours marked as non-billable across all projects + Standard holiday hours.",
+      "Total Hours = Billable Hours + Non-Billable Hours.",
+      "Billable Utilization % = Billable Hours ÷ Total Hours × 100.",
+      "Minimum Monthly Hours = 176.",
+      "Leaves / Holidays = Sum of approved leave days + company-declared holidays in the selected month.",
+      "Current Active Projects = Number of projects where the employee logged hours during the month.",
+      "Project-wise Hour Distribution = Proportion of total hours dedicated to each project relative to all projects combined.",
+      "Daily Hours Breakdown = Shows how the employee distributed work hours across each day of the week throughout the month.",
+      "Weekly Timesheet Summary = Displays weekly logged hours, approval status, and detailed daily tasks.",
+      "Draft / Submitted / Approved / Rejected Status = Draft (saved), Submitted (pending approval), Approved (reviewed), Rejected (requires correction).",
+      "Monthly Minimum Hours Requirement = Expected minimum monthly working hours: 176 hours (22 working days × 8 hours/day).",
+      "Missing Timesheets = Weeks with zero entries indicate unfilled or unsubmitted timesheets.",
+      "Hour Accuracy = Hours displayed are based on submitted timesheets; incomplete or delayed entries may affect totals.",
+    ];
 
-// Notes content
-doc.setFont("helvetica", "normal");
-doc.setFontSize(10);
-doc.setTextColor(55, 65, 81);
+    // ---------------- Calculate total dynamic height ----------------
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
 
-const notes = [
-  "Billable Hours = Total hours spent on tasks classified as billable across all projects.",
-  "Standard Holiday Hours = (Mon–Fri calculated at 8 hours per holiday).",
-  "Non-Billable Hours = Sum of all task hours marked as non-billable across all projects + Standard holiday hours.",
-  "Total Hours = Billable Hours + Non-Billable Hours.",
-  "Billable Utilization % = Billable Hours ÷ Total Hours × 100.",
-  "Minimum Monthly Hours = 176.",
-  "Leaves / Holidays = Sum of approved leave days + company-declared holidays in the selected month.",
-  "Current Active Projects = Number of projects where the employee logged hours during the month.",
-  "Project-wise Hour Distribution = Proportion of total hours dedicated to each project relative to all projects combined.",
-  "Daily Hours Breakdown = Shows how the employee distributed work hours across each day of the week throughout the month.",
-  "Weekly Timesheet Summary = Displays weekly logged hours, approval status, and detailed daily tasks.",
-  "Draft / Submitted / Approved / Rejected Status = Draft (saved), Submitted (pending approval), Approved (reviewed), Rejected (requires correction).",
-  "Monthly Minimum Hours Requirement = Expected minimum working hours: 176 hours (22 working days × 8 hours/day).",
-  "Missing Timesheets = Weeks with zero entries indicate unfilled or unsubmitted timesheets.",
-  "Hour Accuracy = Hours displayed are based on submitted timesheets; incomplete or delayed entries may affect totals.",
-];
+    let totalTextHeight = 0;
 
+    notes.forEach((line) => {
+      const split = doc.splitTextToSize(line, notesWidth - 20);
+      totalTextHeight += split.length * 6; // 6px per line
+      totalTextHeight += 2; // padding
+    });
 
-let noteY = y + 22;
+    // Final box height
+    const notesHeight = titleHeight + 10 + totalTextHeight + 10;
 
-notes.forEach((line) => {
-  doc.text(`• ${line}`, notesX + 8, noteY);
-  noteY += 7;
-});
+    // Ensure page space before drawing box
+    y = ensureSpace(notesHeight + 20, y);
 
-// Footer message
-y = y + notesHeight + 10;
-doc.setFont("helvetica", "italic");
-doc.setFontSize(10);
-doc.text(
-  `Report generated on ${new Date().toISOString().slice(0, 19)}.`,
-  notesX,
-  y
-);
+    // Draw background box
+    doc.setFillColor(228, 235, 245);
+    doc.roundedRect(notesX, y, notesWidth, notesHeight, 6, 6, "F");
+
+    // Draw border
+    doc.setDrawColor(180, 190, 205);
+    doc.roundedRect(notesX, y, notesWidth, notesHeight, 6, 6, "S");
+
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Report Notes", notesX + 10, y + 14);
+
+    // Render notes
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(55, 65, 81);
+
+    let lineY = y + 24;
+
+    notes.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, notesWidth - 20);
+      doc.text(`• `, notesX + 10, lineY);
+      doc.text(wrapped, notesX + 16, lineY);
+      lineY += wrapped.length * 6 + 2;
+    });
+
+    // Footer
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text(
+      `Report generated on ${new Date().toISOString().slice(0, 10)}.`,
+      notesX + 10,
+      y + notesHeight - 6
+    );
 
     doc.save(`User_Monthly_Report_${monthLabel.replace(" ", "_")}.pdf`);
   };
@@ -757,7 +810,8 @@ doc.text(
               classified as billable across all projects.
             </li>
             <li>
-              <strong>Standard Holiday Hours</strong> = (Mon-Fri calculated 8 hrs/holiday).
+              <strong>Standard Holiday Hours</strong> = (Mon-Fri calculated 8
+              hrs/holiday).
             </li>
             <li>
               <strong>Non-Billable Hours</strong> = Sum of all task hours marked

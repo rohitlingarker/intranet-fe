@@ -25,34 +25,6 @@ const toLocalISODate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-
-export const ConfirmDialog = ({ open, title, message, onConfirm, onCancel }) => {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
-        <h2 className="text-lg font-semibold mb-4 text-left">{title}</h2>
-        <p className="mb-6 text-left">{message}</p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const formatDate = (dateStr) => {
   const date = new Date(dateStr);
   const dayOfWeek = date.getDay();
@@ -141,7 +113,7 @@ const calculateTotalHours = (entries) => {
   return (totalMinutes / 60).toFixed(2);
 };
 
-const TimesheetGroup = ({
+const TimesheetHistoryGroup = ({
   weekGroup,
   timesheetId,
   workDate,
@@ -170,8 +142,6 @@ const TimesheetGroup = ({
   );
   const [selectedEntryIds, setSelectedEntryIds] = useState([]);
   const [timesheetIdAdding, setTimesheetIdAdding] = useState(null); 
-  
-  const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [date, setDate] = useState(
     isWeeklyFormat ? weekData.weekStart : workDate
   );
@@ -180,7 +150,6 @@ const TimesheetGroup = ({
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showSelectionCheckboxes, setShowSelectionCheckboxes] = useState(false);
   const menuRef = useRef(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmittingWeek, setIsSubmittingWeek] = useState(false);
 
   // Create individual refs for each timesheet menu
@@ -204,46 +173,46 @@ const TimesheetGroup = ({
   };
 
   // Get the button text based on status
-  const getSubmitButtonText = () => {
-    if (!isWeeklyFormat || !weekData) return "SUBMIT WEEK";
+//   const getSubmitButtonText = () => {
+//     if (!isWeeklyFormat || !weekData) return "SUBMIT WEEK";
 
-    const weeklyStatus = weekData.status?.toUpperCase();
+//     const weeklyStatus = weekData.status?.toUpperCase();
 
-    if (weeklyStatus === "APPROVED") {
-      return "Week Already Approved";
-    }
-    if (weeklyStatus === "PARTIALLY APPROVED") {
-      return "Week Partially Approved";
-    }
-    if (weeklyStatus === "SUBMITTED") {
-      return "Week Already Submitted";
-    }
+//     if (weeklyStatus === "APPROVED") {
+//       return "Week Already Approved";
+//     }
+//     if (weeklyStatus === "PARTIALLY APPROVED") {
+//       return "Week Partially Approved";
+//     }
+//     if (weeklyStatus === "SUBMITTED") {
+//       return "Week Already Submitted";
+//     }
 
-    return "SUBMIT WEEK";
-  };
+//     return "SUBMIT WEEK";
+//   };
 
   // Handle weekly submission
-  const handleSubmitWeek = async () => {
-    if (!isWeeklyFormat) return;
+//   const handleSubmitWeek = async () => {
+//     if (!isWeeklyFormat) return;
 
-    // Get all timesheet IDs for the week
-    const timesheetIds = weekData.timesheets.map((ts) => ts.timesheetId);
+//     // Get all timesheet IDs for the week
+//     const timesheetIds = weekData.timesheets.map((ts) => ts.timesheetId);
 
-    if (timesheetIds.length === 0) {
-      showStatusToast("No timesheets to submit", "error");
-      return;
-    }
+//     if (timesheetIds.length === 0) {
+//       showStatusToast("No timesheets to submit", "error");
+//       return;
+//     }
 
-    try {
-      setIsSubmittingWeek(true);
-      await submitWeeklyTimesheet(timesheetIds);
-      if (refreshData) await refreshData();
-    } catch (error) {
-      showStatusToast("Failed to submit weekly timesheet", "error");    
-    } finally {
-      setIsSubmittingWeek(false);
-    }
-  };
+//     try {
+//       setIsSubmittingWeek(true);
+//       await submitWeeklyTimesheet(timesheetIds);
+//       if (refreshData) await refreshData();
+//     } catch (error) {
+//       showStatusToast("Failed to submit weekly timesheet", "error");    
+//     } finally {
+//       setIsSubmittingWeek(false);
+//     }
+//   };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -265,109 +234,109 @@ const TimesheetGroup = ({
     ? weekData.totalHours.toFixed(2)
     : calculateTotalHours(entriesState);
 
-  const handleAddEntryDaily = () => {
-    setMenuOpen(false);
-    setTimesheetIdAdding(timesheetId); 
-  };
+//   const handleAddEntryDaily = () => {
+//     setMenuOpen(false);
+//     setTimesheetIdAdding(timesheetId); 
+//   };
 
 
-  const handleAddEntryWeekly = (id) => {
-    setMenuOpen(false);
-    setTimesheetIdAdding(id);
-  };
+//   const handleAddEntryWeekly = (id) => {
+//     setMenuOpen(false);
+//     setTimesheetIdAdding(id);
+//   };
 
 
-  const handleDeleteClick = () => {
-    if (selectedEntryIds.length === 0) {
-      alert("No entries selected for deletion.");
-      return;
-    }
+//   const handleDeleteClick = () => {
+//     if (selectedEntryIds.length === 0) {
+//       alert("No entries selected for deletion.");
+//       return;
+//     }
 
-    setMenuOpen(false);
-    setIsConfirmOpen(true);
-  };
+//     setMenuOpen(false);
+//     setIsConfirmOpen(true);
+//   };
 
   const toggleDateChange = (e) => {
     if (status?.toLowerCase() === "approved") return; // prevent date change if approved
     setEditDateIndex((prev) => (prev === null ? 0 : null));
   };
 
-  const handleConfirmDelete = async () => {
-    setIsConfirmOpen(false);
-    let responseText = ""; 
+//   const handleConfirmDelete = async () => {
+//     setIsConfirmOpen(false);
+//     let responseText = ""; 
 
-    try {
-      // For weekly format, delete from multiple timesheets
-      if (isWeeklyFormat) {
-        for (const timesheet of weekData.timesheets) {
-          const response = await fetch(
-            `${
-              import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-            }/api/timesheet/deleteEntries/${timesheet.timesheetId}`,
-            {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-              body: JSON.stringify({
-                entryIds: selectedEntryIds,
-              }),
-            }
-          );
+//     try {
+//       // For weekly format, delete from multiple timesheets
+//       if (isWeeklyFormat) {
+//         for (const timesheet of weekData.timesheets) {
+//           const response = await fetch(
+//             `${
+//               import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+//             }/api/timesheet/deleteEntries/${timesheet.timesheetId}`,
+//             {
+//               method: "DELETE",
+//               headers: {
+//                 "Content-Type": "application/json",
+//                 Authorization: `Bearer ${localStorage.getItem("token")}`,
+//               },
+//               body: JSON.stringify({
+//                 entryIds: selectedEntryIds,
+//               }),
+//             }
+//           );
 
-          const data = await response.text();
+//           const data = await response.text();
 
-          if (!response.ok) {
-            throw new Error(data || "Failed to delete entries");
-          }
+//           if (!response.ok) {
+//             throw new Error(data || "Failed to delete entries");
+//           }
 
-          responseText = data; // ✅ capture latest response message
-        }
-      } else {
-        // Single timesheet delete
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-          }/api/timesheet/deleteEntries/${timesheetId}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: JSON.stringify({
-              entryIds: selectedEntryIds,
-            }),
-          }
-        );
+//           responseText = data; // ✅ capture latest response message
+//         }
+//       } else {
+//         // Single timesheet delete
+//         const response = await fetch(
+//           `${
+//             import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+//           }/api/timesheet/deleteEntries/${timesheetId}`,
+//           {
+//             method: "DELETE",
+//             headers: {
+//               "Content-Type": "application/json",
+//               Authorization: `Bearer ${localStorage.getItem("token")}`,
+//             },
+//             body: JSON.stringify({
+//               entryIds: selectedEntryIds,
+//             }),
+//           }
+//         );
 
-        const data = await response.text();
+//         const data = await response.text();
 
-        if (!response.ok) {
-          throw new Error(data || "Failed to delete entries");
-        }
+//         if (!response.ok) {
+//           throw new Error(data || "Failed to delete entries");
+//         }
 
-        responseText = data; 
-      }
-      showStatusToast(responseText, "success"); 
+//         responseText = data; 
+//       }
+//       showStatusToast(responseText, "success"); 
 
-      setSelectedEntryIds([]);
-      if (refreshData) await refreshData();
-    } catch (error) {
-      showStatusToast(error.message || "Error deleting entries", "error");
-    }
-  };
+//       setSelectedEntryIds([]);
+//       if (refreshData) await refreshData();
+//     } catch (error) {
+//       showStatusToast(error.message || "Error deleting entries", "error");
+//     }
+//   };
 
-  const handleCancelDelete = () => {
-    setIsConfirmOpen(false);
-  };
+//   const handleCancelDelete = () => {
+//     setIsConfirmOpen(false);
+//   };
 
-  const handleSelect = () => {
-    setMenuOpen(false);
-    setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
-    setSelectedEntryIds([]); // clear previous selection
-  };
+//   const handleSelect = () => {
+//     setMenuOpen(false);
+//     setShowSelectionCheckboxes((prev) => !prev); // toggle checkboxes
+//     setSelectedEntryIds([]); // clear previous selection
+//   };
 
   const approveStatus = approvers.every(
     (a) => a.status?.toUpperCase() === "APPROVED"
@@ -772,7 +741,7 @@ const TimesheetGroup = ({
         )}
 
         {/* 3 dots menu for daily format */}
-        {!isWeeklyFormat && (
+{/*         {!isWeeklyFormat && (
           <div className="relative" ref={menuRef}>
             {window.location.pathname !== "/managerapproval" && (
               <button
@@ -816,7 +785,7 @@ const TimesheetGroup = ({
               </div>
             )}
           </div>
-        )}
+        )} */}
       </div>
 
       {isWeeklyFormat ? (
@@ -866,7 +835,7 @@ const TimesheetGroup = ({
                       )}
 
                     {/* 3 dots menu for individual timesheet */}
-                    {window.location.pathname !== "/managerapproval" && (
+{/*                     {window.location.pathname !== "/managerapproval" && (
                       <div
                         className="relative"
                         ref={(el) => {
@@ -940,7 +909,7 @@ const TimesheetGroup = ({
                           </div>
                         )}
                       </div>
-                    )}
+                    )} */}
                   </div>
                   ) : formatDate(timesheet.workDate).isWeekend ? (
                     <CustomStatusBadge label="WeekEnd" size="sm" />
@@ -974,7 +943,7 @@ const TimesheetGroup = ({
             ))}
 
           {/* Submit Week Button */}
-          {window.location.pathname !== "/managerapproval" &&
+{/*           {window.location.pathname !== "/managerapproval" &&
             isWeeklyFormat &&
             weekData && (
               <div className="mt-4 px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
@@ -996,7 +965,7 @@ const TimesheetGroup = ({
                     : "SUBMIT WEEK"}
                 </button>
               </div>
-            )}
+            )} */}
         </div>
       ) : (
         <EntriesTable
@@ -1014,18 +983,8 @@ const TimesheetGroup = ({
           selectionMode={showSelectionCheckboxes}
         />
       )}
-
-      <ConfirmDialog
-        open={isConfirmOpen}
-        title="Confirm Delete"
-        message={`Are you sure you want to delete ${
-          selectedEntryIds.length
-        } selected entr${selectedEntryIds.length > 1 ? "ies" : "y"}?`}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-      />
     </div>
   );
 };
 
-export { TimesheetGroup };
+export { TimesheetHistoryGroup };
