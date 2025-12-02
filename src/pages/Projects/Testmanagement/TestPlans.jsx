@@ -13,13 +13,20 @@ export default function TestPlans() {
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
+  const [scenarios, setScenarios] = useState([]);
+  const [loadingScenarios, setLoadingScenarios] = useState(false);
+
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [editPlanId, setEditPlanId] = useState(null);
 
+  const [storyTitles, setStoryTitles] = useState({}); // Store multiple story titles
+
   const token = localStorage.getItem("token");
 
-  // Fetch plans
+  // ------------------------------------------
+  // FETCH PLANS
+  // ------------------------------------------
   const fetchPlans = async () => {
     try {
       const response = await axios.get(
@@ -38,7 +45,10 @@ export default function TestPlans() {
         : [response.data];
 
       setPlans(plansArray);
-      if (plansArray.length > 0) setSelectedPlan(plansArray[0].id);
+
+      if (plansArray.length > 0) {
+        setSelectedPlan(plansArray[0].id);
+      }
     } catch (error) {
       console.error("Error fetching test plans:", error);
     }
@@ -50,7 +60,73 @@ export default function TestPlans() {
 
   const active = plans.find((p) => p.id === selectedPlan);
 
+  // ------------------------------------------
+  // FETCH SCENARIOS FOR SELECTED PLAN
+  // ------------------------------------------
+  const fetchScenarios = async (planId) => {
+    if (!planId) return;
+
+    setLoadingScenarios(true);
+
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/scenarios/plans/${planId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setScenarios(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch scenarios:", error);
+      setScenarios([]);
+    } finally {
+      setLoadingScenarios(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPlan) fetchScenarios(selectedPlan);
+  }, [selectedPlan]);
+
+  // ------------------------------------------
+  // FETCH STORY TITLE FOR LINKED STORY
+  // ------------------------------------------
+  const fetchStoryTitle = async (storyId) => {
+    if (!storyId) return;
+
+    if (storyTitles[storyId]) return;
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setStoryTitles((prev) => ({
+        ...prev,
+        [storyId]: res.data.title || "Untitled Story",
+      }));
+    } catch (error) {
+      console.error("Error fetching story title:", error);
+      setStoryTitles((prev) => ({
+        ...prev,
+        [storyId]: "Unknown Story",
+      }));
+    }
+  };
+
+  useEffect(() => {
+    scenarios.forEach((sc) => {
+      if (sc.linkedStoryId) fetchStoryTitle(sc.linkedStoryId);
+    });
+  }, [scenarios]);
+
+  // ------------------------------------------
   // DELETE CONFIRM TOAST
+  // ------------------------------------------
   const showConfirmToast = (message, onConfirm) => {
     toast(
       ({ closeToast }) => (
@@ -91,7 +167,7 @@ export default function TestPlans() {
   };
 
   const handleDelete = (id) => {
-    showConfirmToast("This action cannot be undone.", async () => {
+    showConfirmToast("Are you sure you want to delete this test plan?", async () => {
       try {
         await axios.delete(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/${id}`,
@@ -115,20 +191,32 @@ export default function TestPlans() {
     });
   };
 
+  // ------------------------------------------
+  // PRIORITY & STATUS COLORS
+  // ------------------------------------------
+  const priorityColors = {
+    HIGH: "bg-red-100 text-red-600",
+    MEDIUM: "bg-yellow-100 text-yellow-600",
+    LOW: "bg-green-100 text-green-600",
+  };
+
+  const statusColors = {
+    DRAFT: "bg-gray-200 text-gray-700",
+    ACTIVE: "bg-blue-100 text-blue-600",
+    COMPLETED: "bg-green-100 text-green-600",
+  };
+
+  // ------------------------------------------
+  // RENDER UI
+  // ------------------------------------------
   return (
     <div className="p-6 space-y-6 text-[#1A2B3F]">
-      {/* PAGE HEADER */}
       <div>
         <h1 className="text-2xl font-semibold">Test Plans</h1>
-        <p className="text-sm text-gray-500">
-          Manage test strategies and release coverage.
-        </p>
       </div>
 
       {/* TOP BAR */}
-      <div className="flex justify-between items-center">
-        <div className="font-semibold text-sm text-gray-600"></div>
-
+      <div className="flex justify-end items-center">
         <button
           className="flex items-center bg-blue-600 text-white text-sm px-4 py-2 rounded-lg gap-2"
           onClick={() => setOpenCreateModal(true)}
@@ -157,18 +245,14 @@ export default function TestPlans() {
                 }`}
                 onClick={() => setSelectedPlan(plan.id)}
               >
-                <td className="py-4 px-6 font-medium align-top">
-                  {plan.name}
-                </td>
+                <td className="py-4 px-6 font-medium align-top">{plan.name}</td>
 
-                {/* FIXED ALIGNMENT */}
                 <td className="py-4 px-6 text-gray-500 align-top max-w-xs whitespace-pre-wrap">
                   {plan.objective}
                 </td>
 
                 <td className="py-4 px-6 text-center align-top">
                   <div className="flex justify-center gap-4">
-                    {/* EDIT BUTTON */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -180,7 +264,6 @@ export default function TestPlans() {
                       <Edit2 size={16} />
                     </button>
 
-                    {/* DELETE BUTTON */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -200,40 +283,65 @@ export default function TestPlans() {
 
       {/* SELECTED PLAN DETAILS */}
       {active && (
-        <div className="bg-white border shadow-sm rounded-xl p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {active.name} Details{" "}
-                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-lg ml-2">
-                  Selected
-                </span>
-              </h2>
-              <div className="text-sm text-gray-500 mt-1">
-                {active.objective}
-              </div>
-            </div>
+        <div className="bg-white border shadow-sm rounded-xl p-6 space-y-5">
+          <h2 className="text-lg font-semibold">{active.name} Details</h2>
+          <p className="text-sm text-gray-500">{active.objective}</p>
 
-            <div className="flex gap-3">
-              <button
-                className="border text-sm px-4 py-2 rounded-lg"
-                onClick={() => {
-                  setEditPlanId(active.id);
-                  setOpenEditModal(true);
-                }}
-              >
-                Edit
-              </button>
+          <h3 className="text-md font-semibold">Test Scenarios</h3>
 
-              <button className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
-                ▶ Run Now
-              </button>
+          {loadingScenarios ? (
+            <div className="text-sm text-gray-500">Loading scenarios...</div>
+          ) : scenarios.length === 0 ? (
+            <div className="text-sm text-gray-400 italic">
+              No scenarios found for this test plan.
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {scenarios.map((sc) => (
+                <div
+                  key={sc.id}
+                  className="border rounded-lg p-4 bg-gray-50 shadow-sm"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="font-semibold text-gray-800">
+                      {sc.title}
+                    </div>
+
+                    <span
+                      className={`px-3 py-1 text-xs rounded-full ${
+                        priorityColors[sc.priority] || "bg-gray-200"
+                      }`}
+                    >
+                      {sc.priority}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-4 text-xs">
+                    <span
+                      className={`px-2 py-1 rounded ${statusColors[sc.status]}`}
+                    >
+                      {sc.status}
+                    </span>
+
+                    {sc.linkedStoryId && (
+                      <span className="text-gray-600">
+                        Linked Story:{" "}
+                        {storyTitles[sc.linkedStoryId] || "Loading..."}
+                      </span>
+                    )}
+
+                    <span className="text-gray-700">
+                      Test Cases: {sc.caseCount}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* CREATE PLAN MODAL */}
+      {/* CREATE MODAL */}
       {openCreateModal && (
         <CreateTestPlan
           projectId={projectId}
@@ -246,7 +354,7 @@ export default function TestPlans() {
         />
       )}
 
-      {/* EDIT PLAN MODAL */}
+      {/* EDIT MODAL */}
       {openEditModal && editPlanId && (
         <EditTestPlan
           projectId={projectId}

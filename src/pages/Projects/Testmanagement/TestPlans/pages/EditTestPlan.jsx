@@ -5,18 +5,10 @@ import { X } from "lucide-react";
 
 import FormInput from "../../../../../components/forms/FormInput";
 import FormTextArea from "../../../../../components/forms/FormTextArea";
-// const { user } = useAuth();
-// const userId = user.user?.sub || user.user?.id || user.user?.userId;
-const EditTestPlan = ({
-  projectId,
-  planId,
-  onClose,
-  onSuccess,
-  mode = "modal",
-}) => {
+
+const EditTestPlan = ({ projectId, planId, onClose, onSuccess, mode = "modal" }) => {
   const token = localStorage.getItem("token");
-  const updatedBy = localStorage.getItem("userId");
-//  console.log("planId in EditTestPlan:", userId);
+
   const [formData, setFormData] = useState({
     name: "",
     objective: "",
@@ -25,7 +17,7 @@ const EditTestPlan = ({
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // 🔥 Fetch existing plan details
+  // Load plan details once
   useEffect(() => {
     if (!planId) return;
 
@@ -33,11 +25,7 @@ const EditTestPlan = ({
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/${planId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         const plan = response.data;
@@ -57,7 +45,6 @@ const EditTestPlan = ({
     fetchPlan();
   }, [planId]);
 
-  // Controlled input handler
   const handleChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -65,7 +52,6 @@ const EditTestPlan = ({
     }));
   };
 
-  // 🔥 Submit update
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -80,7 +66,6 @@ const EditTestPlan = ({
       name: formData.name,
       objective: formData.objective,
       projectId: Number(projectId),
-      // updatedBy: Number(updatedBy),
     };
 
     try {
@@ -106,17 +91,21 @@ const EditTestPlan = ({
     }
   };
 
-  // Wrapper for modal mode
+  // Modal/drawer wrapper
   const Wrapper = ({ children }) => {
     if (mode === "modal") {
       return (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
-          onClick={onClose}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
           <div
-            className="bg-white rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-0 bg-black/50"
+            onClick={onClose}
+          />
+
+          {/* Modal content */}
+          <div
+            className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()} // Prevent closing on click inside
           >
             {children}
           </div>
@@ -124,7 +113,12 @@ const EditTestPlan = ({
       );
     }
 
-    return <div className="w-full h-full bg-white flex flex-col">{children}</div>;
+    // Full page or drawer mode
+    return (
+      <div className="w-full h-full flex flex-col bg-white">
+        {children}
+      </div>
+    );
   };
 
   if (initialLoading) {
@@ -146,10 +140,7 @@ const EditTestPlan = ({
       </div>
 
       {/* BODY */}
-      <form
-        className="p-6 overflow-y-auto flex-1 space-y-6"
-        onSubmit={handleSubmit}
-      >
+      <form className="p-6 overflow-y-auto flex-1 space-y-6" onSubmit={handleSubmit}>
         <FormInput
           label="Test Plan Name *"
           name="name"
