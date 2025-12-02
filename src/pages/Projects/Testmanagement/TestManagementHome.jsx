@@ -5,9 +5,7 @@ import { Outlet } from "react-router-dom";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
-import TestExecution from "./TestExecution";
-
-
+ import TestDesign from "./TestDesign";
 // import Execution from "./Execution";
 // import Reports from "./Reports";
 import { useEffect, useState } from "react";  

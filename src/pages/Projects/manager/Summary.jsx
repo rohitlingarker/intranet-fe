@@ -911,7 +911,7 @@ const Summary = ({ projectId, projectName }) => {
           axios.get(`${base}/api/projects/${projectId}/epics`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/stories`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/tasks`, { headers }),
-          axios.get(`${base}/api/bugs/project/${projectId}`, { headers }),
+          axios.get(`${base}/api/bugs/project/${projectId}`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/statuses`, { headers }),
           axios.get(`${base}/api/projects/${projectId}/members-with-owner`, { headers }),
         ]);

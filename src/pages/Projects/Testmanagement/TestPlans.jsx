@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { MoreHorizontal, Plus, Calendar } from "lucide-react";
+import { MoreHorizontal, Plus, Calendar, X } from "lucide-react";
+import CreateTestPlan from "./TestPlans/pages/CreateTestPlan"; // ⭐ IMPORT MODAL FORM
+import { useParams } from "react-router-dom";
 
 export default function TestPlans() {
   const [selectedPlan, setSelectedPlan] = useState(1);
-
+   const { projectId } = useParams();
+  const [openModal, setOpenModal] = useState(false); // ⭐ MODAL STATE
+  console.log("Project ID in TestPlans:", projectId);
   const plans = [
     {
       id: 1,
@@ -42,18 +46,22 @@ export default function TestPlans() {
         </p>
       </div>
 
-      {/* TOP SECTION HEADER */}
+      {/* HEADER SECTION */}
       <div className="flex justify-between items-center">
         <div className="font-semibold text-sm text-gray-600">
           ACTIVE PLANS <span className="ml-1 text-blue-600">({plans.length})</span>
         </div>
 
-        <button className="flex items-center bg-blue-600 text-white text-sm px-4 py-2 rounded-lg gap-2">
+        {/* ⭐ OPEN MODAL */}
+        <button
+          className="flex items-center bg-blue-600 text-white text-sm px-4 py-2 rounded-lg gap-2"
+          onClick={() => setOpenModal(true)}
+        >
           <Plus size={16} /> New Test Plan
         </button>
       </div>
 
-      {/* ACTIVE PLANS TABLE */}
+      {/* PLANS TABLE */}
       <div className="bg-white shadow-sm border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -73,7 +81,6 @@ export default function TestPlans() {
                 className="border-t hover:bg-gray-50 cursor-pointer"
                 onClick={() => setSelectedPlan(plan.id)}
               >
-                {/* PLAN NAME */}
                 <td className="py-4 px-4">
                   <div className="font-medium">{plan.name}</div>
                   <div className="text-xs text-gray-500">
@@ -81,13 +88,11 @@ export default function TestPlans() {
                   </div>
                 </td>
 
-                {/* SPRINT */}
                 <td className="py-4 px-4 flex gap-2 items-center">
                   <Calendar size={16} className="text-gray-500" />
                   {plan.sprint}
                 </td>
 
-                {/* STATUS */}
                 <td className="py-4 px-4">
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${
@@ -100,7 +105,6 @@ export default function TestPlans() {
                   </span>
                 </td>
 
-                {/* COVERAGE */}
                 <td className="py-4 px-4">
                   <div className="w-40 bg-gray-200 rounded-full h-2">
                     <div
@@ -113,7 +117,6 @@ export default function TestPlans() {
                   </span>
                 </td>
 
-                {/* ACTIONS */}
                 <td className="py-4 px-4 text-right">
                   <MoreHorizontal className="text-gray-500 cursor-pointer" />
                 </td>
@@ -175,6 +178,25 @@ export default function TestPlans() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ⭐ MODAL COMPONENT */}
+      {openModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white w-[500px] rounded-xl shadow-lg p-6 relative">
+
+            {/* Close Button */}
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              onClick={() => setOpenModal(false)}
+            >
+              <X size={20} />
+            </button>
+
+            {/* FORM COMPONENT */}
+            <CreateTestPlan projectId={projectId} closeModal={() => setOpenModal(false)} />
           </div>
         </div>
       )}

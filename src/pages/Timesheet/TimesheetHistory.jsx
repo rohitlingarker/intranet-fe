@@ -6,6 +6,7 @@ import axios from "axios";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TimesheetHistoryGroup } from "./TimesheetHistoryGroup";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 // Converts a "YYYY-MM-DD" string safely to a Date object in local Indian time
 const parseLocalDate = (dateStr) => {
@@ -29,44 +30,45 @@ const getMonthName = (dateStr) => {
 };
 
 // ISO‑like week number (same as in TimesheetGroup)
-const getWeekNumber = (dateStr) => {
-  const d = parseLocalDate(dateStr);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-  const week1 = new Date(d.getFullYear(), 0, 4);
-  return (
-    1 +
-    Math.round(
-      ((d.getTime() - week1.getTime()) / 86400000 -
-        3 +
-        ((week1.getDay() + 6) % 7)) /
-        7
-    )
-  );
-};
+// const getWeekNumber = (dateStr) => {
+//   const d = parseLocalDate(dateStr);
+//   d.setHours(0, 0, 0, 0);
+//   d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+//   const week1 = new Date(d.getFullYear(), 0, 4);
+//   return (
+//     1 +
+//     Math.round(
+//       ((d.getTime() - week1.getTime()) / 86400000 -
+//         3 +
+//         ((week1.getDay() + 6) % 7)) /
+//         7
+//     )
+//   );
+// };
 
 const TimesheetHistory = () => {
-  const [startDate, setStartDate] = useState(null); // JS Date
-  const [endDate, setEndDate] = useState(null); // JS Date
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null); 
   const [loading, setLoading] = useState(false);
-  const [historyData, setHistoryData] = useState([]); // weeklySummary[]
-  const [groupedData, setGroupedData] = useState({}); // { [year]: { [monthName]: [weekGroups] } }
+  const [historyData, setHistoryData] = useState([]); 
+  const [groupedData, setGroupedData] = useState({}); 
   const [error, setError] = useState(null);
 
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
-  const [openWeeks, setOpenWeeks] = useState({}); // State to hold the fetched project information
+  const [openWeeks, setOpenWeeks] = useState({}); 
   const [projectInfo, setProjectInfo] = useState([]);
-  const navigate = useNavigate(); // --- 1. Initialization: Set Dates on Mount ---
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     const today = new Date();
-    const oneMonthAgo = new Date(); // Setting to the start of the previous month for robust initial range
+    const oneMonthAgo = new Date(); 
     oneMonthAgo.setMonth(today.getMonth() - 1);
     oneMonthAgo.setDate(1);
+    const oneMonthAgoEndDate = new Date(oneMonthAgo.getFullYear(), oneMonthAgo.getMonth() + 1, 0);
     setStartDate(oneMonthAgo);
-    setEndDate(today);
-  }, []); // --- 2. Project/Task Fetcher (CRITICAL FIX) --- // This runs only once on mount to ensure project info is ready early.
+    setEndDate(oneMonthAgoEndDate);
+  }, []); 
 
   useEffect(() => {
     const fetchAndStoreProjectTaskInfo = async () => {
@@ -97,7 +99,7 @@ const TimesheetHistory = () => {
       }
     };
     fetchAndStoreProjectTaskInfo();
-  }, []); // Run ONLY on mount // --- 3. History Fetcher ---
+  }, []); 
 
   const fetchHistory = async (start, end) => {
     if (!start || !end) return;
@@ -129,13 +131,13 @@ const TimesheetHistory = () => {
     } finally {
       setLoading(false);
     }
-  }; // --- 4. Trigger History Fetch --- // Fetch history when start/end dates are initialized or changed.
+  };
 
   useEffect(() => {
     if (startDate && endDate) {
       fetchHistory(startDate, endDate);
     }
-  }, [startDate, endDate]); // --- 5. Group Raw Data ---
+  }, [startDate, endDate]); 
 
   useEffect(() => {
     if (!Array.isArray(historyData) || historyData.length === 0) {
@@ -148,14 +150,14 @@ const TimesheetHistory = () => {
     historyData.forEach((rawWeek) => {
       const year = parseLocalDate(rawWeek.startDate).getFullYear();
       const monthName = getMonthName(rawWeek.startDate);
-      const weekNumber = getWeekNumber(rawWeek.startDate);
+      // const weekNumber = getWeekNumber(rawWeek.startDate);
       const weekRange = `${rawWeek.startDate} to ${rawWeek.endDate}`;
 
       const weekGroup = {
         weekId: rawWeek.weekId,
         weekStart: rawWeek.startDate,
         weekEnd: rawWeek.endDate,
-        weekNumber,
+        // weekNumber,
         weekRange,
         year,
         monthName,
@@ -171,11 +173,11 @@ const TimesheetHistory = () => {
       grouped[year][monthName].push(weekGroup);
     }); // Sort weeks by weekNumber
 
-    Object.keys(grouped).forEach((year) => {
-      Object.keys(grouped[year]).forEach((month) => {
-        grouped[year][month].sort((a, b) => a.weekNumber - b.weekNumber);
-      });
-    });
+    // Object.keys(grouped).forEach((year) => {
+    //   Object.keys(grouped[year]).forEach((month) => {
+    //     grouped[year][month].sort((a, b) => a.weekNumber - b.weekNumber);
+    //   });
+    // });
 
     setGroupedData(grouped);
   }, [historyData]);
@@ -249,8 +251,13 @@ const TimesheetHistory = () => {
         </button>
       </div>
       {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
+      {loading && (
+        <div>
+          <LoadingSpinner text="Loading..." />
+        </div>
+      )}
       {!loading && yearKeys.length === 0 && (
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 italic font-semibold">
           No timesheet history available for the selected range. 
         </div>
       )}
