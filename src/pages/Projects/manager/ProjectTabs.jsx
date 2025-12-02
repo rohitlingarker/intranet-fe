@@ -65,11 +65,11 @@ const ProjectTabs = () => {
       case "summary":
         return <Summary projectId={pid} projectName={projectName} />;
       case "backlog":
-        return <BacklogAndSprints projectId={pid}/>
-     
+        return <Backlog projectId={pid} projectName={projectName} />;
       case "board":
         return <Board projectId={pid} projectName={projectName} />;
-      
+      case "sprint":
+        return <SprintBoard projectId={pid} projectName={projectName} />;
       case "status-report":
         return <ProjectStatusReportWrapper projectId={pid} />;
       case "calender":
