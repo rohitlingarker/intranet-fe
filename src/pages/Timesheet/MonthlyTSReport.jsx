@@ -34,7 +34,7 @@ const MonthlyTSReport = () => {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const monthOptions = [
@@ -53,6 +53,11 @@ const MonthlyTSReport = () => {
   ];
   const currentYear = new Date().getFullYear();
   const yearOptions = [currentYear, currentYear - 1];
+
+  const filteredMonths =
+  selectedYear === currentYear
+    ? monthOptions.filter((m) => m.value <= month)
+    : monthOptions;
 
   useEffect(() => {
     const loadProjectInfo = async () => {
@@ -700,7 +705,7 @@ doc.text(
                           setSelectedMonth(Number(e.target.value))
                         }
                       >
-                        {monthOptions.map((m) => (
+                        {filteredMonths.map((m) => (
                           <option key={m.value} value={m.value}>
                             {m.name}
                           </option>
