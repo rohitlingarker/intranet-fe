@@ -115,7 +115,7 @@ const ManagerMonthlyReport = () => {
   const [projectInfo, setProjectInfo] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
+  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth());
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mailLoading, setMailLoading] = useState(false);
@@ -202,6 +202,11 @@ const ManagerMonthlyReport = () => {
 
   const totalBillable = apiData?.billableHours ?? 0;
   const totalNonBillable = apiData?.nonBillableHours ?? 0;
+
+  const filteredMonths =
+  selectedYear === currentYear
+    ? monthOptions.filter((m) => m.value <= appliedMonth)
+    : monthOptions;
 
   const underutilized = useMemo(() => {
     if (!apiData) return [];
@@ -1269,7 +1274,7 @@ currentY = cursorY + 10;
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
                   >
-                    {monthOptions.map((m) => (
+                    {filteredMonths.map((m) => (
                       <option key={m.value} value={m.value}>
                         {m.name}
                       </option>
@@ -1294,25 +1299,24 @@ currentY = cursorY + 10;
               )}
             </div>
             <div className="flex gap-3">
-  <Button
-    variant="primary"
-    size="medium"
-    onClick={() => generateManagerPDF(apiData)}
-  >
-    Download PDF
-  </Button>
+              <Button
+                variant="primary"
+                size="medium"
+                onClick={() => generateManagerPDF(apiData)}
+              >
+                Download PDF
+              </Button>
 
-  <Button
-    variant="secondary"
-    size="medium"
-    className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-    onClick={sendMailPDF}
-    disabled={mailLoading}
-  >
-    {mailLoading ? "Sending..." : "Send Report via Email"}
-  </Button>
-</div>
-
+              <Button
+                variant="secondary"
+                size="medium"
+                className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={sendMailPDF}
+                disabled={mailLoading}
+              >
+                {mailLoading ? "Sending..." : "Send Report via Email"}
+              </Button>
+            </div>
           </div>
         </header>
 
