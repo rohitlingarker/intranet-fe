@@ -70,8 +70,9 @@ const CreateRiskModal = ({ isOpen, onClose, projectId, onSuccess }) => {
   // Fetch issues for linked type
   useEffect(() => {
     if (!form.linkedType || !projectId) return;
+    const type = form.linkedType.toLowerCase() == "story" ? "stories" : `${form.linkedType.toLowerCase()}s`;
     axios
-      .get(`${BASE_URL}/api/projects/${projectId}/${form.linkedType.toLowerCase()}s`, {
+      .get(`${BASE_URL}/api/projects/${projectId}/${type}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setIssues(res.data || []))

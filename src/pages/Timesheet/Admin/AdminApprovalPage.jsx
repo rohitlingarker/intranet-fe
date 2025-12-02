@@ -7,20 +7,30 @@ import TimesheetHeader from "../TimesheetHeader";
 // import { getManagerDashboardData } from "../api";
 import { useMemo } from "react";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { CheckCircle, XCircle } from "lucide-react";
 
 const AdminApprovalPage = () => {
   const [groupedTimesheets, setGroupedTimesheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [emailData, setEmailData] = useState("");
+  const [selectedEmail, setSelectedEmail] = useState("");
+  const [emailOptions, setEmailOptions] = useState([]);
 
   // ✅ Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [userFilter, setUserFilter] = useState("All Users");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
 
   const entriesTableRef = useRef(null);
+
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleScroll = () => {
     entriesTableRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,7 +40,9 @@ const AdminApprovalPage = () => {
   const fetchGroupedTimesheets = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/internal/summary`,
+        `${
+          import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+        }/api/timesheets/internal/summary`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -60,6 +72,46 @@ const AdminApprovalPage = () => {
   //     setLoadingDashboard(false);
   //   }
   // };
+
+  const fetchEmailUsers = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setEmailOptions(res.data);
+    } catch (err) {
+      console.log("failed to fetch users email: ", err);
+      toast.error(err?.response?.data || "Failed to fetch users email.");
+    }
+  };
+
+  const fetchEmail = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/emailSettings`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      console.log(res);
+      setEmailData(res.data[0]);
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.response?.data || "Failed to fetch email address.");
+    }
+  };
+
+  useEffect(() => {
+    fetchEmail();
+    fetchEmailUsers();
+  }, []);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -138,32 +190,56 @@ const AdminApprovalPage = () => {
     return filtered;
   }, [statusFilter, userFilter, selectedDate, searchTerm, groupedTimesheets]);
 
-const handleResetFilters = () => {
-  setSearchTerm("");
-  setSelectedDate("");
-  setUserFilter("All Users");
-  setStatusFilter("All");
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedDate("");
+    setUserFilter("All Users");
+    setStatusFilter("All");
 
-  // Smoothly scroll down to the timesheet table after resetting filters
-  if (entriesTableRef.current) {
-    entriesTableRef.current.scrollIntoView({ behavior: "smooth" });
-  }
-};
+    // Smoothly scroll down to the timesheet table after resetting filters
+    if (entriesTableRef.current) {
+      entriesTableRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSaveEmail = async () => {
+    if (!isValidEmail(editValue)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/emailSettings/${
+          emailData.id
+        }`,
+        { email: editValue },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setIsEditing(false);
+      setEmailData({ ...emailData, email: editValue });
+      toast.success("Email updated successfully!");
+    } catch (err) {
+      toast.error("Failed to update email.");
+    }
+  };
 
   // ✅ Add this function inside ManagerApprovalPage component, before return()
   const handleTableRefresh = async () => {
-     fetchGroupedTimesheets(); // refresh approval table
-     //fetchDashboardData(); // refresh dashboard summary
+    fetchGroupedTimesheets(); // refresh approval table
+    //fetchDashboardData(); // refresh dashboard summary
   };
 
   if (loading) {
     return (
       <div className="flex justify-center mt-10">
-        <LoadingSpinner text="Loading Manager View..." />
+        <LoadingSpinner text="Loading Admin View..." />
       </div>
     );
   }
-
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -179,10 +255,55 @@ const handleResetFilters = () => {
           Failed to load dashboard summary. Please refresh the page.
         </div>
       )} */}
-      <div>
+      <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Admin Approvals
         </h1>
+        <h3 className="flex items-center text-lg text-gray-500 font-semibold">
+          Finance Report Email:&nbsp;
+          {!isEditing ? (
+            <button
+              className="text-blue-600 font-semibold text-[15px]"
+              onClick={() => {
+                setEditValue(emailData?.email || "");
+                setIsEditing(true);
+              }}
+            >
+              {emailData?.email}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              {/* <input
+                type="email"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                autoFocus
+              /> */}
+              <select
+                value={selectedEmail}
+                onChange={(e) => {setSelectedEmail(e.target.value), setEditValue(e.target.value)}}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-300"
+              >
+                {emailOptions.map((m) => (
+                  <option key={m.id} value={m.email}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+
+              <CheckCircle
+                className="text-green-600 hover:text-green-800 w-5 h-5 cursor-pointer"
+                onClick={handleSaveEmail}
+              />
+
+              <XCircle
+                className="text-red-500 hover:text-red-800 w-5 h-5 cursor-pointer"
+                onClick={() => setIsEditing(false)}
+              />
+            </div>
+          )}
+        </h3>
       </div>
 
       {/* ✅ Filter Header */}
