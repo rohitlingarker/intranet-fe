@@ -1,40 +1,123 @@
-import { useState } from "react";
-import { MoreHorizontal, Plus, Calendar } from "lucide-react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
+import axios from "axios";
+import CreateTestPlan from "./TestPlans/pages/CreateTestPlan";
+import EditTestPlan from "./TestPlans/pages/EditTestPlan";
+import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function TestPlans() {
-  const [selectedPlan, setSelectedPlan] = useState(1);
+  const { projectId } = useParams();
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
-  const plans = [
-    {
-      id: 1,
-      name: "Release 3.0",
-      sprint: "Sprint 10",
-      status: "Active",
-      coverage: 85,
-      linkedStories: 5,
-      stories: [
-        { id: "US-101", title: "Login Feature" },
-        { id: "US-102", title: "Forgot Password" },
-        { id: "US-105", title: "User Profile" },
-      ],
-    },
-    {
-      id: 2,
-      name: "UAT Phase 1",
-      sprint: "Release 2.5",
-      status: "Draft",
-      coverage: 40,
-      linkedStories: 0,
-      stories: [],
-    },
-  ];
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [editPlanId, setEditPlanId] = useState(null);
+
+  const token = localStorage.getItem("token");
+
+  // Fetch plans
+  const fetchPlans = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/projects/${projectId}?t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        }
+      );
+
+      const plansArray = Array.isArray(response.data)
+        ? response.data
+        : [response.data];
+
+      setPlans(plansArray);
+      if (plansArray.length > 0) setSelectedPlan(plansArray[0].id);
+    } catch (error) {
+      console.error("Error fetching test plans:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlans();
+  }, [projectId, token]);
 
   const active = plans.find((p) => p.id === selectedPlan);
 
+  // DELETE CONFIRM TOAST
+  const showConfirmToast = (message, onConfirm) => {
+    toast(
+      ({ closeToast }) => (
+        <div className="p-3">
+          <h3 className="font-semibold text-gray-900 mb-2">Confirm Delete</h3>
+          <p className="text-sm text-gray-600">{message}</p>
+
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              className="px-3 py-1 border rounded-md text-sm"
+              onClick={() => closeToast()}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="px-3 py-1 bg-red-600 text-white rounded-md text-sm"
+              onClick={() => {
+                closeToast();
+                onConfirm();
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        toastId: "confirm-delete",
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        className: "bg-white shadow-lg rounded-lg border max-w-sm w-full mx-auto",
+      }
+    );
+  };
+
+  const handleDelete = (id) => {
+    showConfirmToast("This action cannot be undone.", async () => {
+      try {
+        await axios.delete(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const updated = plans.filter((plan) => plan.id !== id);
+        setPlans(updated);
+
+        if (selectedPlan === id && updated.length > 0) {
+          setSelectedPlan(updated[0].id);
+        }
+
+        toast.success("Test Plan deleted successfully!", {
+          position: "top-right",
+        });
+      } catch (error) {
+        console.error("Failed to delete plan:", error);
+        toast.error("Failed to delete the test plan");
+      }
+    });
+  };
+
   return (
     <div className="p-6 space-y-6 text-[#1A2B3F]">
-
-      {/* PAGE TITLE */}
+      {/* PAGE HEADER */}
       <div>
         <h1 className="text-2xl font-semibold">Test Plans</h1>
         <p className="text-sm text-gray-500">
@@ -42,27 +125,26 @@ export default function TestPlans() {
         </p>
       </div>
 
-      {/* TOP SECTION HEADER */}
+      {/* TOP BAR */}
       <div className="flex justify-between items-center">
-        <div className="font-semibold text-sm text-gray-600">
-          ACTIVE PLANS <span className="ml-1 text-blue-600">({plans.length})</span>
-        </div>
+        <div className="font-semibold text-sm text-gray-600"></div>
 
-        <button className="flex items-center bg-blue-600 text-white text-sm px-4 py-2 rounded-lg gap-2">
+        <button
+          className="flex items-center bg-blue-600 text-white text-sm px-4 py-2 rounded-lg gap-2"
+          onClick={() => setOpenCreateModal(true)}
+        >
           <Plus size={16} /> New Test Plan
         </button>
       </div>
 
-      {/* ACTIVE PLANS TABLE */}
+      {/* PLANS TABLE */}
       <div className="bg-white shadow-sm border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-auto">
           <thead className="bg-gray-50 text-gray-600">
             <tr>
-              <th className="py-3 px-4 text-left">Plan Name</th>
-              <th className="py-3 px-4 text-left">Sprint/Release</th>
-              <th className="py-3 px-4 text-left">Status</th>
-              <th className="py-3 px-4 text-left">Coverage</th>
-              <th className="py-3 px-4 text-right">Actions</th>
+              <th className="py-3 px-6 text-center">Plan Name</th>
+              <th className="py-3 px-6 text-center">Objective</th>
+              <th className="py-3 px-6 text-center">Actions</th>
             </tr>
           </thead>
 
@@ -70,52 +152,45 @@ export default function TestPlans() {
             {plans.map((plan) => (
               <tr
                 key={plan.id}
-                className="border-t hover:bg-gray-50 cursor-pointer"
+                className={`border-t hover:bg-gray-50 cursor-pointer ${
+                  selectedPlan === plan.id ? "bg-gray-100" : ""
+                }`}
                 onClick={() => setSelectedPlan(plan.id)}
               >
-                {/* PLAN NAME */}
-                <td className="py-4 px-4">
-                  <div className="font-medium">{plan.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {plan.linkedStories} Linked Stories
+                <td className="py-4 px-6 font-medium align-top">
+                  {plan.name}
+                </td>
+
+                {/* FIXED ALIGNMENT */}
+                <td className="py-4 px-6 text-gray-500 align-top max-w-xs whitespace-pre-wrap">
+                  {plan.objective}
+                </td>
+
+                <td className="py-4 px-6 text-center align-top">
+                  <div className="flex justify-center gap-4">
+                    {/* EDIT BUTTON */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditPlanId(plan.id);
+                        setOpenEditModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+
+                    {/* DELETE BUTTON */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(plan.id);
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                </td>
-
-                {/* SPRINT */}
-                <td className="py-4 px-4 flex gap-2 items-center">
-                  <Calendar size={16} className="text-gray-500" />
-                  {plan.sprint}
-                </td>
-
-                {/* STATUS */}
-                <td className="py-4 px-4">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      plan.status === "Active"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {plan.status}
-                  </span>
-                </td>
-
-                {/* COVERAGE */}
-                <td className="py-4 px-4">
-                  <div className="w-40 bg-gray-200 rounded-full h-2">
-                    <div
-                      style={{ width: `${plan.coverage}%` }}
-                      className="h-2 bg-blue-600 rounded-full"
-                    ></div>
-                  </div>
-                  <span className="text-xs ml-2 text-gray-600">
-                    {plan.coverage}%
-                  </span>
-                </td>
-
-                {/* ACTIONS */}
-                <td className="py-4 px-4 text-right">
-                  <MoreHorizontal className="text-gray-500 cursor-pointer" />
                 </td>
               </tr>
             ))}
@@ -126,7 +201,6 @@ export default function TestPlans() {
       {/* SELECTED PLAN DETAILS */}
       {active && (
         <div className="bg-white border shadow-sm rounded-xl p-6 space-y-4">
-
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-lg font-semibold">
@@ -135,50 +209,56 @@ export default function TestPlans() {
                   Selected
                 </span>
               </h2>
-              <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                <Calendar size={16} /> {active.sprint}
-                <span>• {active.linkedStories} User Stories Linked</span>
+              <div className="text-sm text-gray-500 mt-1">
+                {active.objective}
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button className="border text-sm px-4 py-2 rounded-lg">Edit</button>
+              <button
+                className="border text-sm px-4 py-2 rounded-lg"
+                onClick={() => {
+                  setEditPlanId(active.id);
+                  setOpenEditModal(true);
+                }}
+              >
+                Edit
+              </button>
+
               <button className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2">
                 ▶ Run Now
               </button>
             </div>
           </div>
-
-          {/* STORIES GRID */}
-          <div className="border rounded-xl p-5">
-
-            <div className="text-sm mb-3 text-gray-700 font-medium">
-              LINKED USER STORIES COVERAGE
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              {active.stories.map((story) => (
-                <div
-                  key={story.id}
-                  className="border rounded-lg p-4 flex justify-between items-center"
-                >
-                  <div>
-                    <div className="text-green-600 font-bold text-xs">●</div>
-                    <div className="font-semibold">{story.id} {story.title}</div>
-                  </div>
-                  <button className="text-sm text-blue-600">View</button>
-                </div>
-              ))}
-
-              <div className="border border-dashed rounded-lg p-4 flex justify-center items-center text-gray-500 cursor-pointer">
-                + Add Coverage
-              </div>
-            </div>
-
-          </div>
         </div>
       )}
 
+      {/* CREATE PLAN MODAL */}
+      {openCreateModal && (
+        <CreateTestPlan
+          projectId={projectId}
+          mode="modal"
+          onClose={() => setOpenCreateModal(false)}
+          onSuccess={() => {
+            setOpenCreateModal(false);
+            fetchPlans();
+          }}
+        />
+      )}
+
+      {/* EDIT PLAN MODAL */}
+      {openEditModal && editPlanId && (
+        <EditTestPlan
+          projectId={projectId}
+          planId={editPlanId}
+          mode="modal"
+          onClose={() => setOpenEditModal(false)}
+          onSuccess={() => {
+            setOpenEditModal(false);
+            fetchPlans();
+          }}
+        />
+      )}
     </div>
   );
 }

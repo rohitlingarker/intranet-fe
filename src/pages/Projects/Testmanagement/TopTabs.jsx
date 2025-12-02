@@ -3,8 +3,11 @@
 import { NavLink, useParams } from "react-router-dom";
 import { LayoutGrid, FileText, PenTool, Play, BarChart3 } from "lucide-react";
 
-export default function TopTabs({selectedTab}) {
+export default function TopTabs({ selectedTab }) {
   const { projectId } = useParams();
+   console.log("Project ID in TopTabs:", projectId);
+  // ⭐ Default to overview
+  const activeTab = selectedTab || "test-management/overview";
 
   const tabs = [
     {
@@ -41,29 +44,26 @@ export default function TopTabs({selectedTab}) {
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm">
-  <div className="flex gap-6 px-6 py-3">
-
-    {tabs.map((tab) => (
-      <NavLink
-        key={tab.name}
-        to={tab.path}
-        end
-        className={
-          `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all
-          ${
-            
-             selectedTab === tab.tab ? "bg-[#0A1128] text-white shadow-md"      // ACTIVE
-              : "text-gray-600 hover:text-[#0A1128]"    // INACTIVE (no bg)
-          }`
-        }
-      >
-        {tab.icon}
-        {tab.name}
-      </NavLink>
-    ))}
-
-  </div>
-</div>
-
+      <div className="flex gap-6 px-6 py-3">
+        {tabs.map((tab) => (
+          <NavLink
+            key={tab.name}
+            to={tab.path}
+            end
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all
+              ${
+                activeTab === tab.tab
+                  ? "bg-[#0A1128] text-white shadow-md"
+                  : "text-gray-600 hover:text-[#0A1128]"
+              }
+            `}
+          >
+            {tab.icon}
+            {tab.name}
+          </NavLink>
+        ))}
+      </div>
+    </div>
   );
 }
