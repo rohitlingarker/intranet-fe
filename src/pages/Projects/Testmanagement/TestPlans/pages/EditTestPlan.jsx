@@ -1,107 +1,185 @@
-// import React, { useState, useEffect } from "react";
-// import axios from "axios";
-// import { toast } from "react-toastify";
-// import FormInput from "../../../../components/forms/FormInput";
-// import FormTextArea from "../../../../components/forms/FormTextArea";
-// import FormSelect from "../../../../components/forms/FormSelect";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { X } from "lucide-react";
 
-// const EditTestPlan = ({ projectId, planData, onSuccess }) => {
-//   const token = localStorage.getItem("token");
+import FormInput from "../../../../../components/forms/FormInput";
+import FormTextArea from "../../../../../components/forms/FormTextArea";
 
-//   const [formData, setFormData] = useState({
-//     name: "",
-//     description: "",
-//     status: "Active",
-//   });
+const EditTestPlan = ({ projectId, planId, onClose, onSuccess, mode = "modal" }) => {
+  const token = localStorage.getItem("token");
 
-//   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    objective: "",
+  });
 
-//   // Pre-fill form on mount
-//   useEffect(() => {
-//     if (planData) {
-//       setFormData({
-//         name: planData.name || "",
-//         description: planData.description || "",
-//         status: planData.status || "Active",
-//       });
-//     }
-//   }, [planData]);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-//   const handleChange = (field, value) => {
-//     setFormData((prev) => ({ ...prev, [field]: value }));
-//   };
+  // Load plan details once
+  useEffect(() => {
+    if (!planId) return;
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
+    const fetchPlan = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/${planId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-//     if (!formData.name.trim()) {
-//       toast.error("Name is required.");
-//       return;
-//     }
+        const plan = response.data;
 
-//     setLoading(true);
+        setFormData({
+          name: plan.name || "",
+          objective: plan.objective || "",
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load test plan details");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
 
-//     try {
-//       await axios.put(
-//         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/test-plans/${planData.id}`,
-//         formData,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`,
-//             "Content-Type": "application/json",
-//           },
-//         }
-//       );
+    fetchPlan();
+  }, [planId]);
 
-//       toast.success("Test Plan updated successfully.");
-//       if (onSuccess) onSuccess();
-//     } catch (err) {
-//       console.error(err);
-//       toast.error("Failed to update Test Plan.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
-//   return (
-//     <form onSubmit={handleSubmit} className="space-y-4">
-//       <FormInput
-//         label="Test Plan Name"
-//         placeholder="Enter Test Plan name"
-//         value={formData.name}
-//         onChange={(e) => handleChange("name", e.target.value)}
-//         required
-//       />
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-//       <FormTextArea
-//         label="Description"
-//         placeholder="Enter description"
-//         value={formData.description}
-//         onChange={(e) => handleChange("description", e.target.value)}
-//       />
+    if (!formData.name.trim()) {
+      toast.error("Test Plan Name is required.");
+      return;
+    }
 
-//       <FormSelect
-//         label="Status"
-//         value={formData.status}
-//         onChange={(e) => handleChange("status", e.target.value)}
-//       >
-//         <option value="Active">Active</option>
-//         <option value="Inactive">Inactive</option>
-//       </FormSelect>
+    setLoading(true);
 
-//       <div className="flex justify-end gap-2 mt-4">
-//         <button
-//           type="submit"
-//           className={`px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition ${
-//             loading ? "opacity-70 cursor-not-allowed" : ""
-//           }`}
-//           disabled={loading}
-//         >
-//           {loading ? "Updating..." : "Update Test Plan"}
-//         </button>
-//       </div>
-//     </form>
-//   );
-// };
+    const payload = {
+      name: formData.name,
+      objective: formData.objective,
+      projectId: Number(projectId),
+    };
 
-// export default EditTestPlan;
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/update/${planId}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Test Plan updated successfully");
+      onSuccess?.();
+      onClose?.();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update Test Plan");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Modal/drawer wrapper
+  const Wrapper = ({ children }) => {
+    if (mode === "modal") {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={onClose}
+          />
+
+          {/* Modal content */}
+          <div
+            className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()} // Prevent closing on click inside
+          >
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    // Full page or drawer mode
+    return (
+      <div className="w-full h-full flex flex-col bg-white">
+        {children}
+      </div>
+    );
+  };
+
+  if (initialLoading) {
+    return (
+      <Wrapper>
+        <div className="p-6 text-center">Loading test plan...</div>
+      </Wrapper>
+    );
+  }
+
+  return (
+    <Wrapper>
+      {/* HEADER */}
+      <div className="flex justify-between items-center p-6 border-b">
+        <h2 className="text-xl font-semibold">Update Test Plan</h2>
+        <button onClick={onClose}>
+          <X className="text-gray-600" />
+        </button>
+      </div>
+
+      {/* BODY */}
+      <form className="p-6 overflow-y-auto flex-1 space-y-6" onSubmit={handleSubmit}>
+        <FormInput
+          label="Test Plan Name *"
+          name="name"
+          value={formData.name}
+          onChange={(e) => handleChange("name", e.target.value)}
+          required
+        />
+
+        <FormTextArea
+          label="Objective"
+          name="objective"
+          value={formData.objective}
+          onChange={(e) => handleChange("objective", e.target.value)}
+          placeholder="What is the purpose of this test plan?"
+        />
+
+        {/* FOOTER */}
+        <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 ${
+              loading ? "opacity-60" : ""
+            }`}
+          >
+            {loading ? "Updating..." : "Update Plan"}
+          </button>
+        </div>
+      </form>
+    </Wrapper>
+  );
+};
+
+export default EditTestPlan;
