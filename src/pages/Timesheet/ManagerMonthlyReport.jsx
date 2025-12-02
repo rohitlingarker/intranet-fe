@@ -115,7 +115,7 @@ const ManagerMonthlyReport = () => {
   const [projectInfo, setProjectInfo] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
+  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth());
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mailLoading, setMailLoading] = useState(false);
@@ -203,12 +203,18 @@ const ManagerMonthlyReport = () => {
   const totalBillable = apiData?.billableHours ?? 0;
   const totalNonBillable = apiData?.nonBillableHours ?? 0;
 
+  const filteredMonths =
+  selectedYear === currentYear
+    ? monthOptions.filter((m) => m.value <= appliedMonth)
+    : monthOptions;
+
   const underutilized = useMemo(() => {
     if (!apiData) return [];
     return (apiData.underutilizedInsight?.underutilized || []).map((u) => ({
       name: u.userName,
       hours: u.totalHours, // API doesn't provide hours in this insight
-      rank: u.rank, // API doesn't provide productivity
+      rank: u.rank,
+      expectedHours: apiData.expectedHours, // API doesn't provide productivity
     }));
   }, [apiData]);
 
@@ -217,7 +223,7 @@ const ManagerMonthlyReport = () => {
     return (apiData.overworkedInsight?.overworked || []).map((u) => ({
       name: u.userName,
       hours: u.totalHours, // API doesn't provide hours in this insight
-      productivity: 0, // API doesn't provide productivity
+      expectedHours: apiData.expectedHours, // API doesn't provide productivity
     }));
   }, [apiData]);
 
@@ -1048,8 +1054,9 @@ currentY = cursorY + 10;
       underutilized.map((u) => ({
         name: u.name,
         hours: u.hours,
-        rank: u.rank, // Hours not available in this API summary
-        meta: `• ${u.hours} hours less than monthly recommended hours`,
+        rank: u.rank, 
+        expectedHours: u.expectedHours,
+        meta: `• ${u.hours} hours less than monthly ${u.expectedHours} hours`,
       }))
     );
   };
@@ -1068,8 +1075,9 @@ currentY = cursorY + 10;
         "Overworked Team Members",
         overworked.map((o) => ({
           name: o.name,
-          hours: o.hours, // Hours not available in this API summary
-          meta: `• ${o.hours} hours over than monthly recommended hours`,
+          hours: o.hours,
+          expectedHours: o.expectedHours, 
+          meta: `• ${o.hours} hours over than monthly ${o.expectedHours} hours`,
         }))
       );
     }
@@ -1269,7 +1277,7 @@ currentY = cursorY + 10;
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
                   >
-                    {monthOptions.map((m) => (
+                    {filteredMonths.map((m) => (
                       <option key={m.value} value={m.value}>
                         {m.name}
                       </option>
@@ -1294,25 +1302,24 @@ currentY = cursorY + 10;
               )}
             </div>
             <div className="flex gap-3">
-  <Button
-    variant="primary"
-    size="medium"
-    onClick={() => generateManagerPDF(apiData)}
-  >
-    Download PDF
-  </Button>
+              <Button
+                variant="primary"
+                size="medium"
+                onClick={() => generateManagerPDF(apiData)}
+              >
+                Download PDF
+              </Button>
 
-  <Button
-    variant="secondary"
-    size="medium"
-    className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-    onClick={sendMailPDF}
-    disabled={mailLoading}
-  >
-    {mailLoading ? "Sending..." : "Send Report via Email"}
-  </Button>
-</div>
-
+              <Button
+                variant="secondary"
+                size="medium"
+                className={`${mailLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={sendMailPDF}
+                disabled={mailLoading}
+              >
+                {mailLoading ? "Sending..." : "Send Report via Email"}
+              </Button>
+            </div>
           </div>
         </header>
 
