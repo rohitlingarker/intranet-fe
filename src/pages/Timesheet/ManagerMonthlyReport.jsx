@@ -213,7 +213,8 @@ const ManagerMonthlyReport = () => {
     return (apiData.underutilizedInsight?.underutilized || []).map((u) => ({
       name: u.userName,
       hours: u.totalHours, // API doesn't provide hours in this insight
-      rank: u.rank, // API doesn't provide productivity
+      rank: u.rank,
+      expectedHours: apiData.expectedHours, // API doesn't provide productivity
     }));
   }, [apiData]);
 
@@ -222,7 +223,7 @@ const ManagerMonthlyReport = () => {
     return (apiData.overworkedInsight?.overworked || []).map((u) => ({
       name: u.userName,
       hours: u.totalHours, // API doesn't provide hours in this insight
-      productivity: 0, // API doesn't provide productivity
+      expectedHours: apiData.expectedHours, // API doesn't provide productivity
     }));
   }, [apiData]);
 
@@ -1053,8 +1054,9 @@ currentY = cursorY + 10;
       underutilized.map((u) => ({
         name: u.name,
         hours: u.hours,
-        rank: u.rank, // Hours not available in this API summary
-        meta: `• ${u.hours} hours less than monthly recommended hours`,
+        rank: u.rank, 
+        expectedHours: u.expectedHours,
+        meta: `• ${u.hours} hours less than monthly ${u.expectedHours} hours`,
       }))
     );
   };
@@ -1073,8 +1075,9 @@ currentY = cursorY + 10;
         "Overworked Team Members",
         overworked.map((o) => ({
           name: o.name,
-          hours: o.hours, // Hours not available in this API summary
-          meta: `• ${o.hours} hours over than monthly recommended hours`,
+          hours: o.hours,
+          expectedHours: o.expectedHours, 
+          meta: `• ${o.hours} hours over than monthly ${o.expectedHours} hours`,
         }))
       );
     }
