@@ -94,6 +94,8 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 
+import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
+
 
 import { showStatusToast } from "./components/toastfy/toast";
 
@@ -294,6 +296,8 @@ useEffect(() => {
            <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
 
           <Route path="/projects/:projectId/status-report" element={<ProjectStatusReportWrapper />} />
+
+          <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
