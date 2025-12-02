@@ -1,49 +1,59 @@
 "use client";
 
 import TopTabs from "./Toptabs";
-import { Outlet } from "react-router-dom";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
-import TestDesign from "./TestDesign";
+import TestDesign from "./TestDesign/TestDesign";
 // import Execution from "./Execution";
 // import Reports from "./Reports";
-import { useEffect, useState } from "react";  
+import { useEffect, useState } from "react";
 
 export default function TestManagement() {
-
+  const { projectId } = useParams();       // ✅ REQUIRED FIX
   const location = useLocation();
-  const navigate = useNavigate();
 
   const getSelectedTabFromLocation = () => {
-      const params = new URLSearchParams(location.search);
-      return params.get("tab") || "overview";
-    };
-   
-    const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
-   
-    // Sync tab change based on URL
-    useEffect(() => {
-      setSelectedTab(getSelectedTabFromLocation());
-    }, [location.search]);
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") || "test-management/overview";
+  };
+
+  const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
+
+  // Update selected tab when URL changes
+  useEffect(() => {
+    setSelectedTab(getSelectedTabFromLocation());
+  }, [location.search]);
 
   const renderTabContent = () => {
     if (selectedTab === "test-management/overview") {
-      return <Overview />;
-    }else if (selectedTab === "test-management/test-design") {
-      return <TestDesign />;
-    }else if (selectedTab === "test-management/execution") {
-      return <Execution />;
-    }else if (selectedTab === "reports") {
-      return <Reports />;
-    }else if (selectedTab === "test-management/test-plans") {
-      return <TestPlans />;
+      return <Overview projectId={projectId} />;
     }
-  }
-  
+
+    if (selectedTab === "test-management/test-plans") {
+      return <TestPlans projectId={projectId} />;
+    }
+
+    if (selectedTab === "test-management/test-design") {
+      return <TestDesign projectId={projectId} />;  // ✅ MAIN FIX
+    }
+
+    if (selectedTab === "test-management/execution") {
+      return <div>Execution (work in progress)</div>;
+      // return <Execution projectId={projectId} />;
+    }
+
+    if (selectedTab === "reports") {
+      return <div>Reports (work in progress)</div>;
+      // return <Reports projectId={projectId} />;
+    }
+
+    return null;
+  };
+
   return (
     <div className="w-full">
-      <TopTabs selectedTab={selectedTab} />
+      <TopTabs selectedTab={selectedTab} projectId={projectId} />
       <div>{renderTabContent()}</div>
     </div>
   );
