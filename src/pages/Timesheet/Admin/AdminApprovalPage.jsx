@@ -17,6 +17,8 @@ const AdminApprovalPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [emailData, setEmailData] = useState("");
+  const [selectedEmail, setSelectedEmail] = useState("");
+  const [emailOptions, setEmailOptions] = useState([]);
 
   // ✅ Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,6 +73,23 @@ const AdminApprovalPage = () => {
   //   }
   // };
 
+  const fetchEmailUsers = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setEmailOptions(res.data);
+    } catch (err) {
+      console.log("failed to fetch users email: ", err);
+      toast.error(err?.response?.data || "Failed to fetch users email.");
+    }
+  };
+
   const fetchEmail = async () => {
     try {
       const res = await axios.get(
@@ -91,6 +110,7 @@ const AdminApprovalPage = () => {
 
   useEffect(() => {
     fetchEmail();
+    fetchEmailUsers();
   }, []);
 
   useEffect(() => {
@@ -192,15 +212,15 @@ const AdminApprovalPage = () => {
         `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/emailSettings/${
           emailData.id
         }`,
-        {email: editValue},
+        { email: editValue },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-      setEmailData({...emailData, email: editValue});
       setIsEditing(false);
+      setEmailData({ ...emailData, email: editValue });
       toast.success("Email updated successfully!");
     } catch (err) {
       toast.error("Failed to update email.");
@@ -239,12 +259,11 @@ const AdminApprovalPage = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Admin Approvals
         </h1>
-        <h3 className="flex items-center text-sm text-gray-500 font-semibold">
+        <h3 className="flex items-center text-lg text-gray-500 font-semibold">
           Finance Report Email:&nbsp;
           {!isEditing ? (
-            // Normal display mode
             <button
-              className="text-blue-600 font-semibold"
+              className="text-blue-600 font-semibold text-[15px]"
               onClick={() => {
                 setEditValue(emailData?.email || "");
                 setIsEditing(true);
@@ -253,15 +272,25 @@ const AdminApprovalPage = () => {
               {emailData?.email}
             </button>
           ) : (
-            // Editing mode
             <div className="flex items-center gap-2">
-              <input
+              {/* <input
                 type="email"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-300"
                 autoFocus
-              />
+              /> */}
+              <select
+                value={selectedEmail}
+                onChange={(e) => {setSelectedEmail(e.target.value), setEditValue(e.target.value)}}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-300"
+              >
+                {emailOptions.map((m) => (
+                  <option key={m.id} value={m.email}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
 
               <CheckCircle
                 className="text-green-600 hover:text-green-800 w-5 h-5 cursor-pointer"

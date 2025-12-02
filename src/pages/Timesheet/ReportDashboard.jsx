@@ -53,7 +53,7 @@ export default function ReportDashboard() {
   const TS_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth() + 1);
+  const [appliedMonth, setAppliedMonth] = useState(new Date().getMonth());
   const [appliedYear, setAppliedYear] = useState(new Date().getFullYear());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -68,6 +68,11 @@ export default function ReportDashboard() {
       [projectId]: newPage,
     }));
   };
+
+  const filteredMonths =
+  selectedYear === currentYear
+    ? monthOptions.filter((m) => m.value <= appliedMonth)
+    : monthOptions;
 
   const itemsPerPageChangeEmployeeBreakdown = (event) => {
     const newItemsPerPage = parseInt(event.target.value, 10);
@@ -279,7 +284,7 @@ export default function ReportDashboard() {
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
               >
-                {monthOptions.map((m) => (
+                {filteredMonths.map((m) => (
                   <option key={m.value} value={m.value}>
                     {m.name}
                   </option>
