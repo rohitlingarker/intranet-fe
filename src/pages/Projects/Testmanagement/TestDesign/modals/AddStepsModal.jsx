@@ -7,20 +7,20 @@ export default function AddStepsModal({ caseId, onClose }) {
   const [newSteps, setNewSteps] = useState([{ action: "", expectedResult: "" }]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch existing case
+  // Load existing steps
   useEffect(() => {
-    const loadCase = async () => {
+    const loadSteps = async () => {
       try {
         const res = await axiosInstance.get(
-          `/api/test-design/test-cases/${caseId}`
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/steps/test-cases/${caseId}`
         );
-        setExistingSteps(res.data.steps || []);
+        setExistingSteps(res.data || []);
       } catch (err) {
-        console.error("Failed to load case", err);
+        console.error("Failed to load steps", err);
       }
     };
 
-    loadCase();
+    loadSteps();
   }, [caseId]);
 
   const addRow = () =>
@@ -48,13 +48,7 @@ export default function AddStepsModal({ caseId, onClose }) {
     setLoading(true);
 
     try {
-      // 1. Fetch full case details (fresh)
-      const res = await axiosInstance.get(
-        `/api/test-design/test-cases/${caseId}`
-      );
-      const caseData = res.data;
-
-      // 2. Prepare updated steps
+      // Build final step array
       const updatedSteps = [
         ...existingSteps.map((s) => ({
           id: s.id,
@@ -69,29 +63,18 @@ export default function AddStepsModal({ caseId, onClose }) {
         })),
       ];
 
-      // 3. PUT updated case
-      const payload = {
-        id: caseData.id,
-        scenarioId: caseData.scenarioId,
-        title: caseData.title,
-        preConditions: caseData.preConditions,
-        type: caseData.type,
-        priority: caseData.priority,
-        steps: updatedSteps,
-      };
-
-      await axiosInstance.put(
-        `/api/test-design/test-cases/${caseId}`,
-        payload
+      // Backend expects ONLY an array of steps
+      await axiosInstance.post(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/steps/test-cases/${caseId}`,
+        updatedSteps
       );
 
       alert("Steps added successfully");
-
       onClose();
       window.location.reload();
     } catch (err) {
-      console.error("Failed to update steps", err);
-      alert("Failed to update steps");
+      console.error("Failed to save steps", err);
+      alert("Failed to add steps");
     } finally {
       setLoading(false);
     }
@@ -107,7 +90,6 @@ export default function AddStepsModal({ caseId, onClose }) {
         </div>
 
         <div className="space-y-3">
-
           <div className="flex justify-between">
             <label className="text-sm">New Steps</label>
             <button
@@ -144,13 +126,13 @@ export default function AddStepsModal({ caseId, onClose }) {
 
             </div>
           ))}
-
         </div>
 
         <div className="flex justify-end gap-2 mt-5">
           <button className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>
             Cancel
           </button>
+
           <button
             onClick={handleSave}
             disabled={loading}
