@@ -191,7 +191,7 @@ const AdminApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/timesheets/review/internal`,
+        }/timesheets/review/internal/bulk`,
         {
           method: "POST",
           headers: {
