@@ -27,6 +27,7 @@ const ManagerApprovalPage = () => {
 
   // ✅ Fetch Timesheets
   const fetchGroupedTimesheets = async () => {
+    setLoading(true);
     try {
       const response = await fetch(
         `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/timesheets/manager`,
@@ -42,9 +43,9 @@ const ManagerApprovalPage = () => {
       const data = await response.json();
       setGroupedTimesheets(data);
       setFilteredTimesheets(data);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching timesheets:", error);
+    } finally {
       setLoading(false);
     }
   };
