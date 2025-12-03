@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 const CancellationModal = ({
+  title,
+  subtitle,
   isOpen,
   onConfirm,
   onCancel,
@@ -20,17 +22,19 @@ const CancellationModal = ({
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-4">
       <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-        <h3 className="text-lg font-semibold mb-2">Confirm Cancellation</h3>
-        <p className="mb-4 text-sm text-gray-600">
-          Are you sure you want to Cancel this Leave Request?
-        </p>
+        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        {subtitle && (
+          <p className="mb-4 text-sm text-gray-600">
+            {subtitle}
+          </p>
+        )}
         <label className="block text-sm font-medium text-gray-700">
           Reason <span className="text-red-500">*</span>
         </label>
         <textarea
           maxLength="60"
           rows="2"
-        //   cols="30"
+          //   cols="30"
           value={reason}
           required
           onChange={(e) => setReason(e.target.value)}
