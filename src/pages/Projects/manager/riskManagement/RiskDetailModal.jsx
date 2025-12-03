@@ -29,10 +29,9 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
       setError(null);
 
       try {
-        const riskReq = axios.get(
-          `${BASE_URL}/api/risks/${risk.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const riskReq = axios.get(`${BASE_URL}/api/risks/${risk.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const mitigationReq = axios
           .get(`${BASE_URL}/api/mitigation-plans/risk/${risk.id}`, {
@@ -48,39 +47,31 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
         const riskRes = (await riskReq).data;
 
         const categoryReq = riskRes.categoryId
-          ? axios.get(
-              `${BASE_URL}/api/risk/category/${riskRes.categoryId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
+          ? axios.get(`${BASE_URL}/api/risk/category/${riskRes.categoryId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
           : null;
 
         const ownerReq = riskRes.ownerId
-          ? axios.get(
-              `${BASE_URL}/api/users/${riskRes.ownerId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
+          ? axios.get(`${BASE_URL}/api/users/${riskRes.ownerId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
           : null;
 
         const reporterReq = riskRes.reporterId
-          ? axios.get(
-              `${BASE_URL}/api/users/${riskRes.reporterId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
+          ? axios.get(`${BASE_URL}/api/users/${riskRes.reporterId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
           : null;
 
-        const [
-          mitigationRes,
-          membersRes,
-          categoryRes,
-          ownerRes,
-          reporterRes,
-        ] = await Promise.all([
-          mitigationReq,
-          membersReq,
-          categoryReq,
-          ownerReq,
-          reporterReq,
-        ]);
+        const [mitigationRes, membersRes, categoryRes, ownerRes, reporterRes] =
+          await Promise.all([
+            mitigationReq,
+            membersReq,
+            categoryReq,
+            ownerReq,
+            reporterReq,
+          ]);
 
         if (!mounted) return;
 
@@ -108,9 +99,7 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
   }
 
   function handleUpdated(updated) {
-    setMitigations((p) =>
-      p.map((m) => (m.id === updated.id ? updated : m))
-    );
+    setMitigations((p) => p.map((m) => (m.id === updated.id ? updated : m)));
   }
 
   function handleDeleted(id) {
@@ -125,12 +114,8 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
         {/* Header */}
         <div className="bg-indigo-600 text-white p-5 flex justify-between">
           <div>
-            <h2 className="font-semibold text-lg">
-              Risk #{risk.id}
-            </h2>
-            <p className="text-xs opacity-80">
-              {riskDetail?.title || "-"}
-            </p>
+            <h2 className="font-semibold text-lg">Risk #{risk.id}</h2>
+            <p className="text-xs opacity-80">{riskDetail?.title || "-"}</p>
           </div>
           <button onClick={onClose}>
             <X />
@@ -145,9 +130,21 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
           {riskDetail && (
             <>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <Info label="Category" value={category?.name} icon={<Tag size={14} />} />
-                <Info label="Owner" value={owner?.name} icon={<User size={14} />} />
-                <Info label="Reporter" value={reporter?.name} icon={<User size={14} />} />
+                <Info
+                  label="Category"
+                  value={category?.name}
+                  icon={<Tag size={14} />}
+                />
+                <Info
+                  label="Owner"
+                  value={owner?.name}
+                  icon={<User size={14} />}
+                />
+                <Info
+                  label="Reporter"
+                  value={reporter?.name}
+                  icon={<User size={14} />}
+                />
                 <Info label="Triggers" value={riskDetail.triggers || "-"} />
               </div>
 
@@ -183,12 +180,16 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
             </div>
 
             {showAdd && (
-              <AddMitigationForm
-                riskId={risk.id}
-                members={members}
-                onAdd={handleCreated}
-                onClose={() => setShowAdd(false)}
-              />
+              <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
+                <div className="bg-white w-full max-w-md rounded-xl shadow-lg">
+                  <AddMitigationForm
+                    riskId={risk.id}
+                    members={members}
+                    onAdd={handleCreated}
+                    onClose={() => setShowAdd(false)}
+                  />
+                </div>
+              </div>
             )}
 
             {mitigations.length === 0 ? (
