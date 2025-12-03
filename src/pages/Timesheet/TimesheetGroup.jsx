@@ -386,12 +386,14 @@ const TimesheetGroup = ({
   const CustomStatusBadge = ({ label, size = "sm" }) => {
     const getStatusColor = (status) => {
       switch (status?.toLowerCase()) {
-        case "holiday":
-          return "bg-red-100 text-red-800 border-red-300";
+        case "leave day":
+          return "bg-red-100 text-violet-800 border-red-300";
         case "draft":
         case "submitted":
           return "bg-yellow-100 text-yellow-800 border-yellow-300";
         case "approved":
+        case "partially_approved":
+          return "bg-green-100 text-green-800 border-green-300";
         case "partially approved":
           return "bg-green-100 text-green-800 border-green-300";
         case "rejected":
@@ -431,7 +433,7 @@ const TimesheetGroup = ({
       (a) => a.status?.toUpperCase() === "REJECTED"
     );
     const pending = approvers.filter(
-      (a) => a.status?.toUpperCase() === "PENDING"
+      (a) => (a.status?.toUpperCase() === "PENDING" || a.status?.toUpperCase() === "SUBMITTED")
     );
 
     return (
@@ -885,7 +887,7 @@ const TimesheetGroup = ({
                             setOpenMenuId(newMenuId);
                             setMenuOpen(newMenuId !== null);
                           }}
-                          className={`p-1 rounded-full hover:bg-gray-200 focus:outline-none ${(timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially approved") ? "opacity-50 cursor-not-allowed" : ""}`}
+                          className={`p-1 rounded-full hover:bg-gray-200 focus:outline-none ${(timesheet.status?.toLowerCase() === "approved" || timesheet.status?.toLowerCase() === "partially_approved") ? "opacity-50 cursor-not-allowed" : ""}`}
                           type="button"
                           disabled={
                             timesheet.status?.toLowerCase() === "approved" ||
@@ -945,7 +947,7 @@ const TimesheetGroup = ({
                   ) : formatDate(timesheet.workDate).isWeekend ? (
                     <CustomStatusBadge label="WeekEnd" size="sm" />
                   ) : (
-                    <CustomStatusBadge label="Holiday" size="sm" />
+                    <CustomStatusBadge label="Leave Day" size="sm" />
                   )}
                 </div>
 
