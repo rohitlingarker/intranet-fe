@@ -240,6 +240,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
       <RiskDetailModal
         risk={showRiskModal ? selectedRisk : null}
         onClose={() => setShowRiskModal(false)}
+        projectId={projectId}
       />
     </div>
   );

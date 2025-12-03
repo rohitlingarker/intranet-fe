@@ -1,38 +1,153 @@
-import { AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { AlertCircle, Plus, X } from "lucide-react";
+import axios from "axios";
+import AddMitigationForm from "./AddMitigationForm";
+import MitigationList from "./MitigationList";
 
-export default function RiskDetailModal({ risk, onClose }) {
+export default function RiskDetailModal({ risk, onClose, projectId }) {
+  const [riskDetail, setRiskDetail] = useState(null);
+  const [mitigations, setMitigations] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const BASE_URL = import.meta.env.VITE_PMS_BASE_URL;
+  const token = localStorage.getItem("token");
+
+  /* ================= Load data ================= */
+  useEffect(() => {
+    if (!risk?.id) return;
+
+    let mounted = true;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const riskReq = axios.get(`${BASE_URL}/api/risks/${risk.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const mitigationReq = axios
+          .get(`${BASE_URL}/api/mitigation-plans/risk/${risk.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .catch(() => ({ data: [] })); // ✅ safe fallback
+
+        const membersReq = axios.get(
+          `${BASE_URL}/api/projects/${projectId}/members`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const [riskRes, mitigationRes, membersRes] = await Promise.all([
+          riskReq,
+          mitigationReq,
+          membersReq,
+        ]);
+
+        if (!mounted) return;
+
+        setRiskDetail(riskRes.data);
+        setMitigations(Array.isArray(mitigationRes.data) ? mitigationRes.data : []);
+        setMembers(membersRes.data || []);
+      } catch (err) {
+        console.error(err);
+        if (mounted) setError("Failed to load risk details");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => (mounted = false);
+  }, [risk?.id, projectId, BASE_URL, token]);
+
+  /* ================= Handlers ================= */
+  function handleCreated(plan) {
+    setMitigations((p) => [...p, plan]);
+    setShowAdd(false);
+  }
+
+  function handleUpdated(updated) {
+    setMitigations((p) =>
+      p.map((m) => (m.id === updated.id ? updated : m))
+    );
+  }
+
+  function handleDeleted(id) {
+    setMitigations((p) => p.filter((m) => m.id !== id));
+  }
+
   if (!risk) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full">
+    <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-xl max-w-3xl w-full shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-indigo-600 text-white p-6 flex justify-between">
-          <h3 className="font-bold">{risk.id}</h3>
-          <button onClick={onClose}>✕</button>
+        <div className="bg-indigo-600 text-white p-5 flex justify-between">
+          <div>
+            <h2 className="font-semibold text-lg">Risk #{risk.id}</h2>
+            <p className="text-xs opacity-80">{riskDetail?.title || "-"}</p>
+          </div>
+          <button onClick={onClose}><X /></button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-4">
-          <div>
-            <h4 className="font-semibold">{risk.title}</h4>
-            <p className="text-sm text-slate-600">{risk.description}</p>
-          </div>
+        <div className="p-6 space-y-6">
+          {loading && <p className="text-center text-sm">Loading...</p>}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <div className="grid grid-cols-3 gap-3">
-            <Metric label="Probability" value={risk.prob} />
-            <Metric label="Impact" value={risk.impact} />
-            <Metric label="Score" value={risk.prob * risk.impact} />
-          </div>
+          {/* Metrics */}
+          {riskDetail && (
+            <div className="grid grid-cols-3 gap-4">
+              <Metric label="Probability" value={riskDetail.probability} />
+              <Metric label="Impact" value={riskDetail.impact} />
+              <Metric
+                label="Risk Score"
+                value={riskDetail.probability * riskDetail.impact}
+              />
+            </div>
+          )}
 
-          <div className="bg-indigo-50 p-4 rounded">
-            <h5 className="font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Mitigation
-            </h5>
-            <p className="text-sm text-slate-600">
-              Add mitigation plans here
-            </p>
+          {/* Mitigations */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <h4 className="font-semibold flex gap-2">
+                <AlertCircle size={18} />
+                Mitigation Plans
+              </h4>
+              <button
+                onClick={() => setShowAdd((v) => !v)}
+                className="flex items-center gap-1 text-indigo-600 text-sm"
+              >
+                <Plus size={16} /> Add
+              </button>
+            </div>
+
+            {showAdd && (
+              <AddMitigationForm
+                riskId={risk.id}
+                members={members}
+                onAdd={handleCreated}
+                onClose={() => setShowAdd(false)}
+              />
+            )}
+
+            {mitigations.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No mitigation plans added yet.
+              </p>
+            ) : (
+              <MitigationList
+                mitigations={mitigations}
+                members={members}
+                onUpdated={handleUpdated}
+                onDelete={handleDeleted}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -42,9 +157,9 @@ export default function RiskDetailModal({ risk, onClose }) {
 
 function Metric({ label, value }) {
   return (
-    <div className="border p-3 rounded text-center">
-      <div className="text-xs font-semibold text-slate-500">{label}</div>
-      <div className="text-xl font-bold">{value}</div>
+    <div className="border rounded-lg p-4 text-center">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xl font-bold">{value ?? "-"}</div>
     </div>
   );
 }
