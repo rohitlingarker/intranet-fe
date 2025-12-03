@@ -4,6 +4,7 @@ import TopTabs from "./Toptabs";
 import { useParams, useLocation } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
+import TestDesign  from "./TestDesign/TestDesign";
 import TestExecution from "./TestExecution";
 
 
