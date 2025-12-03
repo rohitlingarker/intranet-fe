@@ -13,7 +13,6 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // --- Helper 1: Maps leave balances to dropdown options (Unchanged) ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
-  // ... (this function remains the same as in your original code)
   return balances.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
     const originalName = balance.leaveType.leaveName;
@@ -32,7 +31,7 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
       availableText =
         (balance.remainingLeaves % 1 === 0
           ? balance.remainingLeaves
-          : balance.remainingLeaves), " days available";
+          : balance.remainingLeaves) + " days available";
     } else {
       availableText = "Not Available";
     }
@@ -52,7 +51,6 @@ function mapLeaveBalancesToDropdown(balances, leaveTypes) {
 
 // --- Helper 2: Date and Formatting Logic (Unchanged) ---
 function formatDateForDisplay(dateStr) {
-  // ... (this function remains the same as in your original code)
   if (!dateStr) return "";
   const date = new Date(`${dateStr}T00:00:00`);
   return date.toLocaleDateString("en-GB", {
@@ -62,8 +60,15 @@ function formatDateForDisplay(dateStr) {
   });
 }
 
-// --- Helper 3: **UPDATED** Robust day calculation to exclude holidays ---
-function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
+// --- Helper 3: **UPDATED** Robust day calculation to conditionally exclude holidays ---
+function countWeekdaysBetween(
+  fromDate,
+  toDate,
+  halfDayConfig,
+  holidays = [],
+  // NEW: Flag to include weekends/holidays for specific leave types (like Maternity)
+  includeNonWorkingDays = false 
+) {
   if (!fromDate || !toDate || !halfDayConfig) return 0;
 
   const holidaySet = new Set(
@@ -82,37 +87,18 @@ function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
   );
 
   let total = 0;
+  // Use UTC to prevent timezone issues shifting the date
   const current = new Date(fromDate + "T00:00:00Z");
   const end = new Date(toDate + "T00:00:00Z");
 
-  // while (current <= end) {
-  //   const dayOfWeek = current.getUTCDay();
-  //   const currentDateStr = current.toISOString().split('T')[0];
-  //   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  //   const isHoliday = holidaySet.has(currentDateStr);
-
-  //   if (!isWeekend && !isHoliday) {
-  //     const isStartDate = currentDateStr === fromDate;
-  //     const isEndDate = currentDateStr === toDate;
-
-  //     if (isStartDate) {
-  //       total += (halfDayConfig.start === 'first' || halfDayConfig.start === 'second') ? 0.5 : 1;
-  //     } else if (isEndDate) {
-  //       total += (halfDayConfig.end === 'first' || halfDayConfig.end === 'second') ? 0.5 : 1;
-  //     } else {
-  //       total += 1;
-  //     }
-  //   }
-  //   current.setUTCDate(current.getUTCDate() + 1);
-  // }
-  // return total;
   while (current <= end) {
     const dayOfWeek = current.getUTCDay();
     const currentDateStr = current.toISOString().split("T")[0];
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isHoliday = holidaySet.has(currentDateStr);
 
-    if (!isWeekend && !isHoliday) {
+    // MODIFIED CONDITION: If includeNonWorkingDays is true, it bypasses the weekend/holiday check.
+    if (includeNonWorkingDays || (!isWeekend && !isHoliday)) {
       const isStartDate = currentDateStr === fromDate;
       const isEndDate = currentDateStr === toDate;
 
@@ -147,7 +133,6 @@ function countWeekdaysBetween(fromDate, toDate, halfDayConfig, holidays = []) {
 
 // --- Component 1: The HeadlessUI Leave Type Dropdown (Unchanged) ---
 function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
-  // ... (this component remains the same as in your original code)
   const sel = options.find((o) => o.leaveTypeId === selectedId) ?? null;
   return (
     <Listbox value={sel} onChange={(opt) => setSelectedId(opt.leaveTypeId)}>
@@ -240,7 +225,8 @@ export default function EditLeaveModal({
     user: user?.name,
   });
   const isLockedByOther = locked && lockedBy && lockedBy !== user?.name;
-  // --- Step 3: Fetch leave types and HOLIDAYS when modal opens ---
+  
+  // --- Step 3: Fetch leave types and HOLIDAYS when modal opens (Unchanged) ---
   useEffect(() => {
     if (!isOpen || !initialData) return;
 
@@ -258,7 +244,7 @@ export default function EditLeaveModal({
     const fetchHolidays = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
-          params: { state: "All", country: "India" }, // Adjust params if needed
+          params: { state: "All", country: "India" }, 
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         const holidayDates = res.data.map(
@@ -275,7 +261,7 @@ export default function EditLeaveModal({
     fetchHolidays();
   }, [isOpen, initialData]);
 
-  // Populate form with initial data
+  // Populate form with initial data (Unchanged)
   useEffect(() => {
     if (isOpen && initialData) {
       setStartDate(initialData.startDate || "");
@@ -316,13 +302,17 @@ export default function EditLeaveModal({
     (o) => o.leaveTypeId === leaveTypeId
   );
 
-  // --- Step 4: UPDATED CALCULATIONS to include holidays ---
+  // NEW: Check if the selected leave type is Maternity Leave (Assuming L-ML)
+  const isMaternityLeave = selectedLeaveType?.leaveTypeId === "L-ML";
+
+  // --- Step 4: UPDATED CALCULATIONS to conditionally include holidays/weekends ---
   const isMultiDay = startDate && endDate && startDate !== endDate;
   const weekdays = countWeekdaysBetween(
     startDate,
     endDate,
     halfDayConfig,
-    holidays
+    holidays,
+    isMaternityLeave // Pass the new flag
   );
 
   const shouldShowDriveLink = () => {
@@ -342,7 +332,7 @@ export default function EditLeaveModal({
     );
   };
 
-  // --- Step 5: New handlers for DateRangePicker ---
+  // --- Step 5: New handlers for DateRangePicker (Unchanged) ---
   const handleStartDateChange = (date) => {
     if (!date) return;
     const dateString = format(date, "yyyy-MM-dd");
@@ -359,10 +349,7 @@ export default function EditLeaveModal({
   };
 
   const handleClose = async () => {
-    // This is the crucial part.
-    // We wait for the lock to be released...
     await manualReleaseLock();
-    // ...and *then* we call the original onClose prop to hide the modal.
     onClose();
   };
 
@@ -381,9 +368,9 @@ export default function EditLeaveModal({
       requestDate: initialData.requestDate,
       reason,
       driveLink,
-      // isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
-      endSession: isMultiDay ? halfDayConfig.end : "none",
+      // CORRECTED: If it's a single day, endSession should mirror startSession, not be 'none'.
+      endSession: isMultiDay ? halfDayConfig.end : halfDayConfig.start, 
     };
 
     try {
@@ -397,7 +384,6 @@ export default function EditLeaveModal({
       toast.success("Leave request updated successfully");
       if (onSuccess) onSuccess(data);
       handleClose();
-      // onClose();
     } catch (err) {
       setError(
         "Failed to update leave request: " +
@@ -465,7 +451,8 @@ export default function EditLeaveModal({
                 defaultMonth={
                   startDate ? new Date(startDate + "T00:00:00") : undefined
                 }
-                disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
+                // Only disable if it's NOT maternity leave
+                disabledDays={isMaternityLeave ? [] : [{ dayOfWeek: [0, 6] }, ...holidays]}
               />
               <DateRangePicker
                 label="End Date"
@@ -476,8 +463,8 @@ export default function EditLeaveModal({
                   endDate ? new Date(endDate + "T00:00:00") : undefined
                 }
                 disabledDays={[
-                  { dayOfWeek: [0, 6] },
-                  ...holidays,
+                  // Only disable if it's NOT maternity leave
+                  ...(isMaternityLeave ? [] : [{ dayOfWeek: [0, 6] }, ...holidays]),
                   startDate
                     ? { before: new Date(startDate + "T00:00:00") }
                     : {},
@@ -491,7 +478,7 @@ export default function EditLeaveModal({
               </span>
             </div>
 
-            {(selectedLeaveType && selectedLeaveType.allowHalfDay) && (
+            {(selectedLeaveType && selectedLeaveType.allowHalfDay && !isMaternityLeave) && (
               <div className="space-y-3 mt-2">
                 <div className="p-1 inline-flex items-center bg-gray-200 rounded-lg">
                   <button
