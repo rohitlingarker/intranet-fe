@@ -7,6 +7,9 @@ import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
 import { MoreVertical, X } from "lucide-react";
+import CancellationModal from "../../leave_management/models/CancellationModal";
+import ConfirmationModal from "../../leave_management/models/ConfirmationModal";
+import { set } from "date-fns";
 
 const ManagerApprovalTable = ({
   loading,
@@ -21,7 +24,11 @@ const ManagerApprovalTable = ({
   const [holidayData, setHolidayData] = useState([]);
   const [holidayLoading, setHolidayLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [cancellationModal, setCancellationModal] = useState(false);
+  const [rejectAllCancellationModal, setRejectAllCancellationModal] =
+    useState(false);
+  const [approveAll, setApproveAll] = useState(false);
+  const [approveAllWeeks, setApproveAllWeeks] = useState(false);
   // 🆕 Update User feature hooks — moved here to fix undefined error
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [selectedUpdateRecord, setSelectedUpdateRecord] = useState(null);
@@ -98,6 +105,19 @@ const ManagerApprovalTable = ({
     fetchHolidayExcludedUsers();
   };
 
+  const handleRejectAllCancelModal = () => {
+    setCancellationModal(!cancellationModal);
+  };
+  const handleCancelModal = () => {
+    setRejectAllCancellationModal(!rejectAllCancellationModal);
+  };
+  const handleApproveAll = () => {
+    setApproveAll(!approveAll);
+  };
+  const handleApproveAllWeeks = () => {
+    setApproveAllWeeks(!approveAllWeeks);
+  };
+
   // -----------------------------
   // Lookup maps for fast access
   // -----------------------------
@@ -159,7 +179,7 @@ const ManagerApprovalTable = ({
   // -----------------------------
   // Bulk Approve/Reject All Weeks for a User
   // -----------------------------
-  const handleSelectAllWeeks = async (user, status) => {
+  const handleSelectAllWeeks = async (user, status, reason) => {
     try {
       // 🧠 Filter only SUBMITTED weeks and Pattially Approved
       const submittedWeeks = user.weeklySummary.filter((week) => {
@@ -182,7 +202,7 @@ const ManagerApprovalTable = ({
         userId: user.userId,
         timesheetIds: week.timesheets.map((t) => t.timesheetId),
         status,
-        comments: status === "APPROVED" ? "approved" : "rejected",
+        comments: reason || "Approved by manager",
       }));
 
       const res = await fetch(
@@ -208,7 +228,7 @@ const ManagerApprovalTable = ({
         "success"
       );
 
-       onRefresh?.();
+      onRefresh?.();
     } catch (err) {
       console.error("Error approving all weeks:", err);
       showStatusToast(`Failed to ${status.toLowerCase()} all weeks`, "error");
@@ -425,34 +445,7 @@ const ManagerApprovalTable = ({
                     disabled={Object.values(weekLevelLoading || {}).some(
                       Boolean
                     )}
-                    onClick={async () => {
-                      setWeekLevelLoading((prev) => ({
-                        ...prev,
-                        [`${user.userId}-${week.weekId}`]: true,
-                      }));
-                      try {
-                        const timesheetIds = week.timesheets.map(
-                          (t) => t.timesheetId
-                        );
-                        await handleBulkReview(
-                          user.userId,
-                          timesheetIds,
-                          "APPROVED",
-                          "approved"
-                        );
-                         onRefresh?.();
-                      } catch (err) {
-                        showStatusToast(
-                          "Failed to approve timesheets",
-                          "error"
-                        );
-                      } finally {
-                        setWeekLevelLoading((prev) => ({
-                          ...prev,
-                          [`${user.userId}-${week.weekId}`]: false,
-                        }));
-                      }
-                    }}
+                    onClick={handleApproveAll}
                   >
                     Approve All
                   </Button>
@@ -463,13 +456,14 @@ const ManagerApprovalTable = ({
                     disabled={Object.values(weekLevelLoading || {}).some(
                       Boolean
                     )}
-                    onClick={() => {
-                      setShowCommentBox({ [user.userId]: week.weekId });
-                      setRejectionComments((prev) => ({
-                        ...prev,
-                        [week.weekId]: "",
-                      }));
-                    }}
+                    onClick={handleRejectAllCancelModal}
+                    //   async() => {
+                    //   setShowCommentBox({ [user.userId]: week.weekId });
+                    //   setRejectionComments((prev) => ({
+                    //     ...prev,
+                    //     [week.weekId]: "",
+                    //   }));
+                    // }
                   >
                     Reject All
                   </Button>
@@ -477,30 +471,7 @@ const ManagerApprovalTable = ({
               )}
             </div>
           )}
-          <TimesheetGroup
-            weekGroup={{
-              weekStart: week.startDate,
-              weekEnd: week.endDate,
-              timesheets: week.timesheets,
-              weekRange: `${new Date(
-                week.startDate
-              ).toLocaleDateString()} - ${new Date(
-                week.endDate
-              ).toLocaleDateString()}`,
-              totalHours: week.totalHours,
-              status: week.weeklyStatus,
-              weekNumber: week.weekId,
-              monthName: new Date(week.startDate).toLocaleString("en-US", {
-                month: "long",
-              }),
-              year: new Date(week.startDate).getFullYear(),
-            }}
-            refreshData={onRefresh}
-            mapWorkType={(type) => type}
-            projectInfo={projectInfo}
-          />
-
-          {showCommentBox[user.userId] === week.weekId && (
+          {/* {showCommentBox[user.userId] === week.weekId && (
             <div className="p-4 bg-red-50 border-t">
               <textarea
                 className="border p-2 w-full rounded"
@@ -540,7 +511,7 @@ const ManagerApprovalTable = ({
                         ...prev,
                         [user.userId]: null,
                       }));
-                       onRefresh?.();
+                      onRefresh?.();
                     } catch (err) {
                       console.error("Error rejecting timesheets:", err);
                       showStatusToast("Failed to reject timesheets", "error");
@@ -567,7 +538,94 @@ const ManagerApprovalTable = ({
                 </Button>
               </div>
             </div>
-          )}
+          )} */}
+          <CancellationModal
+            title="Reject All"
+            subtitle="Are you sure you want to Reject all Timesheets?"
+            isOpen={cancellationModal}
+            onCancel={handleRejectAllCancelModal}
+            onConfirm={async (reason) => {
+              setActionLoading(true);
+              try {
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                const comment = reason || "Rejected by manager";
+                await handleBulkReview(
+                  user.userId,
+                  timesheetIds,
+                  "REJECTED",
+                  comment
+                );
+                // setShowCommentBox((prev) => ({
+                //   ...prev,
+                //   [user.userId]: null,
+                // }));
+                onRefresh?.();
+              } catch (err) {
+                console.error("Error rejecting timesheets:", err);
+                showStatusToast("Failed to reject timesheets", "error");
+              } finally {
+                setActionLoading(false);
+                handleRejectAllCancelModal();
+              }
+            }}
+            isLoading={actionLoading}
+            confirmText="Confirm"
+          />
+          <ConfirmationModal
+            title="Approve All"
+            message="Are you sure you want to Approve all Timesheets?"
+            isOpen={approveAll}
+            onCancel={handleApproveAll}
+            isLoading={actionLoading}
+            onConfirm={async () => {
+              setWeekLevelLoading((prev) => ({
+                ...prev,
+                [`${user.userId}-${week.weekId}`]: true,
+              }));
+              setActionLoading(true);
+              try {
+                const timesheetIds = week.timesheets.map((t) => t.timesheetId);
+                await handleBulkReview(
+                  user.userId,
+                  timesheetIds,
+                  "APPROVED",
+                  "approved"
+                );
+                showStatusToast("Timesheets Approved succesfully!", "success");
+                onRefresh?.();
+              } catch (err) {
+                showStatusToast("Failed to approve timesheets", "error");
+              } finally {
+                setWeekLevelLoading((prev) => ({
+                  ...prev,
+                  [`${user.userId}-${week.weekId}`]: false,
+                }));
+                setApproveAll(false);
+              }
+            }}
+          />
+          <TimesheetGroup
+            weekGroup={{
+              weekStart: week.startDate,
+              weekEnd: week.endDate,
+              timesheets: week.timesheets,
+              weekRange: `${new Date(
+                week.startDate
+              ).toLocaleDateString()} - ${new Date(
+                week.endDate
+              ).toLocaleDateString()}`,
+              totalHours: week.totalHours,
+              status: week.weeklyStatus,
+              weekNumber: week.weekId,
+              monthName: new Date(week.startDate).toLocaleString("en-US", {
+                month: "long",
+              }),
+              year: new Date(week.startDate).getFullYear(),
+            }}
+            refreshData={onRefresh}
+            mapWorkType={(type) => type}
+            projectInfo={projectInfo}
+          />
         </div>
       ));
   // Track selection mode and selected users
@@ -725,11 +783,16 @@ const ManagerApprovalTable = ({
             },
           }
         ),
-        fetch(`${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/holidays/currentMonth`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }),
+        fetch(
+          `${
+            import.meta.env.VITE_TIMESHEET_API_ENDPOINT
+          }/api/holidays/currentMonth`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        ),
       ]);
 
       if (!usersRes.ok || !holidaysRes.ok)
@@ -830,6 +893,7 @@ const ManagerApprovalTable = ({
                 className="bg-white rounded-xl shadow-md border p-4"
               >
                 {/* ✅ One-line layout for username and action buttons */}
+                {console.log("user: ", user)}
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xl font-bold text-gray-800">
                     {user.userName} (ID: {user.userId})
@@ -844,14 +908,7 @@ const ManagerApprovalTable = ({
                           variant="success"
                           size="small"
                           disabled={userLevelLoading !== null}
-                          onClick={async () => {
-                            setUserLevelLoading(user.userId);
-                            try {
-                              await handleSelectAllWeeks(user, "APPROVED");
-                            } finally {
-                              setUserLevelLoading(null);
-                            }
-                          }}
+                          onClick={handleApproveAllWeeks}
                         >
                           Approve All Weeks
                         </Button>
@@ -860,14 +917,7 @@ const ManagerApprovalTable = ({
                           variant="danger"
                           size="small"
                           disabled={userLevelLoading !== null}
-                          onClick={async () => {
-                            setUserLevelLoading(user.userId);
-                            try {
-                              await handleSelectAllWeeks(user, "REJECTED");
-                            } finally {
-                              setUserLevelLoading(null);
-                            }
-                          }}
+                          onClick={handleCancelModal}
                         >
                           Reject All Weeks
                         </Button>
@@ -876,6 +926,42 @@ const ManagerApprovalTable = ({
                   </div>
                 </div>
 
+                <CancellationModal
+                  title="Reject All Weeks"
+                  subtitle="Are you sure you want to Reject All Weeks Timesheets?"
+                  isOpen={rejectAllCancellationModal}
+                  onCancel={handleCancelModal}
+                  onConfirm={async (reason) => {
+                    setUserLevelLoading(user.userId);
+                    setActionLoading(true);
+                    try {
+                      await handleSelectAllWeeks(user, "REJECTED", reason);
+                    } finally {
+                      setUserLevelLoading(null);
+                      setActionLoading(false);
+                      handleCancelModal();
+                    }
+                  }}
+                  isLoading={actionLoading}
+                  confirmText="Confirm"
+                />
+                <ConfirmationModal
+                  title="Approve All Weeks"
+                  message="Are you sure you want to Approve All Weeks Timesheets?"
+                  isOpen={approveAllWeeks}
+                  onCancel={handleApproveAllWeeks}
+                  onConfirm={async () => {
+                    setUserLevelLoading(user.userId);
+                    setActionLoading(true);
+                    try {
+                      await handleSelectAllWeeks(user, "APPROVED");
+                    } finally {
+                      setUserLevelLoading(null);
+                      setActionLoading(false);
+                    }
+                  }}
+                  isLoading={actionLoading}
+                />
                 <hr className="my-3 border-gray-200" />
                 {renderUserWeeks(user)}
               </div>
