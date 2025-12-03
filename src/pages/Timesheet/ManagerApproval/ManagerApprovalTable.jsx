@@ -863,7 +863,7 @@ const ManagerApprovalTable = ({
   return (
     <div className="space-y-6">
       {loading ? (
-        <LoadingSpinner text="Loading manager view..." />
+        <LoadingSpinner text="Loading Approval Table..." />
       ) : (
         <>
           <div className="flex justify-end gap-3 mb-4">
