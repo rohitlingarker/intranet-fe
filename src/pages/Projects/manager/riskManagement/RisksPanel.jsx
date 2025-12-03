@@ -1,13 +1,17 @@
 import {
   AlertCircle,
   Download,
-  TrendingUp,
   User,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 
-/* ---------- UI utils (same as main page) ---------- */
+/* ---------- UI utils ---------- */
+
+function formatStatus(status) {
+  if (!status) return "";
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
 
 function getStatusColor(status) {
   const colors = {
@@ -21,85 +25,59 @@ function getStatusColor(status) {
 
 function getRiskColor(score) {
   if (score >= 20)
-    return { bg: "bg-red-50", text: "text-red-700", icon: "text-red-500" };
+    return { bg: "bg-red-50", text: "text-red-700" };
   if (score >= 12)
-    return {
-      bg: "bg-orange-50",
-      text: "text-orange-700",
-      icon: "text-orange-500",
-    };
+    return { bg: "bg-orange-50", text: "text-orange-700" };
   if (score >= 6)
-    return {
-      bg: "bg-yellow-50",
-      text: "text-yellow-700",
-      icon: "text-yellow-500",
-    };
-  return {
-    bg: "bg-green-50",
-    text: "text-green-700",
-    icon: "text-green-500",
-  };
+    return { bg: "bg-yellow-50", text: "text-yellow-700" };
+  return { bg: "bg-green-50", text: "text-green-700" };
 }
 
 /* ---------- Component ---------- */
 
 export default function RisksPanel({
   selectedIssue,
-  riskItems,
-  riskTotal,
-  riskPage,
-  riskTotalPages,
+  data,               // <-- full API response
   isLoadingRisks,
   onPageChange,
   onSelectRisk,
 }) {
-  const highRiskCount = riskItems.filter(
-    (r) => r.prob * r.impact >= 15
-  ).length;
-
-  const avgRiskScore =
-    riskItems.length === 0
-      ? 0
-      : (
-          riskItems.reduce((sum, r) => sum + r.prob * r.impact, 0) /
-          riskItems.length
-        ).toFixed(1);
+  const risks = data?.items || [];
+  const summary = data?.summary;
+  const pagination = data?.pagination;
 
   return (
     <div className="col-span-2 space-y-6">
-      {/* Summary cards */}
-      {selectedIssue && (
+      {/* Summary */}
+      {selectedIssue && summary && (
         <div className="grid grid-cols-3 gap-3">
+          <SummaryCard label="TOTAL RISKS" value={summary.totalRisks} />
           <SummaryCard
-            label="TOTAL RISKS"
-            value={riskTotal}
-          />
-          <SummaryCard
-            label="HIGH RISK"
-            value={highRiskCount}
+            label="HIGH SEVERITY"
+            value={summary.highSeverityCount}
             variant="danger"
           />
           <SummaryCard
             label="AVG SCORE"
-            value={avgRiskScore}
+            value={summary.avgRiskScore}
             variant="info"
           />
         </div>
       )}
 
-      {/* Risks list */}
+      {/* Risks List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-5 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-blue-50 flex justify-between items-center">
           <div>
             <h2 className="font-semibold text-slate-900">
-              Risks {selectedIssue ? `for ${selectedIssue.id}` : ""}
+              Risks {selectedIssue ? `for ${selectedIssue.title}` : ""}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               {isLoadingRisks
                 ? "Loading..."
                 : selectedIssue
-                ? `${riskTotal} risks identified`
+                ? `${summary?.totalRisks || 0} risks identified`
                 : "Select an issue to view risks"}
             </p>
           </div>
@@ -116,31 +94,24 @@ export default function RisksPanel({
             <EmptyState />
           ) : isLoadingRisks ? (
             <LoadingState />
-          ) : riskItems.length === 0 ? (
+          ) : risks.length === 0 ? (
             <EmptyRisks />
           ) : (
             <div className="p-4 space-y-3">
-              {riskItems.map((risk) => {
-                const score = risk.prob * risk.impact;
-                const colors = getRiskColor(score);
+              {risks.map((risk) => {
+                const colors = getRiskColor(risk.riskScore);
+                const statusLabel = formatStatus(risk.status);
 
                 return (
                   <button
                     key={risk.id}
-                    onClick={() => onSelectRisk({ ...risk, score })}
+                    onClick={() => onSelectRisk(risk)}
                     className={`w-full text-left p-4 rounded-lg border-2 transition hover:shadow-md ${colors.bg} border-slate-200`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`text-lg font-bold ${colors.text}`}
-                          >
-                            {score}
-                          </div>
-                          <div className={`text-xl ${colors.icon}`}>
-                            {risk.trend}
-                          </div>
+                        <div className={`text-lg font-bold ${colors.text}`}>
+                          {risk.riskScore}
                         </div>
 
                         <div className="font-semibold text-slate-900 mt-1 text-sm">
@@ -150,15 +121,14 @@ export default function RisksPanel({
                         <div className="flex items-center gap-3 mt-2">
                           <span
                             className={`text-xs px-2 py-1 rounded ${getStatusColor(
-                              risk.status
+                              statusLabel
                             )}`}
                           >
-                            {risk.status}
+                            {statusLabel}
                           </span>
-                          <div className="flex items-center gap-1 text-xs text-slate-600">
-                            <TrendingUp className="w-3 h-3" />
+                          <span className="text-xs text-slate-600">
                             P:{risk.prob} I:{risk.impact}
-                          </div>
+                          </span>
                         </div>
                       </div>
 
@@ -175,23 +145,23 @@ export default function RisksPanel({
         </div>
 
         {/* Pagination */}
-        {riskTotalPages > 1 && (
+        {pagination?.totalPages > 1 && (
           <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
             <div className="text-xs text-slate-600">
-              Page <span className="font-semibold">{riskPage}</span> of{" "}
-              <span className="font-semibold">{riskTotalPages}</span>
+              Page <span className="font-semibold">{pagination.page}</span> of{" "}
+              <span className="font-semibold">{pagination.totalPages}</span>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => onPageChange(riskPage - 1)}
-                disabled={riskPage === 1}
+                onClick={() => onPageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
                 className="p-1 hover:bg-slate-300 disabled:opacity-50 rounded transition"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => onPageChange(riskPage + 1)}
-                disabled={riskPage === riskTotalPages}
+                onClick={() => onPageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
                 className="p-1 hover:bg-slate-300 disabled:opacity-50 rounded transition"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -204,7 +174,7 @@ export default function RisksPanel({
   );
 }
 
-/* ---------- Helper components ---------- */
+/* ---------- Helpers ---------- */
 
 function SummaryCard({ label, value, variant }) {
   const styles = {
@@ -213,10 +183,8 @@ function SummaryCard({ label, value, variant }) {
     default: "bg-white border-slate-200 text-slate-900",
   };
 
-  const applied = styles[variant] || styles.default;
-
   return (
-    <div className={`p-4 rounded-lg border ${applied}`}>
+    <div className={`p-4 rounded-lg border ${styles[variant] || styles.default}`}>
       <div className="text-xs font-semibold mb-2 opacity-80">{label}</div>
       <div className="text-2xl font-bold">{value}</div>
     </div>

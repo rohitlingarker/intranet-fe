@@ -1,79 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Settings,
-} from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import axios from "axios";
 
 import CreateRiskModal from "./createRiskModal";
 import IssuesPanel from "./IssuesPanel";
 import RisksPanel from "./RisksPanel";
 import RiskDetailModal from "./RiskDetailModal";
-
-/* =========================
-   Mock API
-========================= */
-
-const MOCK_TOTAL_BY_TYPE = {
-  All: 124,
-  Epics: 42,
-  Stories: 53,
-  Tasks: 20,
-  Bugs: 9,
-};
-
-function makeMockIssues(type, page = 1, size = 10, search = "") {
-  const base = (type === "All" ? "E" : type[0]).toUpperCase();
-  const total = MOCK_TOTAL_BY_TYPE[type] ?? 0;
-
-  const all = Array.from({ length: total })
-    .map((_, i) => ({
-      id: `${base}-${i + 1}`,
-      title: `${type} ${i + 1}: Important feature implementation`,
-      type,
-      updatedAt: Date.now() - i * 60 * 60 * 1000,
-      highRiskCount: Math.floor(Math.random() * 5),
-      status: ["Open", "In Progress", "Review"][i % 3],
-    }))
-    .filter((it) =>
-      !search ? true : it.title.toLowerCase().includes(search.toLowerCase())
-    );
-
-  const start = (page - 1) * size;
-  return Promise.resolve({
-    total: all.length,
-    page,
-    size,
-    items: all.slice(start, start + size),
-  });
-}
-
-function makeMockRisks(issueType, issueId, page = 1, size = 10) {
-  const total = Math.floor(Math.random() * 20) + 1;
-
-  const all = Array.from({ length: total }).map((_, i) => {
-    const prob = Math.ceil(Math.random() * 5);
-    const impact = Math.ceil(Math.random() * 5);
-    return {
-      id: `${issueId}-R-${i + 1}`,
-      title: `Risk ${i + 1}`,
-      description: "Potential issue requiring mitigation",
-      prob,
-      impact,
-      status: ["Identified", "Analyzed", "Monitoring", "Mitigated"][i % 4],
-      owner: ["Teja", "Anita", "Rahul"][i % 3],
-      trend: ["↑", "↓", "→"][i % 3],
-    };
-  });
-
-  const start = (page - 1) * size;
-  return Promise.resolve({
-    total: all.length,
-    page,
-    size,
-    items: all.slice(start, start + size),
-  });
-}
 
 /* =========================
    Page
@@ -83,27 +15,32 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
   const ISSUES_PAGE_SIZE = 10;
   const RISKS_PAGE_SIZE = 10;
 
+  /* ---------- UI State ---------- */
+
   const [showCreateRisk, setShowCreateRisk] = useState(false);
+  const [showRiskModal, setShowRiskModal] = useState(false);
+
+  /* ---------- Issue Summary ---------- */
 
   const [issueTypeSummary, setIssueTypeSummary] = useState([]);
-
   const [activeIssueType, setActiveIssueType] = useState("All");
   const [issueSearch, setIssueSearch] = useState("");
   const [issuePage, setIssuePage] = useState(1);
-  const [issuesTotal, setIssuesTotal] = useState(0);
-  const [issuesPageItems, setIssuesPageItems] = useState([]);
+
   const [selectedIssue, setSelectedIssue] = useState(null);
-
-  const [riskPage, setRiskPage] = useState(1);
-  const [riskTotal, setRiskTotal] = useState(0);
-  const [riskItems, setRiskItems] = useState([]);
-
   const [selectedRisk, setSelectedRisk] = useState(null);
+
   const [isLoadingIssues, setIsLoadingIssues] = useState(false);
   const [isLoadingRisks, setIsLoadingRisks] = useState(false);
-  const [showRiskModal, setShowRiskModal] = useState(false);
 
-  /* ===== Fetch Issue-Type Summary ===== */
+  /* ---------- Risks ---------- */
+
+  const [riskData, setRiskData] = useState(null);
+  const [riskPage, setRiskPage] = useState(1);
+
+  /* =========================
+     Fetch Issue-Type Summary
+  ========================= */
 
   useEffect(() => {
     async function fetchSummary() {
@@ -114,7 +51,9 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
         const res = await axios.get(
           `${BASE_URL}/api/risk-links/${projectId}/risk-summary/by-issue-type`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
@@ -126,6 +65,10 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
     fetchSummary();
   }, [projectId]);
+
+  /* =========================
+     Issue Type Cards
+  ========================= */
 
   const issueTypeCards = useMemo(() => {
     const total = issueTypeSummary.reduce(
@@ -142,68 +85,6 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
     ];
   }, [issueTypeSummary]);
 
-  /* ===== Load Issues ===== */
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadIssues() {
-      setIsLoadingIssues(true);
-      try {
-        const res = await makeMockIssues(
-          activeIssueType,
-          issuePage,
-          ISSUES_PAGE_SIZE,
-          issueSearch
-        );
-        if (!cancelled) {
-          setIssuesTotal(res.total);
-          setIssuesPageItems(res.items);
-        }
-      } finally {
-        if (!cancelled) setIsLoadingIssues(false);
-      }
-    }
-
-    loadIssues();
-    return () => (cancelled = true);
-  }, [activeIssueType, issuePage, issueSearch]);
-
-  /* ===== Load Risks ===== */
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadRisks() {
-      if (!selectedIssue) {
-        setRiskItems([]);
-        setRiskTotal(0);
-        return;
-      }
-
-      setIsLoadingRisks(true);
-      try {
-        const res = await makeMockRisks(
-          selectedIssue.type,
-          selectedIssue.id,
-          riskPage,
-          RISKS_PAGE_SIZE
-        );
-        if (!cancelled) {
-          setRiskTotal(res.total);
-          setRiskItems(res.items);
-        }
-      } finally {
-        if (!cancelled) setIsLoadingRisks(false);
-      }
-    }
-
-    loadRisks();
-    return () => (cancelled = true);
-  }, [selectedIssue, riskPage]);
-
-  const riskTotalPages = Math.max(1, Math.ceil(riskTotal / RISKS_PAGE_SIZE));
-
   function issueTypeLabel(raw) {
     if (!raw) return raw;
     if (raw.toLowerCase() === "story") return "Stories";
@@ -213,6 +94,58 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
     return raw;
   }
 
+  /* =========================
+     Load Risks (Backend)
+  ========================= */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRisks() {
+      if (!selectedIssue) {
+        setRiskData(null);
+        return;
+      }
+
+      setIsLoadingRisks(true);
+
+      try {
+        const token = localStorage.getItem("token");
+        const BASE_URL = import.meta.env.VITE_PMS_BASE_URL;
+        console.log("selectedIssue", selectedIssue);
+
+        const res = await axios.get(`${BASE_URL}/api/risks/linked`, {
+          params: {
+            projectId,
+            linkedType: selectedIssue.linkedType,
+            linkedId: selectedIssue.linkedId,
+            page: riskPage,
+            size: RISKS_PAGE_SIZE,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!cancelled) {
+          setRiskData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load risks", err);
+        if (!cancelled) setRiskData(null);
+      } finally {
+        if (!cancelled) setIsLoadingRisks(false);
+      }
+    }
+
+    loadRisks();
+    return () => (cancelled = true);
+  }, [selectedIssue, riskPage, projectId]);
+
+  /* =========================
+     Render
+  ========================= */
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -220,9 +153,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between">
           <div>
             <h1 className="text-3xl font-bold">Risk Register</h1>
-            <p className="text-sm text-slate-500">
-              Project {projectId}
-            </p>
+            <p className="text-sm text-slate-500">Project {projectId}</p>
           </div>
 
           <div className="flex gap-3">
@@ -242,7 +173,10 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
             projectId={projectId}
             isOpen={showCreateRisk}
             onClose={() => setShowCreateRisk(false)}
-            onCreate={(data) => console.log("Create risk:", data)}
+            onCreate={() => {
+              setShowCreateRisk(false);
+              setRiskPage(1);
+            }}
           />
         </div>
       </div>
@@ -261,11 +195,10 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
                 setIssuePage(1);
                 setSelectedIssue(null);
                 setRiskPage(1);
+                setRiskData(null);
               }}
               className={`p-4 rounded-lg ${
-                active
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white border"
+                active ? "bg-indigo-600 text-white" : "bg-white border"
               }`}
             >
               <div className="font-semibold">{label}</div>
@@ -284,19 +217,17 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
           issuePage={issuePage}
           setIssuePage={setIssuePage}
           selectedIssue={selectedIssue}
+          isLoadingIssues={isLoadingIssues}
           onSelectIssue={(issue) => {
             setSelectedIssue(issue);
             setRiskPage(1);
-            setRiskItems([]);
+            setRiskData(null);
           }}
         />
 
         <RisksPanel
           selectedIssue={selectedIssue}
-          riskItems={riskItems}
-          riskTotal={riskTotal}
-          riskPage={riskPage}
-          riskTotalPages={riskTotalPages}
+          data={riskData}
           isLoadingRisks={isLoadingRisks}
           onPageChange={setRiskPage}
           onSelectRisk={(risk) => {
