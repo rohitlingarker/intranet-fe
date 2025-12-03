@@ -83,7 +83,7 @@ const CreateRiskModal = ({ isOpen, onClose, projectId, onSuccess }) => {
   useEffect(() => {
     if (!isOpen) return;
     axios
-      .get(`${BASE_URL}/api/risk`, {
+      .get(`${BASE_URL}/api/risk/category`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setCategories(res.data || []))
