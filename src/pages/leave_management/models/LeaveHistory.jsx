@@ -478,6 +478,7 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         onConfirm={handleConfirmCancellation}
         isLoading={isCancelling}
         confirmText="Confirm"
+        isRevoke={true}
       />
     </div>
   );
