@@ -11,6 +11,7 @@ import Timeline from "./Timeline";
 import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
+import { Calendar } from "antd";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -89,6 +90,9 @@ const ProjectTabs = () => {
     if (selectedTab === "timelines") {
       return <Timeline projectId={pid} />;
     }
+    if (selectedTab === "calendar") {
+      return <Calendar projectId={pid} />;
+    }
 
     // ⭐ Test Management (handles ALL inner tabs)
     if (selectedTab.startsWith("test-management")) {
@@ -114,6 +118,7 @@ const ProjectTabs = () => {
     { name: "Status Report", tab: "status-report" },
     { name: "Timelines", tab:"timelines" },
     { name: "Test Management", tab: "test-management" },
+    { name: "Calendar", tab: "calendar" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
