@@ -308,6 +308,7 @@ if (issueType === "Epic") {
         statusId: Number(formData.statusId),
         priority: formData.priority || "LOW",
         storyPoints: formData.storyPoints ? Number(formData.storyPoints) : 0,
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
         projectId: Number(formData.projectId),
         reporterId: normalizeIdValue(formData.reporterId),
@@ -554,6 +555,14 @@ if (issueType === "Epic") {
             <FormSelect label="Sprint" name="sprintId" value={formData.sprintId ?? ""} onChange={handleChange} options={sprints.map(s => ({ label: s.name, value: s.id }))} />
             <FormSelect label="Assignee" name="assigneeId" value={formData.assigneeId ?? ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
             <FormSelect label="Reporter *" name="reporterId" value={formData.reporterId ?? ""} onChange={handleChange} options={users.map(u => ({ label: u.name, value: u.id }))} />
+            <FormDatePicker
+              label="Start Date"
+              name="startDate"
+              value={formData.startDate || ""}
+              onChange={handleChange}
+              min={today}
+            />
+
              <FormDatePicker
               label="Due Date"
               name="dueDate"
