@@ -222,8 +222,8 @@ const EditHolidaysPage = () => {
               <th className="px-4 py-3 font-heading">Holiday Name</th>
               <th className="px-4 py-3 font-heading">Date</th>
               <th className="px-4 py-3 font-heading">Type</th>
-              <th className="px-4 py-3 font-heading">State</th>
               <th className="px-4 py-3 font-heading">Country</th>
+              <th className="px-4 py-3 font-heading">State</th>
               <th className="px-4 py-3 font-heading">Actions</th>
             </tr>
           </thead>
@@ -255,24 +255,11 @@ const EditHolidaysPage = () => {
                       />
                     </td>
                     <td className="px-4 py-2 w-1/6">
-                      <select
+                      <input
+                        type="text"
                         name="type"
                         value={editedData.type}
                         onChange={handleInputChange}
-                        className="border rounded p-1 w-full"
-                      >
-                        <option value="NATIONAL">National</option>
-                        <option value="REGIONAL">Regional</option>
-                        <option value="OPTIONAL">Optional</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="text"
-                        name="state"
-                        value={editedData.state || ""}
-                        onChange={handleInputChange}
-                        placeholder="State"
                         className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
                         readOnly
                       />
@@ -284,6 +271,17 @@ const EditHolidaysPage = () => {
                         value={editedData.country || ""}
                         onChange={handleInputChange}
                         placeholder="Country"
+                        className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
+                        readOnly
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        name="state"
+                        value={editedData.state || ""}
+                        onChange={handleInputChange}
+                        placeholder="State"
                         className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
                         readOnly
                       />
@@ -316,10 +314,10 @@ const EditHolidaysPage = () => {
                     </td>
                     <td className="px-4 py-2">{holiday.type}</td>
                     <td className="px-4 py-2">
-                      {holiday.state ? holiday.state : "-"}
+                      {holiday.country ? holiday.country : "-"}
                     </td>
                     <td className="px-4 py-2">
-                      {holiday.country ? holiday.country : "-"}
+                      {holiday.state ? holiday.state : "-"}
                     </td>
                     <td className="px-4 py-2 flex justify-center gap-2">
                       <button

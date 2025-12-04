@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { AlertCircle, Plus, X, User, Tag } from "lucide-react";
+import { AlertCircle, Plus, X, User, Tag, Pencil, Check } from "lucide-react";
 import axios from "axios";
 import AddMitigationForm from "./AddMitigationForm";
 import MitigationList from "./MitigationList";
+import CreateRiskModal from "./createRiskModal";
 
 export default function RiskDetailModal({ risk, onClose, projectId }) {
   const [riskDetail, setRiskDetail] = useState(null);
@@ -12,6 +13,15 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
   const [category, setCategory] = useState(null);
   const [owner, setOwner] = useState(null);
   const [reporter, setReporter] = useState(null);
+
+  /* ===== STATUS ===== */
+  const [status, setStatus] = useState(null);
+  const [statuses, setStatuses] = useState([]);
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [selectedStatusId, setSelectedStatusId] = useState(null);
+
+  /* ===== EDIT RISK ===== */
+  const [showEdit, setShowEdit] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,14 +74,27 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
             })
           : null;
 
-        const [mitigationRes, membersRes, categoryRes, ownerRes, reporterRes] =
-          await Promise.all([
-            mitigationReq,
-            membersReq,
-            categoryReq,
-            ownerReq,
-            reporterReq,
-          ]);
+        const statusReq = riskRes.statusId
+          ? axios.get(`${BASE_URL}/api/risk-statuses/${riskRes.statusId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          : null;
+
+        const [
+          mitigationRes,
+          membersRes,
+          categoryRes,
+          ownerRes,
+          reporterRes,
+          statusRes,
+        ] = await Promise.all([
+          mitigationReq,
+          membersReq,
+          categoryReq,
+          ownerReq,
+          reporterReq,
+          statusReq,
+        ]);
 
         if (!mounted) return;
 
@@ -81,6 +104,8 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
         setCategory(categoryRes?.data || null);
         setOwner(ownerRes?.data || null);
         setReporter(reporterRes?.data || null);
+        setStatus(statusRes?.data || null);
+        setSelectedStatusId(statusRes?.data?.id || null);
       } catch (err) {
         console.error(err);
         if (mounted) setError("Failed to load risk details");
@@ -92,6 +117,28 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
     load();
     return () => (mounted = false);
   }, [risk?.id, projectId, BASE_URL, token]);
+
+  /* ===== STATUS EDIT ===== */
+  async function startEditStatus() {
+    const res = await axios.get(
+      `${BASE_URL}/api/projects/${projectId}/risk-statuses`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setStatuses(res.data || []);
+    setEditingStatus(true);
+  }
+
+  async function saveStatus() {
+    await axios.patch(
+      `${BASE_URL}/api/risks/${risk.id}/status`,
+      { statusId: selectedStatusId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const updated = statuses.find((s) => s.id === selectedStatusId);
+    setStatus(updated || null);
+    setEditingStatus(false);
+  }
 
   function handleCreated(plan) {
     setMitigations((p) => [...p, plan]);
@@ -112,21 +159,38 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-4xl w-full shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-indigo-600 text-white p-5 flex justify-between">
+        <div className="bg-indigo-600 text-white p-5 flex justify-between items-center">
           <div>
             <h2 className="font-semibold text-lg">Risk #{risk.id}</h2>
             <p className="text-xs opacity-80">{riskDetail?.title || "-"}</p>
           </div>
-          <button onClick={onClose}>
-            <X />
-          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex items-center gap-1 text-sm text-white/90 hover:text-white"
+            >
+              <Pencil size={16} /> Edit Risk
+            </button>
+
+            <button onClick={onClose}>
+              <X />
+            </button>
+          </div>
         </div>
+
+        <CreateRiskModal
+          isOpen={showEdit}
+          onClose={() => setShowEdit(false)}
+          projectId={projectId}
+          risk={riskDetail} // ✅ THIS IS KEY
+          onSuccess={() => window.location.reload()}
+        />
 
         <div className="p-6 space-y-6">
           {loading && <p className="text-center text-sm">Loading...</p>}
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          {/* Core Details */}
           {riskDetail && (
             <>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -146,6 +210,57 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
                   icon={<User size={14} />}
                 />
                 <Info label="Triggers" value={riskDetail.triggers || "-"} />
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between border rounded-lg p-3">
+                <div>
+                  <div className="text-xs text-slate-500 mb-1">Status</div>
+
+                  {!editingStatus ? (
+                    <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-medium">
+                      {status?.name || "-"}
+                    </span>
+                  ) : (
+                    <select
+                      value={selectedStatusId}
+                      onChange={(e) =>
+                        setSelectedStatusId(Number(e.target.value))
+                      }
+                      className="border rounded-md px-3 py-2 text-sm"
+                    >
+                      {statuses.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {!editingStatus ? (
+                  <button
+                    onClick={startEditStatus}
+                    className="text-indigo-600 text-sm flex items-center gap-1"
+                  >
+                    <Pencil size={14} /> Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingStatus(false)}
+                      className="text-sm text-slate-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveStatus}
+                      className="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm flex items-center gap-1"
+                    >
+                      <Check size={14} /> Save
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Metrics */}
@@ -172,7 +287,7 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
                 Mitigation Plans
               </h4>
               <button
-                onClick={() => setShowAdd((v) => !v)}
+                onClick={() => setShowAdd(true)}
                 className="flex items-center gap-1 text-indigo-600 text-sm"
               >
                 <Plus size={16} /> Add
