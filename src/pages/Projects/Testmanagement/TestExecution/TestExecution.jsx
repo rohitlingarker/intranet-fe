@@ -1,0 +1,213 @@
+import React, { useState, useEffect } from "react";
+import axiosInstance from "../api/axiosInstance";
+import CreateTestCycleForm from "./CreateCycle";
+import CreateTestRunForm from "./CreateRun";
+import { useParams } from "react-router-dom";
+
+export default function TestExecution() {
+  const { projectId } = useParams();
+
+  const [cycles, setCycles] = useState([]);
+  const [selectedCycleId, setSelectedCycleId] = useState(null);
+  const [runs, setRuns] = useState([]);
+
+  const [showCycleModal, setShowCycleModal] = useState(false);
+  const [showRunModal, setShowRunModal] = useState(false);
+
+  // --------------------------------------------------------------------
+  // LOAD ALL CYCLES FOR PROJECT
+  // --------------------------------------------------------------------
+  const loadCycles = async () => {
+    try {
+      const res = await axiosInstance.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-cycles/projects/${projectId}`
+      );
+      const data = res.data || [];
+      setCycles(data);
+
+      if (data.length > 0) {
+        setSelectedCycleId(data[0].id); // auto-select first
+      }
+    } catch (err) {
+      console.error("Error loading cycles:", err);
+    }
+  };
+
+  // --------------------------------------------------------------------
+  // LOAD ALL RUNS FOR SELECTED CYCLE
+  // --------------------------------------------------------------------
+  const loadRuns = async (cycleId) => {
+    if (!cycleId) return;
+
+    try {
+      const res = await axiosInstance.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/cycles/${cycleId}`
+      );
+      setRuns(res.data || []);
+    } catch (err) {
+      console.error("Error loading runs:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadCycles();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCycleId) {
+      loadRuns(selectedCycleId);
+    }
+  }, [selectedCycleId]);
+
+  // --------------------------------------------------------------------
+  // STATUS BADGE UI
+  // --------------------------------------------------------------------
+  const getStatusBadge = (status) => {
+    const statusClasses = {
+      Completed: "bg-green-100 text-green-700",
+      InProgress: "bg-blue-100 text-blue-700",
+      NotStarted: "bg-gray-200 text-gray-600",
+    };
+
+    return (
+      <span className={`${statusClasses[status]} px-3 py-1 rounded-full text-xs`}>
+        {status}
+      </span>
+    );
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-bold">Test Execution</h1>
+
+        <div className="flex items-center gap-4">
+
+          {/* CYCLES DROPDOWN */}
+          <select
+            className="border rounded px-3 py-1 focus:outline-none"
+            value={selectedCycleId || ""}
+            onChange={(e) => setSelectedCycleId(e.target.value)}
+          >
+            {cycles.map((cycle) => (
+              <option key={cycle.id} value={cycle.id}>
+                {cycle.name}
+              </option>
+            ))}
+          </select>
+
+          {/* CREATE CYCLE BUTTON */}
+          <button
+            className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700"
+            onClick={() => setShowCycleModal(true)}
+          >
+            + Create Cycle
+          </button>
+
+          {/* CREATE RUN BUTTON */}
+          <button
+            className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+            onClick={() => setShowRunModal(true)}
+          >
+            + Create Run
+          </button>
+        </div>
+      </div>
+
+      {/* --------------------------------------------------------------------
+          RUN CARDS (UI EXACTLY LIKE YOUR SCREENSHOT)
+      -------------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {runs.map((run) => {
+          const executed = run.executedCount || 0;
+          const total = run.totalCount || 0;
+          const progress = total > 0 ? Math.round((executed / total) * 100) : 0;
+
+          return (
+            <div
+              key={run.id}
+              className="bg-[#F7FAFF] p-5 rounded-xl border border-blue-200 shadow-sm"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="font-semibold text-lg">{run.name}</h2>
+                {getStatusBadge(run.status)}
+              </div>
+
+              <p className="text-sm text-gray-500 mb-3">
+                {run.executionDate || "No Date"}
+              </p>
+
+              <div className="w-full bg-gray-200 h-2 rounded-full mb-3">
+                <div
+                  className="h-2 bg-green-500 rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between text-sm text-gray-700">
+                <span>
+                  {executed} / {total} Executed
+                </span>
+                <span>{progress}%</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* --------------------------------------------------------------------
+          MODALS
+      -------------------------------------------------------------------- */}
+
+      {/* CREATE CYCLE MODAL */}
+      {showCycleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
+            <h2 className="text-lg font-semibold mb-4">Create Test Cycle</h2>
+
+            <CreateTestCycleForm
+              projectId={projectId}
+              onSuccess={() => {
+                setShowCycleModal(false);
+                loadCycles(); // refresh cycles
+              }}
+            />
+
+            <button
+              className="absolute top-3 right-4 text-gray-400 hover:text-black"
+              onClick={() => setShowCycleModal(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE RUN MODAL */}
+      {showRunModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
+            <h2 className="text-lg font-semibold mb-4">Create Test Run</h2>
+
+            <CreateTestRunForm
+              projectId={projectId}
+              cycleId={selectedCycleId}
+              onSuccess={() => {
+                setShowRunModal(false);
+                loadRuns(selectedCycleId);
+              }}
+            />
+
+            <button
+              className="absolute top-3 right-4 text-gray-400 hover:text-black"
+              onClick={() => setShowRunModal(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
