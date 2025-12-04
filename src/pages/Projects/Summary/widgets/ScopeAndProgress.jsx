@@ -1,49 +1,39 @@
+// Summary/widgets/ScopeAndProgress.jsx
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, Typography } from "antd";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const { Title, Text } = Typography;
 
-export default function ScopeAndProgress({
-  epics = [],
-  stories = [],
-  tasks = [],
-  bugs = [],
-  statuses = [],
-}) {
-  const all = [...stories, ...tasks, ...bugs];
+function ScopeAndProgressInner({ epics = [], stories = [], tasks = [], bugs = [], statuses = [] }) {
+  const all = useMemo(() => [...(stories || []), ...(tasks || []), ...(bugs || [])], [stories, tasks, bugs]);
   const total = all.length;
 
-  const doneStatus = statuses.length
-    ? statuses.reduce((a, b) => (a.sortOrder > b.sortOrder ? a : b))
-    : null;
+  const doneStatus = useMemo(() => {
+    if (!statuses || statuses.length === 0) return null;
+    return statuses.reduce((a, b) => (a.sortOrder > b.sortOrder ? a : b), statuses[0]);
+  }, [statuses]);
 
-  const doneCount = all.filter((w) =>
-    doneStatus ? w.status?.id === doneStatus.id : false
-  ).length;
+  const doneCount = useMemo(() => {
+    if (!doneStatus) return 0;
+    return all.filter(it => it.status?.id === doneStatus.id).length;
+  }, [all, doneStatus]);
 
   const percent = total ? Math.round((doneCount / total) * 100) : 0;
-
-  const data = [
-    { name: "Completed", value: percent },
-    { name: "Remaining", value: 100 - percent },
-  ];
+  const data = useMemo(() => [{ name: "Completed", value: percent }, { name: "Remaining", value: 100 - percent }], [percent]);
 
   return (
     <Card>
-      <Title level={4}>Scope & Progress</Title>
-
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between">
         <div>
-          <Text type="secondary">Total Work Items</Text>
-          <Title level={4}>{total}</Title>
+          <Title level={4}>Scope & Progress</Title>
+          <Text type="secondary">Overview of epics, stories, tasks and bugs</Text>
         </div>
-
-        <div style={{ width: 130, height: 130 }}>
-          <ResponsiveContainer>
+        <div style={{ width: 120, height: 120 }}>
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={data} dataKey="value" innerRadius={40} outerRadius={55}>
+              <Pie data={data} dataKey="value" innerRadius={40} outerRadius={55} startAngle={90} endAngle={450}>
                 <Cell fill="#4f46e5" />
                 <Cell fill="#e5e7eb" />
               </Pie>
@@ -51,8 +41,12 @@ export default function ScopeAndProgress({
           </ResponsiveContainer>
         </div>
       </div>
-
-      <Text className="mt-2 block">{percent}% Completed</Text>
+      <div className="mt-3">
+        <Title level={4}>{percent}%</Title>
+        <Text type="secondary">{doneCount} / {total} completed</Text>
+      </div>
     </Card>
   );
 }
+
+export default React.memo(ScopeAndProgressInner);
