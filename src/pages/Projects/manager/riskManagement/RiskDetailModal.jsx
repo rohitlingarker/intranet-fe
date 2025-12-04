@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  AlertCircle,
-  Plus,
-  X,
-  User,
-  Tag,
-  Pencil,
-  Check,
-} from "lucide-react";
+import { AlertCircle, Plus, X, User, Tag, Pencil, Check } from "lucide-react";
 import axios from "axios";
 import AddMitigationForm from "./AddMitigationForm";
 import MitigationList from "./MitigationList";
@@ -154,9 +146,7 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
   }
 
   function handleUpdated(updated) {
-    setMitigations((p) =>
-      p.map((m) => (m.id === updated.id ? updated : m))
-    );
+    setMitigations((p) => p.map((m) => (m.id === updated.id ? updated : m)));
   }
 
   function handleDeleted(id) {
@@ -193,9 +183,7 @@ export default function RiskDetailModal({ risk, onClose, projectId }) {
           isOpen={showEdit}
           onClose={() => setShowEdit(false)}
           projectId={projectId}
-          isEdit={true}
-          riskId={risk.id}
-          initialData={riskDetail}
+          risk={riskDetail} // ✅ THIS IS KEY
           onSuccess={() => window.location.reload()}
         />
 
