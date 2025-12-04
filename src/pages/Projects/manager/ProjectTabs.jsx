@@ -3,14 +3,13 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import Summary from "./Summary";
-import Backlog from "./Backlog/Backlog";
-import Board from "./Board";
-import SprintBoard from "./Sprint/SprintBoard";
-import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import BacklogAndSprints from "./BacklogAndSprints";
-import Calender from "./Calender";
+import Board from "./Board";
+import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import Timeline from "./Timeline";
+
 import Navbar from "../../../components/Navbar/Navbar";
+import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 
 const ProjectTabs = () => {
@@ -22,6 +21,7 @@ const ProjectTabs = () => {
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
 
+  // Get tab from URL OR default to summary
   const getSelectedTabFromLocation = () => {
     const params = new URLSearchParams(location.search);
     return params.get("tab") || "summary";
@@ -29,10 +29,23 @@ const ProjectTabs = () => {
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
-  // ✅ Removed redirect for status-report — keeps navbar visible
+  // Update selected tab when URL changes
   useEffect(() => {
     setSelectedTab(getSelectedTabFromLocation());
   }, [location.search]);
+
+  // ⭐ NEW — Auto redirect test-management → test-management/overview
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+
+    if (tab === "test-management") {
+      navigate(
+        `/projects/${projectId}?tab=test-management/overview`,
+        { replace: true }
+      );
+    }
+  }, [location.search, navigate, projectId]);
 
   // Fetch project details
   useEffect(() => {
@@ -54,32 +67,35 @@ const ProjectTabs = () => {
     }
   }, [projectId, token]);
 
+  // Render content for each tab
   const renderTabContent = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
-
-    switch (selectedTab) {
-      case "risk-management":
-        return <RiskRegisterPage projectId={pid} />;
-
-      case "summary":
-        return <Summary projectId={pid} projectName={projectName} />;
-      case "backlog":
-        return <Backlog projectId={pid} projectName={projectName} />;
-      case "board":
-        return <Board projectId={pid} projectName={projectName} />;
-      case "sprint":
-        return <SprintBoard projectId={pid} projectName={projectName} />;
-      case "status-report":
-        return <ProjectStatusReportWrapper projectId={pid} />;
-      case "calender":
-        return <Calender projectId={pid} />;
-      case "timelines":
-        return <Timeline projectId={pid} />;
-      
-      default:
-        return null;
+    if (selectedTab === "risk-management") {
+      return <RiskRegisterPage projectId={pid} />;
     }
+    if (selectedTab === "summary") {
+      return <Summary projectId={pid} projectName={projectName} />;
+    }
+    if (selectedTab === "backlog") {
+      return <BacklogAndSprints projectId={pid} />;
+    }
+    if (selectedTab === "board") {
+      return <Board projectId={pid} projectName={projectName} />;
+    }
+    if (selectedTab === "status-report") {
+      return <ProjectStatusReportWrapper projectId={pid} />;
+    }
+    if (selectedTab === "timelines") {
+      return <Timeline projectId={pid} />;
+    }
+
+    // ⭐ Test Management (handles ALL inner tabs)
+    if (selectedTab.startsWith("test-management")) {
+      return <TestManagement projectId={pid} />;
+    }
+
+    return null;
   };
 
   if (!projectId) {
@@ -96,9 +112,8 @@ const ProjectTabs = () => {
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
     { name: "Status Report", tab: "status-report" },
-    {name: "Calender", tab: "calender"},
-     {name:"Timelines", tab:"timelines"}
-   
+    { name: "Timelines", tab:"timelines" },
+    { name: "Test Management", tab: "test-management" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
@@ -108,17 +123,14 @@ const ProjectTabs = () => {
   }));
 
   return (
-    <div >
-      {/* ✅ Fixed Navbar (always visible) */}
+    <div>
+      {/* Top Navbar */}
       <header className="bg-white mb-4">
-          <Navbar logo={null} navItems={navItemsWithActive} />
+        <Navbar logo={null} navItems={navItemsWithActive} />
       </header>
 
-      {/* ✅ Content below navbar */}
-      
-        <div>
-          {renderTabContent()}
-        </div>
+      {/* Tab Content */}
+      <div>{renderTabContent()}</div>
     </div>
   );
 };

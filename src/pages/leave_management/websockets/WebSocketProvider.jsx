@@ -6,12 +6,14 @@ const WebSocketContext = createContext(null);
 export const useWebSocket = () => useContext(WebSocketContext);
 
 export default function WebSocketProvider({ children }) {
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  // 🛑 FIX 1: Safe fallback URL
+  const BASE_URL =
+    import.meta.env.VITE_BASE_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:8080";
 
   const stompClientRef = useRef(null);
   const listeners = useRef({});
-
-  // ⛔ prevent rapid repeat WebSocket events
   const lastEventTime = useRef(0);
 
   const subscribe = (event, callback) => {
@@ -27,35 +29,48 @@ export default function WebSocketProvider({ children }) {
 
   const emitEvent = (event, payload) => {
     const now = Date.now();
-    if (now - lastEventTime.current < 500) {
-      console.warn("⚠ Ignored duplicate WS event");
-      return;
-    }
-    lastEventTime.current = now;
+    if (now - lastEventTime.current < 500) return; // rate limit
 
+    lastEventTime.current = now;
     (listeners.current[event] || []).forEach((cb) => cb(payload));
   };
 
   useEffect(() => {
-    const socket = new SockJS(`${BASE_URL}/ws`);
-    const stomp = over(socket);
-    stompClientRef.current = stomp;
+    try {
+      // 🛑 FIX 2: Remove double slashes
+      const wsUrl = `${BASE_URL.replace(/\/+$/, "")}/ws`;
+      console.log("Connecting WebSocket:", wsUrl);
 
-    stomp.connect(
-      {},
-      () => {
-        stomp.subscribe("/topic/data-updated", (msg) => {
-          emitEvent("data-updated", msg.body);
-        });
-        stomp.subscribe("/topic/leave-updated", (msg) => {
-          emitEvent("leave-updated", msg.body);
-        });
-      },
-      (err) => console.error("WS error", err)
-    );
+      const socket = new SockJS(wsUrl);
+      const stomp = over(socket);
+      stompClientRef.current = stomp;
+
+      stomp.connect(
+        {},
+        () => {
+          console.log("WS CONNECTED");
+
+          stomp.subscribe("/topic/data-updated", (msg) =>
+            emitEvent("data-updated", msg.body)
+          );
+
+          stomp.subscribe("/topic/leave-updated", (msg) =>
+            emitEvent("leave-updated", msg.body)
+          );
+        },
+        (err) => {
+          // 🛑 FIX 3: Do not crash React
+          console.warn("WS connection failed (non-blocking)", err);
+        }
+      );
+    } catch (err) {
+      console.error("WS init error", err);
+    }
 
     return () => {
-      if (stomp.connected) stomp.disconnect();
+      if (stompClientRef.current?.connected) {
+        stompClientRef.current.disconnect();
+      }
     };
   }, []);
 

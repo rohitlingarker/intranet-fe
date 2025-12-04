@@ -1,7 +1,9 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
+
+const Sprint = ({ children }) => children;
+const Epic = ({ children }) => children;
 
 const Timeline = ({ projectId }) => {
   const [sprints, setSprints] = useState([]);
@@ -12,280 +14,266 @@ const Timeline = ({ projectId }) => {
   const [loading, setLoading] = useState(false);
 
   const scrollRef = useRef(null);
-  const headerRef = useRef(null);
+
+  const stickyWidth = 320;
+  const cellWidth = 40;
 
   const today = dayjs();
   const startTimeline = today.subtract(1, "month").startOf("month");
   const endTimeline = today.add(3, "month").endOf("month");
 
   const days = [];
-  let cursor = startTimeline;
-  while (cursor.isBefore(endTimeline)) {
-    days.push(cursor);
-    cursor = cursor.add(1, "day");
+  for (
+    let d = startTimeline.clone();
+    d.isBefore(endTimeline) || d.isSame(endTimeline, "day");
+    d = d.add(1, "day")
+  ) {
+    days.push(d.clone());
   }
+
+  const totalWidth = days.length * cellWidth;
 
   const fetchData = async () => {
     if (!projectId) return;
     setLoading(true);
+
     try {
       const token = localStorage.getItem("token");
-      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+      const headers = { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      };
 
-      const [sprintRes, epicRes, storyRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`, authHeaders),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`, authHeaders),
-        axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, authHeaders),
+      const [sprintR, epicR, storyR] = await Promise.all([
+        fetch(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+          { headers }
+        ).then(r => r.json()),
+        fetch(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
+          { headers }
+        ).then(r => r.json()),
+        fetch(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+          { headers }
+        ).then(r => r.json()),
       ]);
 
-      setSprints(Array.isArray(sprintRes.data) ? sprintRes.data : sprintRes.data?.data || []);
-      setEpics(Array.isArray(epicRes.data) ? epicRes.data : epicRes.data?.data || []);
-      setStories(Array.isArray(storyRes.data) ? storyRes.data : storyRes.data?.data || []);
+      setSprints(sprintR?.data ?? sprintR ?? []);
+      setEpics(epicR?.data ?? epicR ?? []);
+      setStories(storyR?.data ?? storyR ?? []);
     } catch (err) {
-      console.error("Error fetching timeline data:", err);
-    } finally {
-      setLoading(false);
+      console.error("Timeline Fetch Error:", err);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, [projectId]);
 
-  const cellWidth = 40;
-  const stickyWidth = 420;
+  const toStart = (d) => (d ? dayjs(d).startOf("day") : null);
+  const toEnd = (d) => (d ? dayjs(d).endOf("day") : null);
 
-  const fallbackStart = (item) => {
-    const date = item?.startDate || item?.start_date;
-    return date ? dayjs(date) : today;
+  const fallbackStart = (item) =>
+    toStart(item?.startDate || item?.start_date) || startTimeline;
+  const fallbackEnd = (item) =>
+    toEnd(
+      item?.endDate || item?.end_date || item?.dueDate || item?.due_date
+    ) || fallbackStart(item).add(6, "day");
+
+  const calcX = (date) => {
+    const diff = dayjs(date).startOf("day").diff(startTimeline, "day");
+    return diff * cellWidth;
   };
 
-  const fallbackEnd = (item) => {
-    const date = item?.endDate || item?.end_date || item?.dueDate || item?.due_date;
-    return date ? dayjs(date) : fallbackStart(item).add(7, "day");
+  const calcW = (s, e) => {
+    const diff =
+      dayjs(e).endOf("day").diff(dayjs(s).startOf("day"), "day") + 1;
+    return Math.max(diff * cellWidth, cellWidth);
   };
-
-  const calcX = (d) => dayjs(d).diff(startTimeline, "day") * cellWidth;
-  const calcW = (s, e) => Math.max(dayjs(e).diff(s, "day") * cellWidth, cellWidth);
-
-  const monthGroups = [];
-  let currentMonth = null;
-  let monthStart = 0;
-  days.forEach((d, i) => {
-    const monthKey = d.format("MMM YYYY");
-    if (monthKey !== currentMonth) {
-      if (currentMonth) {
-        monthGroups[monthGroups.length - 1].daysInMonth = i - monthStart;
-      }
-      monthGroups.push({
-        month: d.format("MMM"),
-        year: d.format("YYYY"),
-        startIndex: i,
-        daysInMonth: 0,
-      });
-      currentMonth = monthKey;
-      monthStart = i;
-    }
-  });
-  if (monthGroups.length > 0) {
-    monthGroups[monthGroups.length - 1].daysInMonth = days.length - monthStart;
-  }
 
   const toggleExpand = (id, type) => {
     if (type === "sprint") {
       setExpandedSprints((prev) => {
-        const newSet = new Set(prev);
-        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-        return newSet;
+        const updated = new Set(prev);
+        updated.has(id) ? updated.delete(id) : updated.add(id);
+        return updated;
       });
-    } else if (type === "epic") {
+    }
+    if (type === "epic") {
       setExpandedEpics((prev) => {
-        const newSet = new Set(prev);
-        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-        return newSet;
+        const updated = new Set(prev);
+        updated.has(id) ? updated.delete(id) : updated.add(id);
+        return updated;
       });
     }
   };
 
-  const Bar = ({ item, label, color, showDate = false }) => {
+  const monthGroups = [];
+  let current = days[0].format("MMM YYYY");
+  let startIndex = 0;
+
+  days.forEach((d, i) => {
+    const key = d.format("MMM YYYY");
+    if (key !== current) {
+      monthGroups.push({
+        month: days[startIndex].format("MMM"),
+        year: days[startIndex].format("YYYY"),
+        days: i - startIndex,
+      });
+      current = key;
+      startIndex = i;
+    }
+  });
+
+  monthGroups.push({
+    month: days[startIndex].format("MMM"),
+    year: days[startIndex].format("YYYY"),
+    days: days.length - startIndex,
+  });
+
+  const Bar = ({ item, color, label }) => {
     const start = fallbackStart(item);
     const end = fallbackEnd(item);
-    const displayLabel =
-      label && typeof label === "object" ? label.name || "" : label || "";
 
     return (
-      <div className="relative" style={{ height: 40, marginBottom: 8 }}>
-        {showDate && (
-          <div
-            className="absolute bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-md z-20"
-            style={{ left: stickyWidth + calcX(start) - 80, top: 0 }}
-          >
-            {start.format("MMM D, YYYY")}
-          </div>
-        )}
-        <div
-          className="absolute rounded text-sm text-white px-3 flex items-center font-medium shadow cursor-pointer hover:opacity-90 transition-opacity"
-          style={{
-            left: stickyWidth + calcX(start),
-            width: calcW(start, end),
-            height: 32,
-            top: showDate ? 0 : 4,
-            background: color,
-            zIndex: 10,
-          }}
-          title={`${displayLabel} (${start.format("MMM D")} - ${end.format("MMM D")})`}
-        >
-          <span className="truncate">{displayLabel}</span>
-        </div>
+      <div
+        className="absolute text-white text-xs px-3 flex items-center shadow-sm rounded"
+        style={{
+          background: color,
+          left: calcX(start),
+          width: calcW(start, end),
+          height: 24,
+          top: "50%",
+          transform: "translateY(-50%)",
+          opacity: 0.9,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {label}
       </div>
     );
   };
 
   const ItemRow = ({
     item,
-    color,
     labelKey,
     icon,
+    color,
     indent = 0,
-    showCheckbox = true,
     expandable = false,
-    isExpanded = false,
+    expanded = false,
     onToggle,
-    showDate = false,
-    status = null,
-    actions = false,
   }) => {
-    const labelValue =
-      (item && labelKey && item[labelKey] !== undefined ? item[labelKey] : null) ||
-      item?.name ||
-      item?.title;
-    const displayLabel =
-      labelValue && typeof labelValue === "object" ? labelValue.name || "" : labelValue || "";
-
-    const displayStatus =
-      status && typeof status === "object" ? status.name || "" : status || "";
+    const label = item?.[labelKey] || item?.name || item?.title;
 
     return (
-      <div className="flex items-start border-b hover:bg-gray-50">
+      <div className="table-row-container" style={{ height: 48 }}>
+        {/* STICKY LEFT COLUMN */}
         <div
-          className="sticky left-0 bg-white z-20 flex items-center gap-2 py-3 border-r"
-          style={{ width: stickyWidth, paddingLeft: 16 + indent * 24 }}
+          className="sticky-column"
+          style={{
+            paddingLeft: 12 + indent * 20,
+          }}
         >
-          {showCheckbox && <input type="checkbox" className="w-4 h-4 rounded border-gray-300" />}
           {expandable ? (
-            <button
+            <button 
+              className="expand-btn" 
               onClick={onToggle}
-              className="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded text-gray-600"
             >
-              {isExpanded ? "▼" : "▶"}
+              {expanded ? "▼" : "▶"}
             </button>
           ) : (
-            <div className="w-5"></div>
+            <div style={{ width: 16 }} />
           )}
-          {icon && <span className="text-lg">{icon}</span>}
-          <span className="text-sm text-gray-800 font-medium truncate flex-1">{displayLabel}</span>
-          {displayStatus && (
-            <span
-              className={`text-xs px-2 py-1 rounded font-medium ${
-                displayStatus === "DONE"
-                  ? "bg-green-100 text-green-800"
-                  : displayStatus === "IN PROGRESS"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {displayStatus}
-            </span>
-          )}
-          {actions && (
-            <div className="flex items-center gap-1">
-              <button className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-600">
-                +
-              </button>
-              <button className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-600">
-                •••
-              </button>
-            </div>
-          )}
+
+          <span className="text-base">{icon}</span>
+          <span className="text-sm text-gray-800 truncate flex-1">{label}</span>
         </div>
-        <div className="flex-1 relative min-w-[2000px]">
-          <Bar item={item} color={color} label={displayLabel} showDate={showDate} />
+
+        {/* SCROLLABLE TIMELINE AREA */}
+        <div className="timeline-content">
+          <Bar item={item} color={color} label={label} />
         </div>
       </div>
     );
   };
 
-  const StoryRow = ({ story, indent = 0 }) => (
-    <ItemRow item={story} color="#10B981" labelKey="title" icon="📋" indent={indent} showCheckbox={true} status={story?.status} />
+  const StoryRow = ({ story, indent }) => (
+    <ItemRow item={story} labelKey="title" color="#10B981" icon="📋" indent={indent} />
   );
 
-  const EpicRow = ({ epic, sprintId = null, indent = 0 }) => {
-    const epicId = epic?.id || epic?._id;
-    const isExpanded = expandedEpics.has(epicId);
+  const EpicRow = ({ epic, sprintId, indent }) => {
+    const epicId = epic.id;
+    const expanded = expandedEpics.has(epicId);
 
-    const epicStories = stories.filter((s) => {
-      const storyEpicId = s?.epicId || s?.epic_id;
-      const storySprintId = s?.sprintId || s?.sprint_id;
-      if (sprintId) return storyEpicId === epicId && storySprintId === sprintId;
-      return storyEpicId === epicId;
-    });
+    const epicStories = stories.filter(
+      (s) =>
+        (s.epicId === epicId || s.epic_id === epicId) &&
+        (!sprintId ||
+          s.sprintId === sprintId ||
+          s.sprint_id === sprintId)
+    );
 
     return (
       <>
         <ItemRow
           item={epic}
-          color="#A855F7"
           labelKey="name"
+          color="#A855F7"
           icon="⬡"
           indent={indent}
-          showCheckbox={true}
           expandable={epicStories.length > 0}
-          isExpanded={isExpanded}
+          expanded={expanded}
           onToggle={() => toggleExpand(epicId, "epic")}
-          actions={true}
         />
-        {isExpanded &&
-          epicStories.map((story, idx) => <StoryRow key={`story-${story?.id || idx}`} story={story} indent={indent + 1} />)}
+
+        {expanded &&
+          epicStories.map((story) => (
+            <StoryRow key={story.id} story={story} indent={indent + 1} />
+          ))}
       </>
     );
   };
 
   const SprintRow = ({ sprint }) => {
-    const sprintId = sprint?.id || sprint?._id;
-    const isExpanded = expandedSprints.has(sprintId);
+    const sprintId = sprint.id;
+    const expanded = expandedSprints.has(sprintId);
 
-    const sprintEpics = epics.filter((e) => {
-      const epicSprintId = e?.sprintId || e?.sprint_id;
-      return epicSprintId === sprintId;
-    });
+    const sprintEpics = epics.filter(
+      (e) => e.sprintId === sprintId || e.sprint_id === sprintId
+    );
 
-    const directStories = stories.filter((s) => {
-      const storySprintId = s?.sprintId || s?.sprint_id;
-      const storyEpicId = s?.epicId || s?.epic_id;
-      return storySprintId === sprintId && !storyEpicId;
-    });
+    const directStories = stories.filter(
+      (s) =>
+        !s.epicId &&
+        (s.sprintId === sprintId || s.sprint_id === sprintId)
+    );
 
     return (
       <>
         <ItemRow
           item={sprint}
-          color="#0EA5E9"
           labelKey="name"
+          color="#0EA5E9"
           icon="⚡"
-          showCheckbox={true}
           expandable={true}
-          isExpanded={isExpanded}
+          expanded={expanded}
           onToggle={() => toggleExpand(sprintId, "sprint")}
-          showDate={true}
-          actions={true}
         />
-        {isExpanded && (
+
+        {expanded && (
           <>
-            {sprintEpics.map((epic, idx) => (
-              <EpicRow key={`epic-${epic?.id || idx}`} epic={epic} sprintId={sprintId} indent={1} />
+            {sprintEpics.map((epic) => (
+              <EpicRow key={epic.id} epic={epic} sprintId={sprintId} indent={1} />
             ))}
-            {directStories.map((story, idx) => (
-              <StoryRow key={`story-${story?.id || idx}`} story={story} indent={1} />
+
+            {directStories.map((story) => (
+              <StoryRow key={story.id} story={story} indent={1} />
             ))}
           </>
         )}
@@ -293,111 +281,299 @@ const Timeline = ({ projectId }) => {
     );
   };
 
-  const unassignedEpics = epics.filter((e) => !e?.sprintId && !e?.sprint_id);
-  const unassignedStories = stories.filter((s) => !s?.sprintId && !s?.sprint_id && !s?.epicId && !s?.epic_id);
+  const unassignedEpics = epics.filter(
+    (e) => !e.sprintId && !e.sprint_id
+  );
+  const unassignedStories = stories.filter(
+    (s) =>
+      !s.sprintId &&
+      !s.sprint_id &&
+      !s.epicId &&
+      !s.epic_id
+  );
 
-  // Horizontal scroll sync
-  const handleScroll = (e) => {
-    if (headerRef.current) headerRef.current.scrollLeft = e.target.scrollLeft;
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-white rounded-lg shadow-lg border">
-        <div className="text-gray-500">Loading timeline...</div>
-      </div>
-    );
-  }
+  if (loading)
+    return <div className="p-4 text-center">Loading Timeline...</div>;
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-lg shadow-lg border overflow-hidden">
-      {/* Header */}
-      <div className="flex-shrink-0 bg-gray-50 border-b sticky top-0 z-50">
-        <div className="flex">
-          <div className="w-[420px] bg-white border-r flex items-center px-4 py-3">
-            <span className="font-semibold text-gray-900 text-sm">Work</span>
-          </div>
-          <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin" ref={headerRef}>
-            <div className="inline-block min-w-[2000px]">
-              <div className="flex bg-white">
-                {monthGroups.map((group, i) => (
-                  <div key={i} style={{ width: group.daysInMonth * cellWidth }} className="text-center border-r border-gray-200 py-2">
-                    <div className="font-semibold text-gray-900 text-sm">{group.month}</div>
+    <div className="timeline-wrapper">
+      <div
+        ref={scrollRef}
+        className="timeline-scroll-container"
+      >
+        <div className="timeline-table">
+          {/* HEADER ROW */}
+          <div className="header-row">
+            {/* STICKY WORK HEADER */}
+            <div className="sticky-header-column">
+              Work
+            </div>
+
+            {/* CALENDAR HEADER */}
+            <div className="calendar-header">
+              {/* Month Row */}
+              <div className="month-row">
+                {monthGroups.map((m, i) => (
+                  <div
+                    key={i}
+                    style={{ width: m.days * cellWidth, minWidth: m.days * cellWidth }}
+                    className="month-cell"
+                  >
+                    {m.month}
                   </div>
                 ))}
               </div>
-              <div className="flex bg-gray-50 border-t">
-                {days.map((d, i) => (
-                  <div key={i} style={{ width: cellWidth }} className="text-xs text-gray-600 text-center py-2 border-r border-gray-200 last:border-r-0">
-                    {d.date()}
-                  </div>
-                ))}
+
+              {/* Day Row */}
+              <div className="day-row">
+                {days.map((d, i) => {
+                  const isToday = d.isSame(today, "day");
+                  return (
+                    <div
+                      key={i}
+                      style={{ width: cellWidth, minWidth: cellWidth }}
+                      className={`day-cell ${isToday ? "today" : ""}`}
+                    >
+                      {d.date()}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto scrollbar-thin" ref={scrollRef} onScroll={handleScroll}>
-        {sprints.map((sprint, idx) => (
-          <SprintRow key={`sprint-${sprint?.id || idx}`} sprint={sprint} />
-        ))}
-
-        {unassignedEpics.length > 0 && (
-          <>
-            <div className="border-b bg-gray-100 mt-4">
-              <div className="flex">
-                <div className="sticky left-0 w-[420px] bg-gray-100 z-10 px-4 py-2 border-r">
-                  <span className="font-semibold text-gray-700 text-sm">Epics</span>
-                </div>
-                <div className="flex-1"></div>
+          {/* CONTENT ROWS */}
+          {sprints.length > 0 && (
+            <>
+              <div className="section-header">
+                <div className="sticky-section-label">Sprints</div>
+                <div style={{ width: totalWidth }} />
               </div>
-            </div>
-            {unassignedEpics.map((epic, idx) => (
-              <EpicRow key={`epic-${epic?.id || idx}`} epic={epic} indent={0} />
-            ))}
-          </>
-        )}
+              {sprints.map((s) => (
+                <SprintRow key={s.id} sprint={s} />
+              ))}
+            </>
+          )}
 
-        {unassignedStories.length > 0 && (
-          <>
-            <div className="border-b bg-gray-100 mt-4">
-              <div className="flex">
-                <div className="sticky left-0 w-[420px] bg-gray-100 z-10 px-4 py-2 border-r">
-                  <span className="font-semibold text-gray-700 text-sm">Stories</span>
-                </div>
-                <div className="flex-1"></div>
+          {unassignedEpics.length > 0 && (
+            <>
+              <div className="section-header">
+                <div className="sticky-section-label">Epics</div>
+                <div style={{ width: totalWidth }} />
               </div>
-            </div>
-            {unassignedStories.map((story, idx) => (
-              <StoryRow key={`story-${story?.id || idx}`} story={story} indent={0} />
-            ))}
-          </>
-        )}
+              {unassignedEpics.map((e) => (
+                <EpicRow key={e.id} epic={e} indent={0} />
+              ))}
+            </>
+          )}
 
-        <div className="border-t p-4">
-          <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-            <span className="text-lg">+</span>
-            <span>Create Epic</span>
-          </button>
+          {unassignedStories.length > 0 && (
+            <>
+              <div className="section-header">
+                <div className="sticky-section-label">Stories</div>
+                <div style={{ width: totalWidth }} />
+              </div>
+              {unassignedStories.map((s) => (
+                <StoryRow key={s.id} story={s} indent={0} />
+              ))}
+            </>
+          )}
         </div>
       </div>
 
       <style jsx>{`
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+        .timeline-wrapper {
+          width: 100%;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          border: 1px solid #e5e7eb;
+          overflow: hidden;
         }
-        .scrollbar-thin::-webkit-scrollbar-track {
+
+        .timeline-scroll-container {
+          height: 80vh;
+          overflow: auto;
+          position: relative;
+        }
+
+        .timeline-table {
+          display: table;
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        /* HEADER STYLES */
+        .header-row {
+          display: table-row;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: white;
+        }
+
+        .sticky-header-column {
+          display: table-cell;
+          position: sticky;
+          left: 0;
+          z-index: 101;
+          width: ${stickyWidth}px;
+          min-width: ${stickyWidth}px;
+          max-width: ${stickyWidth}px;
+          background: #f9fafb;
+          border-right: 1px solid #d1d5db;
+          border-bottom: 1px solid #d1d5db;
+          padding: 12px 16px;
+          font-weight: 600;
+          color: #374151;
+          vertical-align: middle;
+          box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+        }
+
+        .calendar-header {
+          display: table-cell;
+          background: #f9fafb;
+          border-bottom: 1px solid #d1d5db;
+          vertical-align: top;
+        }
+
+        .month-row {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .month-cell {
+          text-align: center;
+          padding: 8px;
+          font-weight: 600;
+          color: #374151;
+          font-size: 14px;
+          border-right: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .day-row {
+          display: flex;
+          background: white;
+        }
+
+        .day-cell {
+          text-align: center;
+          padding: 8px;
+          font-size: 12px;
+          color: #6b7280;
+          border-right: 1px solid #e5e7eb;
+        }
+
+        .day-cell.today {
+          background: #eff6ff;
+          color: #2563eb;
+          font-weight: 600;
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
+          display: table-row;
+          position: sticky;
+          top: 80px;
+          z-index: 50;
+          background: #f3f4f6;
+        }
+
+        .sticky-section-label {
+          display: table-cell;
+          position: sticky;
+          left: 0;
+          z-index: 51;
+          width: ${stickyWidth}px;
+          min-width: ${stickyWidth}px;
+          max-width: ${stickyWidth}px;
+          background: #f3f4f6;
+          border-right: 1px solid #d1d5db;
+          border-bottom: 1px solid #d1d5db;
+          padding: 8px 16px;
+          font-weight: 600;
+          color: #374151;
+          font-size: 14px;
+          box-shadow: 2px 0 4px rgba(0,0,0,0.03);
+        }
+
+        /* CONTENT ROWS */
+        .table-row-container {
+          display: table-row;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table-row-container:hover .sticky-column,
+        .table-row-container:hover .timeline-content {
+          background: #f9fafb;
+        }
+
+        .sticky-column {
+          display: table-cell;
+          position: sticky;
+          left: 0;
+          z-index: 10;
+          width: ${stickyWidth}px;
+          min-width: ${stickyWidth}px;
+          max-width: ${stickyWidth}px;
+          background: white;
+          border-right: 1px solid #e5e7eb;
+          padding: 12px;
+          vertical-align: middle;
+          box-shadow: 2px 0 4px rgba(0,0,0,0.03);
+        }
+
+        .sticky-column {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .expand-btn {
+          color: #6b7280;
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .expand-btn:hover {
+          color: #374151;
+        }
+
+        .timeline-content {
+          display: table-cell;
+          position: relative;
+          width: ${totalWidth}px;
+          min-width: ${totalWidth}px;
+          background: white;
+          vertical-align: middle;
+        }
+
+        /* SCROLLBAR */
+        .timeline-scroll-container::-webkit-scrollbar {
+          height: 12px;
+          width: 12px;
+        }
+
+        .timeline-scroll-container::-webkit-scrollbar-track {
           background: #f1f1f1;
         }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 4px;
+
+        .timeline-scroll-container::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 6px;
         }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #555;
+
+        .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
         }
       `}</style>
     </div>
