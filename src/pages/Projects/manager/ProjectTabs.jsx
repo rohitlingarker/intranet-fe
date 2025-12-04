@@ -10,6 +10,7 @@ import Timeline from "./Timeline";
 
 import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
+import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -70,7 +71,9 @@ const ProjectTabs = () => {
   const renderTabContent = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
-
+    if (selectedTab === "risk-management") {
+      return <RiskRegisterPage projectId={pid} />;
+    }
     if (selectedTab === "summary") {
       return <Summary projectId={pid} projectName={projectName} />;
     }
