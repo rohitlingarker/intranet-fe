@@ -1,6 +1,6 @@
 "use client";
 
-import TopTabs from "./Toptabs";
+import TopTabs from "./TopTabs";
 import { useParams, useLocation } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
