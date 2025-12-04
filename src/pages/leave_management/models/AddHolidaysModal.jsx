@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Country, State } from "country-state-city";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
@@ -34,9 +35,12 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("NATIONAL");
+  const [countryCode, setCountryCode] = useState("");
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [error, setError] = useState("");
+  const countries = Country.getAllCountries();
+  const states = countryCode ? State.getStatesOfCountry(countryCode) : [];
 
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -57,6 +61,14 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (type === "NATIONAL") {
+      setState("ALL");
+    } else {
+      setState("");
+    }
+  }, [type]);
 
   // ---------------- Add Manual Holiday ----------------
   const handleAddHoliday = () => {
@@ -194,18 +206,19 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-
         {/* HEADER */}
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-bold">Add Holidays</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full"
+          >
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         {/* BODY */}
         <div className="p-6 overflow-y-auto space-y-6">
-
           {/* ONE SINGLE ENTERPRISE FORM */}
           <div className="bg-gray-50 p-6 rounded-xl border space-y-6">
             <h3 className="font-semibold text-gray-800 border-b pb-2">
@@ -213,8 +226,10 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-              <InputGroup label="Holiday Date *" icon={<CalendarDays className="h-5 w-5 text-orange-500" />}>
+              <InputGroup
+                label="Holiday Date *"
+                icon={<CalendarDays className="h-5 w-5 text-orange-500" />}
+              >
                 <input
                   type="date"
                   value={date}
@@ -224,7 +239,10 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
                 />
               </InputGroup>
 
-              <InputGroup label="Holiday Name *" icon={<Text className="h-5 w-5 text-blue-500" />}>
+              <InputGroup
+                label="Holiday Name *"
+                icon={<Text className="h-5 w-5 text-blue-500" />}
+              >
                 <input
                   type="text"
                   value={description}
@@ -234,7 +252,10 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
                 />
               </InputGroup>
 
-              <InputGroup label="Type *" icon={<Tag className="h-5 w-5 text-green-500" />}>
+              <InputGroup
+                label="Type *"
+                icon={<Tag className="h-5 w-5 text-green-500" />}
+              >
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
@@ -246,24 +267,55 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
                 </select>
               </InputGroup>
 
-              <InputGroup label="Country *" icon={<Globe className="h-5 w-5 text-blue-500" />}>
-                <input
-                  type="text"
+              <InputGroup
+                label="Country *"
+                icon={<Globe className="h-5 w-5 text-blue-500" />}
+              >
+                <select
                   value={country}
-                  onChange={(e) => setCountry(e.target.value)}
+                  onChange={(e) => {
+                    const selected = countries.find(
+                      (c) => c.name === e.target.value
+                    );
+                    setCountry(e.target.value); // Full name → "India"
+                    setCountryCode(selected?.isoCode); // ISO → "IN"
+                    setState("");
+                  }}
                   className="w-full p-2 pl-10 border rounded"
-                  placeholder="e.g., India"
-                />
+                >
+                  <option value="">Select Country</option>
+                  {countries.map((c) => (
+                    <option key={c.isoCode} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </InputGroup>
 
-              <InputGroup label="State *" icon={<MapPin className="h-5 w-5 text-red-500" />}>
-                <input
-                  type="text"
+              <InputGroup
+                label="State *"
+                icon={<MapPin className="h-5 w-5 text-red-500" />}
+              >
+                <select
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  className="w-full p-2 pl-10 border rounded"
-                  placeholder="e.g., Telangana"
-                />
+                  className={`w-full p-2 pl-10 border rounded 
+                ${type === "NATIONAL" ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  disabled={type === "NATIONAL"}
+                >
+                  {type === "NATIONAL" ? (
+                    <option value="ALL">All</option>
+                  ) : (
+                    <>
+                      <option value="">Select State</option>
+                      {states.map((s) => (
+                        <option key={s.isoCode} value={s.isoCode}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
               </InputGroup>
             </div>
 
@@ -287,7 +339,6 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
             <p className="text-gray-500 text-sm">Download → Fill → Upload</p>
 
             <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
-
               <button
                 onClick={handleDownloadTemplate}
                 disabled={downloading}
@@ -324,14 +375,20 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
           {/* HOLIDAY LIST */}
           {holidays.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-semibold">Holidays Added ({holidays.length})</h3>
+              <h3 className="font-semibold">
+                Holidays Added ({holidays.length})
+              </h3>
               <ul className="border rounded-lg divide-y max-h-60 overflow-y-auto">
                 {holidays.map((h) => (
-                  <li key={h.id} className="p-3 flex justify-between items-center">
+                  <li
+                    key={h.id}
+                    className="p-3 flex justify-between items-center"
+                  >
                     <div>
                       <p className="font-semibold">{h.description}</p>
                       <p className="text-sm text-gray-600">
-                        {h.date} ({h.year}) - {h.type} {h.state && `, ${h.state}`}
+                        {h.date} ({h.year}) - {h.type}{" "}
+                        {h.state && `, ${h.state}`}
                       </p>
                     </div>
 
@@ -346,7 +403,6 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
               </ul>
             </div>
           )}
-
         </div>
 
         {/* FOOTER */}
@@ -356,7 +412,9 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
             disabled={submitting || holidays.length === 0}
             className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700"
           >
-            {submitting ? "Submitting..." : `Submit ${holidays.length} Holiday(s)`}
+            {submitting
+              ? "Submitting..."
+              : `Submit ${holidays.length} Holiday(s)`}
           </button>
         </div>
       </div>
