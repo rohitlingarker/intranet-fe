@@ -2,30 +2,30 @@ import React, { useState } from "react";
 import { useDrag } from "react-dnd";
 import { MoreVertical, Plus } from "lucide-react";
 
-const StoryCard = ({
-  story,
+const TaskCard = ({
+  task,
   sprints = [],
-  epics = [],
+  stories = [],
   onAddToSprint,
-  onSelectEpic,
+  onSelectParentStory,
   onClick,
 }) => {
   const [, dragRef] = useDrag({
-    type: "STORY",
-    item: { id: story.id },
+    type: "TASK",
+    item: { id: task.id },
   });
 
   const [showMenu, setShowMenu] = useState(false);
-  const [showEpicList, setShowEpicList] = useState(false);
+  const [showStoryList, setShowStoryList] = useState(false);
 
   const handleSelectSprint = (sprintId) => {
-    onAddToSprint?.(story.id, sprintId);
+    onAddToSprint?.(task.id, sprintId);
     setShowMenu(false);
   };
 
-  const handleSelectEpic = (epicId) => {
-    onSelectEpic?.(story.id, epicId);
-    setShowEpicList(false);
+  const handleSelectStory = (storyId) => {
+    onSelectParentStory?.(task.id, storyId);
+    setShowStoryList(false);
   };
 
   return (
@@ -33,7 +33,7 @@ const StoryCard = ({
       ref={dragRef}
       className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer flex justify-between items-start transition"
     >
-      {/* Left section */}
+      {/* ===== Left Content ===== */}
       <div
         className="cursor-pointer"
         onClick={(e) => {
@@ -41,58 +41,34 @@ const StoryCard = ({
           if (onClick) onClick();
         }}
       >
-        {/* Title + Icon */}
         <div className="flex items-center gap-1">
-          <span className="text-blue-500 text-sm cursor-default">📑</span>
-          <p className="text-sm font-semibold text-indigo-900">{story.title}</p>
+          <span className="text-green-600 text-sm cursor-default">☑️</span>
+          <p className="text-sm font-semibold text-blue-900">{task.title}</p>
         </div>
 
-        {/* Status */}
         <p className="text-xs text-pink-800">
-          Status: {story.statusText || story.status?.name || story.statusName}
+          Status: {task.statusText || task.status?.name || task.statusName}
         </p>
       </div>
 
 
-
-      {/* Right side buttons */}
+      {/* ===== Right Controls (Story Button + Menu) ===== */}
       <div className="relative flex items-start gap-2">
-        {/* + Epic Button */}
-        {story.epicId === null && (
+        {/* + Story Button (Right Side) */}
+        {task.storyId === null && (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setShowEpicList((prev) => !prev);
+              setShowStoryList((prev) => !prev);   // ✅ FIXED
             }}
             className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
           >
-            <Plus size={12} /> Epic
+            <Plus size={12} /> Story
           </button>
-
         )}
+
         
-
-        {/* Dropdown containing list of epics */}
-        {showEpicList && (
-          <div className="absolute right-10 mt-6 w-48 bg-white border rounded-md shadow-lg z-50">
-            {epics.length === 0 ? (
-              <p className="text-xs text-gray-500 p-2 text-center">
-                No epics available
-              </p>
-            ) : (
-              epics.map((epic) => (
-                <button
-                  key={epic.id}
-                  onClick={() => handleSelectEpic(epic.id)}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
-                >
-                  {epic.name}
-                </button>
-              ))
-            )}
-          </div>
-        )}
 
         {/* 3-dot menu */}
         <button
@@ -105,6 +81,7 @@ const StoryCard = ({
           <MoreVertical size={16} />
         </button>
 
+        {/* Dropdown: Add to Sprint */}
         {showMenu && (
           <div className="absolute right-0 mt-6 w-40 bg-white border rounded-md shadow-lg z-50">
             {sprints.length === 0 ? (
@@ -122,9 +99,30 @@ const StoryCard = ({
             )}
           </div>
         )}
+
+        {/* Dropdown: Stories List */}
+        {showStoryList && (
+          <div className="absolute right-10 mt-6 w-48 bg-white border rounded-md shadow-lg z-50">
+            {stories.length === 0 ? (
+              <p className="text-xs text-gray-500 p-2 text-center">
+                No stories available
+              </p>
+            ) : (
+              stories.map((story) => (
+                <button
+                  key={story.id}
+                  onClick={() => handleSelectStory(story.id)}
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                >
+                  {story.title}
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default StoryCard;
+export default TaskCard;
