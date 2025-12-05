@@ -255,16 +255,11 @@ const EditHolidaysPage = () => {
                       />
                     </td>
                     <td className="px-4 py-2 w-1/6">
-                      <select
-                        name="type"
-                        value={editedData.type}
-                        onChange={handleInputChange}
-                        className="border rounded p-1 w-full"
-                      >
-                        <option value="NATIONAL">National</option>
-                        <option value="REGIONAL">Regional</option>
-                        <option value="OPTIONAL">Optional</option>
-                      </select>
+                      <input
+                      value={editedData.type || ""}
+                      className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
+                      readOnly
+                      />
                     </td>
                     <td className="px-4 py-2">
                       <input
