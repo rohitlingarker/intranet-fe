@@ -4,6 +4,7 @@ import CreateTestCycleForm from "./CreateCycle";
 import CreateTestRunForm from "./CreateRun";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import RunListForCycle from "./RunListForCycle";
 
 export default function TestExecution() {
   const { projectId } = useParams();
@@ -27,7 +28,9 @@ export default function TestExecution() {
   const loadCycles = async () => {
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-cycles/projects/${projectId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-cycles/projects/${projectId}`
       );
       const data = res.data || [];
       setCycles(data);
@@ -48,7 +51,9 @@ export default function TestExecution() {
 
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/cycles/${cycleId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/cycles/${cycleId}`
       );
       setRuns(res.data || []);
     } catch (err) {
@@ -77,7 +82,9 @@ export default function TestExecution() {
     };
 
     return (
-      <span className={`${statusClasses[status]} px-3 py-1 rounded-full text-xs`}>
+      <span
+        className={`${statusClasses[status]} px-3 py-1 rounded-full text-xs`}
+      >
         {status}
       </span>
     );
@@ -92,7 +99,9 @@ export default function TestExecution() {
 
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/getcases/${projectId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/test-cases/getcases/${projectId}`
       );
       setAvailableCases(res.data || []);
     } catch (err) {
@@ -111,7 +120,9 @@ export default function TestExecution() {
 
     try {
       await axiosInstance.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/${selectedRunId}/add-cases`,
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${selectedRunId}/add-cases`,
         { testCaseIds: selectedCases }
       );
 
@@ -167,51 +178,11 @@ export default function TestExecution() {
       {/* --------------------------------------------------------------------
           RUN CARDS
       -------------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {runs.map((run) => {
-          const executed = run.executedCount || 0;
-          const total = run.totalCount || 0;
-          const progress = total > 0 ? Math.round((executed / total) * 100) : 0;
 
-          return (
-            <div
-              key={run.id}
-              className="bg-[#F7FAFF] p-5 rounded-xl border border-blue-200 shadow-sm"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="font-semibold text-lg">{run.name}</h2>
-                {getStatusBadge(run.status)}
-              </div>
-
-              <p className="text-sm text-gray-500 mb-3">
-                {run.executionDate || "No Date"}
-              </p>
-
-              <div className="w-full bg-gray-200 h-2 rounded-full mb-3">
-                <div
-                  className="h-2 bg-green-500 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between text-sm text-gray-700 mb-3">
-                <span>
-                  {executed} / {total} Executed
-                </span>
-                <span>{progress}%</span>
-              </div>
-
-              {/* NEW BUTTON */}
-              <button
-                className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-                onClick={() => openAddCasesModal(run.id)}
-              >
-                + Add Test Cases
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <RunListForCycle
+        cycleId={selectedCycleId}
+        onAddCases={openAddCasesModal}
+      />
 
       {/* --------------------------------------------------------------------
           ADD CASES MODAL
@@ -261,7 +232,6 @@ export default function TestExecution() {
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
             <h2 className="text-lg font-semibold mb-4">Create Test Cycle</h2>
 
             <CreateTestCycleForm
@@ -270,6 +240,7 @@ export default function TestExecution() {
                 setShowCycleModal(false);
                 loadCycles(); // refresh cycles
               }}
+              onClose={() => setShowCycleModal(false)}
             />
 
             <button
@@ -278,14 +249,13 @@ export default function TestExecution() {
             >
               ✕
             </button>
-          </div>
         </div>
       )}
 
       {/* CREATE RUN MODAL */}
       {showRunModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
+          {/* <div className="bg-white p-6 rounded-xl w-[70%] shadow-xl relative"> */}
             <h2 className="text-lg font-semibold mb-4">Create Test Run</h2>
 
             <CreateTestRunForm
@@ -295,6 +265,7 @@ export default function TestExecution() {
                 setShowRunModal(false);
                 loadRuns(selectedCycleId);
               }}
+              onClose={() => setShowRunModal(false)}
             />
 
             <button
@@ -303,7 +274,7 @@ export default function TestExecution() {
             >
               ✕
             </button>
-          </div>
+          {/* </div> */}
         </div>
       )}
     </div>
