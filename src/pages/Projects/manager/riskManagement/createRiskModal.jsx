@@ -1,4 +1,3 @@
-// src/components/modals/CreateRiskModal.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Select from "react-select";
@@ -7,25 +6,24 @@ import { showStatusToast } from "../../../../components/toastfy/toast";
 
 const ISSUE_TYPES = ["Epic", "Story", "Task"];
 
+const SCORE_OPTIONS = [1, 2, 3, 4, 5].map((v) => ({
+  value: v,
+  label: `${v}`,
+}));
+
 const customSelectStyles = {
   control: (provided, state) => ({
     ...provided,
-    borderRadius: "0.5rem",
+    width: "100%",
+    borderRadius: "0.6rem",
     borderColor: state.isFocused ? "#000" : "#d1d5db",
     boxShadow: state.isFocused ? "0 0 0 1px #000" : "none",
-    minHeight: "40px",
+    minHeight: "42px",
+    fontSize: "0.95rem",
   }),
   menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 };
 
-/**
- * @props
- * isOpen
- * onClose
- * projectId
- * onSuccess
- * risk (optional) -> if present = EDIT MODE
- */
 const CreateRiskModal = ({
   isOpen,
   onClose,
@@ -34,7 +32,6 @@ const CreateRiskModal = ({
   risk = null,
 }) => {
   const isEditMode = Boolean(risk?.id);
-
   const BASE_URL = import.meta.env.VITE_PMS_BASE_URL;
   const token = localStorage.getItem("token");
 
@@ -43,97 +40,99 @@ const CreateRiskModal = ({
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);
 
-  /* ---------- FORM STATE ---------- */
   const [form, setForm] = useState({
     title: "",
     description: "",
-    probability: "",
-    impact: "",
     triggers: "",
+    probability: null,
+    impact: null,
     statusId: "",
-    ownerId: null,
-    reporterId: null,
-    linkedType: "",
-    linkedId: null,
-    categoryId: null,
+    owner: null,
+    reporter: null,
+    category: null,
+    linkedType: null,
+    linkedIssue: null,
   });
 
-  /* ---------- PREFILL (EDIT MODE) ---------- */
-  useEffect(() => {
-    if (!isOpen || !risk) return;
+  const handleChange = (field, value) =>
+    setForm((p) => ({ ...p, [field]: value }));
 
-    setForm({
-      title: risk.title || "",
-      description: risk.description || "",
-      probability: risk.probability ?? "",
-      impact: risk.impact ?? "",
-      triggers: risk.triggers || "",
-      statusId: risk.statusId || "",
-      ownerId: risk.owner
-        ? { value: risk.owner.id, label: risk.owner.name }
-        : null,
-      reporterId: risk.reporter
-        ? { value: risk.reporter.id, label: risk.reporter.name }
-        : null,
-      linkedType: risk.linkedType || "",
-      linkedId: risk.linkedIssue
-        ? {
-            value: risk.linkedIssue.id,
-            label: risk.linkedIssue.title,
-          }
-        : null,
-      categoryId: risk.category
-        ? { value: risk.category.id, label: risk.category.name }
-        : null,
-    });
-  }, [risk, isOpen]);
-
-  /* ---------- PROJECT MEMBERS ---------- */
-  useEffect(() => {
-    if (!projectId) return;
-
-    axios
-      .get(`${BASE_URL}/api/projects/${projectId}/members`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) =>
-        setMembers(Array.isArray(res.data) ? res.data : res.data?.content || [])
-      )
-      .catch(console.error);
-  }, [projectId]);
-
-  /* ---------- STATUSES ---------- */
+  /* ------------------------------------
+     LOAD MASTER DATA
+  ------------------------------------ */
   useEffect(() => {
     if (!isOpen || !projectId) return;
 
-    axios
-      .get(`${BASE_URL}/api/projects/${projectId}/risk-statuses`, {
-        headers: { Authorization: `Bearer ${token}` },
+    const headers = { Authorization: `Bearer ${token}` };
+
+    Promise.all([
+      axios.get(`${BASE_URL}/api/projects/${projectId}/members`, { headers }),
+      axios.get(`${BASE_URL}/api/projects/${projectId}/risk-statuses`, {
+        headers,
+      }),
+      axios.get(`${BASE_URL}/api/risk/category`, { headers }),
+    ])
+      .then(([m, s, c]) => {
+        setMembers(m.data || []);
+        setStatuses(s.data || []);
+        setCategories(c.data || []);
       })
-      .then((res) => setStatuses(res.data || []))
       .catch(console.error);
   }, [isOpen, projectId]);
 
-  /* ---------- CATEGORIES ---------- */
+  /* ------------------------------------
+     PREFILL EDIT MODE
+  ------------------------------------ */
   useEffect(() => {
-    if (!isOpen) return;
+    if (!risk || !members.length || !categories.length) return;
 
-    axios
-      .get(`${BASE_URL}/api/risk/category`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setCategories(res.data || []))
-      .catch(console.error);
-  }, [isOpen]);
+    setForm({
+      title: risk.title ?? "",
+      description: risk.description ?? "",
+      triggers: risk.triggers ?? "",
+      statusId: risk.statusId ?? "",
 
-  /* ---------- LINKED ISSUES ---------- */
+      probability:
+        SCORE_OPTIONS.find((p) => p.value === risk.probability) || null,
+
+      impact: SCORE_OPTIONS.find((i) => i.value === risk.impact) || null,
+
+      owner: members.find((m) => m.id === risk.ownerId)
+        ? {
+            value: risk.ownerId,
+            label: members.find((m) => m.id === risk.ownerId).name,
+          }
+        : null,
+
+      reporter: members.find((m) => m.id === risk.reporterId)
+        ? {
+            value: risk.reporterId,
+            label: members.find((m) => m.id === risk.reporterId).name,
+          }
+        : null,
+
+      category: categories.find((c) => c.id === risk.categoryId)
+        ? {
+            value: risk.categoryId,
+            label: categories.find((c) => c.id === risk.categoryId).name,
+          }
+        : null,
+
+      linkedType: null,
+      linkedIssue: null,
+    });
+  }, [risk, members, categories]);
+
+  /* ------------------------------------
+     LOAD LINKED ISSUES
+  ------------------------------------ */
   useEffect(() => {
     if (!form.linkedType || !projectId) return;
 
     const apiType =
-      form.linkedType === "Story"
+      form.linkedType.value === "Story"
         ? "stories"
-        : `${form.linkedType.toLowerCase()}s`;
+        : `${form.linkedType.value.toLowerCase()}s`;
 
     axios
       .get(`${BASE_URL}/api/projects/${projectId}/${apiType}`, {
@@ -145,30 +144,39 @@ const CreateRiskModal = ({
 
   if (!isOpen) return null;
 
-  const handleChange = (field, value) =>
-    setForm((p) => ({ ...p, [field]: value }));
-
-  /* ---------- SUBMIT ---------- */
+  /* ------------------------------------
+     SUBMIT
+  ------------------------------------ */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (
+      !form.title ||
+      !form.statusId ||
+      !form.owner ||
+      !form.reporter ||
+      !form.category
+    ) {
+      showStatusToast("Please fill all required fields", "error");
+      return;
+    }
 
     try {
       const payload = {
         projectId,
         title: form.title,
         description: form.description,
-        probability: Number(form.probability),
-        impact: Number(form.impact),
+        probability: form.probability?.value,
+        impact: form.impact?.value,
         triggers: form.triggers,
         statusId: form.statusId,
-        ownerId: form.ownerId.value,
-        reporterId: form.reporterId.value,
-        categoryId: form.categoryId.value,
+        ownerId: form.owner.value,
+        reporterId: form.reporter.value,
+        categoryId: form.category.value,
       };
 
       let riskId = risk?.id;
 
-      /* ---------- CREATE / UPDATE ---------- */
       if (isEditMode) {
         await axios.put(`${BASE_URL}/api/risks/${riskId}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
@@ -180,16 +188,17 @@ const CreateRiskModal = ({
         riskId = res.data.id;
       }
 
-      /* ---------- LINK ISSUE ---------- */
-      await axios.post(
-        `${BASE_URL}/api/risk-links`,
-        {
-          riskId,
-          linkedType: form.linkedType,
-          linkedId: form.linkedId.value,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      if (form.linkedType && form.linkedIssue) {
+        await axios.post(
+          `${BASE_URL}/api/risk-links`,
+          {
+            riskId,
+            linkedType: form.linkedType.value,
+            linkedId: form.linkedIssue.value,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
 
       showStatusToast(
         isEditMode ? "Risk updated successfully" : "Risk created successfully",
@@ -204,25 +213,33 @@ const CreateRiskModal = ({
     }
   };
 
-  /* ---------- OPTIONS ---------- */
+  /* ------------------------------------
+     OPTIONS
+  ------------------------------------ */
   const memberOptions = members.map((m) => ({
     value: m.id,
     label: m.name,
   }));
-  const issueOptions = issues.map((i) => ({
-    value: i.id,
-    label: i.title || i.name,
-  }));
+
   const categoryOptions = categories.map((c) => ({
     value: c.id,
     label: c.name,
   }));
 
+  const issueOptions = issues.map((i) => ({
+    value: i.id,
+    label: i.title || i.name,
+  }));
+
+  /* ------------------------------------
+     UI
+  ------------------------------------ */
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-3xl rounded-2xl p-6">
-        <div className="flex justify-between mb-4">
-          <h2 className="text-xl font-semibold">
+      <div className="bg-white w-full max-w-5xl rounded-2xl p-5 max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold">
             {isEditMode ? "Edit Risk" : "Create Risk"}
           </h2>
           <button onClick={onClose}>
@@ -230,121 +247,159 @@ const CreateRiskModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            className="w-full border rounded-lg px-3 py-2"
-            placeholder="Risk title *"
-            value={form.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-          />
+        {/* SCROLLABLE BODY ✅ */}
+        <div className="overflow-y-auto pr-1">
+          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-4">
+            {/* Title */}
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium">Risk Title *</label>
+              <input
+                className="w-full border rounded-lg px-3 py-1.5 mt-1"
+                value={form.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+              />
+            </div>
 
-          <textarea
-            rows={3}
-            className="w-full border rounded-lg px-3 py-2"
-            placeholder="Description"
-            value={form.description}
-            onChange={(e) => handleChange("description", e.target.value)}
-          />
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium">Description</label>
+              <textarea
+                rows={2}
+                className="w-full border rounded-lg px-3 py-1.5 mt-1"
+                value={form.description}
+                onChange={(e) => handleChange("description", e.target.value)}
+              />
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="number"
-              min={1}
-              max={5}
-              placeholder="Probability"
-              className="border rounded-lg px-3 py-2"
-              value={form.probability}
-              onChange={(e) => handleChange("probability", e.target.value)}
+            {/* Triggers */}
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium">
+                Triggers{" "}
+                <span className="text-slate-500 text-xs">(Early warning)</span>
+              </label>
+              <textarea
+                rows={1}
+                className="w-full border rounded-lg px-3 py-1.5 mt-1"
+                value={form.triggers}
+                onChange={(e) => handleChange("triggers", e.target.value)}
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="text-sm font-medium">Status *</label>
+              <select
+                className="w-full border rounded-lg px-3 py-1.5 mt-1"
+                value={form.statusId}
+                onChange={(e) => handleChange("statusId", e.target.value)}
+              >
+                <option value="">Select</option>
+                {statuses.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="text-sm font-medium">Category *</label>
+              <Select
+                styles={customSelectStyles}
+                options={categoryOptions}
+                value={form.category}
+                onChange={(v) => handleChange("category", v)}
+                menuPortalTarget={document.body}
+              />
+            </div>
+
+            {/* Owner */}
+            <div>
+              <label className="text-sm font-medium">Owner *</label>
+              <Select
+                styles={customSelectStyles}
+                options={memberOptions}
+                value={form.owner}
+                onChange={(v) => handleChange("owner", v)}
+                menuPortalTarget={document.body}
+              />
+            </div>
+
+            {/* Reporter */}
+            <div>
+              <label className="text-sm font-medium">Reporter *</label>
+              <Select
+                styles={customSelectStyles}
+                options={memberOptions}
+                value={form.reporter}
+                onChange={(v) => handleChange("reporter", v)}
+                menuPortalTarget={document.body}
+              />
+            </div>
+
+            {/* Probability */}
+            <div>
+              <label className="text-sm font-medium">Probability</label>
+              <Select
+                styles={customSelectStyles}
+                options={SCORE_OPTIONS}
+                value={form.probability}
+                onChange={(v) => handleChange("probability", v)}
+              />
+            </div>
+
+            {/* Impact */}
+            <div>
+              <label className="text-sm font-medium">Impact</label>
+              <Select
+                styles={customSelectStyles}
+                options={SCORE_OPTIONS}
+                value={form.impact}
+                onChange={(v) => handleChange("impact", v)}
+              />
+            </div>
+
+            {/* Linked Type */}
+            <Select
+              styles={customSelectStyles}
+              options={ISSUE_TYPES.map((t) => ({ value: t, label: t }))}
+              value={form.linkedType}
+              onChange={(v) => {
+                handleChange("linkedType", v);
+                handleChange("linkedIssue", null);
+              }}
+              placeholder="Link Type"
             />
-            <input
-              type="number"
-              min={1}
-              max={5}
-              placeholder="Impact"
-              className="border rounded-lg px-3 py-2"
-              value={form.impact}
-              onChange={(e) => handleChange("impact", e.target.value)}
+
+            {/* Linked Issue */}
+            <Select
+              styles={customSelectStyles}
+              options={issueOptions}
+              value={form.linkedIssue}
+              onChange={(v) => handleChange("linkedIssue", v)}
+              isDisabled={!form.linkedType}
+              placeholder="Linked Item"
             />
-          </div>
 
-          <select
-            className="w-full border rounded-lg px-3 py-2"
-            value={form.statusId}
-            onChange={(e) => handleChange("statusId", e.target.value)}
-          >
-            <option value="">Select Status *</option>
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          <Select
-            styles={customSelectStyles}
-            options={categoryOptions}
-            value={form.categoryId}
-            onChange={(v) => handleChange("categoryId", v)}
-            placeholder="Risk Category *"
-            menuPortalTarget={document.body}
-          />
-
-          <Select
-            styles={customSelectStyles}
-            options={memberOptions}
-            value={form.ownerId}
-            onChange={(v) => handleChange("ownerId", v)}
-            placeholder="Owner *"
-            menuPortalTarget={document.body}
-          />
-
-          <Select
-            styles={customSelectStyles}
-            options={memberOptions}
-            value={form.reporterId}
-            onChange={(v) => handleChange("reporterId", v)}
-            placeholder="Reporter *"
-            menuPortalTarget={document.body}
-          />
-
-          <Select
-            styles={customSelectStyles}
-            options={ISSUE_TYPES.map((t) => ({ value: t, label: t }))}
-            value={
-              form.linkedType
-                ? { value: form.linkedType, label: form.linkedType }
-                : null
-            }
-            onChange={(v) => handleChange("linkedType", v.value)}
-            placeholder="Link Type *"
-            menuPortalTarget={document.body}
-          />
-
-          <Select
-            styles={customSelectStyles}
-            options={issueOptions}
-            value={form.linkedId}
-            onChange={(v) => handleChange("linkedId", v)}
-            placeholder="Link Issue *"
-            menuPortalTarget={document.body}
-          />
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-black text-white rounded-lg"
-            >
-              {isEditMode ? "Update Risk" : "Create Risk"}
-            </button>
-          </div>
-        </form>
+            {/* Actions */}
+            <div className="md:col-span-2 flex justify-end gap-3 pt-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-1.5 border rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-1.5 bg-black text-white rounded-lg"
+              >
+                {isEditMode ? "Update Risk" : "Create Risk"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

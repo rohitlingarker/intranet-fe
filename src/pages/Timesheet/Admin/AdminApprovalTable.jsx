@@ -9,6 +9,7 @@ import Button from "../../../components/Button/Button";
 import { MoreVertical, X } from "lucide-react";
 import Modal from "../../../components/Modal/modal";
 import InternalActivities from "./InternalActivities";
+import CancellationModal from "../../leave_management/models/CancellationModal";
 
 const AdminApprovalTable = ({
   loading,
@@ -23,6 +24,7 @@ const AdminApprovalTable = ({
   const [holidayData, setHolidayData] = useState([]);
   const [holidayLoading, setHolidayLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [rejectAllCancellationModal, setRejectAllCancellationModal] = useState(false);
 
   // 🆕 Update User feature hooks — moved here to fix undefined error
   const [isUpdateMode, setIsUpdateMode] = useState(false);
@@ -101,6 +103,10 @@ const AdminApprovalTable = ({
     fetchHolidayExcludedUsers();
   };
 
+  const handleCancelModal = () => {
+    setRejectAllCancellationModal(!rejectAllCancellationModal);
+  };
+
   // -----------------------------
   // Lookup maps for fast access
   // -----------------------------
@@ -159,10 +165,19 @@ const AdminApprovalTable = ({
     }
   };
 
+  const disableButton = (user) => {
+    const submittedWeeks = user.weeklySummary.filter((week) => {
+        const status = week.weeklyStatus?.toUpperCase();
+        return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
+      });
+
+      return (submittedWeeks.length === 0 );
+  };
+
   // -----------------------------
   // Bulk Approve/Reject All Weeks for a User
   // -----------------------------
-  const handleSelectAllWeeks = async (user, status) => {
+  const handleSelectAllWeeks = async (user, status, reason) => {
     try {
       // 🧠 Filter only SUBMITTED weeks and Pattially Approved
       const submittedWeeks = user.weeklySummary.filter((week) => {
@@ -170,22 +185,22 @@ const AdminApprovalTable = ({
         return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
       });
 
-      if (submittedWeeks.length === 0) {
-        showStatusToast(
-          `No submitted weeks found to ${status.toLowerCase()} for ${
-            user.userName
-          }`,
-          "info"
-        );
-        return;
-      }
+      // if (submittedWeeks.length === 0) {
+      //   showStatusToast(
+      //     `No submitted weeks found to ${status.toLowerCase()} for ${
+      //       user.userName
+      //     }`,
+      //     "info"
+      //   );
+      //   return;
+      // }
 
       // 🧩 Build request payload with only submitted weeks
       const requestPayload = submittedWeeks.map((week) => ({
         userId: user.userId,
         timesheetIds: week.timesheets.map((t) => t.timesheetId),
         status,
-        comments: status === "APPROVED" ? "approved" : "rejected",
+        comments: reason || "Approved by manager",
       }));
 
       const res = await fetch(
@@ -856,7 +871,8 @@ const AdminApprovalTable = ({
                         <Button
                           variant="success"
                           size="small"
-                          disabled={userLevelLoading !== null}
+                          disabled={userLevelLoading !== null || disableButton(user)}
+                          className={`disabled:opacity-50 disabled:cursor-not-allowed`}
                           onClick={async () => {
                             setUserLevelLoading(user.userId);
                             try {
@@ -872,15 +888,9 @@ const AdminApprovalTable = ({
                         <Button
                           variant="danger"
                           size="small"
-                          disabled={userLevelLoading !== null}
-                          onClick={async () => {
-                            setUserLevelLoading(user.userId);
-                            try {
-                              await handleSelectAllWeeks(user, "REJECTED");
-                            } finally {
-                              setUserLevelLoading(null);
-                            }
-                          }}
+                          disabled={userLevelLoading !== null || disableButton(user)}
+                          className={`disabled:opacity-50 disabled:cursor-not-allowed`}
+                          onClick={handleCancelModal}
                         >
                           Reject All Weeks
                         </Button>
@@ -888,6 +898,25 @@ const AdminApprovalTable = ({
                     )}
                   </div>
                 </div>
+                <CancellationModal
+                  title="Reject All Weeks"
+                  subtitle="Are you sure you want to Reject All Weeks Timesheets?"
+                  isOpen={rejectAllCancellationModal}
+                  onCancel={handleCancelModal}
+                  onConfirm={async (reason) => {
+                    setUserLevelLoading(user.userId);
+                    setActionLoading(true);
+                    try {
+                      await handleSelectAllWeeks(user, "REJECTED", reason);
+                    } finally {
+                      setUserLevelLoading(null);
+                      setActionLoading(false);
+                      handleCancelModal();
+                    }
+                  }}
+                  isLoading={actionLoading}
+                  confirmText="Confirm"
+                />
 
                 <hr className="my-3 border-gray-200" />
                 {renderUserWeeks(user)}

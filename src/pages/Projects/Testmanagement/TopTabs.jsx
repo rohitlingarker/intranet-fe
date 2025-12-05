@@ -34,12 +34,12 @@ export default function TopTabs({ selectedTab }) {
       tab: "test-management/test-execution",
       icon: <Play size={16} />,
     },
-    {
-      name: "Reports",
-      path: `/projects/${projectId}?tab=test-management/reports`,
-      tab: "test-management/reports",
-      icon: <BarChart3 size={16} />,
-    },
+    // {
+    //   name: "Reports",
+    //   path: `/projects/${projectId}?tab=test-management/reports`,
+    //   tab: "test-management/reports",
+    //   icon: <BarChart3 size={16} />,
+    // },
   ];
 
   return (

@@ -482,7 +482,7 @@ const TimesheetGroup = ({
   const getBorderColor = () => {
     if (isWeeklyFormat) {
       const status = currentStatus?.toLowerCase();
-      if (status === "approved" || status === "partially approved")
+      if (status === "approved" || status === "partially approved" || status === "partially_approved")
         return "border-green-500";
       if (status === "rejected") return "border-red-500";
       if (status === "draft" || status === "submitted")
@@ -496,7 +496,7 @@ const TimesheetGroup = ({
   const getWeekHeaderBgColor = () => {
     if (isWeeklyFormat) {
       const status = currentStatus?.toLowerCase();
-      if (status === "approved" || status === "partially approved")
+      if (status === "approved" || status === "partially approved" || status === "partially_approved")
         return "bg-green-50 border-b-green-200";
       if (status === "rejected") return "bg-red-50 border-b-red-200";
       if (status === "draft" || status === "submitted")
@@ -510,7 +510,7 @@ const TimesheetGroup = ({
   const getWeekBadgeColor = () => {
     if (isWeeklyFormat) {
       const status = currentStatus?.toLowerCase();
-      if (status === "approved" || status === "partially approved")
+      if (status === "approved" || status === "partially approved" || status === "partially_approved")
         return "bg-green-600";
       if (status === "rejected") return "bg-red-600";
       if (status === "draft" || status === "submitted") return "bg-yellow-600";
