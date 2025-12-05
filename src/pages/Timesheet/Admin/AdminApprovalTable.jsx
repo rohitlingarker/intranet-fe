@@ -7,6 +7,8 @@ import { TimesheetGroup } from "../TimesheetGroup";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
 import { MoreVertical, X } from "lucide-react";
+import Modal from "../../../components/Modal/modal";
+import InternalActivities from "./InternalActivities";
 
 const AdminApprovalTable = ({
   loading,
@@ -32,6 +34,7 @@ const AdminApprovalTable = ({
   const [actionLoadingUser, setActionLoadingUser] = useState(null);
   const [userLevelLoading, setUserLevelLoading] = useState(null); // for Approve/Reject All Weeks
   const [weekLevelLoading, setWeekLevelLoading] = useState({}); // for per-week Approve/Reject
+  const [isOpen, setIsOpen] = useState(false);
 
   // -----------------------------
   // Fetch project info
@@ -188,7 +191,7 @@ const AdminApprovalTable = ({
       const res = await fetch(
         `${
           import.meta.env.VITE_TIMESHEET_API_ENDPOINT
-        }/timesheets/review/internal`,
+        }/timesheets/review/internal/bulk`,
         {
           method: "POST",
           headers: {
@@ -817,6 +820,9 @@ const AdminApprovalTable = ({
             <Button variant="primary" size="small" onClick={exportPDF}>
               Export PDF
             </Button>
+            <Button variant="secondary" size="small" onClick={() => setIsOpen(true)}>
+              Internal Activities
+            </Button>
             <Button
               variant="secondary"
               size="small"
@@ -1242,6 +1248,14 @@ const AdminApprovalTable = ({
           </div>
         </div>
       )}
+
+      <Modal 
+        title="Internal Activities"
+        subtitle="Manage Internal Activities"
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        children={<InternalActivities />}
+      />
     </div>
   );
 };

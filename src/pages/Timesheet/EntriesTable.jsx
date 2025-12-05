@@ -571,7 +571,8 @@ const EntriesTable = ({
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
                 {window.location.pathname === "/timesheets" && (
                   <td className="px-4 py-2">
-                    {status?.toLowerCase() !== "approved" && (
+    {console.log("Status from entries table: ", status)}
+                    {(status?.toLowerCase() === "draft" || status?.toLowerCase() === "submitted" || status?.toLowerCase() === "rejected") && (
                       <div className="flex gap-4">
                          <button
                             className="text-blue-600 hover:text-blue-800 text-sm"
