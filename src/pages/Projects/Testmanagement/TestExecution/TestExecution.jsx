@@ -4,14 +4,19 @@ import CreateTestCycleForm from "./CreateCycle";
 import CreateTestRunForm from "./CreateRun";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import RunListForCycle from "./RunListForCycle";
+import { useNavigate } from "react-router-dom";
 
 export default function TestExecution() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
 
   const [cycles, setCycles] = useState([]);
   const [selectedCycleId, setSelectedCycleId] = useState(null);
+  const [id, setId] = useState(null);
   const [runs, setRuns] = useState([]);
   const [search, setSearch] = useState("");
+  const [openRunList, setOpenRunList] = useState(false);
 
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
@@ -33,6 +38,11 @@ export default function TestExecution() {
     const year = d.getFullYear();
 
     return `${day}/${month}/${year}`;
+  };
+
+  const handleOpenRunList = (cycleId) => {
+    setId(cycleId);
+    setOpenRunList(true);
   };
 
   // --------------------------------------------------------------------
@@ -77,8 +87,6 @@ export default function TestExecution() {
   useEffect(() => {
     loadCycles();
   }, []);
-
-  console.log("Cycles: ", cycles);
 
   const filteredCycles = cycles.filter((cycle) => {
     const term = search.toLowerCase();
@@ -128,6 +136,8 @@ export default function TestExecution() {
       const res = await axiosInstance.get(
         `${
           import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/test-cases/getcases/${projectId}``${
+          import.meta.env.VITE_PMS_BASE_URL
         }/api/test-design/test-cases/getcases/${projectId}`
       );
       setAvailableCases(res.data || []);
@@ -147,6 +157,9 @@ export default function TestExecution() {
 
     try {
       await axiosInstance.post(
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${selectedRunId}/add-cases`,
         `${
           import.meta.env.VITE_PMS_BASE_URL
         }/api/test-execution/test-runs/${selectedRunId}/add-cases`,
@@ -173,13 +186,12 @@ export default function TestExecution() {
         <div className="flex items-center gap-4">
           {/* CYCLES DROPDOWN */}
           <input
-  type="text"
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  placeholder="Search cycles by name or status..."
-  className="px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 w-64"
-/>
-
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search cycles by name or status..."
+            className="px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 w-64"
+          />
 
           {/* CREATE CYCLE BUTTON */}
           <button
@@ -202,7 +214,8 @@ export default function TestExecution() {
           return (
             <div
               key={run.id}
-              className="bg-[#F7FAFF] p-5 rounded-xl border border-blue-200 shadow-sm"
+              onClick={() => handleOpenRunList(run.id)}
+              className="bg-[#F7FAFF] p-5 rounded-xl border border-blue-200 shadow-sm cursor-pointer hover:shadow-md transition"
             >
               <div className="flex justify-between items-center mb-2">
                 <h2 className="font-semibold text-lg">{run.name}</h2>
@@ -214,24 +227,12 @@ export default function TestExecution() {
                 {formatDate(run.endDate || "No Date")}
               </p>
 
-              {/* <div className="w-full bg-gray-200 h-2 rounded-full mb-3">
-                <div
-                  className="h-2 bg-green-500 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
-              </div> */}
-
-              {/* <div className="flex justify-between text-sm text-gray-700 mb-3">
-                <span>
-                  {executed} / {total} Executed
-                </span>
-                <span>{progress}%</span>
-              </div> */}
-
-              {/* NEW BUTTON */}
               <button
                 className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
-                onClick={() => setShowRunModal(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRunModal(true);
+                }}
               >
                 + Create Run
               </button>
@@ -239,6 +240,8 @@ export default function TestExecution() {
           );
         })}
       </div>
+
+      {openRunList && <RunListForCycle cycleId={id} projectId={projectId} />}
       {/* --------------------------------------------------------------------
           ADD CASES MODAL
       -------------------------------------------------------------------- */}
@@ -286,48 +289,48 @@ export default function TestExecution() {
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
-            <h2 className="text-lg font-semibold mb-4">Create Test Cycle</h2>
+          <h2 className="text-lg font-semibold mb-4">Create Test Cycle</h2>
 
-            <CreateTestCycleForm
-              projectId={projectId}
-              onSuccess={() => {
-                setShowCycleModal(false);
-                loadCycles(); // refresh cycles
-              }}
-            />
+          <CreateTestCycleForm
+            projectId={projectId}
+            onSuccess={() => {
+              setShowCycleModal(false);
+              loadCycles(); // refresh cycles
+            }}
+            onClose={() => setShowCycleModal(false)}
+          />
 
-            <button
-              className="absolute top-3 right-4 text-gray-400 hover:text-black"
-              onClick={() => setShowCycleModal(false)}
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            className="absolute top-3 right-4 text-gray-400 hover:text-black"
+            onClick={() => setShowCycleModal(false)}
+          >
+            ✕
+          </button>
         </div>
       )}
       {/* CREATE RUN MODAL */}
       {showRunModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
-            <h2 className="text-lg font-semibold mb-4">Create Test Run</h2>
+          {/* <div className="bg-white p-6 rounded-xl w-[70%] shadow-xl relative"> */}
+          <h2 className="text-lg font-semibold mb-4">Create Test Run</h2>
 
-            <CreateTestRunForm
-              projectId={projectId}
-              cycleId={selectedCycleId}
-              onSuccess={() => {
-                setShowRunModal(false);
-                loadRuns(selectedCycleId);
-              }}
-            />
+          <CreateTestRunForm
+            projectId={projectId}
+            cycleId={selectedCycleId}
+            onSuccess={() => {
+              setShowRunModal(false);
+              loadRuns(selectedCycleId);
+            }}
+            onClose={() => setShowRunModal(false)}
+          />
 
-            <button
-              className="absolute top-3 right-4 text-gray-400 hover:text-black"
-              onClick={() => setShowRunModal(false)}
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            className="absolute top-3 right-4 text-gray-400 hover:text-black"
+            onClick={() => setShowRunModal(false)}
+          >
+            ✕
+          </button>
+          {/* </div> */}
         </div>
       )}
     </div>
