@@ -1,45 +1,103 @@
-// Summary/widgets/TeamWorkload.jsx
+// src/pages/Projects/Summary/widgets/TeamWorkload.jsx
 "use client";
-import React, { useMemo } from "react";
+
+import React, { useMemo, useEffect, useState } from "react";
 import { Card, Typography, Avatar } from "antd";
 import DistributionBar from "./DistributionBar";
+import { motion } from "framer-motion";
+import { itemVariants, DASHBOARD_COLORS } from "../uiConfig";
+import { FiUser } from "react-icons/fi";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-function TeamWorkloadInner({ workItems = [], users = [] }) {
-  const total = (workItems || []).length;
+const TeamWorkload = ({ workItems, users }) => {
+  const [workloadData, setWorkloadData] = useState([]);
+  const totalItems = workItems.length;
 
-  const rows = useMemo(() => {
-    const map = new Map((users || []).map(u => [u.id, { ...u, count: 0 }]));
-    const unassigned = { id: null, name: "Unassigned", count: 0 };
-    (workItems || []).forEach(w => {
-      const uid = w.assigneeId || w.assignee?.id;
-      if (uid && map.has(uid)) map.get(uid).count++;
-      else unassigned.count++;
+  useEffect(() => {
+    if (!users || !workItems) return;
+
+    const userMap = new Map(users.map((u) => [u.id, { ...u, count: 0 }]));
+    const unassigned = { id: null, name: "Unassigned", count: 0, color: "#9ca3af" };
+
+    workItems.forEach((item) => {
+      const assignedTo = item.assigneeId || item.assignee?.id;
+      if (assignedTo && userMap.has(assignedTo)) {
+        userMap.get(assignedTo).count++;
+      } else {
+        unassigned.count++;
+      }
     });
-    const arr = [...map.values()].filter(u => u.count > 0);
-    if (unassigned.count > 0) arr.unshift(unassigned);
-    return arr.map((r, i) => ({ ...r, percentage: total ? (r.count/total)*100 : 0, color: ["#4f46e5","#7c3aed","#db2777","#0d9488","#ea580c"][i % 5] }));
-  }, [workItems, users, total]);
 
-  if (!rows.length) return null;
+    const activeUsers = Array.from(userMap.values()).filter((u) => u.count > 0);
+    const finalUsers =
+      unassigned.count > 0 ? [unassigned, ...activeUsers] : activeUsers;
+
+    const mapped = finalUsers.map((user, index) => ({
+      ...user,
+      percentage: totalItems > 0 ? (user.count / totalItems) * 100 : 0,
+      initials: user.id
+        ? user.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?"
+        : <FiUser />,
+      color: user.id
+        ? DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]
+        : "#9ca3af",
+    }));
+
+    setWorkloadData(mapped);
+  }, [workItems, users, totalItems]);
+
+  if (!totalItems) return null;
 
   return (
-    <Card>
-      <Title level={4}>Team workload</Title>
-      <div className="mt-3 space-y-3">
-        {rows.map(r => (
-          <div key={r.name || r.id} className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Avatar style={{ backgroundColor: r.color, marginRight: 12 }}>{r.name ? (r.name.split(" ").map(n => n[0]).join("").toUpperCase()) : "U"}</Avatar>
-              <div>{r.name}</div>
-            </div>
-            <div style={{ flex: 1, marginLeft: 12 }}><DistributionBar percentage={r.percentage} /></div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Team workload</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+          header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
+          body: { padding: "0 32px 32px 32px" },
+        }}
+      >
+        <Text type="secondary" className="block !mt-0 !mb-6 text-sm">
+          Monitor the capacity of your team.
+        </Text>
 
-export default React.memo(TeamWorkloadInner);
+        <div className="space-y-3">
+          {workloadData.map((user) => (
+            <div
+              key={user.name}
+              className="flex items-center p-1 -m-1 rounded-md transition-colors hover:bg-gray-50"
+            >
+              <div className="w-2/5 flex items-center">
+                <Avatar
+                  size="small"
+                  style={{
+                    backgroundColor: user.color,
+                    marginRight: 12,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {user.initials}
+                </Avatar>
+                <Text className="text-sm font-medium">
+                  {user.name || user.email || "Unassigned"}
+                </Text>
+              </div>
+              <div className="w-3/5">
+                <DistributionBar
+                  percentage={user.percentage}
+                  count={user.count}
+                  total={totalItems}
+                  isInteractive={false}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+export default React.memo(TeamWorkload);
