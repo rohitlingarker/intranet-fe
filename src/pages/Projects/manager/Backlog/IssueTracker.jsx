@@ -1,3 +1,4 @@
+// Cleaned IssueTracker without any Bug-related code
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -10,7 +11,7 @@ import EditStoryForm from "./EditStoryForm";
 import EditTaskForm from "./EditTaskForm";
 import EditEpicForm from "./EditEpicForm";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
- 
+
 const IssueTracker = () => {
   const { projectId: paramProjectId } = useParams();
   const location = useLocation();
@@ -35,7 +36,7 @@ const IssueTracker = () => {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
- 
+
   // Filter state
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
@@ -45,7 +46,7 @@ const IssueTracker = () => {
     statuses: [],
     priorities: [],
   });
- 
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (filterRef.current && !filterRef.current.contains(e.target)) {
@@ -85,7 +86,7 @@ const IssueTracker = () => {
         priority: (s.priority || "MEDIUM").toUpperCase(),
         status: s.status?.name || s.statusName || "BACKLOG",
       }));
- 
+
       const tasksData = tasksRes.data.map((t) => {
         const normalizedStatus = t.statusName
           ? String(t.statusName).toUpperCase().replace(/\s+/g, "_")
@@ -107,7 +108,7 @@ const IssueTracker = () => {
           status: normalizedStatus,
         };
       });
- 
+
       setIssues({ epicsData, storiesData, tasksData });
     } catch (err) {
       toast.error("Failed to load issues");
@@ -140,7 +141,7 @@ const IssueTracker = () => {
     if (issue.type === "Epic") endpoint = `/api/epics/${issue.id}`;
     if (issue.type === "Story") endpoint = `/api/stories/${issue.id}`;
     if (issue.type === "Task") endpoint = `/api/tasks/${issue.id}`;
- 
+
     try {
       await axios.delete(`${import.meta.env.VITE_PMS_BASE_URL}${endpoint}`, { headers });
       fetchIssues();
@@ -151,7 +152,7 @@ const IssueTracker = () => {
   };
  
   const handleEdit = (issue) => setEditModal({ visible: true, type: issue.type, id: issue.id });
- 
+
   const handleUpdated = (msg) => {
     setEditModal({ visible: false });
     setTimeout(() => {
@@ -197,20 +198,20 @@ const IssueTracker = () => {
  
   const toggleStory = (id) =>
     setOpenStories((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
- 
+
   const isFiltersEmpty = () =>
     filters.types.length === 0 && filters.statuses.length === 0 && filters.priorities.length === 0;
  
   const matchesFilters = (issue) => {
     if (isFiltersEmpty()) return true;
- 
+
     if (filters.types.length > 0 && !filters.types.includes(issue.type)) return false;
- 
+
     if (filters.priorities.length > 0) {
       const pr = (issue.priority || "").toUpperCase();
       if (!filters.priorities.includes(pr)) return false;
     }
- 
+
     if (filters.statuses.length > 0) {
       const st = String(issue.status || "").toUpperCase().replace(/\s+/g, "_");
       if (!filters.statuses.includes(st)) return false;
@@ -218,7 +219,7 @@ const IssueTracker = () => {
  
     return true;
   };
- 
+
   const epicMatchesHierarchy = (epic) => {
     if (matchesFilters(epic)) return true;
     const epicStories = issues.storiesData.filter((s) => s.epicId === epic.id);
@@ -231,7 +232,7 @@ const IssueTracker = () => {
     }
     return false;
   };
- 
+
   const storyMatchesHierarchy = (story) => {
     if (matchesFilters(story)) return true;
     const storyTasks = issues.tasksData.filter((t) => t.storyId === story.id);
@@ -240,7 +241,7 @@ const IssueTracker = () => {
     }
     return false;
   };
- 
+
   const TableRow = ({ issue, level }) => (
     <tr className="hover:bg-gray-50 border-b cursor-pointer" onClick={() => handleView(issue)}>
       <td className="py-3">
@@ -317,7 +318,7 @@ const IssueTracker = () => {
       </td>
     </tr>
   );
- 
+
   const renderHierarchy = () => (
     <table className="w-full text-left border rounded-lg ">
       <thead className="bg-gray-100 text-sm font-semibold text-gray-700">
@@ -358,7 +359,7 @@ const IssueTracker = () => {
                   ))}
             </React.Fragment>
           ))}
- 
+
         {(() => {
           const orphanStories = issues.storiesData
             .filter((s) => !s.epicId)
@@ -384,7 +385,7 @@ const IssueTracker = () => {
             </React.Fragment>
           );
         })()}
- 
+
         {(() => {
           const orphanTasks = issues.tasksData
             .filter((t) => !t.storyId)
@@ -406,7 +407,7 @@ const IssueTracker = () => {
       </tbody>
     </table>
   );
- 
+
   const TYPE_OPTIONS = ["Epic", "Story", "Task"];
   const STATUS_OPTIONS = [
     { label: "Backlog", value: "BACKLOG" },
@@ -521,7 +522,7 @@ const IssueTracker = () => {
               </div>
             )}
           </div>
- 
+
           <button
             onClick={() => navigate(-1)}
             className="flex items.center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition"
@@ -549,7 +550,7 @@ const IssueTracker = () => {
               onUpdated={() => handleUpdated("Epic")}
             />
           )}
- 
+
           {editModal.type === "Story" && (
             <EditStoryForm
               storyId={editModal.id}
@@ -559,7 +560,7 @@ const IssueTracker = () => {
               onUpdated={() => handleUpdated("Story")}
             />
           )}
- 
+
           {editModal.type === "Task" && (
             <EditTaskForm
               taskId={editModal.id}

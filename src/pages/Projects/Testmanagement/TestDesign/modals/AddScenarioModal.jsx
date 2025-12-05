@@ -3,9 +3,9 @@ import axiosInstance from "../../api/axiosInstance";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
-export default function AddScenarioModal({ testStoryId, onClose, onCreated }) {
+export default function AddScenarioModal({ storyId, onClose, onCreated }) {
   const { projectId } = useParams();
-
+  console.log("AddScenarioModal storyId:", storyId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("LOW");
@@ -68,7 +68,7 @@ export default function AddScenarioModal({ testStoryId, onClose, onCreated }) {
 
     const payload = {
       testPlanId: Number(testPlanId),
-      testStoryId: Number(testStoryId),
+      testStoryId: Number(storyId), // ✅ FIXED — now from props only
       linkedStoryId: linkedStoryId ? Number(linkedStoryId) : null,
       title: title.trim(),
       description: description.trim(),

@@ -1,12 +1,39 @@
-import React, { useState } from "react";
-import axiosInstance from "../../../../../api/axiosInstance";
+import React, { useState, useEffect } from "react";
+import axiosInstance from "../../api/axiosInstance";
 
-export default function AddTestStoryModal({ projectId, onClose }) {
+export default function AddTestStoryModal({ projectId, onClose, onCreated }) {
   const [name, setName] = useState("");
-  const [linkedStoryId, setLinkedStoryId] = useState("");
   const [description, setDescription] = useState("");
+  const [linkedStoryId, setLinkedStoryId] = useState("");
+
+  const [pmsStories, setPmsStories] = useState([]);
+  const [loadingStories, setLoadingStories] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // ---------------------------------------------------------
+  // LOAD PMS STORIES
+  // ---------------------------------------------------------
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        const res = await axiosInstance.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`
+        );
+
+        setPmsStories(res.data || []);
+      } catch (err) {
+        console.error("Failed to load PMS stories →", err);
+      } finally {
+        setLoadingStories(false);
+      }
+    };
+
+    fetchStories();
+  }, [projectId]);
+
+  // ---------------------------------------------------------
+  // SAVE TEST STORY
+  // ---------------------------------------------------------
   const handleSave = async () => {
     if (!name.trim()) return alert("Story name is required");
 
@@ -20,11 +47,15 @@ export default function AddTestStoryModal({ projectId, onClose }) {
         linkedStoryId: linkedStoryId ? Number(linkedStoryId) : null,
       };
 
-      await axiosInstance.post("/api/test-design/test-stories", payload);
+      await axiosInstance.post(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-stories`,
+        payload
+      );
 
       alert("Test Story created");
+
+      if (onCreated) onCreated();
       onClose();
-      window.location.reload(); // reload whole test design tree
     } catch (err) {
       console.error("Create Test Story FAILED →", err);
       alert("Failed to create test story");
@@ -39,7 +70,9 @@ export default function AddTestStoryModal({ projectId, onClose }) {
 
         <h2 className="text-lg font-semibold mb-4">Add Test Story</h2>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
+
+          {/* STORY NAME */}
           <div>
             <label className="text-sm">Story Name</label>
             <input
@@ -50,16 +83,30 @@ export default function AddTestStoryModal({ projectId, onClose }) {
             />
           </div>
 
+          {/* LINKED PMS STORY DROPDOWN */}
           <div>
-            <label className="text-sm">Linked PMS Story ID (optional)</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              value={linkedStoryId}
-              onChange={(e) => setLinkedStoryId(e.target.value)}
-              placeholder="Enter PMS story ID"
-            />
+            <label className="text-sm">Linked PMS Story (optional)</label>
+
+            {loadingStories ? (
+              <div className="text-sm text-gray-500">Loading stories…</div>
+            ) : (
+              <select
+                className="w-full border rounded px-3 py-2"
+                value={linkedStoryId}
+                onChange={(e) => setLinkedStoryId(e.target.value)}
+              >
+                <option value="">-- Select a PMS story --</option>
+
+                {pmsStories.map((story) => (
+                  <option key={story.id} value={story.id}>
+                    {story.title || story.name || `Story #${story.id}`}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
+          {/* DESCRIPTION */}
           <div>
             <label className="text-sm">Description</label>
             <textarea
@@ -71,6 +118,7 @@ export default function AddTestStoryModal({ projectId, onClose }) {
             />
           </div>
 
+          {/* ACTION BUTTONS */}
           <div className="flex justify-end gap-2 mt-4">
             <button className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>
               Cancel
@@ -83,6 +131,7 @@ export default function AddTestStoryModal({ projectId, onClose }) {
               {saving ? "Saving..." : "Create"}
             </button>
           </div>
+
         </div>
 
       </div>

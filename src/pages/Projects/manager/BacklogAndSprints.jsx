@@ -26,34 +26,50 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  /** ==============================
-   * Fetch Data
-   ============================== */
+  /** ---------------------------------
+   * Helper: Format date like "5 Dec"
+   ----------------------------------*/
+  const formatDateShort = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
+  /** ---------------------------------
+   * Fetch Stories
+   ----------------------------------*/
   const fetchStories = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
         { headers }
       );
+
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setStories(list);
       setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
     } catch (err) {
-      console.error("Failed to fetch stories", err);
       toast.error("Failed to fetch stories");
+      console.error(err);
     }
   };
 
+  /** ---------------------------------
+   * Fetch Sprints
+   ----------------------------------*/
   const fetchSprints = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
         { headers }
       );
+
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setSprints(list);
     } catch (err) {
-      console.error("Failed to fetch sprints", err);
       toast.error("Failed to fetch sprints");
     }
   };
@@ -63,15 +79,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     fetchSprints();
   }, [projectId]);
 
+  /** ---------------------------------
+   * Navigation
+   ----------------------------------*/
   const goToIssueTracker = () => {
-    navigate(`/projects/${projectId}/issuetracker`, {
-      state: { projectId },
-    });
+    navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } });
   };
 
-  /** ==============================
-   * Handlers
-   ============================== */
+  /** ---------------------------------
+   * Drag & Drop Handler
+   ----------------------------------*/
   const handleDropStory = async (storyId, sprintId) => {
     try {
       await axios.put(
@@ -79,14 +96,18 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         { sprintId },
         { headers }
       );
+
       toast.success("Story moved successfully");
       fetchStories();
     } catch (err) {
-      console.error("Failed to assign story", err);
       toast.error("Failed to assign story");
+      console.error(err);
     }
   };
 
+  /** ---------------------------------
+   * Sprint Start / Complete Handler
+   ----------------------------------*/
   const handleSprintStatus = async (sprintId, action) => {
     try {
       const res = await axios.put(
@@ -94,64 +115,68 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         {},
         { headers }
       );
+
       toast.success(`Sprint ${action === "start" ? "started" : "completed"}!`);
+
       setSprints((prev) =>
         prev.map((s) => (s.id === sprintId ? res.data : s))
       );
+
       fetchStories();
     } catch (err) {
-      console.error("Failed to update sprint", err);
       toast.error("Failed to update sprint");
+      console.error(err);
     }
   };
 
-  /** ==============================
-   * UI Helpers
-   ============================== */
   const activeAndPlanningSprints = sprints.filter(
     (s) => s.status === "ACTIVE" || s.status === "PLANNING"
   );
 
-  /** ==============================
-   * Render
-   ============================== */
+  /** ---------------------------------
+   * Component Rendering
+   ----------------------------------*/
   return (
     <DndProvider backend={HTML5Backend}>
       <ToastContainer />
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* ===== Header ===== */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-indigo-900">
-            Backlog & Sprint Planning – {projectName}
+
+      <div className="max-w-7xl mx-auto px-8 py-6 space-y-8">
+
+        {/* =================== Header =================== */}
+        <div className="flex justify-between items-center pb-4 border-b">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Backlog & Sprint Planning — {projectName}
           </h1>
-          <div className="flex gap-3">
+
+          <div className="flex items-center gap-3">
             <Button
               size="medium"
               variant="outline"
-              className="flex items-center gap-2"
               onClick={goToIssueTracker}
+              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
             >
               <List size={18} /> Issue Tracker
             </Button>
 
             <Button
               onClick={() => setShowSprintModal(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
             >
               <Plus size={18} /> Create Sprint
             </Button>
+
             <Button
               variant="outline"
-              className="flex items-center gap-2"
               onClick={() => setShowIssueForm(true)}
+              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
             >
               <Plus size={18} /> Create Issue
             </Button>
           </div>
         </div>
 
-        {/* ===== Sprint List (Expandable Panels) ===== */}
-        <div className="space-y-4">
+        {/* =================== Sprint List =================== */}
+        <div className="space-y-5">
           {activeAndPlanningSprints.length === 0 ? (
             <p className="text-gray-400 italic">No active or planning sprints.</p>
           ) : (
@@ -164,29 +189,37 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               return (
                 <div
                   key={sprint.id}
-                  className="border rounded-xl bg-white shadow hover:shadow-md transition overflow-hidden"
+                  className="border rounded-2xl bg-white shadow-sm hover:shadow-md transition"
                 >
+                  {/* =================== Sprint Header (UPDATED) =================== */}
                   <div
-                    className="flex justify-between items-center px-5 py-4 cursor-pointer bg-white-50 hover:bg-white-100 transition"
+                    className="flex justify-between items-center px-6 py-4 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-t-2xl transition"
                     onClick={() =>
                       setExpandedSprint(isExpanded ? null : sprint.id)
                     }
                   >
-                    <div>
-                      <h3 className="text-lg font-semibold text-indigo-900">
-                        {sprint.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {sprint.startDate} → {sprint.endDate}
-                      </p>
+                    <div className="flex items-center gap-3">
+  <h3 className="text-base font-semibold text-gray-900">
+    {sprint.name}
+  </h3>
+
+  <p className="text-sm text-gray-500">
+    {formatDateShort(sprint.startDate)} – {formatDateShort(sprint.endDate)}
+  </p>
+</div>
+
+
+                    <div className="text-gray-600">
+                      {isExpanded ? <ChevronUp /> : <ChevronDown />}
                     </div>
-                    {isExpanded ? <ChevronUp /> : <ChevronDown />}
                   </div>
 
-                  {/* SprintColumn always rendered for drag/drop */}
+                  {/* Sprint Content */}
                   <div
-                    className={`transition-all ${
-                      isExpanded ? "p-4 bg-gray-50" : "h-4 overflow-hidden"
+                    className={`transition-all duration-300 ${
+                      isExpanded
+                        ? "max-h-screen opacity-100 p-6 bg-white"
+                        : "max-h-0 overflow-hidden opacity-0"
                     }`}
                   >
                     <SprintColumn
@@ -202,21 +235,22 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           )}
         </div>
 
-        {/* ===== Backlog Section ===== */}
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">
+        {/* =================== Backlog Section =================== */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Product Backlog
           </h2>
+
           {backlogStories.length === 0 ? (
             <p className="text-gray-400 italic">No stories in backlog.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {backlogStories.map((story) => (
                 <StoryCard
                   key={story.id}
                   story={story}
                   sprints={activeAndPlanningSprints}
-                  onAddToSprint={handleDropStory} // enables drag from backlog to sprint
+                  onAddToSprint={handleDropStory}
                 />
               ))}
             </div>
@@ -224,33 +258,31 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         </div>
       </div>
 
-      {/* ===== Modals ===== */}
+      {/* =================== Create Issue Modal =================== */}
       {showIssueForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto animate-fadeIn">
-            {/* Close Button */}
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 max-h-[90vh] overflow-y-auto animate-fadeIn">
             <button
               onClick={() => setShowIssueForm(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
             >
               <X size={22} />
             </button>
 
-            {/* Header */}
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-3">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-5 border-b pb-3">
               Create Epic
             </h2>
 
-            {/* Form Component */}
             <CreateIssueForm
               onClose={() => setShowIssueForm(false)}
-              onCreated={() => fetchStories()}
+              onCreated={fetchStories}
               projectId={projectId}
             />
           </div>
         </div>
       )}
 
+      {/* =================== Create Sprint Modal =================== */}
       <CreateSprintModal
         isOpen={showSprintModal}
         projectId={projectId}

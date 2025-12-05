@@ -46,7 +46,7 @@ export default function AddCaseModal({ scenarioId, onClose }) {
           }))
       };
 
-      await axiosInstance.post("/api/test-design/test-cases", payload);
+      await axiosInstance.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases`, payload);
 
       alert("Test Case Created");
       onClose();
