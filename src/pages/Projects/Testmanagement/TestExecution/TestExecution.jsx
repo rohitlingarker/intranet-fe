@@ -3,6 +3,7 @@ import axiosInstance from "../api/axiosInstance";
 import CreateTestCycleForm from "./CreateCycle";
 import CreateTestRunForm from "./CreateRun";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function TestExecution() {
   const { projectId } = useParams();
@@ -13,6 +14,12 @@ export default function TestExecution() {
 
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
+
+  // NEW STATES for Add Cases Modal
+  const [showAddCasesModal, setShowAddCasesModal] = useState(false);
+  const [selectedRunId, setSelectedRunId] = useState(null);
+  const [availableCases, setAvailableCases] = useState([]);
+  const [selectedCases, setSelectedCases] = useState([]);
 
   // --------------------------------------------------------------------
   // LOAD ALL CYCLES FOR PROJECT
@@ -76,6 +83,49 @@ export default function TestExecution() {
     );
   };
 
+  // --------------------------------------------------------------------
+  // LOAD TEST CASES FOR ADD CASES MODAL
+  // --------------------------------------------------------------------
+  const openAddCasesModal = async (runId) => {
+    setSelectedRunId(runId);
+    setShowAddCasesModal(true);
+
+    try {
+      const res = await axiosInstance.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/getcases/${projectId}`
+      );
+      setAvailableCases(res.data || []);
+    } catch (err) {
+      console.error("Error loading cases:", err);
+    }
+  };
+
+  // --------------------------------------------------------------------
+  // SUBMIT ADD CASES TO TEST RUN
+  // --------------------------------------------------------------------
+  const addCasesToRun = async () => {
+    if (selectedCases.length === 0) {
+      toast.error("Please select at least one test case");
+      return;
+    }
+
+    try {
+      await axiosInstance.post(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/${selectedRunId}/add-cases`,
+        { testCaseIds: selectedCases }
+      );
+
+      toast.success("Test Cases Added Successfully!");
+      setShowAddCasesModal(false);
+      setSelectedCases([]);
+
+      loadRuns(selectedCycleId); // refresh test runs
+    } catch (err) {
+      console.error("Error adding cases:", err);
+      toast.error("Failed to add test cases");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* HEADER */}
@@ -83,7 +133,6 @@ export default function TestExecution() {
         <h1 className="text-xl font-bold">Test Execution</h1>
 
         <div className="flex items-center gap-4">
-
           {/* CYCLES DROPDOWN */}
           <select
             className="border rounded px-3 py-1 focus:outline-none"
@@ -116,7 +165,7 @@ export default function TestExecution() {
       </div>
 
       {/* --------------------------------------------------------------------
-          RUN CARDS (UI EXACTLY LIKE YOUR SCREENSHOT)
+          RUN CARDS
       -------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {runs.map((run) => {
@@ -145,20 +194,69 @@ export default function TestExecution() {
                 />
               </div>
 
-              <div className="flex justify-between text-sm text-gray-700">
+              <div className="flex justify-between text-sm text-gray-700 mb-3">
                 <span>
                   {executed} / {total} Executed
                 </span>
                 <span>{progress}%</span>
               </div>
+
+              {/* NEW BUTTON */}
+              <button
+                className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+                onClick={() => openAddCasesModal(run.id)}
+              >
+                + Add Test Cases
+              </button>
             </div>
           );
         })}
       </div>
 
       {/* --------------------------------------------------------------------
-          MODALS
+          ADD CASES MODAL
       -------------------------------------------------------------------- */}
+      {showAddCasesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl w-[500px] shadow-xl relative">
+            <h2 className="text-lg font-semibold mb-4">Add Test Cases</h2>
+
+            <div className="max-h-64 overflow-y-auto border p-2 rounded">
+              {availableCases.map((tc) => (
+                <label key={tc.id} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    value={tc.id}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      setSelectedCases((prev) =>
+                        prev.includes(id)
+                          ? prev.filter((x) => x !== id)
+                          : [...prev, id]
+                      );
+                    }}
+                  />
+                  <span>{tc.title}</span>
+                </label>
+              ))}
+            </div>
+
+            <button
+              className="bg-green-600 text-white px-4 py-1 mt-4 rounded hover:bg-green-700"
+              onClick={addCasesToRun}
+            >
+              Add Selected Cases
+            </button>
+
+            <button
+              className="absolute top-3 right-4 text-gray-400 hover:text-black"
+              onClick={() => setShowAddCasesModal(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
