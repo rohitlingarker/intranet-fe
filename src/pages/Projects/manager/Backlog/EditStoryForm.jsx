@@ -153,17 +153,11 @@ const EditStoryForm = ({
         axiosConfig
       );
 
-      // ⛔ Close immediately
-      onClose?.();
-
-      // 🔥 Show toast after close
-      // toast.success("Story updated successfully!", {
-      //   position: "top-right",
-      //   autoClose: 2500,
-      // });
-
-      // Notify parent
-      onUpdated?.();
+      toast.success("Story updated successfully!");
+      setTimeout(() => {
+        onUpdated?.();
+        onClose?.();
+      }, 500);
     } catch (error) {
       console.error("Error updating:", error);
       const msg =

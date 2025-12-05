@@ -9,60 +9,43 @@ export default function TestRunAccordion({ run, onAddCases }) {
   const progress = total > 0 ? Math.round((executed / total) * 100) : 0;
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm">
-      
-      {/* Accordion Header */}
+    <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
       <div
-        className="p-4 flex justify-between items-center cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-t-lg"
-        onClick={() => setIsOpen(!isOpen)}
+        className="p-4 flex justify-between items-start cursor-pointer bg-gray-50 hover:bg-gray-100"
+        onClick={() => setIsOpen((s) => !s)}
       >
         <div>
-          <h2 className="font-semibold text-lg">{run.name}</h2>
-          <p className="text-sm text-gray-500">
-            {run.executionDate || "No Date"}
-          </p>
+          <h4 className="font-semibold">{run.name}</h4>
+          <p className="text-sm text-gray-500">{run.executionDate || "No Date"}</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">{progress}%</span>
-          <span className="text-lg">
-            {isOpen ? "▲" : "▼"}
-          </span>
+        <div className="flex flex-col items-end gap-2">
+          <div className="text-sm text-gray-600">{progress}%</div>
+
+          <div className="w-24 bg-gray-200 h-2 rounded-full overflow-hidden">
+            <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
+          </div>
+
+          <div className="text-lg">{isOpen ? "▲" : "▼"}</div>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="px-4">
-        <div className="w-full bg-gray-200 h-2 rounded-full my-2">
-          <div
-            className="h-2 bg-green-500 rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        <p className="text-xs text-gray-500 mb-2">
-          {executed} / {total} Executed
-        </p>
-      </div>
-
-      {/* Accordion Content */}
       {isOpen && (
         <div className="p-4 border-t">
-
           {run.testCases && run.testCases.length > 0 ? (
-            <div>
-              <h3 className="font-medium text-sm mb-2">Test Cases</h3>
-              <ul className="list-disc pl-5 text-sm">
+            <>
+              <h5 className="font-medium text-sm mb-2">Test Cases</h5>
+              <ul className="list-disc pl-5 text-sm space-y-1">
                 {run.testCases.map((tc) => (
                   <li key={tc.id}>{tc.title}</li>
                 ))}
               </ul>
-            </div>
+            </>
           ) : (
-            <div className="text-center py-3 text-gray-500">
-              No test cases added yet.
+            <div className="text-center py-6">
+              <p className="text-gray-500 mb-3">No test cases added yet.</p>
               <button
-                className="mt-3 bg-indigo-600 text-white px-3 py-1 rounded"
+                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
                 onClick={() => onAddCases(run.id)}
               >
                 + Add Test Cases
@@ -71,7 +54,6 @@ export default function TestRunAccordion({ run, onAddCases }) {
           )}
         </div>
       )}
-
     </div>
   );
 }
