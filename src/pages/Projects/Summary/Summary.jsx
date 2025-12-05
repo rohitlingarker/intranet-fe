@@ -1,16 +1,9 @@
-// Summary/Summary.jsx
+// src/pages/Projects/Summary/Summary.jsx
 "use client";
-import React, { Suspense, useMemo, useEffect } from "react";
-import useDashboardData from "./useDashboardData";
-import { preloadAllWidgets } from "./preloadWidgets";
 
-// Lazy widgets
-const ScopeAndProgress = React.lazy(() => import("./widgets/ScopeAndProgress"));
-const StatusOverview = React.lazy(() => import("./widgets/StatusOverview"));
-const TypesOfWork = React.lazy(() => import("./widgets/TypesOfWork"));
-const TeamWorkload = React.lazy(() => import("./widgets/TeamWorkload"));
-const PriorityDistribution = React.lazy(() => import("./widgets/PriorityDistribution"));
-const EpicProgress = React.lazy(() => import("./widgets/EpicProgress"));
+import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { motion } from "framer-motion";
 
 // Skeletons
 import HeaderSkeleton from "./skeletons/HeaderSkeleton";
@@ -19,104 +12,165 @@ import StatusSkeleton from "./skeletons/StatusSkeleton";
 import ChartCardSkeleton from "./skeletons/ChartCardSkeleton";
 import ListCardSkeleton from "./skeletons/ListCardSkeleton";
 
-const HeaderSection = React.memo(function HeaderSection({ stage, projectName, loadingStage }) {
-  if (loadingStage) return <HeaderSkeleton />;
-  return (
-    <div className="mb-6 px-1">
-      <h1 className="text-2xl font-semibold">{projectName || "Project"}</h1>
-      <p className="text-sm text-gray-500">Overview & progress at a glance</p>
-      <div className="mt-2">
-        <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border">
-          Stage: {stage || "UNKNOWN"}
-        </span>
-      </div>
-    </div>
-  );
-});
+// Widgets
+import ScopeAndProgress from "./widgets/ScopeAndProgress";
+import StatusOverview from "./widgets/StatusOverview";
+import TypesOfWork from "./widgets/TypesOfWork";
+import TeamWorkload from "./widgets/TeamWorkload";
+import PriorityDistribution from "./widgets/PriorityDistribution";
+import EpicProgress from "./widgets/EpicProgress";
 
-export default function Summary({ projectId, projectName }) {
-  const { data, loading } = useDashboardData(projectId);
+const Summary = ({ projectId, projectName }) => {
+  const [projectData, setProjectData] = useState({
+    epics: null,
+    stories: null,
+    tasks: null,
+    bugs: null,
+    statuses: null,
+    users: null,
+    stage: null,
+  });
 
-  // preload bundles during idle
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
   useEffect(() => {
-    preloadAllWidgets();
-  }, []);
+    if (!projectId || !token) return;
+    const base = import.meta.env.VITE_PMS_BASE_URL;
+    const headers = { Authorization: `Bearer ${token}` };
 
-  // combine work items only when available - memoized
-  const allWorkItems = useMemo(() => {
-    if (!data.tasks || !data.stories || !data.bugs) return [];
-    return [...(data.tasks || []), ...(data.stories || []), ...(data.bugs || [])];
-  }, [data.tasks, data.stories, data.bugs]);
+    const fetch = (url, key) => {
+      axios.get(url, { headers })
+        .then((res) => setProjectData((p) => ({ ...p, [key]: res.data || [] })))
+        .catch(() => setProjectData((p) => ({ ...p, [key]: [] })));
+    };
+
+    axios.get(`${base}/api/projects/${projectId}`, { headers })
+      .then((res) => setProjectData((p) => ({ ...p, stage: res.data?.currentStage || "INITIATION" })))
+      .catch(() => setProjectData((p) => ({ ...p, stage: "UNKNOWN" })));
+
+    fetch(`${base}/api/projects/${projectId}/epics`, "epics");
+    fetch(`${base}/api/projects/${projectId}/stories`, "stories");
+    fetch(`${base}/api/projects/${projectId}/tasks`, "tasks");
+    fetch(`${base}/api/testing/bugs/projects/${projectId}/summaries`, "bugs");
+    fetch(`${base}/api/projects/${projectId}/statuses`, "statuses");
+    fetch(`${base}/api/projects/${projectId}/members-with-owner`, "users");
+  }, [projectId, token]);
+
+  const isDataReady = {
+    work: projectData.epics && projectData.stories && projectData.tasks && projectData.bugs,
+    statuses: projectData.statuses,
+    users: projectData.users,
+  };
+
+  const allWork = useMemo(() => {
+    if (!isDataReady.work) return [];
+    return [...projectData.tasks, ...projectData.stories, ...projectData.bugs];
+  }, [projectData.epics, projectData.stories, projectData.tasks, projectData.bugs, isDataReady.work]);
 
   return (
-    <div className="bg-white mt-2 p-4">
-      <HeaderSection stage={data.stage} projectName={projectName} loadingStage={loading.stage} />
+    <motion.div
+      className="bg-white mt-2 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.36 }}
+    >
+      {/* HEADER */}
+      {!projectData.stage ? (
+        <HeaderSkeleton />
+      ) : (
+        <div className="mb-6 px-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">
+                {projectName || "Project"}
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Overview & progress at a glance
+              </p>
+            </div>
+            <div>
+              <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Stage: {projectData.stage}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* SCOPE */}
       <div className="mb-4">
-        <Suspense fallback={<ScopeSkeleton />}>
-          {loading.epics || loading.stories || loading.tasks || loading.bugs ? (
-            <ScopeSkeleton />
-          ) : (
-            <ScopeAndProgress
-              epics={data.epics}
-              stories={data.stories}
-              tasks={data.tasks}
-              bugs={data.bugs}
-              statuses={data.statuses}
-            />
-          )}
-        </Suspense>
+        {!isDataReady.work || !isDataReady.statuses ? (
+          <ScopeSkeleton />
+        ) : (
+          <ScopeAndProgress
+            epics={projectData.epics}
+            stories={projectData.stories}
+            statuses={projectData.statuses}
+            tasks={projectData.tasks}
+            bugs={projectData.bugs}
+          />
+        )}
       </div>
 
+      {/* STATUS */}
       <div className="mb-4">
-        <Suspense fallback={<StatusSkeleton />}>
-          {loading.statuses || loading.stories || loading.tasks || loading.bugs ? (
-            <StatusSkeleton />
-          ) : (
-            <StatusOverview workItems={allWorkItems} statuses={data.statuses} />
-          )}
-        </Suspense>
+        {!isDataReady.work || !isDataReady.statuses ? (
+          <StatusSkeleton />
+        ) : (
+          <StatusOverview workItems={allWork} statuses={projectData.statuses} />
+        )}
       </div>
 
+      {/* BOTTOM FLOAT */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <Suspense fallback={<ChartCardSkeleton />}>
-            {loading.tasks || loading.stories || loading.bugs ? (
-              <ChartCardSkeleton />
-            ) : (
-              <PriorityDistribution tasks={data.tasks} stories={data.stories} bugs={data.bugs} />
-            )}
-          </Suspense>
+          {!isDataReady.work ? (
+            <ChartCardSkeleton />
+          ) : (
+            <PriorityDistribution
+              tasks={projectData.tasks}
+              stories={projectData.stories}
+              bugs={projectData.bugs}
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
-          <Suspense fallback={<ListCardSkeleton />}>
-            {loading.tasks || loading.stories || loading.bugs ? (
-              <ListCardSkeleton />
-            ) : (
-              <TypesOfWork tasks={data.tasks} stories={data.stories} epics={data.epics} bugs={data.bugs} />
-            )}
-          </Suspense>
+          {!isDataReady.work ? (
+            <ListCardSkeleton />
+          ) : (
+            <TypesOfWork
+              tasks={projectData.tasks}
+              stories={projectData.stories}
+              epics={projectData.epics}
+              bugs={projectData.bugs}
+            />
+          )}
 
-          <Suspense fallback={<ListCardSkeleton />}>
-            {loading.users || loading.tasks || loading.stories || loading.bugs ? (
-              <ListCardSkeleton />
-            ) : (
-              <TeamWorkload workItems={allWorkItems} users={data.users} />
-            )}
-          </Suspense>
+          {!isDataReady.work || !isDataReady.users ? (
+            <ListCardSkeleton />
+          ) : (
+            <TeamWorkload workItems={allWork} users={projectData.users} />
+          )}
         </div>
       </div>
 
-      <div className="mt-4">
-        <Suspense fallback={<ListCardSkeleton />}>
-          {loading.epics || loading.statuses || loading.tasks || loading.stories || loading.bugs ? (
-            <ListCardSkeleton />
-          ) : (
-            <EpicProgress epics={data.epics} stories={data.stories} tasks={data.tasks} bugs={data.bugs} statuses={data.statuses} />
-          )}
-        </Suspense>
+      {/* EPICS */}
+      <div className="my-4">
+        {!isDataReady.work || !isDataReady.statuses ? (
+          <ListCardSkeleton />
+        ) : (
+          <EpicProgress
+            epics={projectData.epics}
+            stories={projectData.stories}
+            tasks={projectData.tasks}
+            bugs={projectData.bugs}
+            statuses={projectData.statuses}
+          />
+        )}
       </div>
-    </div>
+    </motion.div>
   );
-}
+};
+
+export default Summary;

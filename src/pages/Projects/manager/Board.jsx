@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import CreateIssueForm from "./Backlog/CreateIssueForm";
+import CreateIssueForm from "./CreateIssue/CreateIssueForm";
 import axios from "axios";
 import {
   DragDropContext,

@@ -1,38 +1,73 @@
-// Summary/widgets/TypesOfWork.jsx
+// src/pages/Projects/Summary/widgets/TypesOfWork.jsx
 "use client";
+
 import React, { useMemo } from "react";
 import { Card, Typography } from "antd";
 import DistributionBar from "./DistributionBar";
+import { motion } from "framer-motion";
+import { itemVariants } from "../uiConfig";
+import { FiCheckSquare, FiBookmark, FiZap } from "react-icons/fi";
+import { FaBug } from "react-icons/fa";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-function TypesOfWorkInner({ tasks = [], stories = [], epics = [], bugs = [] }) {
-  const rows = useMemo(() => ([
-    { name: "Tasks", count: (tasks || []).length },
-    { name: "Stories", count: (stories || []).length },
-    { name: "Epics", count: (epics || []).length },
-    { name: "Bugs", count: (bugs || []).length },
-  ]), [tasks, stories, epics, bugs]);
+const TypesOfWork = ({ tasks, stories, epics, bugs }) => {
+  const workTypes = useMemo(
+    () => [
+      { name: "Tasks", items: tasks, icon: <FiCheckSquare className="text-blue-500" /> },
+      { name: "Stories", items: stories, icon: <FiBookmark className="text-green-500" /> },
+      { name: "Epics", items: epics, icon: <FiZap className="text-purple-500" /> },
+      { name: "Bugs", items: bugs, icon: <FaBug className="text-red-500" /> },
+    ],
+    [tasks, stories, epics, bugs]
+  );
 
-  const total = useMemo(() => rows.reduce((a, b) => a + b.count, 0), [rows]);
+  const totalItems = useMemo(
+    () => workTypes.reduce((sum, type) => sum + type.items.length, 0),
+    [workTypes]
+  );
 
-  if (!total) return null;
+  if (!totalItems) return null;
 
   return (
-    <Card>
-      <Title level={4}>Types of Work</Title>
-      <div className="mt-4 space-y-3">
-        {rows.map(r => (
-          <div key={r.name} className="flex items-center justify-between">
-            <span>{r.name} ({r.count})</span>
-            <div className="w-2/3">
-              <DistributionBar percentage={(r.count/total)*100} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Types of work</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+          header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
+          body: { padding: "0 32px 32px 32px" },
+        }}
+      >
+        <Text type="secondary" className="block mb-6 text-sm">
+          Get a breakdown of work items by their types.
+        </Text>
 
-export default React.memo(TypesOfWorkInner);
+        <div className="space-y-3">
+          {workTypes.map((type) => (
+            <div
+              key={type.name}
+              className="flex items-center p-1 -m-1 rounded-md transition-colors hover:bg-gray-50"
+            >
+              <div className="w-2/5 flex items-center">
+                <span className="mr-3 text-lg">{type.icon}</span>
+                <Text className="text-sm font-medium">
+                  {type.name} ({type.items.length})
+                </Text>
+              </div>
+              <div className="w-3/5">
+                <DistributionBar
+                  percentage={(type.items.length / totalItems) * 100}
+                  count={type.items.length}
+                  total={totalItems}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+export default React.memo(TypesOfWork);
