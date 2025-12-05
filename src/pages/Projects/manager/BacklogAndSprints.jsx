@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Plus, List, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, List, X } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -26,9 +26,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  /** ---------------------------------
-   * Helper: Format date like "5 Dec"
-   ----------------------------------*/
   const formatDateShort = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -38,16 +35,12 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     });
   };
 
-  /** ---------------------------------
-   * Fetch Stories
-   ----------------------------------*/
   const fetchStories = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
         { headers }
       );
-
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setStories(list);
       setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
@@ -57,16 +50,12 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
-  /** ---------------------------------
-   * Fetch Sprints
-   ----------------------------------*/
   const fetchSprints = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
         { headers }
       );
-
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setSprints(list);
     } catch (err) {
@@ -79,16 +68,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     fetchSprints();
   }, [projectId]);
 
-  /** ---------------------------------
-   * Navigation
-   ----------------------------------*/
   const goToIssueTracker = () => {
     navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } });
   };
 
-  /** ---------------------------------
-   * Drag & Drop Handler
-   ----------------------------------*/
   const handleDropStory = async (storyId, sprintId) => {
     try {
       await axios.put(
@@ -96,8 +79,8 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         { sprintId },
         { headers }
       );
-
       toast.success("Story moved successfully");
+      // fetchStories will refresh backlog & sprint lists
       fetchStories();
     } catch (err) {
       toast.error("Failed to assign story");
@@ -105,9 +88,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
-  /** ---------------------------------
-   * Sprint Start / Complete Handler
-   ----------------------------------*/
   const handleSprintStatus = async (sprintId, action) => {
     try {
       const res = await axios.put(
@@ -115,13 +95,8 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         {},
         { headers }
       );
-
       toast.success(`Sprint ${action === "start" ? "started" : "completed"}!`);
-
-      setSprints((prev) =>
-        prev.map((s) => (s.id === sprintId ? res.data : s))
-      );
-
+      setSprints((prev) => prev.map((s) => (s.id === sprintId ? res.data : s)));
       fetchStories();
     } catch (err) {
       toast.error("Failed to update sprint");
@@ -133,16 +108,11 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     (s) => s.status === "ACTIVE" || s.status === "PLANNING"
   );
 
-  /** ---------------------------------
-   * Component Rendering
-   ----------------------------------*/
   return (
     <DndProvider backend={HTML5Backend}>
       <ToastContainer />
 
       <div className="max-w-7xl mx-auto px-8 py-6 space-y-8">
-
-        {/* =================== Header =================== */}
         <div className="flex justify-between items-center pb-4 border-b">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Backlog & Sprint Planning — {projectName}
@@ -175,7 +145,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           </div>
         </div>
 
-        {/* =================== Sprint List =================== */}
+        {/* SPRINTS LIST - SprintColumn now renders header (with drop zone) always */}
         <div className="space-y-5">
           {activeAndPlanningSprints.length === 0 ? (
             <p className="text-gray-400 italic">No active or planning sprints.</p>
@@ -191,55 +161,27 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                   key={sprint.id}
                   className="border rounded-2xl bg-white shadow-sm hover:shadow-md transition"
                 >
-                  {/* =================== Sprint Header (UPDATED) =================== */}
-                  <div
-                    className="flex justify-between items-center px-6 py-4 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-t-2xl transition"
-                    onClick={() =>
-                      setExpandedSprint(isExpanded ? null : sprint.id)
+                  <SprintColumn
+                    sprint={sprint}
+                    stories={sprintStories}
+                    onDropStory={handleDropStory}
+                    onChangeStatus={handleSprintStatus}
+                    onStoryClick={() => {}}
+                    isExpanded={isExpanded}
+                    onToggleExpand={(id) =>
+                      setExpandedSprint((prev) => (prev === id ? null : id))
                     }
-                  >
-                    <div className="flex items-center gap-3">
-  <h3 className="text-base font-semibold text-gray-900">
-    {sprint.name}
-  </h3>
-
-  <p className="text-sm text-gray-500">
-    {formatDateShort(sprint.startDate)} – {formatDateShort(sprint.endDate)}
-  </p>
-</div>
-
-
-                    <div className="text-gray-600">
-                      {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                    </div>
-                  </div>
-
-                  {/* Sprint Content */}
-                  <div
-                    className={`transition-all duration-300 ${
-                      isExpanded
-                        ? "max-h-screen opacity-100 p-6 bg-white"
-                        : "max-h-0 overflow-hidden opacity-0"
-                    }`}
-                  >
-                    <SprintColumn
-                      sprint={sprint}
-                      stories={sprintStories}
-                      onDropStory={handleDropStory}
-                      onChangeStatus={handleSprintStatus}
-                    />
-                  </div>
+                    formatDateShort={formatDateShort}
+                  />
                 </div>
               );
             })
           )}
         </div>
 
-        {/* =================== Backlog Section =================== */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Product Backlog
-          </h2>
+        {/* Backlog */}
+        <div className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition overflow-visible">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Backlog</h2>
 
           {backlogStories.length === 0 ? (
             <p className="text-gray-400 italic">No stories in backlog.</p>
@@ -258,7 +200,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         </div>
       </div>
 
-      {/* =================== Create Issue Modal =================== */}
+      {/* Create Issue Modal */}
       {showIssueForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
           <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 max-h-[90vh] overflow-y-auto animate-fadeIn">
@@ -282,7 +224,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         </div>
       )}
 
-      {/* =================== Create Sprint Modal =================== */}
+      {/* Create Sprint Modal */}
       <CreateSprintModal
         isOpen={showSprintModal}
         projectId={projectId}
