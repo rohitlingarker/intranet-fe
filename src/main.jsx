@@ -5,9 +5,10 @@ import  WebSocketProvider  from "./pages/leave_management/websockets/WebSocketPr
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <WebSocketProvider>
       <App />
     </WebSocketProvider>
-  </StrictMode>
+  // {/* </StrictMode> */}
 );
+  

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import Summary from "./Summary";
+import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
 import Board from "./Board";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";

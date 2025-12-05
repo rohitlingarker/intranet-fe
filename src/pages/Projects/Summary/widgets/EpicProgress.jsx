@@ -1,81 +1,159 @@
-// Summary/widgets/EpicProgress.jsx
+// src/pages/Projects/Summary/widgets/EpicProgress.jsx
 "use client";
-import React, { useMemo } from "react";
-import { Card, Typography } from "antd";
 
-const { Title } = Typography;
+import React, { useEffect, useState } from "react";
+import { Card, Typography, Tooltip } from "antd";
+import { FiZap } from "react-icons/fi";
+import { motion } from "framer-motion";
+import { itemVariants, DASHBOARD_COLORS } from "../uiConfig";
 
-let FixedSizeList = null;
-try {
-  // optional dependency - react-window
-  // if not installed, code will fallback to non-virtualized rendering
-  // install: npm i react-window
-  // eslint-disable-next-line
-  FixedSizeList = require("react-window").FixedSizeList;
-} catch (e) {
-  FixedSizeList = null;
-}
+const { Title, Text } = Typography;
 
-function EpicProgressInner({ epics = [], stories = [], tasks = [], bugs = [], statuses = [] }) {
-  const all = useMemo(() => [...(stories || []), ...(tasks || []), ...(bugs || [])], [stories, tasks, bugs]);
+const EpicTooltipContent = ({ epic }) => (
+  <div className="text-xs">
+    <Text strong className="text-white text-sm block mb-1">{epic.name}</Text>
+    <div className="flex items-center">
+      <span className="w-2.5 h-2.5 bg-green-300 rounded-sm mr-2" />
+      <Text className="text-gray-200">Done: {epic.done}</Text>
+    </div>
+    <div className="flex items-center">
+      <span className="w-2.5 h-2.5 bg-blue-300 rounded-sm mr-2" />
+      <Text className="text-gray-200">In progress: {epic.inProgress}</Text>
+    </div>
+    <div className="flex items-center">
+      <span className="w-2.5 h-2.5 bg-gray-500 rounded-sm mr-2" />
+      <Text className="text-gray-200">To do: {epic.todo}</Text>
+    </div>
+  </div>
+);
 
-  const sortedStatuses = useMemo(() => (statuses || []).slice().sort((a,b) => (a.sortOrder||0) - (b.sortOrder||0)), [statuses]);
+const EpicProgress = ({ epics, stories, tasks, bugs, statuses }) => {
+  const [epicProgressData, setEpicProgressData] = useState([]);
+  const [sortedStatuses, setSortedStatuses] = useState([]);
 
-  const rows = useMemo(() => {
-    return (epics || []).map(e => {
-      const children = all.filter(c => c.epicId === e.id || (c.epic && c.epic.id === e.id));
-      const total = children.length;
-      const dist = sortedStatuses.map((s, i) => {
-        const count = children.filter(c => c.status?.id === s.id).length;
-        return { id: s.id, name: s.name, percent: total ? (count/total)*100 : 0, color: ["#4f46e5","#7c3aed","#0d9488","#ea580c"][i % 4] };
+  useEffect(() => {
+    if (!statuses || statuses.length === 0) {
+      setEpicProgressData([]);
+      return;
+    }
+    const localSortedStatuses = [...statuses]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((status, index) => ({
+        ...status,
+        color: DASHBOARD_COLORS[index % DASHBOARD_COLORS.length],
+      }));
+    setSortedStatuses(localSortedStatuses);
+
+    const allWorkItems = [...stories, ...tasks, ...bugs];
+
+    const processed = epics.map((epic) => {
+      const children = allWorkItems.filter(
+        (item) => item.epicId === epic.id || item.epic?.id === epic.id
+      );
+      const statusCounts = new Map(localSortedStatuses.map((s) => [s.id, 0]));
+      children.forEach((child) => {
+        if (child.status?.id)
+          statusCounts.set(
+            child.status.id,
+            (statusCounts.get(child.status.id) || 0) + 1
+          );
       });
-      return { ...e, total, dist };
-    }).filter(r => r.total > 0);
-  }, [epics, all, sortedStatuses]);
+      const total = children.length;
+      const dist = localSortedStatuses.map((s, index) => ({
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        count: statusCounts.get(s.id) || 0,
+        percentage: total > 0 ? ((statusCounts.get(s.id) || 0) / total) * 100 : 0,
+      }));
+      return { ...epic, total, statusDistribution: dist };
+    });
 
-  if (!rows.length) return null;
+    setEpicProgressData(processed.filter((e) => e.total > 0));
+  }, [epics, stories, tasks, bugs, statuses]);
 
-  const Row = ({ index, style }) => {
-    const r = rows[index];
-    return (
-      <div style={style} className="p-2" key={r.id}>
-        <div className="flex items-center justify-between mb-1">
-          <strong>{r.key || `EPIC-${r.id}`}</strong>
-          <span className="text-sm text-gray-500">{r.total}</span>
-        </div>
-        <div className="h-6 w-full rounded overflow-hidden flex">
-          {r.dist.map(s => <div key={s.id} style={{ width: `${s.percent}%`, background: s.color }} className="flex items-center justify-center text-white text-xs">{s.percent > 10 ? `${Math.round(s.percent)}%` : ""}</div>)}
-        </div>
-      </div>
-    );
-  };
+  if (!epicProgressData.length) return null;
 
   return (
-    <Card>
-      <Title level={4}>Epic progress</Title>
-      <div className="mt-3">
-        {FixedSizeList ? (
-          <FixedSizeList height={360} itemCount={rows.length} itemSize={72} width="100%">
-            {Row}
-          </FixedSizeList>
-        ) : (
-          <div className="space-y-3">
-            {rows.map(r => (
-              <div key={r.id}>
-                <div className="flex items-center justify-between mb-1">
-                  <strong>{r.key || `EPIC-${r.id}`}</strong>
-                  <span className="text-sm text-gray-500">{r.total}</span>
-                </div>
-                <div className="h-6 w-full rounded overflow-hidden flex mb-2">
-                  {r.dist.map(s => <div key={s.id} style={{ width: `${s.percent}%`, background: s.color }} className="flex items-center justify-center text-white text-xs">{s.percent > 10 ? `${Math.round(s.percent)}%` : ""}</div>)}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
+    <motion.div variants={itemVariants} initial="hidden" animate="visible">
+      <Card
+        title={<Title level={4} className="!mb-0 font-bold">Epic progress</Title>}
+        className="shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200"
+        styles={{
+          header: { marginBottom: 0, borderBottom: "none", paddingBottom: 0 },
+          body: { padding: "0 32px 32px 32px" },
+        }}
+      >
+        <Text type="secondary" className="block mb-6 text-sm">
+          See how your epics are progressing at a glance.
+        </Text>
 
-export default React.memo(EpicProgressInner);
+        {/* Legend */}
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mb-4">
+          {sortedStatuses.map((status) => (
+            <div key={status.id} className="flex items-center">
+              <span
+                className="w-3 h-3 rounded-sm mr-2"
+                style={{ backgroundColor: status.color }}
+              />
+              <Text className="text-xs font-semibold">{status.name}</Text>
+            </div>
+          ))}
+        </div>
+
+        {/* EPICS LIST */}
+        <div className="space-y-3">
+          {epicProgressData.map((epic) => (
+            <div key={epic.id}>
+              <Tooltip
+                title={<EpicTooltipContent epic={epic} />}
+                placement="top"
+                arrow={false}
+                styles={{
+                  popup: {
+                    backgroundColor: "rgba(23, 23, 23, 0.9)",
+                    borderRadius: "6px",
+                    padding: "8px 10px",
+                  },
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1 cursor-default">
+                  <FiZap className="text-purple-500" />
+                  <Text strong className="text-sm">
+                    {epic.key || `EPIC-${epic.id}`}
+                  </Text>
+                  <Text className="text-sm">{epic.name}</Text>
+                </div>
+              </Tooltip>
+              <div className="w-full h-6 flex rounded overflow-hidden text-gray-800">
+                {epic.statusDistribution.map((status, index) => (
+                  <motion.div
+                    key={status.id}
+                    className="flex items-center justify-center"
+                    style={{ backgroundColor: status.color }}
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${status.percentage}%` }}
+                    transition={{
+                      duration: 0.6,
+                      ease: "easeOut",
+                      delay: index * 0.05,
+                    }}
+                    viewport={{ once: true, amount: 0.5 }}
+                  >
+                    {status.percentage > 10 && (
+                      <span className="text-xs font-semibold text-white px-1">
+                        {Math.round(status.percentage)}%
+                      </span>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
+};
+
+export default React.memo(EpicProgress);

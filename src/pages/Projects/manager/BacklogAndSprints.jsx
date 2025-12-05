@@ -12,7 +12,7 @@ import Button from "../../../components/Button/Button";
 import StoryCard from "./Sprint/StoryCard";
 import SprintColumn from "./Sprint/SprintColumn";
 import CreateSprintModal from "./Sprint/CreateSprintModal";
-import CreateIssueForm from "./Backlog/CreateIssueForm";
+import CreateIssueForm from "./CreateIssue/CreateIssueForm";
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
@@ -226,30 +226,12 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
       {/* ===== Modals ===== */}
       {showIssueForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto animate-fadeIn">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowIssueForm(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition"
-            >
-              <X size={22} />
-            </button>
-
-            {/* Header */}
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-3">
-              Create Epic
-            </h2>
-
-            {/* Form Component */}
-            <CreateIssueForm
-              onClose={() => setShowIssueForm(false)}
-              onCreated={() => fetchStories()}
-              projectId={projectId}
-            />
-          </div>
-        </div>
-      )}
+  <CreateIssueForm
+    onClose={() => setShowIssueForm(false)}
+    onCreated={() => fetchStories()}
+    projectId={projectId}
+  />
+)}
 
       <CreateSprintModal
         isOpen={showSprintModal}
