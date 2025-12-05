@@ -176,26 +176,35 @@ const ManagerApprovalTable = ({
     }
   };
 
+  const disableButton = (user) => {
+    const submittedWeeks = user.weeklySummary.filter((week) => {
+        const status = week.weeklyStatus?.toUpperCase();
+        return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
+      });
+
+      return (submittedWeeks.length === 0 );
+  };
+
   // -----------------------------
   // Bulk Approve/Reject All Weeks for a User
   // -----------------------------
   const handleSelectAllWeeks = async (user, status, reason) => {
     try {
-      // 🧠 Filter only SUBMITTED weeks and Pattially Approved
+      // // 🧠 Filter only SUBMITTED weeks and Pattially Approved
       const submittedWeeks = user.weeklySummary.filter((week) => {
         const status = week.weeklyStatus?.toUpperCase();
         return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
       });
 
-      if (submittedWeeks.length === 0) {
-        showStatusToast(
-          `No submitted weeks found to ${status.toLowerCase()} for ${
-            user.userName
-          }`,
-          "info"
-        );
-        return;
-      }
+      // if (submittedWeeks.length === 0) {
+      //   showStatusToast(
+      //     `No submitted weeks found to ${status.toLowerCase()} for ${
+      //       user.userName
+      //     }`,
+      //     "info"
+      //   );
+      //   return;
+      // }
 
       // 🧩 Build request payload with only submitted weeks
       const requestPayload = submittedWeeks.map((week) => ({
@@ -907,8 +916,9 @@ const ManagerApprovalTable = ({
                         <Button
                           variant="success"
                           size="small"
-                          disabled={userLevelLoading !== null}
+                          disabled={userLevelLoading !== null || disableButton(user)}
                           onClick={handleApproveAllWeeks}
+                          className={`disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           Approve All Weeks
                         </Button>
@@ -916,7 +926,8 @@ const ManagerApprovalTable = ({
                         <Button
                           variant="danger"
                           size="small"
-                          disabled={userLevelLoading !== null}
+                          disabled={userLevelLoading !== null || disableButton(user)}
+                          className={`disabled:opacity-50 disabled:cursor-not-allowed`}
                           onClick={handleCancelModal}
                         >
                           Reject All Weeks
