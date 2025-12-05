@@ -21,6 +21,7 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EditTaskForm from "./Backlog/EditTaskForm";
+import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import CreateTaskForm from "./Backlog/CreateTask";
 import CreateStoryForm from "./Backlog/CreateStory";
@@ -339,6 +340,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false); // legacy (kept for compatibility)
   const [createDefaultStatusId, setCreateDefaultStatusId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedStory, setSelectedStory] = useState(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // delete modal
@@ -825,8 +827,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
     setSelectedTask(task);
     setIsTaskPanelOpen(true);
   };
+  const openStoryPanel = (story) =>{
+    setSelectedStory(story);
+    setIsStoryPanelOpen(true);
+  }
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
-
+  const [isStoryPanelOpen, setIsStoryPanelOpen] = useState(false);
   const handleTaskSaved = (updated) => setTasks(prev => prev.map(t => String(t.id) === String(updated.id) ? { ...t, ...updated } : t));
 
   // clicking outside filter dropdown closes it
@@ -1030,12 +1036,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
                                       {...storyProvided.draggableProps}
                                       {...storyProvided.dragHandleProps}
                                       className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${storySnapshot.isDragging ? "opacity-80" : ""}`}
-                                      onClick={() => {
+                                      onClick={() => openStoryPanel(story)
                                         // open story detail if you have one (you didn't include a StoryDetail modal - placeholder)
                                         // If you do have one, call e.g. openStoryModal(story)
                                         // For now do nothing or console:
                                         // console.log("Open story", story);
-                                      }}
+                                      }
                                     >
                                       <div className="flex items-center justify-between">
                                         <div className="relative group">
@@ -1166,6 +1172,30 @@ const Board = ({ projectId, sprintId, projectName }) => {
           />
         )}
       </RightSidePanel>
+      <RightSidePanel
+        isOpen={isStoryPanelOpen}
+        onClose={()=>{
+          setIsStoryPanelOpen(false);
+          setSelectedStory(null);
+        }}
+        panelMode="board"
+      >
+        {isStoryPanelOpen && selectedStory &&(
+          <EditStoryForm
+            storyId={selectedStory.id}
+            projectId={projectId}
+            onClose={()=>{
+              setIsStoryPanelOpen(false);
+              setSelectedStory(null);
+            }}
+            onUpdated={async ()=>{
+              await loadBoard();
+              //setIsStoryPanelOpen(false);
+            }}
+          />
+        )}
+      </RightSidePanel>
+
 
 
 
