@@ -193,7 +193,7 @@ const ManagerApprovalTable = ({
       // // 🧠 Filter only SUBMITTED weeks and Pattially Approved
       const submittedWeeks = user.weeklySummary.filter((week) => {
         const status = week.weeklyStatus?.toUpperCase();
-        return status === "SUBMITTED" || status === "PARTIALLY APPROVED";
+        return status === "SUBMITTED" || status === "PARTIALLY_APPROVED";
       });
 
       // if (submittedWeeks.length === 0) {
@@ -442,7 +442,8 @@ const ManagerApprovalTable = ({
           className="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden"
         >
           {/* Manager actions */}
-          {week.weeklyStatus === "SUBMITTED" && (
+          {(week.weeklyStatus === "SUBMITTED" ||
+            week.weeklyStatus === "PARTIALLY_APPROVED") && (
             <div className="p-4 border-t flex gap-3 justify-end items-center">
               {weekLevelLoading?.[`${user.userId}-${week.weekId}`] ? (
                 <LoadingSpinner text="Processing..." />
