@@ -1,158 +1,125 @@
-import React from "react";
+// FULL UPDATED SprintColumn.jsx
+
+import React, { useState } from "react";
 import { useDrop } from "react-dnd";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreVertical } from "lucide-react";
 import StoryCard from "./StoryCard";
 
 const SprintColumn = ({
   sprint,
   stories,
+  statuses,
   onDropStory,
   onChangeStatus,
-  onStoryClick,
-  isExpanded,
-  onToggleExpand,
-  formatDateShort, // optional helper passed from parent
+  onEditSprint,
+  onDeleteSprint,
+  onChangeStoryStatus,
 }) => {
-  const isCompleted = sprint.status === "COMPLETED";
+  const [expand, setExpand] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  /** ===============================
-   *  DROP ZONE — Sprint Header (Always rendered)
-   =============================== */
-  const [{ isOverHeader }, dropHeaderRef] = useDrop(
-    () => ({
-      accept: "STORY",
-      canDrop: () => !isCompleted,
-      drop: (item) => {
-        if (!isCompleted) {
-          onDropStory(item.id, sprint.id);
-        }
-      },
-      collect: (monitor) => ({
-        isOverHeader: monitor.isOver() && !isCompleted,
-      }),
-    }),
-    [isCompleted]
-  );
-
-  /** ===============================
-   *  DROP ZONE — Expanded Content (for when expanded)
-   =============================== */
-  const [{ isOverContent }, dropContentRef] = useDrop(
-    () => ({
-      accept: "STORY",
-      canDrop: () => !isCompleted,
-      drop: (item) => {
-        if (!isCompleted) {
-          onDropStory(item.id, sprint.id);
-        }
-      },
-      collect: (monitor) => ({
-        isOverContent: monitor.isOver() && !isCompleted,
-      }),
-    }),
-    [isCompleted]
-  );
-
-  const sortedStories = [...(stories || [])].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  const [{ isOver }, dropRef] = useDrop(() => ({
+    accept: "STORY",
+    drop: (item) => onDropStory(item.id, sprint.id),
+    collect: (monitor) => ({ isOver: monitor.isOver() }),
+  }));
 
   return (
-    <div className="w-full">
-      {/* HEADER (always present, acts as main drop zone) */}
+    <div className="border bg-white rounded-xl shadow-sm">
+      {/* HEADER */}
       <div
-        ref={dropHeaderRef}
-        onClick={() => onToggleExpand?.(sprint.id)}
-        role="button"
-        tabIndex={0}
-        className={`flex justify-between items-center px-6 py-4 rounded-2xl cursor-pointer
-          border transition
-          ${
-            isOverHeader
-              ? "bg-pink-100 border-pink-400"
-              : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-          }
-          ${isCompleted ? "opacity-70 cursor-not-allowed" : ""}
-        `}
+        ref={dropRef}
+        onClick={() => setExpand((e) => !e)}
+        className={`px-5 py-3 flex justify-between items-center cursor-pointer ${
+          isOver ? "bg-blue-50" : "bg-gray-50 hover:bg-gray-100"
+        }`}
       >
         <div className="flex items-center gap-3">
-          <div>
-            <h3
-              className={`text-base font-semibold ${
-                isCompleted ? "text-gray-500" : "text-indigo-900"
-              }`}
-            >
-              {sprint.name}
-            </h3>
-
-            {formatDateShort ? (
-              <p className="text-sm text-gray-500">
-                {formatDateShort(sprint.startDate)} – {formatDateShort(sprint.endDate)}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500">
-                {sprint.startDate ? sprint.startDate.split("T")[0] : ""} –{" "}
-                {sprint.endDate ? sprint.endDate.split("T")[0] : ""}
-              </p>
-            )}
-          </div>
+          {expand ? <ChevronDown /> : <ChevronRight />}
+          <h3 className="font-semibold text-gray-900">{sprint.name}</h3>
+          <span className="text-sm text-gray-500">
+            {sprint.startDateReadable} – {sprint.endDateReadable}
+          </span>
+          <span className="text-sm text-gray-500">
+            ({stories.length} work items)
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* actions */}
-          {sprint.status === "PLANNING" && (
+          {/* ALWAYS SHOW BUTTON (AS YOU REQUESTED) */}
+          {sprint.status !== "COMPLETED" && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onChangeStatus(sprint.id, "start");
+                onChangeStatus(
+                  sprint.id,
+                  sprint.status === "ACTIVE" ? "complete" : "start"
+                );
               }}
-              className="text-indigo-900 border border-indigo-900 px-2 py-1 rounded text-xs hover:bg-indigo-900 hover:text-white"
+              className="px-4 py-1 border rounded-lg text-sm text-green-700 border-green-700 hover:bg-green-50"
             >
-              Start
+              {sprint.status === "ACTIVE" ? "Complete sprint" : "Start sprint"}
             </button>
           )}
 
-          {sprint.status === "ACTIVE" && (
+          <div className="relative">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onChangeStatus(sprint.id, "complete");
+                setMenuOpen((x) => !x);
               }}
-              className="text-pink-800 border border-pink-800 px-2 py-1 rounded text-xs hover:bg-pink-800 hover:text-white"
             >
-              Complete
+              <MoreVertical />
             </button>
-          )}
 
-          <div className="text-gray-600">
-            {isExpanded ? <ChevronUp /> : <ChevronDown />}
+            {menuOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-0 bg-white border shadow rounded w-40"
+              >
+                <button
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEditSprint(sprint);
+                  }}
+                >
+                  Edit sprint
+                </button>
+
+                <button
+                  className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDeleteSprint(sprint.id);
+                  }}
+                >
+                  Delete sprint
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* EXPANDED CONTENT (only when isExpanded) */}
-      {isExpanded && (
-        <div
-          ref={dropContentRef}
-          className={`border rounded-xl mt-3 p-4 transition ${
-            isOverContent ? "bg-pink-100" : "bg-white"
-          }`}
-        >
-          <div className="space-y-2 min-h-[100px]">
-            {sortedStories.length === 0 ? (
-              <p className="text-gray-400 italic">No stories</p>
-            ) : (
-              sortedStories.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  story={story}
-                  sprints={[]} // optional: pass sprints if StoryCard needs it
-                  onAddToSprint={() => {}}
-                  onClick={() => onStoryClick?.(story.id)}
-                />
-              ))
-            )}
-          </div>
+      {/* EXPANDED STORY LIST */}
+      {expand && (
+        <div className="p-4">
+          {stories.length === 0 ? (
+            <p className="text-gray-400">No stories</p>
+          ) : (
+            stories.map((st) => (
+              <StoryCard
+                key={st.id}
+                story={st}
+                statuses={statuses}
+                sprints={[]} // no sprint move inside sprint
+                onChangeStatus={onChangeStoryStatus} // FIXED
+                onAddToSprint={() => {}}
+                onMoveToBacklog={() => {}}
+              />
+            ))
+          )}
         </div>
       )}
     </div>

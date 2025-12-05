@@ -1,238 +1,286 @@
-// src/pages/Projects/manager/BacklogAndSprints.jsx
+// FULL UPDATED BacklogAndSprints.jsx
+// --- All sprint buttons fixed
+// --- Status update works inside sprint also
+// --- Pass statuses + onChangeStatus to SprintColumn
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Plus, List, X } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import Button from "../../../components/Button/Button";
 import StoryCard from "./Sprint/StoryCard";
 import SprintColumn from "./Sprint/SprintColumn";
 import CreateSprintModal from "./Sprint/CreateSprintModal";
 import CreateIssueForm from "./Backlog/CreateIssueForm";
 
-const BacklogAndSprints = ({ projectId, projectName }) => {
+const BacklogAndSprints = ({ projectId }) => {
   const navigate = useNavigate();
   const [stories, setStories] = useState([]);
   const [sprints, setSprints] = useState([]);
-  const [backlogStories, setBacklogStories] = useState([]);
+  const [statuses, setStatuses] = useState([]);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintModal, setShowSprintModal] = useState(false);
-  const [expandedSprint, setExpandedSprint] = useState(null);
+  const [editingSprint, setEditingSprint] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  const formatDateShort = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    });
-  };
-
   const fetchStories = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-        { headers }
-      );
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setStories(list);
-      setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
-    } catch (err) {
-      toast.error("Failed to fetch stories");
-      console.error(err);
-    }
+    const res = await axios.get(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+      { headers }
+    );
+    setStories(res.data);
   };
 
   const fetchSprints = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-        { headers }
-      );
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setSprints(list);
-    } catch (err) {
-      toast.error("Failed to fetch sprints");
-    }
+    const res = await axios.get(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+      { headers }
+    );
+    setSprints(res.data);
+  };
+
+  const fetchStatuses = async () => {
+    const res = await axios.get(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/statuses`,
+      { headers }
+    );
+    setStatuses(res.data);
   };
 
   useEffect(() => {
-    fetchStories();
+    fetchStatuses();
     fetchSprints();
-  }, [projectId]);
+    fetchStories();
+  }, []);
 
-  const goToIssueTracker = () => {
-    navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } });
+  const getStory = async (id) => {
+    const res = await axios.get(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${id}`,
+      { headers }
+    );
+    return res.data;
   };
 
-  const handleDropStory = async (storyId, sprintId) => {
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
-        { sprintId },
-        { headers }
-      );
-      toast.success("Story moved successfully");
-      // fetchStories will refresh backlog & sprint lists
-      fetchStories();
-    } catch (err) {
-      toast.error("Failed to assign story");
-      console.error(err);
-    }
+  const moveStoryToSprint = async (storyId, sprintId) => {
+    const story = await getStory(storyId);
+    await axios.put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+      { ...story, sprintId },
+      { headers }
+    );
+    toast.success(`Story moved to Sprint`);
+    fetchStories();
   };
 
-  const handleSprintStatus = async (sprintId, action) => {
-    try {
-      const res = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
-        {},
-        { headers }
-      );
-      toast.success(`Sprint ${action === "start" ? "started" : "completed"}!`);
-      setSprints((prev) => prev.map((s) => (s.id === sprintId ? res.data : s)));
-      fetchStories();
-    } catch (err) {
-      toast.error("Failed to update sprint");
-      console.error(err);
-    }
+  const moveStoryToBacklog = async (storyId) => {
+    const story = await getStory(storyId);
+    await axios.put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+      { ...story, sprintId: null },
+      { headers }
+    );
+    toast.success("Story moved to Backlog");
+    fetchStories();
   };
 
-  const activeAndPlanningSprints = sprints.filter(
-    (s) => s.status === "ACTIVE" || s.status === "PLANNING"
-  );
+  const changeStoryStatus = async (storyId, statusId) => {
+    const story = await getStory(storyId);
+    await axios.put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+      { ...story, statusId },
+      { headers }
+    );
+    toast.success("Status updated");
+    fetchStories();
+  };
+
+  const changeSprintStatus = async (sprintId, action) => {
+    await axios.put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
+      {},
+      { headers }
+    );
+    toast.success("Sprint updated");
+    fetchSprints();
+  };
+
+  const deleteSprint = async (id) => {
+  if (!id) {
+    toast.error("Invalid sprint ID.");
+    return;
+  }
+
+  const deleteSprint = async (id) => {
+  if (!id) {
+    toast.error("Invalid sprint ID.");
+    return;
+  }
+
+ const deleteSprint = async (id) => {
+  // if (!id) {
+  //   toast.error("Invalid sprint ID.");
+  //   return;
+  // }
+
+  try {
+    await axios.delete(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${id}`,
+      { headers }
+    );
+
+    toast.success("Sprint deleted successfully");
+    fetchSprints();
+
+  } catch (error) {
+    console.error("Delete sprint error:", error);
+
+    toast.dismiss(); // reset old toasts
+
+    const status = error.response?.status;
+    const backendMsg = error.response?.data?.message?.toLowerCase() || "";
+
+    // Run toast OUTSIDE event chain (DnD fix)
+    setTimeout(() => {
+
+      // 1️⃣ Access Denied (403)
+      if (status === 403) {
+        toast.error("You do not have permission to delete this sprint.");
+        return;
+      }
+
+      // 2️⃣ FK constraint (stories exist inside sprint)
+      if (
+        backendMsg.includes("constraint") ||
+        backendMsg.includes("foreign key") ||
+        backendMsg.includes("referential")
+      ) {
+        toast.error(
+          "This sprint contains stories or tasks. Move them before deleting."
+        );
+        return;
+      }
+
+      // 3️⃣ Backend error message
+      if (backendMsg) {
+        toast.error(
+          backendMsg.charAt(0).toUpperCase() + backendMsg.slice(1)
+        );
+        return;
+      }
+
+      // 4️⃣ Fallback
+      toast.error("Failed to delete sprint. Please try again.");
+
+    }, 50);
+  }
+};
+  }
+}
 
   return (
     <DndProvider backend={HTML5Backend}>
       <ToastContainer />
 
-      <div className="max-w-7xl mx-auto px-8 py-6 space-y-8">
-        <div className="flex justify-between items-center pb-4 border-b">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Backlog & Sprint Planning — {projectName}
-          </h1>
+      <div className="p-6 max-w-6xl mx-auto">
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Backlog & Sprint Planning —</h1>
 
-          <div className="flex items-center gap-3">
-            <Button
-              size="medium"
-              variant="outline"
-              onClick={goToIssueTracker}
-              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() =>
+                navigate(`/projects/${projectId}/issuetracker`, {
+                  state: { projectId },
+                })
+              }
+              className="px-4 py-2 rounded-lg bg-white shadow hover:shadow-md border"
             >
-              <List size={18} /> Issue Tracker
-            </Button>
+              Issue Tracker
+            </button>
 
-            <Button
-              onClick={() => setShowSprintModal(true)}
-              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
+            <button
+              className="px-6 py-2 rounded-lg bg-indigo-700 text-white hover:brightness-95"
+              onClick={() => {
+                setEditingSprint(null);
+                setShowSprintModal(true);
+              }}
             >
-              <Plus size={18} /> Create Sprint
-            </Button>
+              + Create Sprint
+            </button>
 
-            <Button
-              variant="outline"
+            <button
               onClick={() => setShowIssueForm(true)}
-              className="flex items-center gap-2 shadow-sm hover:shadow-md transition rounded-xl"
+              className="px-4 py-2 rounded-lg bg-white shadow hover:shadow-md border"
             >
-              <Plus size={18} /> Create Issue
-            </Button>
+              + Create Issue
+            </button>
           </div>
         </div>
 
-        {/* SPRINTS LIST - SprintColumn now renders header (with drop zone) always */}
-        <div className="space-y-5">
-          {activeAndPlanningSprints.length === 0 ? (
-            <p className="text-gray-400 italic">No active or planning sprints.</p>
-          ) : (
-            activeAndPlanningSprints.map((sprint) => {
-              const isExpanded = expandedSprint === sprint.id;
-              const sprintStories = stories.filter(
-                (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
-              );
-
-              return (
-                <div
-                  key={sprint.id}
-                  className="border rounded-2xl bg-white shadow-sm hover:shadow-md transition"
-                >
-                  <SprintColumn
-                    sprint={sprint}
-                    stories={sprintStories}
-                    onDropStory={handleDropStory}
-                    onChangeStatus={handleSprintStatus}
-                    onStoryClick={() => {}}
-                    isExpanded={isExpanded}
-                    onToggleExpand={(id) =>
-                      setExpandedSprint((prev) => (prev === id ? null : id))
-                    }
-                    formatDateShort={formatDateShort}
-                  />
-                </div>
-              );
-            })
-          )}
+        {/* SPRINT LIST */}
+        <div className="space-y-3">
+          {sprints.map((sp) => (
+            <SprintColumn
+              key={sp.id}
+              sprint={sp}
+              stories={stories.filter((s) => s.sprintId === sp.id)}
+              statuses={statuses}            // FIXED
+              onDropStory={moveStoryToSprint}
+              onChangeStatus={changeSprintStatus}
+              onEditSprint={() => {
+                setEditingSprint(sp);
+                setShowSprintModal(true);
+              }}
+              onDeleteSprint={deleteSprint}
+              onChangeStoryStatus={changeStoryStatus} // FIXED
+            />
+          ))}
         </div>
 
-        {/* Backlog */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition overflow-visible">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Backlog</h2>
+        {/* BACKLOG */}
+        <div className="mt-8 border rounded-xl p-5 bg-white shadow-sm">
+          <h2 className="text-xl font-semibold mb-3">Backlog</h2>
 
-          {backlogStories.length === 0 ? (
-            <p className="text-gray-400 italic">No stories in backlog.</p>
-          ) : (
-            <div className="space-y-3">
-              {backlogStories.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  story={story}
-                  sprints={activeAndPlanningSprints}
-                  onAddToSprint={handleDropStory}
-                />
-              ))}
-            </div>
-          )}
+          {stories.filter((s) => !s.sprintId).map((st) => (
+            <StoryCard
+              key={st.id}
+              story={st}
+              statuses={statuses}
+              onAddToSprint={moveStoryToSprint}
+              onMoveToBacklog={moveStoryToBacklog}
+              onChangeStatus={changeStoryStatus}
+              sprints={sprints}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Create Issue Modal */}
+      {/* ISSUE FORM */}
       {showIssueForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 max-h-[90vh] overflow-y-auto animate-fadeIn">
-            <button
-              onClick={() => setShowIssueForm(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-            >
-              <X size={22} />
-            </button>
-
-            <h2 className="text-2xl font-semibold text-gray-900 mb-5 border-b pb-3">
-              Create Epic
-            </h2>
-
-            <CreateIssueForm
-              onClose={() => setShowIssueForm(false)}
-              onCreated={fetchStories}
-              projectId={projectId}
-            />
-          </div>
-        </div>
+        <CreateIssueForm
+          projectId={projectId}
+          onClose={() => setShowIssueForm(false)}
+          onCreated={fetchStories}
+        />
       )}
 
-      {/* Create Sprint Modal */}
+      {/* CREATE / EDIT SPRINT */}
       <CreateSprintModal
         isOpen={showSprintModal}
+        sprint={editingSprint}
         projectId={projectId}
         onClose={() => setShowSprintModal(false)}
-        onCreated={(newSprint) => setSprints((prev) => [...prev, newSprint])}
+        onCreated={fetchSprints}
       />
     </DndProvider>
   );
 };
+
+
 
 export default BacklogAndSprints;

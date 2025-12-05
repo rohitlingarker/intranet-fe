@@ -1,61 +1,103 @@
+// FULL UPDATED StoryCard.jsx
+
 import React, { useState } from "react";
 import { useDrag } from "react-dnd";
 import { MoreVertical } from "lucide-react";
 
-const StoryCard = ({ story, sprints = [], onAddToSprint, onClick }) => {
-  const [, dragRef] = useDrag({
+const StoryCard = ({
+  story,
+  statuses,
+  sprints = [],
+  onAddToSprint,
+  onMoveToBacklog,
+  onChangeStatus,
+}) => {
+  const [, dragRef] = useDrag(() => ({
     type: "STORY",
     item: { id: story.id },
-  });
+  }));
 
-  const [showMenu, setShowMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
-  const handleSelectSprint = (sprintId) => {
-    onAddToSprint?.(story.id, sprintId);
-    setShowMenu(false);
-  };
+  const statusName =
+    story.status?.name || story.statusName || story.statusText || "Unknown";
 
   return (
     <div
       ref={dragRef}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onClick) onClick();
-      }}
-      className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer flex justify-between items-start transition"
+      className="bg-white border rounded-lg shadow-sm p-3 mb-2 flex justify-between items-center hover:shadow-md"
     >
-      <div>
-        <p className="text-sm font-semibold text-indigo-900">{story.title}</p>
-        <p className="text-xs text-pink-800">
-          Status: {story.statusText || story.status?.name || story.statusName}
-        </p>
+      <div className="flex items-center gap-3">
+        <span className="font-semibold text-sm">{story.title}</span>
+
+        {/* STATUS PILL */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setStatusMenuOpen((x) => !x);
+            }}
+            className="px-2 py-1 text-xs rounded-md border bg-gray-50"
+          >
+            Status | <span className="font-bold">{statusName}</span> |
+          </button>
+
+          {statusMenuOpen && (
+            <div className="absolute mt-2 bg-white border shadow rounded z-50 w-40">
+              {statuses.map((s) => (
+                <button
+                  key={s.id}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                  onClick={() => {
+                    setStatusMenuOpen(false);
+                    onChangeStatus(story.id, s.id);
+                  }}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* RIGHT MENU */}
       <div className="relative">
         <button
           onClick={(e) => {
-            e.stopPropagation(); // prevent this from opening the story panel
-            setShowMenu((prev) => !prev);
+            e.stopPropagation();
+            setMenuOpen((x) => !x);
           }}
-          className="p-1 rounded hover:bg-gray-100"
         >
           <MoreVertical size={16} />
         </button>
 
-        {showMenu && (
-          <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-lg z-50">
-            {sprints.length === 0 ? (
-              <p className="text-xs text-gray-500 p-2 text-center">No sprints</p>
-            ) : (
-              sprints.map((sprint) => (
-                <button
-                  key={sprint.id}
-                  onClick={() => handleSelectSprint(sprint.id)}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
-                >
-                  Add to {sprint.name}
-                </button>
-              ))
+        {menuOpen && (
+          <div className="absolute right-0 bg-white border shadow rounded w-44 z-50">
+            {sprints.map((sp) => (
+              <button
+                key={sp.id}
+                className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onAddToSprint(story.id, sp.id);
+                }}
+              >
+                Move to {sp.name}
+              </button>
+            ))}
+
+            {onMoveToBacklog && (
+              <button
+                className="w-full text-left px-3 py-2 text-red-500 hover:bg-red-50 text-sm"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onMoveToBacklog(story.id);
+                }}
+              >
+                Move to Backlog
+              </button>
             )}
           </div>
         )}
