@@ -39,7 +39,7 @@ import TimesheetHistory from "./pages/Timesheet/TimesheetHistory.jsx";
 // ✅ Project Management
 import ProjectDashboard from "./pages/Projects/manager/ProjectDashboard";
 import Summary from "./pages/Projects/manager/Summary";
-import Backlog from "./pages/Projects/manager/Backlog/Backlog";
+// import Backlog from "./pages/Projects/manager/Backlog/Backlog";
 import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
