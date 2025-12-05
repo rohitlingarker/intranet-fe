@@ -11,6 +11,7 @@ export default function TestExecution() {
   const [cycles, setCycles] = useState([]);
   const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [runs, setRuns] = useState([]);
+  const [search, setSearch] = useState("");
 
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
@@ -21,13 +22,28 @@ export default function TestExecution() {
   const [availableCases, setAvailableCases] = useState([]);
   const [selectedCases, setSelectedCases] = useState([]);
 
+  const formatDate = (date) => {
+    if (!date) return "No Date";
+
+    const d = new Date(date);
+    if (isNaN(d)) return "No Date";
+
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
   // --------------------------------------------------------------------
   // LOAD ALL CYCLES FOR PROJECT
   // --------------------------------------------------------------------
   const loadCycles = async () => {
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-cycles/projects/${projectId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-cycles/projects/${projectId}`
       );
       const data = res.data || [];
       setCycles(data);
@@ -48,7 +64,9 @@ export default function TestExecution() {
 
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/cycles/${cycleId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/cycles/${cycleId}`
       );
       setRuns(res.data || []);
     } catch (err) {
@@ -59,6 +77,16 @@ export default function TestExecution() {
   useEffect(() => {
     loadCycles();
   }, []);
+
+  console.log("Cycles: ", cycles);
+
+  const filteredCycles = cycles.filter((cycle) => {
+    const term = search.toLowerCase();
+    return (
+      cycle.name.toLowerCase().includes(term) ||
+      cycle.status.toLowerCase().includes(term)
+    );
+  });
 
   useEffect(() => {
     if (selectedCycleId) {
@@ -71,13 +99,19 @@ export default function TestExecution() {
   // --------------------------------------------------------------------
   const getStatusBadge = (status) => {
     const statusClasses = {
-      Completed: "bg-green-100 text-green-700",
-      InProgress: "bg-blue-100 text-blue-700",
-      NotStarted: "bg-gray-200 text-gray-600",
+      completed: "bg-green-100 text-green-700",
+      in_progress: "bg-blue-100 text-blue-700",
+      not_started: "bg-gray-200 text-gray-600",
+      blocked: "bg-red-100 text-red-700",
+      planned: "bg-yellow-100 text-yellow-700",
     };
 
     return (
-      <span className={`${statusClasses[status]} px-3 py-1 rounded-full text-xs`}>
+      <span
+        className={`${
+          statusClasses[status.toLowerCase()]
+        } px-3 py-1 rounded-full text-xs`}
+      >
         {status}
       </span>
     );
@@ -92,7 +126,9 @@ export default function TestExecution() {
 
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/getcases/${projectId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/test-cases/getcases/${projectId}`
       );
       setAvailableCases(res.data || []);
     } catch (err) {
@@ -111,7 +147,9 @@ export default function TestExecution() {
 
     try {
       await axiosInstance.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/${selectedRunId}/add-cases`,
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${selectedRunId}/add-cases`,
         { testCaseIds: selectedCases }
       );
 
@@ -134,17 +172,14 @@ export default function TestExecution() {
 
         <div className="flex items-center gap-4">
           {/* CYCLES DROPDOWN */}
-          <select
-            className="border rounded px-3 py-1 focus:outline-none"
-            value={selectedCycleId || ""}
-            onChange={(e) => setSelectedCycleId(e.target.value)}
-          >
-            {cycles.map((cycle) => (
-              <option key={cycle.id} value={cycle.id}>
-                {cycle.name}
-              </option>
-            ))}
-          </select>
+          <input
+  type="text"
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  placeholder="Search cycles by name or status..."
+  className="px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 w-64"
+/>
+
 
           {/* CREATE CYCLE BUTTON */}
           <button
@@ -153,25 +188,16 @@ export default function TestExecution() {
           >
             + Create Cycle
           </button>
-
-          {/* CREATE RUN BUTTON */}
-          <button
-            className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
-            onClick={() => setShowRunModal(true)}
-          >
-            + Create Run
-          </button>
         </div>
       </div>
-
       {/* --------------------------------------------------------------------
-          RUN CARDS
+          Cycle CARDS
       -------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {runs.map((run) => {
-          const executed = run.executedCount || 0;
-          const total = run.totalCount || 0;
-          const progress = total > 0 ? Math.round((executed / total) * 100) : 0;
+        {filteredCycles.map((run) => {
+          // const executed = run.executedCount || 0;
+          // const total = run.totalCount || 0;
+          // const progress = total > 0 ? Math.round((executed / total) * 100) : 0;
 
           return (
             <div
@@ -184,35 +210,35 @@ export default function TestExecution() {
               </div>
 
               <p className="text-sm text-gray-500 mb-3">
-                {run.executionDate || "No Date"}
+                {formatDate(run.startDate || "No Date")} -{" "}
+                {formatDate(run.endDate || "No Date")}
               </p>
 
-              <div className="w-full bg-gray-200 h-2 rounded-full mb-3">
+              {/* <div className="w-full bg-gray-200 h-2 rounded-full mb-3">
                 <div
                   className="h-2 bg-green-500 rounded-full"
                   style={{ width: `${progress}%` }}
                 />
-              </div>
+              </div> */}
 
-              <div className="flex justify-between text-sm text-gray-700 mb-3">
+              {/* <div className="flex justify-between text-sm text-gray-700 mb-3">
                 <span>
                   {executed} / {total} Executed
                 </span>
                 <span>{progress}%</span>
-              </div>
+              </div> */}
 
               {/* NEW BUTTON */}
               <button
-                className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-                onClick={() => openAddCasesModal(run.id)}
+                className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+                onClick={() => setShowRunModal(true)}
               >
-                + Add Test Cases
+                + Create Run
               </button>
             </div>
           );
         })}
       </div>
-
       {/* --------------------------------------------------------------------
           ADD CASES MODAL
       -------------------------------------------------------------------- */}
@@ -257,7 +283,6 @@ export default function TestExecution() {
           </div>
         </div>
       )}
-
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
@@ -281,7 +306,6 @@ export default function TestExecution() {
           </div>
         </div>
       )}
-
       {/* CREATE RUN MODAL */}
       {showRunModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
