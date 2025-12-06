@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDrop } from 'react-dnd';
 import StoryCard from './StoryCard';
+import TaskCard from './TaskCard';
 
-const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus, onStoryClick }) => {
+const SprintColumn = ({ sprint, stories, tasks, epics, allStories, onSelectEpic,onSelectParentStory, onDropStory, onChangeStatus, onStoryClick, onTaskClick }) => {
   const isCompleted = sprint.status === 'COMPLETED';
 
   // Only enable drop if sprint is not completed
@@ -27,6 +28,11 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus, onStoryCli
   const sortedStories = [...stories].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
+
+  const sortedTasks = [...(tasks || [])].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
 
   return (
     <div
@@ -73,16 +79,46 @@ const SprintColumn = ({ sprint, stories, onDropStory, onChangeStatus, onStoryCli
         )}
       </div>
 
-      {/* Stories */}
       <div className="space-y-2 min-h-[100px]">
+
+        {/* STORIES */}
         {sortedStories.length === 0 ? (
           <p className="text-gray-400 italic">No stories</p>
         ) : (
           sortedStories.map((story) => (
-            <StoryCard key={story.id} story={story} isCompleted={isCompleted} onClick={() => onStoryClick(story.id)} />
+            <StoryCard
+              key={"story-" + story.id}
+              story={story}
+              sprints={[]}             // or pass your sprint list if needed
+              epics={epics}            // 🔥 IMPORTANT
+              onSelectEpic={onSelectEpic}
+              onAddToSprint={onDropStory}
+              onClick={() => onStoryClick(story.id)}
+            />
+
           ))
         )}
+
+        {/* TASKS */}
+        {sortedTasks.length === 0 ? (
+          <p className="text-gray-400 italic">No tasks</p>
+        ) : (
+          sortedTasks.map((task) => (
+            <TaskCard
+              key={"task-" + task.id}
+              task={task}
+              sprints={[]}               // optional
+              stories={allStories}          // 🔥 IMPORTANT
+              onSelectParentStory={onSelectParentStory}
+              onAddToSprint={onDropStory}
+              onClick={() => onTaskClick(task.id)}
+            />
+
+          ))
+        )}
+
       </div>
+
     </div>
   );
 };
