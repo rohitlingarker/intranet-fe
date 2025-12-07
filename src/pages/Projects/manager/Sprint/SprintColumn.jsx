@@ -1,19 +1,40 @@
-import React from 'react';
-import { useDrop } from 'react-dnd';
-import StoryCard from './StoryCard';
-import TaskCard from './TaskCard';
+import React, { useState } from "react";
+import { useDrop } from "react-dnd";
+import { ChevronRight, ChevronDown, MoreVertical } from "lucide-react";
+import StoryCard from "./StoryCard";
+import TaskCard from "./TaskCard";
 
-const SprintColumn = ({ sprint, stories, tasks, epics, allStories, onSelectEpic,onSelectParentStory, onDropStory, onChangeStatus, onStoryClick, onTaskClick }) => {
-  const isCompleted = sprint.status === 'COMPLETED';
+const SprintColumn = ({
+  sprint,
+  stories = [],
+  tasks = [],
+  epics = [],
+  allStories = [],
+  statuses = [],
 
-  // Only enable drop if sprint is not completed
+  onDropStory,
+  onChangeStatus,
+  onEditSprint,
+  onDeleteSprint,
+  onChangeStoryStatus,
+
+  onSelectEpic,
+  onSelectParentStory,
+  onStoryClick,
+  onTaskClick,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const isCompleted = sprint.status === "COMPLETED";
+
+  /* -------------------- Drag & Drop -------------------- */
   const [{ isOver }, dropRef] = useDrop(
     () => ({
-      accept: 'STORY',
+      accept: "STORY",
       canDrop: () => !isCompleted,
       drop: (item) => {
         if (!isCompleted) {
-          console.log('Dropped story:', item.id, 'in sprint:', sprint.id);
           onDropStory(item.id, sprint.id);
         }
       },
@@ -24,101 +45,139 @@ const SprintColumn = ({ sprint, stories, tasks, epics, allStories, onSelectEpic,
     [isCompleted]
   );
 
-  // Sort stories by createdAt descending (latest first)
+  /* -------------------- Sorting -------------------- */
   const sortedStories = [...stories].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
 
-  const sortedTasks = [...(tasks || [])].sort(
+  const sortedTasks = [...tasks].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
 
-
   return (
-    <div
-      ref={dropRef}
-      className={`border border-white    p-4 transition ${
-        isOver ? 'bg-pink-100' : isCompleted ? 'bg-gray-100' : 'bg-white'
-      } ${isCompleted ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          {/* <h3
-            className={`text-lg font-semibold ${
-              isCompleted ? 'text-gray-600' : 'text-indigo-900'
-            }`}
-          >
-            {sprint.name}
-          </h3> */}
-          <p
-            className={`text-sm ${
-              isCompleted ? 'text-gray-400' : 'text-gray-500'
-            }`}
-          >
-            {/* {sprint.startDate} → {sprint.endDate} */}
-          </p>
+    <div className="border bg-white rounded-xl shadow-sm">
+      {/* ================= HEADER ================= */}
+      <div
+        ref={dropRef}
+        onClick={() => setExpanded((e) => !e)}
+        className={`px-5 py-3 flex justify-between items-center cursor-pointer transition
+          ${isOver ? "bg-pink-100" : "bg-gray-50 hover:bg-gray-100"}
+          ${isCompleted ? "opacity-80 cursor-not-allowed" : ""}
+        `}
+      >
+        <div className="flex items-center gap-3">
+          {expanded ? <ChevronDown /> : <ChevronRight />}
+          <h3 className="font-semibold text-gray-900">{sprint.name}</h3>
+          <span className="text-sm text-gray-500">
+            {sprint.startDateReadable} – {sprint.endDateReadable}
+          </span>
+          <span className="text-sm text-gray-500">
+            ({stories.length + tasks.length} items)
+          </span>
         </div>
 
-        {/* Sprint Status Actions */}
-        {sprint.status === 'PLANNING' && (
-          <button
-            className="text-indigo-900 border border-indigo-900 px-2 py-1 rounded text-xs hover:bg-indigo-900 hover:text-white"
-            onClick={() => onChangeStatus(sprint.id, 'start')}
-          >
-            Start
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* START / COMPLETE */}
+          {!isCompleted && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onChangeStatus(
+                  sprint.id,
+                  sprint.status === "ACTIVE" ? "complete" : "start"
+                );
+              }}
+              className={`px-4 py-1 border rounded-lg text-sm ${
+                sprint.status === "ACTIVE"
+                  ? "text-pink-700 border-pink-700 hover:bg-pink-50"
+                  : "text-indigo-700 border-indigo-700 hover:bg-indigo-50"
+              }`}
+            >
+              {sprint.status === "ACTIVE" ? "Complete sprint" : "Start sprint"}
+            </button>
+          )}
 
-        {sprint.status === 'ACTIVE' && (
-          <button
-            className="text-pink-800 border border-pink-800 px-2 py-1 rounded text-xs hover:bg-pink-800 hover:text-white"
-            onClick={() => onChangeStatus(sprint.id, 'complete')}
-          >
-            Complete
-          </button>
-        )}
+          {/* OPTIONS MENU */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((x) => !x);
+              }}
+            >
+              <MoreVertical />
+            </button>
+
+            {menuOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-0 bg-white border shadow rounded w-40 z-10"
+              >
+                <button
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onEditSprint(sprint);
+                  }}
+                >
+                  Edit sprint
+                </button>
+
+                <button
+                  className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDeleteSprint(sprint.id);
+                  }}
+                >
+                  Delete sprint
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-2 min-h-[100px]">
+      {/* ================= CONTENT ================= */}
+      {expanded && (
+        <div className="p-4 space-y-3 min-h-[100px]">
+          {/* -------- STORIES -------- */}
+          {sortedStories.length === 0 ? (
+            <p className="text-gray-400 italic">No stories</p>
+          ) : (
+            sortedStories.map((story) => (
+              <StoryCard
+                key={`story-${story.id}`}
+                story={story}
+                epics={epics}
+                statuses={statuses}
+                sprints={[]}
+                onSelectEpic={onSelectEpic}
+                onChangeStatus={onChangeStoryStatus}
+                onAddToSprint={onDropStory}
+                onClick={() => onStoryClick?.(story.id)}
+              />
+            ))
+          )}
 
-        {/* STORIES */}
-        {sortedStories.length === 0 ? (
-          <p className="text-gray-400 italic">No stories</p>
-        ) : (
-          sortedStories.map((story) => (
-            <StoryCard
-              key={"story-" + story.id}
-              story={story}
-              sprints={[]}             // or pass your sprint list if needed
-              epics={epics}            // 🔥 IMPORTANT
-              onSelectEpic={onSelectEpic}
-              onAddToSprint={onDropStory}
-              onClick={() => onStoryClick(story.id)}
-            />
-
-          ))
-        )}
-
-        {/* TASKS */}
-        {sortedTasks.length === 0 ? (
-          <p className="text-gray-400 italic">No tasks</p>
-        ) : (
-          sortedTasks.map((task) => (
-            <TaskCard
-              key={"task-" + task.id}
-              task={task}
-              sprints={[]}               // optional
-              stories={allStories}          // 🔥 IMPORTANT
-              onSelectParentStory={onSelectParentStory}
-              onAddToSprint={onDropStory}
-              onClick={() => onTaskClick(task.id)}
-            />
-
-          ))
-        )}
-
-      </div>
-
+          {/* -------- TASKS -------- */}
+          {sortedTasks.length === 0 ? (
+            <p className="text-gray-400 italic">No tasks</p>
+          ) : (
+            sortedTasks.map((task) => (
+              <TaskCard
+                key={`task-${task.id}`}
+                task={task}
+                stories={allStories}
+                sprints={[]}
+                onSelectParentStory={onSelectParentStory}
+                onAddToSprint={onDropStory}
+                onClick={() => onTaskClick?.(task.id)}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
