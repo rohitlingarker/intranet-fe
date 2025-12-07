@@ -12,7 +12,7 @@ import Button from "../../../components/Button/Button";
 import StoryCard from "./Sprint/StoryCard";
 import SprintColumn from "./Sprint/SprintColumn";
 import CreateSprintModal from "./Sprint/CreateSprintModal";
-import CreateIssueForm from "./Backlog/CreateIssueForm";
+import CreateIssueForm from "./CreateIssue/CreateIssueForm";
 import TaskCard from "./Sprint/TaskCard"; 
 import EditTaskForm from "./Backlog/EditTaskForm";
 import EditStoryForm from "./Backlog/EditStoryForm";
@@ -233,74 +233,47 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         </div>
 
         {/* ===== Sprint List (Expandable Panels) ===== */}
-        <div className="space-y-4">
-          {activeAndPlanningSprints.length === 0 ? (
-            <p className="text-gray-400 italic">No active or planning sprints.</p>
-          ) : (
-            activeAndPlanningSprints.map((sprint) => {
-              const isExpanded = expandedSprint === sprint.id;
-              const sprintStories = stories.filter(
-                (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
-              );
-              const sprintTasks = tasks.filter(
-                (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
-              );
+        {/* ===== Sprint List (Expandable Panels) ===== */}
+<div className="space-y-4">
+  {activeAndPlanningSprints.length === 0 ? (
+    <p className="text-gray-400 italic">No active or planning sprints.</p>
+  ) : (
+    activeAndPlanningSprints.map((sprint) => {
+      const sprintStories = stories.filter(
+        (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
+      );
+      const sprintTasks = tasks.filter(
+        (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
+      );
 
-              return (
-                <div
-                  key={sprint.id}
-                  className="border rounded-xl bg-white shadow hover:shadow-md transition overflow-hidden"
-                >
-                  <div
-                    className="flex justify-between items-center px-5 py-4 cursor-pointer bg-white-50 hover:bg-white-100 transition"
-                    onClick={() =>
-                      setExpandedSprint(isExpanded ? null : sprint.id)
-                    }
-                  >
-                    <div>
-                      <h3 className="text-lg font-semibold text-indigo-900">
-                        {sprint.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {sprint.startDate} → {sprint.endDate}
-                      </p>
-                    </div>
-                    {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                  </div>
+      return (
+        <SprintColumn
+          key={sprint.id}
+          sprint={sprint}
+          stories={sprintStories}
+          tasks={sprintTasks}
+          epics={epics}
+          allStories={stories}
+          onSelectEpic={handleSelectEpic}
+          onSelectParentStory={handleAttachTaskToStory}
+          onDropStory={handleDropStory}
+          onChangeStatus={handleSprintStatus}
+          onStoryClick={(id) => {
+            setPanelMode("story");
+            setSelectedStoryId(id);
+            setRightPanelOpen(true);
+          }}
+          onTaskClick={(id) => {
+            setPanelMode("task");
+            setSelectedTaskId(id);
+            setRightPanelOpen(true);
+          }}
+        />
+      );
+    })
+  )}
+</div>
 
-                  {/* SprintColumn always rendered for drag/drop */}
-                  <div
-                    className={`transition-all ${
-                      isExpanded ? "p-4 bg-gray-50" : "h-4 overflow-hidden"
-                    }`}
-                  >
-                    <SprintColumn
-                      sprint={sprint}
-                      stories={sprintStories}
-                      tasks={sprintTasks}
-                      epics={epics}
-                      allStories={stories}
-                      onSelectEpic={handleSelectEpic}
-                      onSelectParentStory={handleAttachTaskToStory}
-                      onDropStory={handleDropStory}
-                      onChangeStatus={handleSprintStatus}
-                      onStoryClick={(id)=>{
-                        setPanelMode("story");
-                        setSelectedStoryId(id);
-                        setRightPanelOpen(true);
-                      }}
-                      onTaskClick={(id)=>{
-                        setPanelMode("task");
-                        setSelectedTaskId(id);
-                        setRightPanelOpen(true);
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
 
         {/* ===== Backlog Section ===== */}
         <div className="bg-white border rounded-xl p-4 shadow-sm">

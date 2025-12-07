@@ -1,3 +1,4 @@
+// src/pages/Projects/manager/Sprint/SprintColumn.jsx
 import React, { useState } from "react";
 import { useDrop } from "react-dnd";
 import { ChevronRight, ChevronDown, MoreVertical } from "lucide-react";
@@ -23,20 +24,18 @@ const SprintColumn = ({
   onStoryClick,
   onTaskClick,
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true); // auto-expanded by default
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isCompleted = sprint.status === "COMPLETED";
 
-  /* -------------------- Drag & Drop -------------------- */
+  /** Drag & Drop setup */
   const [{ isOver }, dropRef] = useDrop(
     () => ({
       accept: "STORY",
       canDrop: () => !isCompleted,
       drop: (item) => {
-        if (!isCompleted) {
-          onDropStory(item.id, sprint.id);
-        }
+        if (!isCompleted) onDropStory(item.id, sprint.id);
       },
       collect: (monitor) => ({
         isOver: monitor.isOver() && !isCompleted,
@@ -45,31 +44,28 @@ const SprintColumn = ({
     [isCompleted]
   );
 
-  /* -------------------- Sorting -------------------- */
   const sortedStories = [...stories].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
-
   const sortedTasks = [...tasks].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
 
   return (
     <div className="border bg-white rounded-xl shadow-sm">
-      {/* ================= HEADER ================= */}
+      {/* ===== HEADER ===== */}
       <div
         ref={dropRef}
         onClick={() => setExpanded((e) => !e)}
         className={`px-5 py-3 flex justify-between items-center cursor-pointer transition
           ${isOver ? "bg-pink-100" : "bg-gray-50 hover:bg-gray-100"}
-          ${isCompleted ? "opacity-80 cursor-not-allowed" : ""}
-        `}
+          ${isCompleted ? "opacity-80 cursor-not-allowed" : ""}`}
       >
         <div className="flex items-center gap-3">
           {expanded ? <ChevronDown /> : <ChevronRight />}
-          <h3 className="font-semibold text-gray-900">{sprint.name}</h3>
+          <h3 className="font-semibold text-gray-900">{sprint.name || "Unnamed Sprint"}</h3>
           <span className="text-sm text-gray-500">
-            {sprint.startDateReadable} – {sprint.endDateReadable}
+            {sprint.startDateReadable || sprint.startDate} – {sprint.endDateReadable || sprint.endDate}
           </span>
           <span className="text-sm text-gray-500">
             ({stories.length + tasks.length} items)
@@ -77,7 +73,6 @@ const SprintColumn = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* START / COMPLETE */}
           {!isCompleted && (
             <button
               onClick={(e) => {
@@ -97,7 +92,6 @@ const SprintColumn = ({
             </button>
           )}
 
-          {/* OPTIONS MENU */}
           <div className="relative">
             <button
               onClick={(e) => {
@@ -107,7 +101,6 @@ const SprintColumn = ({
             >
               <MoreVertical />
             </button>
-
             {menuOpen && (
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -122,7 +115,6 @@ const SprintColumn = ({
                 >
                   Edit sprint
                 </button>
-
                 <button
                   className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50"
                   onClick={() => {
@@ -138,43 +130,38 @@ const SprintColumn = ({
         </div>
       </div>
 
-      {/* ================= CONTENT ================= */}
+      {/* ===== CONTENT ===== */}
       {expanded && (
         <div className="p-4 space-y-3 min-h-[100px]">
-          {/* -------- STORIES -------- */}
-          {sortedStories.length === 0 ? (
-            <p className="text-gray-400 italic">No stories</p>
+          {sortedStories.length === 0 && sortedTasks.length === 0 ? (
+            <p className="text-gray-400 italic">No stories or tasks in this sprint</p>
           ) : (
-            sortedStories.map((story) => (
-              <StoryCard
-                key={`story-${story.id}`}
-                story={story}
-                epics={epics}
-                statuses={statuses}
-                sprints={[]}
-                onSelectEpic={onSelectEpic}
-                onChangeStatus={onChangeStoryStatus}
-                onAddToSprint={onDropStory}
-                onClick={() => onStoryClick?.(story.id)}
-              />
-            ))
-          )}
-
-          {/* -------- TASKS -------- */}
-          {sortedTasks.length === 0 ? (
-            <p className="text-gray-400 italic">No tasks</p>
-          ) : (
-            sortedTasks.map((task) => (
-              <TaskCard
-                key={`task-${task.id}`}
-                task={task}
-                stories={allStories}
-                sprints={[]}
-                onSelectParentStory={onSelectParentStory}
-                onAddToSprint={onDropStory}
-                onClick={() => onTaskClick?.(task.id)}
-              />
-            ))
+            <>
+              {sortedStories.map((story) => (
+                <StoryCard
+                  key={`story-${story.id}`}
+                  story={story}
+                  epics={epics}
+                  statuses={statuses}
+                  sprints={[]}
+                  onSelectEpic={onSelectEpic}
+                  onChangeStatus={onChangeStoryStatus}
+                  onAddToSprint={onDropStory}
+                  onClick={() => onStoryClick?.(story.id)}
+                />
+              ))}
+              {sortedTasks.map((task) => (
+                <TaskCard
+                  key={`task-${task.id}`}
+                  task={task}
+                  stories={allStories}
+                  sprints={[]}
+                  onSelectParentStory={onSelectParentStory}
+                  onAddToSprint={onDropStory}
+                  onClick={() => onTaskClick?.(task.id)}
+                />
+              ))}
+            </>
           )}
         </div>
       )}
