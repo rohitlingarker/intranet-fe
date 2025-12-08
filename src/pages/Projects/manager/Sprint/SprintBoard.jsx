@@ -8,6 +8,7 @@ import SprintColumn from './SprintColumn';
 import Button from '../../../../components/Button/Button';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import SprintPendingModal from './SprintPendingModal';
 
 const SprintBoard = ({ projectId, projectName }) => {
   const [stories, setStories] = useState([]);
@@ -17,6 +18,8 @@ const SprintBoard = ({ projectId, projectName }) => {
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   /** ==============================
    * Fetch Stories
@@ -88,36 +91,44 @@ const SprintBoard = ({ projectId, projectName }) => {
    * Change Sprint Status
    ============================== */
   const handleStatusChange = async (sprintId, action) => {
-    try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
-        {},
-        { headers }
-      );
+  try {
+    const response = await axios.put(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
+      {},
+      { headers }
+    );
 
-      const updatedSprint = response.data;
-      setSprints(prev =>
-        prev.map(s => (s.id === sprintId ? updatedSprint : s))
-      );
+    // success UI
+    toast.success(`Sprint ${action} successful`);
+    fetchStories();
+    fetchSprints();
 
-      toast.success(`Sprint ${action === 'start' ? 'started' : 'completed'} successfully!`);
-      await fetchStories();
-    } catch (error) {
-      console.error(`❌ Failed to ${action} sprint:`, error.response?.data || error.message);
-      const message =
-        error.response?.data?.message ||
-        "Cannot complete sprint. Some stories or tasks are not done.";
+  } catch (error) {
+    const apiMsg = error.response?.data?.message || "";
+    
+    if (action === "complete" && apiMsg.includes("Cannot complete sprint")) {
 
-      toast.error(message, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+      // Extract pending tasks & stories (clean)
+      const raw = apiMsg;
+      let tasks = raw.match(/Tasks not done: \[(.*?)\]/);
+      let stories = raw.match(/Stories not done: \[(.*?)\]/);
+
+      tasks = tasks ? tasks[1].split(",").map(t => t.trim()) : [];
+      stories = stories ? stories[1].split(",").map(s => s.trim()) : [];
+
+      // 📌 Open modal for decisions
+      setPendingData({
+        sprintId,
+        tasks,
+        stories
       });
+      setShowPendingModal(true);
+      return;
     }
-  };
+
+    toast.error(apiMsg);
+  }
+};
 
   /** ==============================
    * Lifecycle
@@ -220,6 +231,18 @@ const SprintBoard = ({ projectId, projectName }) => {
           onClose={() => setShowModal(false)}
           onCreated={(newSprint) => setSprints((prev) => [...prev, newSprint])}
         />
+
+        <SprintPendingModal
+          isOpen={showPendingModal}
+          pendingData={pendingData}
+          sprints={sprints}
+          onClose={() => setShowPendingModal(false)}
+          refresh={() => {
+            fetchSprints();
+            fetchStories();
+          }}
+        />
+
       </div>
     </DndProvider>
   );
