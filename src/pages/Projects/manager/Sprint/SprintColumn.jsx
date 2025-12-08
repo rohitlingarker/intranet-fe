@@ -13,6 +13,7 @@ const SprintColumn = ({
   epics = [],
   allStories = [],
   statuses = [],
+  sprints = [],
 
   onDropStory,
   onChangeStatus,

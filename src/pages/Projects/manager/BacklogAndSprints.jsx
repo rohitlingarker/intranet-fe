@@ -145,6 +145,21 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
+  const handleDropTask = async (taskId, sprintId) =>{
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
+        { sprintId },
+        { headers } 
+      );
+      toast.success("Task moved successfully");
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to assign task", err);
+      toast.error("Failed to assign task");
+    }
+  }
+
   // (Optional) attach story to epic
   const handleSelectEpic = async (storyId, epicId) => {
     try {
@@ -394,7 +409,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               stories={stories}
               sprints={activeAndPlanningSprints}
               onSelectParentStory={handleAttachTaskToStory}
-              onAddToSprint={handleDropStory}
+              onAddToSprint={handleDropTask}
               onClick={() => {
                 setPanelMode("task");
                 setSelectedTaskId(task.id);
@@ -409,7 +424,11 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
       {showIssueForm && (
         <CreateIssueForm
           onClose={() => setShowIssueForm(false)}
-          onCreated={() => fetchStories()}
+          onCreated={() => {
+            fetchStories();
+            fetchTasks();
+
+          }}
           projectId={projectId}
         />
       )}
@@ -468,4 +487,4 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 };
 
 export default BacklogAndSprints;
-                                                                                                                      
+                                                                                                                    
