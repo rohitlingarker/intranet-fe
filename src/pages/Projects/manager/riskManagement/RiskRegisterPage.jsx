@@ -12,7 +12,6 @@ import RiskDetailModal from "./RiskDetailModal";
 ========================= */
 
 export default function RiskRegisterPage({ projectId = "P-123" }) {
-  const ISSUES_PAGE_SIZE = 10;
   const RISKS_PAGE_SIZE = 10;
 
   /* ---------- UI State ---------- */
@@ -24,13 +23,12 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
   const [issueTypeSummary, setIssueTypeSummary] = useState([]);
   const [activeIssueType, setActiveIssueType] = useState("All");
-  const [issueSearch, setIssueSearch] = useState("");
   const [issuePage, setIssuePage] = useState(1);
 
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [selectedRisk, setSelectedRisk] = useState(null);
 
-  const [isLoadingIssues, setIsLoadingIssues] = useState(false);
+  const [isLoadingIssues] = useState(false);
   const [isLoadingRisks, setIsLoadingRisks] = useState(false);
 
   /* ---------- Risks ---------- */
@@ -51,9 +49,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
         const res = await axios.get(
           `${BASE_URL}/api/risk-links/${projectId}/risk-summary/by-issue-type`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -87,51 +83,52 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
   function issueTypeLabel(raw) {
     if (!raw) return raw;
-    if (raw.toLowerCase() === "story") return "Stories";
-    if (raw.toLowerCase() === "epic") return "Epics";
-    if (raw.toLowerCase() === "task") return "Tasks";
-    if (raw.toLowerCase() === "bug") return "Bugs";
+    const lower = raw.toLowerCase();
+    if (lower === "story") return "Stories";
+    if (lower === "epic") return "Epics";
+    if (lower === "task") return "Tasks";
+    if (lower === "bug") return "Bugs";
     return raw;
   }
 
   /* =========================
-     Load Risks (Backend)
+     ✅ Load Risks (ALL + Specific)
   ========================= */
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadRisks() {
-      if (!selectedIssue) {
-        setRiskData(null);
-        return;
-      }
-
       setIsLoadingRisks(true);
 
       try {
         const token = localStorage.getItem("token");
         const BASE_URL = import.meta.env.VITE_PMS_BASE_URL;
-        console.log("selectedIssue", selectedIssue);
+
+        const params = {
+          projectId,
+          page: riskPage,
+          size: RISKS_PAGE_SIZE,
+          linkedType:null,
+          linkedId:null,
+        };
+
+        // ✅ only when NOT "All"
+        if (selectedIssue) {
+          params.linkedType = selectedIssue.linkedType;
+          params.linkedId = selectedIssue.linkedId;
+        }
 
         const res = await axios.get(`${BASE_URL}/api/risks/linked`, {
-          params: {
-            projectId,
-            linkedType: selectedIssue.linkedType,
-            linkedId: selectedIssue.linkedId,
-            page: riskPage,
-            size: RISKS_PAGE_SIZE,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          params,
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!cancelled) {
           setRiskData(res.data);
         }
       } catch (err) {
-        console.error("Failed to load risks", err);
+        console.error("Failed loading risks", err);
         if (!cancelled) setRiskData(null);
       } finally {
         if (!cancelled) setIsLoadingRisks(false);
@@ -140,7 +137,9 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
     loadRisks();
     return () => (cancelled = true);
-  }, [selectedIssue, riskPage, projectId]);
+
+    // ✅ IMPORTANT FIX
+  }, [selectedIssue, activeIssueType, riskPage, projectId]);
 
   /* =========================
      Render
@@ -156,18 +155,13 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
             <p className="text-sm text-slate-500">Project {projectId}</p>
           </div>
 
-          <div className="flex gap-3">
-            <button className="p-2 hover:bg-slate-100 rounded-lg">
-              <Settings className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowCreateRisk(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Risk
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateRisk(true)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Risk
+          </button>
 
           <CreateRiskModal
             projectId={projectId}
@@ -193,8 +187,8 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
               onClick={() => {
                 setActiveIssueType(label);
                 setIssuePage(1);
-                setSelectedIssue(null);
                 setRiskPage(1);
+                setSelectedIssue(null); // ✅ All
                 setRiskData(null);
               }}
               className={`p-4 rounded-lg ${
@@ -213,9 +207,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
         <IssuesPanel
           projectId={projectId}
           activeIssueType={activeIssueType}
-          issueSearch={issueSearch}
           issuePage={issuePage}
-          setIssuePage={setIssuePage}
           selectedIssue={selectedIssue}
           isLoadingIssues={isLoadingIssues}
           onSelectIssue={(issue) => {
