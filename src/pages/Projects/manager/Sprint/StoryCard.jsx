@@ -1,3 +1,5 @@
+// src/pages/Projects/manager/Sprint/StoryCard.jsx
+
 import React, { useState } from "react";
 import { useDrag } from "react-dnd";
 import { MoreVertical, Plus } from "lucide-react";
@@ -27,6 +29,9 @@ const StoryCard = ({
     onSelectEpic?.(story.id, epicId);
     setShowEpicList(false);
   };
+
+  const statusText =
+    story.statusText || story.status?.name || story.statusName || "";
 
   return (
     <div
@@ -64,7 +69,7 @@ const StoryCard = ({
 
         {/* Epic List Dropdown */}
         {showEpicList && (
-          <div className="absolute right-10 mt-6 w-48 bg-white border rounded-md shadow-lg z-50">
+          <div className="absolute right-10 top-6 w-48 bg-white border rounded-md shadow-lg z-50">
             {epics.length === 0 ? (
               <p className="text-xs text-gray-500 p-2 text-center">No epics available</p>
             ) : (
