@@ -78,7 +78,8 @@ const EditTaskForm = ({ taskId, projectId, onClose, onUpdated, mode="drawer" }) 
           sprintId: task.sprintId ? String(task.sprintId) : "",
           assigneeId: task.assigneeId ? String(task.assigneeId) : "",
           reporterId: task.reporterId ? String(task.reporterId) : "",
-        
+          startDate: task.startDate ? task.startDate : "",
+          dueDate: task.dueDate ? task.dueDate : "",
           isBillable: task.billable ? "true" : "false",
         };
  

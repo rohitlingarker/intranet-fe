@@ -451,7 +451,7 @@ const EntriesTable = ({
           <th className="text-left px-4 py-2">Work Location</th>
           <th className="text-left px-4 py-2">Description</th>
           <th className="text-left px-4 py-2">Billable</th>
-          {window.location.pathname !== "/managerapproval" && (
+          {window.location.pathname === "/timesheets" && (
             <th className="text-left px-4 py-2">Actions</th>
           )}
         </tr>
@@ -569,9 +569,10 @@ const EntriesTable = ({
                 <td className="px-4 py-2">{mapWorkType(entry.workLocation)}</td>
                 <td className="px-4 py-2">{entry.description}</td>
                 <td className="px-4 py-2">{entry.isBillable ? "Yes" : "No"}</td>
-                {window.location.pathname !== "/managerapproval" && (
+                {window.location.pathname === "/timesheets" && (
                   <td className="px-4 py-2">
-                    {status?.toLowerCase() !== "approved" && (
+    {console.log("Status from entries table: ", status)}
+                    {(status?.toLowerCase() === "draft" || status?.toLowerCase() === "submitted" || status?.toLowerCase() === "rejected") && (
                       <div className="flex gap-4">
                          <button
                             className="text-blue-600 hover:text-blue-800 text-sm"

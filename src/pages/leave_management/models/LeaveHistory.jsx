@@ -473,6 +473,8 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         </div>
       )}
       <CancellationModal
+        title="Confirm Cancellation"
+        subtitle="Are you sure you want to Cancel this Leave Request?"
         isOpen={isCancelModalOpen}
         onCancel={handleModalClose}
         onConfirm={handleConfirmCancellation}
