@@ -1,16 +1,21 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { ChevronDown, ChevronRight, Folder, FileText } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { cy } from "date-fns/locale";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Component for selecting existing Test Cases from an existing Project's stories/scenarios.
  * This is a selection tool, not a creation tool.
  */
 export default function AddCasesFromProjectModal({
-  projectId,
+  // projectId,
   onClose,
   onAddCases, // Function to pass selected case IDs back to the parent
 }) {
+  const { projectId, runId } = useParams();
   // State for data fetching
   const [stories, setStories] = useState([]);
   const [expandedStories, setExpandedStories] = useState({});
@@ -18,6 +23,7 @@ export default function AddCasesFromProjectModal({
 
   // State for selection management
   const [selectedCases, setSelectedCases] = useState([]);
+  const navigate = useNavigate();
 
   // =================================================
   // API FETCH LOGIC (No Change)
@@ -26,8 +32,11 @@ export default function AddCasesFromProjectModal({
   const fetchStories = async () => {
     setIsLoadingStories(true);
     try {
+      console.log("Fetching stories for project:", projectId);
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-stories/projects/${projectId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/test-stories/projects/${projectId}`
       );
       setStories((res.data || []).map((s) => ({ ...s, scenarios: [] })));
     } catch (error) {
@@ -40,7 +49,9 @@ export default function AddCasesFromProjectModal({
   const fetchScenarios = async (storyId) => {
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/scenarios/test-stories/${storyId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/scenarios/test-stories/${storyId}`
       );
       return (res.data || []).map((sc) => ({ ...sc, cases: [] }));
     } catch (error) {
@@ -52,7 +63,9 @@ export default function AddCasesFromProjectModal({
   const fetchCasesWithSteps = async (scenarioId) => {
     try {
       const casesRes = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/scenarios/${scenarioId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-design/test-cases/scenarios/${scenarioId}`
       );
 
       const casesList = casesRes.data || [];
@@ -61,7 +74,9 @@ export default function AddCasesFromProjectModal({
       for (const tc of casesList) {
         // Only fetch steps if absolutely necessary, otherwise keep it lean
         const stepsRes = await axiosInstance.get(
-          `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/${tc.id}`
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases/${
+            tc.id
+          }`
         );
 
         finalCases.push({
@@ -104,7 +119,9 @@ export default function AddCasesFromProjectModal({
       );
 
       setStories((prev) =>
-        prev.map((s) => (s.id === story.id ? { ...s, scenarios: scenariosWithCases } : s))
+        prev.map((s) =>
+          s.id === story.id ? { ...s, scenarios: scenariosWithCases } : s
+        )
       );
     }
 
@@ -191,7 +208,7 @@ export default function AddCasesFromProjectModal({
           const selectedScenarioCases = scenarioCaseIds.filter((id) =>
             selectedCases.includes(id)
           );
-          
+
           if (scenarioCaseIds.length === 0) {
             status.scenarios[scenario.id] = "disabled";
           } else if (selectedScenarioCases.length === scenarioCaseIds.length) {
@@ -211,15 +228,58 @@ export default function AddCasesFromProjectModal({
   // FINAL ACTION HANDLER (Selection Only) 🎯
   // =================================================
 
-  const handleAddSelection = () => {
-    if (selectedCases.length === 0) {
-        // Optionally show a notification that no cases are selected
-        return;
-    }
-    // Pass the selected IDs array back to the parent component
-    onAddCases(selectedCases);
-  };
+  // const handleAddSelection = () => {
+  //   if (selectedCases.length === 0) {
+  //       // Optionally show a notification that no cases are selected
+  //       return;
+  //   }
+  //   // Pass the selected IDs array back to the parent component
+  //   onAddCases(selectedCases);
+  // };
 
+  //   const handleAddCasesSubmit = async (selectedCaseIds) => {
+
+  //     console.log("Adding cases to run:", selectedCaseIds);
+  //   // if (!selectedRunId) return;
+
+  //   try {
+  //     await axiosInstance.post(
+  //       `${
+  //         import.meta.env.VITE_PMS_BASE_URL
+  //       }/api/test-execution/test-runs/${runId}/add-cases`,
+  //       { testCaseIds: selectedCaseIds }
+  //     );
+
+  //     toast.success("Test cases added to run");
+  //     // setShowAddCasesModal(false);
+
+  //     // setRunsRefreshKey((k) => k + 1);
+  //   } catch (err) {
+  //     console.error("Error:", err);
+  //     toast.error("Failed to add test cases");
+  //   }
+  // };
+
+  const handleAddCasesSubmit = async (selectedCaseIds) => {
+    console.log("Adding cases to run:", selectedCaseIds);
+
+    try {
+      await axiosInstance.post(
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${runId}/add-cases`,
+        { testCaseIds: selectedCaseIds }
+      );
+
+      toast.success("Test cases added to run");
+
+      // Navigate back to the page that shows TestRunAccordion
+      navigate(-1);
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error("Failed to add test cases");
+    }
+  };
 
   // =================================================
   // COMPONENTS / RENDER
@@ -237,8 +297,10 @@ export default function AddCasesFromProjectModal({
 
     const isChecked = status === "checked" || status === "indeterminate";
 
-    const baseClasses = "form-checkbox rounded border-gray-300 transition duration-150";
-    const enabledClasses = "text-indigo-600 focus:ring-indigo-500 cursor-pointer";
+    const baseClasses =
+      "form-checkbox rounded border-gray-300 transition duration-150";
+    const enabledClasses =
+      "text-indigo-600 focus:ring-indigo-500 cursor-pointer";
     const disabledClasses = "text-gray-400 cursor-not-allowed";
 
     return (
@@ -246,7 +308,9 @@ export default function AddCasesFromProjectModal({
         type="checkbox"
         ref={checkboxRef}
         id={`${entity}-${id}`}
-        className={`${baseClasses} ${isDisabled ? disabledClasses : enabledClasses}`}
+        className={`${baseClasses} ${
+          isDisabled ? disabledClasses : enabledClasses
+        }`}
         checked={isChecked}
         disabled={isDisabled}
         onChange={(e) => onChange(e.target.checked)}
@@ -262,16 +326,20 @@ export default function AddCasesFromProjectModal({
 
     return (
       <div>
-        <div 
+        <div
           className={`flex items-center gap-2 p-2 rounded transition duration-150 ease-in-out ${
-            isDisabled ? 'cursor-not-allowed' : 'hover:bg-indigo-50/50'
+            isDisabled ? "cursor-not-allowed" : "hover:bg-indigo-50/50"
           }`}
         >
           <button
             onClick={() => toggleStory(story)}
             className="text-gray-500 hover:text-indigo-600 focus:outline-none p-1 -ml-1 rounded"
           >
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {isExpanded ? (
+              <ChevronDown size={18} />
+            ) : (
+              <ChevronRight size={18} />
+            )}
           </button>
           <IndeterminateCheckbox
             id={story.id}
@@ -279,11 +347,20 @@ export default function AddCasesFromProjectModal({
             onChange={(isSelected) => toggleStorySelection(story, isSelected)}
             entity="story"
           />
-          <Folder size={18} className={`mr-1 ${isDisabled ? 'text-gray-400' : 'text-indigo-600'}`} />
-          <span className={`text-sm font-semibold cursor-default ${isDisabled ? 'text-gray-500' : 'text-gray-800'}`}>
-            {story.name} 
+          <Folder
+            size={18}
+            className={`mr-1 ${
+              isDisabled ? "text-gray-400" : "text-indigo-600"
+            }`}
+          />
+          <span
+            className={`text-sm font-semibold cursor-default ${
+              isDisabled ? "text-gray-500" : "text-gray-800"
+            }`}
+          >
+            {story.name}
             <span className="font-normal text-xs text-gray-500 ml-1">
-                ({caseCount} Cases)
+              ({caseCount} Cases)
             </span>
           </span>
         </div>
@@ -291,9 +368,13 @@ export default function AddCasesFromProjectModal({
         {isExpanded && (
           <div className="ml-8 border-l border-gray-200 pl-4 mt-1 space-y-2">
             {story.scenarios.length === 0 ? (
-              <div className="text-xs text-gray-500 italic py-2">No scenarios found for this story.</div>
+              <div className="text-xs text-gray-500 italic py-2">
+                No scenarios found for this story.
+              </div>
             ) : (
-              story.scenarios.map((sc) => <ScenarioBlock key={sc.id} scenario={sc} />)
+              story.scenarios.map((sc) => (
+                <ScenarioBlock key={sc.id} scenario={sc} />
+              ))
             )}
           </div>
         )}
@@ -307,28 +388,36 @@ export default function AddCasesFromProjectModal({
     const caseCount = getAllCaseIdsInScenario(scenario).length;
 
     return (
-      <div 
+      <div
         className={`p-3 rounded-lg shadow-sm border ${
-          isDisabled 
-            ? 'bg-gray-100 border-gray-200 cursor-not-allowed' 
-            : 'bg-gray-50 border-gray-100'
+          isDisabled
+            ? "bg-gray-100 border-gray-200 cursor-not-allowed"
+            : "bg-gray-50 border-gray-100"
         }`}
       >
         <div className="flex items-center gap-3 mb-2">
           <IndeterminateCheckbox
             id={scenario.id}
             status={status}
-            onChange={(isSelected) => toggleScenarioSelection(scenario, isSelected)}
+            onChange={(isSelected) =>
+              toggleScenarioSelection(scenario, isSelected)
+            }
             entity="scenario"
           />
-          <span className={`text-sm font-medium ${isDisabled ? 'text-gray-500' : 'text-indigo-800'}`}>
+          <span
+            className={`text-sm font-medium ${
+              isDisabled ? "text-gray-500" : "text-indigo-800"
+            }`}
+          >
             {scenario.title}
           </span>
         </div>
 
         <div className="ml-7 space-y-1">
           {scenario.cases.length === 0 ? (
-            <div className="text-xs text-gray-400 italic">No test cases available.</div>
+            <div className="text-xs text-gray-400 italic">
+              No test cases available.
+            </div>
           ) : (
             scenario.cases.map((tc) => (
               <div
@@ -362,23 +451,25 @@ export default function AddCasesFromProjectModal({
   // =================================================
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-60 flex justify-center items-center p-6 z-50 transition-opacity duration-300">
-      <div className="bg-white w-[700px] max-h-[90vh] flex flex-col rounded-xl shadow-2xl transition-transform duration-300 scale-100">
-        
+    <div>
+      <div className=" w-[100%] max-h-[100%] flex flex-col rounded-xl shadow-2xl transition-transform duration-300 scale-100">
         {/* HEADER */}
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">
             ➕ Add Existing Test Cases
           </h2>
           <p className="text-sm text-gray-500">
-            Select stories, scenarios, or individual cases to add. ({selectedCases.length} selected)
+            Select stories, scenarios, or individual cases to add. (
+            {selectedCases.length} selected)
           </p>
         </div>
 
         {/* HIERARCHY TREE */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {isLoadingStories ? (
-            <div className="text-center py-10 text-gray-500">Loading Test Stories...</div>
+            <div className="text-center py-10 text-gray-500">
+              Loading Test Stories...
+            </div>
           ) : stories.length === 0 ? (
             <div className="text-center py-10 text-gray-500 italic">
               No Test Stories found for this project.
@@ -403,7 +494,7 @@ export default function AddCasesFromProjectModal({
                 ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
                 : "bg-indigo-400 cursor-not-allowed"
             }`}
-            onClick={handleAddSelection}
+            onClick={() => handleAddCasesSubmit(selectedCases)}
             disabled={selectedCases.length === 0}
           >
             Add {selectedCases.length} Selected Case(s)

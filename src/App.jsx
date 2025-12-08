@@ -55,6 +55,7 @@ import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusReportWrapper";
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
+import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -270,6 +271,13 @@ const AppRoutes = () => {
             path="/projects/:projectId/issuetracker"
             element={<IssueTracker />}
           />
+
+          <Route
+            path="/projects/:projectId/cycles/runs/:runId/test-runs"
+            element={<AddCasesFromProjectModal />}
+          />
+
+
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}

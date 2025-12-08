@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import TestRunAccordion from "./TestRuns";
 
-export default function RunListForCycle({ cycleId, onAddCases, refreshKey }) {
+export default function RunListForCycle({ projectId, cycleId, onAddCases, refreshKey }) {
   const [runs, setRuns] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -12,7 +12,9 @@ export default function RunListForCycle({ cycleId, onAddCases, refreshKey }) {
     setLoading(true);
     try {
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/cycles/${cycleId}`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/cycles/${cycleId}`
       );
       // Expect each run object to optionally include run.testCases = [...]
       setRuns(res.data || []);
@@ -40,7 +42,12 @@ export default function RunListForCycle({ cycleId, onAddCases, refreshKey }) {
         <p className="text-gray-500">No runs found for this cycle.</p>
       ) : (
         runs.map((run) => (
-          <TestRunAccordion key={run.id} run={run} onAddCases={onAddCases} />
+          <TestRunAccordion
+            key={run.id}
+            run={run}
+            projectId={projectId}
+            refreshRuns={loadRuns}
+          />
         ))
       )}
     </div>

@@ -8,6 +8,8 @@ import AddCasesModal from "./AddCasesModal";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
+import AddTestStoryModal from "../TestDesign/modals/AddTestStoriesModal";
+import { se } from "date-fns/locale";
 
 export default function TestExecution() {
   const { projectId } = useParams();
@@ -25,7 +27,7 @@ export default function TestExecution() {
   const [showAddCasesModal, setShowAddCasesModal] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState(null);
   const [availableCases, setAvailableCases] = useState([]);
-
+  const [onCreated, setOnCreated] = useState(null);
   const [runsRefreshKey, setRunsRefreshKey] = useState(0);
 
   // ---------------------- UTIL ----------------------
@@ -228,6 +230,7 @@ export default function TestExecution() {
         </div>
       ) : (
         <RunListForCycle
+          projectId={projectId}
           cycleId={selectedCycleId}
           onAddCases={openAddCasesModal}
           refreshKey={runsRefreshKey}
@@ -235,12 +238,22 @@ export default function TestExecution() {
       )}
 
       {/* ADD CASES MODAL */}
-      <AddCasesModal
+      {/* <AddCasesModal
         show={showAddCasesModal}
         onClose={() => setShowAddCasesModal(false)}
         availableCases={availableCases}
         onSubmit={handleAddCasesSubmit}
-      />
+      /> */}
+
+      
+{/* 
+      <AddTestStoryModal
+        projectId={projectId}      
+        onClose={() => setShowAddCasesModal(false)}
+        onCreated={() => setOnCreated(Date.now())}
+      /> */}
+
+
 
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
