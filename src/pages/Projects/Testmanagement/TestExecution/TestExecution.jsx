@@ -4,7 +4,7 @@ import CreateTestCycleForm from "./CreateCycle";
 import CreateTestRunForm from "./CreateRun";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import AddCasesFromProjectModal from "../TestDesign/modals/AddCasesFromProjectModal.jsx";
+// import AddCasesFromProjectModal from "../TestDesign/modals/AddCasesFromProjectModal.jsx";
 
 export default function TestExecution() {
   const { projectId } = useParams();
@@ -200,14 +200,14 @@ export default function TestExecution() {
       </div>
 
       {/* ADD CASES MODAL */}
-      {showAddCasesModal && (
+      {/* {showAddCasesModal && (
         <AddCasesFromProjectModal
           projectId={projectId}
           runId={selectedRunId}
           onClose={() => setShowAddCasesModal(false)}
           onAddCases={handleAddCases}
         />
-      )}
+      )} */}
 
       {/* CREATE CYCLE MODAL */}
       {showCycleModal && (
