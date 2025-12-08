@@ -138,6 +138,21 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
+  const handleDropTask = async (taskId, sprintId) =>{
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
+        { sprintId },
+        { headers } 
+      );
+      toast.success("Task moved successfully");
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to assign task", err);
+      toast.error("Failed to assign task");
+    }
+  }
+
   const handleSprintStatus = async (sprintId, action) => {
     try {
       const res = await axios.put(
@@ -234,45 +249,46 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
         {/* ===== Sprint List (Expandable Panels) ===== */}
         {/* ===== Sprint List (Expandable Panels) ===== */}
-<div className="space-y-4">
-  {activeAndPlanningSprints.length === 0 ? (
-    <p className="text-gray-400 italic">No active or planning sprints.</p>
-  ) : (
-    activeAndPlanningSprints.map((sprint) => {
-      const sprintStories = stories.filter(
-        (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
-      );
-      const sprintTasks = tasks.filter(
-        (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
-      );
+        <div className="space-y-4">
+          {activeAndPlanningSprints.length === 0 ? (
+            <p className="text-gray-400 italic">No active or planning sprints.</p>
+          ) : (
+            activeAndPlanningSprints.map((sprint) => {
+              const sprintStories = stories.filter(
+                (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
+              );
+              const sprintTasks = tasks.filter(
+                (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
+              );
 
-      return (
-        <SprintColumn
-          key={sprint.id}
-          sprint={sprint}
-          stories={sprintStories}
-          tasks={sprintTasks}
-          epics={epics}
-          allStories={stories}
-          onSelectEpic={handleSelectEpic}
-          onSelectParentStory={handleAttachTaskToStory}
-          onDropStory={handleDropStory}
-          onChangeStatus={handleSprintStatus}
-          onStoryClick={(id) => {
-            setPanelMode("story");
-            setSelectedStoryId(id);
-            setRightPanelOpen(true);
-          }}
-          onTaskClick={(id) => {
-            setPanelMode("task");
-            setSelectedTaskId(id);
-            setRightPanelOpen(true);
-          }}
-        />
-      );
-    })
-  )}
-</div>
+              return (
+                <SprintColumn
+                  key={sprint.id}
+                  sprint={sprint}
+                  stories={sprintStories}
+                  tasks={sprintTasks}
+                  epics={epics}
+                  allStories={stories}
+                  sprints={activeAndPlanningSprints}
+                  onSelectEpic={handleSelectEpic}
+                  onSelectParentStory={handleAttachTaskToStory}
+                  onDropStory={handleDropStory}
+                  onChangeStatus={handleSprintStatus}
+                  onStoryClick={(id) => {
+                    setPanelMode("story");
+                    setSelectedStoryId(id);
+                    setRightPanelOpen(true);
+                  }}
+                  onTaskClick={(id) => {
+                    setPanelMode("task");
+                    setSelectedTaskId(id);
+                    setRightPanelOpen(true);
+                  }}
+                />
+              );
+            })
+          )}
+        </div>
 
 
         {/* ===== Backlog Section ===== */}
@@ -319,7 +335,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           task={task}
           sprints={activeAndPlanningSprints}
           stories={stories}
-          onAddToSprint={handleDropStory}
+          onAddToSprint={handleDropTask}
           onSelectParentStory={handleAttachTaskToStory}
           onClick={() => {
             setPanelMode("task");
@@ -337,12 +353,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
       {/* ===== Modals ===== */}
       {showIssueForm && (
-  <CreateIssueForm
-    onClose={() => setShowIssueForm(false)}
-    onCreated={() => fetchStories()}
-    projectId={projectId}
-  />
-)}
+        <CreateIssueForm
+          onClose={() => setShowIssueForm(false)}
+          onCreated={() => {
+            fetchStories();
+            fetchTasks();
+
+          }}
+          projectId={projectId}
+        />
+      )}
 
       <CreateSprintModal
         isOpen={showSprintModal}
