@@ -42,7 +42,7 @@ export const buildTaskPayload = (d, fallbackSprint) => ({
   storyId: normalizeId(d.storyId),
   assigneeId: normalizeId(d.assigneeId),
   sprintId: normalizeId(d.sprintId) ?? normalizeId(fallbackSprint),
-  billable: !!d.isBillable,
+  isbillable: !!d.isBillable,
 });
 
 export const buildBugPayload = (d) => ({
