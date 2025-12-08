@@ -6,6 +6,7 @@ import Overview from "./Overview";
 import TestPlans from "./TestPlans";
 import TestDesign  from "./TestDesign/TestDesign";
 import TestExecution from "./TestExecution/TestExecution";
+import BugPage from "./Bug/BugPage";
 
 
 // import Execution from "./Execution";
@@ -58,6 +59,8 @@ export default function TestManagement() {
       return <Reports />;
     }else if (selectedTab === "test-management/test-plans") {
       return <TestPlans />;
+    }else if(selectedTab === "test-management/test-bugs") {
+      return <BugPage />;
     }
 
     return null;
