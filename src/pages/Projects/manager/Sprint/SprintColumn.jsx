@@ -12,6 +12,7 @@ const SprintColumn = ({
   epics = [],
   allStories = [],
   statuses = [],
+  sprints = [],
 
   onDropStory,
   onChangeStatus,
@@ -143,7 +144,7 @@ const SprintColumn = ({
                   story={story}
                   epics={epics}
                   statuses={statuses}
-                  sprints={[]}
+                  sprints={sprints}
                   onSelectEpic={onSelectEpic}
                   onChangeStatus={onChangeStoryStatus}
                   onAddToSprint={onDropStory}
@@ -155,7 +156,7 @@ const SprintColumn = ({
                   key={`task-${task.id}`}
                   task={task}
                   stories={allStories}
-                  sprints={[]}
+                  sprints={sprints}
                   onSelectParentStory={onSelectParentStory}
                   onAddToSprint={onDropStory}
                   onClick={() => onTaskClick?.(task.id)}

@@ -32,54 +32,41 @@ const StoryCard = ({
     <div
       ref={dragRef}
       className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer flex justify-between items-start transition"
+      onClick={() => onClick?.()}   // ENTIRE CARD clickable
     >
-      {/* Left section */}
-      <div
-        className="cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onClick) onClick();
-        }}
-      >
-        {/* Title + Icon */}
+      {/* LEFT + MIDDLE (no extra wrapper) */}
+      <div className="flex-1">
         <div className="flex items-center gap-1">
-          <span className="text-blue-500 text-sm cursor-default">📑</span>
+          <span className="text-blue-500 text-sm">📑</span>
           <p className="text-sm font-semibold text-indigo-900">{story.title}</p>
         </div>
 
-        {/* Status */}
         <p className="text-xs text-pink-800">
           Status: {story.statusText || story.status?.name || story.statusName}
         </p>
       </div>
 
-
-
-      {/* Right side buttons */}
-      <div className="relative flex items-start gap-2">
+      {/* RIGHT SECTION (stop events from opening form) */}
+      <div
+        className="relative flex items-start gap-2"
+        onClick={(e) => e.stopPropagation()} // prevent form popup
+      >
         {/* + Epic Button */}
         {story.epicId === null && (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowEpicList((prev) => !prev);
-            }}
+            onClick={() => setShowEpicList((prev) => !prev)}
             className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
           >
             <Plus size={12} /> Epic
           </button>
-
         )}
-        
 
-        {/* Dropdown containing list of epics */}
+        {/* Epic List Dropdown */}
         {showEpicList && (
           <div className="absolute right-10 mt-6 w-48 bg-white border rounded-md shadow-lg z-50">
             {epics.length === 0 ? (
-              <p className="text-xs text-gray-500 p-2 text-center">
-                No epics available
-              </p>
+              <p className="text-xs text-gray-500 p-2 text-center">No epics available</p>
             ) : (
               epics.map((epic) => (
                 <button
@@ -94,17 +81,15 @@ const StoryCard = ({
           </div>
         )}
 
-        {/* 3-dot menu */}
+        {/* 3-Dot Menu */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowMenu((prev) => !prev);
-          }}
+          onClick={() => setShowMenu((prev) => !prev)}
           className="p-1 rounded hover:bg-gray-100"
         >
           <MoreVertical size={16} />
         </button>
 
+        {/* Sprint Dropdown */}
         {showMenu && (
           <div className="absolute right-0 mt-6 w-40 bg-white border rounded-md shadow-lg z-50">
             {sprints.length === 0 ? (
