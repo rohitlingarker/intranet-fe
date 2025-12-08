@@ -21,6 +21,11 @@ const SprintBoard = ({ projectId, projectName }) => {
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingData, setPendingData] = useState(null);
 
+  // Debug: log when modal state changes
+  useEffect(() => {
+    console.log("🔄 Modal state changed:", { showPendingModal, pendingData });
+  }, [showPendingModal, pendingData]);
+
   /** ==============================
    * Fetch Stories
    ============================== */
@@ -104,29 +109,57 @@ const SprintBoard = ({ projectId, projectName }) => {
     fetchSprints();
 
   } catch (error) {
-    const apiMsg = error.response?.data?.message || "";
+    const errorData = error.response?.data || {};
     
-    if (action === "complete" && apiMsg.includes("Cannot complete sprint")) {
-
-      // Extract pending tasks & stories (clean)
-      const raw = apiMsg;
-      let tasks = raw.match(/Tasks not done: \[(.*?)\]/);
-      let stories = raw.match(/Stories not done: \[(.*?)\]/);
-
-      tasks = tasks ? tasks[1].split(",").map(t => t.trim()) : [];
-      stories = stories ? stories[1].split(",").map(s => s.trim()) : [];
-
-      // 📌 Open modal for decisions
+    console.log("❌ Error Response:", {
+      code: errorData.code,
+      message: errorData.message,
+      data: errorData.data,
+      fullError: error
+    });
+    
+    // Handle structured error response (preferred)
+    if (action === "complete" && errorData.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
+      const { pendingTasks = [], pendingStories = [] } = errorData.data || {};
+      
+      console.log("✅ Modal triggered with:", { pendingTasks, pendingStories });
+      
       setPendingData({
         sprintId,
-        tasks,
-        stories
+        tasks: Array.isArray(pendingTasks) ? pendingTasks : [],
+        stories: Array.isArray(pendingStories) ? pendingStories : []
       });
       setShowPendingModal(true);
       return;
     }
 
-    toast.error(apiMsg);
+    // Fallback: handle old API response format with string parsing
+    if (action === "complete" && errorData.message?.includes("Cannot complete sprint")) {
+      try {
+        const raw = errorData.message;
+        let tasks = raw.match(/Tasks not done: \[(.*?)\]/);
+        let stories = raw.match(/Stories not done: \[(.*?)\]/);
+
+        tasks = tasks ? tasks[1].split(",").map(t => t.trim()).filter(Boolean) : [];
+        stories = stories ? stories[1].split(",").map(s => s.trim()).filter(Boolean) : [];
+
+        if (tasks.length > 0 || stories.length > 0) {
+          setPendingData({
+            sprintId,
+            tasks,
+            stories
+          });
+          setShowPendingModal(true);
+          return;
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse pending items:", parseErr);
+      }
+    }
+
+    // Generic error message
+    const errorMsg = errorData.message || error.message || "Operation failed";
+    toast.error(errorMsg);
   }
 };
 

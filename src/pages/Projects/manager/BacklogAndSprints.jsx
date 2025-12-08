@@ -18,6 +18,7 @@ import EditTaskForm from "./Backlog/EditTaskForm";
 import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
+import SprintPendingModal from "./Sprint/SprintPendingModal";
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [selectedSprintId, setSelectedSprintId] = useState(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState("story");
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -126,7 +129,22 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
       fetchSprints();
       fetchStories();
     } catch (err) {
-      showStatusToast("Failed to update sprint status", "error", 3000);
+      const errorData = err.response?.data || {};
+      
+      // Handle structured error response (validation error)
+      if (action === "complete" && errorData.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
+        const { pendingTasks = [], pendingStories = [] } = errorData.data || {};
+        
+        setPendingData({
+          sprintId,
+          tasks: Array.isArray(pendingTasks) ? pendingTasks : [],
+          stories: Array.isArray(pendingStories) ? pendingStories : []
+        });
+        setShowPendingModal(true);
+        return;
+      }
+      
+      showStatusToast(errorData.message || "Failed to update sprint status", "error", 3000);
     }
   };
 
@@ -482,6 +500,17 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           />
         )}
       </RightSidePanel>
+
+      <SprintPendingModal
+        isOpen={showPendingModal}
+        pendingData={pendingData}
+        sprints={sprints}
+        onClose={() => setShowPendingModal(false)}
+        refresh={() => {
+          fetchSprints();
+          fetchStories();
+        }}
+      />
     </DndProvider>
   );
 };
