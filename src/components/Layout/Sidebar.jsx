@@ -15,6 +15,7 @@ import { is } from "date-fns/locale";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Projects", href: "/projects", icon: FolderKanban },
   { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
@@ -169,7 +170,7 @@ const Sidebar = ({ isCollapsed }) => {
           )}
 
           {/* Projects */}
-          <li>
+          {/* <li>
             <Link
               to={
                 isManager
@@ -188,7 +189,7 @@ const Sidebar = ({ isCollapsed }) => {
               <FolderKanban className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>Projects</span>}
             </Link>
-          </li>
+          </li> */}
 
           {/* Remaining Menu Items */}
           {navigation.slice(1).map((item) => {
