@@ -2,11 +2,17 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import axiosInstance from "../api/axiosInstance";
+import RunTestCaseComponent from "./RunTestCaseComponent";
+import TestCaseResultComponent from "./TestCaseResultComponent";
 
 export default function TestRunAccordion({ run, projectId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [testCases, setTestCases] = useState([]);
+  const [runTestCaseId, setRunTestCaseId] = useState(null);
+  const [viewResultCaseId, setViewResultCaseId] = useState(null);
+
   const navigate = useNavigate();
 
   const executed = run.executedCount || 0;
@@ -127,44 +133,22 @@ export default function TestRunAccordion({ run, projectId }) {
                         </td>
 
                         {/* Execution Status */}
-                        <td className="py-3 px-3">
-                          {tc.runStatus === "NOT_STARTED" && (
-                            <span className="text-gray-500 flex items-center gap-1">
-                              ⏳ Pending
-                            </span>
-                          )}
-                          {tc.runStatus === "PASS" && (
-                            <span className="text-green-600 flex items-center gap-1">
-                              ✔ Pass
-                            </span>
-                          )}
-                          {tc.runStatus === "FAIL" && (
-                            <span className="text-red-600 flex items-center gap-1">
-                              ✖ Fail
-                            </span>
-                          )}
+                        <td className="py-3 px-3 font-medium text-gray-700">
+                          {tc.runStatus}
                         </td>
 
                         {/* Action Button */}
                         <td className="py-3 px-3">
                           {tc.runStatus === "NOT_STARTED" ? (
                             <button
-                              onClick={() =>
-                                navigate(
-                                  `/projects/${projectId}/cycles/runs/${run.id}/execute/${tc.testCaseId}`
-                                )
-                              }
+                              onClick={() => setRunTestCaseId(tc.testCaseId)}
                               className="px-3 py-1 text-blue-600 border border-blue-300 rounded hover:bg-blue-100"
                             >
                               ▶ Run
                             </button>
                           ) : (
                             <button
-                              onClick={() =>
-                                navigate(
-                                  `/projects/${projectId}/cycles/runs/${run.id}/result/${tc.testCaseId}`
-                                )
-                              }
+                              onClick={() => setViewResultCaseId(tc.testCaseId)}
                               className="text-blue-600 hover:underline"
                             >
                               View Result
@@ -196,6 +180,22 @@ export default function TestRunAccordion({ run, projectId }) {
             </div>
           )}
         </div>
+      )}
+
+      {runTestCaseId && (
+        <RunTestCaseComponent
+          runId={run.id}
+          testCaseId={runTestCaseId}
+          onClose={() => setRunTestCaseId(null)}
+        />
+      )}
+
+      {viewResultCaseId && (
+        <TestCaseResultComponent
+          runId={run.id}
+          testCaseId={viewResultCaseId}
+          onClose={() => setViewResultCaseId(null)}
+        />
       )}
     </div>
   );
