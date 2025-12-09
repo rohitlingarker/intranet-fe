@@ -76,8 +76,8 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const handleDropStory = async (storyId, sprintId) => {
     showStatusToast(
       sprintId ? "Moving story to sprint..." : "Moving story to backlog...",
-      "loading",
-      2000
+      "success",
+      3000
     );
 
     // Optimistic UI update
