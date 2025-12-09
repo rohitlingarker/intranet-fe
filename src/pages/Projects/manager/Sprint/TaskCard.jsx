@@ -32,17 +32,12 @@ const TaskCard = ({
     <div
       ref={dragRef}
       className="relative bg-white p-3 rounded shadow-sm border hover:shadow-md cursor-pointer flex justify-between items-start transition"
+      onClick={() => onClick?.()}   // 👉 entire card opens the form
     >
-      {/* ===== Left Content ===== */}
-      <div
-        className="cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onClick) onClick();
-        }}
-      >
+      {/* ===== Left + Middle (clickable area) ===== */}
+      <div className="flex-1">
         <div className="flex items-center gap-1">
-          <span className="text-green-600 text-sm cursor-default">☑️</span>
+          <span className="text-green-600 text-sm">☑️</span>
           <p className="text-sm font-semibold text-blue-900">{task.title}</p>
         </div>
 
@@ -51,31 +46,25 @@ const TaskCard = ({
         </p>
       </div>
 
-
-      {/* ===== Right Controls (Story Button + Menu) ===== */}
-      <div className="relative flex items-start gap-2">
-        {/* + Story Button (Right Side) */}
+      {/* ===== Right Controls (no form open) ===== */}
+      <div
+        className="relative flex items-start gap-2"
+        onClick={(e) => e.stopPropagation()} // ❗prevent triggering onClick of card
+      >
+        {/* + Story Button */}
         {task.storyId === null && (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowStoryList((prev) => !prev);   // ✅ FIXED
-            }}
+            onClick={() => setShowStoryList((prev) => !prev)}
             className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
           >
             <Plus size={12} /> Story
           </button>
         )}
 
-        
-
         {/* 3-dot menu */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowMenu((prev) => !prev);
-          }}
+          onClick={() => setShowMenu((prev) => !prev)}
           className="p-1 rounded hover:bg-gray-100"
         >
           <MoreVertical size={16} />

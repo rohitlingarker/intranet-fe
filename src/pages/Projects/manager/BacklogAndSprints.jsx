@@ -1,161 +1,154 @@
 // src/pages/Projects/manager/BacklogAndSprints.jsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { DndProvider } from "react-dnd";
+import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Plus, List, X, ChevronDown, ChevronUp } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Plus, List } from "lucide-react";
+import { showStatusToast } from "../../../components/toastfy/toast";
 
 import Button from "../../../components/Button/Button";
 import StoryCard from "./Sprint/StoryCard";
 import SprintColumn from "./Sprint/SprintColumn";
 import CreateSprintModal from "./Sprint/CreateSprintModal";
 import CreateIssueForm from "./CreateIssue/CreateIssueForm";
-import TaskCard from "./Sprint/TaskCard"; 
+import TaskCard from "./Sprint/TaskCard";
 import EditTaskForm from "./Backlog/EditTaskForm";
 import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
-import { id } from "date-fns/locale/id";
+import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
+import SprintPendingModal from "./Sprint/SprintPendingModal";
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
+
   const [stories, setStories] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [sprints, setSprints] = useState([]);
-  const [epics,setEpics] = useState([]);
+  const [epics, setEpics] = useState([]);
   const [backlogStories, setBacklogStories] = useState([]);
   const [backlogTasks, setBacklogTasks] = useState([]);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [showSprintModal, setShowSprintModal] = useState(false);
-  const [expandedSprint, setExpandedSprint] = useState(null);
   const [selectedStoryId, setSelectedStoryId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [selectedSprintId, setSelectedSprintId] = useState(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [panelContent, setPanelContent] = useState(null);
   const [panelMode, setPanelMode] = useState("story");
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  /** ==============================
-   * Fetch Data
-   ============================== */
-  const fetchStories = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-        { headers }
-      );
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setStories(list);
-      setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
-      //setBacklogTasks(list.filter((t) => !t.sprintId && !t.sprint));
-    } catch (err) {
-      console.error("Failed to fetch stories", err);
-      toast.error("Failed to fetch stories");
-    }
-  };
-  const fetchTasks = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
-        { headers }
-      );
-
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-
-      setTasks(list); // You need: const [tasks, setTasks] = useState([]);
-
-      setBacklogTasks(list.filter((t) => !t.sprintId && !t.sprint));
-      //console.log("BACKLOG TASKS:", list.filter((t) => t.sprintId === null));
-    } catch (err) {
-      console.error("Failed to fetch tasks", err);
-      toast.error("Failed to fetch tasks");
-    }
-  };
-  const fetchEpics = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
-        { headers }
-      );
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-      // console.log("Fetched epics:", list);
-      // return list;
-      setEpics(list);
-    } catch (err) {
-      console.error("Failed to fetch epics", err);
-      toast.error("Failed to fetch epics");
-      return [];
-    }
-  }
-
-
-  const fetchSprints = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-        { headers }
-      );
-      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
-      setSprints(list);
-    } catch (err) {
-      console.error("Failed to fetch sprints", err);
-      toast.error("Failed to fetch sprints");
-    }
+  // =======================================
+  // Fetch a single story to get full body
+  // =======================================
+  const fetchStoryById = async (storyId) => {
+    const res = await axios.get(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+      { headers }
+    );
+    return res.data;
   };
 
-  useEffect(() => {
-    fetchStories();
-    fetchTasks();
-    fetchSprints();
-    fetchEpics();
-  }, [projectId]);
+  // =======================================
+  // Build required payload for PUT /stories/{id}
+  // =======================================
+  const buildUpdatedStoryBody = (story, sprintId) => ({
+    id: story.id,
+    title: story.title,
+    description: story.description,
+    acceptanceCriteria: story.acceptanceCriteria,
+    storyPoints: story.storyPoints,
+    assigneeId: story.assigneeId || story.assignee?.id || null,
+    reporterId: story.reporterId || story.reporter?.id || null,
+    projectId: projectId,
+    epicId: story.epicId || story.epic?.id || null,
+    sprintId: sprintId,
+    startDate: story.startDate,
+    statusId: story.statusId || story.status?.id,
+    priority: story.priority,
+    dueDate: story.dueDate,
+  });
 
-  const goToIssueTracker = () => {
-    navigate(`/projects/${projectId}/issuetracker`, {
-      state: { projectId },
-    });
-  };
-
-  /** ==============================
-   * Handlers
-   ============================== */
+  // =======================================
+  // Move Story (Sprint <-> Sprint OR Sprint -> Backlog)
+  // =======================================
   const handleDropStory = async (storyId, sprintId) => {
+    showStatusToast(
+      sprintId ? "Moving story to sprint..." : "Moving story to backlog...",
+      "loading",
+      2000
+    );
+
+    // Optimistic UI update
+    setStories((prev) =>
+      prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
+    );
+
     try {
+      const fullStory = await fetchStoryById(storyId);
+      const body = buildUpdatedStoryBody(fullStory, sprintId);
+
       await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-sprint`,
-        { sprintId },
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}`,
+        body,
         { headers }
       );
-      toast.success("Story moved successfully");
+
+      showStatusToast(
+        sprintId ? "Story moved successfully!" : "Moved to backlog",
+        "success",
+        3000
+      );
+
       fetchStories();
     } catch (err) {
-      console.error("Failed to assign story", err);
-      toast.error("Failed to assign story");
+      showStatusToast("Failed to move story", "error", 3000);
+      fetchStories(); // rollback to server truth
     }
   };
 
+  // =======================================
+  // Sprint start/complete
+  // =======================================
   const handleSprintStatus = async (sprintId, action) => {
     try {
-      const res = await axios.put(
+      await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
         {},
         { headers }
       );
-      toast.success(`Sprint ${action === "start" ? "started" : "completed"}!`);
-      setSprints((prev) =>
-        prev.map((s) => (s.id === sprintId ? res.data : s))
+      showStatusToast(
+        action === "start" ? "Sprint started" : "Sprint completed",
+        "success",
+        3000
       );
+      fetchSprints();
       fetchStories();
     } catch (err) {
-      console.error("Failed to update sprint", err);
-      toast.error("Failed to update sprint");
+      const errorData = err.response?.data || {};
+      
+      // Handle structured error response (validation error)
+      if (action === "complete" && errorData.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
+        const { pendingTasks = [], pendingStories = [] } = errorData.data || {};
+        
+        setPendingData({
+          sprintId,
+          tasks: Array.isArray(pendingTasks) ? pendingTasks : [],
+          stories: Array.isArray(pendingStories) ? pendingStories : []
+        });
+        setShowPendingModal(true);
+        return;
+      }
+      
+      showStatusToast(errorData.message || "Failed to update sprint status", "error", 3000);
     }
   };
 
+  // (Optional) attach task to story
   const handleAttachTaskToStory = async (taskId,storyId) =>{
     try{
       await axios.put(
@@ -170,6 +163,23 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
       toast.error("Failed to attach task to story");
     }
   }
+
+  const handleDropTask = async (taskId, sprintId) =>{
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
+        { sprintId },
+        { headers } 
+      );
+      toast.success("Task moved successfully");
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to assign task", err);
+      toast.error("Failed to assign task");
+    }
+  }
+
+  // (Optional) attach story to epic
   const handleSelectEpic = async (storyId, epicId) => {
     try {
       await axios.put(
@@ -186,42 +196,149 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
+  // (Optional) delete sprint (used by SprintColumn menu)
+  const handleDeleteSprint = async (sprintId) => {
+    const ok = window.confirm("Are you sure you want to delete this sprint?");
+    if (!ok) return;
 
-  /** ==============================
-   * UI Helpers
-   ============================== */
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
+        { headers }
+      );
+      showStatusToast("Sprint deleted", "success", 3000);
+      fetchSprints();
+      fetchStories();
+    } catch (err) {
+      showStatusToast("Failed to delete sprint", "error", 3000);
+    }
+  };
+
+  // =======================================
+  // Fetch Data
+  // =======================================
+  const fetchStories = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
+        { headers }
+      );
+
+      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
+      setStories(list);
+      setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
+    } catch (err) {
+      showStatusToast("Failed to fetch stories", "error", 3000);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
+        { headers }
+      );
+      const list = Array.isArray(res.data) ? res.data : res.data.content || [];
+      setTasks(list);
+      setBacklogTasks(list.filter((t) => !t.sprintId && !t.sprint));
+    } catch (err) {
+      showStatusToast("Failed to fetch tasks", "error", 3000);
+    }
+  };
+
+  const fetchEpics = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
+        { headers }
+      );
+      setEpics(
+        Array.isArray(res.data) ? res.data : res.data.content || []
+      );
+    } catch (err) {
+      showStatusToast("Failed to fetch epics", "error", 3000);
+    }
+  };
+
+  const fetchSprints = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
+        { headers }
+      );
+      setSprints(
+        Array.isArray(res.data) ? res.data : res.data.content || []
+      );
+    } catch (err) {
+      showStatusToast("Failed to fetch sprints", "error", 3000);
+    }
+  };
+
+  useEffect(() => {
+    fetchStories();
+    fetchTasks();
+    fetchSprints();
+    fetchEpics();
+  }, [projectId]);
+
+  // =======================================
+  // Backlog Drop Zone
+  // =======================================
+  const BacklogDropWrapper = ({ children }) => {
+    const [{ isOver }, dropRef] = useDrop(() => ({
+      accept: "STORY",
+      drop: (item) => handleDropStory(item.id, null),
+      collect: (monitor) => ({
+        isOver: monitor.isOver(),
+      }),
+    }));
+
+    return (
+      <div
+        ref={dropRef}
+        className={`transition border rounded p-4 shadow-sm ${
+          isOver ? "bg-green-100 border-green-500" : "bg-white"
+        }`}
+      >
+        {children}
+      </div>
+    );
+  };
+
   const activeAndPlanningSprints = sprints.filter(
     (s) => s.status === "ACTIVE" || s.status === "PLANNING"
   );
 
-  /** ==============================
-   * Render
-   ============================== */
   return (
     <DndProvider backend={HTML5Backend}>
-      <ToastContainer />
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* ===== Header ===== */}
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-indigo-900">
             Backlog & Sprint Planning – {projectName}
           </h1>
+
           <div className="flex gap-3">
             <Button
               size="medium"
               variant="outline"
               className="flex items-center gap-2"
-              onClick={goToIssueTracker}
+              onClick={() =>
+                navigate(`/projects/${projectId}/issuetracker`, {
+                  state: { projectId },
+                })
+              }
             >
               <List size={18} /> Issue Tracker
             </Button>
 
             <Button
-              onClick={() => setShowSprintModal(true)}
               className="flex items-center gap-2"
+              onClick={() => setShowSprintModal(true)}
             >
               <Plus size={18} /> Create Sprint
             </Button>
+
             <Button
               variant="outline"
               className="flex items-center gap-2"
@@ -232,117 +349,112 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           </div>
         </div>
 
-        {/* ===== Sprint List (Expandable Panels) ===== */}
-        {/* ===== Sprint List (Expandable Panels) ===== */}
-<div className="space-y-4">
-  {activeAndPlanningSprints.length === 0 ? (
-    <p className="text-gray-400 italic">No active or planning sprints.</p>
-  ) : (
-    activeAndPlanningSprints.map((sprint) => {
-      const sprintStories = stories.filter(
-        (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
-      );
-      const sprintTasks = tasks.filter(
-        (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
-      );
+        {/* Sprints */}
+        <div className="space-y-4">
+          {activeAndPlanningSprints.map((sprint) => {
+            const sprintStories = stories.filter(
+              (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
+            );
+            const sprintTasks = tasks.filter(
+              (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
+            );
 
-      return (
-        <SprintColumn
-          key={sprint.id}
-          sprint={sprint}
-          stories={sprintStories}
-          tasks={sprintTasks}
-          epics={epics}
-          allStories={stories}
-          onSelectEpic={handleSelectEpic}
-          onSelectParentStory={handleAttachTaskToStory}
-          onDropStory={handleDropStory}
-          onChangeStatus={handleSprintStatus}
-          onStoryClick={(id) => {
-            setPanelMode("story");
-            setSelectedStoryId(id);
-            setRightPanelOpen(true);
-          }}
-          onTaskClick={(id) => {
-            setPanelMode("task");
-            setSelectedTaskId(id);
-            setRightPanelOpen(true);
-          }}
-        />
-      );
-    })
-  )}
-</div>
+            return (
+              <SprintColumn
+                key={sprint.id}
+                sprint={sprint}
+                stories={sprintStories}
+                tasks={sprintTasks}
+                epics={epics}
+                allStories={stories}
+                sprints={activeAndPlanningSprints}
+                onDropStory={handleDropStory}
+                onChangeStatus={handleSprintStatus}
 
+                onEditSprint={(s) => {
+                  setSelectedSprintId(s.id);
+                  setPanelMode("sprint");
+                  setRightPanelOpen(true);
+                }}
+                onDeleteSprint={handleDeleteSprint}
+                onChangeStoryStatus={null}
+                onSelectEpic={handleSelectEpic}
+                onSelectParentStory={handleAttachTaskToStory}
+                onStoryClick={(id) => {
+                  setPanelMode("story");
+                  setSelectedStoryId(id);
+                  setRightPanelOpen(true);
+                }}
+                onTaskClick={(id) => {
+                  setPanelMode("task");
+                  setSelectedTaskId(id);
+                  setRightPanelOpen(true);
+                }}
+              />
+            );
+          })}
+        </div>
 
-        {/* ===== Backlog Section ===== */}
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-  <h2 className="text-lg font-semibold text-indigo-900 mb-3">
-    Product Backlog
-  </h2>
+        {/* Backlog */}
+        <BacklogDropWrapper>
+          <h2 className="text-lg font-semibold text-indigo-900 mb-3">
+            Product Backlog
+          </h2>
 
-  {/* ---- Stories Section ---- */}
-  <h3 className="text-md font-semibold text-blue-700 mb-1">Stories</h3>
+          <h3 className="text-md font-semibold text-blue-700 mb-1">
+            Stories
+          </h3>
 
-  {backlogStories.length === 0 ? (
-    <p className="text-gray-400 italic mb-3">No stories in backlog.</p>
-  ) : (
-    <div className="space-y-2 mb-4">
-      {backlogStories.map((story) => (
-        <StoryCard
-          key={story.id}
-          story={story}
-          sprints={activeAndPlanningSprints}
-          epics={epics}
-          onAddToSprint={handleDropStory}
-          onSelectEpic={handleSelectEpic}
-          onClick={() => {
-            setPanelMode("story");
-            setSelectedStoryId(story.id);
-            setRightPanelOpen(true);
-          }}
-        />
-      ))}
-    </div>
-  )}
+          {backlogStories.map((story) => (
+            <StoryCard
+              key={story.id}
+              story={story}
+              sprints={activeAndPlanningSprints}
+              epics={epics}
+              onAddToSprint={handleDropStory}
+              onSelectEpic={handleSelectEpic}
+              onClick={() => {
+                setPanelMode("story");
+                setSelectedStoryId(story.id);
+                setRightPanelOpen(true);
+              }}
+            />
+          ))}
 
-  {/* ---- Tasks Section ---- */}
-  <h3 className="text-md font-semibold text-green-700 mb-1">Tasks</h3>
+          <h3 className="text-md font-semibold text-green-700 mb-1">
+            Tasks
+          </h3>
 
-  {backlogTasks.length === 0 ? (
-    <p className="text-gray-400 italic">No tasks in backlog.</p>
-  ) : (
-    <div className="space-y-2">
-      {backlogTasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          sprints={activeAndPlanningSprints}
-          stories={stories}
-          onAddToSprint={handleDropStory}
-          onSelectParentStory={handleAttachTaskToStory}
-          onClick={() => {
-            setPanelMode("task");
-            setSelectedTaskId(task.id);
-            setRightPanelOpen(true);
-          }}
-        />
-      ))}
-    </div>
-  )}
-</div>
-
-
+          {backlogTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              stories={stories}
+              sprints={activeAndPlanningSprints}
+              onSelectParentStory={handleAttachTaskToStory}
+              onAddToSprint={handleDropTask}
+              onClick={() => {
+                setPanelMode("task");
+                setSelectedTaskId(task.id);
+                setRightPanelOpen(true);
+              }}
+            />
+          ))}
+        </BacklogDropWrapper>
       </div>
 
-      {/* ===== Modals ===== */}
+      {/* Modals */}
       {showIssueForm && (
-  <CreateIssueForm
-    onClose={() => setShowIssueForm(false)}
-    onCreated={() => fetchStories()}
-    projectId={projectId}
-  />
-)}
+        <CreateIssueForm
+          onClose={() => setShowIssueForm(false)}
+          onCreated={() => {
+            fetchStories();
+            fetchTasks();
+
+          }}
+          projectId={projectId}
+        />
+      )}
 
       <CreateSprintModal
         isOpen={showSprintModal}
@@ -380,10 +492,33 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
             }}
           />
         )}
+
+        {panelMode === "sprint" && selectedSprintId && (
+          <SprintDetailsPanel
+            sprintId={selectedSprintId}
+            projectId={projectId}
+            onClose={() => setRightPanelOpen(false)}
+            onUpdated={() => {
+              fetchSprints();
+              setRightPanelOpen(false);
+            }}
+          />
+        )}
       </RightSidePanel>
 
+      <SprintPendingModal
+        isOpen={showPendingModal}
+        pendingData={pendingData}
+        sprints={sprints}
+        onClose={() => setShowPendingModal(false)}
+        refresh={() => {
+          fetchSprints();
+          fetchStories();
+        }}
+      />
     </DndProvider>
   );
 };
 
 export default BacklogAndSprints;
+                                                                                                                    
