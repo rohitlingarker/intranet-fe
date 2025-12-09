@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { toast } from "react-toastify";
 import BugReportModal from "./BugReportModal";
+import { se } from "date-fns/locale";
 
 export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [testCase, setTestCase] = useState(null);
   const [steps, setSteps] = useState([]);
   const [stepResults, setStepResults] = useState({});
@@ -14,11 +16,15 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
   // Load steps
   const fetchTestCaseExecution = async () => {
     try {
+      setIsLoading(true);
       const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/run-cases/${testCaseId}/steps`
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/run-cases/${testCaseId}/steps`
       );
       setSteps(res.data);
       setTestCase({ title: `Executing Test Case ${testCaseId}` });
+      setIsLoading(false);
     } catch (err) {
       toast.error("Failed to load steps");
     }
@@ -39,7 +45,7 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
       const stepObj = steps.find((s) => s.id === stepId);
       setFailingStep(stepObj);
       setShowBugModal(true);
-      return;
+    //   return;
     }
 
     try {
@@ -54,9 +60,7 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
       );
 
       setSteps((prev) =>
-        prev.map((s) =>
-          s.id === stepId ? { ...s, status: apiStatus } : s
-        )
+        prev.map((s) => (s.id === stepId ? { ...s, status: apiStatus } : s))
       );
 
       setStepResults((prev) => ({ ...prev, [stepId]: apiStatus }));
@@ -77,10 +81,14 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
       let apiStatus = "";
 
       if (action === "PASS") {
-        endpoint = `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/${testCaseId}/bulk-pass`;
+        endpoint =`${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${testCaseId}/bulk-pass`;
         apiStatus = "PASSED";
       } else if (action === "SKIP") {
-        endpoint = `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-runs/${testCaseId}/bulk-skip`;
+        endpoint = `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/${testCaseId}/bulk-skip`;
         apiStatus = "SKIPPED";
       }
 
@@ -113,7 +121,6 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
-
       {/* BUG REPORT MODAL */}
       {showBugModal && failingStep && (
         <BugReportModal
@@ -122,12 +129,17 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
           onClose={() => {
             setShowBugModal(false);
             setFailingStep(null);
+            // updateStepResult(failingStep.id, "FAIL"); // instant UI update
+            // fetchTestCaseExecution(); // sync with backend
           }}
+
+          // onSuccess={() => {
+          //     updateStepResult(failingStep.id, "FAIL");
+          // }}
         />
       )}
 
       <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden">
-
         {/* HEADER */}
         <div className="bg-[#0f1b2d] text-white p-6 flex justify-between items-center">
           <div>
@@ -200,7 +212,6 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
               >
                 {/* STEP HEADER */}
                 <div className="flex justify-between mb-3">
-
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -233,7 +244,6 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
 
                 {/* BUTTONS */}
                 <div className="flex gap-3 mt-2">
-
                   <button
                     onClick={() => updateStepResult(step.id, "PASS")}
                     className={`px-4 py-2 rounded border ${
@@ -278,7 +288,6 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
             );
           })}
         </div>
-
       </div>
     </div>
   );

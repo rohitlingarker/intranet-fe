@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { toast } from "react-toastify";
+import Select from "react-select";
 
 export default function BugReportModal({ step, runCaseId, onClose }) {
   const [title, setTitle] = useState("");
@@ -20,10 +21,19 @@ export default function BugReportModal({ step, runCaseId, onClose }) {
     "COMPATIBILITY",
     "OTHER",
   ];
-
   const bugSeverities = ["MINOR", "MAJOR", "CRITICAL", "BLOCKER"];
-
   const bugPriorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+
+  // Convert to React-Select format
+  const bugTypesOptions = bugTypes.map((t) => ({ value: t, label: t }));
+  const bugSeveritiesOptions = bugSeverities.map((s) => ({
+    value: s,
+    label: s,
+  }));
+  const bugPrioritiesOptions = bugPriorities.map((p) => ({
+    value: p,
+    label: p,
+  }));
 
   const submitBug = async () => {
     try {
@@ -39,7 +49,7 @@ export default function BugReportModal({ step, runCaseId, onClose }) {
           actual,
           priority,
           severity,
-          type, // <-- REQUIRED (was missing)
+          type,
         }
       );
 
@@ -79,20 +89,15 @@ export default function BugReportModal({ step, runCaseId, onClose }) {
             />
           </div>
 
-          {/* Bug Type */}
+          {/* React Select — Bug Type */}
           <div>
             <label className="text-sm font-semibold">Bug Type</label>
-            <select
-              className="w-full mt-1 p-2 border rounded-lg text-sm bg-white"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              {bugTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            <Select
+              className="mt-1 text-sm"
+              value={bugTypesOptions.find((opt) => opt.value === type)}
+              onChange={(selected) => setType(selected.value)}
+              options={bugTypesOptions}
+            />
           </div>
 
           {/* Description */}
@@ -142,36 +147,30 @@ export default function BugReportModal({ step, runCaseId, onClose }) {
             </div>
           </div>
 
-          {/* Priority & Severity */}
+          {/* Priority & Severity using React Select */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-semibold">Priority</label>
-              <select
-                className="w-full mt-1 p-2 border rounded-lg text-sm bg-white"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                {bugPriorities.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <Select
+                className="mt-1 text-sm"
+                value={bugPrioritiesOptions.find(
+                  (opt) => opt.value === priority
+                )}
+                onChange={(selected) => setPriority(selected.value)}
+                options={bugPrioritiesOptions}
+              />
             </div>
 
             <div>
               <label className="text-sm font-semibold">Severity</label>
-              <select
-                className="w-full mt-1 p-2 border rounded-lg text-sm bg-white"
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value)}
-              >
-                {bugSeverities.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              <Select
+                className="mt-1 text-sm"
+                value={bugSeveritiesOptions.find(
+                  (opt) => opt.value === severity
+                )}
+                onChange={(selected) => setSeverity(selected.value)}
+                options={bugSeveritiesOptions}
+              />
             </div>
           </div>
         </div>
