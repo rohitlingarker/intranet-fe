@@ -12,6 +12,7 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
   const [selectedSteps, setSelectedSteps] = useState([]);
   const [showBugModal, setShowBugModal] = useState(false);
   const [failingStep, setFailingStep] = useState(null);
+  const [runCaseIds, setRunCaseIds] = useState([testCaseId]);
 
   // Load steps
   const fetchTestCaseExecution = async () => {
@@ -83,17 +84,18 @@ export default function RunTestCaseComponent({ runId, testCaseId, onClose }) {
       if (action === "PASS") {
         endpoint =`${
           import.meta.env.VITE_PMS_BASE_URL
-        }/api/test-execution/test-runs/${testCaseId}/bulk-pass`;
+        }/api/test-execution/test-runs/${runId}/bulk-pass`;
         apiStatus = "PASSED";
       } else if (action === "SKIP") {
         endpoint = `${
           import.meta.env.VITE_PMS_BASE_URL
-        }/api/test-execution/test-runs/${testCaseId}/bulk-skip`;
+        }/api/test-execution/test-runs/${runId}/bulk-skip`;
         apiStatus = "SKIPPED";
       }
 
       await axiosInstance.post(endpoint, {
-        stepIds: selectedSteps,
+        // stepIds: selectedSteps,
+        runCaseIds: runCaseIds,
       });
 
       toast.success(`${selectedSteps.length} steps updated`);
