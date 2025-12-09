@@ -270,11 +270,11 @@ useEffect(() => {
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
           <Route
-            path="/projects/manager"
+            path="/projects"
             element={
-              <ProtectedRoute allowedRoles={["Manager"]}>
+              // <ProtectedRoute allowedRoles={["Manager"]}>
                 <ProjectDashboard />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             }
           />
 
