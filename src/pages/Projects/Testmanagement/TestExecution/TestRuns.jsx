@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import axiosInstance from "../api/axiosInstance";
 import RunTestCaseComponent from "./RunTestCaseComponent";
 import TestCaseResultComponent from "./TestCaseResultComponent";
+import Select from "react-select";
 
 export default function TestRunAccordion({ run, projectId }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +14,7 @@ export default function TestRunAccordion({ run, projectId }) {
   const [runTestCaseId, setRunTestCaseId] = useState(null);
   const [viewResultCaseId, setViewResultCaseId] = useState(null);
 
+  const [employee, setEmployee] = useState([]);
   const navigate = useNavigate();
 
   const executed = run.executedCount || 0;
@@ -39,23 +41,81 @@ export default function TestRunAccordion({ run, projectId }) {
       console.error("Error loading test cases:", err);
     }
   };
+  console.log("Employees: ", employee);
+  const options = employee.map((option) => ({
+    value: option.user_id,
+    label: option.name,
+  }));
 
   const loadEmployees = async () => {
     try {
-      const res = await axiosInstance.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/employees`
+      const res = await axios.get(
+        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/id/roles`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
       );
+      setEmployee(res.data);
       console.log("Loaded employees:", res);
     } catch (err) {
       console.error("Error loading employees:", err);
     }
   };
 
+  const addAssignee = async ( testCaseId, userId) => {
+    try {
+      const res = await axios.post(
+        `${
+          import.meta.env.VITE_PMS_BASE_URL
+        }/api/test-execution/test-runs/assign/apply`,
+        {
+          runId: run.id,
+          objectType: "CASE",
+          objectId: testCaseId,
+          action: "REASSIGN_ALL",
+          assignTo: userId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      console.log("Added assignee:", res);
+      loadTestCases();
+    } catch (err) {
+      console.error("Error adding assignee:", err);
+    }
+  };
+
   React.useEffect(() => {
     loadTestCases();
   }, [run.id]);
+  React.useEffect(() => {
+    loadEmployees();
+  }, []);
 
-  console.log("Rendering TestRunAccordion for run:", run);
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      minHeight: "32px",
+      height: "32px",
+      fontSize: "14px",
+      width: "180px",
+    }),
+    menu: (base) => ({
+      ...base,
+      width: "180px",
+      zIndex: 9999,
+      position: "absolute",
+    }),
+    menuList: (base) => ({
+      ...base,
+      maxHeight: "160px", // controls dropdown height
+    }),
+  };
 
   return (
     <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
@@ -92,11 +152,12 @@ export default function TestRunAccordion({ run, projectId }) {
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b text-gray-500">
-                      <th className="py-2 px-3 text-left">ID</th>
-                      <th className="py-2 px-3 text-left">Test Case Title</th>
-                      <th className="py-2 px-3 text-left">Priority</th>
+                      <th className="py-2 px-3 text-center">ID</th>
+                      <th className="py-2 px-3 text-center">Test Case Title</th>
+                      <th className="py-2 px-3 text-center">Priority</th>
                       <th className="py-2 px-3 text-left">Status</th>
-                      <th className="py-2 px-3 text-left">Action</th>
+                      <th className="py-2 px-3 text-left">Assignee</th>
+                      <th className="py-2 px-3 text-center">Action</th>
                     </tr>
                   </thead>
 
@@ -107,26 +168,28 @@ export default function TestRunAccordion({ run, projectId }) {
                         className="border-b hover:bg-gray-50"
                       >
                         {/* ID */}
-                        <td className="py-3 px-3 font-medium text-gray-700">
+                        <td className="py-3 px-3 text-center  font-medium text-gray-700">
                           {tc.testCaseId}
                         </td>
 
                         {/* Title */}
-                        <td className="py-3 px-3 text-gray-800">{tc.title}</td>
+                        <td className="py-3 px-3 text-center text-gray-800">
+                          {tc.title}
+                        </td>
 
                         {/* Priority Badge */}
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 text-center">
                           <span
                             className={`
-                    px-2 py-1 rounded text-xs font-semibold
-                    ${
-                      tc.priority === "HIGH"
-                        ? "bg-red-100 text-red-600"
-                        : tc.priority === "MEDIUM"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-blue-100 text-blue-600"
-                    }
-                  `}
+                              px-2 py-1 rounded text-xs font-semibold
+                              ${
+                                tc.priority === "HIGH"
+                                  ? "bg-red-100 text-red-600"
+                                  : tc.priority === "MEDIUM"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-blue-100 text-blue-600"
+                              }
+                            `}
                           >
                             {tc.priority}
                           </span>
@@ -137,8 +200,23 @@ export default function TestRunAccordion({ run, projectId }) {
                           {tc.runStatus}
                         </td>
 
+                        <td className="py-3 px-3 text-center">
+                          <Select
+                            styles={customStyles}
+                            options={options}
+                            placeholder="Select Employee"
+                            isSearchable
+                            onChange={(selected) => {
+                              addAssignee(tc.testCaseId, selected.value)
+                            }}
+                            value={options.find(
+                              (option) => option.value === tc.assigneeId
+                            )}
+                          />
+                        </td>
+
                         {/* Action Button */}
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 text-center">
                           {tc.runStatus === "NOT_STARTED" ? (
                             <button
                               onClick={() => setRunTestCaseId(tc.testCaseId)}
