@@ -131,23 +131,24 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   };
 
   // (Optional) attach task to story
-  const handleAttachTaskToStory = async (taskId, storyId) => {
-    try {
+  const handleAttachTaskToStory = async (taskId,storyId) =>{
+    try{
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-story/${storyId}`,
-        {},
-        { headers }
+        {storyId},
+        {headers}
       );
-      showStatusToast("Task attached to story", "success", 3000);
+      toast.success("Task attached to story successfully");
       fetchTasks();
     } catch (err) {
-      showStatusToast("Failed to attach task to story", "error", 3000);
+      console.error("Failed to attach task to story", err);
+      toast.error("Failed to attach task to story");
     }
-  };
+  }
 
   const handleDropTask = async (taskId, sprintId) =>{
     try {
-      await axios.put(
+      await axios.patch(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
         { sprintId },
         { headers } 
@@ -168,10 +169,12 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         {},
         { headers }
       );
-      showStatusToast("Story attached to epic", "success", 3000);
-      fetchStories();
+
+      toast.success("Story attached to epic successfully");
+      fetchStories(); // refresh UI
     } catch (err) {
-      showStatusToast("Failed to attach story to epic", "error", 3000);
+      console.error("Failed to assign epic", err);
+      toast.error("Failed to attach story to epic");
     }
   };
 
@@ -346,8 +349,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                 tasks={sprintTasks}
                 epics={epics}
                 allStories={stories}
+                sprints={activeAndPlanningSprints}
                 onDropStory={handleDropStory}
                 onChangeStatus={handleSprintStatus}
+
                 onEditSprint={(s) => {
                   setSelectedSprintId(s.id);
                   setPanelMode("sprint");
