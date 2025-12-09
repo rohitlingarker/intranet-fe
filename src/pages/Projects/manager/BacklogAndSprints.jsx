@@ -18,6 +18,7 @@ import EditTaskForm from "./Backlog/EditTaskForm";
 import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
+import SprintPendingModal from "./Sprint/SprintPendingModal";
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [selectedSprintId, setSelectedSprintId] = useState(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState("story");
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -126,28 +129,44 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
       fetchSprints();
       fetchStories();
     } catch (err) {
-      showStatusToast("Failed to update sprint status", "error", 3000);
+      const errorData = err.response?.data || {};
+      
+      // Handle structured error response (validation error)
+      if (action === "complete" && errorData.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
+        const { pendingTasks = [], pendingStories = [] } = errorData.data || {};
+        
+        setPendingData({
+          sprintId,
+          tasks: Array.isArray(pendingTasks) ? pendingTasks : [],
+          stories: Array.isArray(pendingStories) ? pendingStories : []
+        });
+        setShowPendingModal(true);
+        return;
+      }
+      
+      showStatusToast(errorData.message || "Failed to update sprint status", "error", 3000);
     }
   };
 
   // (Optional) attach task to story
-  const handleAttachTaskToStory = async (taskId, storyId) => {
-    try {
+  const handleAttachTaskToStory = async (taskId,storyId) =>{
+    try{
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-story/${storyId}`,
-        {},
-        { headers }
+        {storyId},
+        {headers}
       );
-      showStatusToast("Task attached to story", "success", 3000);
+      toast.success("Task attached to story successfully");
       fetchTasks();
     } catch (err) {
-      showStatusToast("Failed to attach task to story", "error", 3000);
+      console.error("Failed to attach task to story", err);
+      toast.error("Failed to attach task to story");
     }
-  };
+  }
 
   const handleDropTask = async (taskId, sprintId) =>{
     try {
-      await axios.put(
+      await axios.patch(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
         { sprintId },
         { headers } 
@@ -168,10 +187,12 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         {},
         { headers }
       );
-      showStatusToast("Story attached to epic", "success", 3000);
-      fetchStories();
+
+      toast.success("Story attached to epic successfully");
+      fetchStories(); // refresh UI
     } catch (err) {
-      showStatusToast("Failed to attach story to epic", "error", 3000);
+      console.error("Failed to assign epic", err);
+      toast.error("Failed to attach story to epic");
     }
   };
 
@@ -346,8 +367,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                 tasks={sprintTasks}
                 epics={epics}
                 allStories={stories}
+                sprints={activeAndPlanningSprints}
                 onDropStory={handleDropStory}
                 onChangeStatus={handleSprintStatus}
+
                 onEditSprint={(s) => {
                   setSelectedSprintId(s.id);
                   setPanelMode("sprint");
@@ -482,6 +505,17 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           />
         )}
       </RightSidePanel>
+
+      <SprintPendingModal
+        isOpen={showPendingModal}
+        pendingData={pendingData}
+        sprints={sprints}
+        onClose={() => setShowPendingModal(false)}
+        refresh={() => {
+          fetchSprints();
+          fetchStories();
+        }}
+      />
     </DndProvider>
   );
 };
