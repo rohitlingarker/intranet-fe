@@ -440,16 +440,18 @@ const ProjectDashboard = () => {
                 className="relative bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-5 border border-gray-100 flex flex-col justify-between"
               >
                 {/* 3 Dots Menu */}
-                {project.status !== "COMPLETED" && (
-                  <ProjectMenu
-                    project={project}
-                    onEdit={(p) => {
-                      startEdit(p);        // set the editing project
-                      setIsCreateModalOpen(true); // open the modal
-                    }}
-                    onDelete={handleDelete}
-                  />
-                )}
+               {project.status !== "COMPLETED" && (
+  <ProjectMenu
+    project={project}
+    loggedInUserId={user?.user_id}
+    onEdit={(p) => {
+      startEdit(p);
+      setIsCreateModalOpen(true);
+    }}
+    onDelete={handleDelete}
+  />
+)}
+
 
 
 
