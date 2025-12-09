@@ -10,10 +10,13 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
+  Handshake,
+  
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { hr } from "date-fns/locale/hr";
+import { handler } from "@tailwindcss/line-clamp";
  
 const Dashboard = () => {
   const { user } = useAuth();
@@ -267,6 +270,14 @@ const Dashboard = () => {
       description: "View events, meetings, and deadlines",
       icon: Calendar,
       href: "/calendar",
+      color: "bg-[#d23369]",
+      stats: "5 events today",
+    },
+    {
+      title: "Employee Onbording",
+      description: "Create offers and onboard new employees",
+      icon: Handshake,
+      href: "/employee_onboarding",
       color: "bg-[#d23369]",
       stats: "5 events today",
     },

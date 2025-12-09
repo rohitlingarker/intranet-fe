@@ -14,7 +14,7 @@ const COVERAGE_DATA = [
 const EXECUTION_DATA = [
   { name: 'Pass', value: 45, color: '#10b981' },
   { name: 'Fail', value: 12, color: '#ef4444' },
-  { name: 'Block', value: 5, color: '#f59e0b' },
+  { name: 'Blockkk', value: 5, color: '#f59e0b' },
   { name: 'Pending', value: 38, color: '#94a3b8' },
 ];
 
