@@ -146,20 +146,30 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   }
 
-  const handleDropTask = async (taskId, sprintId) =>{
+  const handleDropTask = async (taskId, sprintId) => {
     try {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, sprintId } : t))
+      );
+
       await axios.patch(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
-        { sprintId },
-        { headers } 
+        null,
+        {
+          params: { sprintId },
+          headers
+        }
       );
+
       toast.success("Task moved successfully");
-      fetchTasks();
+      await fetchTasks();
     } catch (err) {
       console.error("Failed to assign task", err);
       toast.error("Failed to assign task");
+      await fetchTasks();
     }
-  }
+  };
+
 
   // (Optional) attach story to epic
   const handleSelectEpic = async (storyId, epicId) => {
