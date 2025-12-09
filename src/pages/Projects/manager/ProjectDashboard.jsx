@@ -69,10 +69,12 @@ const ProjectDashboard = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [projectsPerPage] = useState(6);
+  const [roleFilter, setRoleFilter] = useState("ALL");
 
   const { user } = useAuth();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const userIsManagerAnywhere = projects.some((item) => item.canEdit && item.canDelete);
 
   // ------------------- FETCH PROJECTS -------------------
   const fetchProjects = async (status) => {
@@ -175,7 +177,14 @@ const ProjectDashboard = () => {
 
     const matchesStatus = filterStatus === "All" ? true : p.status === filterStatus;
 
-    return matchesSearch && matchesStatus;
+    let matchesRole = true;
+    if(roleFilter === "OWNER"){
+      matchesRole = item.canEdit && item.canDelete;
+    }else if(roleFilter === "MEMBER"){
+      matchesRole = item.canView && !item.canEdit
+    }
+
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   const indexOfLast = currentPage * projectsPerPage;
@@ -191,25 +200,31 @@ const ProjectDashboard = () => {
         <h1 className="text-3xl font-bold">Dashboard</h1>
 
         <div className="flex gap-3">
-          <Button
-            onClick={() => navigate(`/block-leave-dates/${user?.user_id}`)}
-            variant="secondary"
-            size="medium"
-          >
-            Manage Leave Blocks
-          </Button>
+          {userIsManagerAnywhere && (
+            <>
+              <Button
+                onClick={() => navigate(`/block-leave-dates/${user?.user_id}`)}
+                variant="secondary"
+                size="medium"
+              >
+                Manage Leave Blocks
+              </Button>
 
-          <Button
-            variant="primary"
-            size="medium"
-            onClick={() => {
-              setEditingProjectId(null);
-              setFormData({});
-              setIsCreateModalOpen(true);
-            }}
-          >
-            + Create Project
-          </Button>
+              <Button
+                variant="primary"
+                size="medium"
+                onClick={() => {
+                  setEditingProjectId(null);
+                  setFormData({});
+                  setIsCreateModalOpen(true);
+                }}
+              >
+                + Create Project
+              </Button>
+            </>
+
+          )}
+          
         </div>
       </div>
 
@@ -218,27 +233,44 @@ const ProjectDashboard = () => {
         <h2 className="text-2xl font-semibold mb-4">All Projects</h2>
 
         {/* SEARCH + FILTER */}
-        <div className="flex justify-between items-center mb-6 gap-4">
+        <div className="flex justify-between items-center mb-6">
+          
+          {/* LEFT SIDE → SEARCH */}
           <input
             type="text"
             placeholder="Search by name or key"
-            className="border px-3 py-2 rounded-xl"
+            className="border px-3 py-2 rounded-xl w-64"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border w-40 h-10 px-3 py-2 rounded-xl"
-          >
-            <option value="All">All</option>
-            <option value="ACTIVE">Active</option>
-            <option value="PLANNING">Planning</option>
-            <option value="ARCHIVED">Archived</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
+          {/* RIGHT SIDE → BOTH FILTERS */}
+          <div className="flex items-center gap-3">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border w-40 h-10 px-3 py-2 rounded-xl"
+            >
+              <option value="All">All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="PLANNING">Planning</option>
+              <option value="ARCHIVED">Archived</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="border w-40 h-10 px-3 py-2 rounded-xl"
+            >
+              <option value="ALL">All</option>
+              <option value="OWNER">Managed by me</option>
+              <option value="MEMBER">I am a member</option>
+            </select>
+          </div>
+
         </div>
+
 
         {/* PROJECT LIST */}
         {loading ? (
