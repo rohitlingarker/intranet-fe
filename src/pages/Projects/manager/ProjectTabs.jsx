@@ -84,9 +84,9 @@ const ProjectTabs = () => {
     if (selectedTab === "board") {
       return <Board projectId={pid} projectName={projectName} />;
     }
-    if (selectedTab === "status-report") {
-      return <ProjectStatusReportWrapper projectId={pid} />;
-    }
+    // if (selectedTab === "status-report") {
+    //   return <ProjectStatusReportWrapper projectId={pid} />;
+    // }
     if (selectedTab === "timelines") {
       return <Timeline projectId={pid} />;
     }
@@ -115,7 +115,7 @@ const ProjectTabs = () => {
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
-    { name: "Status Report", tab: "status-report" },
+    // { name: "Status Report", tab: "status-report" },
     { name: "Timelines", tab:"timelines" },
     { name: "Test Management", tab: "test-management" },
     { name: "Calendar", tab: "calendar" },

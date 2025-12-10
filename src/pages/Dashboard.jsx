@@ -174,9 +174,9 @@ const Dashboard = () => {
 
   // ✅ Determine project route
   let projectHref = "/projects";
-  if (isDeveloper) projectHref = "/projects/developer";
-  else if (isManager) projectHref = "/projects/manager";
-  else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
+  // if (isDeveloper) projectHref = "/projects/developer";
+  // else if (isManager) projectHref = "/projects/manager";
+  // else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
  
   // ✅ Quick Stats — conditionally show based on role
   const quickStats = isAdminOrSuperAdmin
