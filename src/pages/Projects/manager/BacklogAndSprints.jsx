@@ -157,6 +157,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     console.log("handleDropTask called with:", sprintId);
     toast.info("Moving task...", { autoClose: 2000 });
     try {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, sprintId } : t))
+      );
+
       await axios.patch(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint/${sprintId}`,
         {},

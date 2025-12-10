@@ -551,6 +551,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
 
   const [sprintPopup, setSprintPopup] = useState(null);
   const [isFinishingSprint, setIsFinishingSprint] = useState(false);
+  const [highlightPulse, setHighlightPulse] = useState(false);
 
   // load data
   const loadBoard = useCallback(async () => {
@@ -673,6 +674,25 @@ const Board = ({ projectId, sprintId, projectName }) => {
   useEffect(() => {
     loadBoard();
   }, [loadBoard]);
+
+  // Periodically highlight/pulse the sprint reminder pill every 30 minutes
+  useEffect(() => {
+    if (!activeSprintId) return;
+
+    const pulse = () => {
+      setHighlightPulse(true);
+      // stop the highlight after a short visible period
+      setTimeout(() => setHighlightPulse(false), 3500);
+    };
+
+    // trigger an immediate pulse when active
+    pulse();
+
+    // 30 minutes interval (30 * 60 * 1000)
+    const intervalId = setInterval(pulse, 1 * 30 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [activeSprintId]);
 
   // safe arrays & grouping (original grouping)
   const safeTasks = Array.isArray(tasks) ? tasks : [];
@@ -907,7 +927,15 @@ const Board = ({ projectId, sprintId, projectName }) => {
         `${BASE}/api/sprints/${sprintId}/popup-status`,
         { headers: headersWithToken() }
       );
-      setSprintPopup(res.data);
+      console.log("Sprint popup data:", res.data);
+      if (res.data?.endingSoon === true) {
+      setSprintPopup(res.data);        // store popup info
+      setShowSprintWarning(true);      // show warning banner
+      setActiveSprintId(sprintId);     // keep sprint context
+    } else {
+      setShowSprintWarning(false);     // hide warning banner
+    }
+      // setSprintPopup(res.data);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch sprint info");
@@ -1198,17 +1226,65 @@ const Board = ({ projectId, sprintId, projectName }) => {
         <h2 className="text-xl font-semibold">
           {projectName ?? "Project Board"}
         </h2>
-
+        {/*  */}
+          <div className="flex items-center gap-3">
         {activeSprintId && (
-          <button
-            onClick={() => fetchSprintPopup(activeSprintId)}
-            className="px-3 py-2 rounded border bg-green-100 text-green-700 hover:bg-green-200"
-          >
-            Complete Sprint
-          </button>
+          <div className="relative">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => fetchSprintPopup(activeSprintId)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") fetchSprintPopup(activeSprintId);
+              }}
+              className={`cursor-pointer px-3 py-2 rounded border bg-yellow-50 text-yellow-800 hover:bg-yellow-100 flex items-center gap-2 transform transition-all duration-300 ${
+                highlightPulse
+                  ? "scale-105 shadow-2xl ring-4 ring-yellow-300 z-50"
+                  : ""
+              }`}
+            >
+              <span className="font-medium">Sprint ending — move stories?</span>
+              {sprintPopup && sprintPopup.unfinishedCount != null && (
+                <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">
+                  {sprintPopup.unfinishedCount}
+                </span>
+              )}
+            </div>
+
+            {/* Temporary popup panel shown during pulse to draw attention */}
+            {highlightPulse && (
+              <div className="absolute right-0 mt-3 w-[300px] z-50">
+                <div className="bg-white border rounded-lg shadow-2xl p-3 animate-fade-in">
+                  <div className="flex items-start gap-3">
+                    <div className="text-yellow-600 text-2xl">⚠️</div>
+                    <div className="flex-1">
+                      <div className="font-semibold">Sprint ending soon</div>
+                      <div className="text-sm text-gray-600">
+                        There are unfinished stories — review or move them now.
+                      </div>
+                      <div className="mt-3 flex gap-2 justify-end">
+                        <button
+                          onClick={() => fetchSprintPopup(activeSprintId)}
+                          className="px-3 py-1 rounded bg-yellow-500 text-white text-sm"
+                        >
+                          Review
+                        </button>
+                        <button
+                          onClick={() => setHighlightPulse(false)}
+                          className="px-3 py-1 rounded border text-sm"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3"> */}
           {/* Filter button (Jira-style) */}
           <div className="relative" ref={filterRef}>
             <button
@@ -1458,11 +1534,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
           type="STATUS"
         >
           {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="flex gap-4 overflow-x-auto pb-4"
-            >
+            <div className="overflow-x-auto pb-4 w-full">
+                <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="flex gap-4 items-start min-w-max"
+              >
               {statuses.map((status, idx) => {
                 const storyItems =
                   filteredStoriesByStatusId[String(status.id)] || [];
@@ -1734,7 +1811,8 @@ const Board = ({ projectId, sprintId, projectName }) => {
                   </Draggable>
                 );
               })}
-              {provided.placeholder}
+                {provided.placeholder}
+              </div>
             </div>
           )}
         </Droppable>

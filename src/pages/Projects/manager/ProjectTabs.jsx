@@ -15,6 +15,10 @@ import { Calendar } from "antd";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
+  console.log(projectId);
+  console.log("URL", window.location.href);
+  
+  
   const location = useLocation();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
