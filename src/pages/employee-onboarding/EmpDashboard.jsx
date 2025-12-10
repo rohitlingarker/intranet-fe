@@ -37,8 +37,9 @@ export default function EmployeeOnboardingDashboard() {
     fetchOffers();
   }, []);
 
-  const AcceptCount = offers.filter(o => o.status === "Accepted").length;
+  const acceptCount = offers.filter(o => o.status === "Accepted").length;
   const sentCount = offers.filter(o => o.status === "Offered").length;
+  const draftCount = offers.filter(o => o.status === "Created").length;
 
   
   // ✅ Filter offers based on search term (case-insensitive)
@@ -93,7 +94,7 @@ export default function EmployeeOnboardingDashboard() {
         <StatCard title="Total Offers" value={offers.length} icon={Users} />
         <StatCard
           title=" Accepted Offers"
-          value={AcceptCount}
+          value={acceptCount}
           icon={Clock}
           color="text-orange-600"
         />
@@ -105,7 +106,7 @@ export default function EmployeeOnboardingDashboard() {
         />
          <StatCard
           title="Drafts"
-          value={offers.filter(o => o.status === "DRAFT").length}
+          value={draftCount}
           icon={FileText}
           color="text-blue-600"
         />

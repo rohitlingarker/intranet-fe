@@ -6,6 +6,7 @@ import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
 import axios from "axios";
+import { showStatusToast } from "../../../components/toastfy/toast";
 
 const PAGE_SIZE = 5;
 
@@ -54,14 +55,14 @@ export default function OffersTable({ offers = [], loading = false }) {
         }
       );
 
-      alert(
+      showStatusToast(
         `✅ Bulk Send Complete\n\nSuccessful: ${res.data.successful}\nFailed: ${res.data.failed}`
       );
 
       cancelBulk();
     } catch (error) {
       console.error("Bulk send failed", error);
-      alert("❌ Bulk send failed");
+      showStatusToast("❌ Bulk send failed");
     } finally {
       setSending(false);
     }
