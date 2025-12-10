@@ -76,11 +76,13 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   // Move Story (Sprint <-> Backlog)
   // =======================================
   const handleDropStory = async (storyId, sprintId) => {
-    toast.info(
-  sprintId ? "Moving story to sprint..." : "Moving story to backlog...",
-         { autoClose: 1000 }
-        );
+    showStatusToast(
+      sprintId ? "Moving story to sprint..." : "Moving story to backlog...",
+      "loading",
+      2000
+    );
 
+    // Optimistic UI update
     setStories((prev) =>
       prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
     );
@@ -95,17 +97,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         { headers }
       );
 
-      toast.success(
-  sprintId ? "Story moved successfully!" : "Moved to backlog!",
-  { autoClose: 2000 }
-);
-
+      showStatusToast(
+        sprintId ? "Story moved successfully!" : "Moved to backlog",
+        "success",
+        3000
+      );
 
       fetchStories();
     } catch (err) {
-     toast.error("Failed to move story", { autoClose: 2000 });
-
-      fetchStories();
+      showStatusToast("Failed to move story", "error", 3000);
+      fetchStories(); // rollback to server truth
     }
   };
 
