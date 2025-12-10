@@ -14,7 +14,7 @@ const StoryCard = ({
 }) => {
   const [, dragRef] = useDrag({
     type: "STORY",
-    item: { id: story.id },
+    item: { id: story.id, type: "STORY" },
   });
 
   const [showMenu, setShowMenu] = useState(false);
