@@ -19,7 +19,7 @@ const navigation = [
   { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Employee Onboarding", href: "/employee_onboarding", icon: Handshake },
+  { name: "Employee Onboarding", href: "/employee-onboarding", icon: Handshake },
 ];
 
 const userManagementSubmenu = [
