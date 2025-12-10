@@ -94,13 +94,11 @@ const ProjectTabs = () => {
     if (selectedTab === "timelines") {
       return <Timeline projectId={pid} />;
     }
-    if (selectedTab === "calendar") {
-      return <Calendar projectId={pid} />;
-    }
-
-    // ⭐ Test Management (handles ALL inner tabs)
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
+    }
+    if (selectedTab === "calendar") {
+      return <Calendar projectId={pid} />;
     }
 
     return null;

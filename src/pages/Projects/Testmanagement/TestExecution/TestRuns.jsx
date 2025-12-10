@@ -226,7 +226,7 @@ export default function TestRunAccordion({ run, projectId }) {
                             </button>
                           ) : (
                             <button
-                              onClick={() => setViewResultCaseId(tc.testCaseId)}
+                              onClick={() => setRunTestCaseId(tc.testCaseId)}
                               className="text-blue-600 hover:underline"
                             >
                               View Result
