@@ -74,7 +74,7 @@ export default function CreateOffer() {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_ONBOARDING_BASE_URL}/offerletters/create`,
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/create`,
         formData,
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );

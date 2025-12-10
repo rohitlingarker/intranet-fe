@@ -48,7 +48,7 @@ export default function BulkUpload() {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_ONBOARDING_BASE_URL}/offerletters/bulk_create`,
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/bulk_create`,
         formData,
         {
           headers: {
