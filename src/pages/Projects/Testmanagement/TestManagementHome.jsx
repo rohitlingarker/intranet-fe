@@ -65,4 +65,4 @@ export default function TestManagement() {
       <div>{renderTabContent()}</div>
     </div>
   );
-}
+}};
