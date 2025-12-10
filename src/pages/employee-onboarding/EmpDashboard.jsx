@@ -132,7 +132,7 @@ export default function EmployeeOnboardingDashboard() {
           <option value="ALL">All Status</option>
           <option value="Accepted">Accept</option>
           <option value="Offered">Offer</option>
-          <option value="DRAFT">Draft</option>
+          <option value="Created">Create</option>
         </select>
       </div>
       
