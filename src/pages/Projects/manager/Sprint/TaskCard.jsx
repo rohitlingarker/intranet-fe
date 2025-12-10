@@ -10,10 +10,11 @@ const TaskCard = ({
   onSelectParentStory,
   onClick,
 }) => {
-  const [, dragRef] = useDrag({
-    type: "TASK",
-    item: { id: task.id },
-  });
+ const [, dragRef] = useDrag({
+  type: "TASK",
+  item: { id: task.id, type: "TASK" },   // ⭐ IMPORTANT
+});
+
 
   const [showMenu, setShowMenu] = useState(false);
   const [showStoryList, setShowStoryList] = useState(false);

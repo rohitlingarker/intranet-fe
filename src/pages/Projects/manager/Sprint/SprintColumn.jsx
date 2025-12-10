@@ -15,7 +15,10 @@ const SprintColumn = ({
   statuses = [],
   sprints = [],
 
+  // ⭐ ADD THIS
   onDropStory,
+  onDropTask,          // ⭐ REQUIRED FOR TASK DND
+
   onChangeStatus,
   onEditSprint,
   onDeleteSprint,
@@ -26,12 +29,12 @@ const SprintColumn = ({
   onStoryClick,
   onTaskClick,
 }) => {
-  const [expanded, setExpanded] = useState(false); // collapsed by default
+
+  const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isCompleted = sprint.status === "COMPLETED";
 
-  // Format as "2 Jan 2026"
   const formatPrettyDate = (dateStr) => {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
@@ -47,14 +50,25 @@ const SprintColumn = ({
 
   const totalItems = stories.length + tasks.length;
 
-  /** DRAG & DROP TARGET */
+  /** -----------------------------------------
+   *  ⭐ FIX DND TO SUPPORT BOTH STORY + TASK
+   * -----------------------------------------
+   */
   const [{ isOver }, dropRef] = useDrop(
     () => ({
-      accept: "STORY",
+      accept: ["STORY", "TASK"],   // ⭐ WAS "STORY" ONLY
       canDrop: () => !isCompleted,
+
       drop: (item) => {
-        if (!isCompleted) onDropStory(item.id, sprint.id);
+        if (isCompleted) return;
+
+        if (item.type === "TASK") {
+          onDropTask?.(item.id, sprint.id);   // ⭐ ADD THIS
+        } else {
+          onDropStory?.(item.id, sprint.id);  // ⭐ KEEP EXISTING
+        }
       },
+
       collect: (monitor) => ({
         isOver: monitor.isOver() && !isCompleted,
       }),
@@ -77,7 +91,7 @@ const SprintColumn = ({
       }`}
     >
       {/* ===========================
-          HEADER (Azure DevOps Style)
+          HEADER
       ============================ */}
       <div
         onClick={() => setExpanded(!expanded)}
@@ -87,17 +101,14 @@ const SprintColumn = ({
         <div className="flex items-center gap-3">
           {expanded ? <ChevronDown /> : <ChevronRight />}
 
-          {/* Sprint Name */}
           <h3 className="font-semibold text-gray-900 text-[16px]">
             {sprint.name || "Unnamed Sprint"}
           </h3>
 
-          {/* Large inline date range */}
           <span className="text-sm text-gray-600">
             {start} – {end}
           </span>
 
-          {/* Work items count */}
           <span className="text-sm text-gray-500">
             ({totalItems} work items)
           </span>
@@ -159,7 +170,7 @@ const SprintColumn = ({
       </div>
 
       {/* ===========================
-           BODY CONTENT
+          BODY CONTENT
       ============================ */}
       {expanded && (
         <div className="p-4 space-y-3 min-h-[80px]">
@@ -167,6 +178,7 @@ const SprintColumn = ({
             <p className="text-gray-400 italic">No work items</p>
           )}
 
+          {/* ---- STORIES ---- */}
           {sortedStories.map((story) => (
             <StoryCard
               key={`story-${story.id}`}
@@ -174,21 +186,19 @@ const SprintColumn = ({
               epics={epics}
               statuses={statuses}
               sprints={sprints}
-              onSelectEpic={onSelectEpic}
-              onChangeStatus={onChangeStoryStatus}
               onAddToSprint={onDropStory}
               onClick={() => onStoryClick(story.id)}
             />
           ))}
 
+          {/* ---- TASKS ---- */}
           {sortedTasks.map((task) => (
             <TaskCard
               key={`task-${task.id}`}
               task={task}
               stories={allStories}
               sprints={sprints}
-              onSelectParentStory={onSelectParentStory}
-              onAddToSprint={onDropStory}
+              onAddToSprint={onDropTask}   // ⭐ REQUIRED
               onClick={() => onTaskClick(task.id)}
             />
           ))}

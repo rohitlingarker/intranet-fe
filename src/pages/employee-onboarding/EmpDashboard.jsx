@@ -74,7 +74,7 @@ export default function EmployeeOnboardingDashboard() {
           <Button
             varient="primary"
             size="medium"
-            onClick={() => navigate("/employee-onboarding")}
+            onClick={() => navigate("/employee-onboarding/create")}
           >
             + Create Offer
           </Button>

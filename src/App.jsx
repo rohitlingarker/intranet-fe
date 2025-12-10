@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -23,10 +22,10 @@ import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 // Timesheets
 
-import InitialPasswordSetup  from "./pages/UserManagement/auth/InitialPasswordSetup";
+import InitialPasswordSetup from "./pages/UserManagement/auth/InitialPasswordSetup";
 import TimesheetHistoryPage from "./pages/Timesheet/TimesheetHistoryPage";
 import ManagerApprovalPage from "./pages/Timesheet/ManagerApproval/ManagerApprovalPage";
-import DashboardPage from "./pages/Timesheet/DashboardPage";  
+import DashboardPage from "./pages/Timesheet/DashboardPage";
 import ManagerDashboard from "./pages/Timesheet/ManagerDashboard";
 import IntranetForm from "./components/forms/IntranetForm";
 import ReportDashboard from "./pages/Timesheet/ReportDashboard";
@@ -44,7 +43,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-import AdminDashboard from './pages/Projects/Admin/AdminDashboard';
+import AdminDashboard from "./pages/Projects/Admin/AdminDashboard";
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -55,9 +54,13 @@ import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusReportWrapper";
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
+import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
+import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
 
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
+import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
+import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
 import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
 // import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
 // import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
@@ -103,18 +106,14 @@ import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage
 
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
-
 import { showStatusToast } from "./components/toastfy/toast";
 
-
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user,logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
   const isfirsttlogin = localStorage.getItem("isfirsttlogin");
 
   // console.log("isfirsttlogin:", isfirsttlogin);
-
- 
 
   // ✅ Redirect if first login
   if (isfirsttlogin === "true") {
@@ -122,7 +121,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     localStorage.setItem("isfirsttlogin", true);
     showStatusToast("Please change your password first.");
     return <Navigate to="/" replace />;
-
   }
 
   // ✅ If not authenticated, go to login
@@ -149,9 +147,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return <>{children}</>;
 };
 
-
-
-
 // ✅ Save last path including query params (?tab=)
 const SaveLastPath = () => {
   const location = useLocation();
@@ -160,8 +155,6 @@ const SaveLastPath = () => {
   }, [location]);
   return null;
 };
-
-
 
 // ✅ Project Manager Demo Layout
 const ProjectManager = () => {
@@ -188,44 +181,30 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated,logout} = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  
-  
-useEffect(() => {
 
-  if (isAuthenticated) {
+  useEffect(() => {
+    if (isAuthenticated) {
+      const lastPath = localStorage.getItem("lastPath");
 
-    const lastPath = localStorage.getItem("lastPath");
- 
-    // Special case first
+      // Special case first
 
-    if (lastPath === "/change-password") {
+      if (lastPath === "/change-password") {
+        navigate("/change-password", { replace: true });
+      }
 
-      navigate("/change-password", { replace: true });
-    } 
+      // Other valid last paths
+      else if (lastPath && lastPath !== "/" && lastPath !== "/login") {
+        navigate(lastPath, { replace: true });
+      }
 
-    // Other valid last paths
-
-    else if (lastPath && lastPath !== "/" && lastPath !== "/login") {
-
-      navigate(lastPath, { replace: true });
-
-    } 
-
-    // Default fallback
-
-    else {
-
-      navigate("/", { replace: true });
-
+      // Default fallback
+      else {
+        navigate("/", { replace: true });
+      }
     }
-
-  }
-
-}, [isAuthenticated, navigate]);
-
- 
+  }, [isAuthenticated, navigate]);
 
   return (
     <>
@@ -236,7 +215,7 @@ useEffect(() => {
         <Route path="/reset-password" element={<ForgotPassword />} />
         {/* Unauthorized should be here */}
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/change-password" element={<InitialPasswordSetup />}/>
+        <Route path="/change-password" element={<InitialPasswordSetup />} />
         {/* Protected Routes */}
         <Route
           element={
@@ -251,16 +230,30 @@ useEffect(() => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
-          <Route path="/managerapproval" element={<TSAdminPanel/>} />
+          <Route path="/managerapproval" element={<TSAdminPanel />} />
           <Route path="/timesheet/dashboard" element={<DashboardPage />} />
-          <Route path="/timesheets/managerdashboard" element={<ManagerDashboard />} />
-          <Route path="/timesheets/managerreport" element={<ManagerReportSection />} />
-          <Route path="/timesheets/reportdashboard" element={<ReportDashboard />} />
-          <Route path="/timesheets/managermonthlyreport" element={<ManagerMonthlyReport />} />
-          <Route path="/timesheets/monthlytsreport" element={<MonthlyTSReport />} />
+          <Route
+            path="/timesheets/managerdashboard"
+            element={<ManagerDashboard />}
+          />
+          <Route
+            path="/timesheets/managerreport"
+            element={<ManagerReportSection />}
+          />
+          <Route
+            path="/timesheets/reportdashboard"
+            element={<ReportDashboard />}
+          />
+          <Route
+            path="/timesheets/managermonthlyreport"
+            element={<ManagerMonthlyReport />}
+          />
+          <Route
+            path="/timesheets/monthlytsreport"
+            element={<MonthlyTSReport />}
+          />
           <Route path="/timesheets/history" element={<TimesheetHistory />} />
 
-          
           <Route path="/intranet-form" element={<IntranetForm />} />
 
           <Route path="/profile" element={<Profile />} />
@@ -271,22 +264,37 @@ useEffect(() => {
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
           <Route
-            path="/projects/manager"
+            path="/projects"
             element={
-              <ProtectedRoute allowedRoles={["Manager"]}>
+              // <ProtectedRoute allowedRoles={["Manager"]}>
                 <ProjectDashboard />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             }
           />
 
           <Route path="/projects" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
-          <Route path="/projects/:projectId/issuetracker" element={<IssueTracker />} />
+          <Route
+            path="/projects/:projectId/issuetracker"
+            element={<IssueTracker />}
+          />
+
+          <Route
+            path="/projects/:projectId/cycles/runs/:runId/test-runs"
+            element={<AddCasesFromProjectModal />}
+          />
+
+
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}
           />
+          <Route
+            path="/projects/:projectId/cycles/:cycleId/runs"
+            element={<CycleRunsPage />}
+          />
+
           <Route path="/projects/user/myprofile" element={<Userprofile />} />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
@@ -294,31 +302,47 @@ useEffect(() => {
             path="/projects/userbacklog/:projectId"
             element={<UserBacklog />}
           />
-           <Route path="/projects/admin" element={<ProjectManager />} /> 
+          <Route path="/projects/admin" element={<ProjectManager />} />
           <Route
             path="/projects/user/:projectId"
             element={<UserProjectTabs />}
           />
-          <Route path="/projects/:projectId/user/userissuetracker" element={<UserIssueTracker />} />
-           <Route path="/projects/:projectId/issues/:type/:id/view" element={<ViewSheet />} />
+          <Route
+            path="/projects/:projectId/user/userissuetracker"
+            element={<UserIssueTracker />}
+          />
+          <Route
+            path="/projects/:projectId/issues/:type/:id/view"
+            element={<ViewSheet />}
+          />
 
-          <Route path="/projects/:projectId/status-report" element={<ProjectStatusReportWrapper />} />
+          <Route
+            path="/projects/:projectId/status-report"
+            element={<ProjectStatusReportWrapper />}
+          />
 
+
+          <Route
+            path="/projects/:projectId/risk-management"
+            element={<RiskRegisterPage />}
+          />
           <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
 
            {/* Employee Onboarding */}
             <Route  path ="/employee-onboarding" element={ <EmpDashboard/> } />
             <Route  path="/employee-onboarding/offer/:user_uuid"  element={<ViewEmpDetails />}/>
+           // Correct routes
+<Route path="/employee-onboarding" element={<EmpDashboard />} />
+<Route path="/employee-onboarding/create" element={<CreateOffer />} />
+<Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
+{/* <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewOffer />} /> */}
+
+
+
 
             {/* <Route path="/employee-onboarding/create" element={<CreateOffer />} />
             <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
             <Route path="/employee-onboarding/offerletter/:user_uuid" element={<ViewOffer />} /> */}
-
-
-
-
-
-
 
           {/* User Management */}
 
@@ -381,9 +405,7 @@ useEffect(() => {
             path="/user-management/access-point-map-permission-bulk"
             element={<BulkPermissionMapping />}
           />
-
-
-
+          
           {/* <Route
             path="/user-management/users"
             element={
@@ -501,7 +523,9 @@ useEffect(() => {
           <Route
             path="/leave-management"
             element={
-              <ProtectedRoute allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}>
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
                 <EmployeePanel />
               </ProtectedRoute>
             }
@@ -527,7 +551,7 @@ useEffect(() => {
             path={`/employee-leave-balance`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EmployeeLeaveBalances/>
+                <EmployeeLeaveBalances />
               </ProtectedRoute>
             }
           />
@@ -535,7 +559,7 @@ useEffect(() => {
             path={`/edit-holidays`}
             element={
               <ProtectedRoute allowedRoles={["HR"]}>
-                <EditHolidaysPage/>
+                <EditHolidaysPage />
               </ProtectedRoute>
             }
           />
@@ -547,14 +571,16 @@ useEffect(() => {
               </ProtectedRoute>
             }
           />
-          <Route path="/leave-policy" element={
+          <Route
+            path="/leave-policy"
+            element={
               <ProtectedRoute>
                 <LeavePolicy />
               </ProtectedRoute>
-            } 
+            }
           />
-        <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route 
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route
             path={`/leave-details/:employeeId/:leaveName`}
             element={
               <ProtectedRoute allowedRoles={["General"]}>
@@ -563,26 +589,36 @@ useEffect(() => {
             }
           />
 
-          <Route path="/approval-rules" element={
-              <ProtectedRoute allowedRoles={["HR","Hr-Manager"]}>
+          <Route
+            path="/approval-rules"
+            element={
+              <ProtectedRoute allowedRoles={["HR", "Hr-Manager"]}>
                 <ApprovalRulesPage />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route path="/leave-policies" element={<Navigate to="https://celebrated-renewal-07a16fae8e.strapiapp.com" replace />} />
+          <Route
+            path="/leave-policies"
+            element={
+              <Navigate
+                to="https://celebrated-renewal-07a16fae8e.strapiapp.com"
+                replace
+              />
+            }
+          />
         </Route>
       </Routes>
       <SaveLastPath />
-{/* <<<<<<<<< Temporary merge branch 1
+      {/* <<<<<<<<< Temporary merge branch 1
       {/* <Routes>
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Routes> */}
-{/* ========= */}
+      {/* ========= */}
       {/* <Routes>
         <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes> */}
-{/* >>>>>>>>> Temporary merge branch 2 */}
+      {/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
 };
