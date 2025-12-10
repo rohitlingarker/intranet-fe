@@ -1,9 +1,10 @@
 // src/pages/Projects/Summary/Summary.jsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { preloadAllWidgets } from "./preloadWidgets";
 
 // Skeletons
 import HeaderSkeleton from "./skeletons/HeaderSkeleton";
@@ -12,13 +13,13 @@ import StatusSkeleton from "./skeletons/StatusSkeleton";
 import ChartCardSkeleton from "./skeletons/ChartCardSkeleton";
 import ListCardSkeleton from "./skeletons/ListCardSkeleton";
 
-// Widgets
-import ScopeAndProgress from "./widgets/ScopeAndProgress";
-import StatusOverview from "./widgets/StatusOverview";
-import TypesOfWork from "./widgets/TypesOfWork";
-import TeamWorkload from "./widgets/TeamWorkload";
-import PriorityDistribution from "./widgets/PriorityDistribution";
-import EpicProgress from "./widgets/EpicProgress";
+// Lazy load heavy widgets
+const ScopeAndProgress = lazy(() => import("./widgets/ScopeAndProgress"));
+const StatusOverview = lazy(() => import("./widgets/StatusOverview"));
+const TypesOfWork = lazy(() => import("./widgets/TypesOfWork"));
+const TeamWorkload = lazy(() => import("./widgets/TeamWorkload"));
+const PriorityDistribution = lazy(() => import("./widgets/PriorityDistribution"));
+const EpicProgress = lazy(() => import("./widgets/EpicProgress"));
 
 const Summary = ({ projectId, projectName }) => {
   const [projectData, setProjectData] = useState({
@@ -34,26 +35,43 @@ const Summary = ({ projectId, projectName }) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
+    // Preload widgets in idle time
+    preloadAllWidgets();
+  }, []);
+
+  useEffect(() => {
     if (!projectId || !token) return;
     const base = import.meta.env.VITE_PMS_BASE_URL;
     const headers = { Authorization: `Bearer ${token}` };
 
-    const fetch = (url, key) => {
-      axios.get(url, { headers })
-        .then((res) => setProjectData((p) => ({ ...p, [key]: res.data || [] })))
-        .catch(() => setProjectData((p) => ({ ...p, [key]: [] })));
-    };
+    // Fetch all APIs in parallel using Promise.allSettled
+    const requests = [
+      axios.get(`${base}/api/projects/${projectId}`, { headers })
+        .then((res) => ({ stage: res.data?.currentStage || "INITIATION" })),
+      axios.get(`${base}/api/projects/${projectId}/epics`, { headers })
+        .then((res) => ({ epics: res.data || [] })),
+      axios.get(`${base}/api/projects/${projectId}/stories`, { headers })
+        .then((res) => ({ stories: res.data || [] })),
+      axios.get(`${base}/api/projects/${projectId}/tasks`, { headers })
+        .then((res) => ({ tasks: res.data || [] })),
+      axios.get(`${base}/api/testing/bugs/projects/${projectId}/summaries`, { headers })
+        .then((res) => ({ bugs: res.data || [] })),
+      axios.get(`${base}/api/projects/${projectId}/statuses`, { headers })
+        .then((res) => ({ statuses: res.data || [] })),
+      axios.get(`${base}/api/projects/${projectId}/members-with-owner`, { headers })
+        .then((res) => ({ users: res.data || [] })),
+    ];
 
-    axios.get(`${base}/api/projects/${projectId}`, { headers })
-      .then((res) => setProjectData((p) => ({ ...p, stage: res.data?.currentStage || "INITIATION" })))
-      .catch(() => setProjectData((p) => ({ ...p, stage: "UNKNOWN" })));
-
-    fetch(`${base}/api/projects/${projectId}/epics`, "epics");
-    fetch(`${base}/api/projects/${projectId}/stories`, "stories");
-    fetch(`${base}/api/projects/${projectId}/tasks`, "tasks");
-    fetch(`${base}/api/testing/bugs/projects/${projectId}/summaries`, "bugs");
-    fetch(`${base}/api/projects/${projectId}/statuses`, "statuses");
-    fetch(`${base}/api/projects/${projectId}/members-with-owner`, "users");
+    // Execute all requests in parallel
+    Promise.allSettled(requests).then((results) => {
+      const merged = {};
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          Object.assign(merged, result.value);
+        }
+      });
+      setProjectData((prev) => ({ ...prev, ...merged }));
+    });
   }, [projectId, token]);
 
   const isDataReady = {
@@ -102,13 +120,15 @@ const Summary = ({ projectId, projectName }) => {
         {!isDataReady.work || !isDataReady.statuses ? (
           <ScopeSkeleton />
         ) : (
-          <ScopeAndProgress
-            epics={projectData.epics}
-            stories={projectData.stories}
-            statuses={projectData.statuses}
-            tasks={projectData.tasks}
-            bugs={projectData.bugs}
-          />
+          <Suspense fallback={<ScopeSkeleton />}>
+            <ScopeAndProgress
+              epics={projectData.epics}
+              stories={projectData.stories}
+              statuses={projectData.statuses}
+              tasks={projectData.tasks}
+              bugs={projectData.bugs}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -117,7 +137,9 @@ const Summary = ({ projectId, projectName }) => {
         {!isDataReady.work || !isDataReady.statuses ? (
           <StatusSkeleton />
         ) : (
-          <StatusOverview workItems={allWork} statuses={projectData.statuses} />
+          <Suspense fallback={<StatusSkeleton />}>
+            <StatusOverview workItems={allWork} statuses={projectData.statuses} />
+          </Suspense>
         )}
       </div>
 
@@ -127,11 +149,13 @@ const Summary = ({ projectId, projectName }) => {
           {!isDataReady.work ? (
             <ChartCardSkeleton />
           ) : (
-            <PriorityDistribution
-              tasks={projectData.tasks}
-              stories={projectData.stories}
-              bugs={projectData.bugs}
-            />
+            <Suspense fallback={<ChartCardSkeleton />}>
+              <PriorityDistribution
+                tasks={projectData.tasks}
+                stories={projectData.stories}
+                bugs={projectData.bugs}
+              />
+            </Suspense>
           )}
         </div>
 
@@ -139,18 +163,22 @@ const Summary = ({ projectId, projectName }) => {
           {!isDataReady.work ? (
             <ListCardSkeleton />
           ) : (
-            <TypesOfWork
-              tasks={projectData.tasks}
-              stories={projectData.stories}
-              epics={projectData.epics}
-              bugs={projectData.bugs}
-            />
+            <Suspense fallback={<ListCardSkeleton />}>
+              <TypesOfWork
+                tasks={projectData.tasks}
+                stories={projectData.stories}
+                epics={projectData.epics}
+                bugs={projectData.bugs}
+              />
+            </Suspense>
           )}
 
           {!isDataReady.work || !isDataReady.users ? (
             <ListCardSkeleton />
           ) : (
-            <TeamWorkload workItems={allWork} users={projectData.users} />
+            <Suspense fallback={<ListCardSkeleton />}>
+              <TeamWorkload workItems={allWork} users={projectData.users} />
+            </Suspense>
           )}
         </div>
       </div>
@@ -160,13 +188,15 @@ const Summary = ({ projectId, projectName }) => {
         {!isDataReady.work || !isDataReady.statuses ? (
           <ListCardSkeleton />
         ) : (
-          <EpicProgress
-            epics={projectData.epics}
-            stories={projectData.stories}
-            tasks={projectData.tasks}
-            bugs={projectData.bugs}
-            statuses={projectData.statuses}
-          />
+          <Suspense fallback={<ListCardSkeleton />}>
+            <EpicProgress
+              epics={projectData.epics}
+              stories={projectData.stories}
+              tasks={projectData.tasks}
+              bugs={projectData.bugs}
+              statuses={projectData.statuses}
+            />
+          </Suspense>
         )}
       </div>
     </motion.div>

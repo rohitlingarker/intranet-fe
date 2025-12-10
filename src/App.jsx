@@ -54,9 +54,18 @@ import IssueTracker from "./pages/Projects/manager/Backlog/IssueTracker";
 import ViewSheet from "./pages/Projects/manager/Backlog/ViewSheet";
 import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusReportWrapper";
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
+<<<<<<< HEAD
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
 
+=======
+
+// ✅ Employee Onboarding
+import EmpDashboard from "./pages/employee_onboarding/EmpDashboard.jsx";
+// import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
+// import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
+// import ViewOffer from "./pages/employee_onboarding/ViewOffer.jsx";
+>>>>>>> 3fb3a12f43744e730e20192182082b7cb9462224
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -256,11 +265,11 @@ const AppRoutes = () => {
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
 
           <Route
-            path="/projects/manager"
+            path="/projects"
             element={
-              <ProtectedRoute allowedRoles={["Manager"]}>
+              // <ProtectedRoute allowedRoles={["Manager"]}>
                 <ProjectDashboard />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             }
           />
 
@@ -313,10 +322,27 @@ const AppRoutes = () => {
             element={<ProjectStatusReportWrapper />}
           />
 
+<<<<<<< HEAD
           <Route
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
+=======
+          <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
+
+           {/* Employee Onboarding */}
+            <Route  path ="/employee_onboarding" element={ <EmpDashboard/> } />
+            {/* <Route path="/employee-onboarding/create" element={<CreateOffer />} />
+            <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
+            <Route path="/employee-onboarding/offerletter/:user_uuid" element={<ViewOffer />} /> */}
+
+
+
+
+
+
+
+>>>>>>> 3fb3a12f43744e730e20192182082b7cb9462224
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
@@ -379,6 +405,11 @@ const AppRoutes = () => {
             element={<BulkPermissionMapping />}
           />
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 3fb3a12f43744e730e20192182082b7cb9462224
           {/* <Route
             path="/user-management/users"
             element={

@@ -14,7 +14,7 @@ import BugPage from "./Bug/BugPage";
 import { useEffect, useState } from "react";
 
 export default function TestManagement() {
-  const { projectId } = useParams();       // ✅ REQUIRED FIX
+  const { projectId } = useParams();
   const location = useLocation();
 
   const getSelectedTabFromLocation = () => {
@@ -24,28 +24,23 @@ export default function TestManagement() {
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
 
-  // Update selected tab when URL changes
   useEffect(() => {
     setSelectedTab(getSelectedTabFromLocation());
   }, [location.search]);
 
   const renderTabContent = () => {
-    if (selectedTab === "test-management/overview") {
-      return <Overview projectId={projectId} />;
-    }
+    switch (selectedTab) {
+      case "test-management/overview":
+        return <Overview projectId={projectId} />;
 
-    if (selectedTab === "test-management/test-plans") {
-      return <TestPlans projectId={projectId} />;
-    }
+      case "test-management/test-plans":
+        return <TestPlans projectId={projectId} />;
 
-    if (selectedTab === "test-management/test-design") {
-      return <TestDesign projectId={projectId} />;  // ✅ MAIN FIX
-    }
+      case "test-management/test-design":
+        return <TestDesign projectId={projectId} />;
 
-    if (selectedTab === "test-management/execution") {
-      return <div>Execution (work in progress)</div>;
-      // return <Execution projectId={projectId} />;
-    }
+      case "test-management/test-execution":   // ⭐ FINAL EXECUTION TAB
+        return <TestExecution projectId={projectId} />;
 
     if (selectedTab === "reports") {
       return <div>Reports (work in progress)</div>;
@@ -62,8 +57,6 @@ export default function TestManagement() {
     }else if(selectedTab === "test-management/test-bugs") {
       return <BugPage />;
     }
-
-    return null;
   };
 
   return (
