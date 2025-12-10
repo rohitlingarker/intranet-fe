@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import axios from "axios";
 import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Plus, List } from "lucide-react";
+import { ToastContainer } from "react-toastify";   // ✅ Added
 import { showStatusToast } from "../../../components/toastfy/toast";
 
 import Button from "../../../components/Button/Button";
@@ -40,10 +42,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [pendingData, setPendingData] = useState(null);
 
   const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
+  // const headers = { Authorization: `Bearer ${token}` };
 
   // =======================================
-  // Fetch a single story to get full body
+  // Fetch a single story
   // =======================================
   const fetchStoryById = async (storyId) => {
     const res = await axios.get(
@@ -53,9 +55,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     return res.data;
   };
 
-  // =======================================
-  // Build required payload for PUT /stories/{id}
-  // =======================================
   const buildUpdatedStoryBody = (story, sprintId) => ({
     id: story.id,
     title: story.title,
@@ -74,7 +73,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   });
 
   // =======================================
-  // Move Story (Sprint <-> Sprint OR Sprint -> Backlog)
+  // Move Story (Sprint <-> Backlog)
   // =======================================
   const handleDropStory = async (storyId, sprintId) => {
     showStatusToast(
@@ -112,105 +111,69 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   };
 
   // =======================================
-  // Sprint start/complete
+  // Sprint Start / Complete
   // =======================================
   const handleSprintStatus = async (sprintId, action) => {
     try {
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}/${action}`,
         {},
-        { headers }
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        } }
       );
-      showStatusToast(
-        action === "start" ? "Sprint started" : "Sprint completed",
-        "success",
-        3000
-      );
+
+      toast.success(
+  action === "start" ? "Sprint started" : "Sprint completed",
+  { autoClose: 2000 }
+);
+
       fetchSprints();
       fetchStories();
     } catch (err) {
-      const errorData = err.response?.data || {};
-      
-      // Handle structured error response (validation error)
-      if (action === "complete" && errorData.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
-        const { pendingTasks = [], pendingStories = [] } = errorData.data || {};
-        
+      const data = err.response?.data || {};
+
+      if (action === "complete" && data.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
         setPendingData({
           sprintId,
-          tasks: Array.isArray(pendingTasks) ? pendingTasks : [],
-          stories: Array.isArray(pendingStories) ? pendingStories : []
+          tasks: data.data?.pendingTasks || [],
+          stories: data.data?.pendingStories || [],
         });
         setShowPendingModal(true);
         return;
       }
-      
-      showStatusToast(errorData.message || "Failed to update sprint status", "error", 3000);
+
+     toast.error(data.message || "Failed to update sprint", {
+  autoClose: 2000,
+});
+
     }
   };
 
-  // (Optional) attach task to story
-  const handleAttachTaskToStory = async (taskId,storyId) =>{
-    try{
-      await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-story/${storyId}`,
-        {storyId},
-        {headers}
-      );
-      toast.success("Task attached to story successfully");
-      fetchTasks();
-    } catch (err) {
-      console.error("Failed to attach task to story", err);
-      toast.error("Failed to attach task to story");
-    }
-  }
-
-  const handleDropTask = async (taskId, sprintId) =>{
+  // =======================================
+  // Move Task
+  // =======================================
+  const handleDropTask = async (taskId, sprintId) => {
+    console.log("handleDropTask called with:", sprintId);
+    toast.info("Moving task...", { autoClose: 2000 });
     try {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, sprintId } : t))
+      );
+
       await axios.patch(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint`,
-        { sprintId },
-        { headers } 
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-sprint/${sprintId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          }
+        },
       );
-      toast.success("Task moved successfully");
+      toast.success("Task moved!", { autoClose: 2000 });
       fetchTasks();
     } catch (err) {
-      console.error("Failed to assign task", err);
-      toast.error("Failed to assign task");
-    }
-  }
-
-  // (Optional) attach story to epic
-  const handleSelectEpic = async (storyId, epicId) => {
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-epic/${epicId}`,
-        {},
-        { headers }
-      );
-
-      toast.success("Story attached to epic successfully");
-      fetchStories(); // refresh UI
-    } catch (err) {
-      console.error("Failed to assign epic", err);
-      toast.error("Failed to attach story to epic");
-    }
-  };
-
-  // (Optional) delete sprint (used by SprintColumn menu)
-  const handleDeleteSprint = async (sprintId) => {
-    const ok = window.confirm("Are you sure you want to delete this sprint?");
-    if (!ok) return;
-
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
-        { headers }
-      );
-      showStatusToast("Sprint deleted", "success", 3000);
-      fetchSprints();
-      fetchStories();
-    } catch (err) {
-      showStatusToast("Failed to delete sprint", "error", 3000);
+    toast.error("Failed to move task", { autoClose: 2000 });
     }
   };
 
@@ -221,14 +184,17 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`,
-        { headers }
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }}
       );
 
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setStories(list);
-      setBacklogStories(list.filter((s) => !s.sprintId && !s.sprint));
-    } catch (err) {
-      showStatusToast("Failed to fetch stories", "error", 3000);
+      setBacklogStories(list.filter((s) => !s.sprintId));
+    } catch {
+      toast.error("Failed to fetch stories", { autoClose: 2000 });
+
     }
   };
 
@@ -236,13 +202,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`,
-        { headers }
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        } }
       );
+
       const list = Array.isArray(res.data) ? res.data : res.data.content || [];
       setTasks(list);
-      setBacklogTasks(list.filter((t) => !t.sprintId && !t.sprint));
-    } catch (err) {
-      showStatusToast("Failed to fetch tasks", "error", 3000);
+      setBacklogTasks(list.filter((t) => !t.sprintId));
+    } catch {
+      toast.error("Failed to fetch tasks", { autoClose: 2000 });
     }
   };
 
@@ -250,13 +219,14 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/epics`,
-        { headers }
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        } }
       );
-      setEpics(
-        Array.isArray(res.data) ? res.data : res.data.content || []
-      );
-    } catch (err) {
-      showStatusToast("Failed to fetch epics", "error", 3000);
+
+      setEpics(Array.isArray(res.data) ? res.data : res.data.content || []);
+    } catch {
+      toast.error("Failed to fetch epics", { autoClose: 2000 });
     }
   };
 
@@ -264,15 +234,39 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/sprints`,
-        { headers }
+        { headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        } }
       );
-      setSprints(
-        Array.isArray(res.data) ? res.data : res.data.content || []
-      );
-    } catch (err) {
-      showStatusToast("Failed to fetch sprints", "error", 3000);
+
+      setSprints(Array.isArray(res.data) ? res.data : res.data.content || []);
+    } catch {
+      toast.error("Failed to fetch sprints", { autoClose: 2000 });
     }
   };
+  // =======================================
+// Delete Sprint
+// =======================================
+const handleDeleteSprint = async (sprintId) => {
+  const ok = window.confirm("Are you sure you want to delete this sprint?");
+  if (!ok) return;
+
+  try {
+    await axios.delete(
+      `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
+      { headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      } }
+    );
+
+    toast.success("Sprint deleted successfully");
+    fetchSprints();
+    fetchStories();
+  } catch (err) {
+    toast.error("Failed to delete sprint", { autoClose: 2000 });
+  }
+};
+
 
   useEffect(() => {
     fetchStories();
@@ -283,27 +277,36 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
   // =======================================
   // Backlog Drop Zone
-  // =======================================
-  const BacklogDropWrapper = ({ children }) => {
-    const [{ isOver }, dropRef] = useDrop(() => ({
-      accept: "STORY",
-      drop: (item) => handleDropStory(item.id, null),
-      collect: (monitor) => ({
-        isOver: monitor.isOver(),
-      }),
-    }));
+  // =======================================// =======================================
+// Backlog Drop Zone (UPDATED)
+// =======================================
+const BacklogDropWrapper = ({ children }) => {
+  const [{ isOver }, dropRef] = useDrop(() => ({
+    accept: ["STORY", "TASK"],   // 👈 accept BOTH
+    drop: (item) => {
+      if (item.type === "TASK") {
+        handleDropTask(item.id, null);   // move TASK to backlog
+      } else {
+        handleDropStory(item.id, null);  // move STORY to backlog
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
 
-    return (
-      <div
-        ref={dropRef}
-        className={`transition border rounded p-4 shadow-sm ${
-          isOver ? "bg-green-100 border-green-500" : "bg-white"
-        }`}
-      >
-        {children}
-      </div>
-    );
-  };
+  return (
+    <div
+      ref={dropRef}
+      className={`transition border rounded p-4 shadow-sm ${
+        isOver ? "bg-green-100 border-green-500" : "bg-white"
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
 
   const activeAndPlanningSprints = sprints.filter(
     (s) => s.status === "ACTIVE" || s.status === "PLANNING"
@@ -312,6 +315,9 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Toast Container — MUST EXIST for instant toasts */}
+        <ToastContainer position="top-right" autoClose={2000} /> {/* ✅ Added */}
+
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-indigo-900">
@@ -324,18 +330,13 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               variant="outline"
               className="flex items-center gap-2"
               onClick={() =>
-                navigate(`/projects/${projectId}/issuetracker`, {
-                  state: { projectId },
-                })
+                navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } })
               }
             >
               <List size={18} /> Issue Tracker
             </Button>
 
-            <Button
-              className="flex items-center gap-2"
-              onClick={() => setShowSprintModal(true)}
-            >
+            <Button className="flex items-center gap-2" onClick={() => setShowSprintModal(true)}>
               <Plus size={18} /> Create Sprint
             </Button>
 
@@ -369,17 +370,15 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
                 allStories={stories}
                 sprints={activeAndPlanningSprints}
                 onDropStory={handleDropStory}
+                onDropTask={handleDropTask}
                 onChangeStatus={handleSprintStatus}
-
+                onDeleteSprint={handleDeleteSprint}
                 onEditSprint={(s) => {
                   setSelectedSprintId(s.id);
                   setPanelMode("sprint");
                   setRightPanelOpen(true);
                 }}
-                onDeleteSprint={handleDeleteSprint}
-                onChangeStoryStatus={null}
-                onSelectEpic={handleSelectEpic}
-                onSelectParentStory={handleAttachTaskToStory}
+                onSelectEpic={() => {}}
                 onStoryClick={(id) => {
                   setPanelMode("story");
                   setSelectedStoryId(id);
@@ -397,13 +396,9 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
         {/* Backlog */}
         <BacklogDropWrapper>
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">
-            Product Backlog
-          </h2>
+          <h2 className="text-lg font-semibold text-indigo-900 mb-3">Product Backlog</h2>
 
-          <h3 className="text-md font-semibold text-blue-700 mb-1">
-            Stories
-          </h3>
+          <h3 className="text-md font-semibold text-blue-700 mb-1">Stories</h3>
 
           {backlogStories.map((story) => (
             <StoryCard
@@ -412,7 +407,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               sprints={activeAndPlanningSprints}
               epics={epics}
               onAddToSprint={handleDropStory}
-              onSelectEpic={handleSelectEpic}
               onClick={() => {
                 setPanelMode("story");
                 setSelectedStoryId(story.id);
@@ -421,9 +415,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
             />
           ))}
 
-          <h3 className="text-md font-semibold text-green-700 mb-1">
-            Tasks
-          </h3>
+          <h3 className="text-md font-semibold text-green-700 mb-1">Tasks</h3>
 
           {backlogTasks.map((task) => (
             <TaskCard
@@ -431,7 +423,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
               task={task}
               stories={stories}
               sprints={activeAndPlanningSprints}
-              onSelectParentStory={handleAttachTaskToStory}
               onAddToSprint={handleDropTask}
               onClick={() => {
                 setPanelMode("task");
@@ -450,7 +441,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           onCreated={() => {
             fetchStories();
             fetchTasks();
-
           }}
           projectId={projectId}
         />
@@ -463,10 +453,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         onCreated={(newSprint) => setSprints((prev) => [...prev, newSprint])}
       />
 
-      <RightSidePanel
-        isOpen={rightPanelOpen}
-        onClose={() => setRightPanelOpen(false)}
-      >
+      <RightSidePanel isOpen={rightPanelOpen} onClose={() => setRightPanelOpen(false)}>
         {panelMode === "story" && selectedStoryId && (
           <EditStoryForm
             storyId={selectedStoryId}
@@ -521,4 +508,3 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 };
 
 export default BacklogAndSprints;
-                                                                                                                    
