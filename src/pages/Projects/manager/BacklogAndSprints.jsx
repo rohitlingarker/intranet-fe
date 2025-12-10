@@ -42,7 +42,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [pendingData, setPendingData] = useState(null);
 
   const token = localStorage.getItem("token");
-  // const headers = { Authorization: `Bearer ${token}` };
+  const headers = { Authorization: `Bearer ${token}` };
 
   // =======================================
   // Fetch a single story
