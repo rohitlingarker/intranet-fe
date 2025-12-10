@@ -4,8 +4,13 @@ import TopTabs from "./TopTabs";
 import { useParams, useLocation } from "react-router-dom";
 import Overview from "./Overview";
 import TestPlans from "./TestPlans";
-import TestDesign from "./TestDesign/TestDesign";
-// import TestExecution from "./TestExecution/TestExecution";   // ✅ FIXED IMPORT
+import TestDesign  from "./TestDesign/TestDesign";
+import TestExecution from "./TestExecution/TestExecution";
+import BugPage from "./Bug/BugPage";
+
+
+// import Execution from "./Execution";
+// import Reports from "./Reports";
 import { useEffect, useState } from "react";
 
 export default function TestManagement() {
@@ -37,12 +42,20 @@ export default function TestManagement() {
       case "test-management/test-execution":   // ⭐ FINAL EXECUTION TAB
         return <TestExecution projectId={projectId} />;
 
-      case "reports":
-        return <div>Reports (work in progress)</div>;
-        // return <Reports projectId={projectId} />
-
-      default:
-        return null;
+    if (selectedTab === "reports") {
+      return <div>Reports (work in progress)</div>;
+      // return <Reports projectId={projectId} />;
+      return <Overview />;
+    }else if (selectedTab === "test-management/test-design") {
+      return <TestDesign />;
+    }else if (selectedTab === "test-management/test-execution") {
+      return <TestExecution />;
+    }else if (selectedTab === "reports") {
+      return <Reports />;
+    }else if (selectedTab === "test-management/test-plans") {
+      return <TestPlans />;
+    }else if(selectedTab === "test-management/test-bugs") {
+      return <BugPage />;
     }
   };
 
@@ -52,4 +65,4 @@ export default function TestManagement() {
       <div>{renderTabContent()}</div>
     </div>
   );
-}
+}};
