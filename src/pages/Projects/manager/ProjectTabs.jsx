@@ -115,13 +115,14 @@ const ProjectTabs = () => {
   }
 
   const navItems = [
-    { name: "Risk Management", tab: "risk-management" },
+   
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
+     { name: "Risk Management", tab: "risk-management" },
     // { name: "Status Report", tab: "status-report" },
-    { name: "Timelines", tab:"timelines" },
     { name: "Test Management", tab: "test-management" },
+      { name: "Timelines", tab:"timelines" },
     { name: "Calendar", tab: "calendar" },
   ];
 
