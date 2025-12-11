@@ -58,7 +58,10 @@ import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRu
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
 
 // ✅ Employee Onboarding
-import EmpDashboard from "./pages/employee_onboarding/EmpDashboard.jsx";
+import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
+import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
+import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
+import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
 // import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
 // import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
 // import ViewOffer from "./pages/employee_onboarding/ViewOffer.jsx";
@@ -326,7 +329,17 @@ const AppRoutes = () => {
           <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
 
            {/* Employee Onboarding */}
-            <Route  path ="/employee_onboarding" element={ <EmpDashboard/> } />
+            <Route  path ="/employee-onboarding" element={ <EmpDashboard/> } />
+            <Route  path="/employee-onboarding/offer/:user_uuid"  element={<ViewEmpDetails />}/>
+           // Correct routes
+<Route path="/employee-onboarding" element={<EmpDashboard />} />
+<Route path="/employee-onboarding/create" element={<CreateOffer />} />
+<Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
+{/* <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewOffer />} /> */}
+
+
+
+
             {/* <Route path="/employee-onboarding/create" element={<CreateOffer />} />
             <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
             <Route path="/employee-onboarding/offerletter/:user_uuid" element={<ViewOffer />} /> */}
