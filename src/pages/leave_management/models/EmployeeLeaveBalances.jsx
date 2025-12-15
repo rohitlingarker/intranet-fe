@@ -6,13 +6,32 @@ import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
- 
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 // const token = localStorage.getItem("token");
- 
+
+export const YearDropdown = ({ value, onChange }) => {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="border px-3 py-2 pr-8 rounded"
+    >
+      {years.map((year) => (
+        <option key={year} value={year}>
+          {year}
+        </option>
+      ))}
+    </select>
+  );
+};
+
 const EmployeeLeaveBalances = () => {
-  const navigate = useNavigate(); // <-- Hook for navigation
- 
+  const navigate = useNavigate();
+
   const [data, setData] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,26 +42,27 @@ const EmployeeLeaveBalances = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
- 
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
- 
+
   const wrapperRef = useRef(null);
- 
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setShowSuggestions(false);
       }
     };
- 
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [wrapperRef]);
- 
+
   // 🔹 Hide suggestions when pressing Escape
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -50,13 +70,13 @@ const EmployeeLeaveBalances = () => {
         setShowSuggestions(false);
       }
     };
- 
+
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [setShowSuggestions]);
- 
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery.trim());
@@ -64,11 +84,11 @@ const EmployeeLeaveBalances = () => {
     }, 400);
     return () => clearTimeout(handler);
   }, [searchQuery]);
- 
+
   useEffect(() => {
     fetchLeaveData(debouncedQuery);
-  }, [debouncedQuery]);
- 
+  }, [debouncedQuery, currentYear]);
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
@@ -80,7 +100,11 @@ const EmployeeLeaveBalances = () => {
           `${BASE_URL}/api/leave-balance/autocomplete?query=${encodeURIComponent(
             searchQuery
           )}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
         );
         setSuggestions(res.data);
         setShowSuggestions(true);
@@ -88,21 +112,21 @@ const EmployeeLeaveBalances = () => {
         console.error("Error fetching suggestions", err);
       }
     };
- 
+
     fetchSuggestions();
   }, [searchQuery]);
- 
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       const gender = selectedEmployee?.employeeGender?.toLowerCase();
- 
+
       const filteredBalances = leaveTypes
         .filter(({ leaveTypeName }) => {
           const lowerName = leaveTypeName.toLowerCase();
           const isMaternity = lowerName.includes("maternity");
           const isPaternity = lowerName.includes("paternity");
- 
+
           // ❌ Exclude maternity for males, paternity for females, or if gender unknown
           if (
             (isMaternity && gender === "male") ||
@@ -111,7 +135,7 @@ const EmployeeLeaveBalances = () => {
           ) {
             return false;
           }
- 
+
           return true;
         })
         .map(({ leaveTypeName, leaveTypeId }) => ({
@@ -122,13 +146,13 @@ const EmployeeLeaveBalances = () => {
             selectedEmployee.balances[leaveTypeName]?.year ??
             new Date().getFullYear(),
         }));
- 
+
       const payload = {
         employeeId: selectedEmployee.employeeId,
         balances: filteredBalances,
         // performedBy: hrId,
       };
- 
+
       const res = await axios.put(
         `${BASE_URL}/api/leave-balance/update`,
         payload,
@@ -138,7 +162,7 @@ const EmployeeLeaveBalances = () => {
           },
         }
       );
- 
+
       toast.success(res.data?.message || "Leave balances updated successfully");
       setIsEditModalOpen(false);
       fetchLeaveData();
@@ -148,95 +172,101 @@ const EmployeeLeaveBalances = () => {
       setIsSubmitting(false);
     }
   };
- 
+
   const handleEdit = (employee) => {
     setSelectedEmployee({ ...employee });
     setIsEditModalOpen(true);
   };
- 
+
   const fetchLeaveData = async (query = "") => {
     try {
       setIsLoading(true);
+
       const url =
         query === ""
-          ? `${BASE_URL}/api/leave-balance/all-leave-balances`
+          ? `${BASE_URL}/api/leave-balance/all-leave-balances/${currentYear}`
           : `${BASE_URL}/api/leave-balance/search?query=${encodeURIComponent(
               query
             )}`;
- 
+
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
- 
-      const raw = response.data;
+
+      const raw = response.data; // New API response array
+
       const groupedByEmployee = {};
- 
+      const leaveTypeCollection = {};
+
       raw.forEach((entry) => {
-        const empId = entry.employee?.employeeId || "Unknown";
-        const empName = `${entry.employee?.firstName || ""} ${
-          entry.employee?.lastName || ""
-        }`.trim();
-        const gender = entry?.employee?.gender;
- 
-        if (!groupedByEmployee[empId]) {
-          groupedByEmployee[empId] = {
-            employeeId: empId,
-            employeeName: empName,
-            employeeGender: gender,
+        const {
+          employeeId,
+          employeeName,
+          leaveTypeId,
+          leaveTypeName,
+          remainingLeaves,
+          year,
+          gender,
+        } = entry;
+
+        // If employee not added yet, initialize
+        if (!groupedByEmployee[employeeId]) {
+          groupedByEmployee[employeeId] = {
+            employeeId,
+            employeeName,
+            employeeGender: gender || null,
             balances: {},
           };
         }
- 
-        const leaveTypeName = entry.leaveType.leaveName;
-        groupedByEmployee[empId].balances[leaveTypeName] = {
-          ...entry,
-          remainingLeaves: entry.remainingLeaves,
-          leaveTypeId: entry.leaveType.leaveTypeId,
-          year: entry.year,
+
+        // Add leave type balance for this employee
+        groupedByEmployee[employeeId].balances[leaveTypeName] = {
+          leaveTypeId,
+          remainingLeaves: remainingLeaves ?? 0,
+          year,
+          leaveType: {
+            maxDaysPerYear: null, // API does not provide this
+          },
         };
+
+        // Collect unique leave types for table header
+        if (!leaveTypeCollection[leaveTypeName]) {
+          leaveTypeCollection[leaveTypeName] = {
+            leaveTypeName,
+            leaveTypeId,
+          };
+        }
       });
- 
+
+      // Convert objects to arrays required by UI
       setData(Object.values(groupedByEmployee));
- 
-      if (leaveTypes.length === 0 && raw.length > 0) {
-        const allLeaveTypes = Array.from(
-          new Map(
-            raw.map((entry) => [
-              entry.leaveType.leaveName,
-              {
-                leaveTypeName: entry.leaveType.leaveName,
-                leaveTypeId: entry.leaveType.leaveTypeId,
-              },
-            ])
-          ).values()
-        );
-        setLeaveTypes(allLeaveTypes);
-      }
+      setLeaveTypes(Object.values(leaveTypeCollection));
     } catch (error) {
-      // console.error("Error fetching leave balances", error);
       toast.error("Failed to fetch leave balances");
     } finally {
       setIsLoading(false);
     }
   };
- 
+
   const handleSuggestionClick = (suggestion) => {
     setSearchQuery(suggestion);
     setDebouncedQuery(suggestion);
     setSuggestions([]);
     setShowSuggestions(false);
   };
- 
+
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
- 
+
   const handlePrevious = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
- 
+
   return (
     <div className="p-6 overflow-auto">
       {/* 🔹 Loading Spinner Overlay */}
@@ -245,7 +275,7 @@ const EmployeeLeaveBalances = () => {
           <LoadingSpinner text="Loading Leave Balances" />
         </div>
       )}
- 
+
       {/* backbutton and title */}
       <div className="flex items-center justify-between px-6 mb-4 ">
         <h2 className="text-xl font-bold text-gray-800">
@@ -261,101 +291,114 @@ const EmployeeLeaveBalances = () => {
           Back
         </motion.button>
       </div>
- 
+
       {/* Search Bar */}
-      <div ref={wrapperRef} className="mb-4 relative h-9 w-full max-w-md">
-        <input
-          type="text"
-          placeholder="Search by Employee ID or Name..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border px-4 py-2 rounded w-full shadow-sm"
-          onFocus={() => setShowSuggestions(true)}
-        />
- 
-        {showSuggestions && suggestions.length > 0 && (
-          <ul className="absolute bg-white border rounded w-full shadow-md mt-1 max-h-48 overflow-y-auto z-20">
-            {suggestions.map((s, i) => (
-              <li
-                key={i}
-                onClick={() => handleSuggestionClick(s)}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-              >
-                {s}
-              </li>
-            ))}
-          </ul>
-        )}
- 
-        {searchQuery && (
-          <button
-            onClick={() => {
-              setSearchQuery("");
-              setDebouncedQuery("");
-              setSuggestions([]);
-            }}
-            className="absolute right-2 top-2 text-gray-500 hover:text-black"
-          >
-            ✕
-          </button>
-        )}
-      </div>
- 
-      {/* Table */}
-      <div className="overflow-x-auto border rounded-md">
-        <table className="min-w-max text-sm text-left border-collapse relative">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-6 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px]">
-                Employee Id
-              </th>
-              <th className="border px-6 py-3 sticky left-[200px] bg-gray-100 z-10 min-w-[250px]">
-                Employee Name
-              </th>
-              {leaveTypes.map(({ leaveTypeName }) => (
-                <th
-                  key={leaveTypeName}
-                  className="border px-6 py-3 text-center min-w-[160px] whitespace-nowrap"
+      <div className="flex items-center gap-3 mb-4">
+        <div ref={wrapperRef} className="relative h-9 w-full max-w-md">
+          <input
+            type="text"
+            placeholder="Search by Employee ID or Name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border px-4 py-2 rounded w-full shadow-sm"
+            onFocus={() => setShowSuggestions(true)}
+          />
+
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="absolute bg-white border rounded w-full shadow-md mt-1 max-h-48 overflow-y-auto z-20">
+              {suggestions.map((s, i) => (
+                <li
+                  key={i}
+                  onClick={() => handleSuggestionClick(s)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                 >
-                  {leaveTypeName}
-                </th>
+                  {s}
+                </li>
               ))}
-              <th className="border px-4 py-2 sticky right-0 bg-gray-100 z-10">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="text-xs">
-            {paginatedData.map((emp) => (
-              <tr key={emp.employeeId}>
-                <td className="border px-6 py-2 sticky left-0 bg-white z-10 font-medium min-w-[200px]">
-                  {emp.employeeId}
-                </td>
-                <td className="border px-6 py-2 sticky left-[200px] bg-white z-10 font-medium min-w-[250px]">
-                  {emp.employeeName}
-                </td>
-                {leaveTypes.map(({ leaveTypeName }) => (
-                  <td
-                    key={leaveTypeName}
-                    className="border px-6 py-2 text-center min-w-[160px] whitespace-nowrap"
-                  >
-                    {emp.balances[leaveTypeName]?.remainingLeaves ?? "-"}
-                  </td>
-                ))}
-                <td className="border px-4 py-2 text-center sticky right-0 bg-white z-10">
-                  <button
-                    onClick={() => handleEdit(emp)}
-                    className="text-blue-600 underline hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </ul>
+          )}
+
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setDebouncedQuery("");
+                setSuggestions([]);
+              }}
+              className="absolute right-2 top-2 text-gray-500 hover:text-black"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Year Dropdown beside search bar */}
+        <YearDropdown value={currentYear} onChange={setCurrentYear} />
       </div>
- 
+
+      {/* Table */}
+      <div>
+        {paginatedData.length === 0 ? (
+          <p className="text-gray-500 italic font-semibold text-center mt-5">
+            No leave balances found.
+          </p>
+        ) : (
+          <div className="overflow-x-auto border rounded-md">
+            <table className="min-w-max text-sm text-left border-collapse relative">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border px-6 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px]">
+                    Employee Id
+                  </th>
+                  <th className="border px-6 py-3 sticky left-[200px] bg-gray-100 z-10 min-w-[250px]">
+                    Employee Name
+                  </th>
+                  {leaveTypes.map(({ leaveTypeName }) => (
+                    <th
+                      key={leaveTypeName}
+                      className="border px-6 py-3 text-center min-w-[160px] whitespace-nowrap"
+                    >
+                      {leaveTypeName}
+                    </th>
+                  ))}
+                  <th className="border px-4 py-2 sticky right-0 bg-gray-100 z-10">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-xs">
+                {paginatedData.map((emp) => (
+                  <tr key={emp.employeeId}>
+                    <td className="border px-6 py-2 sticky left-0 bg-white z-10 font-medium min-w-[200px]">
+                      {emp.employeeId}
+                    </td>
+                    <td className="border px-6 py-2 sticky left-[200px] bg-white z-10 font-medium min-w-[250px]">
+                      {emp.employeeName}
+                    </td>
+                    {leaveTypes.map(({ leaveTypeName }) => (
+                      <td
+                        key={leaveTypeName}
+                        className="border px-6 py-2 text-center min-w-[160px] whitespace-nowrap"
+                      >
+                        {emp.balances[leaveTypeName]?.remainingLeaves ?? "-"}
+                      </td>
+                    ))}
+                    <td className="border px-4 py-2 text-center sticky right-0 bg-white z-10">
+                      <button
+                        onClick={() => handleEdit(emp)}
+                        className="text-blue-600 underline hover:text-blue-800"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
@@ -365,14 +408,14 @@ const EmployeeLeaveBalances = () => {
           onNext={handleNext}
         />
       )}
- 
+
       {/* 🔹 Spinner during submit (modal) */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <LoadingSpinner />
         </div>
       )}
- 
+
       {isEditModalOpen && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           {/* Spinner Overlay */}
@@ -381,13 +424,13 @@ const EmployeeLeaveBalances = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent border-white"></div>
             </div>
           )}
- 
+
           {/* Modal Content */}
           <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
             <h3 className="text-xl font-bold mb-6">
               Edit Leave Balances – {selectedEmployee.employeeName}
             </h3>
- 
+
             <div className="space-y-4">
               {leaveTypes.map(({ leaveTypeId, leaveTypeName }) => {
                 const gender = selectedEmployee?.employeeGender?.toLowerCase();
@@ -397,14 +440,14 @@ const EmployeeLeaveBalances = () => {
                 const currentValue =
                   selectedEmployee.balances[leaveTypeName]?.remainingLeaves ??
                   "";
- 
+
                 const isMaternity = leaveTypeName
                   .toLowerCase()
                   .includes("maternity");
                 const isPaternity = leaveTypeName
                   .toLowerCase()
                   .includes("paternity");
- 
+
                 let isDisabled = false;
                 if (
                   (isMaternity && gender === "male") ||
@@ -413,7 +456,7 @@ const EmployeeLeaveBalances = () => {
                 ) {
                   isDisabled = true;
                 }
- 
+
                 return (
                   <div
                     key={leaveTypeId}
@@ -450,7 +493,7 @@ const EmployeeLeaveBalances = () => {
                 );
               })}
             </div>
- 
+
             <div className="mt-8 flex justify-end gap-4">
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -473,5 +516,5 @@ const EmployeeLeaveBalances = () => {
     </div>
   );
 };
- 
+
 export default EmployeeLeaveBalances;
