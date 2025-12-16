@@ -24,7 +24,7 @@ export default function ApprovalRulesPage() {
   const [formData, setFormData] = useState({
     actionType: "",
     makerRole: "HR",
-    checkerRole: "hrAdministrator",
+    checkerRole: "hr_administrator",
     approvalLevel: 1,
     approvalCondition: "",
     approverType: "",
