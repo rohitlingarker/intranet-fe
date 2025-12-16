@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import Summary from "./Summary";
+import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
 import Board from "./Board";
 import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
@@ -15,6 +15,10 @@ import { Calendar } from "antd";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
+  console.log(projectId);
+  console.log("URL", window.location.href);
+  
+  
   const location = useLocation();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -90,13 +94,11 @@ const ProjectTabs = () => {
     if (selectedTab === "timelines") {
       return <Timeline projectId={pid} />;
     }
-    if (selectedTab === "calendar") {
-      return <Calendar projectId={pid} />;
-    }
-
-    // ⭐ Test Management (handles ALL inner tabs)
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
+    }
+    if (selectedTab === "calendar") {
+      return <Calendar projectId={pid} />;
     }
 
     return null;

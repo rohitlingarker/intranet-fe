@@ -1,7 +1,7 @@
 "use client";
 
 import { NavLink, useParams } from "react-router-dom";
-import { LayoutGrid, FileText, PenTool, Play, BarChart3 } from "lucide-react";
+import { LayoutGrid, FileText, PenTool, Play, BarChart3, Bug } from "lucide-react";
 
 export default function TopTabs({ selectedTab }) {
   const { projectId } = useParams();
@@ -33,6 +33,12 @@ export default function TopTabs({ selectedTab }) {
       path: `/projects/${projectId}?tab=test-management/test-execution`,
       tab: "test-management/test-execution",
       icon: <Play size={16} />,
+    },
+    {
+      name: "Bugs",
+      path: `/projects/${projectId}?tab=test-management/test-bugs`,
+      tab: "test-management/test-bugs", 
+      icon: <Bug size={16} />,
     },
     // {
     //   name: "Reports",

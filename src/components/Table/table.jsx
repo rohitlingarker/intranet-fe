@@ -84,7 +84,7 @@ const GenericTable = ({
           <thead>
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               {headers.map((header, idx) => (
-                <th key={idx} className="text-left px-4 py-3">
+                <th key={idx} className="text-center px-3 py-3">
                   {header}
                 </th> 
               ))}

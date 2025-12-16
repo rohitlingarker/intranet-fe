@@ -10,10 +10,13 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
+  Handshake,
+  
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { hr } from "date-fns/locale/hr";
+import { handler } from "@tailwindcss/line-clamp";
  
 const Dashboard = () => {
   const { user } = useAuth();
@@ -171,9 +174,9 @@ const Dashboard = () => {
 
   // ✅ Determine project route
   let projectHref = "/projects";
-  if (isDeveloper) projectHref = "/projects/developer";
-  else if (isManager) projectHref = "/projects/manager";
-  else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
+  // if (isDeveloper) projectHref = "/projects/developer";
+  // else if (isManager) projectHref = "/projects/manager";
+  // else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
  
   // ✅ Quick Stats — conditionally show based on role
   const quickStats = isAdminOrSuperAdmin
@@ -267,6 +270,14 @@ const Dashboard = () => {
       description: "View events, meetings, and deadlines",
       icon: Calendar,
       href: "/calendar",
+      color: "bg-[#d23369]",
+      stats: "5 events today",
+    },
+    {
+      title: "Employee Onbording",
+      description: "Create offers and onboard new employees",
+      icon: Handshake,
+      href: "/employee-onboarding",
       color: "bg-[#d23369]",
       stats: "5 events today",
     },

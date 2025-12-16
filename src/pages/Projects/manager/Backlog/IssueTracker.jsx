@@ -17,20 +17,20 @@ const IssueTracker = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const projectId = location.state?.projectId || paramProjectId;
-
+ 
   const [issues, setIssues] = useState({
     epicsData: [],
     storiesData: [],
     tasksData: [],
   });
-
+ 
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
   const [editModal, setEditModal] = useState({ visible: false, type: null, id: null });
-
+ 
   const [openEpics, setOpenEpics] = useState([]);
   const [openStories, setOpenStories] = useState([]);
-
+ 
   const token = localStorage.getItem("token");
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -40,7 +40,7 @@ const IssueTracker = () => {
   // Filter state
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
-
+ 
   const [filters, setFilters] = useState({
     types: [],
     statuses: [],
@@ -56,7 +56,7 @@ const IssueTracker = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+ 
   const fetchIssues = async () => {
     try {
       setLoading(true);
@@ -65,7 +65,7 @@ const IssueTracker = () => {
         axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`, { headers }),
         axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/tasks`, { headers }),
       ]);
-
+ 
       const epicsData = epicsRes.data.map((e) => ({
         ...e,
         type: "Epic",
@@ -75,7 +75,7 @@ const IssueTracker = () => {
         priority: (e.priority || "MEDIUM").toUpperCase(),
         status: e.status || "BACKLOG",
       }));
-
+ 
       const storiesData = storiesRes.data.map((s) => ({
         ...s,
         type: "Story",
@@ -93,7 +93,7 @@ const IssueTracker = () => {
           : t.status
           ? String(t.status).toUpperCase().replace(/\s+/g, "_")
           : "BACKLOG";
-
+ 
         return {
           ...t,
           type: "Task",
@@ -116,7 +116,7 @@ const IssueTracker = () => {
       setLoading(false);
     }
   };
-
+ 
   const fetchProjects = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects`, { headers });
@@ -125,18 +125,18 @@ const IssueTracker = () => {
       toast.error("Failed to load projects");
     }
   };
-
+ 
   useEffect(() => {
     if (projectId) {
       fetchIssues();
       fetchProjects();
     }
   }, [projectId]);
-
+ 
   const handleDelete = async (issue) => {
     const confirmed = window.confirm(`Delete this ${issue.type}?`);
     if (!confirmed) return;
-
+ 
     let endpoint = "";
     if (issue.type === "Epic") endpoint = `/api/epics/${issue.id}`;
     if (issue.type === "Story") endpoint = `/api/stories/${issue.id}`;
@@ -150,7 +150,7 @@ const IssueTracker = () => {
       toast.error(`Failed to delete ${issue.type}`);
     }
   };
-
+ 
   const handleEdit = (issue) => setEditModal({ visible: true, type: issue.type, id: issue.id });
 
   const handleUpdated = (msg) => {
@@ -162,29 +162,29 @@ const IssueTracker = () => {
     }, 300);
     toast.success(`${msg} updated`);
   };
-
+ 
   const handleView = (issue) => {
     navigate(`/projects/${projectId}/issues/${issue.type.toLowerCase()}/${issue.id}/view`, {
       state: { issue },
     });
   };
-
+ 
   const currentProject = projects.find((p) => p.id === Number(projectId));
   const projectName = currentProject?.name || projectId;
-
+ 
   const typeColors = {
     Epic: "bg-purple-200 text-purple-800",
     Story: "bg-blue-200 text-blue-800",
     Task: "bg-green-200 text-green-800",
   };
-
+ 
   const priorityColors = {
     LOW: "bg-green-100 text-green-700",
     MEDIUM: "bg-yellow-100 text-yellow-700",
     HIGH: "bg-orange-100 text-orange-700",
     CRITICAL: "bg-red-100 text-red-700",
   };
-
+ 
   const statusColors = {
     BACKLOG: "bg-gray-100 text-gray-700",
     IN_PROGRESS: "bg-blue-100 text-blue-700",
@@ -192,16 +192,16 @@ const IssueTracker = () => {
     DONE: "bg-green-100 text-green-700",
     TO_DO: "bg-gray-100 text-gray-700",
   };
-
+ 
   const toggleEpic = (id) =>
     setOpenEpics((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-
+ 
   const toggleStory = (id) =>
     setOpenStories((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const isFiltersEmpty = () =>
     filters.types.length === 0 && filters.statuses.length === 0 && filters.priorities.length === 0;
-
+ 
   const matchesFilters = (issue) => {
     if (isFiltersEmpty()) return true;
 
@@ -216,7 +216,7 @@ const IssueTracker = () => {
       const st = String(issue.status || "").toUpperCase().replace(/\s+/g, "_");
       if (!filters.statuses.includes(st)) return false;
     }
-
+ 
     return true;
   };
 
@@ -267,13 +267,13 @@ const IssueTracker = () => {
           </div>
         </div>
       </td>
-
+ 
       <td>
         <span className={`px-2 py-1 rounded text-xs ${typeColors[issue.type]}`}>
           {issue.type}
         </span>
       </td>
-
+ 
       <td>
         <span
           className={`px-2 py-1 rounded text-xs ${
@@ -283,7 +283,7 @@ const IssueTracker = () => {
           {issue.priority}
         </span>
       </td>
-
+ 
       <td>
         <span
           className={`px-2 py-1 rounded text-xs ${
@@ -293,10 +293,10 @@ const IssueTracker = () => {
           {String(issue.status).replace("_", " ")}
         </span>
       </td>
-
+ 
       <td className="text-sm">{issue.assigneeName}</td>
       <td className="text-sm">{issue.reporterName}</td>
-
+ 
       <td className="flex gap-2 py-3">
         <button
           onClick={(e) => {
@@ -306,7 +306,7 @@ const IssueTracker = () => {
         >
           <FiEdit className="text-green-600" />
         </button>
-
+ 
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -332,14 +332,14 @@ const IssueTracker = () => {
           <th className="px-2 w-24">Actions</th>
         </tr>
       </thead>
-
+ 
       <tbody>
         {issues.epicsData
           .filter((epic) => epicMatchesHierarchy(epic))
           .map((epic) => (
             <React.Fragment key={`E-${epic.id}`}>
               <TableRow issue={epic} level={0} />
-
+ 
               {openEpics.includes(epic.id) &&
                 issues.storiesData
                   .filter((s) => s.epicId === epic.id)
@@ -347,7 +347,7 @@ const IssueTracker = () => {
                   .map((story) => (
                     <React.Fragment key={`S-${story.id}`}>
                       <TableRow issue={story} level={1} />
-
+ 
                       {openStories.includes(story.id) &&
                         issues.tasksData
                           .filter((t) => t.storyId === story.id)
@@ -417,7 +417,7 @@ const IssueTracker = () => {
     { label: "To Do", value: "TO_DO" },
   ];
   const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-
+ 
   const toggleFilterValue = (group, value) => {
     setFilters((prev) => {
       const arr = prev[group];
@@ -427,16 +427,16 @@ const IssueTracker = () => {
       return { ...prev, [group]: [...arr, value] };
     });
   };
-
+ 
   const clearFilters = () => setFilters({ types: [], statuses: [], priorities: [] });
-
+ 
   return (
     <div className="max-w-7xl mx-auto mt-6 px-4 space-y-6">
       <ToastContainer />
-
+ 
       <div className="flex items-center justify-between sticky top-0 bg-white z-20 py-3 border-b">
         <h1 className="text-2xl font-semibold text-indigo-900">Issue Tracker ({projectName})</h1>
-
+ 
         <div className="flex items-center gap-3">
           <div className="relative" ref={filterRef}>
             <button
@@ -445,7 +445,7 @@ const IssueTracker = () => {
             >
               Filter ▾
             </button>
-
+ 
             {filterOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white border rounded-md shadow-lg p-3 z-30">
                 <div className="flex items-center justify-between mb-2">
@@ -457,7 +457,7 @@ const IssueTracker = () => {
                     Clear
                   </button>
                 </div>
-
+ 
                 <div className="space-y-2 max-h-56 overflow-auto pr-1">
                   <div>
                     <div className="text-xs font-medium text-gray-600 mb-1">Types</div>
@@ -475,7 +475,7 @@ const IssueTracker = () => {
                       ))}
                     </div>
                   </div>
-
+ 
                   <div className="pt-2">
                     <div className="text-xs font-medium text-gray-600 mb-1">Status</div>
                     <div className="grid grid-cols-2 gap-2">
@@ -492,7 +492,7 @@ const IssueTracker = () => {
                       ))}
                     </div>
                   </div>
-
+ 
                   <div className="pt-2">
                     <div className="text-xs font-medium text-gray-600 mb-1">Priority</div>
                     <div className="grid grid-cols-2 gap-2">
@@ -510,7 +510,7 @@ const IssueTracker = () => {
                     </div>
                   </div>
                 </div>
-
+ 
                 <div className="mt-3 flex justify-end gap-2">
                   <button
                     onClick={() => setFilterOpen(false)}
@@ -531,7 +531,7 @@ const IssueTracker = () => {
           </button>
         </div>
       </div>
-
+ 
       {loading ? (
         <div className="flex justify-center py-20">
           <LoadingSpinner text="Loading issues..." />
@@ -539,7 +539,7 @@ const IssueTracker = () => {
       ) : (
         <div className="bg-white border rounded-lg shadow p-4">{renderHierarchy()}</div>
       )}
-
+ 
       {editModal.visible && (
         <Modal onClose={() => setEditModal({ visible: false })}>
           {editModal.type === "Epic" && (
@@ -575,7 +575,7 @@ const IssueTracker = () => {
     </div>
   );
 };
-
+ 
 const Modal = ({ children, onClose }) => (
   <div
     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
@@ -592,5 +592,5 @@ const Modal = ({ children, onClose }) => (
     </div>
   </div>
 );
-
+ 
 export default IssueTracker;

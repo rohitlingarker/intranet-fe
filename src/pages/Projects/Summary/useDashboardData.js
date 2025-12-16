@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { getCache, setCache, getPending, setPending } from "./apiCache";
 
-const DEFAULT_TTL = 30_000; // 30s cache
+const DEFAULT_TTL = 30_000; // 30 seconds cache
 
 export default function useDashboardData(projectId) {
   const [data, setData] = useState({
@@ -29,13 +29,25 @@ export default function useDashboardData(projectId) {
   const controllersRef = useRef({});
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined"
+      ? localStorage.getItem("token")
+      : null;
+
     const base = import.meta.env.VITE_PMS_BASE_URL || "";
+
     if (!projectId || !token) return;
 
-    // helper that respects cache, dedupe and abort signals
+    /**
+     * Fetch Helper with:
+     * - Cache
+     * - Pending dedupe
+     * - Abort support
+     * - Silent cancellation
+     */
     const fetchWithCache = (key, url, transformStage = false, ttl = DEFAULT_TTL) => {
       const cacheKey = `${key}:${url}`;
+
+      /** ---------- 1) Cache hit ---------- */
       const cached = getCache(cacheKey);
       if (cached) {
         setData(prev => ({ ...prev, [key]: cached }));
@@ -43,16 +55,23 @@ export default function useDashboardData(projectId) {
         return Promise.resolve(cached);
       }
 
+      /** ---------- 2) Pending Promise dedupe ---------- */
       const pending = getPending(cacheKey);
       if (pending) {
-        // a fetch for same resource is in progress
-        return pending.then(res => {
-          setData(prev => ({ ...prev, [key]: res }));
-          setLoading(prev => ({ ...prev, [key]: false }));
-          return res;
-        }).catch(err => { throw err; });
+        return pending
+          .then(res => {
+            setData(prev => ({ ...prev, [key]: res }));
+            setLoading(prev => ({ ...prev, [key]: false }));
+            return res;
+          })
+          .catch(err => {
+            /** ignore canceled — no console noise */
+            if (axios.isCancel(err) || err?.code === "ERR_CANCELED") return;
+            console.error("fetch error", key, err?.message);
+          });
       }
 
+      /** ---------- 3) Fresh Request ---------- */
       const controller = new AbortController();
       controllersRef.current[key] = controller;
 
@@ -60,19 +79,26 @@ export default function useDashboardData(projectId) {
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       }).then(res => {
-        const payload = transformStage ? (res.data?.currentStage || res.data || "INITIATION") : (res.data || []);
+        const payload = transformStage
+          ? (res.data?.currentStage || res.data || "INITIATION")
+          : (res.data || []);
+
         setCache(cacheKey, payload, ttl);
         setData(prev => ({ ...prev, [key]: payload }));
         setLoading(prev => ({ ...prev, [key]: false }));
+
         return payload;
       }).catch(err => {
-        if (axios.isCancel(err)) {
-          // aborted - don't set error state
-          return Promise.reject(err);
+        if (axios.isCancel(err) || err?.code === "ERR_CANCELED") {
+          /** silently ignore aborts */
+          return;
         }
-        console.error("fetch error", key, err && err.message);
+
+        console.error("fetch error", key, err?.message);
+
         setData(prev => ({ ...prev, [key]: [] }));
         setLoading(prev => ({ ...prev, [key]: false }));
+
         return [];
       });
 
@@ -80,7 +106,7 @@ export default function useDashboardData(projectId) {
       return promise;
     };
 
-    // kick off all requests in parallel
+    /** ---------- Fire parallel requests ---------- */
     fetchWithCache("stage", `${base}/api/projects/${projectId}`, true);
     fetchWithCache("epics", `${base}/api/projects/${projectId}/epics`);
     fetchWithCache("stories", `${base}/api/projects/${projectId}/stories`);
@@ -89,13 +115,14 @@ export default function useDashboardData(projectId) {
     fetchWithCache("statuses", `${base}/api/projects/${projectId}/statuses`);
     fetchWithCache("users", `${base}/api/projects/${projectId}/members-with-owner`);
 
-    // cleanup abort controllers on unmount or change
+    /** ---------- Cleanup ---------- */
     return () => {
       Object.values(controllersRef.current).forEach(ctrl => {
-        try { ctrl.abort(); } catch(e) {}
+        try { ctrl.abort(); } catch {}
       });
       controllersRef.current = {};
     };
+
   }, [projectId]);
 
   return { data, loading };

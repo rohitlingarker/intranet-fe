@@ -1,55 +1,143 @@
+// src/pages/Projects/manager/Sprint/CreateSprintModal.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
+const CreateSprintModal = ({
+  isOpen,
+  sprint,            // <-- EDIT MODE sprint object
+  projectId,
+  onClose,
+  onCreated,
+}) => {
   if (!isOpen) return null;
 
-  const [formData, setFormData] = useState({
+  const token = localStorage.getItem("token");
+
+  // ---------------------------
+  // Default Form State
+  // ---------------------------
+  const emptyState = {
     name: "",
     goal: "",
     startDate: "",
     endDate: "",
     status: "PLANNING",
-    projectId: projectId.toString(),
-  });
-  const token = localStorage.getItem("token");
+    projectId: projectId?.toString(),
+  };
 
+  const [formData, setFormData] = useState(emptyState);
+  const [duration, setDuration] = useState("1W");
+  const [customWeeks, setCustomWeeks] = useState("");
   const [projectName, setProjectName] = useState("");
+  const [showDecimalWarning, setShowDecimalWarning] = useState(false);
 
+  // ---------------------------
+  // Fetch Project Name
+  // ---------------------------
   useEffect(() => {
-    const fetchProject = async () => {
+    const load = async () => {
       try {
-        const response = await axios.get(
+        const res = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        setProjectName(response.data.name || "Unknown Project");
-      } catch (error) {
-        toast.error("Error fetching project details.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        console.error("Error fetching project:", error);
+        setProjectName(res.data.name);
+      } catch (e) {
+        toast.error("Failed to load project details");
       }
     };
-    if (projectId) {
-      fetchProject();
-    }
+    load();
   }, [projectId, token]);
 
+  // ---------------------------
+  // EDIT MODE: Load sprint data
+  // ---------------------------
+  useEffect(() => {
+    if (sprint) {
+      setFormData({
+        name: sprint.name || "",
+        goal: sprint.goal || "",
+        startDate: sprint.startDate
+          ? sprint.startDate.slice(0, 16)
+          : "",
+        endDate: sprint.endDate
+          ? sprint.endDate.slice(0, 16)
+          : "",
+        status: sprint.status || "PLANNING",
+        projectId: projectId.toString(),
+      });
+
+      setDuration("CUSTOM"); // because edit sprint uses actual dates
+      setCustomWeeks("");
+    } else {
+      setFormData(emptyState);
+      setDuration("1W");
+      setCustomWeeks("");
+    }
+  }, [sprint]);
+
+  // ---------------------------
+  // Helpers
+  // ---------------------------
+  const toLocalDateTime = (val) =>
+    val.length === 16 ? `${val}:00` : val;
+
+  const calculateEndDate = (start, weeks) => {
+    if (!start || !weeks) return "";
+    const d = new Date(start);
+    d.setDate(d.getDate() + weeks * 7);
+    return d.toISOString().slice(0, 16);
+  };
+
+  // ---------------------------
+  // Start Date Change
+  // ---------------------------
+  const handleStartDateChange = (e) => {
+    const newStart = e.target.value;
+    let newEnd = formData.endDate;
+
+    if (duration !== "CUSTOM") {
+      const w = parseInt(duration.replace("W", ""));
+      newEnd = calculateEndDate(newStart, w);
+    } else if (customWeeks) {
+      newEnd = calculateEndDate(newStart, parseInt(customWeeks));
+    }
+
+    setFormData({
+      ...formData,
+      startDate: newStart,
+      endDate: newEnd,
+    });
+  };
+
+  // ---------------------------
+  // Duration Change
+  // ---------------------------
+  const handleDurationChange = (e) => {
+    const value = e.target.value;
+    setDuration(value);
+
+    if (value !== "CUSTOM") {
+      const w = parseInt(value.replace("W", ""));
+      const end = calculateEndDate(formData.startDate, w);
+      setFormData({ ...formData, endDate: end });
+      setCustomWeeks("");
+    }
+  };
+
+  // ---------------------------
+  // Generic input handler
+  // ---------------------------
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const toLocalDateTime = (datetimeStr) => {
-    return datetimeStr.length === 16 ? `${datetimeStr}:00` : datetimeStr;
-  };
-
+  // ---------------------------
+  // SUBMIT (Create or Update)
+  // ---------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -59,69 +147,71 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
       startDate: toLocalDateTime(formData.startDate),
       endDate: toLocalDateTime(formData.endDate),
       status: formData.status,
-      projectId: parseInt(formData.projectId),
+      projectId: Number(formData.projectId),
     };
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      let res;
+
+      if (sprint) {
+        // -------------------------
+        // EDIT MODE
+        // -------------------------
+        res = await axios.put(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprint.id}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success("Sprint updated successfully!");
+      } else {
+        // -------------------------
+        // CREATE MODE
+        // -------------------------
+        res = await axios.post(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success("Sprint created successfully!");
+      }
+
+      onCreated(res.data);
+
+      setTimeout(() => onClose(), 600);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Error saving sprint"
       );
-
-      toast.success("Sprint created successfully!", {
-        position: "top-right",
-        autoClose: 1000,
-      });
-
-      onCreated(response.data);
-
-      setFormData({
-        name: "",
-        goal: "",
-        startDate: "",
-        endDate: "",
-        status: "PLANNING",
-        projectId: projectId.toString(),
-      });
-
-      setTimeout(() => {
-        onClose();
-      }, 500);
-    } catch (error) {
-      console.error(
-        "🚫 Error creating sprint:",
-        error.response?.data || error.message
-      );
-      const errorMsg =
-        error.response?.data?.message ||
-        "Sprint creation failed. Please check your inputs.";
-      toast.error(`❌ ${errorMsg}`, { position: "top-right", autoClose: 5000 });
     }
   };
 
+  // ---------------------------
+  // Render
+  // ---------------------------
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-xl max-h-screen overflow-y-auto p-6 relative">
+    <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto relative">
         <ToastContainer />
+
         {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-          aria-label="Close modal"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          Create a New Sprint
+        <h2 className="text-2xl font-semibold text-center mb-6">
+          {sprint ? "Edit Sprint" : "Create New Sprint"}
         </h2>
+
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Sprint Name */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Sprint Name <span className="text-red-500">*</span>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Sprint Name *
             </label>
             <input
               type="text"
@@ -129,95 +219,147 @@ const CreateSprintModal = ({ isOpen, projectId, onClose, onCreated }) => {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="border rounded-lg w-full p-2"
             />
           </div>
 
+          {/* Goal */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Goal <span className="text-gray-400 text-sm">(Optional)</span>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Goal <span className="text-gray-400">(optional)</span>
             </label>
             <textarea
               name="goal"
               value={formData.goal}
               onChange={handleChange}
+              className="border rounded-lg w-full p-2"
               rows={3}
-              className="w-full border border-gray-300 p-2 rounded-md resize-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* Start Date */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Start Date <span className="text-red-500">*</span>
+            <label className="block text-gray-700 mb-1 font-medium">
+              Start Date *
             </label>
             <input
               type="datetime-local"
               name="startDate"
               value={formData.startDate}
-              onChange={handleChange}
+              onChange={handleStartDateChange}
               required
-              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="border rounded-lg w-full p-2"
             />
           </div>
 
+          {/* Duration */}
+          {!sprint && (
+            <div>
+              <label className="block text-gray-700 mb-1 font-medium">
+                Duration
+              </label>
+              <select
+                value={duration}
+                onChange={handleDurationChange}
+                className="border rounded-lg w-full p-2"
+              >
+                <option value="1W">1 Week</option>
+                <option value="2W">2 Weeks</option>
+                <option value="3W">3 Weeks</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+            </div>
+          )}
+
+          {/* Custom weeks */}
+          {!sprint && duration === "CUSTOM" && (
+            <div>
+              {showDecimalWarning && (
+                <p className="text-red-500 text-sm mb-1">
+                  Decimal weeks not allowed
+                </p>
+              )}
+
+              <label className="block font-medium text-gray-700 mb-1">
+                Enter Weeks *
+              </label>
+
+              <input
+                type="text"
+                value={customWeeks}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.includes(".")) {
+                    setShowDecimalWarning(true);
+                    return;
+                  }
+                  if (/^\d*$/.test(value)) {
+                    setShowDecimalWarning(false);
+                    setCustomWeeks(value);
+
+                    if (
+                      value !== "" &&
+                      value !== "0" &&
+                      formData.startDate
+                    ) {
+                      const end = calculateEndDate(
+                        formData.startDate,
+                        Number(value)
+                      );
+                      setFormData({ ...formData, endDate: end });
+                    }
+                  }
+                }}
+                className="border rounded-lg w-full p-2"
+              />
+            </div>
+          )}
+
+          {/* End Date */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              End Date <span className="text-red-500">*</span>
+            <label className="block text-gray-700 mb-1 font-medium">
+              End Date *
             </label>
             <input
               type="datetime-local"
               name="endDate"
               value={formData.endDate}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
+              readOnly
+              disabled={!sprint}
+              className="border rounded-lg w-full p-2 bg-gray-100"
             />
           </div>
 
+          {/* Project (readonly) */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="PLANNING">Planning</option>
-              <option value="ACTIVE">Active</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-          </div>
-
-          {/* Project field (read-only) */}
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">
+            <label className="block text-gray-700 mb-1 font-medium">
               Project
             </label>
             <input
               type="text"
               value={projectName}
               disabled
-              className="w-full border border-gray-300 p-2 rounded-md bg-gray-100 text-gray-600"
+              className="border rounded-lg w-full p-2 bg-gray-100"
             />
           </div>
 
-          <div className="flex justify-end space-x-4 mt-6">
+          {/* Buttons */}
+          <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition"
+              className="px-5 py-2 bg-gray-200 rounded-lg text-gray-700"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+              className="px-5 py-2 bg-blue-600 text-white rounded-lg"
             >
-              Create Sprint
+              {sprint ? "Update Sprint" : "Create Sprint"}
             </button>
           </div>
-
         </form>
       </div>
     </div>
