@@ -105,7 +105,7 @@ export default function EmployeeOnboardingDashboard() {
           color="text-green-600"
         />
          <StatCard
-          title="Drafts"
+          title="Draft Offers"
           value={draftCount}
           icon={FileText}
           color="text-blue-600"
@@ -130,9 +130,9 @@ export default function EmployeeOnboardingDashboard() {
           className="w-full md:w-1/4 px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="ALL">All Status</option>
-          <option value="Accepted">Accept</option>
-          <option value="Offered">Offer</option>
-          <option value="Created">Create</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Offered">Offered</option>
+          <option value="Created">Created</option>
         </select>
       </div>
       
