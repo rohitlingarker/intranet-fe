@@ -97,9 +97,9 @@ const ProjectTabs = () => {
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
-    if (selectedTab === "calendar") {
-      return <Calendar projectId={pid} />;
-    }
+    // if (selectedTab === "calendar") {
+    //   return <Calendar projectId={pid} />;
+    // }
 
     return null;
   };
@@ -120,8 +120,8 @@ const ProjectTabs = () => {
      { name: "Risk Management", tab: "risk-management" },
     // { name: "Status Report", tab: "status-report" },
     { name: "Test Management", tab: "test-management" },
-      { name: "Timelines", tab:"timelines" },
-    { name: "Calendar", tab: "calendar" },
+     { name: "Timelines", tab:"timelines" },
+    // { name: "Calendar", tab: "calendar" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
@@ -133,9 +133,17 @@ const ProjectTabs = () => {
   return (
     <div>
       {/* Top Navbar */}
-      <header className="bg-white mb-4">
+      {/* <header className="bg-white mb-4">
         <Navbar logo={null} navItems={navItemsWithActive} />
-      </header>
+      </header> */}
+      <header className="bg-white mb-4 px-4 py-3 flex items-center justify-between border-b">
+  <h1 className="text-xl font-semibold text-slate-700">
+    {projectName || "Project"}
+  </h1>
+
+  <Navbar logo={null} navItems={navItemsWithActive} />
+</header>
+
 
       {/* Tab Content */}
       <div>{renderTabContent()}</div>

@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import FormInput from "../../../../components/forms/FormInput";
 import FormSelect from "../../../../components/forms/FormSelect";
 import FormTextArea from "../../../../components/forms/FormTextArea";
+import FormDatePicker from "../../../../components/forms/FormDatePicker";
 
 const EditStoryForm = ({
   storyId,
@@ -87,6 +88,8 @@ const EditStoryForm = ({
 
           assigneeId: data.assigneeId || "",
           reporterId: data.reporterId || "",
+          startDate: data.startDate || "",
+          dueDate: data.dueDate || "",  
         });
 
         setUsers(userRes.data.content || userRes.data || []);
@@ -144,6 +147,8 @@ const EditStoryForm = ({
       sprintId: formData.sprintId,
       statusId: formData.statusId,
       priority: formData.priority,
+      startDate: new Date(formData.startDate).toISOString(),
+      dueDate: new Date(formData.dueDate).toISOString(),
     };
 
     try {
@@ -324,6 +329,12 @@ const EditStoryForm = ({
               ...users.map((u) => ({ label: u.name, value: u.id })),
             ]}
           />
+         
+    <FormDatePicker label="Start Date" name="startDate" value={formData.startDate || ""} onChange={handleChange}  />
+
+    <FormDatePicker label="Due Date" name="dueDate" value={formData.dueDate || ""} onChange={handleChange}/>
+
+      
         </div>
       </div>
 
