@@ -17,7 +17,7 @@ export default function TestManagement() {
 
   const getSelectedTabFromLocation = () => {
     const params = new URLSearchParams(location.search);
-    return params.get("tab") || "test-management/overview";
+    return params.get("tab") || "test-management/test-plans";
   };
 
   const [selectedTab, setSelectedTab] = useState(getSelectedTabFromLocation());
@@ -28,8 +28,8 @@ export default function TestManagement() {
 
   const renderTabContent = () => {
     switch (selectedTab) {
-      case "test-management/overview":
-        return <Overview projectId={projectId} />;
+      // case "test-management/overview":
+      //   return <Overview projectId={projectId} />;
 
       case "test-management/test-plans":
         return <TestPlans projectId={projectId} />;
@@ -44,7 +44,7 @@ export default function TestManagement() {
         return <BugPage projectId={projectId} />;
 
       default:
-        return <Overview projectId={projectId} />;
+        return <TestPlans  projectId={projectId} />;
     }
   };
 
