@@ -62,6 +62,9 @@ import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
 import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
 import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
+import HrConfiguration from "./pages/employee-onboarding/hr-configuration/HrConfiguration.jsx";
+import CountryManagement from "./pages/employee-onboarding/hr-configuration/country/CountryManagement.jsx";
+import IdentityTypeManagement from "./pages/employee-onboarding/hr-configuration/identity/IdentityTypeManagement.jsx";
 // import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
 // import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
 // import ViewOffer from "./pages/employee_onboarding/ViewOffer.jsx";
@@ -107,7 +110,7 @@ import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
 import { showStatusToast } from "./components/toastfy/toast";
-
+import { IdentificationIcon } from "@heroicons/react/24/outline";
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
@@ -337,13 +340,20 @@ const AppRoutes = () => {
 <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
 {/* <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewOffer />} /> */}
 
+<Route
+  path="/employee-onboarding/hr-configuration/country"
+  element={<CountryManagement />}
+/>
+<Route 
+  path="/employee-onboarding/hr-configuration" 
+  element={<HrConfiguration />}
+/>
+<Route 
+path ="/employee-onboarding/hr-configuration/identity" 
+element={ <IdentityTypeManagement/> } />
 
 
-
-            {/* <Route path="/employee-onboarding/create" element={<CreateOffer />} />
-            <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
-            <Route path="/employee-onboarding/offerletter/:user_uuid" element={<ViewOffer />} /> */}
-
+           
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />

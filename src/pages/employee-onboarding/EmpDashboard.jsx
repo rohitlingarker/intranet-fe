@@ -86,6 +86,13 @@ export default function EmployeeOnboardingDashboard() {
           >
             Bulk Upload
           </Button>
+          <Button
+            varient="primary"
+            size="medium"
+            onClick={() => navigate("/employee-onboarding/hr-configuration")}
+          >
+            + HR Configuration
+          </Button>
         </div>
       </div>
 
