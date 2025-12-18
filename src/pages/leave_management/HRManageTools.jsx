@@ -18,6 +18,7 @@ const HRManageTools = ({ employeeId }) => {
   // 2. Add state for the new modal
   const [isAddHolidaysModalOpen, setIsAddHolidaysModalOpen] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [genderBasedLeaveTypes, setGenderBasedLeaveTypes] = useState([]);
   const [editLeaveType, setEditLeaveType] = useState(null);
   const [selectedLeaveTypeIdToDelete, setSelectedLeaveTypeIdToDelete] =
     useState(null);
@@ -32,6 +33,7 @@ const HRManageTools = ({ employeeId }) => {
 
   useEffect(() => {
     fetchLeaveTypes();
+    fetchGenderBasedLeaveTypes();
   }, []);
 
   const fetchLeaveTypes = async () => {
@@ -46,6 +48,23 @@ const HRManageTools = ({ employeeId }) => {
       toast.error("Failed to load leave types");
     } finally {
       setIsLoading(false); // ✅ Hide spinner after request completes
+    }
+  };
+
+  const fetchGenderBasedLeaveTypes = async () => {
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/gender-base-leave/all-leave-types`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      setGenderBasedLeaveTypes(res.data?.data);
+    } catch (err) {
+      console.error("Failed to fetch leave types", err);
+      toast.error(
+        err.response?.data?.message || "Failed to load gender based leave types"
+      );
     }
   };
 
@@ -90,6 +109,10 @@ const HRManageTools = ({ employeeId }) => {
   };
 
   const tableHeaders = leaveTypes.length > 0 ? Object.keys(leaveTypes[0]) : [];
+  const tableHeadersGenderBase =
+    genderBasedLeaveTypes.length > 0
+      ? Object.keys(genderBasedLeaveTypes[0])
+      : [];
 
   return (
     <div className="space-y-6 py-6 px-6">
@@ -149,82 +172,167 @@ const HRManageTools = ({ employeeId }) => {
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="overflow-x-auto border rounded-md max-w-full">
-          <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
-            <thead className="bg-gray-100">
-              <tr>
-                {tableHeaders.map((header, i) => (
-                  <th
-                    key={header}
-                    className={`border px-4 py-3 min-w-[100px] capitalize bg-gray-100 ${
-                      i === 0
-                        ? "sticky left-0 z-20"
-                        : i === 1
-                        ? "sticky left-[200px] z-20"
-                        : ""
-                    }`}
-                  >
-                    {header}
-                  </th>
-                ))}
-                <th className="border px-3 py-2 min-w-[100px] sticky right-0 bg-gray-100 z-20">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="text-xs">
-              {leaveTypes.length === 0 ? (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            Gender Based Leave Types
+          </h2>
+          <div className="overflow-x-auto border rounded-md max-w-full">
+            <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
+              <thead className="bg-gray-100">
                 <tr>
-                  <td
-                    colSpan={tableHeaders.length + 1}
-                    className="text-center py-6 text-gray-500"
-                  >
-                    No leave types found.
-                  </td>
+                  {tableHeadersGenderBase.map((header, i) => (
+                    <th
+                      key={header}
+                      className={`border px-4 py-3 min-w-[100px] capitalize bg-gray-100 ${
+                        i === 0
+                          ? "sticky left-0 z-20"
+                          : i === 1
+                          ? "sticky left-[200px] z-20"
+                          : ""
+                      }`}
+                    >
+                      {header}
+                    </th>
+                  ))}
+                  <th className="border px-3 py-2 min-w-[100px] sticky right-0 bg-gray-100 z-20">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                leaveTypes.map((lt, index) => (
-                  <tr key={index} className="border-t">
-                    {tableHeaders.map((key, i) => (
-                      <td
-                        key={key}
-                        className={`border px-4 py-2 min-w-[200px] bg-white ${
-                          i === 0
-                            ? "sticky left-0 z-10"
-                            : i === 1
-                            ? "sticky left-[200px] z-10"
-                            : ""
-                        }`}
-                      >
-                        {String(lt[key])}
-                      </td>
-                    ))}
-                    <td className="border px-3 py-2 min-w-[100px] sticky right-0 bg-white">
-                      <div className="flex items-center justify-center gap-3">
-                        <button
-                          title="Edit"
-                          onClick={() => {
-                            setEditLeaveType(lt);
-                            setIsAddLeaveTypeModalOpen(true);
-                          }}
-                          className="text-blue-500 hover:text-blue-800 transition-colors"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          title="Delete"
-                          onClick={() => handleConfirm(lt.leaveTypeId)}
-                          className="text-red-500 hover:text-red-800 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="text-xs">
+                {genderBasedLeaveTypes.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={tableHeadersGenderBase.length + 1}
+                      className="text-center py-6 text-gray-500"
+                    >
+                      No leave types found.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  genderBasedLeaveTypes.map((lt, index) => (
+                    <tr key={index} className="border-t">
+                      {tableHeadersGenderBase.map((key, i) => (
+                        <td
+                          key={key}
+                          className={`border px-4 py-2 min-w-[200px] bg-white ${
+                            i === 0
+                              ? "sticky left-0 z-10"
+                              : i === 1
+                              ? "sticky left-[200px] z-10"
+                              : ""
+                          }`}
+                        >
+                          {String(lt[key])}
+                        </td>
+                      ))}
+                      <td className="border px-3 py-2 min-w-[100px] sticky right-0 bg-white">
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            title="Edit"
+                            onClick={() => {
+                              setEditLeaveType(lt);
+                              setIsAddLeaveTypeModalOpen(true);
+                            }}
+                            className="text-blue-500 hover:text-blue-800 transition-colors"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            title="Delete"
+                            onClick={() => handleConfirm(lt.leaveTypeId)}
+                            className="text-red-500 hover:text-red-800 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2 mt-3">
+            Regular Leave Types
+          </h2>
+          <div className="overflow-x-auto border rounded-md max-w-full">
+            <table className="min-w-max text-sm text-left border-collapse relative w-[800px]">
+              <thead className="bg-gray-100">
+                <tr>
+                  {tableHeaders.map((header, i) => (
+                    <th
+                      key={header}
+                      className={`border px-4 py-3 min-w-[100px] capitalize bg-gray-100 ${
+                        i === 0
+                          ? "sticky left-0 z-20"
+                          : i === 1
+                          ? "sticky left-[200px] z-20"
+                          : ""
+                      }`}
+                    >
+                      {header}
+                    </th>
+                  ))}
+                  <th className="border px-3 py-2 min-w-[100px] sticky right-0 bg-gray-100 z-20">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-xs">
+                {leaveTypes.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={tableHeaders.length + 1}
+                      className="text-center py-6 text-gray-500"
+                    >
+                      No leave types found.
+                    </td>
+                  </tr>
+                ) : (
+                  leaveTypes.map((lt, index) => (
+                    <tr key={index} className="border-t">
+                      {tableHeaders.map((key, i) => (
+                        <td
+                          key={key}
+                          className={`border px-4 py-2 min-w-[200px] bg-white ${
+                            i === 0
+                              ? "sticky left-0 z-10"
+                              : i === 1
+                              ? "sticky left-[200px] z-10"
+                              : ""
+                          }`}
+                        >
+                          {String(lt[key])}
+                        </td>
+                      ))}
+                      <td className="border px-3 py-2 min-w-[100px] sticky right-0 bg-white">
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            title="Edit"
+                            onClick={() => {
+                              setEditLeaveType(lt);
+                              setIsAddLeaveTypeModalOpen(true);
+                            }}
+                            className="text-blue-500 hover:text-blue-800 transition-colors"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            title="Delete"
+                            onClick={() => handleConfirm(lt.leaveTypeId)}
+                            className="text-red-500 hover:text-red-800 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       <AddEmployeeModal
@@ -240,6 +348,7 @@ const HRManageTools = ({ employeeId }) => {
         editData={editLeaveType}
         onSuccess={() => {
           fetchLeaveTypes();
+          fetchGenderBasedLeaveTypes();
           setEditLeaveType(null);
           setIsAddLeaveTypeModalOpen(false);
         }}

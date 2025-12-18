@@ -142,9 +142,22 @@ const CreateProjectModal = ({
 
       setDateError(false);
     } catch (error) {
-      console.error("Failed to submit project:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to submit project.");
-    } finally {
+  console.error(
+    "Failed to submit project:",
+    error.response?.data || error
+  );
+
+  const backend = error.response?.data;
+
+  const errorMessage =
+    backend?.errors?.[0] ||     // first error in array
+    backend?.message ||         // fallback backend message
+    "Project update failed. Please try again.";
+
+  toast.error(errorMessage);
+}
+
+ finally {
       setIsSubmitting(false);
     }
   };

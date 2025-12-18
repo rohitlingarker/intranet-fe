@@ -37,8 +37,9 @@ export default function EmployeeOnboardingDashboard() {
     fetchOffers();
   }, []);
 
-  const AcceptCount = offers.filter(o => o.status === "Accepted").length;
+  const acceptCount = offers.filter(o => o.status === "Accepted").length;
   const sentCount = offers.filter(o => o.status === "Offered").length;
+  const draftCount = offers.filter(o => o.status === "Created").length;
 
   
   // ✅ Filter offers based on search term (case-insensitive)
@@ -93,7 +94,7 @@ export default function EmployeeOnboardingDashboard() {
         <StatCard title="Total Offers" value={offers.length} icon={Users} />
         <StatCard
           title=" Accepted Offers"
-          value={AcceptCount}
+          value={acceptCount}
           icon={Clock}
           color="text-orange-600"
         />
@@ -104,8 +105,8 @@ export default function EmployeeOnboardingDashboard() {
           color="text-green-600"
         />
          <StatCard
-          title="Drafts"
-          value={offers.filter(o => o.status === "DRAFT").length}
+          title="Draft Offers"
+          value={draftCount}
           icon={FileText}
           color="text-blue-600"
         />
@@ -129,9 +130,9 @@ export default function EmployeeOnboardingDashboard() {
           className="w-full md:w-1/4 px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="ALL">All Status</option>
-          <option value="Accepted">Accept</option>
-          <option value="Offered">Offer</option>
-          <option value="DRAFT">Draft</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Offered">Offered</option>
+          <option value="Created">Created</option>
         </select>
       </div>
       

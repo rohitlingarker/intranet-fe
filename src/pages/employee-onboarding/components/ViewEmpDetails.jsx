@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { showStatusToast } from "../../../components/toastfy/toast"; 
 import {
   ArrowLeft,
   Mail,
@@ -65,13 +66,13 @@ export default function ViewEmpDetails() {
           },
         }
       );
-      alert(res.data.results?.[0]?.message || "Offer sent successfully");
+      showStatusToast(res.data.results?.[0]?.message || "Offer sent successfully");
 
       // ✅ Refresh employee status after send
       fetchEmployee();
     } catch (error) {
       console.error("Failed to send offer", error);
-      alert("Failed to send offer");
+      showStatusToast("Failed to send offer");
     } finally {
       setSending(false);
     }
