@@ -65,9 +65,12 @@ import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetail
 import HrConfiguration from "./pages/employee-onboarding/hr-configuration/HrConfiguration.jsx";
 import CountryManagement from "./pages/employee-onboarding/hr-configuration/country/CountryManagement.jsx";
 import IdentityTypeManagement from "./pages/employee-onboarding/hr-configuration/identity/IdentityTypeManagement.jsx";
-// import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
-// import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
-// import ViewOffer from "./pages/employee_onboarding/ViewOffer.jsx";
+import CountryIdentityMapping from "./pages/employee-onboarding/hr-configuration/mapping/CountryIdentityMapping.jsx";
+import EducationDashboard from "./pages/employee-onboarding/hr-configuration/education/EducationDashboard.jsx";
+import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
+import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
+import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -335,25 +338,35 @@ const AppRoutes = () => {
             <Route  path ="/employee-onboarding" element={ <EmpDashboard/> } />
             <Route  path="/employee-onboarding/offer/:user_uuid"  element={<ViewEmpDetails />}/>
            // Correct routes
-<Route path="/employee-onboarding" element={<EmpDashboard />} />
-<Route path="/employee-onboarding/create" element={<CreateOffer />} />
-<Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
-{/* <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewOffer />} /> */}
+            <Route path="/employee-onboarding" element={<EmpDashboard />} />
+            <Route path="/employee-onboarding/create" element={<CreateOffer />} />
+            <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
+            <Route path="/employee-onboarding/hr-configuration/country" element={<CountryManagement />}/>
+            <Route path="/employee-onboarding/hr-configuration" element={<HrConfiguration />}/>
+            <Route path ="/employee-onboarding/hr-configuration/identity" element={ <IdentityTypeManagement/> } />
+            <Route path ="/employee-onboarding/hr-configuration/mapping" element={ <CountryIdentityMapping/> } />
+<Route
+  path="/employee-onboarding/hr-configuration/education"
+  element={<EducationDashboard />}
+/>
 
 <Route
-  path="/employee-onboarding/hr-configuration/country"
-  element={<CountryManagement />}
+  path="/employee-onboarding/hr-configuration/education/levels"
+  element={<EducationLevelManagement />}
 />
-<Route 
-  path="/employee-onboarding/hr-configuration" 
-  element={<HrConfiguration />}
+
+<Route
+  path="/employee-onboarding/hr-configuration/education/documents"
+  element={<EducationDocumentManagement />}
 />
-<Route 
-path ="/employee-onboarding/hr-configuration/identity" 
-element={ <IdentityTypeManagement/> } />
+
+<Route
+  path="/employee-onboarding/hr-configuration/education/mapping"
+  element={<CountryEducationMapping />}
+/>
 
 
-           
+
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />

@@ -1,0 +1,104 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+export default function AddCountryIdentityMappingModal({
+  countryUuid,
+  onClose,
+  onSuccess,
+}) {
+  const [identities, setIdentities] = useState([]);
+  const [identityUuid, setIdentityUuid] = useState("");
+  const [mandatory, setMandatory] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const loadIdentities = async () => {
+      const res = await axios.get(`${BASE_URL}/identity`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIdentities(res.data);
+    };
+    loadIdentities();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await axios.post(
+        `${BASE_URL}/identity/country-mapping`,
+        {
+          country_uuid: countryUuid,
+          identity_type_uuid: identityUuid,
+          is_mandatory: mandatory,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      toast.success("Identity mapped successfully");
+      onClose();
+      onSuccess();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to create mapping");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4">
+          Add Identity to Country
+        </h2>
+
+        <label className="block text-sm mb-1">Identity Type</label>
+        <select
+          value={identityUuid}
+          onChange={(e) => setIdentityUuid(e.target.value)}
+          className="border rounded-lg px-3 py-2 w-full mb-4"
+        >
+          <option value="">Select Identity</option>
+          {identities.map((i) => (
+            <option key={i.identity_type_uuid} value={i.identity_type_uuid}>
+              {i.identity_type_name}
+            </option>
+          ))}
+        </select>
+
+        <label className="flex items-center gap-2 mb-6">
+          <input
+            type="checkbox"
+            checked={mandatory}
+            onChange={() => setMandatory(!mandatory)}
+          />
+          Mandatory
+        </label>
+
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!identityUuid || saving}
+            className={`px-4 py-2 rounded-lg text-white ${
+              saving || !identityUuid
+                ? "bg-gray-400"
+                : "bg-blue-700 hover:bg-blue-800"
+            }`}
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
