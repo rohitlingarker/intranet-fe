@@ -26,6 +26,15 @@ export default function ViewEmpDetails() {
   const [isEditing, setIsEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  // 🔹 Approval related states
+const [openApprovalModal, setOpenApprovalModal] = useState(false);
+const [adminUsers, setAdminUsers] = useState([]);
+const [selectedAdmin, setSelectedAdmin] = useState("");
+const [sendingApproval, setSendingApproval] = useState(false);
+const [approvalHistory, setApprovalHistory] = useState([]);
+const [approvalRequested, setApprovalRequested] = useState(false);
+
+
   const [editData, setEditData] = useState({
     first_name: "",
     last_name: "",
@@ -68,9 +77,68 @@ export default function ViewEmpDetails() {
     }
   };
 
+
+  /* -------------------- FETCH ADMIN USERS -------------------- */
+const fetchAdminUsers = async () => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/admin-users`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setAdminUsers(res.data || []);
+  } catch (error) {
+    showStatusToast("Failed to load approvers");
+  }
+};
+
+
+/* -------------------- FETCH APPROVAL HISTORY -------------------- */
+/* -------------------- FETCH APPROVAL HISTORY -------------------- */
+const fetchApprovalHistory = async () => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/status/${user_uuid}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // ✅ Normalize object/array response
+    const data = Array.isArray(res.data) ? res.data : [res.data];
+    console.log("Approval History Data:", data);
+    setApprovalHistory(data);
+  } catch (error) {
+    console.error("Failed to fetch approval history");
+  }
+};
+
+
+
   useEffect(() => {
     fetchEmployee();
+    fetchApprovalHistory(); 
   }, [user_uuid]);
+
+  useEffect(() => {
+  if (openApprovalModal) fetchAdminUsers();
+  
+}, [openApprovalModal]);
+
+
+/* -------------------- DERIVED APPROVAL STATE (FIX) -------------------- */
+  const latestApproval =
+    approvalHistory && approvalHistory.length > 0
+      ? approvalHistory[0]
+      : null;
+
+  const effectiveApprovalStatus =
+    employee?.approval_status || latestApproval?.status || null;
+
+  const effectiveApprover =
+    employee?.approver_name || latestApproval?.action_taker_name || null;
+
 
   /* -------------------- SEND OFFER -------------------- */
   const handleSendOffer = async () => {
@@ -101,6 +169,49 @@ export default function ViewEmpDetails() {
       setSending(false);
     }
   };
+
+  /* -------------------- SEND APPROVAL REQUEST -------------------- */
+const handleSendApproval = async () => {
+  if (!selectedAdmin) {
+    showStatusToast("Please select approver");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+  try {
+    setSendingApproval(true);
+    await axios.post(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval-requests/request`,
+      [
+        {
+          user_uuid,
+          action_taker_id: Number(selectedAdmin),
+        },
+      ],
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    showStatusToast("Approval request sent");
+    
+
+// ✅ Optimistic UI update (instant)
+setEmployee((prev) => ({
+  ...prev,
+  approval_status: "PENDING",
+  approver_name:
+    adminUsers.find((a) => a.user_id === Number(selectedAdmin))?.name || "",
+}));
+setApprovalRequested(true); 
+    setOpenApprovalModal(false);
+ 
+    fetchApprovalHistory();
+  } catch (error) {
+    showStatusToast("Approval request failed");
+  } finally {
+    setSendingApproval(false);
+  }
+};
+
 
   /* -------------------- UPDATE OFFER -------------------- */
   const handleUpdateOffer = async () => {
@@ -175,6 +286,16 @@ export default function ViewEmpDetails() {
                   {employee.status}
                 </span>
               </p>
+
+              {/* ✅ Approval Status Visibility */}
+            
+             {effectiveApprovalStatus && (
+              <ApprovalStatusBadge
+                status={effectiveApprovalStatus}
+                approver={effectiveApprover}
+              />
+            )}
+
             </div>
           </div>
 
@@ -206,6 +327,8 @@ export default function ViewEmpDetails() {
             value={`${employee.package} ${employee.currency}`}
           />
         </div>
+
+
 
         {isEditing && (
           <div className="mt-10 border rounded-lg p-6 bg-gray-50">
@@ -265,11 +388,12 @@ export default function ViewEmpDetails() {
         )}
 
         <div className="flex gap-4 mt-10">
+          {console.log("Approval History Data at button :", approvalHistory[0]?.status)}
           <button
             onClick={handleSendOffer}
-            disabled={sending || employee.status === "SENT"}
+            disabled={sending || approvalHistory[0]?.status !== "APPROVED"}
             className={`px-6 py-2 rounded-lg text-white ${
-              employee.status === "SENT"
+              approvalHistory[0]?.status !== "APPROVED"
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-700 hover:bg-green-800"
             }`}
@@ -280,8 +404,52 @@ export default function ViewEmpDetails() {
           <button className="px-6 py-2 bg-red-700 text-white rounded-lg">
             Delete Offer
           </button>
+          <button
+            onClick={() => setOpenApprovalModal(true)}
+            disabled={approvalHistory[0]?.status.toUpperCase() !== "NO REQUEST"}
+            className={`px-6 py-2 rounded-lg text-white ${
+              approvalHistory[0]?.status.toUpperCase() !== "NO REQUEST"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-700 hover:bg-green-800"
+            }`}
+          >
+            Request Approval
+          </button>
+
         </div>
       </div>
+      {/* ✅ Approval Modal */}
+      {openApprovalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded w-full max-w-md">
+            <h3 className="font-semibold mb-4">Send for Approval</h3>
+
+            <select
+              className="w-full border p-2 mb-4"
+              value={selectedAdmin}
+              onChange={(e) => setSelectedAdmin(e.target.value)}
+            >
+              <option value="">Select Approver</option>
+              {adminUsers.map((a) => (
+                <option key={a.user_id} value={a.user_id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setOpenApprovalModal(false)}>Cancel</button>
+              <button
+                onClick={handleSendApproval}
+                disabled={sendingApproval}
+                className="bg-indigo-700 text-white px-4 py-2 rounded"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -295,6 +463,31 @@ function DetailCard({ icon, label, value }) {
         <p className="text-sm text-gray-900">{label}</p>
         <p className="font-semibold text-blue-900">{value || "—"}</p>
       </div>
+    </div>
+  );
+}
+function ApprovalStatusBadge({ status, approver }) {
+  const styles = {
+    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    APPROVED: "bg-green-100 text-green-800 border-green-300",
+    REJECTED: "bg-red-100 text-red-800 border-red-300",
+    ON_HOLD: "bg-gray-100 text-gray-800 border-gray-300",
+  };
+
+  return (
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${
+        styles[status] || "bg-gray-100 text-gray-800"
+      }`}
+    >
+      <span className="font-medium">
+        {status === "PENDING" ? "Approval Pending" : status}
+      </span>
+      {approver && (
+        <span className="text-xs opacity-80">
+          • {approver}
+        </span>
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ export default function EmployeeOnboardingDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [viewRole, setViewRole] = useState("HR"); // HR | ADMIN
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -71,29 +73,62 @@ export default function EmployeeOnboardingDashboard() {
           </p>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            varient="primary"
-            size="medium"
-            onClick={() => navigate("/employee-onboarding/create")}
-          >
-            + Create Offer
-          </Button>
-          <Button
-            onClick={() => navigate("/employee-onboarding/bulk-upload")}
-            varient="secondary"
-            size="medium"
-          >
-            Bulk Upload
-          </Button>
-          <Button
-            varient="primary"
-            size="medium"
-            onClick={() => navigate("/employee-onboarding/hr-configuration")}
-          >
-            + HR Configuration
-          </Button>
-        </div>
+       <div className="flex items-center gap-4">
+  {/* Role Toggle */}
+  <div className="flex rounded-lg border overflow-hidden">
+    <button
+      onClick={() => setViewRole("HR")}
+      className={`px-4 py-2 text-sm font-medium ${
+        viewRole === "HR"
+          ? "bg-indigo-600 text-white"
+          : "bg-white text-gray-700"
+      }`}
+    >
+      HR View
+    </button>
+
+    <button
+      onClick={() => setViewRole("ADMIN")}
+      className={`px-4 py-2 text-sm font-medium ${
+        viewRole === "ADMIN"
+          ? "bg-indigo-600 text-white"
+          : "bg-white text-gray-700"
+      }`}
+    >
+      Admin View
+    </button>
+  </div>
+
+  {/* Existing Buttons */}
+  {viewRole === "HR" && (
+    <>
+      <Button
+        varient="primary"
+        size="medium"
+        onClick={() => navigate("/employee-onboarding/create")}
+      >
+        + Create Offer
+      </Button>
+
+      <Button
+        onClick={() => navigate("/employee-onboarding/bulk-upload")}
+        varient="secondary"
+        size="medium"
+      >
+        Bulk Upload
+      </Button>
+
+      <Button
+        varient="primary"
+        size="medium"
+        onClick={() => navigate("/employee-onboarding/hr-configuration")}
+      >
+        + HR Configuration
+      </Button>
+    </>
+  )}
+</div>
+
       </div>
 
       {/* Stats */}
@@ -145,9 +180,16 @@ export default function EmployeeOnboardingDashboard() {
       
 
       {/* ✅ Reusable Offers Table */}
-      <EmpTable 
-      key={`${searchTerm}-${statusFilter}`}
-      offers={filteredOffers} loading={loading} />
+    {viewRole === "HR" ? (
+  <EmpTable
+    key={`${searchTerm}-${statusFilter}`}
+    offers={filteredOffers}
+    loading={loading}
+  />
+) : (
+  <AdminApprovalView />
+)}
+
     </div>
   );
 }
