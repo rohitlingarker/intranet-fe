@@ -74,30 +74,22 @@ export default function EmployeeOnboardingDashboard() {
         </div>
 
        <div className="flex items-center gap-4">
-  {/* Role Toggle */}
-  <div className="flex rounded-lg border overflow-hidden">
-    <button
-      onClick={() => setViewRole("HR")}
-      className={`px-4 py-2 text-sm font-medium ${
-        viewRole === "HR"
-          ? "bg-indigo-600 text-white"
-          : "bg-white text-gray-700"
-      }`}
-    >
-      HR View
-    </button>
+  /* Role Toggle (Navigation based) */
+<div className="flex rounded-lg border overflow-hidden">
+  <button
+    onClick={() => navigate("/employee-onboarding")}
+    className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white"
+  >
+    HR View
+  </button>
 
-    <button
-      onClick={() => setViewRole("ADMIN")}
-      className={`px-4 py-2 text-sm font-medium ${
-        viewRole === "ADMIN"
-          ? "bg-indigo-600 text-white"
-          : "bg-white text-gray-700"
-      }`}
-    >
-      Admin View
-    </button>
-  </div>
+  <button
+    onClick={() => navigate("/employee-onboarding/admin/my-approvals")}
+    className="px-4 py-2 text-sm font-medium bg-white text-gray-700"
+  >
+    Admin View
+  </button>
+</div>
 
   {/* Existing Buttons */}
   {viewRole === "HR" && (

@@ -70,7 +70,7 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-
+import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -365,8 +365,7 @@ const AppRoutes = () => {
   element={<CountryEducationMapping />}
 />
 
-
-
+<Route path="/employee-onboarding/admin/my-approvals" element={<AdminApprovalActions />} />
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
