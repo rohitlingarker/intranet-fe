@@ -74,7 +74,7 @@ export default function EmployeeOnboardingDashboard() {
         </div>
 
        <div className="flex items-center gap-4">
-  /* Role Toggle (Navigation based) */
+  {/* Role Toggle (Navigation based) */}
 <div className="flex rounded-lg border overflow-hidden">
   <button
     onClick={() => navigate("/employee-onboarding")}
