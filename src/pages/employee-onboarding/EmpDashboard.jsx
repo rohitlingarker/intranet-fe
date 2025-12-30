@@ -84,7 +84,7 @@ export default function EmployeeOnboardingDashboard() {
   </button>
 
   <button
-    onClick={() => navigate("/employee-onboarding/admin/my-approvals")}
+    onClick={() => navigate("/employee-onboarding/admin/approval-dashboard")}
     className="px-4 py-2 text-sm font-medium bg-white text-gray-700"
   >
     Admin View

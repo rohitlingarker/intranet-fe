@@ -71,6 +71,9 @@ import EducationLevelManagement from "./pages/employee-onboarding/hr-configurati
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
 import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
+import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
+import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -366,6 +369,17 @@ const AppRoutes = () => {
 />
 
 <Route path="/employee-onboarding/admin/my-approvals" element={<AdminApprovalActions />} />
+
+
+<Route path="/employee-onboarding/admin/approval-dashboard" element={<AdminApprovalDashboard />} />
+<Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />} />
+
+
+
+
+
+
+
           {/* User Management */}
 
           <Route path="/user-management/users" element={<UsersTable />} />
