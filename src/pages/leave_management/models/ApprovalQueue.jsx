@@ -41,7 +41,6 @@ const ApprovalQueue = ({ actionType, payload }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {entries.map(([k, v]) => {
               const highlight = highlightKeys.includes(k);
-              console.log("highlight", k);
               return (
                 <tr key={k} className={highlight ? "bg-blue-100" : ""}>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
@@ -170,6 +169,11 @@ const ApprovalQueue = ({ actionType, payload }) => {
       return <KeyValueTable obj={newData} />;
     }
     case "UPDATE_LEAVE_TYPE": {
+      const before = (parsed && parsed.before) || {};
+      const after = (parsed && parsed.after) || {};
+      return <DiffTable before={before} after={after} />;
+    }
+    case "UPDATE_GENDER_BASED_LEAVE": {
       const before = (parsed && parsed.before) || {};
       const after = (parsed && parsed.after) || {};
       return <DiffTable before={before} after={after} />;

@@ -39,7 +39,7 @@ export default function WebSocketProvider({ children }) {
     try {
       // 🛑 FIX 2: Remove double slashes
       const wsUrl = `${BASE_URL.replace(/\/+$/, "")}/ws`;
-      console.log("Connecting WebSocket:", wsUrl);
+      // console.log("Connecting WebSocket:", wsUrl);
 
       const socket = new SockJS(wsUrl);
       const stomp = over(socket);
@@ -48,7 +48,7 @@ export default function WebSocketProvider({ children }) {
       stomp.connect(
         {},
         () => {
-          console.log("WS CONNECTED");
+          // console.log("WS CONNECTED");
 
           stomp.subscribe("/topic/data-updated", (msg) =>
             emitEvent("data-updated", msg.body)
