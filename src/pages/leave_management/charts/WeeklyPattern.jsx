@@ -12,8 +12,8 @@ import useLeaveData from "../hooks/useLeaveData";
 
 const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const WeeklyPattern = ({ employeeId, refreshKey }) => {
-  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey);
+const WeeklyPattern = ({ employeeId, refreshKey, year }) => {
+  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey, year);
   
 
   const data = useMemo(() => {
@@ -65,8 +65,8 @@ const WeeklyPattern = ({ employeeId, refreshKey }) => {
         <span className="text-xs sm:text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
-            year: "numeric",
-          })}
+          })} {" "}
+          {year}
         </span>
       </div>
 

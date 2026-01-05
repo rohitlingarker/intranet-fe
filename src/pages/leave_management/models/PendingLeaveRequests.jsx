@@ -9,64 +9,7 @@ import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
 import NoPendingLeaves from "../../../components/icons/no_pending_leaves.svg";
 
-const ITEMS_PER_PAGE = 5;
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-
-/**
- * Fetch pending leave requests, leave types, and balances.
- */
-const fetchData = async (
-  employeeId,
-  setPendingLeaves,
-  setLeaveTypes,
-  setLeaveBalances,
-  setError,
-  setLoading
-) => {
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Authentication token not found.");
-      return;
-    }
-
-    const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
-      axios.get(`${BASE_URL}/api/leave-requests/employee/pending/${employeeId}`, {
-        withCredentials: true,
-        headers: {
-          "Cache-Control": "no-store",
-          Authorization: `Bearer ${token}`,
-        },
-      }),
-      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      axios.get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`, {
-        withCredentials: true,
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    ]);
-
-    const allLeaves = Array.isArray(leaveReqRes.data?.data)
-      ? leaveReqRes.data.data
-      : [];
-    const onlyPending = allLeaves.filter(
-      (leave) => String(leave.status).toUpperCase() === "PENDING"
-    );
-
-    setPendingLeaves(onlyPending);
-    setLeaveTypes(leaveTypeRes.data || []);
-    setLeaveBalances(balanceRes.data || {});
-  } catch (err) {
-    console.error(err);
-    setError("Failed to fetch pending leave requests.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-const PendingLeaveRequests = ({ refreshKey }) => {
+const PendingLeaveRequests = ({ refreshKey, year }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState({});
@@ -76,6 +19,69 @@ const PendingLeaveRequests = ({ refreshKey }) => {
   const [refreshKeyInternal, setRefreshKeyInternal] = useState(0);
 
   const employeeId = useAuth()?.user?.user_id;
+
+  const ITEMS_PER_PAGE = 5;
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+  /**
+   * Fetch pending leave requests, leave types, and balances.
+   */
+  const fetchData = async (
+    employeeId,
+    setPendingLeaves,
+    setLeaveTypes,
+    setLeaveBalances,
+    setError,
+    setLoading
+  ) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token not found.");
+        return;
+      }
+
+      const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
+        axios.get(
+          `${BASE_URL}/api/leave-requests/employee/pending/${employeeId}/${year}`,
+          {
+            withCredentials: true,
+            headers: {
+              "Cache-Control": "no-store",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        ),
+        axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(
+          `${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`,
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+      ]);
+
+      const allLeaves = Array.isArray(leaveReqRes.data?.data)
+        ? leaveReqRes.data.data
+        : [];
+      const onlyPending = allLeaves.filter(
+        (leave) => String(leave.status).toUpperCase() === "PENDING"
+      );
+
+      setPendingLeaves(onlyPending);
+      setLeaveTypes(leaveTypeRes.data || []);
+      setLeaveBalances(balanceRes.data || {});
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch pending leave requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (employeeId) {
@@ -88,7 +94,7 @@ const PendingLeaveRequests = ({ refreshKey }) => {
         setLoading
       );
     }
-  }, [employeeId, refreshKey, refreshKeyInternal]);
+  }, [employeeId, refreshKey, refreshKeyInternal, year]);
 
   const handleLeaveRequestSuccess = () => {
     setRefreshKeyInternal((prevKey) => prevKey + 1);
@@ -118,7 +124,11 @@ const PendingLeaveRequests = ({ refreshKey }) => {
       ) : pendingLeaves.length === 0 ? (
         <div className="flex items-center justify-center h-32">
           <div className="text-3xl leading-none">
-            <img src={NoPendingLeaves} alt="No Pending Leaves" className="w-20" />
+            <img
+              src={NoPendingLeaves}
+              alt="No Pending Leaves"
+              className="w-20"
+            />
           </div>
           <div className="pl-4 leading-snug">
             <h2 className="text-xl font-semibold">

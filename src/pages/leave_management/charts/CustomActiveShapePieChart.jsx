@@ -76,7 +76,7 @@ const renderActiveShape = (props) => {
   );
 };
 
-const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
+const CustomActiveShapePieChart = ({ employeeId, refreshKey, year }) => {
   const [data, setData] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
       try {
         setLoading(true);
         const res = await axios.get(
-          `${BASE_URL}/api/leave-requests/employee/${employeeId}`,{
+          `${BASE_URL}/api/leave-requests/employee/${employeeId}/${year}`,{
             headers:{
               Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -117,7 +117,7 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
     };
 
     fetchLeaves();
-  }, [employeeId, refreshKey]);
+  }, [employeeId, refreshKey, year]);
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);
@@ -131,9 +131,7 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey }) => {
           Leave Usage By Type
         </h3>
         <span className="text-xs sm:text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
-          {new Date().toLocaleDateString("en-US", {
-            year: "numeric",
-          })}
+          {year}
         </span>
       </div>
       { loading ? (

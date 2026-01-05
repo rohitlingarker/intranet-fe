@@ -24,6 +24,8 @@ import axios from "axios";
 import { useWebSocket } from "./websockets/WebSocketProvider.jsx";
 import { set } from "date-fns";
 
+import { YearDropdown } from "./models/EmployeeLeaveBalances.jsx";
+
 // let stompClient = null;
 
 // This component now holds everything from the "Employee View"
@@ -33,6 +35,7 @@ const EmployeeDashboard = ({ employeeId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [refreshKeys, setrefreshKeys] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const onPendingRequestsChange = (newRequests) => {
     setPendingRequests(newRequests);
   };
@@ -210,6 +213,10 @@ const EmployeeDashboard = ({ employeeId }) => {
     };
   }, [subscribe, fetchRequests]);
 
+  useEffect(()=>{
+    console.log("EmployeeDashboard: currentYear changed:", currentYear);
+  },[currentYear]);
+
   // const holidayData = axios.get(`${process.env.REACT_APP_API_URL}/api/holidays/all`)
   // .then((res)=> res.data).catch((err) => {
   //   console.error("Error fetching holiday data:", err);
@@ -218,6 +225,7 @@ const EmployeeDashboard = ({ employeeId }) => {
   return (
     <>
       <div className="m-6 flex flex-col sm:flex-row sm:justify-end gap-2">
+        <YearDropdown value={currentYear} onChange={setCurrentYear} />
         <ActionButtons
           onRequestLeave={() => setIsRequestLeaveModalOpen(true)}
           onRequestCompOff={() => setIsCompOffModalOpen(true)}
@@ -236,13 +244,16 @@ const EmployeeDashboard = ({ employeeId }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm md:w-full lg:w-[65%]">
           <PendingLeaveRequests
             employeeId={employeeId}
+            year={currentYear}
             refreshKey={refreshKeys}
           />
         </div>
 
         {/* Upcoming Holidays */}
         <div className="md:w-full lg:w-[35%]">
-          <UpcomingHolidays />
+          <UpcomingHolidays 
+            year={currentYear}
+          />
         </div>
       </div>
 
@@ -283,16 +294,17 @@ const EmployeeDashboard = ({ employeeId }) => {
 
       <h2 className="text-small font-semibold m-4">My Leave Stats</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <WeeklyPattern employeeId={employeeId} refreshKey={refreshKeys} />
+        <WeeklyPattern employeeId={employeeId} year={currentYear} refreshKey={refreshKeys} />
         <CustomActiveShapePieChart
           employeeId={employeeId}
+          year={currentYear}
           refreshKey={refreshKeys}
         />
-        <MonthlyStats employeeId={employeeId} refreshKey={refreshKeys} />
+        <MonthlyStats employeeId={employeeId} year={currentYear} refreshKey={refreshKeys} />
       </div>
 
       <h2 className="text-small font-semibold m-4">Leave Balances</h2>
-      <LeaveDashboard employeeId={employeeId} refreshKey={refreshKeys} />
+      <LeaveDashboard employeeId={employeeId} year={currentYear} refreshKey={refreshKeys} />
 
       <h2 className="text-small font-semibold m-4">Leave History</h2>
       <LeaveHistory employeeId={employeeId} refreshKey={refreshKeys} />
