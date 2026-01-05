@@ -171,7 +171,11 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
     setSubmitting(true);
 
     const payload = isGenderBasedLeave(formData.leaveName)
-      ? {
+      ?
+      {
+        updateType: "GENDER_BASED",
+        genderBasedLeave: {
+          leaveTypeId: formData.leaveTypeId || null,
           leaveName: formData.leaveName,
           maxLeaveDays: formData.maxLeaveDays
             ? Number(formData.maxLeaveDays)
@@ -190,8 +194,10 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           gender: formData.gender,
           effectiveStartDate: formData.effectiveStartDate,
           effectiveEndDate: null,
-        }
+        }}
       : {
+        updateType: "REGULAR",
+        leaveType: {
           leaveTypeId: formData.leaveTypeId || null,
           leaveName: formData.leaveName,
           description: formData.description,
@@ -211,7 +217,8 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           weekendsAndHolidaysAllowed: formData.weekendsAndHolidaysAllowed,
           active: formData.active,
           effectiveStartDate: formData.effectiveStartDate,
-        };
+        }
+      };
 
     const url = editData
       ? `${BASE_URL}/api/leave/update-leave-type/${editData.leaveTypeId}`
@@ -472,11 +479,11 @@ const AddLeaveTypeModal = ({ isOpen, onClose, editData = null, onSuccess }) => {
           formData.leaveName.toLowerCase() === "maternity_leave" ? (
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                "MaxLeaveDays",
-                "MinLeaveDays",
-                "WaitingPeriodDays",
-                "AdvanceNoticePeriod",
-                "CoolDownPeriod",
+                "maxLeaveDays",
+                "minLeaveDays",
+                "waitingPeriodDays",
+                "advanceNoticePeriod",
+                "coolDownPeriod",
               ].map((key) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
