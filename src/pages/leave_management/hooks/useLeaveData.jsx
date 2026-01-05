@@ -6,7 +6,7 @@ import { over } from "stompjs";
 
 let stompClient = null;
 
-const useLeaveData = (employeeId, refreshKey) => {
+const useLeaveData = (employeeId, refreshKey, year) => {
   const [leaveData, setLeaveData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,7 +27,7 @@ const useLeaveData = (employeeId, refreshKey) => {
       }
 
       const response = await axios.get(
-        `${BASE_URL}/api/leave-requests/employee/${employeeId}`,
+        `${BASE_URL}/api/leave-requests/employee/${employeeId}/${year}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ const useLeaveData = (employeeId, refreshKey) => {
     if (employeeId) {
       fetchLeaveData();
     }
-  }, [employeeId, refreshKey]);
+  }, [employeeId, refreshKey, year]);
 
   // ---------------------------
   // WEBSOCKET REAL-TIME LISTENER

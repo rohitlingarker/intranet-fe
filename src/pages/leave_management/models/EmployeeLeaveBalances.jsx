@@ -6,28 +6,61 @@ import { useNavigate } from "react-router-dom"; // <-- Import useNavigate
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-// const token = localStorage.getItem("token");
+import { Listbox } from "@headlessui/react";
+import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 
 export const YearDropdown = ({ value, onChange }) => {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 3 }, (_, i) => currentYear - i);
 
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="border px-3 py-2 pr-8 rounded"
-    >
-      {years.map((year) => (
-        <option key={year} value={year}>
-          {year}
-        </option>
-      ))}
-    </select>
+    <div className="w-32">
+      <Listbox value={value} onChange={onChange}>
+        <div className="relative">
+          <Listbox.Button className="relative w-full cursor-pointer rounded border bg-white py-2 pl-3 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <span className="block truncate">{value}</span>
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+              <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+            </span>
+          </Listbox.Button>
+
+          <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded border bg-white py-1 shadow-lg">
+            {years.map((year) => (
+              <Listbox.Option
+                key={year}
+                value={year}
+                className={({ active }) =>
+                  `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                    active ? "bg-blue-100 text-blue-900" : "text-gray-900"
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <>
+                    <span
+                      className={`block truncate ${
+                        selected ? "font-medium" : "font-normal"
+                      }`}
+                    >
+                      {year}
+                    </span>
+
+                    {selected && (
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                        <CheckIcon className="h-5 w-5" />
+                      </span>
+                    )}
+                  </>
+                )}
+              </Listbox.Option>
+            ))}
+          </Listbox.Options>
+        </div>
+      </Listbox>
+    </div>
   );
 };
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const EmployeeLeaveBalances = () => {
   const navigate = useNavigate();

@@ -8,9 +8,9 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-export default function LeaveDashboard({ employeeId, refreshKey }) {
+export default function LeaveDashboard({ employeeId, refreshKey, year }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const { leaveData, loading } = useLeaveConsumption(employeeId, refreshKey);
+  const { leaveData, loading } = useLeaveConsumption(employeeId, refreshKey, year);
   const navigate = useNavigate();
 
   const fetchLeaveTypes = async () => {

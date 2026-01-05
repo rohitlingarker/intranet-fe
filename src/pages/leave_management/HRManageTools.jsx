@@ -59,7 +59,12 @@ const HRManageTools = ({ employeeId }) => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      setGenderBasedLeaveTypes(res.data?.data);
+      if(res.data?.data === null){
+        setGenderBasedLeaveTypes([]);
+      }
+      else{
+        setGenderBasedLeaveTypes(res.data?.data);
+      }
     } catch (err) {
       console.error("Failed to fetch leave types", err);
       toast.error(
