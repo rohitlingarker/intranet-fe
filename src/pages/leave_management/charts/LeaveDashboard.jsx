@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
-import {toast} from "react-toastify";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import useLeaveConsumption from "../hooks/useLeaveConsumption";
 import LeaveUsageChart from "./LeaveUsageChart";
@@ -10,7 +10,11 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function LeaveDashboard({ employeeId, refreshKey, year }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const { leaveData, loading } = useLeaveConsumption(employeeId, refreshKey, year);
+  const { leaveData, loading } = useLeaveConsumption(
+    employeeId,
+    refreshKey,
+    year
+  );
   const navigate = useNavigate();
 
   const fetchLeaveTypes = async () => {
@@ -29,52 +33,72 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
   useEffect(() => {
     fetchLeaveTypes();
   }, []);
-  
-  const getDisplayName = useCallback((leaveName) => {
-    const matchingType = leaveTypes.find((type) => type.name === leaveName);
-    return matchingType ? matchingType.label : leaveName;
-  }, [leaveTypes]);
-  
-  const { sortedMainLeaves, specialLeaves, allLeaveTypesForNav } = useMemo(() => {
-  // Wait until both data sources are available before doing anything.
-    if (leaveData.length === 0 || leaveTypes.length === 0) {
-      return { sortedMainLeaves: [], specialLeaves: [], allLeaveTypesForNav: [] };
-    }
 
-    const mainLeaves = leaveData.filter((leave) => {
-      const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
-      return !name.includes("paternity") && !name.includes("maternity");
-    });
+  const getDisplayName = useCallback(
+    (leaveName) => {
+      const matchingType = leaveTypes.find((type) => type.name === leaveName);
+      return matchingType ? matchingType.label : leaveName;
+    },
+    [leaveTypes]
+  );
 
-    const specialLeaves = leaveData.filter((leave) => {
-      const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
-      return name.includes("paternity") || name.includes("maternity");
-    });
+  const { sortedMainLeaves, specialLeaves, allLeaveTypesForNav } =
+    useMemo(() => {
+      // Wait until both data sources are available before doing anything.
+      if (leaveData.length === 0 || leaveTypes.length === 0) {
+        return {
+          sortedMainLeaves: [],
+          specialLeaves: [],
+          allLeaveTypesForNav: [],
+        };
+      }
 
-    const desiredOrder = [
-      "Earned Leave",
-      "Sick Leave",
-      "Unpaid Leave",
-      "CompOff Leave",
-    ];
+      const leaves = Array.isArray(leaveData?.data) ? leaveData.data : [];
 
-    const sortedMainLeaves = [...mainLeaves].sort((a, b) => {
-      const nameA = getDisplayName(a.leaveType.leaveName);
-      const nameB = getDisplayName(b.leaveType.leaveName);
-      const indexA = desiredOrder.indexOf(nameA);
-      const indexB = desiredOrder.indexOf(nameB);
-      return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
-    });
-    
-    const allLeaveTypesForNav = [...sortedMainLeaves, ...specialLeaves].map((leave) => ({
-      name: leave.leaveType.leaveName,
-      label: getDisplayName(leave.leaveType.leaveName),
-    }));
+      const mainLeaves = leaves.filter((leave) => {
+        const name = getDisplayName(leave.leaveType?.leaveName || "").toLowerCase();
+        return !name.includes("paternity") && !name.includes("maternity");
+      });
 
-    return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
-  }, [leaveData, leaveTypes, getDisplayName]);
+      const specialLeaves = leaves.filter((leave) => {
+        const name = getDisplayName(leave.leaveType.leaveName || "").toLowerCase();
+        return name.includes("paternity") || name.includes("maternity");
+      });
 
-  if (loading) return <div className="text-center"><LoadingSpinner text="Loading Balances..."/></div>;
+      const desiredOrder = [
+        "Earned Leave",
+        "Sick Leave",
+        "Unpaid Leave",
+        "CompOff Leave",
+      ];
+
+      const sortedMainLeaves = [...mainLeaves].sort((a, b) => {
+        const nameA = getDisplayName(a.leaveType.leaveName);
+        const nameB = getDisplayName(b.leaveType.leaveName);
+        const indexA = desiredOrder.indexOf(nameA);
+        const indexB = desiredOrder.indexOf(nameB);
+        return (
+          (indexA === -1 ? Infinity : indexA) -
+          (indexB === -1 ? Infinity : indexB)
+        );
+      });
+
+      const allLeaveTypesForNav = [...sortedMainLeaves, ...specialLeaves].map(
+        (leave) => ({
+          name: leave.leaveType.leaveName,
+          label: getDisplayName(leave.leaveType.leaveName),
+        })
+      );
+
+      return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
+    }, [leaveData, leaveTypes, getDisplayName]);
+
+  if (loading)
+    return (
+      <div className="text-center">
+        <LoadingSpinner text="Loading Balances..." />
+      </div>
+    );
 
   const handleViewDetails = (leave, displayName) => {
     navigate(`/leave-details/${employeeId}/${leave.leaveType.leaveName}`, {
@@ -91,8 +115,8 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
       <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {sortedMainLeaves.map((leave) => {
           const displayName = getDisplayName(leave.leaveType.leaveName);
-          const isCompOff = leave.leaveType.leaveName === 'COMPENSATORY_LEAVE';
-          const isUnpaid = leave.leaveType.leaveName === 'UNPAID_LEAVE';
+          const isCompOff = leave.leaveType.leaveName === "COMPENSATORY_LEAVE";
+          const isUnpaid = leave.leaveType.leaveName === "UNPAID_LEAVE";
 
           return (
             <div
@@ -101,8 +125,8 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
             >
               <div className="flex items-center w-full justify-between mb-3">
                 <h3 className="font-semibold text-gray-900">{displayName}</h3>
-                <button 
-                  onClick={()=> handleViewDetails(leave, displayName)}
+                <button
+                  onClick={() => handleViewDetails(leave, displayName)}
                   className="text-indigo-600 text-xs hover:text-indigo-800 transition-colors"
                 >
                   View details
@@ -119,29 +143,29 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
                   <span className="text-gray-500 text-right">CONSUMED</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  {isUnpaid ? "∞ Days" : (
-                    <span>
-                      {Math.max(leave.remainingLeaves, 0)} days
-                    </span>
+                  {isUnpaid ? (
+                    "∞ Days"
+                  ) : (
+                    <span>{Math.max(leave.remainingLeaves, 0)} days</span>
                   )}
                   <span>{leave.usedLeaves} days</span>
                 </div>
                 {!isCompOff && (
-                <div className="flex justify-between text-xs">
-                  {!isUnpaid && (
-                    <span className="text-gray-500">ACCRUED SO FAR</span>
-                  )}
-                  <span className="text-gray-500 text-right">ANNUAL QUOTA</span>
-                </div>
+                  <div className="flex justify-between text-xs">
+                    {!isUnpaid && (
+                      <span className="text-gray-500">ACCRUED SO FAR</span>
+                    )}
+                    <span className="text-gray-500 text-right">
+                      ANNUAL QUOTA
+                    </span>
+                  </div>
                 )}
                 {!isCompOff && (
                   <div className="flex justify-between text-sm">
-                    {!isUnpaid && (
-                      <span>{leave.accruedLeaves} days</span>
-                    )}
-                    {isUnpaid 
-                    ? "∞ Days" : 
-                    (
+                    {!isUnpaid && <span>{leave.accruedLeaves} days</span>}
+                    {isUnpaid ? (
+                      "∞ Days"
+                    ) : (
                       <span>{leave.totalLeaves || "-"} days</span>
                     )}
                   </div>
