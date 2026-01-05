@@ -16,6 +16,7 @@ import {
 export default function AdminOfferView() {
   const { user_uuid } = useParams();
   const navigate = useNavigate();
+
   const token = localStorage.getItem("token");
   const BASE = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
 
@@ -34,14 +35,14 @@ export default function AdminOfferView() {
     setOffer(res.data);
   };
 
-  /* ---------------- FETCH ADMIN ACTION ---------------- */
+  /* ---------------- FETCH APPROVAL FOR THIS USER ---------------- */
   const fetchApproval = async () => {
     const res = await axios.get(
-      `${BASE}/offer-approval/admin/my-actions`,
+      `${BASE}/offer-approval/my-actions`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    const found = res.data.find(a => a.user_uuid === user_uuid);
+    const found = res.data.find(item => item.user_uuid === user_uuid);
     setApproval(found || null);
   };
 
@@ -51,35 +52,36 @@ export default function AdminOfferView() {
       .finally(() => setLoading(false));
   }, [user_uuid]);
 
-  /* ---------------- ADMIN ACTION ---------------- */
+  /* ---------------- SUBMIT ADMIN ACTION ---------------- */
   const submitAction = async (action) => {
     try {
       setActing(true);
       setError("");
 
-      await axios.post(
-        `${BASE}/offer-approval/action`,
-        [
-          {
-            user_uuid,
-            action,
-            comments:
-              action === "APPROVED"
-                ? "Approved by admin"
-                : action === "REJECTED"
-                ? "Rejected by admin"
-                : "Kept on hold",
-          },
-        ],
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await axios.put(
+      `${BASE}/offer-approval/update_action`,
+      {
+        user_uuid,
+        action,
+        comments:
+          action === "APPROVED"
+            ? "Approved by admin"
+            : action === "REJECTED"
+            ? "Rejected by admin"
+            : "Kept on hold by admin",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
+
+      // 🔄 refresh approval status after action
       await fetchApproval();
+
     } catch (e) {
       setError(
         e?.response?.data?.detail ||
@@ -109,32 +111,30 @@ export default function AdminOfferView() {
       </button>
 
       <div className="bg-white rounded-xl shadow-md p-8">
-        <div className="flex justify-between items-start mb-8">
-          <div className="flex items-center gap-4">
-            <div className="bg-blue-100 text-blue-900 rounded-full p-3">
-              <User />
-            </div>
 
-            <div>
-              <h1 className="text-2xl font-semibold text-blue-900">
-                {offer.first_name} {offer.last_name}
-              </h1>
+        {/* HEADER */}
+        <div className="flex gap-4 mb-8">
+          <div className="bg-blue-100 text-blue-900 rounded-full p-3">
+            <User />
+          </div>
 
-              <p className="flex items-center gap-2 text-gray-900">
-                <BadgeCheck size={16} />
-                Status:
-                <span className="ml-1 font-medium text-blue-900">
-                  {offer.status}
-                </span>
-              </p>
+          <div>
+            <h1 className="text-2xl font-semibold text-blue-900">
+              {offer.first_name} {offer.last_name}
+            </h1>
 
-              {approval && (
-                <ApprovalBadge
-                  status={approval.action}
-                  approver={approval.requested_name}
-                />
-              )}
-            </div>
+            <p className="flex items-center gap-2 text-gray-700">
+              <BadgeCheck size={16} />
+              Offer Status:
+              <span className="font-medium">{offer.status}</span>
+            </p>
+
+            {approval && (
+              <ApprovalBadge
+                status={approval.action}
+                approver={approval.requested_by_name}
+              />
+            )}
           </div>
         </div>
 
@@ -158,8 +158,8 @@ export default function AdminOfferView() {
           />
         </div>
 
-        {/* ADMIN ACTIONS */}
-        {approval?.action === "PENDING" && (
+        {/* ADMIN ACTION BUTTONS */}
+        {approval?.action === "Pending" && (
           <div className="flex gap-4 mt-10">
             <button
               disabled={acting}
@@ -202,7 +202,7 @@ function DetailCard({ icon, label, value }) {
     <div className="border rounded-lg p-4 flex items-start gap-4">
       <div className="text-blue-900">{icon}</div>
       <div>
-        <p className="text-sm text-gray-900">{label}</p>
+        <p className="text-sm text-gray-700">{label}</p>
         <p className="font-semibold text-blue-900">{value || "—"}</p>
       </div>
     </div>
@@ -219,9 +219,7 @@ function ApprovalBadge({ status, approver }) {
 
   return (
     <div
-      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${
-        styles[status]
-      }`}
+      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
     >
       <span className="font-medium">{status}</span>
       {approver && <span className="text-xs">• {approver}</span>}
