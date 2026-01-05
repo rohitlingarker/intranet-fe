@@ -211,11 +211,7 @@ const EmployeeDashboard = ({ employeeId }) => {
       if (typeof unsub1 === "function") unsub1();
       if (typeof unsub2 === "function") unsub2();
     };
-  }, [subscribe, fetchRequests]);
-
-  useEffect(()=>{
-    console.log("EmployeeDashboard: currentYear changed:", currentYear);
-  },[currentYear]);
+  }, [subscribe, fetchRequests, currentYear]);
 
   // const holidayData = axios.get(`${process.env.REACT_APP_API_URL}/api/holidays/all`)
   // .then((res)=> res.data).catch((err) => {

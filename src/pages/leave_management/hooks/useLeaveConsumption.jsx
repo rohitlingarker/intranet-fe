@@ -19,11 +19,11 @@ const useLeaveConsumption = (employeeId, refreshKey, year) => {
   const fetchLeaveData = () => {
     if (!employeeId) return;
 
-    axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`, {
+    axios.get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
+        console.log("Leave consumption data fetched:", res.data);
         setLeaveData(res.data);
         setLoading(false);
       })
