@@ -7,15 +7,15 @@ export default function TopTabs({ selectedTab }) {
   const { projectId } = useParams();
    console.log("Project ID in TopTabs:", projectId);
   // ⭐ Default to overview
-  const activeTab = selectedTab || "test-management/overview";
+  const activeTab = selectedTab || "test-management/test-plans";
 
   const tabs = [
-    {
-      name: "Overview",
-      path: `/projects/${projectId}?tab=test-management/overview`,
-      tab: "test-management/overview",
-      icon: <LayoutGrid size={16} />,
-    },
+    // {
+    //   name: "Overview",
+    //   path: `/projects/${projectId}?tab=test-management/overview`,
+    //   tab: "test-management/overview",
+    //   icon: <LayoutGrid size={16} />,
+    // },
     {
       name: "Test Plans",
       path: `/projects/${projectId}?tab=test-management/test-plans`,

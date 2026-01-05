@@ -223,11 +223,11 @@ const CreateIssueForm = ({
       endpoint = "/api/tasks";
     }
 
-    if (issueType === "Bug") {
-      err = validateBug(fd);
-      if (!err) payload = buildBugPayload(fd);
-      endpoint = "/api/bugs";
-    }
+    // if (issueType === "Bug") {
+    //   err = validateBug(fd);
+    //   if (!err) payload = buildBugPayload(fd);
+    //   endpoint = "/api/bugs";
+    // }
 
     if (err) return toast.error(err);
 
@@ -292,7 +292,7 @@ const CreateIssueForm = ({
                 { label: "Epic", value: "Epic" },
                 { label: "Story", value: "Story" },
                 { label: "Task", value: "Task" },
-                { label: "Bug", value: "Bug" },
+                // { label: "Bug", value: "Bug" },
               ]}
             />
 

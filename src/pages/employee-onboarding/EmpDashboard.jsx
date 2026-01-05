@@ -14,6 +14,8 @@ export default function EmployeeOnboardingDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [viewRole, setViewRole] = useState("HR"); // HR | ADMIN
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -71,22 +73,54 @@ export default function EmployeeOnboardingDashboard() {
           </p>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            varient="primary"
-            size="medium"
-            onClick={() => navigate("/employee-onboarding/create")}
-          >
-            + Create Offer
-          </Button>
-          <Button
-            onClick={() => navigate("/employee-onboarding/bulk-upload")}
-            varient="secondary"
-            size="medium"
-          >
-            Bulk Upload
-          </Button>
-        </div>
+       <div className="flex items-center gap-4">
+  {/* Role Toggle (Navigation based) */}
+<div className="flex rounded-lg border overflow-hidden">
+  <button
+    onClick={() => navigate("/employee-onboarding")}
+    className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white"
+  >
+    HR View
+  </button>
+
+  <button
+    onClick={() => navigate("/employee-onboarding/admin/approval-dashboard")}
+    className="px-4 py-2 text-sm font-medium bg-white text-gray-700"
+  >
+    Admin View
+  </button>
+</div>
+
+  {/* Existing Buttons */}
+  {viewRole === "HR" && (
+    <>
+      <Button
+        varient="primary"
+        size="medium"
+        onClick={() => navigate("/employee-onboarding/create")}
+      >
+        + Create Offer
+      </Button>
+
+      <Button
+        onClick={() => navigate("/employee-onboarding/bulk-upload")}
+        varient="secondary"
+        size="medium"
+      >
+        Bulk Upload
+      </Button>
+
+      <Button
+        varient="primary"
+        size="medium"
+        onClick={() => navigate("/employee-onboarding/hr-configuration")}
+      >
+        + HR Configuration
+      </Button>
+    </>
+  )}
+</div>
+
       </div>
 
       {/* Stats */}
@@ -105,7 +139,7 @@ export default function EmployeeOnboardingDashboard() {
           color="text-green-600"
         />
          <StatCard
-          title="Drafts"
+          title="Draft Offers"
           value={draftCount}
           icon={FileText}
           color="text-blue-600"
@@ -130,17 +164,24 @@ export default function EmployeeOnboardingDashboard() {
           className="w-full md:w-1/4 px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="ALL">All Status</option>
-          <option value="Accepted">Accept</option>
-          <option value="Offered">Offer</option>
-          <option value="Created">Create</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Offered">Offered</option>
+          <option value="Created">Created</option>
         </select>
       </div>
       
 
       {/* ✅ Reusable Offers Table */}
-      <EmpTable 
-      key={`${searchTerm}-${statusFilter}`}
-      offers={filteredOffers} loading={loading} />
+    {viewRole === "HR" ? (
+  <EmpTable
+    key={`${searchTerm}-${statusFilter}`}
+    offers={filteredOffers}
+    loading={loading}
+  />
+) : (
+  <AdminApprovalView />
+)}
+
     </div>
   );
 }

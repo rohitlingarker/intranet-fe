@@ -152,7 +152,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between">
           <div>
             <h1 className="text-3xl font-bold">Risk Register</h1>
-            <p className="text-sm text-slate-500">Project {projectId}</p>
+            {/* <p className="text-sm text-slate-500">Project {projectId}</p> */}
           </div>
 
           <button

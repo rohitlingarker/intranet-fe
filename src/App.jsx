@@ -62,9 +62,18 @@ import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
 import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
 import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
-// import CreateOffer from "./pages/employee_onboarding/CreateOffer.jsx";
-// import BulkUpload from "./pages/employee_onboarding/BulkUpload.jsx";
-// import ViewOffer from "./pages/employee_onboarding/ViewOffer.jsx";
+import HrConfiguration from "./pages/employee-onboarding/hr-configuration/HrConfiguration.jsx";
+import CountryManagement from "./pages/employee-onboarding/hr-configuration/country/CountryManagement.jsx";
+import IdentityTypeManagement from "./pages/employee-onboarding/hr-configuration/identity/IdentityTypeManagement.jsx";
+import CountryIdentityMapping from "./pages/employee-onboarding/hr-configuration/mapping/CountryIdentityMapping.jsx";
+import EducationDashboard from "./pages/employee-onboarding/hr-configuration/education/EducationDashboard.jsx";
+import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
+import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
+import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
+import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
+import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
+import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -107,7 +116,7 @@ import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
 import { showStatusToast } from "./components/toastfy/toast";
-
+import { IdentificationIcon } from "@heroicons/react/24/outline";
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
@@ -332,17 +341,44 @@ const AppRoutes = () => {
             <Route  path ="/employee-onboarding" element={ <EmpDashboard/> } />
             <Route  path="/employee-onboarding/offer/:user_uuid"  element={<ViewEmpDetails />}/>
            // Correct routes
-<Route path="/employee-onboarding" element={<EmpDashboard />} />
-<Route path="/employee-onboarding/create" element={<CreateOffer />} />
-<Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
-{/* <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewOffer />} /> */}
-
-
-
-
-            {/* <Route path="/employee-onboarding/create" element={<CreateOffer />} />
+            <Route path="/employee-onboarding" element={<EmpDashboard />} />
+            <Route path="/employee-onboarding/create" element={<CreateOffer />} />
             <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
-            <Route path="/employee-onboarding/offerletter/:user_uuid" element={<ViewOffer />} /> */}
+            <Route path="/employee-onboarding/hr-configuration/country" element={<CountryManagement />}/>
+            <Route path="/employee-onboarding/hr-configuration" element={<HrConfiguration />}/>
+            <Route path ="/employee-onboarding/hr-configuration/identity" element={ <IdentityTypeManagement/> } />
+            <Route path ="/employee-onboarding/hr-configuration/mapping" element={ <CountryIdentityMapping/> } />
+<Route
+  path="/employee-onboarding/hr-configuration/education"
+  element={<EducationDashboard />}
+/>
+
+<Route
+  path="/employee-onboarding/hr-configuration/education/levels"
+  element={<EducationLevelManagement />}
+/>
+
+<Route
+  path="/employee-onboarding/hr-configuration/education/documents"
+  element={<EducationDocumentManagement />}
+/>
+
+<Route
+  path="/employee-onboarding/hr-configuration/education/mapping"
+  element={<CountryEducationMapping />}
+/>
+
+<Route path="/employee-onboarding/admin/my-approvals" element={<AdminApprovalActions />} />
+
+
+<Route path="/employee-onboarding/admin/approval-dashboard" element={<AdminApprovalDashboard />} />
+<Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />} />
+
+
+
+
+
+
 
           {/* User Management */}
 

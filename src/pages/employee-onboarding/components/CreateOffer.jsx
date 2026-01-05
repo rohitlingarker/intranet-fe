@@ -40,7 +40,7 @@ export default function CreateOffer() {
     const load = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_ONBOARDING_BASE_URL}/masters/country`,
+          `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/country`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
