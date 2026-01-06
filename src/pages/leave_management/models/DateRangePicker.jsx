@@ -5,12 +5,12 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "react-toastify";
 import axios from "axios";
-
+ 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-
+ 
 // Style for holidays
 const holidayStyleRed = { backgroundColor: "#fee2e2", color: "#b91c1c" };
-
+ 
 const DateRangePicker = ({
   label,
   onChange,
@@ -18,36 +18,37 @@ const DateRangePicker = ({
   disabledDays,
   defaultMonth,
   align = "left",
+  year,
 }) => {
   const [selected, setSelected] = useState(defaultDate);
   const [holidaysDays, setHolidaysDays] = useState([]);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
+ 
   const fetchHolidays = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+      const res = await axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
         params: { state: "All", country: "India" },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
-      const holidayDates = res.data.map((holiday) => {
+ 
+      const holidayDates = res.data.data.map((holiday) => {
         const [y, m, d] = holiday.holidayDate.split("-").map(Number);
         return new Date(y, (m ?? 1) - 1, d ?? 1);
       });
-
+ 
       setHolidaysDays(holidayDates);
     } catch (err) {
       toast.error("Could not load company holidays");
     }
   };
-
+ 
   const handleSelect = (date) => {
     setSelected(date);
     if (onChange) onChange(date);
     setOpen(false);
   };
-
+ 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (ref.current && !ref.current.contains(event.target)) {
@@ -57,24 +58,24 @@ const DateRangePicker = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+ 
   useEffect(() => {
     fetchHolidays();
   }, []);
-
+ 
   useEffect(() => {
     setSelected(defaultDate);
   }, [defaultDate]);
-
+ 
   const currentYear = new Date().getFullYear();
   const toYear = currentYear + 3;
-
+ 
   return (
     <div className="flex flex-col space-y-2 w-full" ref={ref}>
       {label && (
         <label className="text-sm font-medium text-gray-700">{label}</label>
       )}
-
+ 
       <div className="relative w-full">
         <button
           type="button"
@@ -86,7 +87,7 @@ const DateRangePicker = ({
           </span>
           <CalendarIcon className="w-5 h-5 text-gray-500" />
         </button>
-
+ 
         {open && (
           <div
             className={`absolute z-20 mt-2 origin-top-left scale-75 ${
@@ -118,5 +119,5 @@ const DateRangePicker = ({
     </div>
   );
 };
-
+ 
 export default DateRangePicker;

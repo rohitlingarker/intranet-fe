@@ -307,6 +307,7 @@ const EmployeeDashboard = ({ employeeId }) => {
 
       <RequestLeaveModal
         isOpen={isRequestLeaveModalOpen}
+        year={currentYear}
         onClose={() => setIsRequestLeaveModalOpen(false)}
         employeeId={employeeId}
         onSuccess={() => setrefreshKeys((prev) => !prev)} // Trigger refresh of pending leaves

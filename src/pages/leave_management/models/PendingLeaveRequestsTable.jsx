@@ -22,6 +22,7 @@ const PendingLeaveRequestsTable = ({
   leaveTypeNames, // Receive this from the parent
   employeeId,
   refreshData, // This is the key prop for refreshing
+  year,
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentLeaveToEdit, setCurrentLeaveToEdit] = useState(null);
@@ -170,6 +171,7 @@ const PendingLeaveRequestsTable = ({
           leaveBalances={leaveBalances}
           onSuccess={handleUpdateSuccess}
           employeeId={employeeId}
+          year={year}
           />
         )}
 
