@@ -145,6 +145,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
             leaveTypeNames={leaveTypes}
             employeeId={employeeId}
             refreshData={handleLeaveRequestSuccess}
+            year={year}
           />
 
           {/* ✅ Custom Pagination */}

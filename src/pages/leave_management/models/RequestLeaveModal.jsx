@@ -245,7 +245,7 @@ function LeaveTypeDropdown({ options, selectedId, setSelectedId }) {
 }
 
 // ---- THE MAIN MODAL COMPONENT ----
-export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
+export default function RequestLeaveModal({ isOpen, onClose, onSuccess, year }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [leaveTypeId, setLeaveTypeId] = useState("");
@@ -326,11 +326,11 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     if (!isOpen) return;
     setLoadingBalances(true);
     axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`, {
+      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((response) => {
-        setBalances(response.data);
+        setBalances(response.data.data);
         setLoadingBalances(false);
       })
       .catch(() => {
@@ -340,13 +340,13 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
     const fetchHolidays = async () => {
       try {
         // Replace with your actual holiday API endpoint
-        const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+        const res = await axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
           params: { state: "All", country: "India" },
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
         // Map the JSON response to an array of Date objects
-        const holidayDates = res.data.map((holiday) => {
+        const holidayDates = res.data.data.map((holiday) => {
           const [y, m, d] = holiday.holidayDate.split("-").map(Number);
           return new Date(y, (m ?? 1) - 1, d ?? 1);
         });
@@ -488,6 +488,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                 startDate ? new Date(startDate + "T00:00:00") : null
               }
               disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
+              year={year}
             />
             <DateRangePicker
               label={
@@ -510,6 +511,7 @@ export default function RequestLeaveModal({ isOpen, onClose, onSuccess }) {
                 ...holidays,
                 startDate ? { before: new Date(startDate + "T00:00:00") } : {},
               ]}
+              year={year}
             />
           </div>
           <div className="text-center space-y-1">

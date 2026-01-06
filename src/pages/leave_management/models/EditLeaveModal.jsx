@@ -203,6 +203,7 @@ export default function EditLeaveModal({
   initialData,
   leaveBalances,
   onSuccess,
+  year,
 }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -243,11 +244,11 @@ export default function EditLeaveModal({
 
     const fetchHolidays = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+        const res = await axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
           params: { state: "All", country: "India" }, 
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        const holidayDates = res.data.map(
+        const holidayDates = res.data.data.map(
           (holiday) => new Date(holiday.holidayDate + "T00:00:00")
         );
         setHolidays(holidayDates);
@@ -453,6 +454,7 @@ export default function EditLeaveModal({
                 }
                 // Only disable if it's NOT maternity leave
                 disabledDays={isMaternityLeave ? [] : [{ dayOfWeek: [0, 6] }, ...holidays]}
+                year={year}
               />
               <DateRangePicker
                 label="End Date"
@@ -469,6 +471,7 @@ export default function EditLeaveModal({
                     ? { before: new Date(startDate + "T00:00:00") }
                     : {},
                 ]}
+                year={year}
               />
             </div>
 
