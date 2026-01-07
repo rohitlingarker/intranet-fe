@@ -24,7 +24,6 @@ const useLeaveConsumption = (employeeId, refreshKey, year) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log("Leave consumption data fetched:", res.data);
         setLeaveData(res.data);
         setLoading(false);
       })
