@@ -232,14 +232,14 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
     }));
 
     try {
-      await axios.post(`${BASE_URL}/api/holidays/add`, payload, {
+      const res = await axios.post(`${BASE_URL}/api/holidays/add`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      toast.success("Holidays added successfully!");
+      toast.success(res.data.message || "Holidays added successfully!");
       onSuccess?.();
       onClose();
-    } catch {
-      toast.error("Failed to submit holidays.");
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to submit holidays.");
     } finally {
       setSubmitting(false);
     }
