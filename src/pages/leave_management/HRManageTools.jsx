@@ -87,6 +87,7 @@ const HRManageTools = ({ employeeId }) => {
     setIsDeleting(false);
     setIsEffectiveModalOpen(false);
     setEffectiveDeactivationDate("");
+    fetchLeaveTypes();
   };
 
   const handleDeleteLeaveType = async (leaveTypeId) => {

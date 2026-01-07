@@ -79,7 +79,7 @@ const CompOffBalanceRequests = ({ managerId }) => {
       <h3 className="text-lg font-semibold text-blue-900 mb-2">Comp-Off Balance Requests</h3>
       <div className="border-b-2 border-blue-500 w-16 mb-4"></div>
       {pendingCompOffs.length === 0 ? (
-        <p className="text-gray-600">No pending Comp-Off requests for your team.</p>
+        <p className="text-gray-500 italic font-semibold">No pending Comp-Off requests for your team.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
