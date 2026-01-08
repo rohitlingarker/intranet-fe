@@ -35,13 +35,7 @@ export default function HrConfiguration() {
       icon: <Link2 />,
       path: "/employee-onboarding/hr-configuration/mapping",
     },
-    {
-      title: "Document Rules",
-      description: "Configure document upload rules & validations",
-      icon: <FileText />,
-      path: "/employee-onboarding/hr-configuration/documents",
-      disabled: true, // future feature
-    },
+   
   ];
 
   return (
