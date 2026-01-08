@@ -7,6 +7,8 @@ import {
   FileText,
 } from "lucide-react";
 
+
+
 export default function HrConfiguration() {
   const navigate = useNavigate();
 

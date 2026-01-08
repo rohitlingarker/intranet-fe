@@ -109,7 +109,6 @@ import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
-
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -427,7 +426,8 @@ const AppRoutes = () => {
             path="/user-management/access-point-map-permission-bulk"
             element={<BulkPermissionMapping />}
           />
-          
+
+
           {/* <Route
             path="/user-management/users"
             element={
