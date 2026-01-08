@@ -4,7 +4,7 @@ import axios from "axios";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import AllHolidaysGrid from "./AllHolidaysGrid";
 
-export default function UpcomingHolidays() {
+export default function UpcomingHolidays({year}) {
   const today = new Date();
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function UpcomingHolidays() {
     const fetchHolidays = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/api/holidays/year/${new Date().getFullYear()}`,
+          `${import.meta.env.VITE_BASE_URL}/api/holidays/year/${year}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         );
         setHolidays(res.data);
@@ -31,7 +31,7 @@ export default function UpcomingHolidays() {
       }
     };
     fetchHolidays();
-  }, []);
+  }, [year]);
 
   // Compute today holiday once
   const todayHoliday = holidays.find(

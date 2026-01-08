@@ -1,11 +1,13 @@
 "use client";
 
+
 import { useEffect, useState, useMemo } from "react";
 import { FileText, Send, Users, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/Button/Button";
+// import Button from "../../components/Button/Button";
 import EmpTable from "./components/EmpTable";
 import axios from "axios";
+import OnboardingNavBar from "./components/NavigationBar";
 
 export default function EmployeeOnboardingDashboard() {
   const navigate = useNavigate();
@@ -61,8 +63,9 @@ export default function EmployeeOnboardingDashboard() {
 
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="p-1 space-y-6">
+        {/* Top Tabs - Always Visible */}
+      <OnboardingNavBar />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -72,10 +75,10 @@ export default function EmployeeOnboardingDashboard() {
             Manage offer letters and onboarding workflow
           </p>
         </div>
-
-       <div className="flex items-center gap-4">
+     
+      {/* <div className="flex items-center gap-4"> */}
   {/* Role Toggle (Navigation based) */}
-<div className="flex rounded-lg border overflow-hidden">
+{/* <div className="flex rounded-lg border overflow-hidden">
   <button
     onClick={() => navigate("/employee-onboarding")}
     className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white"
@@ -89,11 +92,11 @@ export default function EmployeeOnboardingDashboard() {
   >
     Admin View
   </button>
-</div>
+</div> */}
 
   {/* Existing Buttons */}
-  {viewRole === "HR" && (
-    <>
+    {/* {viewRole === "HR" && (
+      <>
       <Button
         varient="primary"
         size="medium"
@@ -118,8 +121,8 @@ export default function EmployeeOnboardingDashboard() {
         + HR Configuration
       </Button>
     </>
-  )}
-</div>
+        )}
+      </div> */}
 
       </div>
 

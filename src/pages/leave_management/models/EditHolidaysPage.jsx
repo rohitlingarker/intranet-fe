@@ -36,28 +36,29 @@ const EditHolidaysPage = () => {
   const navigate = useNavigate();
   // const token = localStorage.getItem("token");
 
+  const fetchHolidays = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(
+        `${BASE_URL}/api/holidays/year/${selectedYear}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setHolidays(response.data);
+    } catch (err) {
+      setError("Failed to fetch holidays. Please try again later.");
+      toast.error("Failed to fetch holidays.");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch all holidays
   useEffect(() => {
-    const fetchHolidays = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get(
-          `${BASE_URL}/api/holidays/year/${selectedYear}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        setHolidays(response.data);
-      } catch (err) {
-        setError("Failed to fetch holidays. Please try again later.");
-        toast.error("Failed to fetch holidays.");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchHolidays();
   }, [selectedYear, localStorage.getItem("token")]);
 
@@ -102,19 +103,23 @@ const EditHolidaysPage = () => {
 
   const handleDeleteHoliday = async (holidayId) => {
     try {
-      setIsLoading(true);
-      await axios.delete(`${BASE_URL}/api/holidays/delete/${holidayId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      toast.success("Holiday deleted successfully!");
+      setIsDeleting(true);
+      const res = await axios.delete(
+        `${BASE_URL}/api/holidays/delete/${holidayId}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      toast.success(res.data.message || "Holiday deleted successfully!");
       setHolidays((holidays) =>
         holidays.filter((h) => h.holidayId !== holidayId)
       );
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete holiday.");
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
       setIsDeleteConfirmationOpen(false);
+      fetchHolidays();
     }
   };
 
@@ -256,9 +261,9 @@ const EditHolidaysPage = () => {
                     </td>
                     <td className="px-4 py-2 w-1/6">
                       <input
-                      value={editedData.type || ""}
-                      className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
-                      readOnly
+                        value={editedData.type || ""}
+                        className="border rounded p-1 w-full bg-gray-100 text-gray-400 hover:cursor-not-allowed"
+                        readOnly
                       />
                     </td>
                     <td className="px-4 py-2">
@@ -365,6 +370,7 @@ const EditHolidaysPage = () => {
         message="Are you sure you want to delete this holiday?"
         onConfirm={() => handleDeleteHoliday(selectedLeaveTypeIdToDelete)}
         onCancel={() => setIsDeleteConfirmationOpen(false)}
+        isLoading={isDeleting}
       />
     </div>
   );
