@@ -13,7 +13,7 @@ import {
   File,
 } from "lucide-react";
 
-const [fileLoading, setFileLoading] = useState(false);
+// const [fileLoading, setFileLoading] = useState(false);
 
 export default function HrProfileView() {
   const { user_uuid } = useParams();
@@ -65,7 +65,7 @@ export default function HrProfileView() {
   }
 
   async function openFileInNewTab(url) {
-    setFileLoading(true);
+    // setFileLoading(true);
     const newTab = window.open("", "_blank");
     try {
       const res = await axios.get(`${BASE_URL}/hr/view_documents`, {
@@ -79,7 +79,7 @@ export default function HrProfileView() {
       console.error("Failed to open document", err);
       newTab.close(); // cleanup if error
     } finally {
-      setFileLoading(false);
+      // setFileLoading(false);
     }
   }
 
