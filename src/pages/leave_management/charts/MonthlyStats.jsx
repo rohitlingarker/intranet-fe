@@ -25,8 +25,8 @@ const monthsOrder = [
   "Dec",
 ];
 
-const MonthlyStats = ({ employeeId, refreshKey }) => {
-  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey);
+const MonthlyStats = ({ employeeId, refreshKey, year }) => {
+  const { leaveData, loading, error } = useLeaveData(employeeId, refreshKey, year);
 
   // useEffect(() => {}, [leaveData, refreshKey]);
 
@@ -52,7 +52,7 @@ const MonthlyStats = ({ employeeId, refreshKey }) => {
           Monthly Leave Days
         </h3>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
-          {new Date().getFullYear()}
+          {year}
         </span>
       </div>
 

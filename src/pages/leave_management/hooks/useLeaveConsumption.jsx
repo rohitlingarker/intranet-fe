@@ -6,7 +6,7 @@ import { over } from "stompjs";
 
 let stompClient = null;
 
-const useLeaveConsumption = (employeeId, refreshKey) => {
+const useLeaveConsumption = (employeeId, refreshKey, year) => {
   const token = localStorage.getItem("token");
   const [leaveData, setLeaveData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,8 @@ const useLeaveConsumption = (employeeId, refreshKey) => {
   const fetchLeaveData = () => {
     if (!employeeId) return;
 
-    axios
-      .get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${new Date().getFullYear()}`, {
+    setLoading(true);
+    axios.get(`${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -38,7 +38,7 @@ const useLeaveConsumption = (employeeId, refreshKey) => {
   // ---------------------------
   useEffect(() => {
     fetchLeaveData();
-  }, [employeeId, refreshKey]);
+  }, [employeeId, refreshKey, year]);
 
   // ---------------------------
   // WEBSOCKET REAL-TIME LISTENER

@@ -15,7 +15,7 @@ export default function AdminApprovalActions() {
   const fetchMyActions = async () => {
     try {
       const res = await axios.get(
-        `${BASE_URL}/offer-approval/admin/my-actions`,
+        `${BASE_URL}/offer-approval/my-actions`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -40,10 +40,11 @@ export default function AdminApprovalActions() {
     try {
       setUpdatingRequestId(request_id);
 
-      await axios.post(
-        `${BASE_URL}/offer-approval/action`,
+      await axios.put(
+        `${BASE_URL}/offer-approval/update_action`,
         [
           {
+            request_id,
             user_uuid,
             action,
             comments:
@@ -125,7 +126,7 @@ export default function AdminApprovalActions() {
               </div>
 
               {/* ACTIONS */}
-              {req.action === "PENDING" && (
+              {req.action === "Pending" && (
                 <div className="flex gap-2">
                   <button
                     disabled={updatingRequestId === req.request_id}
