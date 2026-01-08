@@ -9,7 +9,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "HR View", path: "/employee-onboarding" },
-  { label: "Admin View", path: "/employee-onboarding/admin/my-approvals" },
+  { label: "Admin View", path: "/employee-onboarding/admin/approval-dashboard" },
   { label: "Create Offer", path: "/employee-onboarding/create" },
   { label: "Bulk Upload", path: "/employee-onboarding/bulk-upload" },
   { label: "HR Configuration", path: "/employee-onboarding/hr-configuration" },
