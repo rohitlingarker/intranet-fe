@@ -71,7 +71,7 @@ import EducationLevelManagement from "./pages/employee-onboarding/hr-configurati
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
 import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
-import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
+import AdminApprovalDashboard from "./pages/employee-onboarding/Admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/Hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/Hr/HrProfileView.jsx";
