@@ -70,9 +70,9 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
-import AdminApprovalDashboard from "./pages/employee-onboarding/Admin/AdminApprovalDashboard.jsx";
-import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
+import AdminApprovalActions from "./pages/employee-onboarding/admin1/AdminApprovalActions.js"; 
+import AdminApprovalDashboard from "./pages/employee-onboarding/admin1/AdminApprovalDashboard.jsx";
+import AdminOfferView from "./pages/employee-onboarding/admin1/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/Hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/Hr/HrProfileView.jsx";
 // ✅ User Management
