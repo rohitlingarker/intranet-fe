@@ -2,142 +2,295 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function CountryEducationMapping() {
-  const [countries, setCountries] = useState([]);
-  const [levels, setLevels] = useState([]);
-  const [docs, setDocs] = useState([]);
-  const [mappings, setMappings] = useState([]);
-
-  const [country, setCountry] = useState("");
-  const [level, setLevel] = useState("");
-  const [doc, setDoc] = useState("");
-  const [mandatory, setMandatory] = useState(true);
-
   const BASE = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
   const token = localStorage.getItem("token");
 
+  const axiosConfig = {
+    headers: { Authorization: `Bearer ${token}` },
+  };
+
+  /* ================= STATE ================= */
+  const [countries, setCountries] = useState([]);
+  const [mappings, setMappings] = useState([]);
+
+  const [levels, setLevels] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [selectedDocument, setSelectedDocument] = useState("");
+  const [mandatory, setMandatory] = useState(true);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [loadingMappings, setLoadingMappings] = useState(false);
+  const [loadingFormData, setLoadingFormData] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  /* ================= LOAD COUNTRIES ONLY ================= */
   useEffect(() => {
-    axios.get(`${BASE}/masters/country`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => setCountries(r.data));
-
-    axios.get(`${BASE}/masters/education-level`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => setLevels(r.data));
-
-    axios.get(`${BASE}/education/education-document`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => setDocs(r.data));
+    axios
+      .get(`${BASE}/masters/country`, axiosConfig)
+      .then((res) => setCountries(res.data || []))
+      .catch(() => setError("Failed to load countries"));
   }, []);
 
-  const loadMappings = async (uuid) => {
-    const res = await axios.get(
-      `${BASE}/education/country-mapping/${uuid}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+  /* ================= LOAD MAPPINGS ================= */
+  const loadMappings = async (countryUuid) => {
+    if (!countryUuid) return;
+
+    setLoadingMappings(true);
+    setError("");
+    setShowAddForm(false);
+
+    try {
+      const res = await axios.get(
+        `${BASE}/education/country-mapping/${countryUuid}`,
+        axiosConfig
+      );
+      setMappings(res.data || []);
+    } catch {
+      setMappings([]);
+    } finally {
+      setLoadingMappings(false);
+    }
+  };
+
+  /* ================= LOAD LEVELS & DOCUMENTS (ON DEMAND) ================= */
+  const loadFormData = async () => {
+    setLoadingFormData(true);
+    setError("");
+
+    try {
+      const [levelsRes, docsRes] = await Promise.all([
+        axios.get(`${BASE}/masters/education-level`, axiosConfig),
+        axios.get(`${BASE}/education/education-document`, axiosConfig),
+      ]);
+
+      setLevels(levelsRes.data || []);
+      setDocuments(docsRes.data || []);
+      setShowAddForm(true);
+    } catch {
+      setError("Failed to load education levels or documents");
+    } finally {
+      setLoadingFormData(false);
+    }
+  };
+ /* ================= ADD NEW MAPPING ================= */
+  const addMapping = async () => {
+  if (!selectedLevel || !selectedDocument) return;
+
+  setSubmitting(true);
+  setError("");
+
+  try {
+    const res = await axios.post(
+      `${BASE}/masters/{educ-level-uuid}/{educ-doc-uuid}/{country-uuid}`,
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          educ_level_uuid: selectedLevel,
+          educ_doc_uuid: selectedDocument,
+          country_uuid: selectedCountry,
+        },
+      }
     );
-    setMappings(res.data);
-  };
 
-  const add = async () => {
-    await axios.post(
-      `${BASE}/masters/${level}/${doc}/${country}`,
-      { is_mandatory: mandatory },
-      { headers: { Authorization: `Bearer ${token}` } }
+    // 🔥 BUILD NEW ROW LOCALLY
+    const levelObj = levels.find(
+      (l) => l.education_uuid === selectedLevel
     );
-    loadMappings(country);
-  };
+    const docObj = documents.find(
+      (d) => d.education_document_uuid === selectedDocument
+    );
 
-  const remove = async (uuid) => {
-    if (!confirm("Remove mapping?")) return;
-    await axios.delete(`${BASE}/masters/mapping/${uuid}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    loadMappings(country);
-  };
+    const newMapping = {
+      mapping_uuid: res.data.mapping_uuid, // from backend
+      education_name: levelObj?.education_name,
+      document_name: docObj?.document_name,
+      is_mandatory: mandatory,
+    };
 
+    // 🔥 APPEND ONLY NEW ROW (NO RE-FETCH)
+    setMappings((prev) => [...prev, newMapping]);
+
+    // reset form
+    setSelectedLevel("");
+    setSelectedDocument("");
+    setMandatory(true);
+    setShowAddForm(false);
+  } catch (err) {
+    setError(err?.response?.data?.detail || "Failed to create mapping");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+  /* ================= UI ================= */
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-xl font-semibold mb-6">
-        Country ↔ Education Mapping
+    <div className="max-w-6xl mx-auto mt-8">
+      <h1 className="text-2xl font-semibold mb-1">
+        Education Country Mapping
       </h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Configure education document requirements per country
+      </p>
 
-      <select
-        className="border p-2 mb-4"
-        onChange={(e) => {
-          setCountry(e.target.value);
-          loadMappings(e.target.value);
-        }}
-      >
-        <option>Select Country</option>
-        {countries.map(c => (
-          <option key={c.country_uuid} value={c.country_uuid}>
-            {c.country_name}
-          </option>
-        ))}
-      </select>
+      <div className="bg-white shadow rounded p-6">
+        {error && (
+          <div className="mb-4 text-red-600 text-sm">{error}</div>
+        )}
 
-      {country && (
-        <>
-          <div className="flex gap-3 mb-4">
-            <select onChange={e => setLevel(e.target.value)}>
-              <option>Education Level</option>
-              {levels.map(l => (
-                <option key={l.education_uuid} value={l.education_uuid}>
-                  {l.education_name}
-                </option>
-              ))}
-            </select>
+        {/* Country Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-1">
+            Select Country
+          </label>
+          <select
+            className="border rounded px-3 py-2 w-80"
+            value={selectedCountry}
+            onChange={(e) => {
+              setSelectedCountry(e.target.value);
+              loadMappings(e.target.value);
+            }}
+          >
+            <option value="">-- Choose Country --</option>
+            {countries.map((c) => (
+              <option key={c.country_uuid} value={c.country_uuid}>
+                {c.country_name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            <select onChange={e => setDoc(e.target.value)}>
-              <option>Document</option>
-              {docs.map(d => (
-                <option key={d.education_document_uuid} value={d.education_document_uuid}>
-                  {d.document_name}
-                </option>
-              ))}
-            </select>
+        {/* Existing Mappings */}
+        {selectedCountry && (
+          <>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-medium">
+                Existing Mappings
+              </h2>
+              <button
+                onClick={loadFormData}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+                disabled={loadingFormData}
+              >
+                {loadingFormData ? "Loading..." : "+ Add Mapping"}
+              </button>
+            </div>
 
-            <label>
-              <input
-                type="checkbox"
-                checked={mandatory}
-                onChange={() => setMandatory(!mandatory)}
-              /> Mandatory
-            </label>
+            {loadingMappings ? (
+              <div className="text-gray-500 py-4">
+                Loading mappings...
+              </div>
+            ) : (
+              <table className="w-full border">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-3 text-left">Education</th>
+                    <th className="p-3 text-left">Document</th>
+                    <th className="p-3 text-left">Mandatory</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mappings.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="text-center p-4 text-gray-500"
+                      >
+                        No mappings found
+                      </td>
+                    </tr>
+                  ) : (
+                    mappings.map((m) => (
+                      <tr key={m.mapping_uuid} className="border-t">
+                        <td className="p-3">{m.education_name}</td>
+                        <td className="p-3">{m.document_name}</td>
+                        <td className="p-3">
+                          {m.is_mandatory ? "Yes" : "No"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
 
-            <button onClick={add} className="bg-blue-700 text-white px-4">
-              Add
-            </button>
-          </div>
+        {/* Add Mapping Form */}
+        {showAddForm && (
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-medium mb-4">
+              Add New Mapping
+            </h3>
 
-          <table className="w-full border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3">Education</th>
-                <th className="p-3">Document</th>
-                <th className="p-3">Mandatory</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mappings.map(m => (
-                <tr key={m.mapping_uuid} className="border-t">
-                  <td className="p-3">{m.education_name}</td>
-                  <td className="p-3">{m.document_name}</td>
-                  <td className="p-3">{m.is_mandatory ? "Yes" : "No"}</td>
-                  <td className="p-3">
-                    <button
-                      onClick={() => remove(m.mapping_uuid)}
-                      className="text-red-600"
+            <div className="flex items-end gap-4">
+              <div>
+                <label className="block text-sm mb-1">
+                  Education Level
+                </label>
+                <select
+                  className="border rounded px-3 py-2"
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                >
+                  <option value="">Select Level</option>
+                  {levels.map((l) => (
+                    <option
+                      key={l.education_uuid}
+                      value={l.education_uuid}
                     >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+                      {l.education_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">
+                  Document
+                </label>
+                <select
+                  className="border rounded px-3 py-2"
+                  value={selectedDocument}
+                  onChange={(e) => setSelectedDocument(e.target.value)}
+                >
+                  <option value="">Select Document</option>
+                  {documents.map((d) => (
+                    <option
+                      key={d.education_document_uuid}
+                      value={d.education_document_uuid}
+                    >
+                      {d.document_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  checked={mandatory}
+                  onChange={() => setMandatory(!mandatory)}
+                />
+                Mandatory
+              </label>
+
+              <button
+                onClick={addMapping}
+                disabled={submitting}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+              >
+                {submitting ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

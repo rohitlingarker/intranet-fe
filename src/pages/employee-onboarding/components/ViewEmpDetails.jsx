@@ -9,11 +9,13 @@ import {
   Mail,
   Phone,
   Briefcase,
-  IndianRupee,
   User,
   BadgeCheck,
   Pencil,
+  MoreVertical,
+  Wallet,
 } from "lucide-react";
+import { set } from "date-fns";
 
 export default function ViewEmpDetails() {
   const { user_uuid } = useParams();
@@ -22,18 +24,16 @@ export default function ViewEmpDetails() {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // 🔹 Approval related states
-const [openApprovalModal, setOpenApprovalModal] = useState(false);
-const [adminUsers, setAdminUsers] = useState([]);
-const [selectedAdmin, setSelectedAdmin] = useState("");
-const [sendingApproval, setSendingApproval] = useState(false);
-const [approvalHistory, setApprovalHistory] = useState([]);
-const [approvalRequested, setApprovalRequested] = useState(false);
-
+  // 🔹 Approval states
+  const [openApprovalModal, setOpenApprovalModal] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [selectedAdmin, setSelectedAdmin] = useState("");
+  const [sendingApproval, setSendingApproval] = useState(false);
+  const [approvalHistory, setApprovalHistory] = useState([]);
+  const [openMenu, setOpenMenu] = useState(false);
 
   const [editData, setEditData] = useState({
     first_name: "",
@@ -46,218 +46,158 @@ const [approvalRequested, setApprovalRequested] = useState(false);
     currency: "",
   });
 
-  /* -------------------- FETCH EMPLOYEE -------------------- */
+  function toTitleCase(str) {
+    str = str.toLowerCase();
+    const words = str.split(' ');
+    const capitalizedWords = words.map(word => {
+      if (word.length === 0) return ''; 
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+    return capitalizedWords.join(' ');
+  }
+
+  /* ---------------- FETCH EMPLOYEE ---------------- */
   const fetchEmployee = async () => {
     const token = localStorage.getItem("token");
-
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/offer/${user_uuid}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setEmployee(res.data);
-
-      setEditData({
-        first_name: res.data.first_name,
-        last_name: res.data.last_name,
-        mail: res.data.mail,
-        country_code: res.data.country_code,
-        contact_number: res.data.contact_number,
-        designation: res.data.designation,
-        package: res.data.package,
-        currency: res.data.currency,
-      });
-    } catch (error) {
-      console.error("Failed to fetch employee details", error);
+      setEditData(res.data);
+    } catch {
+      showStatusToast("Failed to fetch employee details");
     } finally {
       setLoading(false);
     }
   };
 
-
-  /* -------------------- FETCH ADMIN USERS -------------------- */
-const fetchAdminUsers = async () => {
-  const token = localStorage.getItem("token");
-
-  try {
+  /* ---------------- FETCH ADMIN USERS ---------------- */
+  const fetchAdminUsers = async () => {
+    const token = localStorage.getItem("token");
     const res = await axios.get(
       `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/admin-users`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     setAdminUsers(res.data || []);
-  } catch (error) {
-    showStatusToast("Failed to load approvers");
-  }
-};
+  };
 
-
-/* -------------------- FETCH APPROVAL HISTORY -------------------- */
-/* -------------------- FETCH APPROVAL HISTORY -------------------- */
-const fetchApprovalHistory = async () => {
-  const token = localStorage.getItem("token");
-
-  try {
+  /* ---------------- FETCH APPROVAL HISTORY ---------------- */
+  const fetchApprovalHistory = async () => {
+    const token = localStorage.getItem("token");
     const res = await axios.get(
       `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/status/${user_uuid}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
-    // ✅ Normalize object/array response
-    const data = Array.isArray(res.data) ? res.data : [res.data];
-    console.log("Approval History Data:", data);
-    setApprovalHistory(data);
-  } catch (error) {
-    console.error("Failed to fetch approval history");
-  }
-};
-
-
+    setApprovalHistory(Array.isArray(res.data) ? res.data : [res.data]);
+  };
 
   useEffect(() => {
     fetchEmployee();
-    fetchApprovalHistory(); 
+    fetchApprovalHistory();
   }, [user_uuid]);
 
   useEffect(() => {
-  if (openApprovalModal) fetchAdminUsers();
-  
-}, [openApprovalModal]);
+    if (openApprovalModal) fetchAdminUsers();
+  }, [openApprovalModal]);
 
+  /* ---------------- DERIVED STATE ---------------- */
+  const approvalStatus =
+    approvalHistory?.[0]?.status?.toUpperCase() || "NO REQUEST";
 
-/* -------------------- DERIVED APPROVAL STATE (FIX) -------------------- */
-  const latestApproval =
-    approvalHistory && approvalHistory.length > 0
-      ? approvalHistory[0]
-      : null;
-
-  const effectiveApprovalStatus =
-    employee?.approval_status || latestApproval?.status || null;
+  const isNoRequest = approvalStatus === "NO REQUEST";
+  const isPending = approvalStatus === "PENDING";
+  const canModifyOfferApprovalRequest = isPending;
 
   const effectiveApprover =
-    employee?.approver_name || latestApproval?.action_taker_name || null;
+    employee?.approver_name ||
+    approvalHistory?.[0]?.action_taker_name ||
+    null;
 
-
-  /* -------------------- SEND OFFER -------------------- */
+  /* ---------------- SEND OFFER ---------------- */
   const handleSendOffer = async () => {
     const token = localStorage.getItem("token");
-
     try {
       setSending(true);
-
-      const res = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/bulk-send`,
         { user_uuid_list: [user_uuid] },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      showStatusToast(
-        res.data.results?.[0]?.message || "Offer sent successfully"
-      );
+      showStatusToast("Offer sent successfully");
       fetchEmployee();
-    } catch (error) {
-      console.error("Failed to send offer", error);
+    } catch {
       showStatusToast("Failed to send offer");
     } finally {
       setSending(false);
     }
   };
 
-  /* -------------------- SEND APPROVAL REQUEST -------------------- */
-const handleSendApproval = async () => {
-  if (!selectedAdmin) {
-    showStatusToast("Please select approver");
-    return;
-  }
+  /* ---------------- CREATE / REASSIGN APPROVAL ---------------- */
+  const handleApprovalSubmit = async () => {
+    if (!selectedAdmin) {
+      showStatusToast("Please select approver");
+      return;
+    }
 
-  const token = localStorage.getItem("token");
-  try {
-    setSendingApproval(true);
-    await axios.post(
-      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval-requests/request`,
-      [
-        {
-          user_uuid,
-          action_taker_id: Number(selectedAdmin),
-        },
-      ],
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    showStatusToast("Approval request sent");
-    
-
-// ✅ Optimistic UI update (instant)
-setEmployee((prev) => ({
-  ...prev,
-  approval_status: "PENDING",
-  approver_name:
-    adminUsers.find((a) => a.user_id === Number(selectedAdmin))?.name || "",
-}));
-setApprovalRequested(true); 
-    setOpenApprovalModal(false);
- 
-    fetchApprovalHistory();
-  } catch (error) {
-    showStatusToast("Approval request failed");
-  } finally {
-    setSendingApproval(false);
-  }
-};
-
-
-  /* -------------------- UPDATE OFFER -------------------- */
-  const handleUpdateOffer = async () => {
     const token = localStorage.getItem("token");
+    setSendingApproval(true);
 
     try {
-      setUpdating(true);
+      if (isNoRequest) {
+        await axios.post(
+          `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval-requests/request`,
+          [{ user_uuid, action_taker_id: Number(selectedAdmin) }],
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        showStatusToast("Approval request sent");
+      } else if (isPending) {
+        await axios.put(
+          `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/reassign`,
+          {
+            user_uuid,
+            new_approver_id: Number(selectedAdmin),
+            comments: "Reassigned from UI",
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        showStatusToast("Approval reassigned");
+      }
 
+      setOpenApprovalModal(false);
+      setSelectedAdmin("");
+      fetchApprovalHistory();
+    } catch {
+      showStatusToast("Failed to process approval");
+    } finally {
+      setSendingApproval(false);
+    }
+  };
+
+  /* ---------------- UPDATE OFFER ---------------- */
+  const handleUpdateOffer = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      setUpdating(true);
       await axios.put(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/${user_uuid}`,
-        {
-          ...editData,
-          contact_number: String(editData.contact_number),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        editData,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Optimistic UI
-      setEmployee((prev) => ({ ...prev, ...editData }));
-
       showStatusToast("Offer updated successfully");
       setIsEditing(false);
-    } catch (error) {
-      console.error("Update failed", error?.response?.data);
+    } catch {
       showStatusToast("Failed to update offer");
     } finally {
       setUpdating(false);
     }
   };
 
-  if (loading) {
-    return <div className="p-10 text-center">Loading employee details...</div>;
-  }
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
+  if (!employee) return <div className="p-10 text-center">Not found</div>;
 
-  if (!employee) {
-    return (
-      <div className="p-10 text-center text-red-600">
-        Employee not found
-      </div>
-    );
-  }
+  /* ========================= UI (UNCHANGED) ========================= */
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -287,28 +227,100 @@ setApprovalRequested(true);
                 </span>
               </p>
 
-              {/* ✅ Approval Status Visibility */}
-            
-             {effectiveApprovalStatus && (
               <ApprovalStatusBadge
-                status={effectiveApprovalStatus}
+                status={approvalStatus}
                 approver={effectiveApprover}
               />
-            )}
-
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              setEditData(employee);
+              setIsEditing(true)}}
             disabled={employee.status === "SENT"}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg disabled:bg-gray-400"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg"
           >
             <Pencil size={16} />
             Edit Offer
           </button>
-        </div>
 
+        {isEditing && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl">
+            <h3 className="text-2xl font-semibold mb-4 text-blue-900">
+              Edit Offer Details
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.keys(editData).filter(key => ['first_name','last_name','mail','country_code','contact_number','designation','package','currency'].includes(key)).map((key) => (
+              <label key={key} className="flex flex-col gap-1">
+                {toTitleCase(key.replace("_", " "))}
+              <input
+                key={key}
+                value={editData[key] || ""}
+                onChange={(e) =>
+                  setEditData({ ...editData, [key]: e.target.value })
+                }
+                className="border p-2 rounded"
+                placeholder={key.replace("_", " ").toUpperCase()}
+              />
+              </label>
+            ))}
+          </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              {/* ❌ Cancel */}
+              <button
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-2 rounded bg-gray-200"
+              >
+                Cancel
+              </button>
+
+                    {/* ✅ Save */}
+                    <button
+                      onClick={handleUpdateOffer}
+                      disabled={updating}
+                      className="px-4 py-2 rounded bg-green-700 text-white"
+                    >
+                      {updating ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+  
+
+          {canModifyOfferApprovalRequest && (
+            <div className="relative">
+              <button
+                onClick={() => setOpenMenu(!openMenu)}
+                className="p-2 rounded-full hover:bg-gray-300"
+              >
+                <MoreVertical size={24} />
+              </button>
+
+              {openMenu && (
+                <div className="absolute right-0 mt-2 w-52 bg-white border rounded-lg shadow-lg z-20">
+                  <button
+                    onClick={() => {
+                      setOpenMenu(false);
+                      setOpenApprovalModal(true);
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50"
+                  >
+                    Edit Approval Request
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>  
+
+        {/* --- DETAILS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DetailCard icon={<Mail />} label="Email" value={employee.mail} />
           <DetailCard
@@ -322,103 +334,40 @@ setApprovalRequested(true);
             value={employee.designation}
           />
           <DetailCard
-            icon={<IndianRupee />}
+            icon={<Wallet />}
             label="CTC"
             value={`${employee.package} ${employee.currency}`}
           />
         </div>
 
-
-
-        {isEditing && (
-          <div className="mt-10 border rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4 text-blue-900">
-              Edit Offer Details
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.keys(editData).map((key) => (
-                <input
-                  key={key}
-                  disabled={updating}
-                  value={editData[key]}
-                  onChange={(e) =>
-                    setEditData({ ...editData, [key]: e.target.value })
-                  }
-                  placeholder={key.replace("_", " ").toUpperCase()}
-                  className={`border p-2 rounded ${
-                    updating ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                />
-              ))}
-            </div>
-
-            {updating && (
-              <p className="text-sm text-blue-900 mt-3">
-                Saving changes, please wait...
-              </p>
-            )}
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleUpdateOffer}
-                disabled={updating}
-                className={`px-6 py-2 rounded-lg text-white flex items-center gap-2 ${
-                  updating
-                    ? "bg-green-400 cursor-not-allowed"
-                    : "bg-green-700 hover:bg-green-800"
-                }`}
-              >
-                {updating ? "Saving..." : "Save Changes"}
-              </button>
-
-              <button
-                disabled={updating}
-                onClick={() => setIsEditing(false)}
-                className={`px-6 py-2 rounded-lg ${
-                  updating
-                    ? "bg-gray-200 cursor-not-allowed"
-                    : "bg-gray-300"
-                }`}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-4 mt-10">
-          {console.log("Approval History Data at button :", approvalHistory[0]?.status)}
           <button
             onClick={handleSendOffer}
-            disabled={sending || approvalHistory[0]?.status !== "APPROVED"}
+            disabled={approvalStatus !== "APPROVED"}
             className={`px-6 py-2 rounded-lg text-white ${
-              approvalHistory[0]?.status !== "APPROVED"
-                ? "bg-gray-400 cursor-not-allowed"
+              approvalStatus !== "APPROVED"
+                ? "bg-gray-400"
                 : "bg-green-700 hover:bg-green-800"
             }`}
           >
-            {sending ? "Sending..." : "Send Offer"}
+            Send Offer
           </button>
 
-          <button className="px-6 py-2 bg-red-700 text-white rounded-lg">
-            Delete Offer
-          </button>
           <button
             onClick={() => setOpenApprovalModal(true)}
-            disabled={approvalHistory[0]?.status.toUpperCase() !== "NO REQUEST"}
+            disabled={!isNoRequest}
             className={`px-6 py-2 rounded-lg text-white ${
-              approvalHistory[0]?.status.toUpperCase() !== "NO REQUEST"
-                ? "bg-gray-400 cursor-not-allowed"
+              !isNoRequest
+                ? "bg-gray-400"
                 : "bg-green-700 hover:bg-green-800"
             }`}
           >
             Request Approval
           </button>
-
         </div>
       </div>
-      {/* ✅ Approval Modal */}
+
+      {/* ---------- APPROVAL MODAL ---------- */}
       {openApprovalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
           <div className="bg-white p-6 rounded w-full max-w-md">
@@ -440,7 +389,7 @@ setApprovalRequested(true);
             <div className="flex justify-end gap-3">
               <button onClick={() => setOpenApprovalModal(false)}>Cancel</button>
               <button
-                onClick={handleSendApproval}
+                onClick={handleApprovalSubmit}
                 disabled={sendingApproval}
                 className="bg-indigo-700 text-white px-4 py-2 rounded"
               >
@@ -454,7 +403,7 @@ setApprovalRequested(true);
   );
 }
 
-/* -------------------- CARD -------------------- */
+/* ---------------- UI HELPERS ---------------- */
 function DetailCard({ icon, label, value }) {
   return (
     <div className="border rounded-lg p-4 flex items-start gap-4">
@@ -466,6 +415,7 @@ function DetailCard({ icon, label, value }) {
     </div>
   );
 }
+
 function ApprovalStatusBadge({ status, approver }) {
   const styles = {
     PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -477,17 +427,13 @@ function ApprovalStatusBadge({ status, approver }) {
   return (
     <div
       className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${
-        styles[status] || "bg-gray-100 text-gray-800"
+        styles[status] || "bg-gray-100"
       }`}
     >
       <span className="font-medium">
         {status === "PENDING" ? "Approval Pending" : status}
       </span>
-      {approver && (
-        <span className="text-xs opacity-80">
-          • {approver}
-        </span>
-      )}
+      {approver && <span className="text-xs opacity-80">• {approver}</span>}
     </div>
   );
 }

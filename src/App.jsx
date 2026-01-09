@@ -73,7 +73,8 @@ import CountryEducationMapping from "./pages/employee-onboarding/hr-configuratio
 import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
-
+import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
+import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -112,7 +113,6 @@ import LeaveDetailsPage from "./pages/leave_management/charts/LeaveDetailsPage";
 import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
-
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -374,7 +374,8 @@ const AppRoutes = () => {
 <Route path="/employee-onboarding/admin/approval-dashboard" element={<AdminApprovalDashboard />} />
 <Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />} />
 
-
+<Route path="/employee-onboarding/hr" element={<HrOnboardingDashboard />} />
+<Route path="/employee-onboarding/hr/profile/:user_uuid" element={<HrProfileView />} />
 
 
 
@@ -441,7 +442,8 @@ const AppRoutes = () => {
             path="/user-management/access-point-map-permission-bulk"
             element={<BulkPermissionMapping />}
           />
-          
+
+
           {/* <Route
             path="/user-management/users"
             element={
