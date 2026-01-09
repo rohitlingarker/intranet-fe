@@ -70,9 +70,9 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/Admin/AdminApprovalActions.jsx"; 
-import AdminApprovalDashboard from "./pages/employee-onboarding/Admin/AdminApprovalDashboard.jsx";
-import AdminOfferView from "./pages/employee-onboarding/Admin/AdminOfferView.jsx";
+import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
+import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
+import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/Hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/Hr/HrProfileView.jsx";
 // ✅ User Management
@@ -81,7 +81,6 @@ import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
 import UpdateUserRoles from "./pages/UserManagement/admin/userManagement/UpdateUserRoles";
 import EditUserRoleForm from "./pages/UserManagement/admin/userManagement/EditUserRoleForm";
 import UsersTable from "./pages/UserManagement/admin/userManagement/UsersTable";
-
 
 // ✅ Roles & Permissions
 import RoleManagement from "./pages/UserManagement/admin/roleManagement/RoleManagement";
