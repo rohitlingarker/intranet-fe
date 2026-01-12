@@ -105,14 +105,14 @@ const cancelBulkJoin = () => {
       // ✅ Normalize status for comparison
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
-        
-      const isStatusOffered =
-        String(offer.status || "").trim().toUpperCase() === "OFFERED";
+
+      const isStatusSubmitted =
+        String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
 
        // ✅ Enable checkbox based on active bulk mode
     const isCheckboxEnabled =
       (bulkMode && isStatusCreated) ||
-      (bulkJoinMode && isStatusOffered);
+      (bulkJoinMode && isStatusSubmitted);
 
       // console.log("isCheckboxEnabled:", isCheckboxEnabled);
 
@@ -169,7 +169,7 @@ const cancelBulkJoin = () => {
               varient="primary"
               size="small"
               onClick={() => setBulkJoinMode(true)}
-              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "OFFERED")}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "SUBMITTED")}
             >
               Send Join
             </Button>
