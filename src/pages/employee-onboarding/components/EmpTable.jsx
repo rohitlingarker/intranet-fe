@@ -7,8 +7,62 @@ import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
+import { useEffect, useRef } from "react";
 
 const PAGE_SIZE = 5;
+function ActionMenu({ onView, onVerify,showVerify  }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      {/* 3 Dots Button */}
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="px-2 py-1 text-xl font-bold text-gray-600 hover:text-gray-900"
+      >
+        &#8942;
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute right-full mr-2 top-0 w-32 bg-white border rounded-md shadow-lg z-50">
+          <button
+            onClick={() => {
+              onView();
+              setOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            View
+          </button>
+          {showVerify && (
+            <button
+              onClick={() => {
+                onVerify();
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Verify
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function OffersTable({ offers = [], loading = false }) {
   const navigate = useNavigate();
@@ -109,6 +163,9 @@ const cancelBulkJoin = () => {
       const isStatusSubmitted =
         String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
 
+      const isSubmitted =
+        String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
+
        // ✅ Enable checkbox based on active bulk mode
     const isCheckboxEnabled =
       (bulkMode && isStatusCreated) ||
@@ -140,23 +197,24 @@ const cancelBulkJoin = () => {
         designation: offer.designation || "—",
         status: offer.status || "—",
 
-        action: (
-          <button
-            className="text-blue-900 underline"
-            onClick={() =>
-              navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
-            }
-          >
-            View
-          </button>
-        ),
+      action: (
+            <ActionMenu
+              onView={() =>
+                navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
+              }
+              onVerify={() =>
+                navigate(`/employee-onboarding/hr/profile/${offer.user_uuid}`)
+              }
+              showVerify={isSubmitted}
+            />
+          ),
       };
     });
   }, [offers, currentPage, bulkMode, bulkJoinMode, selectedIds, navigate]);
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <div className="bg-white rounded-xl shadow-sm relative overflow-visible">
       {/* Header */}
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="font-semibold text-gray-800">Recent Offer Letters</h2>

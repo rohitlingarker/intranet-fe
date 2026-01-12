@@ -67,6 +67,7 @@ const GenericTable = ({
 }) => {
   return (
     <div
+     className="relative overflow-visible"
       style={{
         background: "#fff",
         padding: "16px",
@@ -80,7 +81,7 @@ const GenericTable = ({
       ) : rows.length === 0 ? (
         <div className="text-center text-gray-500">No records found.</div>
       ) : (
-        <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+        <table className="w-full border-collapse rounded-lg shadow-sm">
           <thead>
             <tr className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white text-sm">
               {headers.map((header, idx) => (
@@ -101,7 +102,7 @@ const GenericTable = ({
                 {columns.map((col, colIndex) => (
                   <td
                     key={colIndex}
-                    className={`p-3 text-gray-700 font-medium ${
+                    className={`p-3 text-gray-700 font-medium relative overflow-visible ${
                       col.toLowerCase() === "status"
                         ? row[col]?.toUpperCase() === "APPROVED"  ||  row[col]?.toUpperCase() === "ACTIVE"
                           ? "text-green-600"
