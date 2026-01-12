@@ -8,6 +8,7 @@ import Button from "../../../components/Button/Button";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import { useEffect, useRef } from "react";
+import { Mail } from "lucide-react";
 
 const PAGE_SIZE = 5;
 function ActionMenu({ onView, onVerify,showVerify  }) {
@@ -128,6 +129,55 @@ const cancelBulkJoin = () => {
     }
   };
 
+
+  /* -------------------- Bulk Send API -------------------- */
+  const handleBulkJoin = () => {
+  if (selectedIds.length === 0) return;
+
+  // 1️⃣ Get selected users
+  const selectedUsers = offers.filter((offer) =>
+    selectedIds.includes(offer.user_uuid)
+  );
+
+  // 2️⃣ Extract emails
+  const emailList = selectedUsers
+    .map((user) => user.mail)
+    .filter(Boolean)
+    .join(";");
+
+  if (!emailList) {
+    showStatusToast("❌ No valid email addresses found");
+    return;
+  }
+
+  // 3️⃣ Email content
+  const subject = encodeURIComponent("Joining Letter – Welcome Aboard");
+  const body = encodeURIComponent(
+    `Hello Team,
+
+    Please find your joining details below.
+
+    Joining Date: [DD/MM/YYYY]
+    Reporting Time: 9:30 AM
+    Location: Office / Remote
+
+    Regards,
+    HR Team`
+      );
+  
+  // 4️⃣ Build mailto link
+  const mailtoLink = `mailto:${emailList}?subject=${subject}&body=${body}`;
+  
+  showStatusToast(`Redirecting to email app`, "info");
+
+  // 5️⃣ Open email client
+  window.location.href = mailtoLink;
+
+  // Optional cleanup
+  cancelBulkJoin();
+  };
+
+
   /* -------------------- Table Config -------------------- */
   const headers = [
     bulkMode ? "Select" : null,
@@ -237,7 +287,7 @@ const cancelBulkJoin = () => {
                 varient="primary"
                 size="small"
                 disabled={selectedIds.length === 0 || sending}
-                // onClick={handleBulkSend}
+                onClick={handleBulkJoin}
               >
                 {sending ? "Sending..." : `Send (${selectedIds.length})`}
               </Button>
