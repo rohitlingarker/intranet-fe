@@ -18,6 +18,8 @@ export default function CreateOffer() {
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(true);
 
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -42,7 +44,9 @@ export default function CreateOffer() {
         const res = await axios.get(
           `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/country`,
           {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
         );
 
@@ -66,6 +70,31 @@ export default function CreateOffer() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Cancel click → show confirmation overlay
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
+
+  // Confirm cancel → clear fields
+  const confirmCancel = () => {
+    setFormData({
+      first_name: "",
+      last_name: "",
+      mail: "",
+      country_code: "",
+      contact_number: "",
+      designation: "",
+      package: "",
+      currency: "",
+    });
+    setShowCancelConfirm(false);
+  };
+
+  // Close confirmation → keep fields
+  const cancelConfirmation = () => {
+    setShowCancelConfirm(false);
+  };
+
   // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,10 +102,14 @@ export default function CreateOffer() {
     const toastId = toast.loading("Creating offer...");
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/create`,
         formData,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
       );
 
       toast.update(toastId, {
@@ -98,8 +131,7 @@ export default function CreateOffer() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
-
+    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6 relative">
       {/* Heading */}
       <h2 className="text-2xl font-semibold text-gray-900">Create Offer</h2>
       <p className="text-gray-500 mt-1 mb-6">
@@ -108,7 +140,6 @@ export default function CreateOffer() {
 
       {/* Form */}
       <form className="space-y-6" onSubmit={handleSubmit}>
-
         {/* First + Last Name */}
         <div className="grid grid-cols-2 gap-6">
           <FormInput
@@ -116,17 +147,12 @@ export default function CreateOffer() {
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
-            className="rounded-lg border-gray-300 text-gray-700"
-            placeholder="Enter first name"
           />
-
           <FormInput
             label="Last Name"
             name="last_name"
             value={formData.last_name}
             onChange={handleChange}
-            className="rounded-lg border-gray-300 text-gray-700"
-            placeholder="Enter last name"
           />
         </div>
 
@@ -137,8 +163,6 @@ export default function CreateOffer() {
           type="email"
           value={formData.mail}
           onChange={handleChange}
-          placeholder="Enter email"
-          className="rounded-lg border-gray-300 text-gray-700"
         />
 
         {/* Country + Phone */}
@@ -149,16 +173,12 @@ export default function CreateOffer() {
             value={formData.country_code}
             onChange={handleChange}
             options={countries}
-            className="rounded-lg border-gray-300"
           />
-
           <FormInput
             label="Contact Number"
             name="contact_number"
             value={formData.contact_number}
             onChange={handleChange}
-            placeholder="Enter phone number"
-            className="rounded-lg border-gray-300 text-gray-700"
           />
         </div>
 
@@ -168,8 +188,6 @@ export default function CreateOffer() {
           name="designation"
           value={formData.designation}
           onChange={handleChange}
-          placeholder="Enter designation"
-          className="rounded-lg border-gray-300 text-gray-700"
         />
 
         {/* Package */}
@@ -178,8 +196,6 @@ export default function CreateOffer() {
           name="package"
           value={formData.package}
           onChange={handleChange}
-          placeholder="Ex: 12 LPA"
-          className="rounded-lg border-gray-300 text-gray-700"
         />
 
         {/* Currency */}
@@ -189,14 +205,13 @@ export default function CreateOffer() {
           value={formData.currency}
           onChange={handleChange}
           options={currencies}
-          className="rounded-lg border-gray-300"
         />
 
         {/* Buttons */}
         <div className="flex justify-end gap-4 pt-4">
           <button
             type="button"
-            onClick={() => navigate("/employee-onboarding-dashboard")}
+            onClick={handleCancelClick}
             className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
           >
             Cancel
@@ -210,6 +225,37 @@ export default function CreateOffer() {
           </button>
         </div>
       </form>
+
+      {/* 🔒 Overlay Confirmation (INSIDE FORM CARD) */}
+      {showCancelConfirm && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Confirm Cancel
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to cancel? All entered details will be
+              cleared.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={cancelConfirmation}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={confirmCancel}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+              >
+                Yes, Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

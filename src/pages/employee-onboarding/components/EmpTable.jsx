@@ -16,6 +16,7 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkMode, setBulkMode] = useState(false);
+  const [bulkJoinMode, setBulkJoinMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [sending, setSending] = useState(false);
 
@@ -34,6 +35,11 @@ export default function OffersTable({ offers = [], loading = false }) {
     setBulkMode(false);
     setSelectedIds([]);
   };
+
+const cancelBulkJoin = () => {
+  setBulkJoinMode(false);
+  setSelectedIds([]);
+};
 
   /* -------------------- Bulk Send API -------------------- */
   const handleBulkSend = async () => {
@@ -71,6 +77,7 @@ export default function OffersTable({ offers = [], loading = false }) {
   /* -------------------- Table Config -------------------- */
   const headers = [
     bulkMode ? "Select" : null,
+    bulkJoinMode ? "Select" : null,
     "Candidate Name",
     "Email",
     "Contact",
@@ -81,6 +88,7 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const columns = [
     bulkMode ? "select" : null,
+    bulkJoinMode ? "select" : null,
     "candidate_name",
     "mail",
     "contact",
@@ -89,6 +97,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "action",
   ].filter(Boolean);
 
+
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
 
@@ -96,17 +105,27 @@ export default function OffersTable({ offers = [], loading = false }) {
       // ✅ Normalize status for comparison
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
+        
+      const isStatusOffered =
+        String(offer.status || "").trim().toUpperCase() === "OFFERED";
+
+       // ✅ Enable checkbox based on active bulk mode
+    const isCheckboxEnabled =
+      (bulkMode && isStatusCreated) ||
+      (bulkJoinMode && isStatusOffered);
+
+      // console.log("isCheckboxEnabled:", isCheckboxEnabled);
 
       return {
-        ...(bulkMode && {
+        ...((bulkMode || bulkJoinMode) && {
           select: (
             <input
               type="checkbox"
-              disabled={!isStatusCreated}
+              disabled={!isCheckboxEnabled}
               checked={selectedIds.includes(offer.user_uuid)}
-              onChange={() => isStatusCreated && toggleSelect(offer.user_uuid)}
+              onChange={() => isCheckboxEnabled && toggleSelect(offer.user_uuid)}
               className={`h-4 w-4 ${
-                isStatusCreated
+                isCheckboxEnabled
                   ? "cursor-pointer"
                   : "cursor-not-allowed opacity-40"
               }`}
@@ -133,7 +152,7 @@ export default function OffersTable({ offers = [], loading = false }) {
         ),
       };
     });
-  }, [offers, currentPage, bulkMode, selectedIds, navigate]);
+  }, [offers, currentPage, bulkMode, bulkJoinMode, selectedIds, navigate]);
 
   /* -------------------- UI -------------------- */
   return (
@@ -142,31 +161,61 @@ export default function OffersTable({ offers = [], loading = false }) {
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="font-semibold text-gray-800">Recent Offer Letters</h2>
 
-        {!bulkMode ? (
-          <Button
-            varient="primary"
-            size="small"
-            onClick={() => setBulkMode(true)}
-            disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
-          >
-            Bulk Send
-          </Button>
-        ) : (
-          <div className="flex gap-3">
+        {/* 👉 RIGHT SIDE BUTTON GROUP */}
+        <div className="flex items-center gap-3">
+
+          {!bulkJoinMode ? (
             <Button
               varient="primary"
               size="small"
-              disabled={selectedIds.length === 0 || sending}
-              onClick={handleBulkSend}
+              onClick={() => setBulkJoinMode(true)}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "OFFERED")}
             >
-              {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              Send Join
             </Button>
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                varient="primary"
+                size="small"
+                disabled={selectedIds.length === 0 || sending}
+                // onClick={handleBulkSend}
+              >
+                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              </Button>
 
-            <Button varient="secondary" size="small" onClick={cancelBulk}>
-              Cancel
+              <Button varient="secondary" size="small" onClick={cancelBulkJoin}>
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {!bulkMode ? (
+            <Button
+              varient="primary"
+              size="small"
+              onClick={() => setBulkMode(true)}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
+            >
+              Bulk Send
             </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                varient="primary"
+                size="small"
+                disabled={selectedIds.length === 0 || sending}
+                onClick={handleBulkSend}
+              >
+                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              </Button>
+
+              <Button varient="secondary" size="small" onClick={cancelBulk}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}

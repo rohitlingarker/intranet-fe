@@ -13,8 +13,9 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // --- Helper 1: Maps leave balances to dropdown options with user-friendly labels ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
-  if (!balances || !leaveTypes) return [];
-  return balances.map((balance) => {
+  console.log("Mapping leave balances:", balances);
+  if (!balances.data || !leaveTypes) return [];
+  return balances.data.map((balance) => {
     const { leaveType, remainingLeaves } = balance;
     const leaveTypeId = leaveType.leaveTypeId;
     const originalName = leaveType.leaveName;
@@ -212,6 +213,8 @@ export default function ManagerEditLeaveRequest({
   onSave,
   requestDetails,
 }) {
+  console.log("Rendering ManagerEditLeaveRequest with details:", requestDetails);
+  const year = requestDetails.year;
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [leaveTypeId, setLeaveTypeId] = useState("");
@@ -266,13 +269,13 @@ export default function ManagerEditLeaveRequest({
         try {
           const [balancesRes, typesRes, holidays] = await Promise.all([
             axios.get(
-              `${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}/${new Date().getFullYear()}`,
+              `${BASE_URL}/api/leave-balance/employee/${requestDetails.employee.employeeId}/${year}`,
               { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             ),
             axios.get(`${BASE_URL}/api/leave/types`, {
               headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             }),
-            axios.get(`${BASE_URL}/api/holidays/by-location`, {
+            axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
               params: { state: "All", country: "India" },
               headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             }),
@@ -433,6 +436,7 @@ export default function ManagerEditLeaveRequest({
                 startDate ? new Date(startDate + "T00:00:00") : undefined
               }
               disabledDays={[{ dayOfWeek: [0, 6] }, ...holidays]}
+              year={year}
             />
             <DateRangePicker
               label="End Date"
@@ -447,6 +451,7 @@ export default function ManagerEditLeaveRequest({
                 ...holidays,
                 startDate ? { before: new Date(startDate + "T00:00:00") } : {},
               ]}
+              year={year}
             />
           </div>
 
