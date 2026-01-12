@@ -103,12 +103,21 @@ export default function ViewEmpDetails() {
   }, [openApprovalModal]);
 
   /* ---------------- DERIVED STATE ---------------- */
-  const approvalStatus =
-    approvalHistory?.[0]?.status?.toUpperCase() || "NO REQUEST";
+  /* ---------------- DERIVED STATE ---------------- */
+const rawStatus = approvalHistory?.[0]?.status || "";
 
-  const isNoRequest = approvalStatus === "NO REQUEST";
-  const isPending = approvalStatus === "PENDING";
-  const canModifyOfferApprovalRequest = isPending;
+const approvalStatus = rawStatus.toUpperCase();
+
+const isNoRequest = !rawStatus;
+const isPending = approvalStatus.includes("PENDING");
+const canModifyOfferApprovalRequest = isPending;
+
+  // const approvalStatus =
+  //   approvalHistory?.[0]?.status?.toUpperCase() || "NO REQUEST";
+
+  // const isNoRequest = approvalStatus === "NO REQUEST";
+  // const isPending = approvalStatus === "PENDING";
+  // const canModifyOfferApprovalRequest = isPending;
 
   const effectiveApprover =
     employee?.approver_name ||
@@ -135,6 +144,22 @@ export default function ViewEmpDetails() {
   };
 
   /* ---------------- CREATE / REASSIGN APPROVAL ---------------- */
+  useEffect(() => {
+  if (openApprovalModal && isPending) {
+    const current =
+      approvalHistory?.[0]?.action_taker_id ||
+      approvalHistory?.[0]?.approver_id;
+
+    if (current) {
+      setSelectedAdmin(String(current));
+    }
+  }
+
+  if (openApprovalModal && isNoRequest) {
+    setSelectedAdmin("");
+  }
+}, [openApprovalModal, isPending, isNoRequest, approvalHistory]);
+
   const handleApprovalSubmit = async () => {
     if (!selectedAdmin) {
       showStatusToast("Please select approver");

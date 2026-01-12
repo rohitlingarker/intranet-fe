@@ -182,6 +182,7 @@ export default function EmployeeOnboardingDashboard() {
     key={`${searchTerm}-${statusFilter}`}
     offers={filteredOffers}
     loading={loading}
+    stage="HR_VIEW"
   />
 ) : (
   <AdminApprovalView />
