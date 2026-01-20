@@ -44,6 +44,7 @@ export default function EmployeeOnboardingDashboard() {
   const acceptCount = offers.filter(o => o.status === "Accepted").length;
   const sentCount = offers.filter(o => o.status === "Offered").length;
   const draftCount = offers.filter(o => o.status === "Created").length;
+  const submittedCount = offers.filter(o => o.status === "Submitted").length;
 
   
   // ✅ Filter offers based on search term (case-insensitive)
@@ -147,6 +148,13 @@ export default function EmployeeOnboardingDashboard() {
           icon={FileText}
           color="text-blue-600"
         />
+        <StatCard
+          title="Submitted Offers"
+          value={submittedCount}
+          icon={FileText}
+          color="text-purple-600"
+        />
+          
       </div> 
 
       {/* search bar  */}
