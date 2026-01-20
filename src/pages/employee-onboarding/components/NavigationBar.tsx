@@ -13,6 +13,8 @@ const navItems: NavItem[] = [
   { label: "Create Offer", path: "/employee-onboarding/create" },
   { label: "Bulk Upload", path: "/employee-onboarding/bulk-upload" },
   { label: "HR Configuration", path: "/employee-onboarding/hr-configuration" },
+  { label: "HR Verification", path: "/employee-onboarding/hr" },
+  { label: "HR Approved", path: "/employee-onboarding/hr-approved" },
 ];
 
 export default function OnboardingNavBar() {

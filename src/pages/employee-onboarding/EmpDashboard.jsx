@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useEffect, useState, useMemo } from "react";
 import { FileText, Send, Users, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -178,6 +177,9 @@ export default function EmployeeOnboardingDashboard() {
           <option value="Accepted">Accepted</option>
           <option value="Offered">Offered</option>
           <option value="Created">Created</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Verified">Verified</option>
+          <option value="Submitted">Submitted</option>
         </select>
       </div>
       
@@ -188,6 +190,7 @@ export default function EmployeeOnboardingDashboard() {
     key={`${searchTerm}-${statusFilter}`}
     offers={filteredOffers}
     loading={loading}
+    stage="HR_VIEW"
   />
 ) : (
   <AdminApprovalView />

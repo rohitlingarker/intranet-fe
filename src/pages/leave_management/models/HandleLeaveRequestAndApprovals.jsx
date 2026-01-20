@@ -44,7 +44,6 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [leaveBalanceModal, setLeaveBalaceModel] = useState(null);
-  const token = localStorage.getItem("token");
   const [editingRequest, setEditingRequest] = useState(null);
   const itemsPerPage = 8;
   const currentYear = new Date().getFullYear();

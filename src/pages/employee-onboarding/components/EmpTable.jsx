@@ -7,8 +7,63 @@ import Pagination from "../../../components/Pagination/pagination";
 import Button from "../../../components/Button/Button";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
+import { useEffect, useRef } from "react";
+import { Mail } from "lucide-react";
 
 const PAGE_SIZE = 5;
+function ActionMenu({ onView, onVerify,showVerify  }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      {/* 3 Dots Button */}
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="px-2 py-1 text-xl font-bold text-gray-600 hover:text-gray-900"
+      >
+        &#8942;
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute right-full mr-2 top-0 w-32 bg-white border rounded-md shadow-lg z-50">
+          <button
+            onClick={() => {
+              onView();
+              setOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            View
+          </button>
+          {showVerify && (
+            <button
+              onClick={() => {
+                onVerify();
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Verify
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function OffersTable({ offers = [], loading = false }) {
   const navigate = useNavigate();
@@ -16,6 +71,7 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkMode, setBulkMode] = useState(false);
+  const [bulkJoinMode, setBulkJoinMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [sending, setSending] = useState(false);
 
@@ -34,6 +90,11 @@ export default function OffersTable({ offers = [], loading = false }) {
     setBulkMode(false);
     setSelectedIds([]);
   };
+
+const cancelBulkJoin = () => {
+  setBulkJoinMode(false);
+  setSelectedIds([]);
+};
 
   /* -------------------- Bulk Send API -------------------- */
   const handleBulkSend = async () => {
@@ -68,9 +129,59 @@ export default function OffersTable({ offers = [], loading = false }) {
     }
   };
 
+
+  /* -------------------- Bulk Send API -------------------- */
+  const handleBulkJoin = () => {
+  if (selectedIds.length === 0) return;
+
+  // 1️⃣ Get selected users
+  const selectedUsers = offers.filter((offer) =>
+    selectedIds.includes(offer.user_uuid)
+  );
+
+  // 2️⃣ Extract emails
+  const emailList = selectedUsers
+    .map((user) => user.mail)
+    .filter(Boolean)
+    .join(";");
+
+  if (!emailList) {
+    showStatusToast("❌ No valid email addresses found");
+    return;
+  }
+
+  // 3️⃣ Email content
+  const subject = encodeURIComponent("Joining Letter – Welcome Aboard");
+  const body = encodeURIComponent(
+    `Hello Team,
+
+    Please find your joining details below.
+
+    Joining Date: [DD/MM/YYYY]
+    Reporting Time: 9:30 AM
+    Location: Office / Remote
+
+    Regards,
+    HR Team`
+      );
+  
+  // 4️⃣ Build mailto link
+  const mailtoLink = `mailto:${emailList}?subject=${subject}&body=${body}`;
+  
+  showStatusToast(`Redirecting to email app`, "info");
+
+  // 5️⃣ Open email client
+  window.location.href = mailtoLink;
+
+  // Optional cleanup
+  cancelBulkJoin();
+  };
+
+
   /* -------------------- Table Config -------------------- */
   const headers = [
     bulkMode ? "Select" : null,
+    bulkJoinMode ? "Select" : null,
     "Candidate Name",
     "Email",
     "Contact",
@@ -81,6 +192,7 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const columns = [
     bulkMode ? "select" : null,
+    bulkJoinMode ? "select" : null,
     "candidate_name",
     "mail",
     "contact",
@@ -88,6 +200,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "status",
     "action",
   ].filter(Boolean);
+
 
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -97,16 +210,29 @@ export default function OffersTable({ offers = [], loading = false }) {
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
 
+      const isStatusSubmitted =
+        String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
+
+      const isSubmitted =
+        String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
+
+       // ✅ Enable checkbox based on active bulk mode
+    const isCheckboxEnabled =
+      (bulkMode && isStatusCreated) ||
+      (bulkJoinMode && isStatusSubmitted);
+
+      // console.log("isCheckboxEnabled:", isCheckboxEnabled);
+
       return {
-        ...(bulkMode && {
+        ...((bulkMode || bulkJoinMode) && {
           select: (
             <input
               type="checkbox"
-              disabled={!isStatusCreated}
+              disabled={!isCheckboxEnabled}
               checked={selectedIds.includes(offer.user_uuid)}
-              onChange={() => isStatusCreated && toggleSelect(offer.user_uuid)}
+              onChange={() => isCheckboxEnabled && toggleSelect(offer.user_uuid)}
               className={`h-4 w-4 ${
-                isStatusCreated
+                isCheckboxEnabled
                   ? "cursor-pointer"
                   : "cursor-not-allowed opacity-40"
               }`}
@@ -121,52 +247,83 @@ export default function OffersTable({ offers = [], loading = false }) {
         designation: offer.designation || "—",
         status: offer.status || "—",
 
-        action: (
-          <button
-            className="text-blue-900 underline"
-            onClick={() =>
-              navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
-            }
-          >
-            View
-          </button>
-        ),
+      action: (
+            <ActionMenu
+              onView={() =>
+                navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
+              }
+              onVerify={() =>
+                navigate(`/employee-onboarding/hr/profile/${offer.user_uuid}`)
+              }
+              showVerify={isSubmitted}
+            />
+          ),
       };
     });
-  }, [offers, currentPage, bulkMode, selectedIds, navigate]);
+  }, [offers, currentPage, bulkMode, bulkJoinMode, selectedIds, navigate]);
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <div className="bg-white rounded-xl shadow-sm relative overflow-visible">
       {/* Header */}
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="font-semibold text-gray-800">Recent Offer Letters</h2>
 
-        {!bulkMode ? (
-          <Button
-            varient="primary"
-            size="small"
-            onClick={() => setBulkMode(true)}
-            disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
-          >
-            Bulk Send
-          </Button>
-        ) : (
-          <div className="flex gap-3">
+        {/* 👉 RIGHT SIDE BUTTON GROUP */}
+        <div className="flex items-center gap-3">
+
+          {!bulkJoinMode ? (
             <Button
               varient="primary"
               size="small"
-              disabled={selectedIds.length === 0 || sending}
-              onClick={handleBulkSend}
+              onClick={() => setBulkJoinMode(true)}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "SUBMITTED")}
             >
-              {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              Send Join
             </Button>
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                varient="primary"
+                size="small"
+                disabled={selectedIds.length === 0 || sending}
+                onClick={handleBulkJoin}
+              >
+                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              </Button>
 
-            <Button varient="secondary" size="small" onClick={cancelBulk}>
-              Cancel
+              <Button varient="secondary" size="small" onClick={cancelBulkJoin}>
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {!bulkMode ? (
+            <Button
+              varient="primary"
+              size="small"
+              onClick={() => setBulkMode(true)}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
+            >
+              Bulk Send
             </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-3">
+              <Button
+                varient="primary"
+                size="small"
+                disabled={selectedIds.length === 0 || sending}
+                onClick={handleBulkSend}
+              >
+                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+              </Button>
+
+              <Button varient="secondary" size="small" onClick={cancelBulk}>
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}
