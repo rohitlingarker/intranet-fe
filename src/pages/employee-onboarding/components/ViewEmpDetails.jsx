@@ -108,7 +108,7 @@ const rawStatus = approvalHistory?.[0]?.status || "";
 
 const approvalStatus = rawStatus.toUpperCase();
 
-const isNoRequest = !rawStatus;
+const isNoRequest = !rawStatus || approvalStatus === "NO REQUEST";
 const isPending = approvalStatus.includes("PENDING");
 const canModifyOfferApprovalRequest = isPending;
 
@@ -391,6 +391,7 @@ const canModifyOfferApprovalRequest = isPending;
           </button>
         </div>
       </div>
+      
 
       {/* ---------- APPROVAL MODAL ---------- */}
       {openApprovalModal && (

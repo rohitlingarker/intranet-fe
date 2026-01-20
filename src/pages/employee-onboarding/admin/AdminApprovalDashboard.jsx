@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Users, CheckCircle, XCircle, PauseCircle } from "lucide-react";
+import { Users, CheckCircle, XCircle, PauseCircle, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -19,6 +19,11 @@ export default function AdminApprovalDashboard() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+   const getStatus = (row) => {
+    return row.action ? row.action.toUpperCase() : "PENDING";
+  };
+
 
   /* ---------- FETCH DATA (ONE API) ---------- */
   useEffect(() => {
@@ -44,9 +49,13 @@ export default function AdminApprovalDashboard() {
 
   /* ---------- STATS ---------- */
   const totalRequests = data.length;
-  const approvedCount = data.filter(d => d.action === "APPROVED").length;
-  const rejectedCount = data.filter(d => d.action === "REJECTED").length;
-  const onHoldCount = data.filter(d => d.action === "ON_HOLD").length;
+  const approvedCount = data.filter(d => getStatus(d) === "APPROVED").length;
+  const rejectedCount = data.filter(d => getStatus(d) === "REJECTED").length;
+  const onHoldCount = data.filter(d => getStatus(d) === "ON_HOLD").length;
+  const pendingCount = data.filter(d => getStatus(d) === "PENDING").length;
+  
+
+ 
 
   /* ---------- FILTERED DATA ---------- */
   const filteredData = useMemo(() => {
@@ -58,8 +67,9 @@ export default function AdminApprovalDashboard() {
         name.includes(searchTerm.toLowerCase()) ||
         role.includes(searchTerm.toLowerCase());
 
+      const rowStatus = getStatus(row);
       const matchesStatus =
-        statusFilter === "ALL" || row.action === statusFilter;
+        statusFilter === "ALL" || rowStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -106,6 +116,7 @@ export default function AdminApprovalDashboard() {
         <StatCard title="Approved" value={approvedCount} icon={CheckCircle} color="text-green-600" />
         <StatCard title="Rejected" value={rejectedCount} icon={XCircle} color="text-red-600" />
         <StatCard title="On Hold" value={onHoldCount} icon={PauseCircle} color="text-yellow-600" />
+        <StatCard title="Pending" value={pendingCount} icon={Clock} color="text-gray-600" />
       </div>
 
       {/* Search & Filter */}
@@ -155,7 +166,7 @@ export default function AdminApprovalDashboard() {
                 <td className="px-4 py-3">{row.mail}</td>
                 <td className="px-4 py-3">{row.designation}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={row.action} />
+                  <StatusBadge status={getStatus(row)} />
                 </td>
                 <td className="px-4 py-3">{row.requested_by_name}</td>
                 <td className="px-4 py-3 text-indigo-600 cursor-pointer">
