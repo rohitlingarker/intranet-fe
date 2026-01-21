@@ -255,7 +255,8 @@ const cancelBulkJoin = () => {
               onVerify={() =>
                 navigate(`/employee-onboarding/hr/profile/${offer.user_uuid}`)
               }
-              showVerify={isSubmitted}
+              showVerify={
+                isSubmitted}
             />
           ),
       };
@@ -279,7 +280,7 @@ const cancelBulkJoin = () => {
               onClick={() => setBulkJoinMode(true)}
               disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "SUBMITTED")}
             >
-              Send Join
+              Bulk Join
             </Button>
           ) : (
             <div className="flex gap-3">

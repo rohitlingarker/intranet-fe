@@ -12,7 +12,6 @@ import {
   User,
   BadgeCheck,
   Pencil,
-  MoreVertical,
   Wallet,
 } from "lucide-react";
 import { set } from "date-fns";
@@ -203,15 +202,27 @@ const canModifyOfferApprovalRequest = isPending;
   /* ---------------- UPDATE OFFER ---------------- */
   const handleUpdateOffer = async () => {
     const token = localStorage.getItem("token");
+
+    const payload = {
+    first_name: editData.first_name,
+    last_name: editData.last_name,
+    mail: editData.mail,
+    country_code: editData.country_code,
+    contact_number: editData.contact_number,
+    designation: editData.designation,
+    package: editData.package,
+    currency: editData.currency,
+  };
     try {
       setUpdating(true);
       await axios.put(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/${user_uuid}`,
-        editData,
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       showStatusToast("Offer updated successfully");
       setIsEditing(false);
+      fetchEmployee(); // Refresh data
     } catch {
       showStatusToast("Failed to update offer");
     } finally {
@@ -260,6 +271,7 @@ const canModifyOfferApprovalRequest = isPending;
           </div>
 
           <div className="flex items-center gap-2">
+          {isNoRequest && (
           <button
             onClick={() => {
               setEditData(employee);
@@ -270,6 +282,8 @@ const canModifyOfferApprovalRequest = isPending;
             <Pencil size={16} />
             Edit Offer
           </button>
+        )}
+          
 
         {isEditing && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -319,27 +333,18 @@ const canModifyOfferApprovalRequest = isPending;
   
 
           {canModifyOfferApprovalRequest && (
-            <div className="relative">
-              <button
-                onClick={() => setOpenMenu(!openMenu)}
-                className="p-2 rounded-full hover:bg-gray-300"
-              >
-                <MoreVertical size={24} />
-              </button>
-
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-52 bg-white border rounded-lg shadow-lg z-20">
+            <div className="relative ">
+              <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       setOpenMenu(false);
                       setOpenApprovalModal(true);
                     }}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg"
                   >
                     Edit Approval Request
                   </button>
                 </div>
-              )}
             </div>
           )}
         </div>
