@@ -237,6 +237,18 @@ const AppRoutes = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
+          {/* Resource Management */}
+          <Route 
+            path="/resource-management"
+            element={
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
+                <EmployeePanel />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
           <Route path="/managerapproval" element={<TSAdminPanel />} />

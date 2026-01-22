@@ -9,6 +9,7 @@ import {
   PlaneTakeoff,
   ChevronDown,
   Handshake,
+  UserCog2,
   X, // added close icon
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -16,6 +17,7 @@ import { is } from "date-fns/locale";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Resource Management", href: "/resource-management", icon: UserCog2 },
   { name: "Projects", href: "/projects", icon: FolderKanban },
   { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },

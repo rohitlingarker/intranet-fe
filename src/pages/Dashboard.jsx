@@ -11,7 +11,7 @@ import {
   AlertCircle,
   CheckCircle,
   Handshake,
-  
+  UserCog2
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
@@ -230,20 +230,12 @@ const Dashboard = () => {
   // ✅ Module cards remain same for all roles
   const moduleCards = [
     {
-      title: "User Management",
-      description: "Manage employees, roles, and permissions",
-      icon: Users,
-      href: "/user-management/users",
+      title: "Resource Management",
+      description: "Make the right people available to the right projects at the right time",
+      icon: UserCog2,
+      href: "/resource-management",
       color: "bg-[#263383]",
-      stats: activeEmployeeCount ? `${activeEmployeeCount} employees` : "Loading...",
-    },
-    {
-      title: "Project Management",
-      description: "Track projects, deadlines, and team progress",
-      icon: FolderKanban,
-      href: projectHref,
-      color: "bg-[#3548b6]",
-      stats: projectsCount ? `${projectsCount} projects` : "Loading...",
+      stats: "Manage resources effectively",
     },
     {
       title: "Leave Management",
@@ -256,6 +248,22 @@ const Dashboard = () => {
         : "-",
     },
     {
+      title: "Project Management",
+      description: "Track projects, deadlines, and team progress",
+      icon: FolderKanban,
+      href: projectHref,
+      color: "bg-[#3548b6]",
+      stats: projectsCount ? `${projectsCount} projects` : "Loading...",
+    },
+    {
+      title: "User Management",
+      description: "Manage employees, roles, and permissions",
+      icon: Users,
+      href: "/user-management/users",
+      color: "bg-[#263383]",
+      stats: activeEmployeeCount ? `${activeEmployeeCount} employees` : "Loading...",
+    },
+    {
       title: "Timesheets",
       description: "Track time and generate reports",
       icon: Clock,
@@ -266,18 +274,18 @@ const Dashboard = () => {
         : "0 hrs/week",
     },
     {
-      title: "Calendar",
-      description: "View events, meetings, and deadlines",
-      icon: Calendar,
-      href: "/calendar",
-      color: "bg-[#d23369]",
-      stats: "5 events today",
-    },
-    {
       title: "Employee Onbording",
       description: "Create offers and onboard new employees",
       icon: Handshake,
       href: "/employee-onboarding",
+      color: "bg-[#d23369]",
+      stats: "5 events today",
+    },
+    {
+      title: "Calendar",
+      description: "View events, meetings, and deadlines",
+      icon: Calendar,
+      href: "/calendar",
       color: "bg-[#d23369]",
       stats: "5 events today",
     },
