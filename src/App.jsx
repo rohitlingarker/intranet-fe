@@ -20,6 +20,10 @@ import LoginPage from "./pages/LoginPage";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
+
+// Resource Management
+import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx";
+
 // Timesheets
 
 import InitialPasswordSetup from "./pages/UserManagement/auth/InitialPasswordSetup";
@@ -244,7 +248,7 @@ const AppRoutes = () => {
               <ProtectedRoute
                 allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
               >
-                <EmployeePanel />
+                <AdminPannel />
               </ProtectedRoute>
             }
           />
