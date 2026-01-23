@@ -13,7 +13,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // --- Helper 1: Maps leave balances to dropdown options (Unchanged) ---
 function mapLeaveBalancesToDropdown(balances, leaveTypes) {
-  return balances.map((balance) => {
+  return balances.data.map((balance) => {
     const leaveTypeId = balance.leaveType.leaveTypeId;
     const originalName = balance.leaveType.leaveName;
     const matchingType = leaveTypes.find((type) => type.name === originalName);
