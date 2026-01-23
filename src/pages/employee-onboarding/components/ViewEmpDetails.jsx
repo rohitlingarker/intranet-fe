@@ -33,6 +33,7 @@ export default function ViewEmpDetails() {
   const [sendingApproval, setSendingApproval] = useState(false);
   const [approvalHistory, setApprovalHistory] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
+  const [loadingSendOffer, setLoadingSendOffer] = useState(false);
 
   const [editData, setEditData] = useState({
     first_name: "",
@@ -125,6 +126,7 @@ const canModifyOfferApprovalRequest = isPending;
 
   /* ---------------- SEND OFFER ---------------- */
   const handleSendOffer = async () => {
+    setLoadingSendOffer(true);
     const token = localStorage.getItem("token");
     try {
       setSending(true);
@@ -139,6 +141,7 @@ const canModifyOfferApprovalRequest = isPending;
       showStatusToast("Failed to send offer");
     } finally {
       setSending(false);
+      setLoadingSendOffer(false);
     }
   };
 
@@ -373,14 +376,14 @@ const canModifyOfferApprovalRequest = isPending;
         <div className="flex gap-4 mt-10">
           <button
             onClick={handleSendOffer}
-            disabled={approvalStatus !== "APPROVED"}
+            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer}
             className={`px-6 py-2 rounded-lg text-white ${
               approvalStatus !== "APPROVED"
                 ? "bg-gray-400"
                 : "bg-green-700 hover:bg-green-800"
             }`}
           >
-            Send Offer
+            {loadingSendOffer ? "Sending..." : "Send Offer"}
           </button>
 
           <button
