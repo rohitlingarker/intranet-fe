@@ -3,6 +3,7 @@ import { Users, Briefcase, Activity, DollarSign, Search } from "lucide-react";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 import CreateClient from "../../models/CreateClient";
+import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 
 const KPI_DATA = [
@@ -70,6 +71,7 @@ const priorityColor = {
 };
 
 const AdminPannel = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -164,7 +166,8 @@ const AdminPannel = () => {
             {filteredClients.map((client, index) => (
               <div
                 key={index}
-                className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition"
+                onClick={()=> navigate(`/resource-management/client-details/${index}`)}
+                className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
               >
                 <div className="flex justify-between items-start">
                   <h3 className="font-semibold text-gray-900">{client.name}</h3>

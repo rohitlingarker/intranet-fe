@@ -23,6 +23,7 @@ import Calendar from "./pages/Calendar";
 
 // Resource Management
 import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx";
+import ClientPage from "./pages/resource_management/models/ClientPage.jsx";
 
 // Timesheets
 
@@ -74,7 +75,7 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx"; 
+import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
@@ -241,18 +242,6 @@ const AppRoutes = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
           <Route path="/calendar" element={<Calendar />} />
-          {/* Resource Management */}
-          <Route 
-            path="/resource-management"
-            element={
-              <ProtectedRoute
-                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
-              >
-                <AdminPannel />
-              </ProtectedRoute>
-            }
-          />
-
           <Route path="/timesheets" element={<TimesheetHistoryPage />} />
           {/* <Route path="/managerapproval" element={<ManagerApprovalPage />} /> */}
           <Route path="/managerapproval" element={<TSAdminPanel />} />
@@ -278,25 +267,20 @@ const AppRoutes = () => {
             element={<MonthlyTSReport />}
           />
           <Route path="/timesheets/history" element={<TimesheetHistory />} />
-
           <Route path="/intranet-form" element={<IntranetForm />} />
-
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
-
           {/* Projects */}
           {/* <Route path="/projects/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/projects/developer" element={<ReadOnlyDashboard />} />
-
           <Route
             path="/projects"
             element={
               // <ProtectedRoute allowedRoles={["Manager"]}>
-                <ProjectDashboard />
+              <ProjectDashboard />
               // </ProtectedRoute>
             }
           />
-
           <Route path="/projects" element={<ProjectManager />} />
           <Route path="/projects/:projectId" element={<ProjectTabs />} />
           <Route path="/projects/list" element={<ProjectList />} />
@@ -304,13 +288,10 @@ const AppRoutes = () => {
             path="/projects/:projectId/issuetracker"
             element={<IssueTracker />}
           />
-
           <Route
             path="/projects/:projectId/cycles/runs/:runId/test-runs"
             element={<AddCasesFromProjectModal />}
           />
-
-
           <Route
             path="/projects/performance"
             element={<EmployeePerformance />}
@@ -319,7 +300,6 @@ const AppRoutes = () => {
             path="/projects/:projectId/cycles/:cycleId/runs"
             element={<CycleRunsPage />}
           />
-
           <Route path="/projects/user/myprofile" element={<Userprofile />} />
           <Route path="/projects/userlist" element={<UserProjectList />} />
           {/* <Route path="/projects/user/:userId" element={<UserProjectDashboard />} /> */}
@@ -340,65 +320,84 @@ const AppRoutes = () => {
             path="/projects/:projectId/issues/:type/:id/view"
             element={<ViewSheet />}
           />
-
           <Route
             path="/projects/:projectId/status-report"
             element={<ProjectStatusReportWrapper />}
           />
-
-
           <Route
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
-          <Route path="/projects/:projectId/risk-management" element={<RiskRegisterPage />} />
-
-           {/* Employee Onboarding */}
-            <Route  path ="/employee-onboarding" element={ <EmpDashboard/> } />
-            <Route  path="/employee-onboarding/offer/:user_uuid"  element={<ViewEmpDetails />}/>
-           // Correct routes
-            <Route path="/employee-onboarding" element={<EmpDashboard />} />
-            <Route path="/employee-onboarding/create" element={<CreateOffer />} />
-            <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />} />
-            <Route path="/employee-onboarding/hr-configuration/country" element={<CountryManagement />}/>
-            <Route path="/employee-onboarding/hr-configuration" element={<HrConfiguration />}/>
-            <Route path ="/employee-onboarding/hr-configuration/identity" element={ <IdentityTypeManagement/> } />
-            <Route path ="/employee-onboarding/hr-configuration/mapping" element={ <CountryIdentityMapping/> } />
-<Route
-  path="/employee-onboarding/hr-configuration/education"
-  element={<EducationDashboard />}
-/>
-
-<Route
-  path="/employee-onboarding/hr-configuration/education/levels"
-  element={<EducationLevelManagement />}
-/>
-
-<Route
-  path="/employee-onboarding/hr-configuration/education/documents"
-  element={<EducationDocumentManagement />}
-/>
-
-<Route
-  path="/employee-onboarding/hr-configuration/education/mapping"
-  element={<CountryEducationMapping />}
-/>
-
-<Route path="/employee-onboarding/admin/my-approvals" element={<AdminApprovalActions />} />
-
-
-<Route path="/employee-onboarding/admin/approval-dashboard" element={<AdminApprovalDashboard />} />
-<Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />} />
-
-<Route path="/employee-onboarding/hr" element={<HrOnboardingDashboard />} />
-<Route path="/employee-onboarding/hr/profile/:user_uuid" element={<HrProfileView />} />
-
-
-
-
-
+          <Route
+            path="/projects/:projectId/risk-management"
+            element={<RiskRegisterPage />}
+          />
+          {/* Employee Onboarding */}
+          <Route path="/employee-onboarding" element={<EmpDashboard />} />
+          <Route
+            path="/employee-onboarding/offer/:user_uuid"
+            element={<ViewEmpDetails />}
+          />
+          // Correct routes
+          <Route path="/employee-onboarding" element={<EmpDashboard />} />
+          <Route path="/employee-onboarding/create" element={<CreateOffer />} />
+          <Route
+            path="/employee-onboarding/bulk-upload"
+            element={<BulkUpload />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/country"
+            element={<CountryManagement />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration"
+            element={<HrConfiguration />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/identity"
+            element={<IdentityTypeManagement />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/mapping"
+            element={<CountryIdentityMapping />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/education"
+            element={<EducationDashboard />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/education/levels"
+            element={<EducationLevelManagement />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/education/documents"
+            element={<EducationDocumentManagement />}
+          />
+          <Route
+            path="/employee-onboarding/hr-configuration/education/mapping"
+            element={<CountryEducationMapping />}
+          />
+          <Route
+            path="/employee-onboarding/admin/my-approvals"
+            element={<AdminApprovalActions />}
+          />
+          <Route
+            path="/employee-onboarding/admin/approval-dashboard"
+            element={<AdminApprovalDashboard />}
+          />
+          <Route
+            path="/employee-onboarding/admin/offer/:user_uuid"
+            element={<AdminOfferView />}
+          />
+          <Route
+            path="/employee-onboarding/hr"
+            element={<HrOnboardingDashboard />}
+          />
+          <Route
+            path="/employee-onboarding/hr/profile/:user_uuid"
+            element={<HrProfileView />}
+          />
           {/* User Management */}
-
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
             path="/user-management/users/create"
@@ -453,13 +452,10 @@ const AppRoutes = () => {
             path="/user-management/access-points/create-bulk"
             element={<BulkAccessPointCreate />}
           />
-
           <Route
             path="/user-management/access-point-map-permission-bulk"
             element={<BulkPermissionMapping />}
           />
-
-
           {/* <Route
             path="/user-management/users"
             element={
@@ -572,7 +568,6 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           /> */}
-
           {/* Leave Management */}
           <Route
             path="/leave-management"
@@ -592,7 +587,6 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/leave-management/hr"
             element={
@@ -642,7 +636,6 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/approval-rules"
             element={
@@ -651,7 +644,6 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/leave-policies"
             element={
@@ -659,6 +651,28 @@ const AppRoutes = () => {
                 to="https://celebrated-renewal-07a16fae8e.strapiapp.com"
                 replace
               />
+            }
+          />
+
+          {/* Resource Management */}
+          <Route 
+            path="/resource-management"
+            element={
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
+                <AdminPannel />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/resource-management/client-details/:clientId"
+            element={
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
+                <ClientPage />
+              </ProtectedRoute>
             }
           />
         </Route>
