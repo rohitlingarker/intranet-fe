@@ -153,7 +153,18 @@ export default function EmployeeOnboardingDashboard() {
           icon={FileText}
           color="text-purple-600"
         />
-          
+        <StatCard
+          title ="Verified Offers"
+          value={offers.filter(o => o.status === "Verified").length}
+          icon={FileText}
+          color="text-teal-600"
+        />
+        <StatCard
+          title="Rejected Offers"
+          value={offers.filter(o => o.status === "Rejected").length}
+          icon={FileText}
+          color="text-red-600"
+        />  
       </div> 
 
       {/* search bar  */}
