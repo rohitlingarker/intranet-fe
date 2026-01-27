@@ -229,13 +229,13 @@ const AdminPannel = () => {
       </div>
 
       {/* ===== MODALS ===== */}
-
-      {/* Create Client
-      <CreateClientModal
-        open={openCreateClient}
+      <Modal
+        isOpen={openCreateClient}
         onClose={() => setOpenCreateClient(false)}
-        onCreateClient={handleCreateClient}
-      /> */}
+        title="Create New Client"
+        subtitle="Fill in the details to add a new client"
+        children={<CreateClient />}
+      />
 
       {/* Configuration Selector */}
       <AddConfigurationModal
