@@ -29,7 +29,6 @@ const MOCK_CLIENT_DATA = {
   industry: "Manufacturing",
   region: "North America",
   tier: "Strategic Partner",
-  logo: "AC", // Placeholder for logo
   stats: {
     totalProjects: 3,
     activeSLA: "99.9%",
@@ -97,7 +96,6 @@ const MOCK_CLIENT_DATA = {
       hasCompliance: true,
       hasAssets: true,
       hasEscalation: true,
-      slaData: null,
       assetsData: [
         { name: "MacBook Pro M2", serial: "FVX992", assignedTo: "Dev 1" },
         { name: "MacBook Pro M2", serial: "FVX993", assignedTo: "Dev 2" },
@@ -121,7 +119,7 @@ const MOCK_CLIENT_DATA = {
   ],
 };
 
-// --- Reusable UI Components ---
+/* ---------------- SUB COMPONENTS ---------------- */
 
 const SectionHeader = ({ title, subtitle }) => (
   <div className="mb-6">
@@ -129,18 +127,6 @@ const SectionHeader = ({ title, subtitle }) => (
     {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
   </div>
 );
-
-const DetailRow = ({ label, value, icon: Icon }) => (
-  <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 px-2 rounded transition">
-    <div className="flex items-center gap-3">
-      {Icon && <Icon className="w-4 h-4 text-gray-400" />}
-      <span className="text-sm font-medium text-gray-600">{label}</span>
-    </div>
-    <span className="text-sm font-semibold text-gray-900">{value}</span>
-  </div>
-);
-
-// --- Content Tabs Components ---
 
 const ProjectSLA = ({ data }) => (
   <div className="animate-fadeIn">
@@ -263,9 +249,8 @@ const ProjectAssets = ({ assets }) => (
         </table>
       </div>
     ) : (
-      <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-500">
-        <Box className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-        No physical assets assigned to this project.
+      <div className="text-center p-6 border-2 border-dashed rounded-lg text-gray-400">
+        No assets assigned
       </div>
     )}
   </div>
@@ -318,7 +303,7 @@ const ProjectEscalation = () => (
   </div>
 );
 
-// --- Main Page Component ---
+/* ---------------- MAIN PAGE ---------------- */
 
 const ClientPage = () => {
   const { clientId } = useParams();
@@ -333,11 +318,11 @@ const ClientPage = () => {
     setOpenConfigModal(false);
   };
 
-  // Load initial data and set first project as default
   useEffect(() => {
-    if (MOCK_CLIENT_DATA.projects.length > 0) {
-      setSelectedProject(MOCK_CLIENT_DATA.projects[0]);
-    }
+    setSelectedProject(MOCK_CLIENT_DATA.projects[0]);
+    setActiveTab(
+      MOCK_CLIENT_DATA.projects[0].hasSLA ? "sla" : "compliance"
+    );
   }, []);
 
   // Determine available tabs for the selected project
@@ -358,15 +343,15 @@ const ClientPage = () => {
   const ActivityIcon = CheckCircle2; // Just a helper for the array above
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans">
-      {/* 1. Header Navigation */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
             className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -516,8 +501,8 @@ const ClientPage = () => {
           </div>
         </div>
 
-        {/* 3. RIGHT SIDE: Project Details (The Content) */}
-        <div className="col-span-12 lg:col-span-8">
+        {/* PROJECT DETAILS */}
+        <div className="col-span-8 bg-white border rounded-xl shadow-sm">
           {selectedProject ? (
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm min-h-[600px] flex flex-col">
               {/* Project Header */}
