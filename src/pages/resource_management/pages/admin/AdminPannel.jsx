@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from "react";
-import {
-  Users,
-  Briefcase,
-  Activity,
-  DollarSign,
-  Search,
-} from "lucide-react";
+import { Users, Briefcase, Activity, DollarSign, Search } from "lucide-react";
+import Button from "../../../../components/Button/Button";
+import Modal from "../../../../components/Modal/modal";
+import CreateClient from "../../models/CreateClient";
+import { Plus } from "lucide-react";
 
 /* ===== MODALS (keep paths as per your structure) ===== */
 // import CreateClientModal from "../../../resource_management/models/CreateClientModal";
@@ -109,7 +107,7 @@ const AdminPannel = () => {
         client.name.toLowerCase().includes(term) ||
         client.priority.toLowerCase().includes(term) ||
         client.region.toLowerCase().includes(term) ||
-        client.type.toLowerCase().includes(term)
+        client.type.toLowerCase().includes(term),
     );
   }, [searchTerm, clients]);
 
