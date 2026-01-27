@@ -6,9 +6,6 @@ import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 
-/* ===== MODALS ===== */
-import AddConfigurationModal from "../../../resource_management/models/client_configuration/AddConfigurationModal";
-
 /* ===== KPI DATA ===== */
 const KPI_DATA = [
   {
@@ -82,15 +79,6 @@ const AdminPannel = () => {
   /* ===== CREATE CLIENT MODAL ===== */
   const [openCreateClient, setOpenCreateClient] = useState(false);
 
-  /* ===== ADD CONFIGURATION MODAL (SINGLE MODAL) ===== */
-  const [openConfigModal, setOpenConfigModal] = useState(false);
-
-  const handleSaveConfiguration = ({ type, data }) => {
-    // mock save for now – backend later
-    console.log("Saved configuration:", type, data);
-    setOpenConfigModal(false);
-  };
-
   /* ===== FILTERED CLIENTS ===== */
   const filteredClients = useMemo(() => {
     if (!searchTerm) return clients;
@@ -146,13 +134,6 @@ const AdminPannel = () => {
           </h2>
 
           <div className="flex gap-3">
-            <button
-              onClick={() => setOpenConfigModal(true)}
-              className="px-4 py-2 text-sm border rounded-lg"
-            >
-              + Add Configuration
-            </button>
-
             <button
               onClick={() => setOpenCreateClient(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg"
@@ -230,13 +211,6 @@ const AdminPannel = () => {
       >
         <CreateClient />
       </Modal>
-
-      {/* Add Configuration (SINGLE DYNAMIC MODAL) */}
-      <AddConfigurationModal
-        open={openConfigModal}
-        onClose={() => setOpenConfigModal(false)}
-        onSave={handleSaveConfiguration}
-      />
     </div>
   );
 };
