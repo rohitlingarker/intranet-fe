@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   Briefcase,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import ClientSection from "./ClientSection";
 import AddConfigurationModal from "../models/client_configuration/AddConfigurationModal";
@@ -424,13 +425,22 @@ const ClientPage = () => {
         ))}
       </div>
 
-      <div className="text-right mt-5 ">
+      <div className="flex justify-end gap-3 mt-5">
         <Button
           variant="primary"
           onClick={() => setOpenConfigModal(true)}
           className="px-4 py-2 text-sm border rounded-lg"
         >
           + Add Configuration
+        </Button>
+
+        <Button
+          variant="secondary"
+          onClick={() => navigate("/assets")}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+        >
+          <Package size={16} />
+          Manage Assets
         </Button>
       </div>
 

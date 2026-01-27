@@ -63,7 +63,7 @@ const AddConfigurationModal = ({ open, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg">
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
 
         {/* ===== HEADER ===== */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
