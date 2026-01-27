@@ -6,13 +6,6 @@ import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 
-/* ===== MODALS (keep paths as per your structure) ===== */
-// import CreateClientModal from "../../../resource_management/models/CreateClientModal";
-import AddConfigurationModal from "../../../resource_management/models/client_configuration/AddConfigurationModal";
-import CreateSLAModal from "../../../resource_management/models/client_configuration/sla/CreateSLAModal";
-import CreateEscalationModal from "../../../resource_management/models/client_configuration/escalation/CreateEscalationModal";
-import CreateComplianceModal from "../../../resource_management/models/client_configuration/compliance/CreateComplianceModal";
-
 /* ===== KPI DATA ===== */
 const KPI_DATA = [
   {
@@ -45,7 +38,7 @@ const KPI_DATA = [
   },
 ];
 
-const clients = [
+const clientsData = [
   {
     name: "Acme Corporation",
     type: "Enterprise",
@@ -81,26 +74,10 @@ const priorityColor = {
 const AdminPannel = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [clients, setClients] = useState(clientsData);
 
   /* ===== CREATE CLIENT MODAL ===== */
   const [openCreateClient, setOpenCreateClient] = useState(false);
-
-  const handleCreateClient = (newClient) => {
-    setClients((prev) => [...prev, newClient]);
-  };
-
-  /* ===== CONFIGURATION WORKFLOW ===== */
-  const [openConfigSelector, setOpenConfigSelector] = useState(false);
-  const [activeConfigType, setActiveConfigType] = useState(null);
-
-  const handleConfigSelect = (type) => {
-    setOpenConfigSelector(false);
-    setActiveConfigType(type); // sla | escalation | compliance
-  };
-
-  const closeAllConfigModals = () => {
-    setActiveConfigType(null);
-  };
 
   /* ===== FILTERED CLIENTS ===== */
   const filteredClients = useMemo(() => {
@@ -113,7 +90,7 @@ const AdminPannel = () => {
         client.name.toLowerCase().includes(term) ||
         client.priority.toLowerCase().includes(term) ||
         client.region.toLowerCase().includes(term) ||
-        client.type.toLowerCase().includes(term),
+        client.type.toLowerCase().includes(term)
     );
   }, [searchTerm, clients]);
 
@@ -157,19 +134,12 @@ const AdminPannel = () => {
           </h2>
 
           <div className="flex gap-3">
-            <button
-              onClick={() => setOpenConfigSelector(true)}
-              className="px-4 py-2 text-sm border rounded-lg"
-            >
-              + Add Configuration
-            </button>
-
-            <button
+            <Button
               onClick={() => setOpenCreateClient(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center"
             >
-              + Create New Client
-            </button>
+              <Plus className="w-4 h-4 mr-1" /> Create New Client
+            </Button>
           </div>
         </div>
 
@@ -198,7 +168,9 @@ const AdminPannel = () => {
             {filteredClients.map((client, index) => (
               <div
                 key={index}
-                onClick={()=> navigate(`/resource-management/client-details/${index}`)}
+                onClick={() =>
+                  navigate(`/resource-management/client-details/${index}`)
+                }
                 className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
               >
                 <div className="flex justify-between items-start">
@@ -230,37 +202,15 @@ const AdminPannel = () => {
 
       {/* ===== MODALS ===== */}
 
-      {/* Create Client
-      <CreateClientModal
-        open={openCreateClient}
+      {/* Create Client */}
+      <Modal
+        isOpen={openCreateClient}
         onClose={() => setOpenCreateClient(false)}
-        onCreateClient={handleCreateClient}
-      /> */}
-
-      {/* Configuration Selector */}
-      <AddConfigurationModal
-        open={openConfigSelector}
-        onClose={() => setOpenConfigSelector(false)}
-        onSelect={handleConfigSelect}
-      />
-
-      {/* SLA */}
-      <CreateSLAModal
-        open={activeConfigType === "sla"}
-        onClose={closeAllConfigModals}
-      />
-
-      {/* Escalation */}
-      <CreateEscalationModal
-        open={activeConfigType === "escalation"}
-        onClose={closeAllConfigModals}
-      />
-
-      {/* Compliance */}
-      <CreateComplianceModal
-        open={activeConfigType === "compliance"}
-        onClose={closeAllConfigModals}
-      />
+        title="Create New Client"
+        subtitle="Fill in the details to add a new client"
+      >
+        <CreateClient />
+      </Modal>
     </div>
   );
 };

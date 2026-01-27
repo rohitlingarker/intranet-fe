@@ -1,22 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
-const AddConfigurationModal = ({ open, onClose, onSelect }) => {
-  const [selectedConfig, setSelectedConfig] = useState("");
+// Forms
+import SLAForm from "./forms/SLAForm";
+import EscalationForm from "./forms/EscalationForm";
+import ComplianceForm from "./forms/ComplianceForm";
+
+const AddConfigurationModal = ({ open, onClose, onSave }) => {
+  const [configType, setConfigType] = useState("");
+  const [formData, setFormData] = useState({});
+
+  // reset when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setConfigType("");
+      setFormData({});
+    }
+  }, [open]);
 
   if (!open) return null;
 
-  const handleContinue = () => {
-    if (!selectedConfig) return;
-    onSelect(selectedConfig); // sla | escalation | compliance
-    setSelectedConfig("");    // reset for next open
+  const handleSave = () => {
+    if (!configType) return;
+
+    onSave({
+      type: configType, // "slas" | "escalations" | "compliances"
+      data: formData,
+    });
+
+    onClose();
+  };
+
+  const isSaveDisabled = () => {
+    if (!configType) return true;
+
+    switch (configType) {
+      case "slas":
+        return (
+          !formData.sla_type ||
+          !formData.sla_duration_days ||
+          !formData.warning_threshold_days
+        );
+
+      case "escalations":
+        return (
+          !formData.contact_name ||
+          !formData.contact_role ||
+          !formData.email ||
+          !formData.escalation_level
+        );
+
+      case "compliances":
+        return (
+          !formData.requirement_type ||
+          !formData.requirement_name
+        );
+
+      default:
+        return true;
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-lg">
-        
-        {/* ===== Header ===== */}
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
+
+        {/* ===== HEADER ===== */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
             Add Client Configuration
@@ -29,25 +78,50 @@ const AddConfigurationModal = ({ open, onClose, onSelect }) => {
           </button>
         </div>
 
-        {/* ===== Body ===== */}
-        <div className="px-6 py-5 space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Configuration Type <span className="text-red-500">*</span>
-          </label>
+        {/* ===== BODY ===== */}
+        <div className="px-6 py-5 space-y-6">
 
-          <select
-            value={selectedConfig}
-            onChange={(e) => setSelectedConfig(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">Select configuration type</option>
-            <option value="sla">SLA Configuration</option>
-            <option value="escalation">Escalation Matrix</option>
-            <option value="compliance">Compliance Requirements</option>
-          </select>
+          {/* Configuration Type Dropdown */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">
+              Configuration Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={configType}
+              onChange={(e) => {
+                setConfigType(e.target.value);
+                setFormData({});
+              }}
+              className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Select configuration</option>
+              <option value="slas">SLA Configuration</option>
+              <option value="escalations">Escalation Matrix</option>
+              <option value="compliances">Compliance Requirements</option>
+            </select>
+          </div>
+
+          {/* ===== DYNAMIC FORM AREA ===== */}
+          {configType === "slas" && (
+            <SLAForm formData={formData} setFormData={setFormData} />
+          )}
+
+          {configType === "escalations" && (
+            <EscalationForm
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+
+          {configType === "compliances" && (
+            <ComplianceForm
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
         </div>
 
-        {/* ===== Footer ===== */}
+        {/* ===== FOOTER ===== */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t">
           <button
             onClick={onClose}
@@ -56,11 +130,11 @@ const AddConfigurationModal = ({ open, onClose, onSelect }) => {
             Cancel
           </button>
           <button
-            onClick={handleContinue}
-            disabled={!selectedConfig}
-            className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSave}
+            disabled={isSaveDisabled()}
+            className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50"
           >
-            Continue
+            Save Configuration
           </button>
         </div>
       </div>
