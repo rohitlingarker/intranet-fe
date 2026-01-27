@@ -24,6 +24,8 @@ import Calendar from "./pages/Calendar";
 // Resource Management
 import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx";
 import ClientPage from "./pages/resource_management/models/ClientPage.jsx";
+import AssetList from "./pages/resource_management/assests/AssetList.jsx";
+import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
 
 // Timesheets
 
@@ -672,6 +674,26 @@ const AppRoutes = () => {
                 allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
               >
                 <ClientPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/assets/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
+                <AssetDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/assets"
+            element={
+              <ProtectedRoute
+                allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
+              >
+                <AssetList />
               </ProtectedRoute>
             }
           />
