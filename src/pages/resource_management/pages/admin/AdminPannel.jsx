@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from "react";
-import {
-  Users,
-  Briefcase,
-  Activity,
-  DollarSign,
-  Search,
-} from "lucide-react";
+import { Users, Briefcase, Activity, DollarSign, Search } from "lucide-react";
+import Button from "../../../../components/Button/Button";
+import Modal from "../../../../components/Modal/modal";
+import CreateClient from "../../models/CreateClient";
+import { Plus } from "lucide-react";
 
 const KPI_DATA = [
   {
@@ -73,6 +71,7 @@ const priorityColor = {
 
 const AdminPannel = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredClients = useMemo(() => {
     if (!searchTerm) return clients;
@@ -84,7 +83,7 @@ const AdminPannel = () => {
         client.name.toLowerCase().includes(term) ||
         client.priority.toLowerCase().includes(term) ||
         client.region.toLowerCase().includes(term) ||
-        client.type.toLowerCase().includes(term)
+        client.type.toLowerCase().includes(term),
     );
   }, [searchTerm]);
 
@@ -126,21 +125,34 @@ const AdminPannel = () => {
           Clients Information
         </h2>
 
-        {/* Search */}
-        <div className="flex items-center gap-3 max-w-md">
-          <div className="relative w-full">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search by name, priority, region or type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Search */}
+          <div className="flex items-center gap-3 max-w-md w-full">
+            <div className="relative w-full">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search by name, priority, region or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
+
+          {/* Create Client Button */}
+          <Button
+            size="medium"
+            variant="primary"
+            className="flex items-center gap-2 font-medium"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            Create Client
+          </Button>
         </div>
 
         {filteredClients.length === 0 ? (
@@ -180,6 +192,17 @@ const AdminPannel = () => {
           </div>
         )}
       </div>
+      {
+        isModalOpen && (
+          <Modal 
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            title="Create Client"
+            subtitle="Fill out the form below to create a new client"
+            children={<CreateClient />}
+          />
+        )
+      }
     </div>
   );
 };
