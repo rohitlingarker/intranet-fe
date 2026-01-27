@@ -134,12 +134,12 @@ const AdminPannel = () => {
           </h2>
 
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={() => setOpenCreateClient(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center"
             >
-              + Create New Client
-            </button>
+              <Plus className="w-4 h-4 mr-1" /> Create New Client
+            </Button>
           </div>
         </div>
 
