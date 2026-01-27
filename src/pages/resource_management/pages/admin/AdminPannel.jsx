@@ -7,6 +7,14 @@ import {
   Search,
 } from "lucide-react";
 
+/* ===== MODALS (keep paths as per your structure) ===== */
+// import CreateClientModal from "../../../resource_management/models/CreateClientModal";
+import AddConfigurationModal from "../../../resource_management/models/client_configuration/AddConfigurationModal";
+import CreateSLAModal from "../../../resource_management/models/client_configuration/sla/CreateSLAModal";
+import CreateEscalationModal from "../../../resource_management/models/client_configuration/escalation/CreateEscalationModal";
+import CreateComplianceModal from "../../../resource_management/models/client_configuration/compliance/CreateComplianceModal";
+
+/* ===== KPI DATA ===== */
 const KPI_DATA = [
   {
     label: "Total Clients",
@@ -35,33 +43,6 @@ const KPI_DATA = [
     icon: DollarSign,
     color: "text-emerald-600",
     bg: "bg-emerald-100",
-  }, // Added as a bonus KPI
-];
-
-const clients = [
-  {
-    name: "Acme Corporation",
-    type: "Enterprise",
-    priority: "High",
-    region: "North America",
-  },
-  {
-    name: "FinEdge Solutions",
-    type: "Startup",
-    priority: "Medium",
-    region: "India",
-  },
-  {
-    name: "Globex Systems",
-    type: "SMB",
-    priority: "Low",
-    region: "Europe",
-  },
-  {
-    name: "NextGen Soft",
-    type: "Enterprise",
-    priority: "High",
-    region: "Asia Pacific",
   },
 ];
 
@@ -72,8 +53,52 @@ const priorityColor = {
 };
 
 const AdminPannel = () => {
+  /* ===== CLIENT STATE (MOCK JSON ARRAY) ===== */
+  const [clients, setClients] = useState([
+    {
+      name: "Acme Corporation",
+      type: "Enterprise",
+      priority: "High",
+      region: "North America",
+    },
+    {
+      name: "FinEdge Solutions",
+      type: "Startup",
+      priority: "Medium",
+      region: "India",
+    },
+    {
+      name: "Globex Systems",
+      type: "SMB",
+      priority: "Low",
+      region: "Europe",
+    },
+  ]);
+
+  /* ===== SEARCH ===== */
   const [searchTerm, setSearchTerm] = useState("");
 
+  /* ===== CREATE CLIENT MODAL ===== */
+  const [openCreateClient, setOpenCreateClient] = useState(false);
+
+  const handleCreateClient = (newClient) => {
+    setClients((prev) => [...prev, newClient]);
+  };
+
+  /* ===== CONFIGURATION WORKFLOW ===== */
+  const [openConfigSelector, setOpenConfigSelector] = useState(false);
+  const [activeConfigType, setActiveConfigType] = useState(null);
+
+  const handleConfigSelect = (type) => {
+    setOpenConfigSelector(false);
+    setActiveConfigType(type); // sla | escalation | compliance
+  };
+
+  const closeAllConfigModals = () => {
+    setActiveConfigType(null);
+  };
+
+  /* ===== FILTERED CLIENTS ===== */
   const filteredClients = useMemo(() => {
     if (!searchTerm) return clients;
 
@@ -86,11 +111,11 @@ const AdminPannel = () => {
         client.region.toLowerCase().includes(term) ||
         client.type.toLowerCase().includes(term)
     );
-  }, [searchTerm]);
+  }, [searchTerm, clients]);
 
   return (
     <div className="p-6 space-y-8">
-      {/* Header */}
+      {/* ===== HEADER ===== */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">
           Client Overview
@@ -100,18 +125,18 @@ const AdminPannel = () => {
         </p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      {/* ===== KPIs ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {KPI_DATA.map((kpi, index) => (
           <div
             key={index}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between transition-hover hover:shadow-md"
+            className="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between hover:shadow-md transition"
           >
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">
-                {kpi.label}
-              </p>
-              <h3 className="text-2xl font-bold text-gray-900">{kpi.value}</h3>
+              <p className="text-sm text-gray-500">{kpi.label}</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {kpi.value}
+              </h3>
             </div>
             <div className={`p-3 rounded-full ${kpi.bg}`}>
               <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
@@ -120,31 +145,48 @@ const AdminPannel = () => {
         ))}
       </div>
 
-      {/* Client Cards */}
+      {/* ===== CLIENT SECTION ===== */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Clients Information
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Clients Information
+          </h2>
 
-        {/* Search */}
-        <div className="flex items-center gap-3 max-w-md">
-          <div className="relative w-full">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search by name, priority, region or type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="flex gap-3">
+            <button
+              onClick={() => setOpenConfigSelector(true)}
+              className="px-4 py-2 text-sm border rounded-lg"
+            >
+              + Add Configuration
+            </button>
+
+            <button
+              onClick={() => setOpenCreateClient(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg"
+            >
+              + Create New Client
+            </button>
           </div>
         </div>
 
+        {/* ===== SEARCH ===== */}
+        <div className="max-w-md relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search by name, priority, region or type..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        {/* ===== CLIENT CARDS ===== */}
         {filteredClients.length === 0 ? (
-          <div className="text-sm text-gray-500 italic font-semibold bg-white border rounded-lg p-6">
+          <div className="bg-white border rounded-lg p-6 text-sm text-gray-500 italic">
             No clients match your search.
           </div>
         ) : (
@@ -155,11 +197,11 @@ const AdminPannel = () => {
                 className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition"
               >
                 <div className="flex justify-between items-start">
-                  <h3 className="font-semibold text-gray-900">{client.name}</h3>
+                  <h3 className="font-semibold text-gray-900">
+                    {client.name}
+                  </h3>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      priorityColor[client.priority]
-                    }`}
+                    className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColor[client.priority]}`}
                   >
                     {client.priority}
                   </span>
@@ -180,6 +222,40 @@ const AdminPannel = () => {
           </div>
         )}
       </div>
+
+      {/* ===== MODALS ===== */}
+
+      {/* Create Client
+      <CreateClientModal
+        open={openCreateClient}
+        onClose={() => setOpenCreateClient(false)}
+        onCreateClient={handleCreateClient}
+      /> */}
+
+      {/* Configuration Selector */}
+      <AddConfigurationModal
+        open={openConfigSelector}
+        onClose={() => setOpenConfigSelector(false)}
+        onSelect={handleConfigSelect}
+      />
+
+      {/* SLA */}
+      <CreateSLAModal
+        open={activeConfigType === "sla"}
+        onClose={closeAllConfigModals}
+      />
+
+      {/* Escalation */}
+      <CreateEscalationModal
+        open={activeConfigType === "escalation"}
+        onClose={closeAllConfigModals}
+      />
+
+      {/* Compliance */}
+      <CreateComplianceModal
+        open={activeConfigType === "compliance"}
+        onClose={closeAllConfigModals}
+      />
     </div>
   );
 };
