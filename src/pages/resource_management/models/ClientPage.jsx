@@ -21,6 +21,7 @@ import {
 import ClientSection from "./ClientSection";
 import AddConfigurationModal from "../models/client_configuration/AddConfigurationModal";
 import Button from "../../../components/Button/Button";
+import { useAuth } from "../../../contexts/AuthContext";
 
 // --- Mock Data: Client with Multiple Projects ---
 const MOCK_CLIENT_DATA = {
@@ -307,6 +308,10 @@ const ProjectEscalation = () => (
 
 const ClientPage = () => {
   const { clientId } = useParams();
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
+  const canConfigAgreements = permissions.includes("ADD_CONFIGURATION");
+  const canManageAssets = permissions.includes("ASSETS_MANAGEMENT");
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -320,9 +325,7 @@ const ClientPage = () => {
 
   useEffect(() => {
     setSelectedProject(MOCK_CLIENT_DATA.projects[0]);
-    setActiveTab(
-      MOCK_CLIENT_DATA.projects[0].hasSLA ? "sla" : "compliance"
-    );
+    setActiveTab(MOCK_CLIENT_DATA.projects[0].hasSLA ? "sla" : "compliance");
   }, []);
 
   // Determine available tabs for the selected project
@@ -410,26 +413,32 @@ const ClientPage = () => {
         ))}
       </div>
 
-      <div className="flex justify-end gap-3 mt-5">
-        <Button
-          variant="primary"
-          onClick={() => setOpenConfigModal(true)}
-          className="px-4 py-2 text-sm border rounded-lg"
-        >
-          + Add Configuration
-        </Button>
+      {(canConfigAgreements || canManageAssets) && (
+        <div className="flex justify-end gap-3 mt-5">
+          {canConfigAgreements && (
+            <Button
+              variant="primary"
+              onClick={() => setOpenConfigModal(true)}
+              className="px-4 py-2 text-sm border rounded-lg"
+            >
+              + Add Configuration
+            </Button>
+          )}
 
-        <Button
-          variant="secondary"
-          onClick={() => navigate("/assets")}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
-        >
-          <Package size={16} />
-          Manage Assets
-        </Button>
-      </div>
+          {canManageAssets && (
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/assets")}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+            >
+              <Package size={16} />
+              Manage Assets
+            </Button>
+          )}
+        </div>
+      )}
 
-      <div className="mt-2 mb-10">
+      <div className="mt-8 mb-10">
         <ClientSection clientId={clientId} />
       </div>
 
