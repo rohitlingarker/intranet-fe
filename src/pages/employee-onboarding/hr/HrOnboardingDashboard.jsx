@@ -14,11 +14,11 @@ export default function HrOnboardingDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  /* ---------- PAGINATION STATE ---------- */
+  /* ---------- PAGINATION ---------- */
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  /* ---------- FETCH SUBMITTED EMPLOYEES ---------- */
+  /* ---------- FETCH DATA ---------- */
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -39,18 +39,22 @@ export default function HrOnboardingDashboard() {
     fetchEmployees();
   }, []);
 
-  /* ---------- STATS ---------- */
-  const totalEmployees = data.length;
-
   /* ---------- FILTER ---------- */
+  const allowedStatuses = ["Submitted", "Verified", "Rejected"];
+
   const filteredData = useMemo(() => {
     return data.filter((emp) => {
       const name = `${emp.first_name} ${emp.last_name}`.toLowerCase();
-      return name.includes(searchTerm.toLowerCase());
+      const matchesSearch = name.includes(searchTerm.toLowerCase());
+      const matchesStatus = allowedStatuses.includes(emp.status);
+      return matchesSearch && matchesStatus;
     });
   }, [data, searchTerm]);
 
-  /* ---------- PAGINATED DATA ---------- */
+  /* ---------- STATS ---------- */
+  const totalEmployees = filteredData.length;
+
+  /* ---------- PAGINATION LOGIC ---------- */
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const paginatedData = useMemo(() => {
@@ -90,36 +94,45 @@ export default function HrOnboardingDashboard() {
         value={searchTerm}
         onChange={(e) => {
           setSearchTerm(e.target.value);
-          setCurrentPage(1); // reset page on search
+          setCurrentPage(1);
         }}
         className="w-full md:w-1/3 px-3 py-2 border rounded-lg"
       />
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead className="bg-indigo-900 text-white">
             <tr>
-              <th className="px-4 py-3 text-left">Employee Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Designation</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-left w-[10%]">Employee Name</th>
+              <th className="px-4 py-3 text-center w-[10%]">Email</th>
+              <th className="px-4 py-3 text-center w-[10%]">Contact</th>
+              <th className="px-4 py-3 text-center w-[15%]">Role</th>
+              <th className="px-4 py-3 text-center w-[10%]">Status</th>
+              <th className="px-4 py-3 text-center w-[10%]">Action</th>
             </tr>
           </thead>
 
           <tbody>
             {paginatedData.map((emp) => (
-              <tr key={emp.user_uuid} className="border-b">
-                <td className="px-4 py-3">
+              <tr key={emp.user_uuid} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-3 truncate">
                   {emp.first_name} {emp.last_name}
                 </td>
-                <td className="px-4 py-3">{emp.mail}</td>
-                <td className="px-4 py-3">{emp.designation}</td>
+
+                <td className="px-4 py-3 truncate">{emp.mail}</td>
+
                 <td className="px-4 py-3">
-                  <StatusBadge status={emp.onboarding_status} />
+                  {emp.contact_number || "—"}
                 </td>
-                <td className="px-4 py-3 text-indigo-600 cursor-pointer">
+
+                <td className="px-4 py-3">{emp.designation}</td>
+
+                <td className="px-4 py-3 text-center">
+                  <StatusBadge status={emp.status} />
+                </td>
+
+                <td className="px-4 py-3 text-center text-indigo-600 cursor-pointer">
                   <span
                     onClick={() =>
                       navigate(
@@ -135,7 +148,10 @@ export default function HrOnboardingDashboard() {
 
             {paginatedData.length === 0 && (
               <tr>
-                <td colSpan="5" className="text-center py-6 text-gray-500">
+                <td
+                  colSpan="6"
+                  className="text-center py-6 text-gray-500"
+                >
                   No records found
                 </td>
               </tr>
@@ -194,18 +210,19 @@ function StatCard({ title, value, icon: Icon }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    SUBMITTED: "bg-blue-100 text-blue-700",
-    VERIFIED: "bg-green-100 text-green-700",
-    REJECTED: "bg-red-100 text-red-700",
+    Submitted: "bg-blue-100 text-blue-700",
+    Verified: "bg-green-100 text-green-700",
+    Rejected: "bg-red-100 text-red-700",
   };
 
   return (
     <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${
+      className={`inline-flex items-center justify-center px-3 py-1 
+      rounded-full text-xs font-semibold ${
         styles[status] || "bg-gray-100 text-gray-700"
       }`}
     >
-      {status || "PENDING"}
+      {status}
     </span>
   );
 }

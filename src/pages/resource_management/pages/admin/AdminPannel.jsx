@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Users, Briefcase, Activity, DollarSign, Search } from "lucide-react";
+import { Users, Briefcase, Activity, DollarSign } from "lucide-react";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
+import FilterBar from "../../components/filters/FilterBar";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { getClients } from "../../services/clientservice";
 import { toast } from "react-toastify";
@@ -27,6 +28,18 @@ const AdminPannel = () => {
 
   /* ===== CREATE CLIENT MODAL ===== */
   const [openCreateClient, setOpenCreateClient] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    region: "",
+    type: "",
+    priority: "",
+    status: "",
+    startDate: "",
+    endDate: "",
+  });
+  const handleFilterUpdate = (updates) => {
+    setFilters((prev) => ({ ...prev, ...updates }));
+  };
   const KPI_DATA = [
     {
       label: "Total Clients",
@@ -57,6 +70,11 @@ const AdminPannel = () => {
       bg: "bg-emerald-100",
     },
   ];
+
+  const handleOnSuccess = () => {
+    setOpenCreateClient(false);
+    fetchClients();
+  };
 
   const fetchClients = async () => {
     setLoading(true);
@@ -113,7 +131,7 @@ const AdminPannel = () => {
         </p>
       </div>
 
-      {/* ===== KPIs ===== */}
+      {/* ===== KPI CARDS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {KPI_DATA.map((kpi, index) => (
           <div
@@ -150,20 +168,12 @@ const AdminPannel = () => {
           )}
         </div>
 
-        {/* ===== SEARCH ===== */}
-        <div className="max-w-md relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search by name, priority, region or type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-        </div>
+        {/* ===== FILTER BAR ===== */}
+        <FilterBar
+          filters={filters}
+          onUpdate={handleFilterUpdate}
+          totalResults={filteredClients.length}
+        />
 
         {/* ===== CLIENT CARDS ===== */}
         {filteredClients.length === 0 ? (
@@ -202,6 +212,10 @@ const AdminPannel = () => {
                     <span className="font-medium text-gray-800">Region:</span>{" "}
                     {client.country_name}
                   </p>
+                  <p>
+                    <span className="font-medium text-gray-800">Status:</span>{" "}
+                    {client.status}
+                  </p>
                 </div>
               </div>
             ))}
@@ -216,7 +230,7 @@ const AdminPannel = () => {
         title="Create New Client"
         subtitle="Fill in the details to add a new client"
       >
-        <CreateClient onSuccess={() => setOpenCreateClient(false)} />
+        <CreateClient onSuccess={() => handleOnSuccess()} />
       </Modal>
     </div>
   );
