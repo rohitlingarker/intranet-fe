@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Users, Briefcase, Activity, DollarSign, Search } from "lucide-react";
+import { Users, Briefcase, Activity, DollarSign } from "lucide-react";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
+import FilterBar from "../../components/filters/FilterBar";
 
 /* ===== KPI DATA ===== */
 const KPI_DATA = [
@@ -38,30 +39,35 @@ const KPI_DATA = [
   },
 ];
 
+/* ===== MOCK CLIENT DATA ===== */
 const clientsData = [
   {
     name: "Acme Corporation",
     type: "Enterprise",
     priority: "High",
     region: "North America",
+    status: "Active",
   },
   {
     name: "FinEdge Solutions",
     type: "Startup",
     priority: "Medium",
     region: "India",
+    status: "Inactive",
   },
   {
     name: "Globex Systems",
     type: "SMB",
     priority: "Low",
     region: "Europe",
+    status: "Active",
   },
   {
     name: "NextGen Soft",
     type: "Enterprise",
     priority: "High",
     region: "Asia Pacific",
+    status: "Active",
   },
 ];
 
@@ -73,26 +79,56 @@ const priorityColor = {
 
 const AdminPannel = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+
+  /* ===== CLIENT STATE ===== */
   const [clients, setClients] = useState(clientsData);
+
+  /* ===== FILTER STATE (maps directly to backend DTO) ===== */
+  const [filters, setFilters] = useState({
+    search: "",
+    region: "",
+    type: "",
+    priority: "",
+    status: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const handleFilterUpdate = (updates) => {
+    setFilters((prev) => ({ ...prev, ...updates }));
+  };
 
   /* ===== CREATE CLIENT MODAL ===== */
   const [openCreateClient, setOpenCreateClient] = useState(false);
 
   /* ===== FILTERED CLIENTS ===== */
   const filteredClients = useMemo(() => {
-    if (!searchTerm) return clients;
+    return clients.filter((client) => {
+      const matchesSearch =
+        !filters.search ||
+        client.name.toLowerCase().includes(filters.search.toLowerCase());
 
-    const term = searchTerm.toLowerCase();
+      const matchesRegion =
+        !filters.region || client.region === filters.region;
 
-    return clients.filter(
-      (client) =>
-        client.name.toLowerCase().includes(term) ||
-        client.priority.toLowerCase().includes(term) ||
-        client.region.toLowerCase().includes(term) ||
-        client.type.toLowerCase().includes(term)
-    );
-  }, [searchTerm, clients]);
+      const matchesType =
+        !filters.type || client.type === filters.type;
+
+      const matchesPriority =
+        !filters.priority || client.priority === filters.priority;
+
+      const matchesStatus =
+        !filters.status || client.status === filters.status;
+
+      return (
+        matchesSearch &&
+        matchesRegion &&
+        matchesType &&
+        matchesPriority &&
+        matchesStatus
+      );
+    });
+  }, [clients, filters]);
 
   return (
     <div className="p-6 space-y-8">
@@ -106,7 +142,7 @@ const AdminPannel = () => {
         </p>
       </div>
 
-      {/* ===== KPIs ===== */}
+      {/* ===== KPI CARDS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {KPI_DATA.map((kpi, index) => (
           <div
@@ -133,35 +169,26 @@ const AdminPannel = () => {
             Clients Information
           </h2>
 
-          <div className="flex gap-3">
-            <Button
-              onClick={() => setOpenCreateClient(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center"
-            >
-              <Plus className="w-4 h-4 mr-1" /> Create New Client
-            </Button>
-          </div>
+          <Button
+            onClick={() => setOpenCreateClient(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Create New Client
+          </Button>
         </div>
 
-        {/* ===== SEARCH ===== */}
-        <div className="max-w-md relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search by name, priority, region or type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-        </div>
+        {/* ===== FILTER BAR ===== */}
+        <FilterBar
+          filters={filters}
+          onUpdate={handleFilterUpdate}
+          totalResults={filteredClients.length}
+        />
 
         {/* ===== CLIENT CARDS ===== */}
         {filteredClients.length === 0 ? (
           <div className="bg-white border rounded-lg p-6 text-sm text-gray-500 italic">
-            No clients match your search.
+            No clients match your filters.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -193,6 +220,10 @@ const AdminPannel = () => {
                     <span className="font-medium text-gray-800">Region:</span>{" "}
                     {client.region}
                   </p>
+                  <p>
+                    <span className="font-medium text-gray-800">Status:</span>{" "}
+                    {client.status}
+                  </p>
                 </div>
               </div>
             ))}
@@ -200,9 +231,7 @@ const AdminPannel = () => {
         )}
       </div>
 
-      {/* ===== MODALS ===== */}
-
-      {/* Create Client */}
+      {/* ===== CREATE CLIENT MODAL ===== */}
       <Modal
         isOpen={openCreateClient}
         onClose={() => setOpenCreateClient(false)}

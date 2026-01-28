@@ -245,6 +245,7 @@ const CreateClient = ({ onSuccess }) => {
       );
       onSuccess?.();
     } catch (error) {
+      console.error("Error creating client:", error);
       toast.error(
         error.response?.data?.message ||
           "Error creating client. Please try again.",
