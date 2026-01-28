@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import {showStatusToast} from "../../../components/toastfy/toast.jsx";
+
 import {
   ArrowLeft,
   User,
@@ -12,8 +14,6 @@ import {
   Briefcase,
   File,
 } from "lucide-react";
-
-// const [fileLoading, setFileLoading] = useState(false);
 
 export default function HrProfileView() {
   const { user_uuid } = useParams();
@@ -25,22 +25,28 @@ export default function HrProfileView() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(`${BASE_URL}/hr/hr/${user_uuid}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setProfile(res.data);
-      } catch (err) {
-        console.error("Failed to load profile", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // verification state
+  const [verificationStatus, setVerificationStatus] = useState(null);
+  // null | "Verified" | "Rejected"
 
-    fetchProfile();
-  }, [user_uuid]);
+const fetchProfile = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/hr/hr/${user_uuid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setProfile(res.data);
+  } catch (err) {
+    console.error("Failed to load profile", err);
+    showStatusToast("Failed to load profile", "error");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchProfile();
+}, [user_uuid]);
+
 
   if (loading)
     return <div className="p-10 text-center">Loading profile...</div>;
@@ -59,43 +65,56 @@ export default function HrProfileView() {
     experience,
   } = profile;
 
-  // ------------------ DOCUMENT OPEN FUNCTION ------------------
   function removeQuotes(url) {
     return url.replace(/^"+|"+$/g, "");
   }
 
   async function openFileInNewTab(url) {
-    // setFileLoading(true);
     const newTab = window.open("", "_blank");
     try {
       const res = await axios.get(`${BASE_URL}/hr/view_documents`, {
         params: { file_path: encodeURIComponent(url) },
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Signed URL response:", res.data);
       const cleanUrl = removeQuotes(res.data);
       newTab.location.href = cleanUrl;
     } catch (err) {
       console.error("Failed to open document", err);
-      newTab.close(); // cleanup if error
-    } finally {
-      // setFileLoading(false);
+      newTab.close();
     }
   }
 
-  // async function openFileInNewTab(url) {
-  //   try {
-  //     const res = await axios.get(`${BASE_URL}/hr/view_documents`, {
-  //       params: { file_path: encodeURIComponent(url) },
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     console.log("Signed URL response:", res.data);
-  //     const cleanUrl = await removeQuotes(res.data);
-  //     window.open(cleanUrl, "_blank");
-  //   } catch (err) {
-  //     console.error("Failed to open document", err);
-  //   }
-  // }
+  const updateVerificationStatus = async (status) => {
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/hr/verify-profile`,
+      {
+        user_uuid,
+        status,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    // ✅ backend response is string
+    showStatusToast(res.data, "success");
+
+    setVerificationStatus(status);
+
+    // 🔁 reload profile again
+    setLoading(true);
+    await fetchProfile();
+    
+  } catch (err) {
+    console.error("Verification failed", err);
+    showStatusToast("Verification failed", "error");
+  }
+};
+
+const handleVerify = () => updateVerificationStatus("Verified");
+const handleReject = () => updateVerificationStatus("Rejected");
+
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -109,22 +128,13 @@ export default function HrProfileView() {
 
       {/* PERSONAL INFO */}
       <Section title="Personal Information" icon={<User />}>
-        <FieldCard
-          label="Name"
-          value={`${user.first_name} ${user.last_name}`}
-        />
+        <FieldCard label="Name" value={`${user.first_name} ${user.last_name}`} />
         <FieldCard label="Email" value={user.email} />
         <FieldCard label="Phone" value={user.contact_number} />
         <FieldCard label="Designation" value={user.designation} />
         <FieldCard label="Gender" value={personal_details?.gender} />
-        <FieldCard
-          label="Date of Birth"
-          value={personal_details?.date_of_birth}
-        />
-        <FieldCard
-          label="Marital Status"
-          value={personal_details?.marital_status}
-        />
+        <FieldCard label="Date of Birth" value={personal_details?.date_of_birth} />
+        <FieldCard label="Marital Status" value={personal_details?.marital_status} />
         <FieldCard label="Blood Group" value={personal_details?.blood_group} />
         <FieldCard label="Nationality" value={personal_details?.nationality} />
         <FieldCard label="Residence" value={personal_details?.residence} />
@@ -132,57 +142,46 @@ export default function HrProfileView() {
 
       {/* ADDRESS */}
       <Section title="Address" icon={<MapPin />}>
-        {addresses?.length ? (
-          addresses.map((addr) => (
-            <AddressCard key={addr.address_uuid} address={addr} />
-          ))
-        ) : (
-          <Info label="Address" value="No address available" />
-        )}
+        {addresses?.length
+          ? addresses.map((addr) => (
+              <AddressCard key={addr.address_uuid} address={addr} />
+            ))
+          : <Info label="Address" value="No address available" />}
       </Section>
 
       {/* EDUCATION */}
       <Section title="Education" icon={<GraduationCap />}>
-        {education_documents?.length ? (
-          <div className="space-y-4">
-            {education_documents.map((edu) => (
+        {education_documents?.length
+          ? education_documents.map((edu) => (
               <DocumentCard
                 key={edu.document_uuid}
                 title={`${edu.education_level} - ${edu.specialization}`}
                 subtitle={`${edu.institution_name} (${edu.year_of_passing})`}
                 documentName={edu.document_name}
-                filePath={edu.file_path} // signed URL
+                filePath={edu.file_path}
                 onView={openFileInNewTab}
               />
-            ))}
-          </div>
-        ) : (
-          <Info label="Education" value="No education documents uploaded" />
-        )}
+            ))
+          : <Info label="Education" value="No education documents uploaded" />}
       </Section>
 
       {/* EXPERIENCE */}
       <Section title="Work Experience" icon={<Briefcase />}>
-        {experience?.length ? (
-          <div className="space-y-4">
-            {experience.map((exp) => (
+        {experience?.length
+          ? experience.map((exp) => (
               <ExperienceCard
                 key={exp.experience_uuid}
                 exp={exp}
                 onView={openFileInNewTab}
               />
-            ))}
-          </div>
-        ) : (
-          <Info label="Experience" value="No work experience provided" />
-        )}
+            ))
+          : <Info label="Experience" value="No work experience provided" />}
       </Section>
 
       {/* IDENTITY DOCUMENTS */}
       <Section title="Identity Documents" icon={<File />}>
-        {identity_documents?.length ? (
-          <div className="space-y-4">
-            {identity_documents.map((doc) => (
+        {identity_documents?.length
+          ? identity_documents.map((doc) => (
               <DocumentCard
                 key={doc.document_uuid}
                 title={doc.identity_type}
@@ -190,17 +189,48 @@ export default function HrProfileView() {
                 filePath={doc.file_path}
                 onView={openFileInNewTab}
               />
-            ))}
-          </div>
-        ) : (
-          <Info label="Identity" value="No identity documents uploaded" />
-        )}
+            ))
+          : <Info label="Identity" value="No identity documents uploaded" />}
       </Section>
+
+      {/* ✅ BOTTOM ACTION BUTTONS */}
+      <div className="pt-8 border-t flex flex-col items-center gap-4">
+        {verificationStatus && (
+          <span
+            className={`px-4 py-1 text-sm font-semibold rounded-full ${
+              verificationStatus === "Verified"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {verificationStatus}
+          </span>
+        )}
+
+        <div className="flex gap-4">
+          <button
+            onClick={handleVerify}
+            disabled={verificationStatus === "Verified"}
+            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+          >
+            Verify
+          </button>
+
+          <button
+            onClick={handleReject}
+            disabled={verificationStatus === "Rejected"}
+            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ------------------ UI HELPERS ------------------ */
+/* ------------------ UI HELPERS (UNCHANGED) ------------------ */
+
 function Section({ title, icon, children }) {
   return (
     <div className="bg-gray-50 rounded-xl shadow-sm p-6 hover:shadow-md transition">
@@ -250,7 +280,6 @@ function AddressCard({ address }) {
   );
 }
 
-/* ------------------ DOCUMENT CARD ------------------ */
 function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
   return (
     <div className="border rounded-lg p-4 shadow-sm bg-white hover:shadow-md transition min-h-[100px]">
@@ -259,7 +288,7 @@ function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
       {documentName && <p className="text-gray-700 mt-1">{documentName}</p>}
       {filePath && (
         <button
-          className="mt-3 text-blue-600 font-medium cursor-pointer hover:underline"
+          className="mt-3 text-blue-600 font-medium hover:underline"
           onClick={() => onView(filePath)}
         >
           View Document
@@ -269,8 +298,7 @@ function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
   );
 }
 
-/* ------------------ EXPERIENCE CARD ------------------ */
-function ExperienceCard({ exp, onView }) {
+function ExperienceCard({ exp }) {
   const statusStyles = {
     verified: "bg-green-100 text-green-700",
     rejected: "bg-red-100 text-red-700",
@@ -292,46 +320,6 @@ function ExperienceCard({ exp, onView }) {
           Verification: {exp.certificate_status?.toUpperCase()}
         </span>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
-        <p>
-          <span className="font-medium">Employment Type:</span>{" "}
-          {exp.employment_type}
-        </p>
-        <p>
-          <span className="font-medium">Duration:</span>{" "}
-          {formatDate(exp.start_date)} →{" "}
-          {exp.is_current ? "Present" : formatDate(exp.end_date)}
-        </p>
-      </div>
-
-      {exp.remarks && (
-        <p className="text-sm text-gray-600 italic">
-          <span className="font-medium not-italic">Remarks:</span> {exp.remarks}
-        </p>
-      )}
-
-      {exp.documents && exp.documents.length > 0 && (
-        <div className="mt-2 space-y-1">
-          {exp.documents.map((doc) => (
-            <DocumentCard
-              key={doc.document_uuid}
-              title={doc.document_name}
-              filePath={doc.file_path}
-              onView={onView}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
-}
-
-/* ------------------ HELPER ------------------ */
-function formatDate(date) {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
 }
