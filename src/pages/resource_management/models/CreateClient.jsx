@@ -160,8 +160,7 @@ const SearchableCombobox = ({ label, value, onChange, options }) => {
 };
 
 // --- 3. Main Form Component ---
-const CreateClient = () => {
-  // const createClient = new createClient();
+const CreateClient = ({ onSuccess }) => {
 
   // A. Load Countries
   const allCountryData = useMemo(() => {
@@ -173,10 +172,10 @@ const CreateClient = () => {
 
   const [formData, setFormData] = useState({
     client_name: "",
-    client_type: "Enterprise",
-    priority_level: "Low",
-    delivery_model: "Onsite",
-    status: "Active",
+    client_type: "STANDARD",
+    priority_level: "LOW",
+    delivery_model: "ONSITE",
+    status: "ACTIVE",
     country_name: "",
     default_timezone: "",
     SLA: false,
@@ -188,7 +187,6 @@ const CreateClient = () => {
 
   const [timezoneOptions, setTimezoneOptions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOpen, setIsOpen] = useState(true);
 
   // --- Handlers ---
   const handleInputChange = (e) => {
@@ -243,9 +241,9 @@ const CreateClient = () => {
     try {
       const clientCreation = await createClient(formData);
       toast.success(
-        clientCreation.data.message || "Client created successfully!",
+        clientCreation.message || "Client created successfully.",
       );
-      setIsOpen(false);
+      onSuccess?.();
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -279,28 +277,28 @@ const CreateClient = () => {
         <CustomListbox
           label="Client Type"
           value={formData.client_type}
-          options={["Enterprise", "Partner", "Internal", "Support"]}
+          options={["STRATEGIC", "INTERNAL", "SUPPORT", "STANDARD"]}
           onChange={(val) => handleGenericListboxChange("client_type", val)}
         />
 
         <CustomListbox
           label="Priority Level"
           value={formData.priority_level}
-          options={["Low", "Medium", "High"]}
+          options={["LOW", "MEDIUM", "HIGH", "CRITICAL"]}
           onChange={(val) => handleGenericListboxChange("priority_level", val)}
         />
 
         <CustomListbox
           label="Delivery Model"
           value={formData.delivery_model}
-          options={["Onsite", "Offshore", "Hybrid"]}
+          options={["ONSITE", "OFFSHORE", "HYBRID"]}
           onChange={(val) => handleGenericListboxChange("delivery_model", val)}
         />
 
         <CustomListbox
           label="Status"
           value={formData.status}
-          options={["Active", "Inactive"]}
+          options={["ACTIVE", "INACTIVE", "ON_HOLD"]}
           onChange={(val) => handleGenericListboxChange("status", val)}
         />
 
@@ -364,7 +362,7 @@ const CreateClient = () => {
         <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
           <button
             type="submit"
-            // onClick={handleSubmit}
+            onClick={handleSubmit}
             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors shadow-md"
           >
             {isSubmitting ? "Creating..." : "Create Client"}

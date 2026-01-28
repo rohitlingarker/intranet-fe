@@ -209,7 +209,7 @@ const AdminPannel = () => {
         title="Create New Client"
         subtitle="Fill in the details to add a new client"
       >
-        <CreateClient />
+        <CreateClient onSuccess={() => setOpenCreateClient(false)} />
       </Modal>
     </div>
   );
