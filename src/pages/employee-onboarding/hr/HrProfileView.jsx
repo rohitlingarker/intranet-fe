@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import {showStatusToast} from "../../../components/toastfy/toast.jsx";
+import { showStatusToast } from "../../../components/toastfy/toast.jsx";
 
 import {
   ArrowLeft,
@@ -25,28 +25,33 @@ export default function HrProfileView() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // verification state
   const [verificationStatus, setVerificationStatus] = useState(null);
-  // null | "Verified" | "Rejected"
+  const [confirmationMessage, setConfirmationMessage] = useState(null);
 
-const fetchProfile = async () => {
-  try {
-    const res = await axios.get(`${BASE_URL}/hr/hr/${user_uuid}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setProfile(res.data);
-  } catch (err) {
-    console.error("Failed to load profile", err);
-    showStatusToast("Failed to load profile", "error");
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/hr/hr/${user_uuid}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProfile(res.data);
 
-useEffect(() => {
-  fetchProfile();
-}, [user_uuid]);
+      // Only show status if not "Submitted"
+      setVerificationStatus(
+        res.data.user.offer_status !== "Submitted"
+          ? res.data.user.offer_status
+          : null
+      );
+    } catch (err) {
+      console.error("Failed to load profile", err);
+      showStatusToast("Failed to load profile", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchProfile();
+  }, [user_uuid]);
 
   if (loading)
     return <div className="p-10 text-center">Loading profile...</div>;
@@ -85,39 +90,31 @@ useEffect(() => {
   }
 
   const updateVerificationStatus = async (status) => {
-  try {
-    const res = await axios.post(
-      `${BASE_URL}/hr/verify-profile`,
-      {
-        user_uuid,
-        status,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      await axios.post(
+        `${BASE_URL}/hr/verify-profile`,
+        { user_uuid, status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    // ✅ backend response is string
-    showStatusToast(res.data, "success");
+      showStatusToast(`Profile ${status}`, "success");
 
-    setVerificationStatus(status);
+      setVerificationStatus(status);
+      setConfirmationMessage(`Profile has been ${status.toLowerCase()}.`);
 
-    // 🔁 reload profile again
-    setLoading(true);
-    await fetchProfile();
-    
-  } catch (err) {
-    console.error("Verification failed", err);
-    showStatusToast("Verification failed", "error");
-  }
-};
+      // Hide confirmation after 3 seconds
+      setTimeout(() => setConfirmationMessage(null), 3000);
+    } catch (err) {
+      console.error("Verification failed", err);
+      showStatusToast("Verification failed", "error");
+    }
+  };
 
-const handleVerify = () => updateVerificationStatus("Verified");
-const handleReject = () => updateVerificationStatus("Rejected");
-
+  const handleVerify = () => updateVerificationStatus("Verified");
+  const handleReject = () => updateVerificationStatus("Rejected");
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6 relative">
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
@@ -125,6 +122,30 @@ const handleReject = () => updateVerificationStatus("Rejected");
       >
         <ArrowLeft size={18} /> Back
       </button>
+
+      {/* Top-Right Status Badge */}
+      {(verificationStatus === "Verified" || verificationStatus === "Rejected") && (
+        <div className="absolute top-6 right-6">
+          <span
+            className={`px-6 py-2 text-lg font-bold rounded-full shadow-lg
+              ${
+                verificationStatus === "Verified"
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
+              }
+            `}
+          >
+            {verificationStatus}
+          </span>
+        </div>
+      )}
+
+      {/* Confirmation Message */}
+      {confirmationMessage && (
+        <div className="absolute top-20 right-6 bg-blue-500 text-white px-4 py-2 rounded shadow-lg animate-fade-in">
+          {confirmationMessage}
+        </div>
+      )}
 
       {/* PERSONAL INFO */}
       <Section title="Personal Information" icon={<User />}>
@@ -193,43 +214,28 @@ const handleReject = () => updateVerificationStatus("Rejected");
           : <Info label="Identity" value="No identity documents uploaded" />}
       </Section>
 
-      {/* ✅ BOTTOM ACTION BUTTONS */}
-      <div className="pt-8 border-t flex flex-col items-center gap-4">
-        {verificationStatus && (
-          <span
-            className={`px-4 py-1 text-sm font-semibold rounded-full ${
-              verificationStatus === "Verified"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {verificationStatus}
-          </span>
-        )}
-
-        <div className="flex gap-4">
+      {/* Action Buttons */}
+      {(!verificationStatus && user.offer_status === "Submitted") && (
+        <div className="pt-8 border-t flex justify-center gap-4">
           <button
             onClick={handleVerify}
-            disabled={verificationStatus === "Verified"}
-            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
+            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium shadow-md hover:bg-green-700 hover:scale-105 active:bg-green-800 active:scale-95 transition-all duration-200 ease-in-out"
           >
             Verify
           </button>
-
           <button
             onClick={handleReject}
-            disabled={verificationStatus === "Rejected"}
-            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50"
+            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium shadow-md hover:bg-red-700 hover:scale-105 active:bg-red-800 active:scale-95 transition-all duration-200 ease-in-out"
           >
             Reject
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/* ------------------ UI HELPERS (UNCHANGED) ------------------ */
+/* ------------------ UI HELPERS ------------------ */
 
 function Section({ title, icon, children }) {
   return (
@@ -288,7 +294,7 @@ function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
       {documentName && <p className="text-gray-700 mt-1">{documentName}</p>}
       {filePath && (
         <button
-          className="mt-3 text-blue-600 font-medium hover:underline"
+          className="mt-3 text-blue-600 font-medium hover:text-blue-800 hover:scale-105 active:text-blue-900 active:scale-95 transition-all duration-200 ease-in-out"
           onClick={() => onView(filePath)}
         >
           View Document
