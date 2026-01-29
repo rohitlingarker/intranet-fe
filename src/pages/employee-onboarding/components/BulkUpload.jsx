@@ -110,7 +110,9 @@ export default function BulkUpload() {
       <div className="flex justify-end gap-3 mt-6">
         <button
           onClick={resetForm}
-          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300  active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
         >
           Reset
         </button>
@@ -118,7 +120,9 @@ export default function BulkUpload() {
         <button
           onClick={handleUpload}
           disabled={uploading}
-          className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400  active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
         >
           {uploading ? "Uploading..." : "Upload"}
         </button>

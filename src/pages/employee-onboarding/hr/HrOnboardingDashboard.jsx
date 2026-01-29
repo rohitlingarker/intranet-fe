@@ -165,10 +165,10 @@ export default function HrOnboardingDashboard() {
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(currentPage - 1)}
-          className={`w-10 h-10 rounded-lg ${
+          className={`w-10 h-10 rounded-lg border ${
             currentPage === 1
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-indigo-900 text-white hover:bg-indigo-800"
           }`}
         >
           &lt;
@@ -181,9 +181,9 @@ export default function HrOnboardingDashboard() {
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage(currentPage + 1)}
-          className={`w-10 h-10 rounded-lg ${
+          className={`w-10 h-10 rounded-lg border ${
             currentPage === totalPages
-              ? "bg-indigo-200 text-white cursor-not-allowed"
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
               : "bg-indigo-900 text-white hover:bg-indigo-800"
           }`}
         >

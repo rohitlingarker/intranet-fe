@@ -73,7 +73,10 @@ export default function AddCountryModal({ onClose, onSuccess }) {
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 bg-gray-200 rounded-lg"
+            className="px-4 py-2 bg-gray-200 rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             Cancel
           </button>
@@ -81,7 +84,10 @@ export default function AddCountryModal({ onClose, onSuccess }) {
           <button
             onClick={handleSave}
             disabled={!isValidCallingCode || saving}
-            className={`px-4 py-2 rounded-lg text-white ${
+            className={`px-4 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2 ${
               !isValidCallingCode || saving
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-700 hover:bg-blue-800"

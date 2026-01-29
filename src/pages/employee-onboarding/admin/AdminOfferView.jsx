@@ -164,7 +164,10 @@ export default function AdminOfferView() {
             <button
               disabled={acting}
               onClick={() => submitAction("APPROVED")}
-              className="px-6 py-2 bg-green-700 text-white rounded-lg"
+              className="px-6 py-2 bg-green-700 text-white rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
             >
               Approve
             </button>
@@ -172,7 +175,10 @@ export default function AdminOfferView() {
             <button
               disabled={acting}
               onClick={() => submitAction("REJECTED")}
-              className="px-6 py-2 bg-red-700 text-white rounded-lg"
+              className="px-6 py-2 bg-red-700 text-white rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
             >
               Reject
             </button>
@@ -180,7 +186,10 @@ export default function AdminOfferView() {
             <button
               disabled={acting}
               onClick={() => submitAction("ON_HOLD")}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg"
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
             >
               On Hold
             </button>
