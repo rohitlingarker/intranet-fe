@@ -6,13 +6,9 @@ import {
   Globe,
   FileText,
   CheckCircle2,
-  AlertCircle,
   ShieldCheck,
   Users,
   Box,
-  ChevronRight,
-  Clock,
-  Calendar,
   MoreHorizontal,
   Briefcase,
   AlertTriangle,
@@ -22,6 +18,9 @@ import ClientSection from "./ClientSection";
 import AddConfigurationModal from "../models/client_configuration/AddConfigurationModal";
 import Button from "../../../components/Button/Button";
 import { useAuth } from "../../../contexts/AuthContext";
+import { toast } from "react-toastify";
+import { getClientById } from "../services/clientservice";
+import { createClientSLA, createClientCompliance, createClientEscalation } from "../services/clientservice";
 
 // --- Mock Data: Client with Multiple Projects ---
 const MOCK_CLIENT_DATA = {
@@ -316,10 +315,77 @@ const ClientPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [openConfigModal, setOpenConfigModal] = useState(false);
+  const [clientDetails, setClientDetails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [slaRefetchKey, setSLARefetchKey] = useState(0);
+  const [complianceRefetchKey, setComplianceRefetchKey] = useState(0);
+  const [escalationRefetchKey, setEscalationRefetchKey] = useState(0);
 
-  const handleSaveConfiguration = ({ type, data }) => {
-    // mock save for now – backend later
-    console.log("Saved configuration:", type, data);
+  const fetchClientDetails = async () => {
+    setLoading(true);
+    try {
+      const data = await getClientById(clientId);
+      setClientDetails(data.data);
+    } catch (error) {
+      toast.error("Failed to fetch client details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (clientId) fetchClientDetails();
+  }, [clientId]);
+
+  const handleSLACreate = async (data) => {
+    setLoading(true);
+    try {
+      const res = await createClientSLA(data);
+      toast.success(res.message || "SLA created successfully");
+      setSLARefetchKey((prev) => prev + 1);
+    } catch (res) {
+      toast.error(res.response?.data?.message || "Failed to create SLA");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleComplianceCreate = async (data) => {
+    setLoading(true);
+    try {
+      const res = await createClientCompliance(data);
+      toast.success(res.message || "Compliance created successfully");
+      setComplianceRefetchKey((prev) => prev + 1);
+    } catch (res) {
+      toast.error(res.response?.data?.message || "Failed to create Compliance");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEscalationCreate = async (data) => {
+    setLoading(true);
+    try {
+      const res = await createClientEscalation(data);
+      toast.success(res.message || "Escalation created successfully");
+      setEscalationRefetchKey((prev) => prev + 1);
+    } catch (res) {
+      toast.error(res.response?.data?.message || "Failed to create Escalation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveConfiguration = async ({ type, data }) => {
+    if (type === "slas") {
+      await handleSLACreate(data);
+    } else if (type === "compliances") {
+      await handleComplianceCreate(data);
+    } else if (type === "escalations"){
+      await handleEscalationCreate(data);
+    } else {
+      toast.error("Unknown configuration type");
+    }
     setOpenConfigModal(false);
   };
 
@@ -415,15 +481,18 @@ const ClientPage = () => {
 
       {(canConfigAgreements || canManageAssets) && (
         <div className="flex justify-end gap-3 mt-5">
-          {canConfigAgreements && (
-            <Button
-              variant="primary"
-              onClick={() => setOpenConfigModal(true)}
-              className="px-4 py-2 text-sm border rounded-lg"
-            >
-              + Add Configuration
-            </Button>
-          )}
+          {(canConfigAgreements &&
+            (clientDetails.compliance ||
+              clientDetails.SLA ||
+              clientDetails.escalationContact)) && (
+              <Button
+                variant="primary"
+                onClick={() => setOpenConfigModal(true)}
+                className="px-4 py-2 text-sm border rounded-lg"
+              >
+                + Add Configuration
+              </Button>
+            )}
 
           {canManageAssets && (
             <Button
@@ -438,11 +507,15 @@ const ClientPage = () => {
         </div>
       )}
 
-      <div className="mt-8 mb-10">
-        <ClientSection clientId={clientId} />
-      </div>
+      {(clientDetails.compliance ||
+        clientDetails.SLA ||
+        clientDetails.escalationContact) && (
+        <div className="mt-8 mb-10">
+          <ClientSection clientDetails={clientDetails} slaRefetchKey={slaRefetchKey} complianceRefetchKey={complianceRefetchKey} escalationRefetchKey={escalationRefetchKey} />
+        </div>
+      )}
 
-      <div className="border-t border-gray-300"></div>
+      {/* <div className="border-t border-gray-300"></div> */}
 
       <div className="grid grid-cols-12 gap-8 mt-10">
         {/* 2. LEFT SIDE: Project List (The Menu) */}
@@ -592,6 +665,8 @@ const ClientPage = () => {
         open={openConfigModal}
         onClose={() => setOpenConfigModal(false)}
         onSave={handleSaveConfiguration}
+        clientDetails={clientDetails}
+        loading={loading}
       />
     </div>
   );

@@ -14,15 +14,15 @@ const ComplianceForm = ({ formData, setFormData }) => {
           Requirement Type <span className="text-red-500">*</span>
         </label>
         <select
-          name="requirement_type"
-          value={formData.requirement_type || ""}
+          name="requirementType"
+          value={formData.requirementType || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">Select type</option>
-          <option value="Certification">Certification</option>
-          <option value="Clearance">Clearance</option>
-          <option value="Tool Access">Tool Access</option>
+          <option value="CERTIFICATION">Certification</option>
+          <option value="CLEARANCE">Clearance</option>
+          <option value="TOOL_ACCESS">Tool Access</option>
         </select>
       </div>
 
@@ -32,53 +32,52 @@ const ComplianceForm = ({ formData, setFormData }) => {
           Requirement Name <span className="text-red-500">*</span>
         </label>
         <input
-          name="requirement_name"
-          value={formData.requirement_name || ""}
+          name="requirementName"
+          value={formData.requirementName || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         />
       </div>
 
-      {/* Mandatory Flag */}
-      <div>
-        <label className="text-sm font-medium text-gray-700">
+      {/* Compliance Flag's */}
+      <div className="flex items-center gap-2">
+        <label
+          htmlFor="mandatoryFlag"
+          className="text-sm font-medium text-gray-700"
+        >
           Mandatory
         </label>
-        <select
-          name="mandatory_flag"
-          value={formData.mandatory_flag ?? true}
+        <input
+          type="checkbox"
+          id="mandatoryFlag"
+          checked={formData.mandatoryFlag ?? true}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
-              mandatory_flag: e.target.value === "true",
+              mandatoryFlag: e.target.checked,
             }))
           }
-          className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-      </div>
+          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+        />
 
-      {/* Status */}
-      <div>
-        <label className="text-sm font-medium text-gray-700">
-          Status
+        <label
+          htmlFor="activeFlag"
+          className="text-sm font-medium text-gray-700"
+        >
+          Active
         </label>
-        <select
-          name="active_flag"
-          value={formData.active_flag ?? true}
+        <input
+          type="checkbox"
+          id="activeFlag"
+          checked={formData.activeFlag ?? true}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
-              active_flag: e.target.value === "true",
+              activeFlag: e.target.checked,
             }))
           }
-          className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+        />
       </div>
     </div>
   );

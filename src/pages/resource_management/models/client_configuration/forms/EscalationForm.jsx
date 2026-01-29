@@ -14,8 +14,8 @@ const EscalationForm = ({ formData, setFormData }) => {
           Contact Name <span className="text-red-500">*</span>
         </label>
         <input
-          name="contact_name"
-          value={formData.contact_name || ""}
+          name="contactName"
+          value={formData.contactName || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         />
@@ -27,8 +27,8 @@ const EscalationForm = ({ formData, setFormData }) => {
           Contact Role <span className="text-red-500">*</span>
         </label>
         <input
-          name="contact_role"
-          value={formData.contact_role || ""}
+          name="contactRole"
+          value={formData.contactRole || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         />
@@ -67,8 +67,8 @@ const EscalationForm = ({ formData, setFormData }) => {
           Escalation Level <span className="text-red-500">*</span>
         </label>
         <select
-          name="escalation_level"
-          value={formData.escalation_level || ""}
+          name="escalationLevel"
+          value={formData.escalationLevel || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         >
@@ -77,6 +77,24 @@ const EscalationForm = ({ formData, setFormData }) => {
           <option value="2">Level 2</option>
           <option value="3">Level 3</option>
         </select>
+      </div>
+      {/* Active Flag */}
+      <div>
+        <input
+          type="checkbox"
+          id="activeFlag"
+          checked={formData.activeFlag ?? true}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              activeFlag: e.target.checked,
+            }))
+          }
+          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+        />
+        <label htmlFor="activeFlag" className="text-sm text-gray-700 ml-2">
+          Active
+        </label>
       </div>
     </div>
   );
