@@ -50,7 +50,9 @@ export default function CreateOffer() {
           }
         );
 
-        const formatted = res.data.map((c) => ({
+        const formatted = res.data 
+        .filter((c) => c.is_active === true)  
+        .map((c) => ({
           label: `${c.country_name} (${c.calling_code})`,
           value: c.calling_code,
         }));
@@ -167,13 +169,20 @@ export default function CreateOffer() {
 
         {/* Country + Phone */}
         <div className="grid grid-cols-2 gap-6">
-          <FormSelect
+                  <FormSelect
             label="Country Code"
             name="country_code"
             value={formData.country_code}
             onChange={handleChange}
-            options={countries}
+            options={
+              loadingCountries
+                ? [{ label: "Loading countries...", value: "" }]
+                : countries
+            }
+            disabled={loadingCountries}
           />
+
+
           <FormInput
             label="Contact Number"
             name="contact_number"

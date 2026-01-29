@@ -45,13 +45,13 @@ export default function HrProfileView() {
   if (loading)
     return <div className="p-10 text-center">Loading profile...</div>;
 
-  if (!profile || !profile.user)
+  if (!profile || !profile.offer)
     return (
       <div className="p-10 text-center text-red-600">Profile not found</div>
     );
 
   const {
-    user,
+    offer,
     personal_details,
     addresses,
     identity_documents,
@@ -111,11 +111,11 @@ export default function HrProfileView() {
       <Section title="Personal Information" icon={<User />}>
         <FieldCard
           label="Name"
-          value={`${user.first_name} ${user.last_name}`}
+          value={`${offer.first_name} ${offer.last_name}`}
         />
-        <FieldCard label="Email" value={user.email} />
-        <FieldCard label="Phone" value={user.contact_number} />
-        <FieldCard label="Designation" value={user.designation} />
+        <FieldCard label="Email" value={offer.email} />
+        <FieldCard label="Phone" value={offer.contact_number} />
+        <FieldCard label="Designation" value={offer.designation} />
         <FieldCard label="Gender" value={personal_details?.gender} />
         <FieldCard
           label="Date of Birth"

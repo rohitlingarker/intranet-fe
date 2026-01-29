@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import AddCountryIdentityMappingModal from "./AddCountryIdentityMappingModal";
 
 export default function CountryIdentityMapping() {
   const [countries, setCountries] = useState([]);
@@ -230,6 +231,16 @@ export default function CountryIdentityMapping() {
           </option>
         ))}
       </select>
+{showForm && (
+  <AddCountryIdentityMappingModal
+    countryUuid={selectedCountry}
+    onClose={() => setShowForm(false)}
+    onSuccess={() => {
+      fetchMappings(selectedCountry); // reload table
+      setShowForm(false);
+    }}
+  />
+)}
 
       {selectedCountry && (
         <button
