@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Laptop,
@@ -12,47 +12,50 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Button from "../../../components/Button/Button";
+import toast from "react-hot-toast";
 
-/* ---------------- MOCK DATA ---------------- */
-
-const initialAssets = [
-  {
-    id: 1,
-    asset_name: "MacBook Pro 16-inch",
-    asset_category: "DEVICE",
-    asset_type: "Laptop",
-    quantity: 25,
-    assigned: 23,
-    status: "Active",
-  },
-  {
-    id: 2,
-    asset_name: "Microsoft Office 365",
-    asset_category: "SOFTWARE",
-    asset_type: "License",
-    quantity: 50,
-    assigned: 45,
-    status: "Active",
-  },
-];
+import {
+  getAssetsByClient,
+  createClientAsset,
+  updateClientAsset,
+  deleteClientAsset,
+} from "../services/ClientAssetService";
 
 /* ---------------- MAIN COMPONENT ---------------- */
 
-const AssetList = () => {
+const AssetList = () => { // ✅ clientId from route
   const navigate = useNavigate();
+  const { clientId } = useParams(); // ✅ clientId from route
 
-  const [assets, setAssets] = useState(initialAssets);
+  const [assets, setAssets] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
-
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  /* ---------------- FETCH ASSETS ---------------- */
+
+  const fetchAssets = async () => {
+    try {
+      const res = await getAssetsByClient(clientId);
+      if (res.success) {
+        setAssets(res.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load assets");
+    }
+  };
+
+  useEffect(() => {
+    fetchAssets();
+  }, [clientId]);
 
   /* ---------------- KPI CALCULATIONS ---------------- */
 
   const totalAssets = assets.reduce((s, a) => s + a.quantity, 0);
-  const assignedAssets = assets.reduce((s, a) => s + a.assigned, 0);
+  const assignedAssets = assets.reduce((s, a) => s + (a.assigned || 0), 0);
   const availableAssets = totalAssets - assignedAssets;
 
   const utilization =
@@ -62,43 +65,55 @@ const AssetList = () => {
 
   const filteredAssets = assets.filter(
     (a) =>
-      a.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.asset_category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.asset_type.toLowerCase().includes(searchTerm.toLowerCase())
+      a.assetName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.assetCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.assetType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  /* ---------------- ADD / EDIT HANDLER ---------------- */
+  /* ---------------- ADD / EDIT ---------------- */
 
-  const handleSaveAsset = (e) => {
+  const handleSaveAsset = async (e) => {
     e.preventDefault();
     const form = e.target;
 
     const payload = {
-      id: editingAsset ? editingAsset.id : Date.now(),
-      asset_name: form.asset_name.value,
-      asset_category: form.asset_category.value,
-      asset_type: form.asset_type.value,
+      client: { clientId },
+      assetName: form.asset_name.value,
+      assetCategory: form.asset_category.value,
+      assetType: form.asset_type.value,
       quantity: Number(form.quantity.value),
-      assigned: editingAsset ? editingAsset.assigned : 0,
-      status: "Active",
     };
 
-    setAssets((prev) =>
-      editingAsset
-        ? prev.map((a) => (a.id === editingAsset.id ? payload : a))
-        : [...prev, payload]
-    );
+    try {
+      if (editingAsset) {
+        await updateClientAsset(editingAsset.assetId, payload);
+        toast.success("Asset updated successfully");
+      } else {
+        await createClientAsset(payload);
+        toast.success("Asset added successfully");
+      }
 
-    setShowModal(false);
-    setEditingAsset(null);
-    form.reset();
+      setShowModal(false);
+      setEditingAsset(null);
+      await fetchAssets();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save asset");
+    }
   };
 
-  /* ---------------- DELETE HANDLER ---------------- */
+  /* ---------------- DELETE ---------------- */
 
-  const confirmDelete = () => {
-    setAssets((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-    setDeleteTarget(null);
+  const confirmDelete = async () => {
+    try {
+      await deleteClientAsset(deleteTarget.assetId);
+      toast.success("Asset deleted successfully");
+      setDeleteTarget(null);
+      await fetchAssets();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete asset");
+    }
   };
 
   return (
@@ -118,7 +133,7 @@ const AssetList = () => {
               Asset Management
             </h1>
             <p className="text-sm text-gray-500">
-              Client: Acme Corporation • Region: NA
+              Client Assets
             </p>
           </div>
         </div>
@@ -146,158 +161,76 @@ const AssetList = () => {
         />
       </div>
 
-      
-
       {/* TABLE */}
-<div className="bg-white border rounded-xl shadow-sm p-6">
+      <div className="bg-white border rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Asset Inventory</h2>
 
-  {/* HEADER + SEARCH */}
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-lg font-semibold">Asset Inventory</h2>
-
-    <div className="relative">
-      <input
-        className="
-          w-64 pl-9 pr-3 py-2 text-sm
-          border rounded-lg
-          focus:outline-none
-          focus:ring-2 focus:ring-indigo-500
-        "
-        placeholder="Search assets..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <svg
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        width="16"
-        height="16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-      >
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </svg>
-    </div>
-  </div>
-
-  <table className="w-full text-sm border-separate border-spacing-y-1">
-    <thead className="text-xs uppercase text-gray-500">
-      <tr>
-        <th className="text-left py-3 px-3">Asset Name</th>
-        <th className="px-3">Category</th>
-        <th className="px-3">Type</th>
-        <th className="px-3 text-center">Quantity</th>
-        <th className="px-3 text-center">Status</th>
-        <th className="px-3 text-right">Actions</th>
-        <th className="w-6"></th>
-      </tr>
-    </thead>
-
-   <tbody>
-  {filteredAssets.length ? (
-    filteredAssets.map((asset) => (
-      <tr
-        key={asset.id}
-        onClick={() => navigate(`/assets/${asset.id}`)}
-        className="
-          relative group cursor-pointer
-          transition
-          hover:bg-indigo-50
-        "
-      >
-        {/* ASSET NAME (with accent via pseudo effect) */}
-        <td className="py-4 px-3 font-medium text-gray-900 relative">
-          <span
-            className="
-              absolute left-0 top-0 h-full w-1
-              bg-indigo-500
-              opacity-0
-              group-hover:opacity-100
-              rounded-r
-            "
-          />
-          <span className="pl-2 block">{asset.asset_name}</span>
-        </td>
-
-        <td className="px-3 text-gray-600">{asset.asset_category}</td>
-        <td className="px-3 text-gray-600">{asset.asset_type}</td>
-
-        <td className="px-3 text-center">{asset.quantity}</td>
-
-        <td className="px-3 text-center">
-          <StatusBadge status={asset.status} />
-        </td>
-
-        {/* ACTIONS + CHEVRON (SAME COLUMN) */}
-        <td
-          className="px-3 text-right"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-end gap-4">
-            <Pencil
-  size={16}
-  className="
-    cursor-pointer
-    text-indigo-500
-    opacity-80
-    hover:opacity-100
-    hover:scale-110
-    transition
-  "
-  title="Edit Asset"
-  onClick={() => {
-    setEditingAsset(asset);
-    setShowModal(true);
-  }}
-/>
-
-<Trash2
-  size={16}
-  className="
-    cursor-pointer
-    text-red-500
-    opacity-80
-    hover:opacity-100
-    hover:scale-110
-    transition
-  "
-  title="Delete Asset"
-  onClick={() => setDeleteTarget(asset)}
-/>
-
-
-            {/* Chevron */}
-            <span
-              className="
-                ml-2
-                text-gray-300
-                transition-all
-                group-hover:text-green-600
-                group-hover:translate-x-1
-                font-bold
-              "
-            >
-              ›
-            </span>
+          <div className="relative">
+            <input
+              className="w-64 pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              placeholder="Search assets..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan={6} className="py-10 text-center text-gray-400">
-        No assets found
-      </td>
-    </tr>
-  )}
-</tbody>
+        </div>
 
+        <table className="w-full text-sm">
+          <thead className="text-xs uppercase text-gray-500">
+            <tr>
+              <th className="text-left py-3">Asset Name</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th className="text-center">Quantity</th>
+              <th className="text-center">Status</th>
+              <th className="text-right">Actions</th>
+            </tr>
+          </thead>
 
-  </table>
-</div>
-
+          <tbody>
+            {filteredAssets.length ? (
+              filteredAssets.map((asset) => (
+                <tr
+                  key={asset.assetId}
+                  className="hover:bg-indigo-50 cursor-pointer"
+                >
+                  <td className="py-4 font-medium">{asset.assetName}</td>
+                  <td>{asset.assetCategory}</td>
+                  <td>{asset.assetType}</td>
+                  <td className="text-center">{asset.quantity}</td>
+                  <td className="text-center">
+                    <StatusBadge status={asset.status} />
+                  </td>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-4">
+                      <Pencil
+                        size={16}
+                        className="cursor-pointer text-indigo-500"
+                        onClick={() => {
+                          setEditingAsset(asset);
+                          setShowModal(true);
+                        }}
+                      />
+                      <Trash2
+                        size={16}
+                        className="cursor-pointer text-red-500"
+                        onClick={() => setDeleteTarget(asset)}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="py-10 text-center text-gray-400">
+                  No assets found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* ADD / EDIT MODAL */}
       {showModal && (
@@ -312,28 +245,20 @@ const AssetList = () => {
             <Input
               label="Asset Name"
               name="asset_name"
-              defaultValue={editingAsset?.asset_name}
+              defaultValue={editingAsset?.assetName}
               required
             />
             <Select
               label="Asset Category"
               name="asset_category"
               options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
-              defaultValue={editingAsset?.asset_category}
+              defaultValue={editingAsset?.assetCategory}
             />
             <Select
               label="Asset Type"
               name="asset_type"
-              options={[
-                "Laptop",
-                "Mobile",
-                "License",
-                "VPN",
-                "VDI",
-                "Token",
-                "Tool",
-              ]}
-              defaultValue={editingAsset?.asset_type}
+              options={["Laptop", "Mobile", "License", "VPN", "Tool"]}
+              defaultValue={editingAsset?.assetType}
             />
             <Input
               label="Quantity"
@@ -362,8 +287,7 @@ const AssetList = () => {
           <div className="space-y-4 text-center">
             <AlertTriangle className="mx-auto text-red-500" size={36} />
             <p>
-              Are you sure you want to delete{" "}
-              <strong>{deleteTarget.asset_name}</strong>?
+              Delete <strong>{deleteTarget.assetName}</strong>?
             </p>
             <div className="flex justify-center gap-4 pt-4">
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
@@ -380,7 +304,7 @@ const AssetList = () => {
   );
 };
 
-/* ---------------- UI COMPONENTS ---------------- */
+/* ---------------- UI HELPERS ---------------- */
 
 const Kpi = ({ title, value, icon: Icon, highlight }) => {
   const color =
@@ -407,9 +331,8 @@ const Kpi = ({ title, value, icon: Icon, highlight }) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    Active: "bg-green-100 text-green-700",
-    Retired: "bg-gray-100 text-gray-700",
-    Lost: "bg-red-100 text-red-700",
+    ACTIVE: "bg-green-100 text-green-700",
+    INACTIVE: "bg-gray-100 text-gray-700",
   };
   return (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${map[status]}`}>
@@ -423,9 +346,7 @@ const Modal = ({ title, children, onClose }) => (
     <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose}>
-          <X />
-        </button>
+        <button onClick={onClose}><X /></button>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -442,16 +363,9 @@ const Input = ({ label, ...props }) => (
 const Select = ({ label, options, defaultValue, ...props }) => (
   <div>
     <label className="block text-sm font-medium mb-1">{label}</label>
-    <select
-      {...props}
-      defaultValue={defaultValue}
-      className="w-full border rounded-lg px-3 py-2 text-sm"
-      required
-    >
+    <select {...props} defaultValue={defaultValue} className="w-full border rounded-lg px-3 py-2 text-sm">
       {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
+        <option key={o} value={o}>{o}</option>
       ))}
     </select>
   </div>

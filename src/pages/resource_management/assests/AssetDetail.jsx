@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,44 +10,17 @@ import {
   Box,
   Users,
   Laptop,
-  Percent
+  Percent,
 } from "lucide-react";
 import Button from "../../../components/Button/Button";
+import {
+  getAssetsByClient,
+  createClientAsset,
+  updateClientAsset,
+  deleteClientAsset,
+} from "../services/ClientAssetService";
 
-/* ---------------- CONSTANTS ---------------- */
-
-const TOTAL_QUANTITY = 25;
-
-/* ---------------- MOCK DATA ---------------- */
-
-const initialAssignments = [
-  {
-    id: 1,
-    resource_name: "John Doe",
-    project_name: "Project Alpha",
-    assigned_date: "2024-01-20",
-    expected_return_date: "2025-01-20",
-    actual_return_date: "",
-    usage_status: "In Use",
-    asset_location_type: "Client Site",
-    asset_location_details: "Singapore",
-    assigned_by: "Admin",
-    remarks: "",
-  },
-  {
-    id: 2,
-    resource_name: "Jane Smith",
-    project_name: "Project Beta",
-    assigned_date: "2024-02-15",
-    expected_return_date: "2025-02-15",
-    actual_return_date: "",
-    usage_status: "In Use",
-    asset_location_type: "Employee Home",
-    asset_location_details: "Mumbai",
-    assigned_by: "Admin",
-    remarks: "",
-  },
-];
+/* ---------------- STATUS COLORS ---------------- */
 
 const STATUS_COLORS = {
   Assigned: "bg-blue-100 text-blue-700",
@@ -60,16 +33,38 @@ const STATUS_COLORS = {
 
 const AssetDetail = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams(); // clientId
 
-  const [assignments, setAssignments] = useState(initialAssignments);
+  const [assignments, setAssignments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
 
+  /* ---------------- FETCH ASSETS ---------------- */
+
+  const fetchAssets = async () => {
+    try {
+      const res = await getAssetsByClient(id);
+      if (res.success) {
+        setAssignments(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch assets", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssets();
+  }, [id]);
+
   /* ---------------- KPI CALCULATIONS ---------------- */
+
+  const TOTAL_QUANTITY = assignments.reduce(
+    (sum, a) => sum + (a.quantity || 0),
+    0
+  );
 
   const assignedCount = assignments.length;
   const availableCount = TOTAL_QUANTITY - assignedCount;
@@ -79,57 +74,67 @@ const AssetDetail = () => {
       ? Math.round((assignedCount / TOTAL_QUANTITY) * 100)
       : 0;
 
-  /* ---------------- SAVE ASSIGNMENT ---------------- */
+  /* ---------------- SAVE (CREATE / UPDATE) ---------------- */
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const f = e.target;
 
     const payload = {
-      id: editingItem ? editingItem.id : Date.now(),
-      resource_name: f.resource_name.value,
-      project_name: f.project_name.value,
-      assigned_date: f.assigned_date.value,
-      expected_return_date: f.expected_return_date.value,
-      actual_return_date: f.actual_return_date?.value || "",
-      usage_status: f.usage_status.value,
-      asset_location_type: f.asset_location_type.value,
-      asset_location_details: f.asset_location_details.value,
-      assigned_by: f.assigned_by.value,
-      remarks: f.remarks.value,
+      client: { clientId: id },
+      assetName: f.resource_name.value,
+      description: f.remarks.value,
+      assetCategory: "DEVICE",
+      assetType: "Laptop",
+      quantity: 1,
     };
 
-    setAssignments((prev) =>
-      editingItem
-        ? prev.map((a) => (a.id === editingItem.id ? payload : a))
-        : [...prev, payload]
-    );
+    try {
+      if (editingItem) {
+        await updateClientAsset(editingItem.id, payload);
+      } else {
+        await createClientAsset(payload);
+      }
 
-    setShowModal(false);
-    setEditingItem(null);
+      await fetchAssets();
+      setShowModal(false);
+      setEditingItem(null);
+    } catch (err) {
+      console.error("Save failed", err);
+    }
   };
 
-  /* ---------------- RETURN ---------------- */
+  /* ---------------- RETURN ASSET ---------------- */
 
-  const handleReturn = (item) => {
-    setEditingItem({
-      ...item,
-      usage_status: "Returned",
-      actual_return_date: today,
-    });
-    setShowModal(true);
+  const handleReturn = async (item) => {
+    try {
+      await updateClientAsset(item.id, {
+        ...item,
+        usage_status: "Returned",
+        actual_return_date: today,
+      });
+      await fetchAssets();
+    } catch (err) {
+      console.error("Return failed", err);
+    }
   };
 
-  /* ---------------- DELETE ---------------- */
+  /* ---------------- DELETE ASSET ---------------- */
 
-  const confirmDelete = () => {
-    setAssignments((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-    setDeleteTarget(null);
+  const confirmDelete = async () => {
+    try {
+      await deleteClientAsset(deleteTarget.id);
+      await fetchAssets();
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
   };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <div className="flex gap-3 items-center">
@@ -137,18 +142,12 @@ const AssetDetail = () => {
             <ArrowLeft />
           </button>
           <div>
-            <h1 className="text-xl font-bold">MacBook Pro 16-inch</h1>
-            <p className="text-sm text-gray-500">Category: DEVICE</p>
+            <h1 className="text-xl font-bold">Client Assets</h1>
+            <p className="text-sm text-gray-500">Client ID: {id}</p>
           </div>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => {
-            setEditingItem(null);
-            setShowModal(true);
-          }}
-        >
+        <Button variant="primary" onClick={() => setShowModal(true)}>
           Assign Asset
         </Button>
       </div>
@@ -166,18 +165,14 @@ const AssetDetail = () => {
         />
       </div>
 
-      {/* ASSIGNMENTS TABLE */}
+      {/* TABLE */}
       <div className="bg-white border rounded-xl shadow-sm p-6">
         <h2 className="text-lg font-semibold mb-4">Active Assignments</h2>
 
         <table className="w-full text-sm">
           <thead className="text-xs uppercase text-gray-500 border-b">
             <tr>
-              <th className="text-left py-3">Resource</th>
-              <th>Project</th>
-              <th>Assigned</th>
-              <th>Expected Return</th>
-              <th>Location</th>
+              <th className="text-left py-3">Asset</th>
               <th>Status</th>
               <th className="text-right">Actions</th>
             </tr>
@@ -185,41 +180,24 @@ const AssetDetail = () => {
 
           <tbody className="divide-y">
             {assignments.map((a) => (
-              <tr key={a.id} className="hover:bg-gray-50">
-                <td className="py-4 font-medium">{a.resource_name}</td>
-                <td>{a.project_name}</td>
-                <td>{a.assigned_date}</td>
-                <td>{a.expected_return_date}</td>
-                <td>{a.asset_location_details}</td>
+              <tr key={a.id}>
+                <td className="py-4 font-medium">{a.assetName}</td>
                 <td>
                   <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[a.usage_status]}`}>
                     {a.usage_status}
                   </span>
                 </td>
-                <td className="text-right">
-                  <div className="flex justify-end gap-4">
-                    <Pencil
-                      size={16}
-                      className="cursor-pointer text-indigo-600"
-                      title="Edit"
-                      onClick={() => {
-                        setEditingItem(a);
-                        setShowModal(true);
-                      }}
-                    />
-                    <RotateCcw
-                      size={16}
-                      className="cursor-pointer text-green-600"
-                      title="Return Asset"
-                      onClick={() => handleReturn(a)}
-                    />
-                    <Trash2
-                      size={16}
-                      className="cursor-pointer text-red-600"
-                      title="Delete"
-                      onClick={() => setDeleteTarget(a)}
-                    />
-                  </div>
+                <td className="text-right flex justify-end gap-4">
+                  <RotateCcw
+                    size={16}
+                    className="cursor-pointer text-green-600"
+                    onClick={() => handleReturn(a)}
+                  />
+                  <Trash2
+                    size={16}
+                    className="cursor-pointer text-red-600"
+                    onClick={() => setDeleteTarget(a)}
+                  />
                 </td>
               </tr>
             ))}
@@ -227,58 +205,19 @@ const AssetDetail = () => {
         </table>
       </div>
 
-      {/* MODALS */}
-      {showModal && (
-        <Modal
-          title={editingItem ? "Update Assignment" : "Assign Asset"}
-          onClose={() => {
-            setShowModal(false);
-            setEditingItem(null);
-          }}
-        >
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input name="resource_name" label="Resource Name" defaultValue={editingItem?.resource_name} required />
-              <Input name="project_name" label="Project Name" defaultValue={editingItem?.project_name} required />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input type="date" name="assigned_date" label="Assigned Date" defaultValue={editingItem?.assigned_date} required />
-              <Input type="date" name="expected_return_date" label="Expected Return Date" defaultValue={editingItem?.expected_return_date} required />
-            </div>
-
-            {editingItem?.usage_status === "Returned" && (
-              <Input type="date" name="actual_return_date" label="Actual Return Date" defaultValue={today} required />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select name="usage_status" label="Usage Status" options={["Assigned", "In Use", "Returned", "Lost"]} defaultValue={editingItem?.usage_status} />
-              <Input name="assigned_by" label="Assigned By" defaultValue={editingItem?.assigned_by} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select name="asset_location_type" label="Location Type" options={["Client Site", "Employee Home", "Office", "Data Center"]} defaultValue={editingItem?.asset_location_type} />
-              <Input name="asset_location_details" label="Location Details" defaultValue={editingItem?.asset_location_details} />
-            </div>
-
-            <Textarea name="remarks" label="Remarks" defaultValue={editingItem?.remarks} />
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button variant="primary" type="submit">Save</Button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
+      {/* DELETE MODAL */}
       {deleteTarget && (
         <Modal title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
           <div className="space-y-4 text-center">
             <AlertTriangle className="mx-auto text-red-500" size={36} />
-            <p>Delete assignment for <strong>{deleteTarget.resource_name}</strong>?</p>
+            <p>Delete this asset?</p>
             <div className="flex justify-center gap-4 pt-4">
-              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-              <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={confirmDelete}>
+                Delete
+              </Button>
             </div>
           </div>
         </Modal>
@@ -298,16 +237,14 @@ const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
       : "text-red-600";
 
   return (
-    <div className="bg-white p-4 rounded-xl border shadow-sm flex justify-between items-center">
+    <div className="bg-white p-4 rounded-xl border shadow-sm flex justify-between">
       <div>
         <p className="text-xs text-gray-500 uppercase">{title}</p>
-        <p className={`text-xl font-bold ${utilization !== undefined ? utilColor : highlight ? "text-green-600" : ""}`}>
+        <p className={`text-xl font-bold ${highlight || utilization ? utilColor : ""}`}>
           {value}
         </p>
       </div>
-      <div className="bg-indigo-50 p-2 rounded-lg">
-        <Icon className="text-indigo-600" size={22} />
-      </div>
+      <Icon className="text-indigo-600" />
     </div>
   );
 };
@@ -321,31 +258,6 @@ const Modal = ({ title, children, onClose }) => (
       </div>
       <div className="p-6">{children}</div>
     </div>
-  </div>
-);
-
-const Input = ({ label, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}</label>
-    <input {...props} className="w-full border rounded-lg px-3 py-2 text-sm" />
-  </div>
-);
-
-const Textarea = ({ label, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}</label>
-    <textarea {...props} className="w-full border rounded-lg px-3 py-2 text-sm" />
-  </div>
-);
-
-const Select = ({ label, options, defaultValue, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}</label>
-    <select {...props} defaultValue={defaultValue} className="w-full border rounded-lg px-3 py-2 text-sm">
-      {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
-      ))}
-    </select>
   </div>
 );
 
