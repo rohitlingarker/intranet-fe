@@ -678,7 +678,7 @@ const AppRoutes = () => {
             }
           />
           <Route 
-            path="/manage-assets/:clientId/:assetId"
+            path="/assets/:clientId/:assetId"
             element={
               <ProtectedRoute
                 allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
