@@ -196,7 +196,7 @@ const AssetList = () => {
                   key={asset.assetId}
                   className="hover:bg-indigo-50 cursor-pointer"
                   onClick={() =>
-                    navigate(`/clients/${clientId}/assets/${asset.assetId}`)
+                    navigate(`/assets/${clientId}/assets${asset.assetId}`)
                   }
                 >
                   <td className="py-4 font-medium">{asset.assetName}</td>
