@@ -497,7 +497,7 @@ const ClientPage = () => {
           {canManageAssets && (
             <Button
               variant="secondary"
-              onClick={() => navigate("/assets")}
+              onClick={() => navigate(`/manage-assets/${clientId}`)}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
             >
               <Package size={16} />
