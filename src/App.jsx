@@ -80,8 +80,8 @@ import CountryEducationMapping from "./pages/employee-onboarding/hr-configuratio
 import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
-import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
-import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import HrOnboardingDashboard from "./pages/employee-onboarding/hr_temp/HrOnboardingDashboard.jsx";
+import HrProfileView from "./pages/employee-onboarding/hr_temp/HrProfileView.jsx";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
