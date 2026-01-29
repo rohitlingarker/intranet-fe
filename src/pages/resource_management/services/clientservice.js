@@ -25,6 +25,7 @@ export const getAdminKPI = async () => {
     }
 };
 
+
 export const createClient = async (clientData) => {
     try {
         const response = await axios.post(`${RMS_BASE_URL}/api/client/create`, clientData, getAuthHeader());
