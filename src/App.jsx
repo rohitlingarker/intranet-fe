@@ -661,7 +661,7 @@ const AppRoutes = () => {
             path="/resource-management"
             element={
               <ProtectedRoute
-                allowedRoles={["Admin", "PROJECT-MANAGER"]} 
+                allowedRoles={["Admin", "PROJECT-MANAGER", "RESOURCE-MANAGER"]} 
               >
                 <AdminPannel />
               </ProtectedRoute>
@@ -678,7 +678,7 @@ const AppRoutes = () => {
             }
           />
           <Route 
-            path="/assets/:id"
+            path="/manage-assets/:clientId/:assetId"
             element={
               <ProtectedRoute
                 allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
@@ -688,7 +688,7 @@ const AppRoutes = () => {
             }
           />
           <Route 
-            path="/assets"
+            path="/manage-assets/:clientId"
             element={
               <ProtectedRoute
                 allowedRoles={["General", "HR", "Manager", "Hr-Manager"]}
