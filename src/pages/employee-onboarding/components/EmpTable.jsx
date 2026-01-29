@@ -210,8 +210,8 @@ const cancelBulkJoin = () => {
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
 
-      const isStatusSubmitted =
-        String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
+      const isStatusVerified =
+        String(offer.status || "").trim().toUpperCase() === "VERIFIED";
 
       const isSubmitted =
         String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
@@ -219,7 +219,7 @@ const cancelBulkJoin = () => {
        // ✅ Enable checkbox based on active bulk mode
     const isCheckboxEnabled =
       (bulkMode && isStatusCreated) ||
-      (bulkJoinMode && isStatusSubmitted);
+      (bulkJoinMode && isStatusVerified);
 
       // console.log("isCheckboxEnabled:", isCheckboxEnabled);
 
@@ -278,7 +278,7 @@ const cancelBulkJoin = () => {
               varient="primary"
               size="small"
               onClick={() => setBulkJoinMode(true)}
-              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "SUBMITTED")}
+              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "VERIFIED")}
             >
               Bulk Join
             </Button>
@@ -306,7 +306,7 @@ const cancelBulkJoin = () => {
               onClick={() => setBulkMode(true)}
               disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
             >
-              Bulk Send
+              Bulk Offer
             </Button>
           ) : (
             <div className="flex gap-3">
