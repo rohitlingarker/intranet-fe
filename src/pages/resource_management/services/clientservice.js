@@ -25,25 +25,6 @@ export const getAdminKPI = async () => {
     }
 };
 
-
-// export const createClientKPI = async (clientData) => {
-//     try {
-//         const response = await axios.post(`${RMS_BASE_URL}/api/client/create`,
-//             clientData,
-//             {
-//                 headers: {
-//                     Authorization: `Bearer ${localStorage.getItem('token')}`,
-//                 },
-//             }
-//         );
-//         return response.data;
-//     } catch (error) {
-//         console.error("KPI Fetch Error:", error);
-//         throw error;
-//     }
-// };
-
-
 export const createClient = async (clientData) => {
     try {
         const response = await axios.post(`${RMS_BASE_URL}/api/client/create`, clientData, getAuthHeader());
