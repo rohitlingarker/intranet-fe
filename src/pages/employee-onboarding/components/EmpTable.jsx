@@ -275,6 +275,10 @@ const cancelBulkJoin = () => {
 
           {!bulkJoinMode ? (
             <Button
+              className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      "
               varient="primary"
               size="small"
               onClick={() => setBulkJoinMode(true)}
@@ -285,6 +289,10 @@ const cancelBulkJoin = () => {
           ) : (
             <div className="flex gap-3">
               <Button
+                className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      "
                 varient="primary"
                 size="small"
                 disabled={selectedIds.length === 0 || sending}
@@ -293,7 +301,10 @@ const cancelBulkJoin = () => {
                 {sending ? "Sending..." : `Send (${selectedIds.length})`}
               </Button>
 
-              <Button varient="secondary" size="small" onClick={cancelBulkJoin}>
+              <Button className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      " varient="secondary" size="small" onClick={cancelBulkJoin}>
                 Cancel
               </Button>
             </div>
@@ -301,6 +312,10 @@ const cancelBulkJoin = () => {
 
           {!bulkMode ? (
             <Button
+              className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      "
               varient="primary"
               size="small"
               onClick={() => setBulkMode(true)}
@@ -311,6 +326,10 @@ const cancelBulkJoin = () => {
           ) : (
             <div className="flex gap-3">
               <Button
+                className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      "
                 varient="primary"
                 size="small"
                 disabled={selectedIds.length === 0 || sending}
@@ -319,7 +338,10 @@ const cancelBulkJoin = () => {
                 {sending ? "Sending..." : `Send (${selectedIds.length})`}
               </Button>
 
-              <Button varient="secondary" size="small" onClick={cancelBulk}>
+              <Button className="active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+      " varient="secondary" size="small" onClick={cancelBulk}>
                 Cancel
               </Button>
             </div>

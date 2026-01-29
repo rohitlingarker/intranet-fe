@@ -107,14 +107,20 @@ export default function AddEditIdentityModal({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 rounded-lg"
+            className="px-4 py-2 bg-gray-200 rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !name}
-            className={`px-4 py-2 rounded-lg text-white ${
+            className={`px-4 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2${
               saving || !name
                 ? "bg-gray-400"
                 : "bg-blue-700 hover:bg-blue-800"

@@ -213,13 +213,15 @@ export default function HrProfileView() {
         <div className="pt-8 border-t flex justify-center gap-4">
           <button
             onClick={handleVerify}
-            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium shadow-md hover:bg-green-700"
+            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium shadow-md hover:bg-green-700 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]"
           >
             Verify
           </button>
           <button
             onClick={handleReject}
-            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium shadow-md hover:bg-red-700"
+            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium shadow-md hover:bg-red-700 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]"
           >
             Reject
           </button>

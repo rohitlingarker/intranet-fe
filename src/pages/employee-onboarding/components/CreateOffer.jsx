@@ -221,14 +221,20 @@ export default function CreateOffer() {
           <button
             type="button"
             onClick={handleCancelClick}
-            className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
+            className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             Cancel
           </button>
 
           <button
             type="submit"
-            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow"
+            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             Create Offer
           </button>
@@ -250,14 +256,20 @@ export default function CreateOffer() {
               <button
                 type="button"
                 onClick={cancelConfirmation}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
               >
                 No
               </button>
               <button
                 type="button"
                 onClick={confirmCancel}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
               >
                 Yes, Clear
               </button>

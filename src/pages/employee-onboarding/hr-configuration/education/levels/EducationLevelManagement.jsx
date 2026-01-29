@@ -269,14 +269,20 @@ function LevelModal({ editData, onClose, onSuccess }) {
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 bg-gray-200 rounded-lg"
+            className="px-4 py-2 bg-gray-200 rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             Cancel
           </button>
           <button
             onClick={save}
             disabled={saving}
-            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+            className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             {saving ? "Saving..." : "Save"}
           </button>

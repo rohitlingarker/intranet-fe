@@ -421,11 +421,14 @@ const canModifyOfferApprovalRequest = isPending;
             </select>
 
             <div className="flex justify-end gap-3">
-              <button onClick={() => setOpenApprovalModal(false)}>Cancel</button>
+              <button  onClick={() => setOpenApprovalModal(false)}>Cancel</button>
               <button
                 onClick={handleApprovalSubmit}
                 disabled={sendingApproval}
-                className="bg-indigo-700 text-white px-4 py-2 rounded"
+                className="bg-indigo-700 text-white px-4 py-2 rounded transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
               >
                 Send
               </button>
