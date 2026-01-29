@@ -23,7 +23,8 @@ import {
 
 /* ---------------- MAIN COMPONENT ---------------- */
 
-const AssetList = () => { // ✅ clientId from route
+const AssetList = () => {
+  // ✅ clientId from route
   const navigate = useNavigate();
   const { clientId } = useParams(); // ✅ clientId from route
 
@@ -67,7 +68,7 @@ const AssetList = () => { // ✅ clientId from route
     (a) =>
       a.assetName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.assetCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.assetType?.toLowerCase().includes(searchTerm.toLowerCase())
+      a.assetType?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   /* ---------------- ADD / EDIT ---------------- */
@@ -81,6 +82,8 @@ const AssetList = () => { // ✅ clientId from route
       assetName: form.asset_name.value,
       assetCategory: form.asset_category.value,
       assetType: form.asset_type.value,
+      description: form.description.value,
+      serialNumber: form.serial_number.value,
       quantity: Number(form.quantity.value),
     };
 
@@ -118,7 +121,6 @@ const AssetList = () => { // ✅ clientId from route
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -132,9 +134,7 @@ const AssetList = () => { // ✅ clientId from route
             <h1 className="text-2xl font-bold text-gray-900">
               Asset Management
             </h1>
-            <p className="text-sm text-gray-500">
-              Client Assets
-            </p>
+            <p className="text-sm text-gray-500">Client Assets</p>
           </div>
         </div>
 
@@ -180,6 +180,7 @@ const AssetList = () => { // ✅ clientId from route
           <thead className="text-xs uppercase text-gray-500">
             <tr>
               <th className="text-left py-3">Asset Name</th>
+              <th className="text-center">Serial Number</th>
               <th>Category</th>
               <th>Type</th>
               <th className="text-center">Quantity</th>
@@ -194,8 +195,12 @@ const AssetList = () => { // ✅ clientId from route
                 <tr
                   key={asset.assetId}
                   className="hover:bg-indigo-50 cursor-pointer"
+                  onClick={() =>
+                    navigate(`/clients/${clientId}/assets/${asset.assetId}`)
+                  }
                 >
                   <td className="py-4 font-medium">{asset.assetName}</td>
+                  <td className="text-center">{asset.serialNumber}</td>
                   <td>{asset.assetCategory}</td>
                   <td>{asset.assetType}</td>
                   <td className="text-center">{asset.quantity}</td>
@@ -207,15 +212,20 @@ const AssetList = () => { // ✅ clientId from route
                       <Pencil
                         size={16}
                         className="cursor-pointer text-indigo-500"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingAsset(asset);
                           setShowModal(true);
                         }}
                       />
+
                       <Trash2
                         size={16}
                         className="cursor-pointer text-red-500"
-                        onClick={() => setDeleteTarget(asset)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(asset);
+                        }}
                       />
                     </div>
                   </td>
@@ -248,6 +258,19 @@ const AssetList = () => { // ✅ clientId from route
               defaultValue={editingAsset?.assetName}
               required
             />
+            <Input
+              label="Description"
+              name="description"
+              defaultValue={editingAsset?.description}
+              placeholder="Brief asset description"
+            />
+
+            <Input
+              label="Serial Number"
+              name="serial_number"
+              defaultValue={editingAsset?.serialNumber}
+              placeholder="Unique serial number"
+            />
             <Select
               label="Asset Category"
               name="asset_category"
@@ -270,7 +293,11 @@ const AssetList = () => { // ✅ clientId from route
             />
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setShowModal(false)}
+              >
                 Cancel
               </Button>
               <Button variant="primary" type="submit">
@@ -311,16 +338,14 @@ const Kpi = ({ title, value, icon: Icon, highlight }) => {
     highlight >= 80
       ? "text-green-600"
       : highlight >= 50
-      ? "text-yellow-600"
-      : "text-red-600";
+        ? "text-yellow-600"
+        : "text-red-600";
 
   return (
     <div className="bg-white p-4 rounded-xl border shadow-sm flex justify-between">
       <div>
         <p className="text-xs text-gray-500 uppercase">{title}</p>
-        <p className={`text-xl font-bold ${highlight ? color : ""}`}>
-          {value}
-        </p>
+        <p className={`text-xl font-bold ${highlight ? color : ""}`}>{value}</p>
       </div>
       <div className="bg-indigo-50 p-2 rounded-lg">
         <Icon className="text-indigo-600" />
@@ -335,7 +360,9 @@ const StatusBadge = ({ status }) => {
     INACTIVE: "bg-gray-100 text-gray-700",
   };
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${map[status]}`}>
+    <span
+      className={`px-2 py-1 rounded-full text-xs font-medium ${map[status]}`}
+    >
       {status}
     </span>
   );
@@ -346,7 +373,9 @@ const Modal = ({ title, children, onClose }) => (
     <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose}><X /></button>
+        <button onClick={onClose}>
+          <X />
+        </button>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -363,9 +392,15 @@ const Input = ({ label, ...props }) => (
 const Select = ({ label, options, defaultValue, ...props }) => (
   <div>
     <label className="block text-sm font-medium mb-1">{label}</label>
-    <select {...props} defaultValue={defaultValue} className="w-full border rounded-lg px-3 py-2 text-sm">
+    <select
+      {...props}
+      defaultValue={defaultValue}
+      className="w-full border rounded-lg px-3 py-2 text-sm"
+    >
       {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
+        <option key={o} value={o}>
+          {o}
+        </option>
       ))}
     </select>
   </div>

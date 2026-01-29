@@ -19,6 +19,7 @@ import {
   updateClientAsset,
   deleteClientAsset,
 } from "../services/ClientAssetService";
+import { getAssetById } from "../services/ClientAssetService";
 
 /* ---------------- STATUS COLORS ---------------- */
 
@@ -33,7 +34,9 @@ const STATUS_COLORS = {
 
 const AssetDetail = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // clientId
+  // const { id } = useParams(); // clientId
+  const { clientId, assetId } = useParams();
+  const [asset, setAsset] = useState(null);
 
   const [assignments, setAssignments] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -59,20 +62,33 @@ const AssetDetail = () => {
     fetchAssets();
   }, [id]);
 
+  const fetchAsset = async () => {
+    try {
+      const res = await getAssetById(assetId);
+      if (res.success) {
+        setAsset(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch asset", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAsset();
+  }, [assetId]);
+
   /* ---------------- KPI CALCULATIONS ---------------- */
 
   const TOTAL_QUANTITY = assignments.reduce(
     (sum, a) => sum + (a.quantity || 0),
-    0
+    0,
   );
 
   const assignedCount = assignments.length;
   const availableCount = TOTAL_QUANTITY - assignedCount;
 
   const utilization =
-    TOTAL_QUANTITY > 0
-      ? Math.round((assignedCount / TOTAL_QUANTITY) * 100)
-      : 0;
+    TOTAL_QUANTITY > 0 ? Math.round((assignedCount / TOTAL_QUANTITY) * 100) : 0;
 
   /* ---------------- SAVE (CREATE / UPDATE) ---------------- */
 
@@ -81,7 +97,7 @@ const AssetDetail = () => {
     const f = e.target;
 
     const payload = {
-      client: { clientId: id },
+      client: { clientId },
       assetName: f.resource_name.value,
       description: f.remarks.value,
       assetCategory: "DEVICE",
@@ -131,6 +147,14 @@ const AssetDetail = () => {
     }
   };
 
+  const Detail = ({ label, value }) => (
+  <div>
+    <p className="text-xs text-gray-500 uppercase">{label}</p>
+    <p className="font-medium text-gray-900">{value}</p>
+  </div>
+);
+
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -143,7 +167,7 @@ const AssetDetail = () => {
           </button>
           <div>
             <h1 className="text-xl font-bold">Client Assets</h1>
-            <p className="text-sm text-gray-500">Client ID: {id}</p>
+            <p className="text-sm text-gray-500">Client ID: {clientId}</p>
           </div>
         </div>
 
@@ -152,11 +176,35 @@ const AssetDetail = () => {
         </Button>
       </div>
 
+      {/* ASSET DETAILS SECTION */}
+      {asset && (
+        <div className="bg-white border rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4">Asset Details</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <Detail label="Asset Name" value={asset.assetName} />
+            <Detail label="Serial Number" value={asset.serialNumber || "-"} />
+            <Detail label="Category" value={asset.assetCategory} />
+            <Detail label="Type" value={asset.assetType} />
+            <Detail label="Quantity" value={asset.quantity} />
+            <Detail label="Status" value={asset.status} />
+            <Detail label="Description" value={asset.description || "-"} />
+          </div>
+        </div>
+      )}
+
+      
+
       {/* KPI SECTION */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat title="Total Quantity" value={TOTAL_QUANTITY} icon={Box} />
         <Stat title="Currently Assigned" value={assignedCount} icon={Users} />
-        <Stat title="Available" value={availableCount} icon={Laptop} highlight />
+        <Stat
+          title="Available"
+          value={availableCount}
+          icon={Laptop}
+          highlight
+        />
         <Stat
           title="Utilization"
           value={`${utilization}%`}
@@ -183,7 +231,9 @@ const AssetDetail = () => {
               <tr key={a.id}>
                 <td className="py-4 font-medium">{a.assetName}</td>
                 <td>
-                  <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[a.usage_status]}`}>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[a.usage_status]}`}
+                  >
                     {a.usage_status}
                   </span>
                 </td>
@@ -233,14 +283,16 @@ const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
     utilization >= 80
       ? "text-green-600"
       : utilization >= 50
-      ? "text-yellow-600"
-      : "text-red-600";
+        ? "text-yellow-600"
+        : "text-red-600";
 
   return (
     <div className="bg-white p-4 rounded-xl border shadow-sm flex justify-between">
       <div>
         <p className="text-xs text-gray-500 uppercase">{title}</p>
-        <p className={`text-xl font-bold ${highlight || utilization ? utilColor : ""}`}>
+        <p
+          className={`text-xl font-bold ${highlight || utilization ? utilColor : ""}`}
+        >
           {value}
         </p>
       </div>
@@ -254,7 +306,9 @@ const Modal = ({ title, children, onClose }) => (
     <div className="bg-white rounded-xl w-full max-w-xl shadow-lg">
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose}><X /></button>
+        <button onClick={onClose}>
+          <X />
+        </button>
       </div>
       <div className="p-6">{children}</div>
     </div>

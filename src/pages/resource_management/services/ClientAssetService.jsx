@@ -79,3 +79,18 @@ export const getAssetsByClient = async (clientId) => {
     throw error;
   }
 };
+export const getAssetById = async (assetId) => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/clinet-assets/${assetId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
