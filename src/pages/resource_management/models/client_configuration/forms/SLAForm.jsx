@@ -8,22 +8,21 @@ const SLAForm = ({ formData, setFormData }) => {
 
   return (
     <div className="space-y-4 border-t pt-4">
-
       {/* SLA Type */}
       <div>
         <label className="text-sm font-medium text-gray-700">
           SLA Type <span className="text-red-500">*</span>
         </label>
         <select
-          name="sla_type"
-          value={formData.sla_type || ""}
+          name="slaType"
+          value={formData.slaType || ""}
           onChange={handleChange}
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">Select SLA type</option>
-          <option value="New Demand">New Demand</option>
-          <option value="Replacement">Replacement</option>
-          <option value="Emergency">Emergency</option>
+          <option value="NEW_DEMAND">New Demand</option>
+          <option value="REPLACEMENT">Replacement</option>
+          <option value="EMERGENCY">Emergency</option>
         </select>
       </div>
 
@@ -34,8 +33,8 @@ const SLAForm = ({ formData, setFormData }) => {
         </label>
         <input
           type="number"
-          name="sla_duration_days"
-          value={formData.sla_duration_days || ""}
+          name="slaDurationDays"
+          value={formData.slaDurationDays || ""}
           onChange={handleChange}
           placeholder="e.g. 15"
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
@@ -49,8 +48,8 @@ const SLAForm = ({ formData, setFormData }) => {
         </label>
         <input
           type="number"
-          name="warning_threshold_days"
-          value={formData.warning_threshold_days || ""}
+          name="warningThresholdDays"
+          value={formData.warningThresholdDays || ""}
           onChange={handleChange}
           placeholder="e.g. 5"
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
@@ -59,23 +58,21 @@ const SLAForm = ({ formData, setFormData }) => {
 
       {/* Status */}
       <div>
-        <label className="text-sm font-medium text-gray-700">
-          Status
-        </label>
-        <select
-          name="active_flag"
-          value={formData.active_flag ?? true}
+        <input
+          type="checkbox"
+          id="activeFlag"
+          checked={formData.activeFlag ?? true}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
-              active_flag: e.target.value === "true",
+              activeFlag: e.target.checked,
             }))
           }
-          className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+        />
+        <label htmlFor="activeFlag" className="text-sm text-gray-700 ml-2">
+          Active
+        </label>
       </div>
     </div>
   );

@@ -1,34 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
-
-// Forms
 import SLAForm from "./forms/SLAForm";
 import EscalationForm from "./forms/EscalationForm";
 import ComplianceForm from "./forms/ComplianceForm";
 
-const AddConfigurationModal = ({ open, onClose, onSave }) => {
-  const [configType, setConfigType] = useState("");
-  const [formData, setFormData] = useState({});
+const CONFIG_OPTIONS = [
+  {
+    key: "slas",
+    label: "SLA Configuration",
+    enabled: (d) => d?.SLA,
+  },
+  {
+    key: "escalations",
+    label: "Escalation Matrix",
+    enabled: (d) => d?.escalationContact,
+  },
+  {
+    key: "compliances",
+    label: "Compliance Requirements",
+    enabled: (d) => d?.compliance,
+  },
+];
 
-  // reset when modal opens/closes
+const AddConfigurationModal = ({
+  open,
+  onClose,
+  onSave,
+  clientDetails,
+  loading,
+}) => {
+  const DEFAULT_FORM_STATE = {
+    activeFlag: true,
+  };
+
+  const [configType, setConfigType] = useState("");
+  const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
+
+  const allowedConfigs = useMemo(
+    () => CONFIG_OPTIONS.filter((c) => c.enabled(clientDetails)),
+    [clientDetails],
+  );
+
   useEffect(() => {
     if (!open) {
       setConfigType("");
-      setFormData({});
+      setFormData(DEFAULT_FORM_STATE);
+      return;
     }
-  }, [open]);
+
+    // Auto-select if only one option
+    if (allowedConfigs.length === 1) {
+      setConfigType(allowedConfigs[0].key);
+    } else {
+      setConfigType("");
+    }
+
+    setFormData(DEFAULT_FORM_STATE);
+  }, [open, allowedConfigs]);
 
   if (!open) return null;
 
+  // No configurations allowed → don’t show modal
+  if (allowedConfigs.length === 0) return null;
+
   const handleSave = () => {
-    if (!configType) return;
+    if (!configType) return "Select a configuration type";
+
+    const payload = {
+      client: {
+        clientId: clientDetails.clientId,
+      },
+      ...formData,
+    };
 
     onSave({
-      type: configType, // "slas" | "escalations" | "compliances"
-      data: formData,
+      type: configType,
+      data: payload,
     });
-
-    onClose();
   };
 
   const isSaveDisabled = () => {
@@ -37,24 +85,21 @@ const AddConfigurationModal = ({ open, onClose, onSave }) => {
     switch (configType) {
       case "slas":
         return (
-          !formData.sla_type ||
-          !formData.sla_duration_days ||
-          !formData.warning_threshold_days
+          !formData.slaType ||
+          !formData.slaDurationDays ||
+          !formData.warningThresholdDays
         );
 
       case "escalations":
         return (
-          !formData.contact_name ||
-          !formData.contact_role ||
+          !formData.contactName ||
+          !formData.contactRole ||
           !formData.email ||
-          !formData.escalation_level
+          !formData.escalationLevel
         );
 
       case "compliances":
-        return (
-          !formData.requirement_type ||
-          !formData.requirement_name
-        );
+        return !formData.requirementType || !formData.requirementName;
 
       default:
         return true;
@@ -64,7 +109,6 @@ const AddConfigurationModal = ({ open, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
-
         {/* ===== HEADER ===== */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -78,46 +122,41 @@ const AddConfigurationModal = ({ open, onClose, onSave }) => {
           </button>
         </div>
 
-        {/* ===== BODY ===== */}
         <div className="px-6 py-5 space-y-6">
+          {allowedConfigs.length > 1 && (
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Configuration Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={configType}
+                onChange={(e) => {
+                  setConfigType(e.target.value);
+                  setFormData(DEFAULT_FORM_STATE);
+                }}
+                className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Select configuration</option>
+                {allowedConfigs.map((cfg) => (
+                  <option key={cfg.key} value={cfg.key}>
+                    {cfg.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Configuration Type Dropdown */}
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Configuration Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={configType}
-              onChange={(e) => {
-                setConfigType(e.target.value);
-                setFormData({});
-              }}
-              className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">Select configuration</option>
-              <option value="slas">SLA Configuration</option>
-              <option value="escalations">Escalation Matrix</option>
-              <option value="compliances">Compliance Requirements</option>
-            </select>
-          </div>
-
-          {/* ===== DYNAMIC FORM AREA ===== */}
+          {/* ===== FORMS ===== */}
           {configType === "slas" && (
             <SLAForm formData={formData} setFormData={setFormData} />
           )}
 
           {configType === "escalations" && (
-            <EscalationForm
-              formData={formData}
-              setFormData={setFormData}
-            />
+            <EscalationForm formData={formData} setFormData={setFormData} />
           )}
 
           {configType === "compliances" && (
-            <ComplianceForm
-              formData={formData}
-              setFormData={setFormData}
-            />
+            <ComplianceForm formData={formData} setFormData={setFormData} />
           )}
         </div>
 
@@ -131,10 +170,10 @@ const AddConfigurationModal = ({ open, onClose, onSave }) => {
           </button>
           <button
             onClick={handleSave}
-            disabled={isSaveDisabled()}
+            disabled={isSaveDisabled() || loading}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50"
           >
-            Save Configuration
+            {loading ? "Saving..." : "Save Configuration"}
           </button>
         </div>
       </div>
