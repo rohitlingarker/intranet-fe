@@ -19,7 +19,7 @@ import {
   createClientAsset,
   updateClientAsset,
   deleteClientAsset,
-} from "../services/ClientAssetService";
+} from "../services/clientservice";
 
 /* ---------------- MAIN COMPONENT ---------------- */
 

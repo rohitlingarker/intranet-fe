@@ -19,7 +19,7 @@ import {
   updateClientAsset,
   deleteClientAsset,
 } from "../services/ClientAssetService";
-import { getAssetById } from "../services/ClientAssetService";
+import { getAssetById } from "../services/clientservice";
 
 /* ---------------- STATUS COLORS ---------------- */
 
