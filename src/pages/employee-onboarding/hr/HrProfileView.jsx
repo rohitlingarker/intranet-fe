@@ -23,9 +23,9 @@ export default function HrProfileView() {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [verificationStatus, setVerificationStatus] = useState(null);
-  const [confirmationMessage, setConfirmationMessage] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -34,8 +34,6 @@ export default function HrProfileView() {
       });
 
       setProfile(res.data);
-
-      // Only show status if not "Submitted"
       setVerificationStatus(
         res.data.offer?.offer_status !== "Submitted"
           ? res.data.offer?.offer_status
@@ -83,8 +81,7 @@ export default function HrProfileView() {
         params: { file_path: encodeURIComponent(url) },
         headers: { Authorization: `Bearer ${token}` },
       });
-      const cleanUrl = removeQuotes(res.data);
-      newTab.location.href = cleanUrl;
+      newTab.location.href = removeQuotes(res.data);
     } catch (err) {
       console.error("Failed to open document", err);
       newTab.close();
@@ -92,7 +89,12 @@ export default function HrProfileView() {
   }
 
   const updateVerificationStatus = async (status) => {
+    const isVerify = status === "Verified";
+    const setBtnLoading = isVerify ? setVerifying : setRejecting;
+
     try {
+      setBtnLoading(true);
+
       await axios.post(
         `${BASE_URL}/hr/verify-profile`,
         { user_uuid, status },
@@ -100,38 +102,31 @@ export default function HrProfileView() {
       );
 
       showStatusToast(`Profile ${status}`, "success");
-
       setVerificationStatus(status);
-      setConfirmationMessage(`Profile has been ${status.toLowerCase()}.`);
-
-      setTimeout(() => setConfirmationMessage(null), 3000);
     } catch (err) {
       console.error("Verification failed", err);
       showStatusToast("Verification failed", "error");
+    } finally {
+      setBtnLoading(false);
     }
   };
 
-  const handleVerify = () => updateVerificationStatus("Verified");
-  const handleReject = () => updateVerificationStatus("Rejected");
-
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 relative">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 relative">
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-blue-900 font-semibold hover:underline"
+        className="flex items-center gap-2 text-blue-700 font-semibold hover:underline"
       >
         <ArrowLeft size={18} /> Back
       </button>
 
       {/* Status Badge */}
-      {(verificationStatus === "Verified" || verificationStatus === "Rejected") && (
+      {verificationStatus && (
         <div className="absolute top-6 right-6">
           <span
-            className={`px-6 py-2 text-lg font-bold rounded-full shadow-lg ${
-              verificationStatus === "Verified"
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
+            className={`inline-flex items-center px-6 py-2 rounded-full font-bold text-white shadow-md ${
+              verificationStatus === "Verified" ? "bg-green-600" : "bg-red-600"
             }`}
           >
             {verificationStatus}
@@ -139,14 +134,7 @@ export default function HrProfileView() {
         </div>
       )}
 
-      {/* Confirmation */}
-      {confirmationMessage && (
-        <div className="absolute top-20 right-6 bg-blue-500 text-white px-4 py-2 rounded shadow-lg">
-          {confirmationMessage}
-        </div>
-      )}
-
-      {/* PERSONAL */}
+      {/* PERSONAL INFORMATION */}
       <Section title="Personal Information" icon={<User />}>
         <FieldCard label="Name" value={`${offer.first_name} ${offer.last_name}`} />
         <FieldCard label="Email" value={offer.email} />
@@ -194,7 +182,7 @@ export default function HrProfileView() {
           : <Info label="Experience" value="No work experience provided" />}
       </Section>
 
-      {/* IDENTITY */}
+      {/* IDENTITY DOCUMENTS */}
       <Section title="Identity Documents" icon={<File />}>
         {identity_documents?.length
           ? identity_documents.map((doc) => (
@@ -209,21 +197,22 @@ export default function HrProfileView() {
       </Section>
 
       {/* ACTION BUTTONS */}
-      {(!verificationStatus && offer.offer_status === "Submitted") && (
-        <div className="pt-8 border-t flex justify-center gap-4">
+      {!verificationStatus && offer.offer_status === "Submitted" && (
+        <div className="flex justify-center gap-4 mt-6">
           <button
-            onClick={handleVerify}
-            className="px-6 py-2 rounded-lg bg-green-600 text-white font-medium shadow-md hover:bg-green-700 transition-all duration-100 ease-in-out
-        active:translate-y-[1px]"
+            onClick={() => updateVerificationStatus("Verified")}
+            disabled={verifying || rejecting}
+            className="px-6 py-2 rounded-full bg-green-600 text-white font-semibold shadow-md hover:bg-green-700 disabled:opacity-60 transition-colors"
           >
-            Verify
+            {verifying ? "Verifying..." : "Verify"}
           </button>
+
           <button
-            onClick={handleReject}
-            className="px-6 py-2 rounded-lg bg-red-600 text-white font-medium shadow-md hover:bg-red-700 transition-all duration-100 ease-in-out
-        active:translate-y-[1px]"
+            onClick={() => updateVerificationStatus("Rejected")}
+            disabled={verifying || rejecting}
+            className="px-6 py-2 rounded-full bg-red-600 text-white font-semibold shadow-md hover:bg-red-700 disabled:opacity-60 transition-colors"
           >
-            Reject
+            {rejecting ? "Rejecting..." : "Reject"}
           </button>
         </div>
       )}
@@ -231,24 +220,25 @@ export default function HrProfileView() {
   );
 }
 
-/* ---------- UI helpers (unchanged) ---------- */
+/* ----------------- UI Components ----------------- */
 
 function Section({ title, icon, children }) {
   return (
-    <div className="bg-gray-50 rounded-xl shadow-sm p-6">
-      <h2 className="flex items-center gap-2 text-lg font-semibold mb-5 text-indigo-700">
-        {icon} {title}
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
+    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+      <div className="flex items-center gap-3 border-b pb-2 mb-4">
+        <span className="text-indigo-600">{icon}</span>
+        <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">{children}</div>
     </div>
   );
 }
 
 function FieldCard({ label, value }) {
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="font-medium text-gray-900">{value || "—"}</p>
+    <div className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="mt-1 text-gray-900 font-semibold">{value || "—"}</p>
     </div>
   );
 }
@@ -264,30 +254,26 @@ function Info({ label, value }) {
 
 function AddressCard({ address }) {
   return (
-    <div className="border rounded-lg p-4 bg-white space-y-1">
-      <p className="text-sm font-semibold text-indigo-700">
-        {address.address_type} Address
-      </p>
+    <div className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+      <p className="text-sm font-semibold text-indigo-700">{address.address_type} Address</p>
       <p>{address.address_line1}</p>
-      <p>
-        {address.city}, {address.state_or_region}
-      </p>
-      <p>
-        {address.postal_code}, {address.country}
-      </p>
+      <p>{address.city}, {address.state_or_region}</p>
+      <p>{address.postal_code}, {address.country}</p>
     </div>
   );
 }
 
 function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
   return (
-    <div className="border rounded-lg p-4 bg-white min-h-[100px]">
-      {title && <h4 className="font-semibold">{title}</h4>}
-      {subtitle && <p>{subtitle}</p>}
-      {documentName && <p>{documentName}</p>}
+    <div className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between min-h-[100px]">
+      <div>
+        {title && <h4 className="font-semibold text-gray-800">{title}</h4>}
+        {subtitle && <p className="text-gray-600">{subtitle}</p>}
+        {documentName && <p className="text-gray-700 mt-1">{documentName}</p>}
+      </div>
       {filePath && (
         <button
-          className="mt-3 text-blue-600 font-medium"
+          className="mt-3 text-indigo-600 font-medium self-start hover:underline"
           onClick={() => onView(filePath)}
         >
           View Document
@@ -299,9 +285,9 @@ function DocumentCard({ title, subtitle, documentName, filePath, onView }) {
 
 function ExperienceCard({ exp }) {
   return (
-    <div className="border rounded-lg p-4 bg-white">
-      <h3 className="font-semibold">{exp.company_name}</h3>
-      <p>{exp.role_title}</p>
+    <div className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <h3 className="font-semibold text-gray-800">{exp.company_name}</h3>
+      <p className="text-gray-700">{exp.role_title}</p>
     </div>
   );
 }

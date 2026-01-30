@@ -95,7 +95,7 @@ export default function AddCountryIdentityMappingModal({
             className={`px-4 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
         active:translate-y-[1px]
         disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2${
+        flex items-center justify-center gap-2 ${
               saving || !identityUuid
                 ? "bg-gray-400"
                 : "bg-blue-700 hover:bg-blue-800"
