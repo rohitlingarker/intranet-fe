@@ -148,11 +148,11 @@ export default function AdminApprovalDashboard() {
           <thead className="bg-indigo-900 text-white">
             <tr>
               <th className="px-4 py-3 text-left">Candidate Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Role</th>
-              <th className="px-4 py-3 text-left">Approval Status</th>
+              <th className="px-4 py-3 text-center">Email</th>
+              <th className="px-4 py-3 text-center">Role</th>
+              <th className="px-4 py-3 text-center">Approval Status</th>
               <th className="px-4 py-3">requested by</th>
-              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-center">Action</th>
               
             </tr>
           </thead>
