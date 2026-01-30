@@ -101,6 +101,35 @@ export const createClientSLA = async (slaData) => {
     }
 };
 
+export const updateClientSLA = async (slaData) => {
+    try {
+        const response = await axios.put(`${RMS_BASE_URL}/api/client-sla/update`,
+            slaData,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteClientSLA = async (slaId) => {
+    try {
+        const response = await axios.delete(`${RMS_BASE_URL}/api/client-sla/delete/${slaId}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const getClientSLA = async (clientId) => {
     try {
         const response = await axios.get(`${RMS_BASE_URL}/api/client-sla/clientSLA/${clientId}`, {
@@ -260,4 +289,32 @@ export const getAssetById = async (assetId) => {
   } catch (error) {
     throw error;
   }
+};
+
+export const updateClient = async (clientData) => {
+    try {
+        const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData, 
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteClient = async (clientId) => {
+    try {
+        const response = await axios.delete(`${RMS_BASE_URL}/api/client/delete-client/${clientId}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
 };
