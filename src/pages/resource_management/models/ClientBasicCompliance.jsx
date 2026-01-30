@@ -5,12 +5,11 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
 
 const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
-
   const [complianceList, setComplianceList] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [loading, setLoading] = useState(false);
-  
-    const ITEMS_PER_PAGE = 1;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const ITEMS_PER_PAGE = 1;
   const fetchCompliance = async () => {
     setLoading(true);
     try {
@@ -30,7 +29,7 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchCompliance();
   }, [clientId, complianceRefetchKey]);
@@ -60,7 +59,6 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
   const currentCompliance = complianceList[currentPage - 1];
 
   return (
-
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">
         Basic Compliance Information
@@ -68,12 +66,16 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
       <div className="border rounded-xl p-5 bg-white shadow-sm space-y-3">
         <div className="flex justify-between">
           <span className="text-sm text-gray-500">Requirement Type</span>
-          <span className="font-medium">{currentCompliance.requirementType}</span>
+          <span className="font-medium">
+            {currentCompliance.requirementType}
+          </span>
         </div>
 
         <div className="flex justify-between">
           <span className="text-sm text-gray-500">Requirement Name</span>
-          <span className="font-medium">{currentCompliance.requirementName}</span>
+          <span className="font-medium">
+            {currentCompliance.requirementName}
+          </span>
         </div>
 
         <div className="flex justify-between items-center">
@@ -107,12 +109,8 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrevious={() =>
-            setCurrentPage((p) => Math.max(p - 1, 1))
-          }
-          onNext={() =>
-            setCurrentPage((p) => Math.min(p + 1, totalPages))
-          }
+          onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         />
       )}
     </div>

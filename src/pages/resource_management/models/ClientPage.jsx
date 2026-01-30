@@ -326,6 +326,7 @@ const ClientPage = () => {
     try {
       const data = await getClientById(clientId);
       setClientDetails(data.data);
+      console.log("Fetched Client Details:", data.data);
     } catch (error) {
       toast.error("Failed to fetch client details.");
     } finally {
@@ -424,15 +425,15 @@ const ClientPage = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              {MOCK_CLIENT_DATA.name}
+              {clientDetails.client_name}
             </h1>
             <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
               <span className="flex items-center gap-1">
-                <Globe size={14} /> {MOCK_CLIENT_DATA.region}
+                <Globe size={14} /> {clientDetails.country_name}
               </span>
               <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
               <span className="flex items-center gap-1">
-                <Briefcase size={14} /> {MOCK_CLIENT_DATA.industry}
+                <Briefcase size={14} /> {clientDetails.client_type}
               </span>
             </div>
           </div>
