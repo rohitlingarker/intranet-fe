@@ -25,6 +25,31 @@ export const getAdminKPI = async () => {
     }
 };
 
+export const searchClients = async (filters, page = 0, size = 10) => {
+    try {
+        const response = await axios.get(`${RMS_BASE_URL}/api/client/search`, {
+            ...getAuthHeader(),
+            params: {
+                // Mapping Frontend Filter state -> Backend ClientFilterDTO
+                clientName: filters.search,
+                countryName: filters.region,
+                clientType: filters.type,
+                priorityLevel: filters.priority,
+                status: filters.status,
+                createdFrom: filters.startDate,
+                createdTo: filters.endDate,
+                // Pagination
+                page: page,
+                size: size
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+ 
+
 export const createClient = async (clientData) => {
     try {
         const response = await axios.post(`${RMS_BASE_URL}/api/client/create`, clientData, getAuthHeader());
