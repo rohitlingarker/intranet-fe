@@ -149,10 +149,7 @@ export default function CountryManagement() {
                     <td className="px-6 py-3">
                       <button
                         onClick={() => handleToggleStatus(country)}
-                        className={`px-3 py-1 rounded text-white text-sm transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2${
+                        className={`px-3 py-1 rounded text-white text-sm ${
                           country.is_active
                             ? "bg-red-600 hover:bg-red-700"
                             : "bg-green-600 hover:bg-green-700"
