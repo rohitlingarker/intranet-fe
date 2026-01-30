@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const ComplianceForm = ({ formData, setFormData }) => {
+  useEffect(() => {
+    setFormData((prev) => ({
+      mandatoryFlag: prev.mandatoryFlag ?? true,
+      activeFlag: prev.activeFlag ?? true,
+      ...prev,
+    }));
+  }, []);
+
   const handleChange = (e) => {
-    const { name, value } = e.target; // ✅ FIX
+    const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -39,44 +47,35 @@ const ComplianceForm = ({ formData, setFormData }) => {
         />
       </div>
 
-      {/* Compliance Flag's */}
+      {/* Flags */}
       <div className="flex items-center gap-2">
-        <label
-          htmlFor="mandatoryFlag"
-          className="text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="mandatoryFlag" className="text-sm font-medium">
           Mandatory
         </label>
         <input
           type="checkbox"
           id="mandatoryFlag"
-          checked={formData.mandatoryFlag ?? true}
+          checked={formData.mandatoryFlag}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
               mandatoryFlag: e.target.checked,
             }))
           }
-          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
         />
-
-        <label
-          htmlFor="activeFlag"
-          className="text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="activeFlag" className="text-sm font-medium ml-4">
           Active
         </label>
         <input
           type="checkbox"
           id="activeFlag"
-          checked={formData.activeFlag ?? true}
+          checked={formData.activeFlag}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
               activeFlag: e.target.checked,
             }))
           }
-          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
         />
       </div>
     </div>
