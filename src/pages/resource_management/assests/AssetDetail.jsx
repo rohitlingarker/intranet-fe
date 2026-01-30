@@ -18,7 +18,7 @@ import {
   createClientAsset,
   updateClientAsset,
   deleteClientAsset,
-} from "../services/ClientAssetService";
+} from "../services/clientservice";
 import { getAssetById } from "../services/clientservice";
 
 /* ---------------- STATUS COLORS ---------------- */
