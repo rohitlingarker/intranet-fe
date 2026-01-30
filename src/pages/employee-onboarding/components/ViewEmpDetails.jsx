@@ -280,7 +280,10 @@ const canModifyOfferApprovalRequest = isPending;
               setEditData(employee);
               setIsEditing(true)}}
             disabled={employee.status === "SENT"}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
           >
             <Pencil size={16} />
             Edit Offer
@@ -316,7 +319,10 @@ const canModifyOfferApprovalRequest = isPending;
               {/* ❌ Cancel */}
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 rounded bg-gray-200"
+                className="px-4 py-2 rounded bg-gray-200 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
               >
                 Cancel
               </button>
@@ -325,7 +331,10 @@ const canModifyOfferApprovalRequest = isPending;
                     <button
                       onClick={handleUpdateOffer}
                       disabled={updating}
-                      className="px-4 py-2 rounded bg-green-700 text-white"
+                      className="px-4 py-2 rounded bg-green-700 text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
                     >
                       {updating ? "Saving..." : "Save Changes"}
                     </button>
@@ -343,7 +352,10 @@ const canModifyOfferApprovalRequest = isPending;
                       setOpenMenu(false);
                       setOpenApprovalModal(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2"
                   >
                     Edit Approval Request
                   </button>
@@ -377,7 +389,10 @@ const canModifyOfferApprovalRequest = isPending;
           <button
             onClick={handleSendOffer}
             disabled={(approvalStatus !== "APPROVED") || loadingSendOffer}
-            className={`px-6 py-2 rounded-lg text-white ${
+            className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2 ${
               approvalStatus !== "APPROVED"
                 ? "bg-gray-400"
                 : "bg-green-700 hover:bg-green-800"
@@ -389,7 +404,10 @@ const canModifyOfferApprovalRequest = isPending;
           <button
             onClick={() => setOpenApprovalModal(true)}
             disabled={!isNoRequest}
-            className={`px-6 py-2 rounded-lg text-white ${
+            className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2 ${
               !isNoRequest
                 ? "bg-gray-400"
                 : "bg-green-700 hover:bg-green-800"
@@ -421,7 +439,10 @@ const canModifyOfferApprovalRequest = isPending;
             </select>
 
             <div className="flex justify-end gap-3">
-              <button  onClick={() => setOpenApprovalModal(false)}>Cancel</button>
+              <button className="px-2 py-2 rounded bg-gray-200 transition-all duration-100 ease-in-out
+        active:translate-y-[1px]
+        disabled:opacity-60 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2" onClick={() => setOpenApprovalModal(false)}>Cancel</button>
               <button
                 onClick={handleApprovalSubmit}
                 disabled={sendingApproval}
