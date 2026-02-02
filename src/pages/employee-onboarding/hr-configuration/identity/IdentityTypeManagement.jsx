@@ -81,9 +81,9 @@ export default function IdentityTypeManagement() {
             <thead className="bg-blue-900 text-white">
               <tr>
                 <th className="px-6 py-3 text-left">Name</th>
-                <th className="px-6 py-3 text-left">Description</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Actions</th>
+                <th className="px-6 py-3 text-center">Description</th>
+                <th className="px-6 py-3 text-center">Status</th>
+                <th className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
 
