@@ -33,16 +33,14 @@ export default function IdentityTypeManagement() {
 
   /* ---------------- DELETE ---------------- */
   const handleDelete = async (uuid) => {
-    if (!window.confirm("Are you sure you want to delete this identity type?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this identity type?")) return;
 
     try {
       await axios.delete(`${BASE_URL}/identity/${uuid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Identity type deleted");
-      fetchIdentities();
+      setIdentities((prev) => prev.filter((i) => i.identity_type_uuid !== uuid));
     } catch {
       toast.error("Failed to delete identity type");
     }
@@ -56,9 +54,7 @@ export default function IdentityTypeManagement() {
           <h1 className="text-2xl font-semibold text-gray-900">
             Identity Type Management
           </h1>
-          <p className="text-gray-600">
-            Manage identity documents used in onboarding
-          </p>
+          <p className="text-gray-600">Manage identity documents used in onboarding</p>
         </div>
 
         <button
@@ -81,8 +77,8 @@ export default function IdentityTypeManagement() {
             <thead className="bg-blue-900 text-white">
               <tr>
                 <th className="px-6 py-3 text-left">Name</th>
-                <th className="px-6 py-3 text-left">Description</th>
-                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-center">Description</th>
+                <th className="px-6 py-3 text-center">Status</th>
                 <th className="px-6 py-3 text-left">Actions</th>
               </tr>
             </thead>
@@ -96,22 +92,13 @@ export default function IdentityTypeManagement() {
                 </tr>
               ) : (
                 identities.map((item) => (
-                  <tr
-                    key={item.identity_type_uuid}
-                    className="border-b hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-3 font-medium">
-                      {item.identity_type_name}
-                    </td>
-                    <td className="px-6 py-3">
-                      {item.description || "—"}
-                    </td>
+                  <tr key={item.identity_type_uuid} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-3 font-medium">{item.identity_type_name}</td>
+                    <td className="px-6 py-3">{item.description || "—"}</td>
                     <td className="px-6 py-3">
                       <span
                         className={`px-2 py-1 rounded text-sm ${
-                          item.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                          item.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                         }`}
                       >
                         {item.is_active ? "Active" : "Inactive"}
@@ -128,9 +115,7 @@ export default function IdentityTypeManagement() {
                         Edit
                       </button>
                       <button
-                        onClick={() =>
-                          handleDelete(item.identity_type_uuid)
-                        }
+                        onClick={() => handleDelete(item.identity_type_uuid)}
                         className="text-red-700 hover:underline"
                       >
                         Delete
@@ -149,7 +134,19 @@ export default function IdentityTypeManagement() {
         <AddEditIdentityModal
           editData={editData}
           onClose={() => setShowModal(false)}
-          onSuccess={fetchIdentities}
+          onSuccess={(savedItem) => {
+            // ✅ Update state immediately without reload
+            setIdentities((prev) => {
+              const exists = prev.some(
+                (i) => i.identity_type_uuid === savedItem.identity_type_uuid
+              );
+              return exists
+                ? prev.map((i) =>
+                    i.identity_type_uuid === savedItem.identity_type_uuid ? savedItem : i
+                  )
+                : [savedItem, ...prev];
+            });
+          }}
         />
       )}
     </div>

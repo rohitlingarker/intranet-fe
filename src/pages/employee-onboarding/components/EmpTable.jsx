@@ -11,24 +11,26 @@ import { useEffect, useRef } from "react";
 import { Mail } from "lucide-react";
 
 const PAGE_SIZE = 5;
-function ActionMenu({ onView, onVerify,showVerify  }) {
+
+function ActionMenu({ onView, onVerify, showVerify }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <div className="relative inline-block" ref={ref}>
-      {/* 3 Dots Button */}
       <button
         onClick={() => setOpen((p) => !p)}
         className="px-2 py-1 text-xl font-bold text-gray-600 hover:text-gray-900"
@@ -36,7 +38,6 @@ function ActionMenu({ onView, onVerify,showVerify  }) {
         &#8942;
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute right-full mr-2 top-0 w-32 bg-white border rounded-md shadow-lg z-50">
           <button
@@ -48,6 +49,7 @@ function ActionMenu({ onView, onVerify,showVerify  }) {
           >
             View
           </button>
+
           {showVerify && (
             <button
               onClick={() => {
@@ -71,13 +73,18 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkMode, setBulkMode] = useState(false);
+
+  /*
   const [bulkJoinMode, setBulkJoinMode] = useState(false);
+  */
+
   const [selectedIds, setSelectedIds] = useState([]);
   const [sending, setSending] = useState(false);
 
   const totalPages = Math.ceil(offers.length / PAGE_SIZE);
 
   /* -------------------- Bulk Helpers -------------------- */
+
   const toggleSelect = (userUuid) => {
     setSelectedIds((prev) =>
       prev.includes(userUuid)
@@ -91,12 +98,15 @@ export default function OffersTable({ offers = [], loading = false }) {
     setSelectedIds([]);
   };
 
-const cancelBulkJoin = () => {
-  setBulkJoinMode(false);
-  setSelectedIds([]);
-};
+  /*
+  const cancelBulkJoin = () => {
+    setBulkJoinMode(false);
+    setSelectedIds([]);
+  };
+  */
 
   /* -------------------- Bulk Send API -------------------- */
+
   const handleBulkSend = async () => {
     if (selectedIds.length === 0) return;
 
@@ -129,59 +139,58 @@ const cancelBulkJoin = () => {
     }
   };
 
-
-  /* -------------------- Bulk Send API -------------------- */
+  /*
   const handleBulkJoin = () => {
-  if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0) return;
 
-  // 1️⃣ Get selected users
-  const selectedUsers = offers.filter((offer) =>
-    selectedIds.includes(offer.user_uuid)
-  );
+    const selectedUsers = offers.filter((offer) =>
+      selectedIds.includes(offer.user_uuid)
+    );
 
-  // 2️⃣ Extract emails
-  const emailList = selectedUsers
-    .map((user) => user.mail)
-    .filter(Boolean)
-    .join(";");
+    const emailList = selectedUsers
+      .map((user) => user.mail)
+      .filter(Boolean)
+      .join(";");
 
-  if (!emailList) {
-    showStatusToast("❌ No valid email addresses found");
-    return;
-  }
+    if (!emailList) {
+      showStatusToast("❌ No valid email addresses found");
+      return;
+    }
 
-  // 3️⃣ Email content
-  const subject = encodeURIComponent("Joining Letter – Welcome Aboard");
-  const body = encodeURIComponent(
-    `Hello Team,
+    const subject = encodeURIComponent("Joining Letter – Welcome Aboard");
 
-    Please find your joining details below.
+    const body = encodeURIComponent(
+      `Hello Team,
 
-    Joining Date: [DD/MM/YYYY]
-    Reporting Time: 9:30 AM
-    Location: Office / Remote
+      Please find your joining details below.
 
-    Regards,
-    HR Team`
-      );
-  
-  // 4️⃣ Build mailto link
-  const mailtoLink = `mailto:${emailList}?subject=${subject}&body=${body}`;
-  
-  showStatusToast(`Redirecting to email app`, "info");
+      Joining Date: [DD/MM/YYYY]
+      Reporting Time: 9:30 AM
+      Location: Office / Remote
 
-  // 5️⃣ Open email client
-  window.location.href = mailtoLink;
+      Regards,
+      HR Team`
+    );
 
-  // Optional cleanup
-  cancelBulkJoin();
+    const mailtoLink = `mailto:${emailList}?subject=${subject}&body=${body}`;
+
+    showStatusToast(`Redirecting to email app`, "info");
+
+    window.location.href = mailtoLink;
+
+    cancelBulkJoin();
   };
-
+  */
 
   /* -------------------- Table Config -------------------- */
+
   const headers = [
     bulkMode ? "Select" : null,
+
+    /*
     bulkJoinMode ? "Select" : null,
+    */
+
     "Candidate Name",
     "Email",
     "Contact",
@@ -192,7 +201,11 @@ const cancelBulkJoin = () => {
 
   const columns = [
     bulkMode ? "select" : null,
+
+    /*
     bulkJoinMode ? "select" : null,
+    */
+
     "candidate_name",
     "mail",
     "contact",
@@ -201,36 +214,38 @@ const cancelBulkJoin = () => {
     "action",
   ].filter(Boolean);
 
-
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
 
     return offers.slice(startIndex, startIndex + PAGE_SIZE).map((offer) => {
-      // ✅ Normalize status for comparison
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
 
+      /*
       const isStatusVerified =
         String(offer.status || "").trim().toUpperCase() === "VERIFIED";
+      */
 
       const isSubmitted =
         String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
 
-       // ✅ Enable checkbox based on active bulk mode
-    const isCheckboxEnabled =
-      (bulkMode && isStatusCreated) ||
-      (bulkJoinMode && isStatusVerified);
+      const isCheckboxEnabled =
+        bulkMode && isStatusCreated;
 
-      // console.log("isCheckboxEnabled:", isCheckboxEnabled);
+      /*
+      || (bulkJoinMode && isStatusVerified);
+      */
 
       return {
-        ...((bulkMode || bulkJoinMode) && {
+        ...(bulkMode && {
           select: (
             <input
               type="checkbox"
               disabled={!isCheckboxEnabled}
               checked={selectedIds.includes(offer.user_uuid)}
-              onChange={() => isCheckboxEnabled && toggleSelect(offer.user_uuid)}
+              onChange={() =>
+                isCheckboxEnabled && toggleSelect(offer.user_uuid)
+              }
               className={`h-4 w-4 ${
                 isCheckboxEnabled
                   ? "cursor-pointer"
@@ -242,106 +257,94 @@ const cancelBulkJoin = () => {
 
         candidate_name:
           `${offer.first_name || ""} ${offer.last_name || ""}`.trim() || "—",
+
         mail: offer.mail || "—",
         contact: offer.contact_number || "—",
         designation: offer.designation || "—",
         status: offer.status || "—",
 
-      action: (
-            <ActionMenu
-              onView={() =>
-                navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
-              }
-              onVerify={() =>
-                navigate(`/employee-onboarding/hr/profile/${offer.user_uuid}`)
-              }
-              showVerify={
-                isSubmitted}
-            />
-          ),
+        action: (
+          <ActionMenu
+            onView={() =>
+              navigate(`/employee-onboarding/offer/${offer.user_uuid}`)
+            }
+            onVerify={() =>
+              navigate(`/employee-onboarding/hr/profile/${offer.user_uuid}`)
+            }
+            showVerify={isSubmitted}
+          />
+        ),
       };
     });
-  }, [offers, currentPage, bulkMode, bulkJoinMode, selectedIds, navigate]);
+  }, [offers, currentPage, bulkMode, selectedIds, navigate]);
 
   /* -------------------- UI -------------------- */
+
   return (
     <div className="bg-white rounded-xl shadow-sm relative overflow-visible">
-      {/* Header */}
       <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="font-semibold text-gray-800">Recent Offer Letters</h2>
+        <h2 className="font-semibold text-gray-800">
+          Recent Offer Letters
+        </h2>
 
-        {/* 👉 RIGHT SIDE BUTTON GROUP */}
         <div className="flex items-center gap-3">
 
+          {/*
           {!bulkJoinMode ? (
             <Button
-              className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      "
               varient="primary"
               size="small"
               onClick={() => setBulkJoinMode(true)}
-              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "VERIFIED")}
             >
               Bulk Join
             </Button>
           ) : (
             <div className="flex gap-3">
               <Button
-                className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      "
                 varient="primary"
                 size="small"
-                disabled={selectedIds.length === 0 || sending}
                 onClick={handleBulkJoin}
               >
-                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+                Send
               </Button>
 
-              <Button className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      " varient="secondary" size="small" onClick={cancelBulkJoin}>
+              <Button
+                varient="secondary"
+                size="small"
+                onClick={cancelBulkJoin}
+              >
                 Cancel
               </Button>
             </div>
           )}
+          */}
 
           {!bulkMode ? (
             <Button
-              className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      "
               varient="primary"
               size="small"
               onClick={() => setBulkMode(true)}
-              disabled={!offers.some(o => String(o.status || "").trim().toUpperCase() === "CREATED")}
             >
               Bulk Offer
             </Button>
           ) : (
             <div className="flex gap-3">
               <Button
-                className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      "
                 varient="primary"
                 size="small"
                 disabled={selectedIds.length === 0 || sending}
                 onClick={handleBulkSend}
               >
-                {sending ? "Sending..." : `Send (${selectedIds.length})`}
+                {sending
+                  ? "Sending..."
+                  : `Send (${selectedIds.length})`}
               </Button>
 
-              <Button className="active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-      " varient="secondary" size="small" onClick={cancelBulk}>
+              <Button
+                varient="secondary"
+                size="small"
+                onClick={cancelBulk}
+              >
                 Cancel
               </Button>
             </div>
@@ -349,16 +352,23 @@ const cancelBulkJoin = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <Table headers={headers} columns={columns} rows={rows} loading={loading} />
+      <Table
+        headers={headers}
+        columns={columns}
+        rows={rows}
+        loading={loading}
+      />
 
-      {/* Pagination */}
       {offers.length > PAGE_SIZE && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-          onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          onPrevious={() =>
+            setCurrentPage((p) => Math.max(p - 1, 1))
+          }
+          onNext={() =>
+            setCurrentPage((p) => Math.min(p + 1, totalPages))
+          }
         />
       )}
     </div>
