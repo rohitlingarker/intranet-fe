@@ -22,6 +22,8 @@ import {
   assignUpdateClientAsset,
   deleteClientAssignment,
 } from "../services/clientservice";
+import { set } from "date-fns";
+import toast from "react-hot-toast";
 
 /* ---------------- STATUS COLORS ---------------- */
 // Matches your Java EnablementAssignmentStatus Enum values
@@ -40,6 +42,10 @@ const AssetDetail = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 8; // change if you want more rows
 
   const today = new Date().toISOString().split("T")[0];
   const [activeTab, setActiveTab] = useState("ACTIVE");
@@ -52,7 +58,7 @@ const AssetDetail = () => {
     expectedReturnDate: "",
     assignmentStatus: "ASSIGNED",
     assignedBy: "",
-    locationType: "Client Site",
+    locationType: "",
     locationDetails: "",
     description: "",
     serialNumber: "",
@@ -65,7 +71,7 @@ const AssetDetail = () => {
     projectName: "",
     serialNumber: "",
     assignedBy: "",
-    locationType: "Client Site",
+    locationType: "",
     locationDetails: "",
     conditionOnReturn: "",
     returnNotes: "",
@@ -99,7 +105,7 @@ const AssetDetail = () => {
         projectName: "",
         serialNumber: "",
         assignedBy: "",
-        locationType: "Client Site",
+        locationType: "",
         locationDetails: "",
         conditionOnReturn: "",
         returnNotes: "",
@@ -232,15 +238,13 @@ const AssetDetail = () => {
     console.log("Deleting assignment ID:", deleteTarget.assignmentId);
     try {
       await deleteClientAssignment(deleteTarget.assignmentId);
-
-      // Remove from UI immediately
-      setAssignments((prev) =>
-        prev.filter((a) => a.assignmentId !== deleteTarget.assignmentId),
-      );
-
+      fetchData();
       setDeleteTarget(null);
+      setCurrentPage(1); // reset page to avoid empty page bug
+toast.success("Record deleted");
     } catch (err) {
       console.error("Delete Error:", err);
+      toast.error("Failed to delete the record.");
     }
   };
 
@@ -254,7 +258,7 @@ const AssetDetail = () => {
       expectedReturnDate: "",
       assignmentStatus: "ASSIGNED",
       assignedBy: "",
-      locationType: "Client Site",
+      locationType: "",
       locationDetails: "",
       description: "",
       serialNumber: "",
@@ -267,6 +271,27 @@ const AssetDetail = () => {
       <p className="font-medium text-gray-900">{value}</p>
     </div>
   );
+
+  const filteredAssignments = assignments
+  .filter((a) =>
+    activeTab === "ACTIVE"
+      ? a.assignmentStatus !== "RETURNED"
+      : a.assignmentStatus === "RETURNED"
+  )
+  .filter((a) =>
+    `${a.resourceName} ${a.projectName} ${a.serialNumber}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+const totalPages = Math.ceil(filteredAssignments.length / rowsPerPage);
+
+const paginatedAssignments = filteredAssignments.slice(
+  (currentPage - 1) * rowsPerPage,
+  currentPage * rowsPerPage
+);
+
+
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -327,33 +352,55 @@ const AssetDetail = () => {
         />
       </div>
 
-      <div className="flex border-b mb-4">
-        <button
-          onClick={() => setActiveTab("ACTIVE")}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition ${
-            activeTab === "ACTIVE"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-gray-500 hover:text-indigo-600"
-          }`}
-        >
-          Active Assignments
-        </button>
+      <div className="flex justify-between items-center border-b mb-4">
+        {/* LEFT SIDE — TABS */}
+        <div className="flex gap-6">
+          <button
+            onClick={() => setActiveTab("ACTIVE")}
+            className={`px-2 py-2 text-sm font-semibold border-b-2 transition ${
+              activeTab === "ACTIVE"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-indigo-600"
+            }`}
+          >
+            Active Assignments
+          </button>
 
-        <button
-          onClick={() => setActiveTab("HISTORY")}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition ${
-            activeTab === "HISTORY"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-gray-500 hover:text-indigo-600"
-          }`}
-        >
-          Assignment History
-        </button>
+          <button
+            onClick={() => setActiveTab("HISTORY")}
+            className={`px-2 py-2 text-sm font-semibold border-b-2 transition ${
+              activeTab === "HISTORY"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-indigo-600"
+            }`}
+          >
+            Assignment History
+          </button>
+        </div>
+
+        {/* RIGHT SIDE — SEARCH */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search assignments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64 pl-3 pr-8 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ASSIGNMENT HISTORY TABLE */}
       <div className="bg-white border rounded-xl shadow-sm p-6 overflow-hidden">
-        <h2 className="text-lg font-semibold mb-4">Assignment History</h2>
+        {/* <h2 className="text-lg font-semibold mb-4">Assignment History</h2> */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-gray-500 border-b bg-gray-50">
@@ -374,6 +421,15 @@ const AssetDetail = () => {
                       ? a.assignmentStatus !== "RETURNED"
                       : a.assignmentStatus === "RETURNED",
                   )
+                  .filter((a) => {
+                    const term = searchTerm.toLowerCase();
+                    return (
+                      a.resourceName?.toLowerCase().includes(term) ||
+                      a.projectName?.toLowerCase().includes(term) ||
+                      a.serialNumber?.toLowerCase().includes(term)
+                    );
+                  })
+
                   .map((a) => (
                     <tr
                       key={a.assignmentId}
@@ -414,7 +470,7 @@ const AssetDetail = () => {
                                   assignmentStatus:
                                     a.assignmentStatus || "ASSIGNED",
                                   assignedBy: a.assignedBy || "",
-                                  locationType: a.locationType || "Client Site",
+                                  locationType: a.locationType,
                                   locationDetails: a.locationDetails || "",
                                   description: a.description || "",
                                   serialNumber: a.serialNumber || "",
@@ -437,7 +493,7 @@ const AssetDetail = () => {
                                     serialNumber: a.serialNumber || "",
                                     assignedBy: a.assignedBy || "",
                                     locationType:
-                                      a.locationType || "Client Site",
+                                      a.locationType,
                                     locationDetails: a.locationDetails || "",
                                     conditionOnReturn: "",
                                     returnNotes: "",
@@ -483,6 +539,34 @@ const AssetDetail = () => {
         </div>
       </div>
 
+
+      {totalPages > 1 && (
+  <div className="flex justify-between items-center mt-4 text-sm">
+    <span className="text-gray-500">
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <div className="flex gap-2">
+      <button
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage((p) => p - 1)}
+        className="px-3 py-1 border rounded-md disabled:opacity-40"
+      >
+        Prev
+      </button>
+
+      <button
+        disabled={currentPage === totalPages}
+        onClick={() => setCurrentPage((p) => p + 1)}
+        className="px-3 py-1 border rounded-md disabled:opacity-40"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
+
+
       {/* MODAL */}
       {showModal && (
         <Modal
@@ -490,7 +574,7 @@ const AssetDetail = () => {
           onClose={closeModal}
         >
           <form onSubmit={handleAssignSave} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Resource Name"
                 name="resourceName"
@@ -547,6 +631,12 @@ const AssetDetail = () => {
                 value={formData.locationType}
                 onChange={handleChange}
               />
+              <Input
+                label="Location Details"
+                name="locationDetails"
+                value={formData.locationDetails}
+                onChange={handleChange}
+              />
             </div>
             <div className="col-span-2">
               <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
@@ -582,44 +672,34 @@ const AssetDetail = () => {
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Resource Name"
-                name="resourceName"
                 value={returnData.resourceName}
-                onChange={handleReturnChange}
+                disabled
               />
 
-              <Input
-                label="Project"
-                name="projectName"
-                value={returnData.projectName}
-                onChange={handleReturnChange}
-              />
+              <Input label="Project" value={returnData.projectName} disabled />
 
               <Input
                 label="Serial Number"
-                name="serialNumber"
                 value={returnData.serialNumber}
-                onChange={handleReturnChange}
+                disabled
               />
 
               <Input
                 label="Assigned By"
-                name="assignedBy"
                 value={returnData.assignedBy}
-                onChange={handleReturnChange}
+                disabled
               />
 
               <Input
                 label="Location Type"
-                name="locationType"
                 value={returnData.locationType}
-                onChange={handleReturnChange}
+                disabled
               />
 
               <Input
                 label="Location Details"
-                name="locationDetails"
                 value={returnData.locationDetails}
-                onChange={handleReturnChange}
+                disabled
               />
 
               {/* Auto-filled, not editable */}
@@ -633,6 +713,14 @@ const AssetDetail = () => {
               onChange={handleReturnChange}
               options={["Good", "Damaged", "Needs Repair", "Lost"]}
             />
+            {/* 
+            <textarea
+              name="returnNotes"
+              value={returnData.returnNotes}
+              onChange={handleReturnChange}
+              className="w-full bg-slate-50 border rounded-xl p-3 mt-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+              rows={3}
+            /> */}
 
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
@@ -671,7 +759,7 @@ const AssetDetail = () => {
             <p className="text-slate-600">
               Are you sure you want to remove this record?
             </p>
-            <div className="flex justify-center gap-4 pt-4">
+            <div className="flex justify-end gap-3 pt-3 sticky bottom-0 bg-white">
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
                 Cancel
               </Button>
@@ -713,7 +801,7 @@ const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col">
       <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-b">
         <h3 className="text-base font-semibold">{title}</h3>
         <button
@@ -723,7 +811,7 @@ const Modal = ({ title, children, onClose }) => (
           <X size={18} />
         </button>
       </div>
-      <div className="p-6">{children}</div>
+      <div className="p-5 overflow-y-auto">{children}</div>
     </div>
   </div>
 );
