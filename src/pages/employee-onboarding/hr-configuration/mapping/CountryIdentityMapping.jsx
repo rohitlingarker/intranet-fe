@@ -250,12 +250,13 @@ export default function CountryIdentityMapping() {
   <AddCountryIdentityMappingModal
     countryUuid={selectedCountry}
     onClose={() => setShowForm(false)}
-    onSuccess={() => {
-      fetchMappings(selectedCountry); // reload table
+    onSuccess={(newMapping) => {
+      setMappings((prev) => [...prev, newMapping]); // ✅ AUTO UPDATE
       setShowForm(false);
     }}
   />
 )}
+
 
       {selectedCountry && (
         <button
