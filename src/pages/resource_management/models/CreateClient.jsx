@@ -1,9 +1,10 @@
-import React, { useState, Fragment, useMemo } from "react";
+import React, { useState, useEffect, Fragment, useMemo } from "react";
 import { Listbox, Combobox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 import ct from "countries-and-timezones";
-import { createClient } from "../services/clientservice";
+import { createClient, updateClient } from "../services/clientservice";
 import { toast } from "react-toastify";
+import Button from "../../../components/Button/Button";
 
 // Updated CustomListbox to accept an 'error' prop
 const CustomListbox = ({
@@ -110,7 +111,7 @@ const SearchableCombobox = ({ label, value, onChange, options, error = false }) 
   );
 };
 
-const CreateClient = ({ onSuccess }) => {
+const CreateClient = ({ mode, initialData, onSuccess }) => {
   const allCountryData = useMemo(() => {
     return Object.values(ct.getAllCountries()).sort((a, b) => a.name.localeCompare(b.name));
   }, []);
@@ -128,6 +129,25 @@ const CreateClient = ({ onSuccess }) => {
     escalationContact: true,
     assets: false,
   });
+
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      setFormData({
+        clientId: initialData.clientId,
+        client_name: initialData.client_name,
+        client_type: initialData.client_type,
+        priority_level: initialData.priority_level,
+        delivery_model: initialData.delivery_model,
+        country_name: initialData.country_name,
+        default_timezone: initialData.default_timezone,
+        status: initialData.status,
+        SLA: initialData.SLA,
+        compliance: initialData.compliance,
+        escalationContact: initialData.escalationContact,
+        assets: initialData.assets,
+      });
+    }
+  }, [mode, initialData]);
 
   const [timezoneOptions, setTimezoneOptions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -179,11 +199,11 @@ const CreateClient = ({ onSuccess }) => {
 
     setIsSubmitting(true);
     try {
-      const clientCreation = await createClient(formData);
-      toast.success(clientCreation.message || "Client created successfully.");
+      const clientCreation = mode === "create" ? await createClient(formData) : await updateClient(formData);
+      toast.success(clientCreation.message || (mode === "create" ? "Client created successfully." : "Client updated successfully."));
       onSuccess?.();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error creating client.");
+      toast.error(error.response?.data?.message || (mode === "create" ? "Failed to create client." : "Failed to update client."));
     } finally {
       setIsSubmitting(false);
     }
@@ -193,7 +213,7 @@ const CreateClient = ({ onSuccess }) => {
     <div className="p-1">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
         <div className="col-span-1 md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Client Name</label>
+          <label className="block text-sm font-medium text-gray-700">Client Name <span className="text-red-500">*</span></label>
           <input
             type="text"
             name="client_name"
@@ -242,7 +262,7 @@ const CreateClient = ({ onSuccess }) => {
 
         <div className="col-span-1 md:col-span-2">
           <SearchableCombobox
-            label="Country"
+            label={<span>Country <span className="text-red-500">*</span></span>}
             value={formData.country_name}
             options={allCountryData.map((c) => c.name)}
             onChange={handleCountryChange}
@@ -252,7 +272,7 @@ const CreateClient = ({ onSuccess }) => {
 
         <div className="col-span-1 md:col-span-2">
           <CustomListbox
-            label="Default Timezone"
+            label={<span>Default Timezone <span className="text-red-500">*</span></span>}
             value={formData.default_timezone}
             options={timezoneOptions}
             onChange={(val) => handleGenericListboxChange("default_timezone", val)}
@@ -280,13 +300,15 @@ const CreateClient = ({ onSuccess }) => {
         </div>
 
         <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
-          <button
-            type="submit"
+          <Button
+            variant="primary"
+            size="medium"
             onClick={handleSubmit}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors shadow-md"
+            disabled={isSubmitting}
+            className={`${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {isSubmitting ? "Creating..." : "Create Client"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
