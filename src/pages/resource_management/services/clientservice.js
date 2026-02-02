@@ -370,3 +370,21 @@ export const deleteClient = async (clientId) => {
         throw error;
     }
 };
+
+
+/* ===============================
+   DELETE CLIENT ASSET ASSIGNMENT
+   =============================== */
+export const deleteClientAssignment = async (assignmentId) => {
+  try {
+    const response = await axios.delete(
+      `${RMS_BASE_URL}/api/client-asset-assignments/${assignmentId}`,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Delete Assignment Error:", error);
+    throw error;
+  }
+};
+
