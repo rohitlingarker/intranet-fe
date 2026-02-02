@@ -325,6 +325,8 @@ export const assignClientAsset = async (assignmentData) => {
         return response.data;
     } catch (error) {
         console.error("Asset Assignment Error:", error);
+    }
+};
 export const updateClient = async (clientData) => {
     try {
         const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData, 

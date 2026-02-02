@@ -1,10 +1,150 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Users } from "lucide-react";
+import { Users, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { showStatusToast } from "../../../components/toastfy/toast";
+import Button from "../../../components/Button/Button";
 
+/* ============================
+   JOIN MODAL COMPONENT
+============================ */
+function JoinModal({
+  open,
+  onClose,
+  onSubmit,
+  loading,
+  form,
+  setForm,
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+
+      <div className="bg-white rounded-xl w-full max-w-md p-6 relative">
+
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+        >
+          <X size={20} />
+        </button>
+
+        <h2 className="text-xl font-semibold mb-4">
+          Send Joining Details
+        </h2>
+
+        <div className="space-y-4">
+
+          {/* Joining Date */}
+          <div>
+            <label className="text-sm font-medium">
+              Joining Date *
+            </label>
+            <input
+              type="date"
+              value={form.joining_date}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  joining_date: e.target.value,
+                })
+              }
+              className="w-full mt-1 px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Reporting Time */}
+          <div>
+            <label className="text-sm font-medium">
+              Reporting Time *
+            </label>
+            <input
+              type="time"
+              value={form.reporting_time}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  reporting_time: e.target.value,
+                })
+              }
+              className="w-full mt-1 px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="text-sm font-medium">
+              Location *
+            </label>
+            <input
+              type="text"
+              placeholder="text"
+              value={form.location}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  location: e.target.value,
+                })
+              }
+              className="w-full mt-1 px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Custom Message */}
+          <div>
+            <label className="text-sm font-medium">
+              Additional Content
+            </label>
+            <textarea
+              rows="3"
+              placeholder="Optional message..."
+              value={form.custom_message}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  custom_message: e.target.value,
+                })
+              }
+              className="w-full mt-1 px-3 py-2 border rounded-lg"
+            />
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 mt-6">
+
+          <Button
+            varient="secondary"
+            size="small"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            varient="primary"
+            size="small"
+            onClick={onSubmit}
+            disabled={loading}
+          >
+            {loading ? "Sending..." : "Send Email"}
+          </Button>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================
+   MAIN COMPONENT
+============================ */
 export default function HrOnboardingDashboard() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -14,23 +154,44 @@ export default function HrOnboardingDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  /* ---------- PAGINATION ---------- */
+  /* Bulk Join */
+  const [bulkJoinMode, setBulkJoinMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  /* Modal */
+  const [showModal, setShowModal] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  /* Form */
+  const [joinForm, setJoinForm] = useState({
+    joining_date: "",
+    reporting_time: "",
+    location: "",
+    custom_message: "",
+  });
+
+  /* Pagination */
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  /* ---------- FETCH DATA ---------- */
+  /* ============================
+     FETCH DATA
+  ============================ */
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         const res = await axios.get(
           `${BASE_URL}/offerletters/user_id/details`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
+
         setData(res.data || []);
-      } catch (error) {
-        console.error("Failed to load onboarding employees", error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -39,38 +200,137 @@ export default function HrOnboardingDashboard() {
     fetchEmployees();
   }, []);
 
-  /* ---------- FILTER ---------- */
+  /* ============================
+     FILTER
+  ============================ */
   const allowedStatuses = ["Submitted", "Verified", "Rejected"];
 
   const filteredData = useMemo(() => {
     return data.filter((emp) => {
       const name = `${emp.first_name} ${emp.last_name}`.toLowerCase();
-      const matchesSearch = name.includes(searchTerm.toLowerCase());
-      const matchesStatus = allowedStatuses.includes(emp.status);
-      return matchesSearch && matchesStatus;
+
+      return (
+        name.includes(searchTerm.toLowerCase()) &&
+        allowedStatuses.includes(emp.status)
+      );
     });
   }, [data, searchTerm]);
 
-  /* ---------- STATS ---------- */
-  const totalEmployees = filteredData.length;
+  /* ============================
+     HELPERS
+  ============================ */
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id]
+    );
+  };
 
-  /* ---------- PAGINATION LOGIC ---------- */
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const resetBulk = () => {
+    setBulkJoinMode(false);
+    setSelectedIds([]);
+    setShowModal(false);
+
+    setJoinForm({
+      joining_date: "",
+      reporting_time: "",
+      location: "",
+      custom_message: "",
+    });
+  };
+
+  /* ============================
+     SUBMIT JOIN EMAIL
+  ============================ */
+  const handleSendJoinEmail = async () => {
+    const {
+      joining_date,
+      reporting_time,
+      location,
+    } = joinForm;
+
+    if (!joining_date || !reporting_time || !location) {
+      showStatusToast("❌ Please fill all required fields");
+      return;
+    }
+
+    try {
+      setSending(true);
+
+      // Extract emails
+      const emails = filteredData
+        .filter((e) => selectedIds.includes(e.user_uuid))
+        .map((e) => e.mail)
+        .filter(Boolean);
+
+      if (emails.length === 0) {
+        showStatusToast("❌ No valid emails found");
+        return;
+      }
+
+      const payload = {
+        user_emails_list: emails,
+        joining_date,
+        reporting_time,
+        location,
+        custom_message: joinForm.custom_message,
+      };
+
+      await axios.post(
+        `${BASE_URL}/hr/offerletters/bulk-join`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      showStatusToast("✅ Joining emails sent successfully");
+
+      resetBulk();
+
+    } catch (err) {
+      console.error(err);
+
+      showStatusToast("❌ Failed to send emails");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  /* ============================
+     PAGINATION
+  ============================ */
+  const totalPages = Math.ceil(
+    filteredData.length / itemsPerPage
+  );
 
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(startIndex, startIndex + itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+
+    return filteredData.slice(
+      start,
+      start + itemsPerPage
+    );
   }, [filteredData, currentPage]);
 
   if (loading) {
-    return <div className="p-10 text-center">Loading HR dashboard...</div>;
+    return (
+      <div className="p-10 text-center">
+        Loading HR dashboard...
+      </div>
+    );
   }
 
   return (
     <div className="p-6 space-y-6">
+
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold">
           HR Onboarding Dashboard
         </h1>
         <p className="text-gray-500">
@@ -79,18 +339,19 @@ export default function HrOnboardingDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Total Submitted Profiles"
-          value={totalEmployees}
+          value={filteredData.length}
           icon={Users}
         />
       </div>
+      
 
       {/* Search */}
       <input
-        type="text"
-        placeholder="Search employee name..."
+        placeholder="Search employee..."
         value={searchTerm}
         onChange={(e) => {
           setSearchTerm(e.target.value);
@@ -99,41 +360,121 @@ export default function HrOnboardingDashboard() {
         className="w-full md:w-1/3 px-3 py-2 border rounded-lg"
       />
 
+      {/* Bulk Join Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm flex justify-between">
+
+        <h2 className="font-semibold text-gray-700">
+          Recent Offer Letters
+        </h2>
+
+        {!bulkJoinMode ? (
+
+          <Button
+            varient="primary"
+            size="small"
+            onClick={() => setBulkJoinMode(true)}
+            disabled={
+              !filteredData.some(
+                (e) =>
+                  e.status?.toUpperCase() === "VERIFIED"
+              )
+            }
+          >
+            Bulk Join
+          </Button>
+
+        ) : (
+
+          <div className="flex gap-3">
+
+            <Button
+              varient="primary"
+              size="small"
+              disabled={selectedIds.length === 0}
+              onClick={() => setShowModal(true)}
+            >
+              Send ({selectedIds.length})
+            </Button>
+
+            <Button
+              varient="secondary"
+              size="small"
+              onClick={resetBulk}
+            >
+              Cancel
+            </Button>
+
+          </div>
+
+        )}
+
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full table-fixed">
+
+        <table className="w-full">
+
           <thead className="bg-indigo-900 text-white">
             <tr>
-              <th className="px-4 py-3 text-left w-[10%]">Employee Name</th>
-              <th className="px-4 py-3 text-center w-[10%]">Email</th>
-              <th className="px-4 py-3 text-center w-[10%]">Contact</th>
-              <th className="px-4 py-3 text-center w-[15%]">Role</th>
-              <th className="px-4 py-3 text-center w-[10%]">Status</th>
-              <th className="px-4 py-3 text-center w-[10%]">Action</th>
+
+              {bulkJoinMode && <th>Select</th>}
+
+              <th>Name</th>
+              <th>Email</th>
+              <th>Contact</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Action</th>
+
             </tr>
           </thead>
 
           <tbody>
-            {paginatedData.map((emp) => (
-              <tr key={emp.user_uuid} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3 truncate">
-                  {emp.first_name} {emp.last_name}
-                </td>
 
-                <td className="px-4 py-3 truncate">{emp.mail}</td>
+            {paginatedData.map((emp) => {
 
-                <td className="px-4 py-3">
-                  {emp.contact_number || "—"}
-                </td>
+              const isVerified =
+                emp.status?.toUpperCase() === "VERIFIED";
 
-                <td className="px-4 py-3">{emp.designation}</td>
+              return (
 
-                <td className="px-4 py-3 text-center">
-                  <StatusBadge status={emp.status} />
-                </td>
+                <tr key={emp.user_uuid}>
 
-                <td className="px-4 py-3 text-center text-indigo-600 cursor-pointer">
-                  <span
+                  {bulkJoinMode && (
+
+                    <td className="px-4 py-3 text-center">
+
+                      <input
+                        type="checkbox"
+                        disabled={!isVerified}
+                        checked={selectedIds.includes(emp.user_uuid)}
+                        onChange={() =>
+                          isVerified &&
+                          toggleSelect(emp.user_uuid)
+                        }
+                        className={`h-4 w-4 ${
+                          isVerified
+                            ? "cursor-pointer"
+                            : "opacity-40 cursor-not-allowed"
+                        }`}
+                      />
+
+                    </td>
+
+                  )}
+
+                  <td>{emp.first_name} {emp.last_name}</td>
+                  <td>{emp.mail}</td>
+                  <td>{emp.contact_number || "—"}</td>
+                  <td>{emp.designation}</td>
+
+                  <td>
+                    <StatusBadge status={emp.status} />
+                  </td>
+
+                  <td
+                    className="text-indigo-600 cursor-pointer"
                     onClick={() =>
                       navigate(
                         `/employee-onboarding/hr/profile/${emp.user_uuid}`
@@ -141,69 +482,79 @@ export default function HrOnboardingDashboard() {
                     }
                   >
                     View
-                  </span>
-                </td>
-              </tr>
-            ))}
+                  </td>
 
-            {paginatedData.length === 0 && (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="text-center py-6 text-gray-500"
-                >
-                  No records found
-                </td>
-              </tr>
-            )}
+                </tr>
+
+              );
+            })}
+
           </tbody>
+
         </table>
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center items-center gap-4 mt-6">
+      <div className="flex justify-center gap-4">
+
         <button
           disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-          className={`w-10 h-10 rounded-lg border ${
-            currentPage === 1
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : "bg-indigo-900 text-white hover:bg-indigo-800"
-          }`}
+          onClick={() =>
+            setCurrentPage((p) => p - 1)
+          }
         >
           &lt;
         </button>
 
-        <span className="text-sm font-medium">
+        <span>
           Page {currentPage} / {totalPages || 1}
         </span>
 
         <button
           disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-          className={`w-10 h-10 rounded-lg border ${
-            currentPage === totalPages
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-indigo-900 text-white hover:bg-indigo-800"
-          }`}
+          onClick={() =>
+            setCurrentPage((p) => p + 1)
+          }
         >
           &gt;
         </button>
+
       </div>
+
+      {/* Modal */}
+      <JoinModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSendJoinEmail}
+        loading={sending}
+        form={joinForm}
+        setForm={setJoinForm}
+      />
+
     </div>
   );
 }
 
-/* ---------- COMPONENTS ---------- */
+/* ============================
+   SMALL COMPONENTS
+============================ */
 
 function StatCard({ title, value, icon: Icon }) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-4">
-      <Icon className="h-6 w-6 text-indigo-600" />
+    <div className="bg-white p-4 rounded-xl shadow-sm flex gap-4">
+
+      <Icon className="text-indigo-600" />
+
       <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-xl font-semibold text-gray-900">{value}</p>
+        <p className="text-sm text-gray-500">
+          {title}
+        </p>
+
+        <p className="text-xl font-semibold text-gray-900">
+          {value}
+        </p>
       </div>
+
     </div>
   );
 }
@@ -219,7 +570,8 @@ function StatusBadge({ status }) {
     <span
       className={`inline-flex items-center justify-center px-3 py-1 
       rounded-full text-xs font-semibold ${
-        styles[status] || "bg-gray-100 text-gray-700"
+        styles[status] ||
+       "bg-gray-100 text-gray-700"
       }`}
     >
       {status}
