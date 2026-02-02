@@ -15,33 +15,29 @@ import {
 import Button from "../../../components/Button/Button";
 import {
   getAssetsByClient,
-  createClientAsset,
   updateClientAsset,
   deleteClientAsset,
+  getAssetById,
+  assignClientAsset, // Make sure this is exported in your service file
+  assignUpdateClientAsset,
 } from "../services/clientservice";
-import { getAssetById } from "../services/clientservice";
 
 /* ---------------- STATUS COLORS ---------------- */
-
+// Matches your Java EnablementAssignmentStatus Enum values
 const STATUS_COLORS = {
-  Assigned: "bg-blue-100 text-blue-700",
-  "In Use": "bg-green-100 text-green-700",
-  Returned: "bg-gray-100 text-gray-700",
-  Lost: "bg-red-100 text-red-700",
+  ASSIGNED: "bg-blue-100 text-blue-700",
+  IN_USE: "bg-green-100 text-green-700",
+  RETURNED: "bg-gray-100 text-gray-700",
+  LOST: "bg-red-100 text-red-700",
 };
-
-/* ---------------- MAIN COMPONENT ---------------- */
 
 const AssetDetail = () => {
   const navigate = useNavigate();
-  // const { id } = useParams(); // clientId
   const { clientId, assetId } = useParams();
   const [asset, setAsset] = useState(null);
-
   const [assignments, setAssignments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
-
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
@@ -51,264 +47,157 @@ const AssetDetail = () => {
     projectName: "",
     assignedDate: "",
     expectedReturnDate: "",
-    usageStatus: "Assigned",
+    assignmentStatus: "ASSIGNED",
     assignedBy: "",
     locationType: "Client Site",
     locationDetails: "",
-    remarks: "",
+    description: "",
+    serialNumber: "",
   });
 
-  /* ---------------- FETCH ASSETS ---------------- */
-
-  const fetchAssets = async () => {
+  /* ---------------- FETCH DATA ---------------- */
+  const fetchData = async () => {
     try {
-      const res = await getAssetsByClient(clientId);
-      if (res.success) {
-        const validAssignments = res.data.filter(
-          (a) => a && (a.resourceName || a.projectName),
-        );
-        setAssignments(validAssignments);
+      console.log("Fetching for Asset ID:", assetId);
+
+      const [assetRes, assignmentsRes] = await Promise.all([
+        getAssetById(assetId),
+        getAssetsByClient(clientId),
+      ]);
+
+      // 1. Set the Master Asset
+      if (assetRes.success) {
+        console.log("Fetched Asset:", assetRes.data);
+        setAssignments(assetRes.data);
       }
+
+      // 2. Filter Assignments specifically for THIS asset
+      // if (assignmentsRes.success && Array.isArray(assignmentsRes.data)) {
+      //   console.log("Total records from server:", assignmentsRes.data.length);
+      //   const validAssignments = assignmentsRes.data
+      //   // const validAssignments = assignmentsRes.data.filter((a) => {
+      //   //   // This handles both a.asset.assetId and a.assetId (common backend variations)
+      //   //   const validAssignments = assignmentsRes.data.filter(
+      //   //     (a) => String(a.asset?.assetId) === String(assetId),
+      //   //   );
+
+      //   //   // Log one to see what the data looks like
+      //   //   // console.log(
+      //   //   //   `Comparing Remote ID ${remoteId} with Local ID ${assetId}`,
+      //   //   // );
+
+      //   //   return String(a.asset?.assetId) === String(assetId);
+      //   // });
+
+      //   console.log("Filtered records for table:", {validAssignments});
+      //   setAssignments(validAssignments);
+      // }
     } catch (err) {
-      console.error("Failed to fetch assets", err);
+      console.error("Fetch Error:", err);
     }
   };
 
   useEffect(() => {
-    if (clientId) fetchAssets();
-  }, [clientId]);
-
-  const fetchAsset = async () => {
-    try {
-      const res = await getAssetById(assetId);
-      if (res.success) {
-        setAsset(res.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch asset", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchAsset();
-  }, [assetId]);
+    if (clientId && assetId) fetchData();
+  }, [clientId, assetId]);
 
   /* ---------------- KPI CALCULATIONS ---------------- */
+  const TOTAL_STOCK = asset?.quantity || 0;
 
-  const TOTAL_QUANTITY = assignments.reduce(
-    (sum, a) => sum + (a.quantity || 0),
-    0,
-  );
+  const assignedCount = assignments.filter(
+    (a) =>
+      a.active === true &&
+      a.assignmentStatus !== "RETURNED" &&
+      a.assignmentStatus !== "LOST",
+  ).length;
 
-  const assignedCount = assignments.length;
-  const availableCount = TOTAL_QUANTITY - assignedCount;
-
+  const availableCount = Math.max(0, TOTAL_STOCK - assignedCount);
   const utilization =
-    TOTAL_QUANTITY > 0 ? Math.round((assignedCount / TOTAL_QUANTITY) * 100) : 0;
+    TOTAL_STOCK > 0 ? Math.round((assignedCount / TOTAL_STOCK) * 100) : 0;
 
+  /* ---------------- HANDLERS ---------------- */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ---------------- SAVE (CREATE / UPDATE) ---------------- */
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    const f = e.target;
-
-    const payload = {
-      client: { clientId },
-      assetName: f.resource_name.value,
-      description: f.remarks.value,
-      assetCategory: "DEVICE",
-      assetType: "Laptop",
-      quantity: 1,
-    };
-
-    try {
-      if (editingItem) {
-        await updateClientAsset(editingItem.id, payload);
-      } else {
-        await createClientAsset(payload);
-      }
-
-      await fetchAssets();
-      setShowModal(false);
-      setEditingItem(null);
-    } catch (err) {
-      console.error("Save failed", err);
-    }
-  };
-
-  /* ---------------- RETURN ASSET ---------------- */
-
-  const handleReturn = async (item) => {
-    try {
-      await updateClientAsset(item.id, {
-        ...item,
-        usage_status: "Returned",
-        actual_return_date: today,
-      });
-      await fetchAssets();
-    } catch (err) {
-      console.error("Return failed", err);
-    }
-  };
-
-  // const handleAssignSave = async (e) =>
-
-  // {showModal && (
-  //   <Modal title="Assign Asset" onClose={() => setShowModal(false)}>
-  //     <form onSubmit={handleAssignSave} className="space-y-4">
-
-  //       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-  <Input
-    label="Resource Name"
-    name="resourceName"
-    value={editingAssignment ? formData.resourceName : asset?.assetName || ""}
-    onChange={handleChange}
-    disabled={!editingAssignment}
-  />;
-
-  //         <Input
-  //           label="Project Name"
-  //           name="projectName"
-  //           value={formData.projectName}
-  //           onChange={handleChange}
-  //           required
-  //         />
-
-  //         <Input
-  //           label="Assigned Date"
-  //           type="date"
-  //           name="assignedDate"
-  //           value={formData.assignedDate}
-  //           onChange={handleChange}
-  //           required
-  //         />
-
-  //         <Input
-  //           label="Expected Return Date"
-  //           type="date"
-  //           name="expectedReturnDate"
-  //           value={formData.expectedReturnDate}
-  //           onChange={handleChange}
-  //         />
-
-  //         <Select
-  //           label="Usage Status"
-  //           name="usageStatus"
-  //           value={formData.usageStatus}
-  //           onChange={handleChange}
-  //           options={["Assigned", "In Use", "Returned", "Lost"]}
-  //         />
-
-  //         <Input
-  //           label="Assigned By"
-  //           name="assignedBy"
-  //           value={formData.assignedBy}
-  //           onChange={handleChange}
-  //         />
-
-  //         <Select
-  //           label="Location Type"
-  //           name="locationType"
-  //           value={formData.locationType}
-  //           onChange={handleChange}
-  //           options={["Client Site", "Office", "Remote"]}
-  //         />
-
-  //         <Input
-  //           label="Location Details"
-  //           name="locationDetails"
-  //           value={formData.locationDetails}
-  //           onChange={handleChange}
-  //         />
-  //       </div>
-
-  //       <div>
-  //         <label className="text-sm font-medium">Remarks</label>
-  //         <textarea
-  //           name="remarks"
-  //           value={formData.remarks}
-  //           onChange={handleChange}
-  //           className="w-full border rounded-lg p-2 mt-1"
-  //           rows={3}
-  //         />
-  //       </div>
-
-  //       <div className="flex justify-end gap-3 pt-4">
-  //         <Button variant="secondary" onClick={() => setShowModal(false)}>
-  //           Cancel
-  //         </Button>
-  //         <Button type="submit" variant="primary">
-  //           Save
-  //         </Button>
-  //       </div>
-  //     </form>
-  //   </Modal>
-  // )}
-
   const handleAssignSave = async (e) => {
     e.preventDefault();
 
     const payload = {
+      resourceName: formData.resourceName,
       projectName: formData.projectName,
       assignedDate: formData.assignedDate,
       expectedReturnDate: formData.expectedReturnDate,
-      usageStatus: formData.usageStatus,
+      assignmentStatus: formData.assignmentStatus,
       assignedBy: formData.assignedBy,
       locationType: formData.locationType,
       locationDetails: formData.locationDetails,
-      remarks: formData.remarks,
+      description: formData.description,
+      serialNumber: formData.serialNumber,
+      active: true,
+      asset: { assetId: Number(assetId) },
     };
 
     try {
       if (editingAssignment) {
-        // UPDATE
-        await updateClientAsset(editingAssignment.id, payload);
+        // ✅ CORRECT API FOR EDIT
+        await assignUpdateClientAsset(editingAssignment.assignmentId, payload);
       } else {
         // CREATE
-        await createClientAsset({
-          client: { clientId },
-          asset: { assetId },
-          resourceName: formData.resourceName,
-          ...payload,
-        });
+        await assignClientAsset(payload);
       }
 
-      await fetchAssets();
-      setShowModal(false);
-      setEditingAssignment(null);
-
-      setFormData({
-        resourceName: "",
-        projectName: "",
-        assignedDate: "",
-        expectedReturnDate: "",
-        usageStatus: "Assigned",
-        assignedBy: "",
-        locationType: "Client Site",
-        locationDetails: "",
-        remarks: "",
-      });
+      await fetchData();
+      closeModal();
     } catch (err) {
-      console.error("Assignment save failed", err);
+      console.error("Save Error:", err);
     }
   };
 
-  /* ---------------- DELETE ASSET ---------------- */
+  const handleReturn = async (item) => {
+    try {
+      await assignUpdateClientAsset(item.assignmentId, {
+        ...item,
+        assignmentStatus: "RETURNED",
+        actualReturnDate: today,
+      });
+
+      await fetchData();
+    } catch (err) {
+      console.error("Return Error:", err);
+    }
+  };
 
   const confirmDelete = async () => {
     try {
-      await deleteClientAsset(deleteTarget.id);
-      await fetchAssets();
+      await assignUpdateClientAsset(deleteTarget.assignmentId, {
+  ...deleteTarget,
+  active: false,
+});
+
+      await fetchData();
       setDeleteTarget(null);
     } catch (err) {
-      console.error("Delete failed", err);
+      console.error("Delete Error:", err);
     }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingAssignment(null);
+    setFormData({
+      resourceName: "",
+      projectName: "",
+      assignedDate: "",
+      expectedReturnDate: "",
+      assignmentStatus: "ASSIGNED",
+      assignedBy: "",
+      locationType: "Client Site",
+      locationDetails: "",
+      description: "",
+      serialNumber: "",
+    });
   };
 
   const Detail = ({ label, value }) => (
@@ -318,58 +207,56 @@ const AssetDetail = () => {
     </div>
   );
 
-  /* ---------------- UI ---------------- */
-
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
       <div className="flex justify-between items-start">
         <div className="flex gap-3 items-start">
-          <button onClick={() => navigate(-1)} className="mt-1">
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-1 hover:text-indigo-600 transition-colors"
+          >
             <ArrowLeft />
           </button>
-
           <div>
             <h1 className="text-2xl font-bold">
-              {asset?.assetName || "Asset"}
+              {asset?.assetName || "Asset Detail"}
             </h1>
+
             <p className="text-sm text-gray-500">
               Category: {asset?.assetCategory || "-"}
             </p>
           </div>
         </div>
-
         <Button variant="primary" onClick={() => setShowModal(true)}>
           Assign Asset
         </Button>
       </div>
 
-      {/* ASSET DETAILS SECTION */}
-      {asset && (
+      {/* ASSET MASTER INFO */}
+      {/* {asset && (
         <div className="bg-white border rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Asset Details</h2>
-
+          <h2 className="text-lg font-semibold mb-4">Asset Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
             <Detail label="Asset Name" value={asset.assetName} />
             <Detail label="Serial Number" value={asset.serialNumber || "-"} />
             <Detail label="Category" value={asset.assetCategory} />
+            <Detail label="Total Stock" value={asset.quantity} />
             <Detail label="Type" value={asset.assetType} />
-            <Detail label="Quantity" value={asset.quantity} />
             <Detail label="Status" value={asset.status} />
-            <Detail label="Description" value={asset.description || "-"} />
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* KPI SECTION */}
+      {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat title="Total Quantity" value={TOTAL_QUANTITY} icon={Box} />
-        <Stat title="Currently Assigned" value={assignedCount} icon={Users} />
+        <Stat title="Total Stock" value={TOTAL_STOCK} icon={Box} />
+        <Stat title="Active Assignments" value={assignedCount} icon={Users} />
         <Stat
           title="Available"
           value={availableCount}
           icon={Laptop}
-          highlight
+          highlight={availableCount > 0}
         />
         <Stat
           title="Utilization"
@@ -379,104 +266,126 @@ const AssetDetail = () => {
         />
       </div>
 
-      <div className="bg-white border rounded-xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold mb-4">Active Assignments</h2>
+      {/* ASSIGNMENT HISTORY TABLE */}
+      <div className="bg-white border rounded-xl shadow-sm p-6 overflow-hidden">
+        <h2 className="text-lg font-semibold mb-4">Assignment History</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase text-gray-500 border-b bg-gray-50">
+              <tr>
+                <th className="text-left py-3 px-4">Resource</th>
+                <th className="text-left py-3 px-2">Project</th>
+                <th className="text-left py-3 px-4">Serial</th>
+                <th className="text-left py-3 px-2">Assigned</th>
+                <th className="text-left py-3 px-2">Status</th>
+                <th className="text-right py-3 px-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {assignments && assignments.length > 0 ? (
+                assignments.map((a) => (
+                  <tr
+                    key={a.assignmentId}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="py-3 px-2 font-medium text-slate-700">
+                      {a.resourceName}
+                    </td>
+                    <td className="py-3 px-2 text-slate-600">
+                      {a.projectName}
+                    </td>
+                    <td className="py-3 px-2 text-xs font-mono text-slate-500">
+                      {a.serialNumber || "N/A"}
+                    </td>
+                    <td className="py-3 px-2 text-slate-600">
+                      {a.assignedDate}
+                    </td>
+                    <td className="py-3 px-2">
+                      <span
+                        className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${STATUS_COLORS[a.assignmentStatus] || "bg-gray-100"}`}
+                      >
+                        {a.assignmentStatus}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <div className="flex justify-end gap-3">
+                        <button
+                          title="Edit Assignment"
+                          onClick={() => {
+                            setEditingAssignment(a);
+                            setFormData({
+                              resourceName: a.resourceName || "",
+                              projectName: a.projectName || "",
+                              assignedDate: a.assignedDate || "",
+                              expectedReturnDate: a.expectedReturnDate || "",
+                              assignmentStatus:
+                                a.assignmentStatus || "ASSIGNED",
+                              assignedBy: a.assignedBy || "",
+                              locationType: a.locationType || "Client Site",
+                              locationDetails: a.locationDetails || "",
+                              description: a.description || "",
+                              serialNumber: a.serialNumber || "",
+                            });
+                            setShowModal(true);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                        >
+                          <Pencil size={16} />
+                        </button>
 
-        <table className="w-full text-sm">
-          <thead className="text-xs uppercase text-gray-500 border-b bg-gray-50">
-            <tr>
-              <th className="text-left py-3 px-2">Resource</th>
-              <th className="text-left py-3 px-2">Project</th>
-              <th className="text-left py-3 px-2">Assigned</th>
-              <th className="text-left py-3 px-2">Expected Return</th>
-              <th className="text-left py-3 px-2">Location</th>
-              <th className="text-left py-3 px-2">Status</th>
-              <th className="text-right py-3 px-2">Actions</th>
-            </tr>
-          </thead>
+                        {a.assignmentStatus !== "RETURNED" && (
+                          <button
+                            title="Mark as Returned"
+                            onClick={() => handleReturn(a)}
+                            className="text-green-600 hover:text-green-900 transition-colors"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        )}
 
-          <tbody className="divide-y">
-            {assignments && assignments.length > 0 ? (
-              assignments.map((a) => (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-2 font-medium">
-                    {a.resourceName || "—"}
-                  </td>
-                  <td className="py-3 px-2">{a.projectName || "—"}</td>
-                  <td className="py-3 px-2">{a.assignedDate || "—"}</td>
-                  <td className="py-3 px-2">{a.expectedReturnDate || "—"}</td>
-                  <td className="py-3 px-2">{a.locationDetails || "—"}</td>
-                  <td className="py-3 px-2">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        STATUS_COLORS[a.usageStatus || a.usage_status]
-                      }`}
-                    >
-                      {a.usageStatus || a.usage_status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2 text-right flex justify-end gap-3">
-                    <Pencil
-                      size={16}
-                      className="cursor-pointer text-indigo-600"
-                      onClick={() => {
-                        setEditingAssignment(a);
-                        setFormData({
-                          resourceName: a.resourceName || "",
-                          projectName: a.projectName || "",
-                          assignedDate: a.assignedDate || "",
-                          expectedReturnDate: a.expectedReturnDate || "",
-                          usageStatus:
-                            a.usageStatus || a.usage_status || "Assigned",
-                          assignedBy: a.assignedBy || "",
-                          locationType: a.locationType || "Client Site",
-                          locationDetails: a.locationDetails || "",
-                          remarks: a.remarks || "",
-                        });
-                        setShowModal(true);
-                      }}
-                    />
-                    <RotateCcw
-                      size={16}
-                      className="cursor-pointer text-green-600"
-                      onClick={() => handleReturn(a)}
-                    />
-                    <Trash2
-                      size={16}
-                      className="cursor-pointer text-red-600"
-                      onClick={() => setDeleteTarget(a)}
-                    />
+                        <button
+                          title="Delete Record"
+                          onClick={() => setDeleteTarget(a)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-400 gap-2">
+                      <Box size={40} className="opacity-20" />
+                      <p className="text-sm italic">
+                        No assignments found for this asset.
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="text-center py-10 text-gray-400">
-                  No assignments yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ASSIGN ASSET MODAL */}
+      {/* MODAL */}
       {showModal && (
         <Modal
           title={editingAssignment ? "Edit Assignment" : "Assign Asset"}
-          onClose={() => {
-            setShowModal(false);
-            setEditingAssignment(null);
-          }}
+          onClose={closeModal}
         >
-          <form onSubmit={handleAssignSave} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleAssignSave} className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Resource Name"
-                value={asset?.assetName || ""}
-                disabled
+                name="resourceName"
+                value={formData.resourceName}
+                onChange={handleChange}
+                required
               />
-
               <Input
                 label="Project Name"
                 name="projectName"
@@ -484,7 +393,20 @@ const AssetDetail = () => {
                 onChange={handleChange}
                 required
               />
-
+              <Input
+                label="Serial Number"
+                name="serialNumber"
+                value={formData.serialNumber}
+                onChange={handleChange}
+                required
+              />
+              <Input
+                label="Assigned By"
+                name="assignedBy"
+                value={formData.assignedBy}
+                onChange={handleChange}
+                required
+              />
               <Input
                 label="Assigned Date"
                 type="date"
@@ -493,82 +415,63 @@ const AssetDetail = () => {
                 onChange={handleChange}
                 required
               />
-
               <Input
-                label="Expected Return Date"
+                label="Exp. Return"
                 type="date"
                 name="expectedReturnDate"
                 value={formData.expectedReturnDate}
                 onChange={handleChange}
               />
-
               <Select
-                label="Usage Status"
-                name="usageStatus"
-                value={formData.usageStatus}
+                label="Status"
+                name="assignmentStatus"
+                value={formData.assignmentStatus}
                 onChange={handleChange}
-                options={["Assigned", "In Use", "Returned", "Lost"]}
+                options={["ASSIGNED", "IN_USE", "RETURNED", "LOST"]}
               />
-
               <Input
-                label="Assigned By"
-                name="assignedBy"
-                value={formData.assignedBy}
-                onChange={handleChange}
-              />
-
-              <Select
                 label="Location Type"
                 name="locationType"
                 value={formData.locationType}
                 onChange={handleChange}
-                options={["Client Site", "Office", "Remote"]}
-              />
-
-              <Input
-                label="Location Details"
-                name="locationDetails"
-                value={formData.locationDetails}
-                onChange={handleChange}
               />
             </div>
-
-            <div>
-              <label className="text-sm font-medium">Remarks</label>
+            <div className="col-span-2">
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                Description
+              </label>
               <textarea
-                name="remarks"
-                value={formData.remarks}
+                name="description"
+                value={formData.description}
                 onChange={handleChange}
-                className="w-full border rounded-lg p-2 mt-1"
+                className="w-full bg-slate-50 border rounded-xl p-3 mt-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
                 rows={3}
               />
             </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
+            <div className="flex justify-end gap-3 pt-2">
+              <button
                 type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingAssignment(null);
-                }}
+                onClick={closeModal}
+                className="text-sm font-medium text-slate-500"
               >
                 Cancel
-              </Button>
+              </button>
               <Button type="submit" variant="primary">
-                Save
+                Confirm
               </Button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* DELETE MODAL */}
+      {/* DELETE DIALOG */}
       {deleteTarget && (
         <Modal title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
           <div className="space-y-4 text-center">
             <AlertTriangle className="mx-auto text-red-500" size={36} />
-            <p>Delete this asset?</p>
+            <p className="text-slate-600">
+              Are you sure you want to remove this record?
+            </p>
             <div className="flex justify-center gap-4 pt-4">
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
                 Cancel
@@ -584,8 +487,7 @@ const AssetDetail = () => {
   );
 };
 
-/* ---------------- UI HELPERS ---------------- */
-
+/* ---------------- HELPERS ---------------- */
 const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
   const utilColor =
     utilization >= 80
@@ -593,13 +495,12 @@ const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
       : utilization >= 50
         ? "text-yellow-600"
         : "text-red-600";
-
   return (
     <div className="bg-white border rounded-xl p-5 shadow-sm flex justify-between items-center">
       <div>
         <p className="text-xs text-gray-400 uppercase">{title}</p>
         <p
-          className={`text-2xl font-bold ${highlight || utilization ? utilColor : ""}`}
+          className={`text-2xl font-bold ${highlight ? "text-indigo-600" : utilization ? utilColor : ""}`}
         >
           {value}
         </p>
@@ -612,12 +513,15 @@ const Stat = ({ title, value, icon: Icon, highlight, utilization }) => {
 };
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl w-full max-w-xl shadow-lg">
-      <div className="flex justify-between items-center p-4 border-b">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose}>
-          <X />
+  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-b">
+        <h3 className="text-base font-semibold">{title}</h3>
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-600"
+        >
+          <X size={18} />
         </button>
       </div>
       <div className="p-6">{children}</div>
@@ -626,16 +530,26 @@ const Modal = ({ title, children, onClose }) => (
 );
 
 const Input = ({ label, ...props }) => (
-  <div>
-    <label className="text-sm font-medium">{label}</label>
-    <input {...props} className="w-full border rounded-lg p-2 mt-1" />
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+      {label}
+    </label>
+    <input
+      {...props}
+      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 transition-all"
+    />
   </div>
 );
 
 const Select = ({ label, options, ...props }) => (
-  <div>
-    <label className="text-sm font-medium">{label}</label>
-    <select {...props} className="w-full border rounded-lg p-2 mt-1">
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+      {label}
+    </label>
+    <select
+      {...props}
+      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 appearance-none"
+    >
       {options.map((opt) => (
         <option key={opt} value={opt}>
           {opt}

@@ -175,7 +175,7 @@ export const getClientEscalation = async (clientId) => {
 export const createClientAsset = async (assetData) => {
   try {
     const response = await axios.post(
-      `${RMS_BASE_URL}/api/clinet-assets`,
+      `${RMS_BASE_URL}/api/client-assets`,
       assetData,
       {
         headers: {
@@ -195,7 +195,7 @@ export const createClientAsset = async (assetData) => {
 export const updateClientAsset = async (assetId, assetData) => {
   try {
     const response = await axios.put(
-      `${RMS_BASE_URL}/api/clinet-assets/${assetId}`,
+      `${RMS_BASE_URL}/api/client-assets/${assetId}`,
       assetData,
       {
         headers: {
@@ -215,7 +215,7 @@ export const updateClientAsset = async (assetId, assetData) => {
 export const deleteClientAsset = async (assetId) => {
   try {
     const response = await axios.delete(
-      `${RMS_BASE_URL}/api/clinet-assets/${assetId}`,
+      `${RMS_BASE_URL}/api/client-assets/${assetId}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -234,7 +234,7 @@ export const deleteClientAsset = async (assetId) => {
 export const getAssetsByClient = async (clientId) => {
   try {
     const response = await axios.get(
-      `${RMS_BASE_URL}/api/clinet-assets/client/${clientId}`,
+      `${RMS_BASE_URL}/api/client-assets/client/${clientId}`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -246,18 +246,72 @@ export const getAssetsByClient = async (clientId) => {
     throw error;
   }
 };
+// export const getAssetById = async (assetId) => {
+//   try {
+//     const response = await axios.get(
+//       `${RMS_BASE_URL}/api/client-assets/${assetId}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+/* ===============================
+   GET ASSET BY ID
+   =============================== */
 export const getAssetById = async (assetId) => {
   try {
+    // 1. Ensure this URL matches your @GetMapping in Java EXACTLY
+    // 2. Double check if your backend expects /api/client-assets/54 
+    //    or perhaps /api/assets/54
     const response = await axios.get(
-      `${RMS_BASE_URL}/api/clinet-assets/${assetId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
+      `${RMS_BASE_URL}/api/client-asset-assignments`,
+      getAuthHeader()
     );
     return response.data;
   } catch (error) {
+    console.error("Fetch Asset Error:", error);
     throw error;
   }
 };
+
+/* ===============================
+   ASSIGN ASSET TO RESOURCE
+   =============================== */
+export const assignClientAsset = async (assignmentData) => {
+    try {
+        // FIX: Using the nested ID safely
+        const id = assignmentData.asset?.assetId || assignmentData.asset?.id;
+        
+        const response = await axios.post(
+            `${RMS_BASE_URL}/api/client-asset-assignments/${id}`,  
+            assignmentData, 
+            getAuthHeader()
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Asset Assignment Error:", error);
+        throw error;
+    }
+};
+
+
+export const assignUpdateClientAsset = async (assignmentId, assignmentData) => {
+  try {
+    const response = await axios.put(
+      `${RMS_BASE_URL}/api/client-asset-assignments/${assignmentId}`,
+      assignmentData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Update Assignment Error:", error);
+    throw error;
+  }
+};
+
