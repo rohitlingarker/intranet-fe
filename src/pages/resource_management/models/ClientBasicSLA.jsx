@@ -24,6 +24,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
   const ITEMS_PER_PAGE = 1;
 
   const handleSetFormData = (data) => {
+    if (!data) return;
     setFormData({
       client: {
         clientId: clientId,
@@ -54,13 +55,21 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
     setDeleteLoading(true);
     try {
       const res = await deleteClientSLA(selectedSLAId);
-      toast.success("SLA deleted successfully.");
-      fetchSLA();
+      setSLAList((prev) =>
+        prev.map((item) =>
+          item.slaId === updated.slaId
+            ? { ...item, ...updated }
+            : item,
+        ),
+      );
+      toast.success(res.message || "SLA deleted successfully.");
+      // fetchSLA();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete SLA.");
     } finally {
       setDeleteLoading(false);
       setOpenConfirmModal(false);
+      setSelectedSLAId(null);
     }
   };  
 
@@ -156,10 +165,9 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
 
                 <button
                   onClick={() => {
-                    setOpenConfirmModal(true);
                     setSelectedSLAId(currentSLA.slaId);
                     setOpenMenu(false);
-                    setOpenDeleteConfirm(true);
+                    setOpenConfirmModal(true);
                   }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
@@ -233,7 +241,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
         isOpen={openConfirmModal}
         onCancel={() => setOpenConfirmModal(false)}
         onConfirm={handleDeleteSLA}
-
+        isLoading={deleteLoading}
       /> 
     </div>
   );
