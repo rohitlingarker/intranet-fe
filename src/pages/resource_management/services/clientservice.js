@@ -378,14 +378,31 @@ export const getAssetsByClient = async (clientId) => {
 /* ===============================
    GET ASSET BY ID
    =============================== */
+// export const getAssetById = async (assetId) => {
+//   try {
+//     // 1. Ensure this URL matches your @GetMapping in Java EXACTLY
+//     // 2. Double check if your backend expects /api/client-assets/54 
+//     //    or perhaps /api/assets/54
+//     const response = await axios.get(
+//       `${RMS_BASE_URL}/api/client-asset-assignments`,
+//       getAuthHeader()
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Fetch Asset Error:", error);
+//     throw error;
+//   }
+// };
+
 export const getAssetById = async (assetId) => {
   try {
-    // 1. Ensure this URL matches your @GetMapping in Java EXACTLY
-    // 2. Double check if your backend expects /api/client-assets/54 
-    //    or perhaps /api/assets/54
     const response = await axios.get(
-      `${RMS_BASE_URL}/api/client-asset-assignments`,
-      getAuthHeader()
+      `${RMS_BASE_URL}/api/client-assets/${assetId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
     );
     return response.data;
   } catch (error) {
@@ -393,6 +410,7 @@ export const getAssetById = async (assetId) => {
     throw error;
   }
 };
+
 
 /* ===============================
    ASSIGN ASSET TO RESOURCE
@@ -476,4 +494,32 @@ export const deleteClientAssignment = async (assignmentId) => {
     throw error;
   }
 };
+
+export const getAssetDashboard = async () => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/client-assets/dashboard`,
+    getAuthHeader()
+  );
+  return res.data;
+};
+
+export const getAssetDashboardByClient = async (clientId) => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/client-assets/dashboard/client/${clientId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Client KPI Fetch Error:", error);
+    throw error;
+  }
+};
+
+
+
 
