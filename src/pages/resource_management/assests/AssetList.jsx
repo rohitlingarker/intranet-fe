@@ -18,7 +18,8 @@ import {
   createClientAsset,
   updateClientAsset,
   deleteClientAsset,
-} from "../services/clientservice"; 
+  getAssetDashboardByClient
+} from "../services/clientservice";
 import { toast } from "react-toastify";
 
 /* ---------------- MAIN COMPONENT ---------------- */
@@ -49,18 +50,34 @@ const AssetList = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAssets();
-  }, [clientId]);
 
   /* ---------------- KPI CALCULATIONS ---------------- */
 
-  const totalAssets = assets.reduce((s, a) => s + a.quantity, 0);
-  const assignedAssets = assets.reduce((s, a) => s + (a.assigned || 0), 0);
-  const availableAssets = totalAssets - assignedAssets;
+  // const totalAssets = assets.reduce((s, a) => s + a.quantity, 0);
+  // const assignedAssets = assets.reduce((s, a) => s + (a.assigned || 0), 0);
+  // const availableAssets = totalAssets - assignedAssets;
 
-  const utilization =
-    totalAssets > 0 ? Math.round((assignedAssets / totalAssets) * 100) : 0;
+  // const utilization =
+  //   totalAssets > 0 ? Math.round((assignedAssets / totalAssets) * 100) : 0;
+  const [kpi, setKpi] = useState({
+    totalAssets: 0,
+    assignedAssets: 0,
+    availableAssets: 0,
+    utilizationPercentage: 0,
+  });
+
+  const fetchKpi = async () => {
+    const res = await getAssetDashboardByClient(clientId);
+    if (res.success) {
+      setKpi(res.data);
+    }
+  };
+
+  useEffect(() => {
+    console.log("CLIENT ID:", clientId);
+    fetchAssets();
+    fetchKpi();
+  }, [clientId]);
 
   /* ---------------- SEARCH ---------------- */
 
@@ -74,39 +91,39 @@ const AssetList = () => {
   /* ---------------- ADD / EDIT ---------------- */
 
   const handleSaveAsset = async (e) => {
-  e.preventDefault();
-  const form = e.target;
+    e.preventDefault();
+    const form = e.target;
 
-  const payload = {
-    client: { clientId },
-    assetName: form.asset_name.value,
-    assetCategory: form.asset_category.value,
-    assetType: form.asset_type.value,
-    description: form.description.value,
-    // serialNumber: form.serial_number.value,
-    quantity: Number(form.quantity.value),
-  };
+    const payload = {
+      client: { clientId },
+      assetName: form.asset_name.value,
+      assetCategory: form.asset_category.value,
+      assetType: form.asset_type.value,
+      description: form.description.value,
+      // serialNumber: form.serial_number.value,
+      quantity: Number(form.quantity.value),
+    };
 
-  const savePromise = editingAsset
-    ? updateClientAsset(editingAsset.assetId, payload)
-    : createClientAsset(payload);
+    const savePromise = editingAsset
+      ? updateClientAsset(editingAsset.assetId, payload)
+      : createClientAsset(payload);
 
-  try {
-    const res = await savePromise;
+    try {
+      const res = await savePromise;
 
-    if (res.success) {
-      setShowModal(false);
-      setEditingAsset(null);
-      fetchAssets();
-      toast.success(res.message || "Operation successful!");
-    } else {
-      toast.error(res.message || "Something went wrong");
+      if (res.success) {
+        setShowModal(false);
+        setEditingAsset(null);
+        fetchAssets();
+        toast.success(res.message || "Operation successful!");
+      } else {
+        toast.error(res.message || "Something went wrong");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Server connection failed");
     }
-  } catch (err) {
-    console.error(err);
-    toast.error(err.response?.data?.message || "Server connection failed");
-  }
-};
+  };
 
   /* ---------------- DELETE ---------------- */
 
@@ -153,14 +170,18 @@ const AssetList = () => {
 
       {/* KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi title="Total Assets" value={totalAssets} icon={Box} />
-        <Kpi title="Assigned Assets" value={assignedAssets} icon={Users} />
-        <Kpi title="Available Assets" value={availableAssets} icon={Laptop} />
+        <Kpi title="Total Assets" value={kpi.totalAssets} icon={Box} />
+        <Kpi title="Assigned Assets" value={kpi.assignedAssets} icon={Users} />
+        <Kpi
+          title="Available Assets"
+          value={kpi.availableAssets}
+          icon={Laptop}
+        />
         <Kpi
           title="Asset Utilization"
-          value={`${utilization}%`}
+          value={`${kpi.utilizationPercentage}%`}
           icon={Users}
-          highlight={utilization}
+          highlight={kpi.utilizationPercentage}
         />
       </div>
 
@@ -318,7 +339,6 @@ const AssetList = () => {
                 variant="primary"
                 className="px-6 py-2 text-sm font-semibold"
                 type="submit"
-                
               >
                 Save Asset
               </Button>
