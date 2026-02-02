@@ -328,6 +328,20 @@ export const assignClientAsset = async (assignmentData) => {
         throw error;
     }
 };
+export const updateClient = async (clientData) => {
+    try {
+        const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData, 
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
 
 
 export const assignUpdateClientAsset = async (assignmentId, assignmentData) => {
@@ -342,22 +356,6 @@ export const assignUpdateClientAsset = async (assignmentId, assignmentData) => {
     console.error("Update Assignment Error:", error);
     throw error;
   }
-};
-
-
-export const updateClient = async (clientData) => {
-    try {
-        const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData, 
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                }
-            }
-        );
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
 };
 
 export const deleteClient = async (clientId) => {
