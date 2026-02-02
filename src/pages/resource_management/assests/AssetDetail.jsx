@@ -15,11 +15,12 @@ import {
 import Button from "../../../components/Button/Button";
 import {
   getAssetsByClient,
-  updateClientAsset,
-  deleteClientAsset,
+  // updateClientAsset,
+  // deleteClientAsset,
   getAssetById,
   assignClientAsset, // Make sure this is exported in your service file
   assignUpdateClientAsset,
+  deleteClientAssignment,
 } from "../services/clientservice";
 
 /* ---------------- STATUS COLORS ---------------- */
@@ -41,6 +42,8 @@ const AssetDetail = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
+  const [activeTab, setActiveTab] = useState("ACTIVE");
+  // ACTIVE | HISTORY
 
   const [formData, setFormData] = useState({
     resourceName: "",
@@ -54,6 +57,57 @@ const AssetDetail = () => {
     description: "",
     serialNumber: "",
   });
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnItem, setReturnItem] = useState(null);
+
+  const [returnData, setReturnData] = useState({
+    resourceName: "",
+    projectName: "",
+    serialNumber: "",
+    assignedBy: "",
+    locationType: "Client Site",
+    locationDetails: "",
+    conditionOnReturn: "",
+    returnNotes: "",
+  });
+  // const [returnData, setReturnData] = useState({
+  // conditionOnReturn: "",
+  // returnNotes: "",
+  // });
+
+  const handleReturnChange = (e) => {
+    const { name, value } = e.target;
+    setReturnData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReturnSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      await assignUpdateClientAsset(returnItem.assignmentId, {
+        ...returnItem,
+        ...returnData,
+        assignmentStatus: "RETURNED",
+        actualReturnDate: today,
+      });
+
+      await fetchData();
+      setReturnModal(false);
+      setReturnItem(null);
+      setReturnData({
+        resourceName: "",
+        projectName: "",
+        serialNumber: "",
+        assignedBy: "",
+        locationType: "Client Site",
+        locationDetails: "",
+        conditionOnReturn: "",
+        returnNotes: "",
+      });
+    } catch (err) {
+      console.error("Return Submit Error:", err);
+    }
+  };
 
   /* ---------------- FETCH DATA ---------------- */
   const fetchData = async () => {
@@ -65,10 +119,21 @@ const AssetDetail = () => {
         getAssetsByClient(clientId),
       ]);
 
+      console.log("Asset Response:", assetRes);
+      console.log("Assignments Response:", assignmentsRes);
+
+      //
       // 1. Set the Master Asset
       if (assetRes.success) {
-        console.log("Fetched Asset:", assetRes.data);
-        setAssignments(assetRes.data);
+        setAsset(assetRes.data);
+      }
+
+      if (assignmentsRes.success && Array.isArray(assignmentsRes.data)) {
+        const filtered = assignmentsRes.data.filter(
+          (a) =>
+            String(a.asset?.assetId) === String(assetId) && a.active !== false,
+        );
+        setAssignments(filtered);
       }
 
       // 2. Filter Assignments specifically for THIS asset
@@ -115,6 +180,14 @@ const AssetDetail = () => {
   const utilization =
     TOTAL_STOCK > 0 ? Math.round((assignedCount / TOTAL_STOCK) * 100) : 0;
 
+  const activeAssignments = assignments.filter(
+    (a) => a.assignmentStatus !== "RETURNED",
+  );
+
+  const returnedAssignments = assignments.filter(
+    (a) => a.assignmentStatus === "RETURNED",
+  );
+
   /* ---------------- HANDLERS ---------------- */
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -155,28 +228,16 @@ const AssetDetail = () => {
     }
   };
 
-  const handleReturn = async (item) => {
-    try {
-      await assignUpdateClientAsset(item.assignmentId, {
-        ...item,
-        assignmentStatus: "RETURNED",
-        actualReturnDate: today,
-      });
-
-      await fetchData();
-    } catch (err) {
-      console.error("Return Error:", err);
-    }
-  };
-
   const confirmDelete = async () => {
+    console.log("Deleting assignment ID:", deleteTarget.assignmentId);
     try {
-      await assignUpdateClientAsset(deleteTarget.assignmentId, {
-  ...deleteTarget,
-  active: false,
-});
+      await deleteClientAssignment(deleteTarget.assignmentId);
 
-      await fetchData();
+      // Remove from UI immediately
+      setAssignments((prev) =>
+        prev.filter((a) => a.assignmentId !== deleteTarget.assignmentId),
+      );
+
       setDeleteTarget(null);
     } catch (err) {
       console.error("Delete Error:", err);
@@ -220,7 +281,7 @@ const AssetDetail = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold">
-              {asset?.assetName || "Asset Detail"}
+              {asset?.asset?.assetName || "Asset Detail"}
             </h1>
 
             <p className="text-sm text-gray-500">
@@ -266,6 +327,30 @@ const AssetDetail = () => {
         />
       </div>
 
+      <div className="flex border-b mb-4">
+        <button
+          onClick={() => setActiveTab("ACTIVE")}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition ${
+            activeTab === "ACTIVE"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500 hover:text-indigo-600"
+          }`}
+        >
+          Active Assignments
+        </button>
+
+        <button
+          onClick={() => setActiveTab("HISTORY")}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition ${
+            activeTab === "HISTORY"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500 hover:text-indigo-600"
+          }`}
+        >
+          Assignment History
+        </button>
+      </div>
+
       {/* ASSIGNMENT HISTORY TABLE */}
       <div className="bg-white border rounded-xl shadow-sm p-6 overflow-hidden">
         <h2 className="text-lg font-semibold mb-4">Assignment History</h2>
@@ -282,78 +367,107 @@ const AssetDetail = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {assignments && assignments.length > 0 ? (
-                assignments.map((a) => (
-                  <tr
-                    key={a.assignmentId}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-3 px-2 font-medium text-slate-700">
-                      {a.resourceName}
-                    </td>
-                    <td className="py-3 px-2 text-slate-600">
-                      {a.projectName}
-                    </td>
-                    <td className="py-3 px-2 text-xs font-mono text-slate-500">
-                      {a.serialNumber || "N/A"}
-                    </td>
-                    <td className="py-3 px-2 text-slate-600">
-                      {a.assignedDate}
-                    </td>
-                    <td className="py-3 px-2">
-                      <span
-                        className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${STATUS_COLORS[a.assignmentStatus] || "bg-gray-100"}`}
-                      >
-                        {a.assignmentStatus}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      <div className="flex justify-end gap-3">
-                        <button
-                          title="Edit Assignment"
-                          onClick={() => {
-                            setEditingAssignment(a);
-                            setFormData({
-                              resourceName: a.resourceName || "",
-                              projectName: a.projectName || "",
-                              assignedDate: a.assignedDate || "",
-                              expectedReturnDate: a.expectedReturnDate || "",
-                              assignmentStatus:
-                                a.assignmentStatus || "ASSIGNED",
-                              assignedBy: a.assignedBy || "",
-                              locationType: a.locationType || "Client Site",
-                              locationDetails: a.locationDetails || "",
-                              description: a.description || "",
-                              serialNumber: a.serialNumber || "",
-                            });
-                            setShowModal(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900 transition-colors"
+              {asset && asset.length > 0 ? (
+                asset
+                  .filter((a) =>
+                    activeTab === "ACTIVE"
+                      ? a.assignmentStatus !== "RETURNED"
+                      : a.assignmentStatus === "RETURNED",
+                  )
+                  .map((a) => (
+                    <tr
+                      key={a.assignmentId}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-3 px-2 font-medium text-slate-700">
+                        {a.resourceName}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600">
+                        {a.projectName}
+                      </td>
+                      <td className="py-3 px-2 text-xs font-mono text-slate-500">
+                        {a.serialNumber || "N/A"}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600">
+                        {a.assignedDate}
+                      </td>
+                      <td className="py-3 px-2">
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
+                            STATUS_COLORS[a.assignmentStatus] || "bg-gray-100"
+                          }`}
                         >
-                          <Pencil size={16} />
-                        </button>
+                          {a.assignmentStatus}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        {activeTab === "ACTIVE" ? (
+                          <div className="flex justify-end gap-3">
+                            <button
+                              title="Edit Assignment"
+                              onClick={() => {
+                                setEditingAssignment(a);
+                                setFormData({
+                                  resourceName: a.resourceName || "",
+                                  projectName: a.projectName || "",
+                                  assignedDate: a.assignedDate || "",
+                                  expectedReturnDate:
+                                    a.expectedReturnDate || "",
+                                  assignmentStatus:
+                                    a.assignmentStatus || "ASSIGNED",
+                                  assignedBy: a.assignedBy || "",
+                                  locationType: a.locationType || "Client Site",
+                                  locationDetails: a.locationDetails || "",
+                                  description: a.description || "",
+                                  serialNumber: a.serialNumber || "",
+                                });
+                                setShowModal(true);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                            >
+                              <Pencil size={16} />
+                            </button>
 
-                        {a.assignmentStatus !== "RETURNED" && (
-                          <button
-                            title="Mark as Returned"
-                            onClick={() => handleReturn(a)}
-                            className="text-green-600 hover:text-green-900 transition-colors"
-                          >
-                            <RotateCcw size={16} />
-                          </button>
+                            {a.assignmentStatus !== "RETURNED" && (
+                              <button
+                                title="Mark as Returned"
+                                onClick={() => {
+                                  setReturnItem(a);
+                                  setReturnData({
+                                    resourceName: a.resourceName || "",
+                                    projectName: a.projectName || "",
+                                    serialNumber: a.serialNumber || "",
+                                    assignedBy: a.assignedBy || "",
+                                    locationType:
+                                      a.locationType || "Client Site",
+                                    locationDetails: a.locationDetails || "",
+                                    conditionOnReturn: "",
+                                    returnNotes: "",
+                                  });
+                                  setReturnModal(true);
+                                }}
+                                className="text-green-600 hover:text-green-900 transition-colors"
+                              >
+                                <RotateCcw size={16} />
+                              </button>
+                            )}
+
+                            <button
+                              title="Delete Record"
+                              onClick={() => setDeleteTarget(a)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">
+                            Returned Record
+                          </span>
                         )}
-
-                        <button
-                          title="Delete Record"
-                          onClick={() => setDeleteTarget(a)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  ))
               ) : (
                 <tr>
                   <td colSpan="6" className="py-12 text-center">
@@ -458,6 +572,93 @@ const AssetDetail = () => {
               </button>
               <Button type="submit" variant="primary">
                 Confirm
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {returnModal && returnItem && (
+        <Modal title="Return Asset" onClose={() => setReturnModal(false)}>
+          <form onSubmit={handleReturnSubmit} className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Resource Name"
+                name="resourceName"
+                value={returnData.resourceName}
+                onChange={handleReturnChange}
+              />
+
+              <Input
+                label="Project"
+                name="projectName"
+                value={returnData.projectName}
+                onChange={handleReturnChange}
+              />
+
+              <Input
+                label="Serial Number"
+                name="serialNumber"
+                value={returnData.serialNumber}
+                onChange={handleReturnChange}
+              />
+
+              <Input
+                label="Assigned By"
+                name="assignedBy"
+                value={returnData.assignedBy}
+                onChange={handleReturnChange}
+              />
+
+              <Input
+                label="Location Type"
+                name="locationType"
+                value={returnData.locationType}
+                onChange={handleReturnChange}
+              />
+
+              <Input
+                label="Location Details"
+                name="locationDetails"
+                value={returnData.locationDetails}
+                onChange={handleReturnChange}
+              />
+
+              {/* Auto-filled, not editable */}
+              <Input label="Return Date" value={today} disabled />
+            </div>
+
+            <Select
+              label="Condition on Return"
+              name="conditionOnReturn"
+              value={returnData.conditionOnReturn}
+              onChange={handleReturnChange}
+              options={["Good", "Damaged", "Needs Repair", "Lost"]}
+            />
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                Return Notes
+              </label>
+              <textarea
+                name="returnNotes"
+                value={returnData.returnNotes}
+                onChange={handleReturnChange}
+                className="w-full bg-slate-50 border rounded-xl p-3 mt-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setReturnModal(false)}
+                className="text-sm font-medium text-slate-500"
+              >
+                Cancel
+              </button>
+              <Button type="submit" variant="primary">
+                Confirm Return
               </Button>
             </div>
           </form>
