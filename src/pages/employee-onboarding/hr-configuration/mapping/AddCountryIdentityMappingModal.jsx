@@ -14,21 +14,32 @@ export default function AddCountryIdentityMappingModal({
 
   const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
   const token = localStorage.getItem("token");
+  const headers = { Authorization: `Bearer ${token}` };
 
+  /* -------- LOAD IDENTITIES -------- */
   useEffect(() => {
     const loadIdentities = async () => {
-      const res = await axios.get(`${BASE_URL}/identity`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setIdentities(res.data);
+      try {
+        const res = await axios.get(`${BASE_URL}/identity`, { headers });
+        setIdentities(res.data);
+      } catch {
+        toast.error("Failed to load identities");
+      }
     };
     loadIdentities();
   }, []);
 
+  /* -------- SAVE -------- */
   const handleSave = async () => {
+    if (!identityUuid) {
+      toast.error("Select identity type");
+      return;
+    }
+
     try {
       setSaving(true);
-      await axios.post(
+
+      const res = await axios.post(
         `${BASE_URL}/identity/country-mapping`,
         {
           country_uuid: countryUuid,
@@ -42,9 +53,22 @@ export default function AddCountryIdentityMappingModal({
           },
         }
       );
+
+      // ✅ Build mapping object for parent (NO reload)
+      const identity = identities.find(
+        (i) => i.identity_type_uuid === identityUuid
+      );
+
+      const newMapping = {
+        mapping_uuid: res.data.mapping_uuid,
+        identity_type_uuid: identityUuid,
+        identity_type_name: identity?.identity_type_name || "",
+        is_mandatory: mandatory,
+      };
+
       toast.success("Identity mapped successfully");
+      onSuccess(newMapping); // ✅ parent updates table instantly
       onClose();
-      onSuccess();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to create mapping");
     } finally {
@@ -83,19 +107,18 @@ export default function AddCountryIdentityMappingModal({
         </label>
 
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded-lg transition-all duration-100 ease-in-out
+            active:translate-y-[1px]"
+          >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!identityUuid || saving}
             className={`px-4 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2 ${
+            active:translate-y-[1px] ${
               saving || !identityUuid
                 ? "bg-gray-400"
                 : "bg-blue-700 hover:bg-blue-800"
