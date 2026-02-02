@@ -12,14 +12,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Button from "../../../components/Button/Button";
-import toast from "react-hot-toast";
 
 import {
   getAssetsByClient,
   createClientAsset,
   updateClientAsset,
   deleteClientAsset,
-} from "../services/clientservice";
+} from "../services/clientservice"; 
+import { toast } from "react-toastify";
 
 /* ---------------- MAIN COMPONENT ---------------- */
 
@@ -74,36 +74,39 @@ const AssetList = () => {
   /* ---------------- ADD / EDIT ---------------- */
 
   const handleSaveAsset = async (e) => {
-    e.preventDefault();
-    const form = e.target;
+  e.preventDefault();
+  const form = e.target;
 
-    const payload = {
-      client: { clientId },
-      assetName: form.asset_name.value,
-      assetCategory: form.asset_category.value,
-      assetType: form.asset_type.value,
-      description: form.description.value,
-      serialNumber: form.serial_number.value,
-      quantity: Number(form.quantity.value),
-    };
+  const payload = {
+    client: { clientId },
+    assetName: form.asset_name.value,
+    assetCategory: form.asset_category.value,
+    assetType: form.asset_type.value,
+    description: form.description.value,
+    // serialNumber: form.serial_number.value,
+    quantity: Number(form.quantity.value),
+  };
 
-    try {
-      if (editingAsset) {
-        await updateClientAsset(editingAsset.assetId, payload);
-        toast.success("Asset updated successfully");
-      } else {
-        await createClientAsset(payload);
-        toast.success("Asset added successfully");
-      }
+  const savePromise = editingAsset
+    ? updateClientAsset(editingAsset.assetId, payload)
+    : createClientAsset(payload);
 
+  try {
+    const res = await savePromise;
+
+    if (res.success) {
       setShowModal(false);
       setEditingAsset(null);
-      await fetchAssets();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save asset");
+      fetchAssets();
+      toast.success(res.message || "Operation successful!");
+    } else {
+      toast.error(res.message || "Something went wrong");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "Server connection failed");
+  }
+};
 
   /* ---------------- DELETE ---------------- */
 
@@ -180,7 +183,7 @@ const AssetList = () => {
           <thead className="text-xs uppercase text-gray-500">
             <tr>
               <th className="text-left py-3">Asset Name</th>
-              <th className="text-center">Serial Number</th>
+              {/* <th className="text-center">Serial Number</th> */}
               <th>Category</th>
               <th>Type</th>
               <th className="text-center">Quantity</th>
@@ -196,11 +199,11 @@ const AssetList = () => {
                   key={asset.assetId}
                   className="hover:bg-indigo-50 cursor-pointer"
                   onClick={() =>
-                    navigate(`/assets/${clientId}/assets${asset.assetId}`)
+                    navigate(`/assets/${clientId}/${asset.assetId}`)
                   }
                 >
                   <td className="py-4 font-medium">{asset.assetName}</td>
-                  <td className="text-center">{asset.serialNumber}</td>
+                  {/* <td className="text-center">{asset.serialNumber}</td> */}
                   <td>{asset.assetCategory}</td>
                   <td>{asset.assetType}</td>
                   <td className="text-center">{asset.quantity}</td>
@@ -252,12 +255,15 @@ const AssetList = () => {
           }}
         >
           <form onSubmit={handleSaveAsset} className="space-y-4">
+            {/* Full Width */}
             <Input
               label="Asset Name"
               name="asset_name"
               defaultValue={editingAsset?.assetName}
               required
             />
+
+            {/* Full Width */}
             <Input
               label="Description"
               name="description"
@@ -265,43 +271,56 @@ const AssetList = () => {
               placeholder="Brief asset description"
             />
 
-            <Input
-              label="Serial Number"
-              name="serial_number"
-              defaultValue={editingAsset?.serialNumber}
-              placeholder="Unique serial number"
-            />
-            <Select
-              label="Asset Category"
-              name="asset_category"
-              options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
-              defaultValue={editingAsset?.assetCategory}
-            />
-            <Select
-              label="Asset Type"
-              name="asset_type"
-              options={["Laptop", "Mobile", "License", "VPN", "Tool"]}
-              defaultValue={editingAsset?.assetType}
-            />
-            <Input
-              label="Quantity"
-              name="quantity"
-              type="number"
-              min="1"
-              defaultValue={editingAsset?.quantity}
-              required
-            />
+            {/* Two Columns Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* <Input
+                label="Serial Number"
+                name="serial_number"
+                defaultValue={editingAsset?.serialNumber}
+                placeholder="Unique serial"
+              /> */}
+              <Select
+                label="Asset Category"
+                name="asset_category"
+                options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
+                defaultValue={editingAsset?.assetCategory}
+              />
+            </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Asset Type"
+                name="asset_type"
+                options={["Laptop", "Mobile", "License", "VPN", "Tool"]}
+                defaultValue={editingAsset?.assetType}
+              />
+              <Input
+                label="Quantity"
+                name="quantity"
+                type="number"
+                min="1"
+                defaultValue={editingAsset?.quantity}
+                required
+              />
+            </div>
+
+            {/* Compact Action Buttons */}
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="secondary"
+                className="px-4 py-2 text-sm"
                 type="button"
                 onClick={() => setShowModal(false)}
               >
                 Cancel
               </Button>
-              <Button variant="primary" type="submit">
-                Save
+              <Button
+                variant="primary"
+                className="px-6 py-2 text-sm font-semibold"
+                type="submit"
+                
+              >
+                Save Asset
               </Button>
             </div>
           </form>
@@ -368,34 +387,44 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Locate your Modal component and change the width class
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
-      <div className="flex justify-between items-center p-4 border-b">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose}>
-          <X />
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
+      {" "}
+      {/* Changed to max-w-md */}
+      <div className="flex justify-between items-center px-5 py-4 border-b">
+        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <X size={20} />
         </button>
       </div>
-      <div className="p-6">{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   </div>
 );
 
 const Input = ({ label, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}</label>
-    <input {...props} className="w-full border rounded-lg px-3 py-2 text-sm" />
+  <div className="flex flex-col gap-1">
+    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+      {label}
+    </label>
+    <input
+      {...props}
+      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+    />
   </div>
 );
 
 const Select = ({ label, options, defaultValue, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}</label>
+  <div className="flex flex-col gap-1">
+    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+      {label}
+    </label>
     <select
       {...props}
       defaultValue={defaultValue}
-      className="w-full border rounded-lg px-3 py-2 text-sm"
+      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
     >
       {options.map((o) => (
         <option key={o} value={o}>

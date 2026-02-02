@@ -41,19 +41,34 @@ export default function CountryIdentityMapping() {
   };
 
   const fetchMappings = async (countryUuid) => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `${BASE_URL}/identity/country-mapping/identities/${countryUuid}`,
-        { headers }
-      );
-      setMappings(res.data);
-    } catch {
-      toast.error("Failed to load mappings");
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+
+    const res = await axios.get(
+      `${BASE_URL}/identity/country-mapping/identities/${countryUuid}`,
+      { headers }
+    );
+
+    // ✅ handle empty list
+    if (!res.data || res.data.length === 0) {
+      setMappings([]);
+      toast.info("No mappings found");
+      return;
     }
-  };
+
+    setMappings(res.data);
+  } catch (err) {
+    // ✅ handle "no mappings" from backend (404)
+    if (err?.response?.status === 404) {
+      setMappings([]);
+      toast.info("No mappings found");
+    } else {
+      toast.error("Failed to load mappings");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* ---------------- ADD / UPDATE ---------------- */
   const submitMapping = async () => {
@@ -159,12 +174,12 @@ export default function CountryIdentityMapping() {
   };
 
 
-  const deleteEmployeeDocument = async (documentUuid) => {
+  const deleteEmployeeDocument = async (document_uuid) => {
   try {
-    setDeletingDocUuid(documentUuid);
+    setDeletingDocUuid(document_uuid);
 
     await axios.delete(
-      `${BASE_URL}/employee-details/identity/{document_uuid}`,
+      `${BASE_URL}/employee-details/identity/${document_uuid}`,
       { headers }
     );
 
@@ -172,7 +187,7 @@ export default function CountryIdentityMapping() {
     setDeleteError((prev) => ({
       ...prev,
       employees: prev.employees.filter(
-        (e) => e.document_uuid !== documentUuid
+        (e) => e.document_uuid !== document_uuid
       ),
     }));
 
@@ -235,12 +250,13 @@ export default function CountryIdentityMapping() {
   <AddCountryIdentityMappingModal
     countryUuid={selectedCountry}
     onClose={() => setShowForm(false)}
-    onSuccess={() => {
-      fetchMappings(selectedCountry); // reload table
+    onSuccess={(newMapping) => {
+      setMappings((prev) => [...prev, newMapping]); // ✅ AUTO UPDATE
       setShowForm(false);
     }}
   />
 )}
+
 
       {selectedCountry && (
         <button
