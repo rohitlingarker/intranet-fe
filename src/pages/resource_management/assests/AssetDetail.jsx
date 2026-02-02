@@ -358,12 +358,12 @@ const AssetDetail = () => {
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-gray-500 border-b bg-gray-50">
               <tr>
-                <th className="text-left py-3 px-4">Resource</th>
-                <th className="text-left py-3 px-2">Project</th>
-                <th className="text-left py-3 px-4">Serial</th>
-                <th className="text-left py-3 px-2">Assigned</th>
-                <th className="text-left py-3 px-2">Status</th>
-                <th className="text-right py-3 px-2">Actions</th>
+                <th className="py-3 px-4 w-[20%]">Resource</th>
+                <th className="py-3 px-4 w-[20%]">Project</th>
+                <th className="py-3 px-4 w-[15%] text-center">Serial</th>
+                <th className="py-3 px-4 w-[15%] text-center">Assigned</th>
+                <th className="py-3 px-4 w-[15%] text-center">Status</th>
+                <th className="py-3 px-4 w-[15%] text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -379,28 +379,26 @@ const AssetDetail = () => {
                       key={a.assignmentId}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="py-3 px-2 font-medium text-slate-700">
+                      <td className="py-3 px-4 font-medium text-slate-700">
                         {a.resourceName}
                       </td>
-                      <td className="py-3 px-2 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600">
                         {a.projectName}
                       </td>
-                      <td className="py-3 px-2 text-xs font-mono text-slate-500">
+                      <td className="py-3 px-4 text-xs font-mono text-slate-500 text-center">
                         {a.serialNumber || "N/A"}
                       </td>
-                      <td className="py-3 px-2 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600 text-center">
                         {a.assignedDate}
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-4 text-center">
                         <span
-                          className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
-                            STATUS_COLORS[a.assignmentStatus] || "bg-gray-100"
-                          }`}
+                          className={`inline-flex items-center justify-center min-w-[70px] h-6 text-[10px] px-2 rounded-full font-bold uppercase ${STATUS_COLORS[a.assignmentStatus] || "bg-gray-100"}`}
                         >
                           {a.assignmentStatus}
                         </span>
                       </td>
-                      <td className="py-3 px-2 text-right">
+                      <td className="py-3 px-4 text-center">
                         {activeTab === "ACTIVE" ? (
                           <div className="flex justify-end gap-3">
                             <button
