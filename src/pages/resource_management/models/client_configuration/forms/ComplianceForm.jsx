@@ -1,13 +1,13 @@
 import React, { useEffect } from "react";
 
 const ComplianceForm = ({ formData, setFormData }) => {
-  useEffect(() => {
-    setFormData((prev) => ({
-      mandatoryFlag: prev.mandatoryFlag ?? true,
-      activeFlag: prev.activeFlag ?? true,
-      ...prev,
-    }));
-  }, []);
+  // useEffect(() => {
+  //   setFormData((prev) => ({
+  //     mandatoryFlag: prev.mandatoryFlag ?? true,
+  //     activeFlag: prev.activeFlag ?? true,
+  //     ...prev,
+  //   }));
+  // }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

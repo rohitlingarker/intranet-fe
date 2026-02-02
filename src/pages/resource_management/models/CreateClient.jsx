@@ -307,7 +307,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
             disabled={isSubmitting}
             className={`${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isSubmitting ? "Creating..." : "Create Client"}
+            {(mode === "edit" ? (isSubmitting ? `Updating...`: `Update Client`) :  (isSubmitting ? `Creating...`: `Create Client`))}
           </Button>
         </div>
       </div>
