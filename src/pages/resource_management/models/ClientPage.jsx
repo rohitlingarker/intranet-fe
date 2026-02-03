@@ -281,6 +281,7 @@ const ClientPage = () => {
   const permissions = user?.permissions || [];
   const canConfigAgreements = permissions.includes("ADD_CONFIGURATION");
   const canManageAssets = permissions.includes("ASSETS_MANAGEMENT");
+  const canEditProfile = permissions.includes("EDIT_CLIENT_PROFILE");
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -474,18 +475,22 @@ const ClientPage = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               {clientDetails.client_name}
-              <Pencil
-                size={16}
-                className="text-blue-500 hover:text-blue-700 cursor-pointer mt-2"
-                title="Edit Client"
-                onClick={() => setOpenUpdateClient(true)}
-              />
-              <Trash2
-                size={16}
-                className="text-red-500 hover:text-red-700 cursor-pointer mt-2"
-                title="Delete Client"
-                onClick={() => setOpenDeleteClient(true)}
-              />
+              {canEditProfile && (
+                <>
+                  <Pencil
+                    size={16}
+                    className="text-blue-500 hover:text-blue-700 cursor-pointer mt-2"
+                    title="Edit Client"
+                    onClick={() => setOpenUpdateClient(true)}
+                  />
+                  <Trash2
+                    size={16}
+                    className="text-red-500 hover:text-red-700 cursor-pointer mt-2"
+                    title="Delete Client"
+                    onClick={() => setOpenDeleteClient(true)}
+                  />
+                </>
+              )}
             </h1>
             <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
               <span className="flex items-center gap-1">

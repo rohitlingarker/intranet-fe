@@ -7,8 +7,12 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import SLAForm from "./client_configuration/forms/SLAForm";
 import Modal from "../../../components/Modal/modal";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
+  const canEditConfig = permissions.includes("EDIT_CLIENT_CONFIG");
   const [slaList, setSLAList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -141,43 +145,44 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
             </h2>
           </div>
 
-          {/* Action menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setOpenMenu((prev) => !prev)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <MoreHorizontal />
-            </button>
+          {canEditConfig && (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setOpenMenu((prev) => !prev)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <MoreHorizontal />
+              </button>
 
-            {openMenu && (
-              <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
-                <button
-                  onClick={() => {
-                    handleSetFormData(currentSLA);
-                    setOpenMenu(false);
-                    setOpenUpdateSLA(true);
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
-                >
-                  <Pencil size={14} />
-                  Update
-                </button>
+              {openMenu && (
+                <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      handleSetFormData(currentSLA);
+                      setOpenMenu(false);
+                      setOpenUpdateSLA(true);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
+                  >
+                    <Pencil size={14} />
+                    Update
+                  </button>
 
-                <button
-                  onClick={() => {
-                    setSelectedSLAId(currentSLA.slaId);
-                    setOpenMenu(false);
-                    setOpenConfirmModal(true);
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={() => {
+                      setSelectedSLAId(currentSLA.slaId);
+                      setOpenMenu(false);
+                      setOpenConfirmModal(true);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-gray-500">SLA Type</span>
