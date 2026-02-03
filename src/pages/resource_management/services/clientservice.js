@@ -378,21 +378,21 @@ export const getAssetsByClient = async (clientId) => {
 /* ===============================
    GET ASSET BY ID
    =============================== */
-// export const getAssetById = async (assetId) => {
-//   try {
-//     // 1. Ensure this URL matches your @GetMapping in Java EXACTLY
-//     // 2. Double check if your backend expects /api/client-assets/54 
-//     //    or perhaps /api/assets/54
-//     const response = await axios.get(
-//       `${RMS_BASE_URL}/api/client-asset-assignments`,
-//       getAuthHeader()
-//     );
-//     return response.data;
-//   } catch (error) {
-//     console.error("Fetch Asset Error:", error);
-//     throw error;
-//   }
-// };
+export const getClientAssetAssignments = async (assetId) => {
+  try {
+    // 1. Ensure this URL matches your @GetMapping in Java EXACTLY
+    // 2. Double check if your backend expects /api/client-assets/54 
+    //    or perhaps /api/assets/54
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/client-asset-assignments`,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Fetch Asset Error:", error);
+    throw error;
+  }
+};
 
 export const getAssetById = async (assetId) => {
   try {

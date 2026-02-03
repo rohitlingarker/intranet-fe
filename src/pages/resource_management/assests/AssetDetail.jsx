@@ -17,21 +17,21 @@ import {
   getAssetsByClient,
   // updateClientAsset,
   // deleteClientAsset,
-  getAssetById,
+  getClientAssetAssignments,
   assignClientAsset, // Make sure this is exported in your service file
   assignUpdateClientAsset,
   deleteClientAssignment,
 } from "../services/clientservice";
 import { set } from "date-fns";
-import toast from "react-hot-toast";
+import {toast} from "react-toastify";
 
 /* ---------------- STATUS COLORS ---------------- */
 // Matches your Java EnablementAssignmentStatus Enum values
 const STATUS_COLORS = {
   ASSIGNED: "bg-blue-100 text-blue-700",
-  IN_USE: "bg-green-100 text-green-700",
+  RE: "bg-green-100 text-green-700",
   RETURNED: "bg-gray-100 text-gray-700",
-  LOST: "bg-red-100 text-red-700",
+  REJECTED: "bg-red-100 text-red-700",
 };
 
 const AssetDetail = () => {
@@ -115,15 +115,13 @@ const AssetDetail = () => {
     }
   };
 
-  
-
   /* ---------------- FETCH DATA ---------------- */
   const fetchData = async () => {
     try {
       console.log("Fetching for Asset ID:", assetId);
 
       const [assetRes, assignmentsRes] = await Promise.all([
-        getAssetById(assetId),
+        getClientAssetAssignments(assetId),
         getAssetsByClient(clientId),
       ]);
 
@@ -239,14 +237,14 @@ const AssetDetail = () => {
   const confirmDelete = async () => {
     console.log("Deleting assignment ID:", deleteTarget.assignmentId);
     try {
-      await deleteClientAssignment(deleteTarget.assignmentId);
+      const res = await deleteClientAssignment(deleteTarget.assignmentId);
       fetchData();
       setDeleteTarget(null);
       setCurrentPage(1); // reset page to avoid empty page bug
-toast.success("Record deleted");
+      toast.success(res.message || "Record deleted");
     } catch (err) {
       console.error("Delete Error:", err);
-      toast.error("Failed to delete the record.");
+      toast.error(err.response?.data?.message || "Failed to delete the record.");
     }
   };
 
@@ -625,7 +623,7 @@ const paginatedAssignments = filteredAssignments.slice(
                 name="assignmentStatus"
                 value={formData.assignmentStatus}
                 onChange={handleChange}
-                options={["ASSIGNED", "IN_USE", "RETURNED", "LOST"]}
+                options={["ASSIGNED", "REQUESTED", "RETURNED", "REJECTED"]}
               />
               <Input
                 label="Location Type"
