@@ -403,7 +403,7 @@ export const getClientAssetAssignments = async (assetId) => {
     // 2. Double check if your backend expects /api/client-assets/54 
     //    or perhaps /api/assets/54
     const response = await axios.get(
-      `${RMS_BASE_URL}/api/client-asset-assignments`,
+      `${RMS_BASE_URL}/api/client-asset-assignments/by-asset/${assetId}`,
       getAuthHeader()
     );
     return response.data;

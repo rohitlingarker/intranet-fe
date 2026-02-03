@@ -58,8 +58,6 @@ const AssetList = () => {
     }
   };
 
-  /* ---------------- KPI CALCULATIONS ---------------- */
-
   const [kpi, setKpi] = useState({
     totalAssets: 0,
     assignedAssets: 0,
@@ -280,7 +278,6 @@ const AssetList = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {/* ✅ Check currentAssets.length instead of filteredAssets */}
                 {currentAssets.length > 0 ? (
                   currentAssets.map((asset) => (
                     <tr
