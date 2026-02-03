@@ -41,9 +41,17 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
     setUpdateLoading(true);
     try {
       const res = await updateClientSLA(formData);
+      const updated = res.data;
       toast.success(res.message || "SLA updated successfully.");
       setOpenUpdateSLA(false);
-      fetchSLA();
+      setSLAList((prev) =>
+        prev.map((item) =>
+          item.slaId === updated.slaId
+            ? { ...item, ...updated }
+            : item,
+        ),
+      );
+      // fetchSLA();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update SLA.");
     } finally {
@@ -55,15 +63,8 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
     setDeleteLoading(true);
     try {
       const res = await deleteClientSLA(selectedSLAId);
-      setSLAList((prev) =>
-        prev.map((item) =>
-          item.slaId === updated.slaId
-            ? { ...item, ...updated }
-            : item,
-        ),
-      );
       toast.success(res.message || "SLA deleted successfully.");
-      // fetchSLA();
+      fetchSLA();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete SLA.");
     } finally {

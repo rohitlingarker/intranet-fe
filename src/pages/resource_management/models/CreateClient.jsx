@@ -27,7 +27,7 @@ const CustomListbox = ({
             ${error ? "border-red-500 ring-1 ring-red-500" : "border-gray-300 focus:ring-blue-500"} 
             ${disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-gray-900"}`}
           >
-            <span className="block truncate">{value || "Select..."}</span>
+            <span className="block truncate">{value || "Default time zone (editable)"}</span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </span>
@@ -235,7 +235,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Priority Level"
           value={formData.priority_level}
-          options={["LOW", "MEDIUM", "HIGH", "CRITICAL"]}
+          options={["LOW", "MEDIUM", "HIGH"]}
           onChange={(val) => handleGenericListboxChange("priority_level", val)}
           error={errors.includes("priority_level")}
         />
@@ -256,9 +256,9 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
           error={errors.includes("status")}
         />
 
-        <div className="col-span-1 md:col-span-2 border-t pt-4 mt-2">
+        {/* <div className="col-span-1 md:col-span-2 border-t pt-4 mt-2">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Location Settings</h3>
-        </div>
+        </div> */}
 
         <div className="col-span-1 md:col-span-2">
           <SearchableCombobox
