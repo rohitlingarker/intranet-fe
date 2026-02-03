@@ -115,6 +115,8 @@ const AssetDetail = () => {
     }
   };
 
+  
+
   /* ---------------- FETCH DATA ---------------- */
   const fetchData = async () => {
     try {
