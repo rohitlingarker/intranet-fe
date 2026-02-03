@@ -282,7 +282,6 @@ const ClientPage = () => {
   const canConfigAgreements = permissions.includes("ADD_CONFIGURATION");
   const canManageAssets = permissions.includes("ASSETS_MANAGEMENT");
   const canEditProfile = permissions.includes("EDIT_CLIENT_PROFILE");
-  const canEditConfig = permissions.includes("EDIT_CLIENT_CONFIG");
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");

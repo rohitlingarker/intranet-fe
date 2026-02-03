@@ -129,68 +129,44 @@ const AddConfigurationModal = ({
               <label className="text-sm font-medium text-gray-700">
                 Configuration Type <span className="text-red-500">*</span>
               </label>
-              <Listbox
-                value={configType}
-                onChange={(val) => {
-                  // Listbox returns the value directly, not an event object
-                  setConfigType(val);
-                  setFormData(DEFAULT_FORM_STATE);
-                }}
-                className="z-2"
-              >
-                <div className="relative">
-                  {/* Button (The Display) */}
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-lg border bg-white py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                    <span
-                      className={`block truncate ${!configType ? "text-gray-500" : "text-gray-900"}`}
-                    >
-                      {/* Find the label for the currently selected key */}
-                      {allowedConfigs.find((c) => c.key === configType)
-                        ?.label || "Select configuration"}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                      <ChevronDown
-                        className="h-4 w-4 text-gray-400"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </Listbox.Button>
-
-                  {/* Options Dropdown */}
-                  <Transition
-                    as={Fragment}
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
-                      {/* Optional: Add a 'Clear/Select' option if you need to unselect */}
-                      <Listbox.Option
-                        value=""
-                        className={({ active }) =>
-                          `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                            active
-                              ? "bg-indigo-50 text-indigo-700"
-                              : "text-gray-900"
-                          }`
-                        }
+              <div className="w-full mt-1">
+                <Listbox
+                  value={configType}
+                  onChange={(val) => {
+                    // Listbox returns the value directly, not an event object
+                    setConfigType(val);
+                    setFormData(DEFAULT_FORM_STATE);
+                  }}
+                >
+                  <div className="relative">
+                    {/* Button (The Display) */}
+                    <Listbox.Button className="relative w-full cursor-pointer rounded-lg border bg-white py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                      <span
+                        className={`block truncate ${!configType ? "text-gray-500" : "text-gray-900"}`}
                       >
-                        {({ selected }) => (
-                          <>
-                            <span
-                              className={`block truncate ${selected ? "font-medium" : "font-normal"} text-gray-500`}
-                            >
-                              Select configuration
-                            </span>
-                          </>
-                        )}
-                      </Listbox.Option>
+                        {/* Find the label for the currently selected key */}
+                        {allowedConfigs.find((c) => c.key === configType)
+                          ?.label || "Select configuration"}
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <ChevronDown
+                          className="h-4 w-4 text-gray-400"
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </Listbox.Button>
 
-                      {/* Map your configs */}
-                      {allowedConfigs.map((cfg) => (
+                    {/* Options Dropdown */}
+                    <Transition
+                      as={Fragment}
+                      leave="transition ease-in duration-100"
+                      leaveFrom="opacity-100"
+                      leaveTo="opacity-0"
+                    >
+                      <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+                        {/* Optional: Add a 'Clear/Select' option if you need to unselect */}
                         <Listbox.Option
-                          key={cfg.key}
-                          value={cfg.key}
+                          value=""
                           className={({ active }) =>
                             `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                               active
@@ -199,29 +175,54 @@ const AddConfigurationModal = ({
                             }`
                           }
                         >
-                          {({ selected, active }) => (
+                          {({ selected }) => (
                             <>
                               <span
-                                className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                className={`block truncate ${selected ? "font-medium" : "font-normal"} text-gray-500`}
                               >
-                                {cfg.label}
+                                Select configuration
                               </span>
-                              {selected ? (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
-                                  <Check
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                </span>
-                              ) : null}
                             </>
                           )}
                         </Listbox.Option>
-                      ))}
-                    </Listbox.Options>
-                  </Transition>
-                </div>
-              </Listbox>
+
+                        {/* Map your configs */}
+                        {allowedConfigs.map((cfg) => (
+                          <Listbox.Option
+                            key={cfg.key}
+                            value={cfg.key}
+                            className={({ active }) =>
+                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                active
+                                  ? "bg-indigo-50 text-indigo-700"
+                                  : "text-gray-900"
+                              }`
+                            }
+                          >
+                            {({ selected, active }) => (
+                              <>
+                                <span
+                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                >
+                                  {cfg.label}
+                                </span>
+                                {selected ? (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
+                                    <Check
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
+                                    />
+                                  </span>
+                                ) : null}
+                              </>
+                            )}
+                          </Listbox.Option>
+                        ))}
+                      </Listbox.Options>
+                    </Transition>
+                  </div>
+                </Listbox>
+              </div>
             </div>
           )}
 
