@@ -398,7 +398,11 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
-            element={<AdminApprovalDashboard />}
+            element={
+              <ProtectedRoute allowedRoles={["Admin"]}>
+                <AdminApprovalDashboard />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/employee-onboarding/admin/offer/:user_uuid"
@@ -674,7 +678,7 @@ const AppRoutes = () => {
             path="/resource-management"
             element={
               <ProtectedRoute
-                allowedRoles={["Admin", "PROJECT-MANAGER", "RESOURCE-MANAGER"]} 
+                allowedRoles={["Admin", "RESOURCE-MANAGER"]} 
               >
                 <AdminPannel />
               </ProtectedRoute>

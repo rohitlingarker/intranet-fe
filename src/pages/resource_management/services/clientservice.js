@@ -25,6 +25,25 @@ export const getAdminKPI = async () => {
   }
 };
 
+// ../services/clientservice.js
+
+// ... existing imports
+
+export const getClientPageData = async (clientId) => {
+  // Assuming you have an axios instance or fetch wrapper
+  // const response = await axios.get(`api/client/${clientId}/page-data`);
+  // return response.data; 
+  
+  // Mocking the call based on your request for now:
+  // return fetch(`/api/client/${clientId}/page-data`).then(res => res.json());
+  try{
+    const response = await axios.get(`${RMS_BASE_URL}/api/client/${clientId}/page-data`, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const searchClients = async (filters, page = 0, size = 10) => {
   try {
     const response = await axios.get(`${RMS_BASE_URL}/api/client/search`, {
@@ -384,7 +403,7 @@ export const getClientAssetAssignments = async (assetId) => {
     // 2. Double check if your backend expects /api/client-assets/54 
     //    or perhaps /api/assets/54
     const response = await axios.get(
-      `${RMS_BASE_URL}/api/client-asset-assignments`,
+      `${RMS_BASE_URL}/api/client-asset-assignments/by-asset/${assetId}`,
       getAuthHeader()
     );
     return response.data;

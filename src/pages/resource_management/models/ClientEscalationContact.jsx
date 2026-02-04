@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import { getClientEscalation, updateClientContact, deleteClientContact } from "../services/clientservice";
+import {
+  getClientEscalation,
+  updateClientContact,
+  deleteClientContact,
+} from "../services/clientservice";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
@@ -7,8 +11,12 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Modal from "../../../components/Modal/modal";
 import EscalationForm from "./client_configuration/forms/EscalationForm";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
+  const canEditConfig = permissions.includes("EDIT_CLIENT_CONFIG");
   const [contactList, setContactList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -80,9 +88,7 @@ const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
       const updated = res.data;
       setContactList((prev) =>
         prev.map((item) =>
-          item.contactId === updated.contactId
-            ? { ...item, ...updated }
-            : item,
+          item.contactId === updated.contactId ? { ...item, ...updated } : item,
         ),
       );
       toast.success(res.message || "Contact deleted successfully.");
@@ -122,9 +128,12 @@ const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
   if (contactList.length === 0) {
     return (
       <div className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Basic Escalation Contacts</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Basic Escalation Contacts
+        </h2>
         <p className="text-gray-600 italic font-semibold text-sm">
-          No Escalation Contacts information available for this client. Add from above!
+          No Escalation Contacts information available for this client. Add from
+          above!
         </p>
       </div>
     );
@@ -143,43 +152,44 @@ const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
             </h2>
           </div>
 
-          {/* Action menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setOpenMenu((prev) => !prev)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <MoreHorizontal />
-            </button>
+          {canEditConfig && (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setOpenMenu((prev) => !prev)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <MoreHorizontal />
+              </button>
 
-            {openMenu && (
-              <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
-                <button
-                  onClick={() => {
-                    handleSetFormData(currentContact);
-                    setOpenMenu(false);
-                    setOpenUpdateContact(true);
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
-                >
-                  <Pencil size={14} />
-                  Update
-                </button>
+              {openMenu && (
+                <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      handleSetFormData(currentContact);
+                      setOpenMenu(false);
+                      setOpenUpdateContact(true);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
+                  >
+                    <Pencil size={14} />
+                    Update
+                  </button>
 
-                <button
-                  onClick={() => {
-                    setSelectedContactId(currentContact.contactId);
-                    setOpenMenu(false);
-                    setOpenConfirmModal(true);
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={() => {
+                      setSelectedContactId(currentContact.contactId);
+                      setOpenMenu(false);
+                      setOpenConfirmModal(true);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-gray-500">Contact Name</span>
@@ -238,14 +248,18 @@ const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
       >
         <EscalationForm formData={formData} setFormData={setFormData} />
         <div className="flex justify-end mt-4">
-          <button onClick={handleUpdateContact} disabled={updateLoading} className={`px-4 py-2 rounded-xl bg-blue-700 text-white hover:bg-blue-800 ${updateLoading && "opacity-50 cursor-not-allowed"}`}>
+          <button
+            onClick={handleUpdateContact}
+            disabled={updateLoading}
+            className={`px-4 py-2 rounded-xl bg-blue-700 text-white hover:bg-blue-800 ${updateLoading && "opacity-50 cursor-not-allowed"}`}
+          >
             {updateLoading ? "Updating..." : "Update"}
           </button>
         </div>
       </Modal>
 
       {/* Confirm Modal */}
-      <ConfirmationModal 
+      <ConfirmationModal
         title="Delete Escalation Contact"
         message="Are you sure you want to delete this Contact? Action cannot be undone."
         confirmText="Delete"

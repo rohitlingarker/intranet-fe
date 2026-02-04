@@ -11,13 +11,13 @@ import {
   AlertCircle,
   CheckCircle,
   Handshake,
-  UserCog2
+  UserCog2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { hr } from "date-fns/locale/hr";
 import { handler } from "@tailwindcss/line-clamp";
- 
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [employeeCount, setEmployeeCount] = useState(null);
@@ -26,15 +26,16 @@ const Dashboard = () => {
   const [taskCount, setTaskCount] = useState(null);
   const [avgTimesheetHours, setAvgTimesheetHours] = useState(null);
   const [pendingApprovals, setPendingApprovals] = useState(null);
- 
+
   // ✅ Determine user roles
- 
+
   const roles = user?.roles || [];
   const isAdminOrSuperAdmin =
     roles.includes("Super Admin") || roles.includes("Admin");
+  const isGeneral = user?.roles?.includes("General");
   const isDeveloper = roles.includes("Developer");
   const isManager = roles.includes("Manager");
- 
+
   // ✅ Fetch total employees
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -44,7 +45,7 @@ const Dashboard = () => {
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/count`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         setEmployeeCount(res.data.user_count);
       } catch (error) {
@@ -53,7 +54,7 @@ const Dashboard = () => {
     };
     fetchEmployeeCount();
   }, []);
- 
+
   // ✅ Fetch active employees
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -63,7 +64,7 @@ const Dashboard = () => {
           `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/active-count`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         setActiveEmployeeCount(res.data.active_user_count);
       } catch (error) {
@@ -72,20 +73,20 @@ const Dashboard = () => {
     };
     fetchActiveEmployees();
   }, []);
- 
+
   // fetch projects count
   useEffect(() => {
     const token = localStorage.getItem("token");
- 
+
     const fetchProjectsCount = async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/count`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
- 
+
         // Directly use the count from API
         const count = res.data ?? 0;
         setProjectsCount(count);
@@ -93,23 +94,23 @@ const Dashboard = () => {
         console.error("Error fetching projects count:", error);
       }
     };
- 
+
     fetchProjectsCount();
   }, []);
- 
+
   // fetch tasks count
   useEffect(() => {
-    const token = localStorage.getItem("token");  
- 
+    const token = localStorage.getItem("token");
+
     const fetchTasksCount = async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_PMS_BASE_URL}/status/done/count`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
- 
+
         // Directly use the count from API
         const count = res.data ?? 0;
         setTaskCount(count);
@@ -118,23 +119,23 @@ const Dashboard = () => {
         console.error("Error fetching tasks count:", error);
       }
     };
- 
+
     fetchTasksCount();
   }, []);
- 
+
   //fetch average timesheet hours
   useEffect(() => {
     const token = localStorage.getItem("token");
- 
+
     const fetchAvgTimesheetHours = async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_TIMESHEET_API_ENDPOINT}/api/dashboard/total_hours`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
- 
+
         // Directly use the count from API
         const hours = res.data?.totalHours ?? 0;
         setAvgTimesheetHours(hours);
@@ -158,7 +159,7 @@ const Dashboard = () => {
           `${import.meta.env.VITE_BASE_URL}/api/leave-requests/manager/pending-count/${managerId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         // Directly use the count from API
@@ -177,7 +178,7 @@ const Dashboard = () => {
   // if (isDeveloper) projectHref = "/projects/developer";
   // else if (isManager) projectHref = "/projects/manager";
   // else if (isAdminOrSuperAdmin) projectHref = "/projects/admin";
- 
+
   // ✅ Quick Stats — conditionally show based on role
   const quickStats = isAdminOrSuperAdmin
     ? [
@@ -226,12 +227,13 @@ const Dashboard = () => {
           positive: true,
         },
       ];
- 
+
   // ✅ Module cards remain same for all roles
   const moduleCards = [
     {
       title: "Resource Management",
-      description: "Make the right people available to the right projects at the right time",
+      description:
+        "Make the right people available to the right projects at the right time",
       icon: UserCog2,
       href: "/resource-management",
       color: "bg-[#263383]",
@@ -243,9 +245,7 @@ const Dashboard = () => {
       icon: PlaneTakeoff,
       href: "/leave-management",
       color: "bg-[#b22a4f]",
-      stats: pendingApprovals
-        ? `${pendingApprovals} pending approvals`
-        : "-",
+      stats: pendingApprovals ? `${pendingApprovals} pending approvals` : "-",
     },
     {
       title: "Project Management",
@@ -261,7 +261,9 @@ const Dashboard = () => {
       icon: Users,
       href: "/user-management/users",
       color: "bg-[#263383]",
-      stats: activeEmployeeCount ? `${activeEmployeeCount} employees` : "Loading...",
+      stats: activeEmployeeCount
+        ? `${activeEmployeeCount} employees`
+        : "Loading...",
     },
     {
       title: "Timesheets",
@@ -290,7 +292,14 @@ const Dashboard = () => {
       stats: "5 events today",
     },
   ];
- 
+
+  const filteredModuleCards = moduleCards.filter((card) => {
+    if (isGeneral && card.title === "Employee Onbording") {
+      return false;
+    }
+    return true;
+  });
+
   const recentActivity = [
     {
       action: "New user registration",
@@ -317,7 +326,7 @@ const Dashboard = () => {
       type: "timesheet",
     },
   ];
- 
+
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -357,7 +366,7 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
- 
+
       {/* Modules & Activities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Module Cards */}
@@ -366,7 +375,7 @@ const Dashboard = () => {
             Quick Access
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {moduleCards.map((card, index) => (
+            {filteredModuleCards.map((card, index) => (
               <Link
                 key={index}
                 to={card.href}
@@ -394,7 +403,7 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
- 
+
         {/* Right Side Panel */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -421,7 +430,7 @@ const Dashboard = () => {
               ))}
             </div>
           </div>
- 
+
           {/* Announcements */}
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h4 className="font-semibold text-gray-900 mb-3">
@@ -445,5 +454,5 @@ const Dashboard = () => {
     </div>
   );
 };
- 
+
 export default Dashboard;
