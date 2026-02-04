@@ -17,6 +17,14 @@ const CreateProjectModal = ({
     status: "PLANNING",
     currentStage: "INITIATION",
     ownerId: "",
+    clientId: "",
+    resourceManagerId: "",
+    deliveryOwnerId: "",
+    primaryLocation: "",
+    deliveryModel: "ONSITE",
+    riskLevel: "LOW",
+    budget: "",
+    budgetCurrency: "",
     memberIds: [],
     startDate: "",
     endDate: "",
@@ -96,7 +104,58 @@ const CreateProjectModal = ({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  const handleDeliveryModelChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleClientChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleResourceManagerChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };    
+  const handleDeliveryOwnerChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  
+ const handleChange = (e) => {
+  const { name, value } = e.target;
 
+  // Budget → allow decimals up to 2 places
+  if (name === "projectBudget") {
+    const regex = /^\d*\.?\d{0,2}$/;
+    if (value === "" || regex.test(value)) {
+      setFormData((prev) => ({
+        ...prev,
+        projectBudget: value,
+      }));
+    }
+    return;
+  }
+
+  // Currency → uppercase, letters only, max 3
+  if (name === "projectBudgetCurrency") {
+    const formatted = value
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 3);
+
+    setFormData((prev) => ({
+      ...prev,
+      projectBudgetCurrency: formatted,
+    }));
+    return;
+  }
+};
+
+  const handleBudgetChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };  
+  const [value, setValue] = useState('');
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -111,6 +170,15 @@ const CreateProjectModal = ({
       description: formData.description || null,
       status: formData.status,
       currentStage: formData.currentStage,
+      deliveryModel: formData.deliveryModel,
+      clientId: '8005572f-6888-4684-b371-cd672c16769a',
+      resourceManagerId: parseInt(formData.resourceManagerId, 10)||120,  
+      deliveryOwnerId: parseInt(formData.deliveryOwnerId, 10)||120,
+      primaryLocation: formData.primaryLocation,
+      riskLevel: formData.riskLevel,
+      projectBudget: formData.projectBudget ? parseFloat(formData.projectBudget) : null,
+      projectBudgetCurrency: formData.projectBudgetCurrency|| null,
+      priorityLevel: formData.priorityLevel,
       ownerId: parseInt(formData.ownerId, 10),
       memberIds: formData.memberIds,
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
@@ -253,7 +321,23 @@ const CreateProjectModal = ({
               <option value="COMPLETED">COMPLETED</option>
             </select>
           </label>
-
+          {/*Delivery model*/}
+           <label className="block">
+            <span className="font-medium text-sm">Delivery Model *</span>
+            <select
+              name="deliveryModel"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.deliveryModel}
+              onChange={handleDeliveryModelChange}
+              required
+            >
+              <option value="ONSITE">ONSITE</option>
+              <option value="OFFSHORE">OFFSHORE</option>
+              <option value="HYBRID">HYBRID</option>
+             
+            </select>
+          </label>
+          
           {/* Owner */}
           <label className="block">
             <span className="font-medium text-sm">Project Owner *</span>
@@ -272,7 +356,61 @@ const CreateProjectModal = ({
               ))}
             </select>
           </label>
-
+          {/*client id*/}
+          <label className="block">
+            <span className="font-medium text-sm">Project Client *</span>
+            <select
+              name="clientId"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.clientId}
+              onChange={handleClientChange}
+              required
+            >
+              <option value="">Select Client</option>
+              {users.map((user) => user && (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.roles?.join(", ") || "No Role"})
+                </option>
+              ))}
+            </select>
+          </label>
+          
+          {/*resource manager id*/}
+          <label className="block">
+            <span className="font-medium text-sm">Resource Manager *</span>
+            <select
+              name="resourceManagerId"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.resourceManagerId}
+              onChange={handleResourceManagerChange}
+              required
+            >
+              <option value="">Select Resource Manager</option>
+              {users.map((user) => user && (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.roles?.join(", ") || "No Role"})
+                </option>
+              ))}
+            </select>
+          </label>
+          {/*deliveryownerid*/}
+          <label className="block">
+            <span className="font-medium text-sm">Delivery Owner *</span>
+            <select
+              name="deliveryOwnerId"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.deliveryOwnerId}
+              onChange={handleDeliveryOwnerChange}
+              required
+            >
+              <option value="">Select Delivery Owner</option>
+              {users.map((user) => user && (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.roles?.join(", ") || "No Role"})
+                </option>
+              ))}
+            </select>
+          </label>
           {/* Description */}
           <label className="block">
             <span className="font-medium text-sm">Project Description</span>
@@ -284,6 +422,18 @@ const CreateProjectModal = ({
               onChange={handleInputChange}
             />
           </label>
+          {/*Primary Location*/}
+           <label className="block w-full md:w-1/2">
+              <span className="font-medium text-sm">Primary Location *</span>
+              <input
+                name="primaryLocation"
+                placeholder="Enter primary location"
+                className="w-full border px-4 py-2 rounded mt-1"
+                value={formData.primaryLocation}
+                onChange={handleInputChange}
+                required
+              />
+            </label>
 
           {/* Dates */}
           <div className="flex gap-4">
@@ -320,6 +470,40 @@ const CreateProjectModal = ({
           )}
 
 
+          {/*Risk Level*/}
+          <label className="block">
+            <span className="font-medium text-sm">Risk Level *</span>
+            <select
+              name="riskLevel"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.riskLevel}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Risk Level</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </label>
+          {/*priority level*/}
+          <label className="block">
+            <span className="font-medium text-sm">Priority Level *</span>
+            <select
+              name="priorityLevel"
+              className="w-full border px-4 py-2 rounded mt-1"
+              value={formData.priorityLevel}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Priority Level</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+            </select>
+          </label>
+
           {/* Members */}
           <div className="border rounded p-4">
             <p className="font-medium mb-2">Select Members (Optional):</p>
@@ -346,6 +530,36 @@ const CreateProjectModal = ({
             
             </div>
           </div>
+         {/* Project Budget */}
+<label className="block">
+  <span className="font-medium text-sm">Project Budget</span>
+  <input
+    type="text"
+    inputMode="decimal"
+    placeholder="e.g. 100000.00"
+    value={formData.projectBudget}
+    onChange={handleChange}
+    name="projectBudget"
+    className="w-full border px-4 py-2 rounded mt-1"
+  />
+</label>
+
+{/* Budget Currency */}
+<label className="block">
+  <span className="font-medium text-sm">Budget Currency (ISO)</span>
+  <input
+    type="text"
+    placeholder="USD"
+    value={formData.projectBudgetCurrency}
+    onChange={handleChange}
+    name="projectBudgetCurrency"
+    className="w-full border px-4 py-2 rounded mt-1"
+  />
+</label>
+
+
+
+          
 
           {/* Add extra padding at bottom so content doesn't get hidden behind footer */}
         {/* Sticky footer buttons */}

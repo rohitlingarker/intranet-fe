@@ -9,6 +9,8 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { Plus, List } from "lucide-react";
 import { ToastContainer } from "react-toastify";   // ✅ Added
 import { showStatusToast } from "../../../components/toastfy/toast";
+import {jwtDecode} from "jwt-decode";
+
 
 import Button from "../../../components/Button/Button";
 import StoryCard from "./Sprint/StoryCard";
@@ -71,6 +73,18 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     priority: story.priority,
     dueDate: story.dueDate,
   });
+  const isManager = (() => {
+  const token = localStorage.getItem("token");
+  if (!token) return false;
+
+  try {
+    const decoded = jwtDecode(token);
+    return decoded?.roles?.includes("Manager");
+  } catch (e) {
+    return false;
+  }
+})();
+
 
   // =======================================
   // Move Story (Sprint <-> Backlog)
@@ -336,9 +350,15 @@ const BacklogDropWrapper = ({ children }) => {
               <List size={18} /> Issue Tracker
             </Button>
 
-            <Button className="flex items-center gap-2" onClick={() => setShowSprintModal(true)}>
-              <Plus size={18} /> Create Sprint
-            </Button>
+          {isManager && (
+  <Button
+    className="flex items-center gap-2"
+    onClick={() => setShowSprintModal(true)}
+  >
+    <Plus size={18} /> Create Sprint
+  </Button>
+)}
+
 
             <Button
               variant="outline"

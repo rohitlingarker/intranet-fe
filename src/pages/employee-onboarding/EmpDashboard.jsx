@@ -73,6 +73,7 @@ export default function EmployeeOnboardingDashboard() {
       ) : (
         <>
           {/* Header */}
+          <OnboardingNavBar />
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
