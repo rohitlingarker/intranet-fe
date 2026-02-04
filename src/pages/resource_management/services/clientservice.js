@@ -435,9 +435,10 @@ export const getAssetById = async (assetId) => {
    ASSIGN ASSET TO RESOURCE
    =============================== */
 export const assignClientAsset = async (assignmentData) => {
+  console.log("Assignment Data:", assignmentData);
     try {
         // FIX: Using the nested ID safely
-        const id = assignmentData.asset?.assetId || assignmentData.asset?.id;
+        const id = assignmentData.asset?.assetId || assignmentData.asset?.id || assignmentData.assetId;
         
         const response = await axios.post(
             `${RMS_BASE_URL}/api/client-asset-assignments/${id}`,  
