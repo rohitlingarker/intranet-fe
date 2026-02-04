@@ -91,9 +91,12 @@ const ProjectTabs = () => {
     if (selectedTab === "board") {
       return <Board projectId={pid} projectName={projectName} />;
     }
-    if (selectedTab === "timelines") {
-      return <Timeline projectId={pid} />;
-    }
+    // if (selectedTab === "status-report") {
+    //   return <ProjectStatusReportWrapper projectId={pid} />;
+    // }
+    // if (selectedTab === "timelines") {
+    //   return <Timeline projectId={pid} />;
+    // }
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
@@ -115,7 +118,8 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
     { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
-    { name: "Timelines", tab: "timelines" },
+    //  { name: "Timelines", tab:"timelines" },
+    // { name: "Calendar", tab: "calendar" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
