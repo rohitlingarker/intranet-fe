@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Users, Briefcase, Activity, TrendingUp, TrendingDown, Plus, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import {
+  Users,
+  Briefcase,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+} from "lucide-react";
 import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
 import FilterBar from "../../components/filters/FilterBar";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { searchClients, getAdminKPI } from "../../services/clientservice"; 
+import { searchClients, getAdminKPI } from "../../services/clientservice";
 import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer check
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import ExcelJS from "exceljs/dist/exceljs.min.js"; // Robust Vite Import
@@ -18,6 +28,12 @@ const priorityColor = {
   LOW: "text-green-600 bg-green-50",
 };
 
+const statusColor = {
+  ACTIVE: "text-xs text-green-600 font-semibold",
+  INACTIVE: "text-xs text-red-600 font-semibold",
+  PROSPECT: "text-xs text-blue-600 font-semibold",
+};
+
 const AdminPannel = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -27,26 +43,34 @@ const AdminPannel = () => {
   const [clientDetails, setClientDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0); 
+  const [exportProgress, setExportProgress] = useState(0);
   const [openCreateClient, setOpenCreateClient] = useState(false);
   const [kpiData, setKpiData] = useState(null);
-  
+
   const [pageInfo, setPageInfo] = useState({
     current: 0,
     size: 8,
     totalElements: 0,
-    totalPages: 0
+    totalPages: 0,
   });
 
   const [filters, setFilters] = useState({
-    search: "", region: "", type: "", priority: "", status: "", startDate: "", endDate: "",
+    search: "",
+    region: "",
+    type: "",
+    priority: "",
+    status: "",
+    startDate: "",
+    endDate: "",
   });
 
   const fetchKPIs = async () => {
     try {
       const response = await getAdminKPI();
       if (response.success) setKpiData(response.data);
-    } catch (error) { console.error("KPI Error:", error); }
+    } catch (error) {
+      console.error("KPI Error:", error);
+    }
   };
 
   const handleFilterUpdate = (updates) => {
@@ -57,17 +81,21 @@ const AdminPannel = () => {
   const fetchClients = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await searchClients(filters, pageInfo.current, pageInfo.size);
+      const response = await searchClients(
+        filters,
+        pageInfo.current,
+        pageInfo.size,
+      );
       if (response.success && response.data) {
         setClientDetails(response.data.records || []);
-        setPageInfo(prev => ({
+        setPageInfo((prev) => ({
           ...prev,
           totalElements: response.data.totalElements,
-          totalPages: response.data.totalPages
+          totalPages: response.data.totalPages,
         }));
       } else {
         setClientDetails([]);
-        setPageInfo(prev => ({ ...prev, totalElements: 0, totalPages: 0 }));
+        setPageInfo((prev) => ({ ...prev, totalElements: 0, totalPages: 0 }));
       }
     } catch (error) {
       toast.error("Failed to load clients.");
@@ -76,7 +104,9 @@ const AdminPannel = () => {
     }
   }, [filters, pageInfo.current, pageInfo.size]);
 
-  useEffect(() => { fetchKPIs(); }, []);
+  useEffect(() => {
+    fetchKPIs();
+  }, []);
   useEffect(() => {
     const handler = setTimeout(() => fetchClients(), 400);
     return () => clearTimeout(handler);
@@ -90,20 +120,20 @@ const AdminPannel = () => {
     }
 
     // 1. Explicitly identify what we are downloading
-    const isFiltered = Object.values(filters).some(x => x !== "");
-    const startMsg = isFiltered 
-      ? `Explicitly downloading ${pageInfo.totalElements} filtered records...` 
+    const isFiltered = Object.values(filters).some((x) => x !== "");
+    const startMsg = isFiltered
+      ? `Explicitly downloading ${pageInfo.totalElements} filtered records...`
       : `Explicitly downloading full list of ${pageInfo.totalElements} clients...`;
-    
+
     toast.info(startMsg, { icon: "📊" });
 
     setExporting(true);
     setExportProgress(0);
-    
+
     try {
       let allRecords = [];
       let currentPage = 0;
-      let totalPagesToFetch = 1; 
+      let totalPagesToFetch = 1;
 
       while (currentPage < totalPagesToFetch) {
         const response = await searchClients(filters, currentPage, 50);
@@ -111,7 +141,9 @@ const AdminPannel = () => {
           allRecords = [...allRecords, ...response.data.records];
           totalPagesToFetch = response.data.totalPages;
           currentPage++;
-          setExportProgress(Math.round((currentPage / totalPagesToFetch) * 100));
+          setExportProgress(
+            Math.round((currentPage / totalPagesToFetch) * 100),
+          );
         } else {
           throw new Error("Batch retrieval interrupted.");
         }
@@ -131,28 +163,36 @@ const AdminPannel = () => {
 
       worksheet.getRow(1).eachCell((cell) => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF4F46E5" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
       });
 
-      const rows = allRecords.map(record => ({
+      const rows = allRecords.map((record) => ({
         ...record,
-        clientType: record.clientType?.replace(/_/g, ' '),
-        createdAt: record.createdAt ? new Date(record.createdAt).toLocaleDateString() : 'N/A'
+        clientType: record.clientType?.replace(/_/g, " "),
+        createdAt: record.createdAt
+          ? new Date(record.createdAt).toLocaleDateString()
+          : "N/A",
       }));
 
       worksheet.addRows(rows);
 
       const buffer = await workbook.xlsx.writeBuffer();
       const fileName = isFiltered ? "Filtered_Clients" : "Full_Inventory";
-      
-      const blob = new Blob([buffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
 
-      saveAs(blob, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      saveAs(
+        blob,
+        `${fileName}_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
       toast.success(`Success! ${allRecords.length} records downloaded.`);
-
     } catch (error) {
       console.error("Export error:", error);
       toast.error(`Download Failed: ${error.message}`);
@@ -163,31 +203,60 @@ const AdminPannel = () => {
   };
 
   const KPI_DATA = [
-    { label: "Total Clients", value: kpiData?.totalClients ?? pageInfo.totalElements, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
-    { label: "Active Clients", value: kpiData?.activeClients ?? 0, icon: Activity, color: "text-green-600", bg: "bg-green-100" },
-    { label: "Active Projects", value: kpiData?.activeProjects ?? 0, icon: Briefcase, color: "text-purple-600", bg: "bg-purple-100" },
-    { label: "Growth Rate", value: `${kpiData?.growthPercentage ?? 0}%`, icon: kpiData?.growthPositive ? TrendingUp : TrendingDown, color: kpiData?.growthPositive ? "text-emerald-600" : "text-red-600", bg: kpiData?.growthPositive ? "bg-emerald-100" : "bg-red-100" },
+    {
+      label: "Total Clients",
+      value: kpiData?.totalClients ?? pageInfo.totalElements,
+      icon: Users,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+    },
+    {
+      label: "Active Clients",
+      value: kpiData?.activeClients ?? 0,
+      icon: Activity,
+      color: "text-green-600",
+      bg: "bg-green-100",
+    },
+    {
+      label: "Active Projects",
+      value: kpiData?.activeProjects ?? 0,
+      icon: Briefcase,
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+    },
+    {
+      label: "Growth Rate",
+      value: `${kpiData?.growthPercentage ?? 0}%`,
+      icon: kpiData?.growthPositive ? TrendingUp : TrendingDown,
+      color: kpiData?.growthPositive ? "text-emerald-600" : "text-red-600",
+      bg: kpiData?.growthPositive ? "bg-emerald-100" : "bg-red-100",
+    },
   ];
 
   return (
     <div className="p-6 space-y-8">
       {/* Ensures toasts appear if not already in App.jsx */}
-      <ToastContainer position="top-right" /> 
+      <ToastContainer position="top-right" />
 
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Client Overview</h1>
-          <p className="text-sm text-gray-500">Monitor clients, priorities, and engagement status</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Client Overview
+          </h1>
+          <p className="text-sm text-gray-500">
+            Monitor clients, priorities, and engagement status
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button 
-            onClick={handleExport} 
+          <Button
+            onClick={handleExport}
             disabled={exporting}
             className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all active:scale-[0.98] 
-              ${exporting 
-                ? "bg-indigo-400 cursor-not-allowed text-white" 
-                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+              ${
+                exporting
+                  ? "bg-indigo-400 cursor-not-allowed text-white"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
               }`}
           >
             {exporting ? (
@@ -197,7 +266,7 @@ const AdminPannel = () => {
               </span>
             ) : (
               <>
-                <Download className="w-4 h-4 mr-1.5" /> 
+                <Download className="w-4 h-4 mr-1.5" />
                 Export Data
               </>
             )}
@@ -207,7 +276,10 @@ const AdminPannel = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {KPI_DATA.map((kpi, index) => (
-          <div key={index} className="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+          <div
+            key={index}
+            className="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between"
+          >
             <div>
               <p className="text-sm text-gray-500">{kpi.label}</p>
               <h3 className="text-2xl font-bold text-gray-900">{kpi.value}</h3>
@@ -221,84 +293,148 @@ const AdminPannel = () => {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Clients Information</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Clients Information
+          </h2>
           {canCreateClient && (
-            <Button onClick={() => setOpenCreateClient(true)} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center hover:bg-indigo-700 transition-all active:scale-[0.98] shadow-sm">
+            <Button
+              onClick={() => setOpenCreateClient(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg flex items-center hover:bg-indigo-700 transition-all active:scale-[0.98] shadow-sm"
+            >
               <Plus className="w-4 h-4 mr-1" /> Create New Client
             </Button>
           )}
         </div>
 
-        <FilterBar filters={filters} onUpdate={handleFilterUpdate} totalResults={pageInfo.totalElements} />
-
-        
+        <FilterBar
+          filters={filters}
+          onUpdate={handleFilterUpdate}
+          totalResults={pageInfo.totalElements}
+        />
 
         {loading ? (
-          <div className="flex items-center justify-center py-12"><LoadingSpinner text="loading..." /></div>
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner text="loading..." />
+          </div>
         ) : (
-          <>
+         clientDetails.length > 0 ? (
+           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {clientDetails.map((client) => (
                 <div
                   key={client.clientId}
-                  onClick={() => navigate(`/resource-management/client-details/${client.clientId}`)}
+                  onClick={() =>
+                    navigate(
+                      `/resource-management/client-details/${client.clientId}`,
+                    )
+                  }
                   className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-gray-900">{client.clientName}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColor[client.priorityLevel] || "bg-gray-50 text-gray-600"}`}>
+                    <h3 className="font-semibold text-gray-900">
+                      {client.clientName}
+                    </h3>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColor[client.priorityLevel] || "bg-gray-50 text-gray-600"}`}
+                    >
                       {client.priorityLevel}
                     </span>
                   </div>
                   <div className="mt-4 space-y-2 text-sm text-gray-600">
-                    <p><span className="font-medium text-gray-800">Type:</span> {client.clientType}</p>
-                    <p><span className="font-medium text-gray-800">Country:</span> {client.countryName}</p>
-                    <p><span className="font-medium text-gray-800">Status:</span> {client.status}</p>
+                    <p>
+                      <span className="font-medium text-gray-800">Type:</span>{" "}
+                      {client.clientType}
+                    </p>
+                    <p>
+                      <span className="font-medium text-gray-800">
+                        Country:
+                      </span>{" "}
+                      {client.countryName}
+                    </p>
+                    <p>
+                      <span className="font-medium text-gray-800">Status:</span>{" "}
+                      <span
+                        className={`${statusColor[client.status] || "text-gray-600"}`}
+                      >
+                        {client.status}
+                      </span>
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Pagination Section */}
-<div className="flex items-center justify-between pt-4 border-t">
-  <p className="text-sm text-gray-600">
-    Showing <span className="font-medium">{clientDetails.length}</span> of <span className="font-medium">{pageInfo.totalElements}</span> results
-  </p>
-  
-  <div className="flex items-center gap-4">
-    {/* Page Status Indicator */}
-    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
-      Page <span className="text-indigo-600">{pageInfo.current + 1}</span> of {Math.max(1, pageInfo.totalPages)}
-      {pageInfo.current + 1 === pageInfo.totalPages && pageInfo.totalPages > 0 && (
-        <span className="ml-2 text-emerald-600 font-bold">• Last Page</span>
-      )}
-    </span>
+            <div className="flex items-center justify-between pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Showing{" "}
+                <span className="font-medium">{clientDetails.length}</span> of{" "}
+                <span className="font-medium">{pageInfo.totalElements}</span>{" "}
+                results
+              </p>
 
-    <div className="flex gap-2">
-      <button 
-        disabled={pageInfo.current === 0} 
-        onClick={() => setPageInfo(p => ({ ...p, current: p.current - 1 }))} 
-        className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-      
-      <button 
-        disabled={pageInfo.current >= pageInfo.totalPages - 1} 
-        onClick={() => setPageInfo(p => ({ ...p, current: p.current + 1 }))} 
-        className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-</div>
+              <div className="flex items-center gap-4">
+                {/* Page Status Indicator */}
+                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
+                  Page{" "}
+                  <span className="text-indigo-600">
+                    {pageInfo.current + 1}
+                  </span>{" "}
+                  of {Math.max(1, pageInfo.totalPages)}
+                  {pageInfo.current + 1 === pageInfo.totalPages &&
+                    pageInfo.totalPages > 0 && (
+                      <span className="ml-2 text-emerald-600 font-bold">
+                        • Last Page
+                      </span>
+                    )}
+                </span>
+
+                <div className="flex gap-2">
+                  <button
+                    disabled={pageInfo.current === 0}
+                    onClick={() =>
+                      setPageInfo((p) => ({ ...p, current: p.current - 1 }))
+                    }
+                    className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    disabled={pageInfo.current >= pageInfo.totalPages - 1}
+                    onClick={() =>
+                      setPageInfo((p) => ({ ...p, current: p.current + 1 }))
+                    }
+                    className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
-        )}
+         ) : (
+           <div className="flex items-center justify-center py-12">
+            <p className="text-sm text-gray-500">No clients found</p>
+           </div>
+         )
+        )
+        }
       </div>
 
-      <Modal isOpen={openCreateClient} onClose={() => setOpenCreateClient(false)} title="Create New Client">
-        <CreateClient onSuccess={() => { setOpenCreateClient(false); fetchClients(); fetchKPIs(); }} />
+      <Modal
+        isOpen={openCreateClient}
+        onClose={() => setOpenCreateClient(false)}
+        title="Create New Client"
+      >
+        <CreateClient
+          mode="create"
+          onSuccess={() => {
+            setOpenCreateClient(false);
+            fetchClients();
+            fetchKPIs();
+          }}
+        />
       </Modal>
     </div>
   );

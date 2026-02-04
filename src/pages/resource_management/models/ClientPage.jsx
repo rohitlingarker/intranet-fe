@@ -13,57 +13,30 @@ import {
   Briefcase,
   AlertTriangle,
   Package,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import ClientSection from "./ClientSection";
 import AddConfigurationModal from "../models/client_configuration/AddConfigurationModal";
 import Button from "../../../components/Button/Button";
+import Modal from "../../../components/Modal/modal";
+import CreateClient from "./CreateClient";
+import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
-import { getClientById } from "../services/clientservice";
-import { createClientSLA, createClientCompliance, createClientEscalation } from "../services/clientservice";
+// Added getClientPageData to imports
+import { 
+  getClientById, 
+  deleteClient, 
+  getClientPageData,
+  createClientSLA,
+  createClientCompliance,
+  createClientEscalation,
+} from "../services/clientservice";
 
 // --- Mock Data: Client with Multiple Projects ---
+// Note: Keeping this for the project list/details which are not yet dynamic in the prompt request
 const MOCK_CLIENT_DATA = {
-  id: "1",
-  name: "Acme Corporation",
-  industry: "Manufacturing",
-  region: "North America",
-  tier: "Strategic Partner",
-  stats: {
-    totalProjects: 3,
-    activeSLA: "99.9%",
-    riskScore: "Low",
-  },
-  kpis: [
-    {
-      label: "Active Projects",
-      value: "12",
-      icon: FileText,
-      color: "text-blue-600",
-      bg: "bg-blue-100",
-    },
-    {
-      label: "Total Spend",
-      value: "$450k",
-      icon: Box,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
-    },
-    {
-      label: "Satisfaction",
-      value: "98%",
-      icon: Users,
-      color: "text-purple-600",
-      bg: "bg-purple-100",
-    },
-    {
-      label: "Pending Issues",
-      value: "2",
-      icon: AlertTriangle,
-      color: "text-orange-600",
-      bg: "bg-orange-100",
-    },
-  ],
   projects: [
     {
       id: 101,
@@ -74,7 +47,6 @@ const MOCK_CLIENT_DATA = {
       health: "On Track",
       description:
         "Migration of legacy ERP systems to SAP S/4HANA across 4 regions.",
-      // Specific details for THIS project
       hasSLA: true,
       hasCompliance: true,
       hasAssets: false,
@@ -88,11 +60,10 @@ const MOCK_CLIENT_DATA = {
       status: "Active",
       type: "T&M",
       manager: "Mike Ross",
-      health: "At Risk", // Interesting data point
+      health: "At Risk",
       description:
         "Providing 5 senior React developers for internal dashboard tools.",
-      // Different configuration
-      hasSLA: false, // Staff aug might not have an SLA
+      hasSLA: false,
       hasCompliance: true,
       hasAssets: true,
       hasEscalation: true,
@@ -110,7 +81,6 @@ const MOCK_CLIENT_DATA = {
       health: "On Track",
       description:
         "Annual external security assessment and penetration testing.",
-      // Minimal config
       hasSLA: false,
       hasCompliance: true,
       hasAssets: false,
@@ -195,7 +165,7 @@ const ProjectCompliance = () => (
               COMPLIANT
             </span>
           </div>
-        ),
+        )
       )}
     </div>
   </div>
@@ -311,6 +281,7 @@ const ClientPage = () => {
   const permissions = user?.permissions || [];
   const canConfigAgreements = permissions.includes("ADD_CONFIGURATION");
   const canManageAssets = permissions.includes("ASSETS_MANAGEMENT");
+  const canEditProfile = permissions.includes("EDIT_CLIENT_PROFILE");
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -320,13 +291,30 @@ const ClientPage = () => {
   const [slaRefetchKey, setSLARefetchKey] = useState(0);
   const [complianceRefetchKey, setComplianceRefetchKey] = useState(0);
   const [escalationRefetchKey, setEscalationRefetchKey] = useState(0);
+  const [openUpdateClient, setOpenUpdateClient] = useState(false);
+  const [openDeleteClient, setOpenDeleteClient] = useState(false);
+
+  // New State for dynamic page data
+  const [clientStats, setClientStats] = useState({
+    totalProjectsCount: 0,
+    activeProjectCount: 0,
+    totalSpend: 0,
+  });
+
+  // Helper to format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const fetchClientDetails = async () => {
     setLoading(true);
     try {
       const data = await getClientById(clientId);
       setClientDetails(data.data);
-      console.log("Fetched Client Details:", data.data);
     } catch (error) {
       toast.error("Failed to fetch client details.");
     } finally {
@@ -334,8 +322,37 @@ const ClientPage = () => {
     }
   };
 
+  const fetchClientStats = async () => {
+    try {
+      const res = await getClientPageData(clientId);
+      if (res.success && res.data) {
+        setClientStats(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch client stats", error);
+      // Optional: toast.error("Failed to load client statistics");
+    }
+  };
+
+  const handleDeleteClient = async (clientId) => {
+    setLoading(true);
+    try {
+      const res = await deleteClient(clientId);
+      toast.success(res.message || "Client deleted successfully.");
+      setOpenDeleteClient(false);
+      navigate(-1);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete client.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (clientId) fetchClientDetails();
+    if (clientId) {
+      fetchClientDetails();
+      fetchClientStats(); // Fetch the dynamic stats
+    }
   }, [clientId]);
 
   const handleSLACreate = async (data) => {
@@ -382,7 +399,7 @@ const ClientPage = () => {
       await handleSLACreate(data);
     } else if (type === "compliances") {
       await handleComplianceCreate(data);
-    } else if (type === "escalations"){
+    } else if (type === "escalations") {
       await handleEscalationCreate(data);
     } else {
       toast.error("Unknown configuration type");
@@ -412,6 +429,38 @@ const ClientPage = () => {
 
   const ActivityIcon = CheckCircle2; // Just a helper for the array above
 
+  // Dynamic KPI Data Construction
+  const kpiData = [
+    {
+      label: "Active Projects",
+      value: clientStats.activeProjectCount, // Dynamic
+      icon: FileText,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+    },
+    {
+      label: "Total Spend",
+      value: formatCurrency(clientStats.totalSpend), // Dynamic
+      icon: Box,
+      color: "text-emerald-600",
+      bg: "bg-emerald-100",
+    },
+    {
+      label: "Satisfaction",
+      value: "98%", // Static/Mock for now as per API response limitations
+      icon: Users,
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+    },
+    {
+      label: "Pending Issues",
+      value: "2", // Static/Mock for now as per API response limitations
+      icon: AlertTriangle,
+      color: "text-orange-600",
+      bg: "bg-orange-100",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* HEADER */}
@@ -426,6 +475,22 @@ const ClientPage = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               {clientDetails.client_name}
+              {canEditProfile && (
+                <>
+                  <Pencil
+                    size={16}
+                    className="text-blue-500 hover:text-blue-700 cursor-pointer mt-2"
+                    title="Edit Client"
+                    onClick={() => setOpenUpdateClient(true)}
+                  />
+                  <Trash2
+                    size={16}
+                    className="text-red-500 hover:text-red-700 cursor-pointer mt-2"
+                    title="Delete Client"
+                    onClick={() => setOpenDeleteClient(true)}
+                  />
+                </>
+              )}
             </h1>
             <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
               <span className="flex items-center gap-1">
@@ -441,14 +506,15 @@ const ClientPage = () => {
 
         {/* Client Level Stats */}
         <div className="flex gap-4">
-          {/* <div className="text-right px-4 border-r border-gray-200">
+          <div className="text-right px-4 border-r border-gray-200">
             <p className="text-xs text-gray-500 font-semibold uppercase">
               Total Projects
             </p>
             <p className="text-xl font-bold text-gray-900">
-              {MOCK_CLIENT_DATA.stats.totalProjects}
+              {/* Dynamic Total Projects */}
+              {clientStats.totalProjectsCount}
             </p>
-          </div> */}
+          </div>
           <div className="text-right pl-2">
             <p className="text-xs text-gray-500 font-semibold uppercase">
               Overall Health
@@ -460,7 +526,7 @@ const ClientPage = () => {
 
       {/* 2. Client KPI's */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10 mb-15">
-        {MOCK_CLIENT_DATA.kpis.map((kpi, idx) => (
+        {kpiData.map((kpi, idx) => (
           <div
             key={idx}
             className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between"
@@ -482,10 +548,10 @@ const ClientPage = () => {
 
       {(canConfigAgreements || canManageAssets) && (
         <div className="flex justify-end gap-3 mt-5">
-          {(canConfigAgreements &&
+          {canConfigAgreements &&
             (clientDetails.compliance ||
               clientDetails.SLA ||
-              clientDetails.escalationContact)) && (
+              clientDetails.escalationContact) && (
               <Button
                 variant="primary"
                 onClick={() => setOpenConfigModal(true)}
@@ -512,7 +578,12 @@ const ClientPage = () => {
         clientDetails.SLA ||
         clientDetails.escalationContact) && (
         <div className="mt-8 mb-10">
-          <ClientSection clientDetails={clientDetails} slaRefetchKey={slaRefetchKey} complianceRefetchKey={complianceRefetchKey} escalationRefetchKey={escalationRefetchKey} />
+          <ClientSection
+            clientDetails={clientDetails}
+            slaRefetchKey={slaRefetchKey}
+            complianceRefetchKey={complianceRefetchKey}
+            escalationRefetchKey={escalationRefetchKey}
+          />
         </div>
       )}
 
@@ -669,6 +740,35 @@ const ClientPage = () => {
         clientDetails={clientDetails}
         loading={loading}
       />
+
+      {/* Update Client Modal */}
+      <Modal
+        isOpen={openUpdateClient}
+        title="Update Client"
+        subtitle="Modify client details and settings."
+        onClose={() => setOpenUpdateClient(false)}
+      >
+        <CreateClient
+          mode="edit"
+          initialData={clientDetails}
+          onSuccess={() => {
+            fetchClientDetails();
+            setOpenUpdateClient(false);
+          }}
+        />
+      </Modal>
+
+      {/* Delete Client Modal */}
+      {openDeleteClient && (
+        <ConfirmationModal
+          isOpen={openDeleteClient}
+          title="Delete Client"
+          message="Are you sure you want to delete this client? This action cannot be undone."
+          onCancel={() => setOpenDeleteClient(false)}
+          onConfirm={() => handleDeleteClient(clientId)}
+          isLoading={loading}
+        />
+      )}
     </div>
   );
 };

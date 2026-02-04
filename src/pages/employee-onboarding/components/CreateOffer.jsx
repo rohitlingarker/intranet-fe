@@ -122,6 +122,7 @@ export default function CreateOffer() {
       });
 
       setTimeout(() => navigate("/employee-onboarding"), 900);
+      navigate("/employee-onboarding");
     } catch (err) {
       toast.update(toastId, {
         render: err.response?.data?.detail || "Something went wrong.",

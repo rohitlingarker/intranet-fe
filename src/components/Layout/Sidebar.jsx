@@ -22,7 +22,11 @@ const navigation = [
   { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Employee Onboarding", href: "/employee-onboarding", icon: Handshake },
+  // {
+  //   name: "Employee Onboarding",
+  //   href: "/employee-onboarding",
+  //   icon: Handshake,
+  // },
 ];
 
 const userManagementSubmenu = [
@@ -35,9 +39,12 @@ const userManagementSubmenu = [
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
-  const isUserManagementActive = location.pathname.startsWith("/user-management");
+  const isUserManagementActive =
+    location.pathname.startsWith("/user-management");
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  const isAdmin =
+    user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  const isGeneral = user?.roles?.includes("General");
   const isManager = user?.roles?.includes("Manager");
   const isDeveloper = user?.roles?.includes("Developer");
 
@@ -170,6 +177,23 @@ const Sidebar = ({ isCollapsed }) => {
                   ))}
                 </ul>
               )}
+            </li>
+          )}
+
+          {!isGeneral && (
+            <li className="relative">
+              <Link
+                to="/employee-onboarding"
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
+                  location.pathname.startsWith("/employee-onboarding")
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                }`}
+                title={isCollapsed ? "Employee Onboarding" : ""}
+              >
+                <Handshake className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Employee Onboarding</span>}
+              </Link>
             </li>
           )}
 

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
+import { Toaster } from 'react-hot-toast';
 
 import {
   BrowserRouter as Router,
@@ -124,6 +125,18 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
+
+
+
+
+// function App() {
+//   return (
+//     <>
+//       {/* ... your routes or components ... */}
+//       <Toaster position="top-right" reverseOrder={false} />
+//     </>
+//   );
+// }
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
@@ -385,7 +398,11 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
-            element={<AdminApprovalDashboard />}
+            element={
+              <ProtectedRoute allowedRoles={["Admin"]}>
+                <AdminApprovalDashboard />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/employee-onboarding/admin/offer/:user_uuid"
@@ -661,7 +678,7 @@ const AppRoutes = () => {
             path="/resource-management"
             element={
               <ProtectedRoute
-                allowedRoles={["Admin", "PROJECT-MANAGER", "RESOURCE-MANAGER"]} 
+                allowedRoles={["Admin", "RESOURCE-MANAGER"]} 
               >
                 <AdminPannel />
               </ProtectedRoute>
