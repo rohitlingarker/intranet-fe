@@ -91,9 +91,9 @@ const ProjectTabs = () => {
     // if (selectedTab === "status-report") {
     //   return <ProjectStatusReportWrapper projectId={pid} />;
     // }
-    if (selectedTab === "timelines") {
-      return <Timeline projectId={pid} />;
-    }
+    // if (selectedTab === "timelines") {
+    //   return <Timeline projectId={pid} />;
+    // }
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
@@ -120,7 +120,7 @@ const ProjectTabs = () => {
      { name: "Risk Management", tab: "risk-management" },
     // { name: "Status Report", tab: "status-report" },
     { name: "Test Management", tab: "test-management" },
-     { name: "Timelines", tab:"timelines" },
+    //  { name: "Timelines", tab:"timelines" },
     // { name: "Calendar", tab: "calendar" },
   ];
 

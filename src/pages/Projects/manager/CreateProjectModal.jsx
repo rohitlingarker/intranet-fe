@@ -377,7 +377,7 @@ const CreateProjectModal = ({
           
           {/*resource manager id*/}
           <label className="block">
-            <span className="font-medium text-sm">Project Owner *</span>
+            <span className="font-medium text-sm">Resource Manager *</span>
             <select
               name="resourceManagerId"
               className="w-full border px-4 py-2 rounded mt-1"
