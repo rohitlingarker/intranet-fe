@@ -5,26 +5,22 @@ import axios from "axios";
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
 import Board from "./Board";
-import ProjectStatusReportWrapper from "./ProjectStatusReportWrapper";
 import Timeline from "./Timeline";
 
 import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
-import { Calendar } from "antd";
+import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
-  console.log(projectId);
-  console.log("URL", window.location.href);
-  
-  
   const location = useLocation();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
   const [projectName, setProjectName] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [showRiskModal, setShowRiskModal] = useState(false); // ✅ NEW
 
   // Get tab from URL OR default to summary
   const getSelectedTabFromLocation = () => {
@@ -39,7 +35,7 @@ const ProjectTabs = () => {
     setSelectedTab(getSelectedTabFromLocation());
   }, [location.search]);
 
-  // ⭐ NEW — Auto redirect test-management → test-management/overview
+  // ⭐ Auto redirect test-management → overview
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
@@ -58,7 +54,6 @@ const ProjectTabs = () => {
       axios
         .get(`${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`, {
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         })
@@ -72,10 +67,18 @@ const ProjectTabs = () => {
     }
   }, [projectId, token]);
 
-  // Render content for each tab
+  // ⭐ AUTO SHOW RISK MODAL WHEN PAGE LOADS
+  useEffect(() => {
+    if (projectId) {
+      setShowRiskModal(true);
+    }
+  }, [projectId]);
+
+  // Render tab content
   const renderTabContent = () => {
     if (!projectId) return null;
     const pid = parseInt(projectId, 10);
+
     if (selectedTab === "risk-management") {
       return <RiskRegisterPage projectId={pid} />;
     }
@@ -88,18 +91,12 @@ const ProjectTabs = () => {
     if (selectedTab === "board") {
       return <Board projectId={pid} projectName={projectName} />;
     }
-    // if (selectedTab === "status-report") {
-    //   return <ProjectStatusReportWrapper projectId={pid} />;
-    // }
     if (selectedTab === "timelines") {
       return <Timeline projectId={pid} />;
     }
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
-    // if (selectedTab === "calendar") {
-    //   return <Calendar projectId={pid} />;
-    // }
 
     return null;
   };
@@ -113,15 +110,12 @@ const ProjectTabs = () => {
   }
 
   const navItems = [
-   
     { name: "Summary", tab: "summary" },
     { name: "Backlog", tab: "backlog" },
     { name: "Board", tab: "board" },
-     { name: "Risk Management", tab: "risk-management" },
-    // { name: "Status Report", tab: "status-report" },
+    { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
-     { name: "Timelines", tab:"timelines" },
-    // { name: "Calendar", tab: "calendar" },
+    { name: "Timelines", tab: "timelines" },
   ];
 
   const navItemsWithActive = navItems.map((item) => ({
@@ -132,21 +126,23 @@ const ProjectTabs = () => {
 
   return (
     <div>
-      {/* Top Navbar */}
-      {/* <header className="bg-white mb-4">
-        <Navbar logo={null} navItems={navItemsWithActive} />
-      </header> */}
+      {/* Header */}
       <header className="bg-white mb-4 px-4 py-3 flex items-center justify-between border-b">
-  <h1 className="text-xl font-semibold text-slate-700">
-    {projectName || "Project"}
-  </h1>
-
-  <Navbar logo={null} navItems={navItemsWithActive} />
-</header>
-
+        <h1 className="text-xl font-semibold text-slate-700">
+          {projectName || "Project"}
+        </h1>
+        <Navbar logo={null} navItems={navItemsWithActive} />
+      </header>
 
       {/* Tab Content */}
       <div>{renderTabContent()}</div>
+
+      {/* ✅ AUTO TRIGGER RISK HEALTH MODAL */}
+      <RiskHealthModal
+        projectId={parseInt(projectId, 10)}
+        open={showRiskModal}
+        onClose={() => setShowRiskModal(false)}
+      />
     </div>
   );
 };
