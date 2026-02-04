@@ -87,33 +87,38 @@ const AssetDetail = () => {
   };
 
   const handleReturnSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      await assignUpdateClientAsset(returnItem.assignmentId, {
-        ...returnItem,
-        ...returnData,
-        assignmentStatus: "RETURNED",
-        actualReturnDate: today,
-      });
+  try {
+    const res = await assignUpdateClientAsset(returnItem.assignmentId, {
+      ...returnItem,
+      ...returnData,
+      assignmentStatus: "RETURNED",
+      actualReturnDate: today,
+    });
 
-      await fetchData();
-      setReturnModal(false);
-      setReturnItem(null);
-      setReturnData({
-        resourceName: "",
-        projectName: "",
-        serialNumber: "",
-        assignedBy: "",
-        locationType: "",
-        locationDetails: "",
-        conditionOnReturn: "",
-        returnNotes: "",
-      });
-    } catch (err) {
-      console.error("Return Submit Error:", err);
-    }
-  };
+    toast.success(res?.message || "Asset returned successfully");
+
+    await fetchData();
+    setReturnModal(false);
+    setReturnItem(null);
+    setReturnData({
+      resourceName: "",
+      projectName: "",
+      serialNumber: "",
+      assignedBy: "",
+      locationType: "",
+      locationDetails: "",
+      conditionOnReturn: "",
+      returnNotes: "",
+    });
+
+  } catch (err) {
+    console.error("Return Submit Error:", err);
+    toast.error(err.response?.data?.message || "Failed to return asset");
+  }
+};
+
 
   /* ---------------- FETCH DATA ---------------- */
   const fetchData = async () => {
@@ -200,53 +205,62 @@ const AssetDetail = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAssignSave = async (e) => {
-    e.preventDefault();
+const handleAssignSave = async (e) => {
+  e.preventDefault();
 
-    const payload = {
-      resourceName: formData.resourceName,
-      projectName: formData.projectName,
-      assignedDate: formData.assignedDate,
-      expectedReturnDate: formData.expectedReturnDate,
-      assignmentStatus: formData.assignmentStatus,
-      assignedBy: formData.assignedBy,
-      locationType: formData.locationType,
-      locationDetails: formData.locationDetails,
-      description: formData.description,
-      serialNumber: formData.serialNumber,
-      active: true,
-      asset: { assetId: Number(assetId) },
-    };
-
-    try {
-      if (editingAssignment) {
-        // ✅ CORRECT API FOR EDIT
-        await assignUpdateClientAsset(editingAssignment.assignmentId, payload);
-      } else {
-        // CREATE
-        await assignClientAsset(payload);
-      }
-
-      await fetchData();
-      closeModal();
-    } catch (err) {
-      console.error("Save Error:", err);
-    }
+  const payload = {
+    resourceName: formData.resourceName,
+    projectName: formData.projectName,
+    assignedDate: formData.assignedDate,
+    expectedReturnDate: formData.expectedReturnDate,
+    assignmentStatus: formData.assignmentStatus,
+    assignedBy: formData.assignedBy,
+    locationType: formData.locationType,
+    locationDetails: formData.locationDetails,
+    description: formData.description,
+    serialNumber: formData.serialNumber,
+    active: true,
+    asset: { assetId: assetId },
   };
+
+  try {
+    let res;
+
+    if (editingAssignment) {
+      // UPDATE
+      res = await assignUpdateClientAsset(editingAssignment.assignmentId, payload);
+      toast.success(res?.message || "Assignment updated successfully");
+    } else {
+      // CREATE
+      res = await assignClientAsset(payload);
+      toast.success(res?.message || "Asset assigned successfully");
+    }
+
+    await fetchData();
+    closeModal();
+
+  } catch (err) {
+    console.error("Save Error:", err);
+    toast.error(err.response?.data?.message || "Failed to save assignment");
+  }
+};
+
 
   const confirmDelete = async () => {
-    console.log("Deleting assignment ID:", deleteTarget.assignmentId);
-    try {
-      const res = await deleteClientAssignment(deleteTarget.assignmentId);
-      fetchData();
-      setDeleteTarget(null);
-      setCurrentPage(1); // reset page to avoid empty page bug
-      toast.success(res.message || "Record deleted");
-    } catch (err) {
-      console.error("Delete Error:", err);
-      toast.error(err.response?.data?.message || "Failed to delete the record.");
-    }
-  };
+  try {
+    const res = await deleteClientAssignment(deleteTarget.assignmentId);
+    toast.success(res?.message || "Record deleted successfully");
+
+    fetchData();
+    setDeleteTarget(null);
+    setCurrentPage(1);
+
+  } catch (err) {
+    console.error("Delete Error:", err);
+    toast.error(err.response?.data?.message || "Failed to delete the record.");
+  }
+};
+
 
   const closeModal = () => {
     setShowModal(false);
@@ -744,6 +758,7 @@ const paginatedAssignments = filteredAssignments.slice(
                 Cancel
               </button>
               <Button type="submit" variant="primary">
+              
                 Confirm Return
               </Button>
             </div>
