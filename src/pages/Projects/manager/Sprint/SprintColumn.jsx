@@ -5,6 +5,9 @@ import { useDrop } from "react-dnd";
 import { ChevronRight, ChevronDown, MoreVertical } from "lucide-react";
 import StoryCard from "./StoryCard";
 import TaskCard from "./TaskCard";
+import { jwtDecode } from "jwt-decode";
+import { is } from "date-fns/locale";
+
 
 const SprintColumn = ({
   sprint,
@@ -49,6 +52,18 @@ const SprintColumn = ({
   const end = formatPrettyDate(sprint.endDateReadable || sprint.endDate);
 
   const totalItems = stories.length + tasks.length;
+  const isManager = (() => {
+  const token = localStorage.getItem("token");
+  if (!token) return false;
+
+  try {
+    const decoded = jwtDecode(token);
+    return decoded?.roles?.includes("Manager");
+  } catch {
+    return false;
+  }
+})();
+
 
   /** -----------------------------------------
    *  ⭐ FIX DND TO SUPPORT BOTH STORY + TASK
@@ -143,7 +158,7 @@ const SprintColumn = ({
               <MoreVertical />
             </button>
 
-            {menuOpen && (
+            {menuOpen && isManager && (
               <div className="absolute right-0 bg-white border shadow rounded w-40 z-20">
                 <button
                   className="w-full text-left px-3 py-2 hover:bg-gray-100"
