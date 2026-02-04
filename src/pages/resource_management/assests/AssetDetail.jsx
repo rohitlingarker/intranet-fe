@@ -1,25 +1,33 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Pencil,
   Trash2,
-  RotateCcw,
   X,
   AlertTriangle,
   Box,
   Users,
   Laptop,
   Percent,
+  Undo2,
+  Check,
+  ChevronDown,
 } from "lucide-react";
-import Button from "../../../components/Button/Button"; // Ensure this path is correct
+import Button from "../../../components/Button/Button";
 import {
   getClientAssetAssignments,
   assignClientAsset,
   assignUpdateClientAsset,
+  getAssignmentKPI,
+  returnAssetAssignment,
   deleteClientAssignment,
 } from "../services/clientservice";
 import { toast } from "react-toastify";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+import { Listbox, Transition } from "@headlessui/react";
+import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
+import Pagination from "../../../components/Pagination/pagination";
 
 /* ---------------- CONSTANTS & STYLES ---------------- */
 
@@ -32,12 +40,28 @@ const STATUS_COLORS = {
 };
 
 const COLOR_STYLES = {
-  indigo: { bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-100" },
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
-  amber: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  indigo: {
+    bg: "bg-indigo-50",
+    text: "text-indigo-600",
+    border: "border-indigo-100",
+  },
+  emerald: {
+    bg: "bg-emerald-50",
+    text: "text-emerald-600",
+    border: "border-emerald-100",
+  },
+  amber: {
+    bg: "bg-amber-50",
+    text: "text-amber-600",
+    border: "border-amber-100",
+  },
   blue: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100" },
   rose: { bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-100" },
-  yellow: { bg: "bg-yellow-50", text: "text-yellow-600", border: "border-yellow-100" },
+  yellow: {
+    bg: "bg-yellow-50",
+    text: "text-yellow-600",
+    border: "border-yellow-100",
+  },
 };
 
 /* ---------------- SUB-COMPONENTS ---------------- */
@@ -45,9 +69,13 @@ const COLOR_STYLES = {
 const Stat = ({ title, value, icon: Icon, color = "indigo" }) => {
   const theme = COLOR_STYLES[color] || COLOR_STYLES.indigo;
   return (
-    <div className={`bg-white border rounded-xl p-5 shadow-sm flex justify-between items-center transition-all hover:shadow-md ${theme.border}`}>
+    <div
+      className={`bg-white border rounded-xl p-5 shadow-sm flex justify-between items-center transition-all hover:shadow-md ${theme.border}`}
+    >
       <div>
-        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">{title}</p>
+        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">
+          {title}
+        </p>
         <p className={`text-2xl font-bold mt-1 ${theme.text}`}>{value}</p>
       </div>
       <div className={`${theme.bg} p-3 rounded-lg`}>
@@ -62,7 +90,10 @@ const Modal = ({ title, children, onClose }) => (
     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col scale-100">
       <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-b rounded-t-2xl">
         <h3 className="text-base font-bold text-gray-800">{title}</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-red-500 transition-colors">
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-red-500 transition-colors"
+        >
           <X size={20} />
         </button>
       </div>
@@ -73,7 +104,9 @@ const Modal = ({ title, children, onClose }) => (
 
 const Input = ({ label, ...props }) => (
   <div className="space-y-1.5">
-    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">{label}</label>
+    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+      {label}
+    </label>
     <input
       {...props}
       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
@@ -83,66 +116,70 @@ const Input = ({ label, ...props }) => (
 
 const Select = ({ label, options, ...props }) => (
   <div className="space-y-1.5">
-    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">{label}</label>
+    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+      {label}
+    </label>
     <select
       {...props}
       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer"
     >
       {options.map((opt) => (
-        <option key={opt} value={opt}>{opt}</option>
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
       ))}
     </select>
   </div>
 );
 
-/* ---------------- MAIN COMPONENT ---------------- */
-
 const AssetDetail = () => {
   const navigate = useNavigate();
   const { clientId, assetId } = useParams();
-  
-  // State
   const [assignments, setAssignments] = useState([]);
-  const [masterAsset, setMasterAsset] = useState(null); // Stores the generic asset info (Name, Category)
+  const [masterAsset, setMasterAsset] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // UI State
-  const [activeTab, setActiveTab] = useState("ACTIVE"); // ACTIVE | HISTORY
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [kpiLoading, setKPILoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("ACTIVE");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 8;
   const today = new Date().toISOString().split("T")[0];
-
-  // Modal States
   const [showModal, setShowModal] = useState(false);
   const [returnModal, setReturnModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  
-  // Editing / Action Items
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [returnItem, setReturnItem] = useState(null);
+  const [kpiData, setKPIData] = useState(null);
 
-  // Forms
   const [formData, setFormData] = useState({
-    resourceName: "", projectName: "", assignedDate: "", expectedReturnDate: "",
-    assignmentStatus: "ASSIGNED", assignedBy: "", locationType: "", locationDetails: "",
-    description: "", serialNumber: "",
+    resourceName: "",
+    projectName: "",
+    assignedDate: "",
+    expectedReturnDate: "",
+    assignmentStatus: "ASSIGNED",
+    assignedBy: "",
+    locationDetails: "",
+    description: "",
+    serialNumber: "",
   });
 
   const [returnData, setReturnData] = useState({
-    conditionOnReturn: "Good", returnNotes: "",
+    conditionOnReturn: "Good",
+    returnNotes: "",
   });
 
-  /* ---------------- FETCH DATA ---------------- */
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await getClientAssetAssignments(assetId);
-      if (res.success && Array.isArray(res.data)) {
-        setAssignments(res.data);
-        // Extract master info from the first record if available, or maintain previous
-        if (res.data.length > 0 && res.data[0].asset) {
-          setMasterAsset(res.data[0].asset);
+
+      if (res.success && res.data) {
+        setAssignments(res.data.assignments || []);
+        if (res.data.asset) {
+          setMasterAsset(res.data.asset);
         }
       }
     } catch (err) {
@@ -153,20 +190,30 @@ const AssetDetail = () => {
     }
   };
 
+  const fetchKPI = async () => {
+    setKPILoading(true);
+    try {
+      const res = await getAssignmentKPI(assetId);
+      setKPIData(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load KPI data");
+    } finally {
+      setKPILoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (assetId) fetchData();
+    if (assetId) {
+      fetchData();
+      fetchKPI();
+    }
   }, [assetId]);
 
   /* ---------------- KPI CALCULATIONS ---------------- */
-  const totalStock = masterAsset?.quantity || 0;
-  
-  const activeAssignmentsList = assignments.filter(
-    (a) => a.active === true && a.assignmentStatus !== "RETURNED" && a.assignmentStatus !== "LOST"
-  );
-  
-  const assignedCount = activeAssignmentsList.length;
-  const availableCount = Math.max(0, totalStock - assignedCount);
-  const utilization = totalStock > 0 ? Math.round((assignedCount / totalStock) * 100) : 0;
+  const totalStock = kpiData?.totalAssets || 0;
+  const assignedCount = kpiData?.activeAssets;
+  const availableCount = kpiData?.availableAssets;
+  const utilization = kpiData?.utilization;
 
   const getUtilizationColor = (rate) => {
     if (rate >= 80) return "emerald";
@@ -174,29 +221,39 @@ const AssetDetail = () => {
     return "rose";
   };
 
-  /* ---------------- TABLE FILTERING & PAGINATION ---------------- */
   const filteredAssignments = useMemo(() => {
     return assignments
-      .filter((a) => activeTab === "ACTIVE" ? a.assignmentStatus !== "RETURNED" : a.assignmentStatus === "RETURNED")
+      .filter((a) =>
+        activeTab === "ACTIVE"
+          ? a.assignmentStatus !== "RETURNED"
+          : a.assignmentStatus === "RETURNED",
+      )
       .filter((a) => {
         const search = searchTerm.toLowerCase();
         return (
           a.resourceName?.toLowerCase().includes(search) ||
           a.projectName?.toLowerCase().includes(search) ||
-          a.serialNumber?.toLowerCase().includes(search)
+          a.serialNumber?.toLowerCase().includes(search) ||
+          a.location?.toLowerCase().includes(search)
         );
       });
   }, [assignments, activeTab, searchTerm]);
 
   const totalPages = Math.ceil(filteredAssignments.length / rowsPerPage);
-  
-  // Reset page when tab or search changes
   useEffect(() => setCurrentPage(1), [activeTab, searchTerm]);
 
   const paginatedAssignments = filteredAssignments.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
+
+  const handlePrevious = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
+  };
 
   /* ---------------- HANDLERS ---------------- */
   const handleFormChange = (e) => {
@@ -213,51 +270,70 @@ const AssetDetail = () => {
     e.preventDefault();
     const payload = {
       ...formData,
-      active: true,
       asset: { assetId: assetId },
     };
-
+    setUpdateLoading(true);
     try {
       if (editingAssignment) {
-        await assignUpdateClientAsset(editingAssignment.assignmentId, payload);
-        toast.success("Assignment updated successfully");
+        const res = await assignUpdateClientAsset(
+          editingAssignment.assignmentId,
+          payload,
+        );
+        if (res.success) {
+          toast.success(res.message || "Assignment updated successfully");
+        } else {
+          toast.error(res.message || "Failed to update assignment");
+        }
       } else {
-        await assignClientAsset(payload);
-        toast.success("Asset assigned successfully");
+        const res = await assignClientAsset(payload);
+        if (res.success) {
+          toast.success(res.message || "Assignment created successfully");
+          fetchKPI();
+        } else {
+          toast.error(res.message || "Failed to create assignment");
+        }
       }
       await fetchData();
       closeModal();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save record");
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
   const handleReturnSubmit = async (e) => {
     e.preventDefault();
+    setReturnLoading(true);
     try {
-      await assignUpdateClientAsset(returnItem.assignmentId, {
-        ...returnItem,
-        ...returnData,
-        assignmentStatus: "RETURNED",
-        actualReturnDate: today,
-      });
-      toast.success("Asset marked as returned");
+      const res = await returnAssetAssignment(
+        returnItem.assignmentId,
+        today,
+        returnData.returnNotes,
+      );
+      toast.success(res.message || "Asset marked as returned");
       await fetchData();
       setReturnModal(false);
       setReturnItem(null);
     } catch (err) {
-      toast.error("Failed to return asset");
+      toast.error(err.response?.data?.message || "Failed to return asset");
+    } finally {
+      setReturnLoading(false);
     }
   };
 
   const confirmDelete = async () => {
+    setDeleteLoading(true);
     try {
-      await deleteClientAssignment(deleteTarget.assignmentId);
-      toast.success("Record deleted");
+      const res = await deleteClientAssignment(deleteTarget.assignmentId);
+      toast.success(res.message || "Record deleted");
       await fetchData();
-      setDeleteTarget(null);
     } catch (err) {
-      toast.error("Failed to delete record");
+      console.log(err);
+      toast.error(err.response?.data || "Failed to delete record");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -270,7 +346,6 @@ const AssetDetail = () => {
       expectedReturnDate: a.expectedReturnDate || "",
       assignmentStatus: a.assignmentStatus || "ASSIGNED",
       assignedBy: a.assignedBy || "",
-      locationType: a.locationType || "",
       locationDetails: a.locationDetails || "",
       description: a.description || "",
       serialNumber: a.serialNumber || "",
@@ -282,11 +357,24 @@ const AssetDetail = () => {
     setShowModal(false);
     setEditingAssignment(null);
     setFormData({
-      resourceName: "", projectName: "", assignedDate: "", expectedReturnDate: "",
-      assignmentStatus: "ASSIGNED", assignedBy: "", locationType: "", locationDetails: "",
-      description: "", serialNumber: "",
+      resourceName: "",
+      projectName: "",
+      assignedDate: "",
+      expectedReturnDate: "",
+      assignmentStatus: "ASSIGNED",
+      assignedBy: "",
+      location: "",
+      description: "",
+      serialNumber: "",
     });
   };
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner text="Loading Asset Assignment Details..." />
+      </div>
+    );
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto font-sans">
@@ -304,7 +392,10 @@ const AssetDetail = () => {
               {masterAsset?.assetName || "Asset Detail"}
             </h1>
             <p className="text-sm text-slate-500">
-              Category: <span className="font-medium">{masterAsset?.assetCategory || "Unknown"}</span>
+              Category:{" "}
+              <span className="font-medium">
+                {masterAsset?.assetCategory || "Unknown"}
+              </span>
             </p>
           </div>
         </div>
@@ -314,12 +405,38 @@ const AssetDetail = () => {
       </div>
 
       {/* KPI CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat title="Total Stock" value={totalStock} icon={Box} color="blue" />
-        <Stat title="Active Assignments" value={assignedCount} icon={Users} color="emerald" />
-        <Stat title="Available" value={availableCount} icon={Laptop} color="amber" />
-        <Stat title="Utilization" value={`${utilization}%`} icon={Percent} color={getUtilizationColor(utilization)} />
-      </div>
+      {kpiLoading ? (
+        <div className="flex items-center justify-center h-screen">
+          <LoadingSpinner text="Loading KPI Data..." />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Stat
+            title="Total Stock"
+            value={totalStock}
+            icon={Box}
+            color="blue"
+          />
+          <Stat
+            title="Active Assignments"
+            value={assignedCount}
+            icon={Users}
+            color="emerald"
+          />
+          <Stat
+            title="Available"
+            value={availableCount}
+            icon={Laptop}
+            color="amber"
+          />
+          <Stat
+            title="Utilization"
+            value={`${utilization}%`}
+            icon={Percent}
+            color={getUtilizationColor(utilization)}
+          />
+        </div>
+      )}
 
       {/* TABS & SEARCH */}
       <div className="flex flex-col sm:flex-row justify-between items-center border-b gap-4">
@@ -364,57 +481,107 @@ const AssetDetail = () => {
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-gray-500 border-b bg-gray-50/50">
               <tr>
-                <th className="py-3 px-4 text-center">Resource</th>
-                <th className="py-3 px-4 text-center">Project</th>
-                <th className="py-3 px-4 text-center">Serial</th>
-                <th className="py-3 px-4 text-center">Assigned</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+                <th className="py-3 px-4 text-center w-[15%]">Resource</th>
+                <th className="py-3 px-4 text-center w-[15%]">Project</th>
+                <th className="py-3 px-4 text-center w-[15%]">Serial</th>
+                <th className="py-3 px-4 text-center w-[15%]">Location</th>
+                <th className="py-3 px-4 text-center w-[15%]">Assigned</th>
+                {activeTab === "HISTORY" && (
+                  <th className="py-3 px-4 text-center w-[15%]">Returned</th>
+                )}
+                <th className="py-3 px-4 text-center w-[10%]">Status</th>
+                <th className="py-3 px-4 text-center w-[15%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-400">Loading data...</td>
+                  <td colSpan="7" className="py-8 text-center text-gray-400">
+                    Loading data...
+                  </td>
                 </tr>
               ) : paginatedAssignments.length > 0 ? (
                 paginatedAssignments.map((a) => (
-                  <tr key={a.assignmentId} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-medium text-slate-700">{a.resourceName}</td>
-                    <td className="py-3 px-4 text-slate-600">{a.projectName}</td>
-                    <td className="py-3 px-4 text-xs font-mono text-slate-500 text-center">{a.serialNumber || "-"}</td>
-                    <td className="py-3 px-4 text-slate-600 text-center">{a.assignedDate}</td>
+                  <tr
+                    key={a.assignmentId}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
+                    <td className="py-3 px-4 font-medium text-slate-700">
+                      {a.resourceName}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      {a.projectName}
+                    </td>
+                    <td className="py-3 px-4 text-xs font-mono text-slate-500 text-center">
+                      {a.serialNumber || "-"}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {a.locationDetails || "-"}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 text-center">
+                      {new Date(a.assignedDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    {activeTab === "HISTORY" && (
+                      <td className="py-3 px-4 text-slate-600 text-center">
+                        {new Date(a.actualReturnedDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-center">
-                      <span className={`inline-flex items-center justify-center min-w-[80px] py-1 px-2 rounded-full text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[a.assignmentStatus] || "bg-gray-100 text-gray-600"}`}>
+                      <span
+                        className={`inline-flex items-center justify-center min-w-[80px] py-1 px-2 rounded-full text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[a.assignmentStatus] || "bg-gray-100 text-gray-600"}`}
+                      >
                         {a.assignmentStatus}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
                       {activeTab === "ACTIVE" ? (
                         <div className="flex justify-center gap-2">
-                          <button onClick={() => openEditModal(a)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit">
+                          <button
+                            onClick={() => openEditModal(a)}
+                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
                             <Pencil size={16} />
                           </button>
-                          <button 
-                            onClick={() => { setReturnItem(a); setReturnModal(true); }} 
-                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                          <button
+                            onClick={() => {
+                              setReturnItem(a);
+                              setReturnModal(true);
+                            }}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                             title="Return"
                           >
-                            <RotateCcw size={16} />
+                            <Undo2 size={16} />
                           </button>
-                          <button onClick={() => setDeleteTarget(a)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                          {/* <button
+                            onClick={() => setDeleteTarget(a)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
                             <Trash2 size={16} />
-                          </button>
+                          </button> */}
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">Read Only</span>
+                        <span className="text-xs text-slate-400 italic">
+                          Read Only
+                        </span>
                       )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center">
+                  <td colSpan="7" className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-400 gap-3">
                       <div className="bg-slate-50 p-3 rounded-full">
                         <Box size={24} className="opacity-40" />
@@ -431,26 +598,13 @@ const AssetDetail = () => {
 
       {/* PAGINATION */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center pt-2 text-sm">
-          <span className="text-gray-500">
-            Page <span className="font-semibold text-gray-700">{currentPage}</span> of {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Previous
-            </button>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          </div>
+        <div className="flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
         </div>
       )}
 
@@ -458,23 +612,74 @@ const AssetDetail = () => {
 
       {/* ASSIGN / EDIT MODAL */}
       {showModal && (
-        <Modal title={editingAssignment ? "Edit Assignment" : "Assign Asset"} onClose={closeModal}>
+        <Modal
+          title={editingAssignment ? "Edit Assignment" : "Assign Asset"}
+          onClose={closeModal}
+        >
           <form onSubmit={handleAssignSave} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Resource Name" name="resourceName" value={formData.resourceName} onChange={handleFormChange} required />
-              <Input label="Project Name" name="projectName" value={formData.projectName} onChange={handleFormChange} required />
-              <Input label="Serial Number" name="serialNumber" value={formData.serialNumber} onChange={handleFormChange} required />
-              <Input label="Assigned By" name="assignedBy" value={formData.assignedBy} onChange={handleFormChange} required />
-              <Input label="Assigned Date" type="date" name="assignedDate" value={formData.assignedDate} onChange={handleFormChange} required />
-              <Input label="Exp. Return" type="date" name="expectedReturnDate" value={formData.expectedReturnDate} onChange={handleFormChange} />
-              <Select label="Status" name="assignmentStatus" value={formData.assignmentStatus} onChange={handleFormChange} options={["ASSIGNED", "REQUESTED", "RETURNED", "REJECTED"]} />
-              <Input label="Location Type" name="locationType" value={formData.locationType} onChange={handleFormChange} />
-              <div className="col-span-1 sm:col-span-2">
-                <Input label="Location Details" name="locationDetails" value={formData.locationDetails} onChange={handleFormChange} />
-              </div>
+              <Input
+                label="Resource Name"
+                name="resourceName"
+                value={formData.resourceName}
+                onChange={handleFormChange}
+                required
+              />
+              <Input
+                label="Project Name"
+                name="projectName"
+                value={formData.projectName}
+                onChange={handleFormChange}
+                required
+              />
+              <Input
+                label="Serial Number"
+                name="serialNumber"
+                value={formData.serialNumber}
+                onChange={handleFormChange}
+                required
+              />
+              <Input
+                label="Assigned By"
+                name="assignedBy"
+                value={formData.assignedBy}
+                onChange={handleFormChange}
+                required
+              />
+              <Input
+                label="Assigned Date"
+                type="date"
+                name="assignedDate"
+                value={formData.assignedDate}
+                onChange={handleFormChange}
+                required
+              />
+              <Input
+                label="Exp. Return"
+                type="date"
+                name="expectedReturnDate"
+                value={formData.expectedReturnDate}
+                onChange={handleFormChange}
+              />
+              <Select
+                label="Status"
+                name="assignmentStatus"
+                value={formData.assignmentStatus}
+                onChange={handleFormChange}
+                options={["ASSIGNED", "REQUESTED", "RETURNED", "REJECTED"]}
+              />
+              <Input
+                label="Location"
+                name="locationDetails"
+                value={formData.locationDetails}
+                onChange={handleFormChange}
+                placeholder="e.g. Hyderabad"
+              />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Description</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                Description
+              </label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -484,8 +689,23 @@ const AssetDetail = () => {
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">Cancel</button>
-              <Button type="submit" variant="primary">Confirm</Button>
+              <button
+                type="button"
+                onClick={closeModal}
+                className={`px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 ${updateLoading ? "cursor-not-allowed" : ""}`}
+                disabled={updateLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={`px-4 py-2 text-sm font-medium rounded-lg text-white bg-indigo-500 hover:bg-indigo-600 ${updateLoading ? "cursor-not-allowed" : ""}`}
+                disabled={updateLoading}
+              >
+                {editingAssignment
+                  ? `${updateLoading ? "Updating..." : "Update"}`
+                  : `${updateLoading ? "Assigning..." : "Assign"}`}
+              </button>
             </div>
           </form>
         </Modal>
@@ -496,14 +716,94 @@ const AssetDetail = () => {
         <Modal title="Return Asset" onClose={() => setReturnModal(false)}>
           <form onSubmit={handleReturnSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Resource" value={returnItem.resourceName} disabled />
+              <Input
+                label="Resource"
+                value={returnItem.resourceName}
+                disabled
+              />
               <Input label="Project" value={returnItem.projectName} disabled />
-              <Input label="Serial Number" value={returnItem.serialNumber} disabled />
+              <Input
+                label="Serial Number"
+                value={returnItem.serialNumber}
+                disabled
+              />
               <Input label="Return Date" value={today} disabled />
             </div>
-            <Select label="Condition on Return" name="conditionOnReturn" value={returnData.conditionOnReturn} onChange={handleReturnChange} options={["Good", "Damaged", "Needs Repair", "Lost"]} />
+
+            {/* --- INLINE LISTBOX START --- */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                Condition on Return
+              </label>
+              <Listbox
+                value={returnData.conditionOnReturn}
+                onChange={(val) =>
+                  handleReturnChange({
+                    target: { name: "conditionOnReturn", value: val },
+                  })
+                }
+              >
+                <div className="relative">
+                  <Listbox.Button className="relative w-full cursor-pointer bg-slate-50 border border-slate-200 rounded-xl py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                    <span className="block truncate text-slate-700">
+                      {returnData.conditionOnReturn}
+                    </span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                      <ChevronDown
+                        size={16}
+                        className="text-gray-400"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </Listbox.Button>
+                  <Transition
+                    as={Fragment}
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-[60]">
+                      {["Good", "Damaged", "Needs Repair", "Lost"].map(
+                        (opt) => (
+                          <Listbox.Option
+                            key={opt}
+                            value={opt}
+                            className={({ active }) =>
+                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                active
+                                  ? "bg-indigo-50 text-indigo-700"
+                                  : "text-gray-900"
+                              }`
+                            }
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span
+                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                >
+                                  {opt}
+                                </span>
+                                {selected ? (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
+                                    <Check size={16} aria-hidden="true" />
+                                  </span>
+                                ) : null}
+                              </>
+                            )}
+                          </Listbox.Option>
+                        ),
+                      )}
+                    </Listbox.Options>
+                  </Transition>
+                </div>
+              </Listbox>
+            </div>
+            {/* --- INLINE LISTBOX END --- */}
+
             <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Return Notes</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                Return Notes
+              </label>
               <textarea
                 name="returnNotes"
                 value={returnData.returnNotes}
@@ -513,8 +813,20 @@ const AssetDetail = () => {
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setReturnModal(false)} className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">Cancel</button>
-              <Button type="submit" variant="primary">Confirm Return</Button>
+              <button
+                type="button"
+                onClick={() => setReturnModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={returnLoading}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {returnLoading ? "Returning..." : "Return"}
+              </button>
             </div>
           </form>
         </Modal>
@@ -522,25 +834,14 @@ const AssetDetail = () => {
 
       {/* DELETE DIALOG */}
       {deleteTarget && (
-        <Modal title="Confirm Delete" onClose={() => setDeleteTarget(null)}>
-          <div className="space-y-4 text-center">
-            <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="text-red-500" size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800">Delete Assignment?</h3>
-            <p className="text-slate-600 text-sm">
-              Are you sure you want to remove the assignment for <span className="font-bold">{deleteTarget.resourceName}</span>? This action cannot be undone.
-            </p>
-            <div className="flex justify-center gap-3 pt-4">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 font-medium text-sm">
-                Cancel
-              </button>
-              <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm shadow-sm">
-                Delete Record
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <ConfirmationModal
+          isOpen={deleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+          title="Delete Asset"
+          message="Are you sure you want to delete this asset?"
+          onConfirm={confirmDelete}
+          isLoading={deleteLoading}
+        />
       )}
     </div>
   );
