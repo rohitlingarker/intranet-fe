@@ -296,8 +296,8 @@ const ClientPage = () => {
 
   // New State for dynamic page data
   const [clientStats, setClientStats] = useState({
-    totalProjectsCount: 0,
-    activeProjectCount: 0,
+    totalProjects: 0,
+    activeProjects: 0,
     totalSpend: 0,
   });
 
@@ -433,7 +433,7 @@ const ClientPage = () => {
   const kpiData = [
     {
       label: "Active Projects",
-      value: clientStats.activeProjectCount, // Dynamic
+      value: clientStats.activeProjects, // Dynamic
       icon: FileText,
       color: "text-blue-600",
       bg: "bg-blue-100",
@@ -512,7 +512,7 @@ const ClientPage = () => {
             </p>
             <p className="text-xl font-bold text-gray-900">
               {/* Dynamic Total Projects */}
-              {clientStats.totalProjectsCount}
+              {clientStats.totalProjects}
             </p>
           </div>
           <div className="text-right pl-2">
