@@ -134,7 +134,7 @@ export default function ViewEmpDetails() {
       </Section>
 
       {/* Education */}
-      <Section title="Education Details">
+      {/* <Section title="Education Details">
         <div className="space-y-3">
           {(education_details || []).map((edu, i) => (
             <div key={i} className="p-3 border rounded-lg">
@@ -149,7 +149,47 @@ export default function ViewEmpDetails() {
             <p className="text-sm text-gray-500">No education records</p>
           )}
         </div>
-      </Section>
+      </Section> */}
+      <Section title="Education Details">
+  <div className="space-y-4">
+    {educationList.map((edu, i) => (
+      <div key={i} className="p-4 border rounded-lg space-y-2">
+        <div>
+          <p className="font-semibold text-gray-900">{edu.level}</p>
+          <p className="text-sm text-gray-500">
+            {edu.institution} • {edu.year}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          {edu.documents.map((doc, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
+            >
+              <span>{doc.documentType}</span>
+              {doc.fileUrl && (
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-indigo-600 underline"
+                >
+                  View Document
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+
+    {educationList.length === 0 && (
+      <p className="text-sm text-gray-500">No education records</p>
+    )}
+  </div>
+</Section>
+
 
       {/* Experience */}
       <Section title="Experience Details">

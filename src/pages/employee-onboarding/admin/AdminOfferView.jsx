@@ -9,8 +9,8 @@ import {
   Phone,
   Briefcase,
   IndianRupee,
-  User,
   BadgeCheck,
+  UserCheck,
 } from "lucide-react";
 
 export default function AdminOfferView() {
@@ -35,13 +35,12 @@ export default function AdminOfferView() {
     setOffer(res.data);
   };
 
-  /* ---------------- FETCH APPROVAL FOR THIS USER ---------------- */
+  /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
     const res = await axios.get(
       `${BASE}/offer-approval/my-actions`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
     const found = res.data.find(item => item.user_uuid === user_uuid);
     setApproval(found || null);
   };
@@ -52,36 +51,33 @@ export default function AdminOfferView() {
       .finally(() => setLoading(false));
   }, [user_uuid]);
 
-  /* ---------------- SUBMIT ADMIN ACTION ---------------- */
+  /* ---------------- SUBMIT ACTION ---------------- */
   const submitAction = async (action) => {
     try {
       setActing(true);
       setError("");
 
       await axios.put(
-      `${BASE}/offer-approval/update_action`,
-      {
-        user_uuid,
-        action,
-        comments:
-          action === "APPROVED"
-            ? "Approved by admin"
-            : action === "REJECTED"
-            ? "Rejected by admin"
-            : "Kept on hold by admin",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+        `${BASE}/offer-approval/update_action`,
+        {
+          user_uuid,
+          action,
+          comments:
+            action === "APPROVED"
+              ? "Approved by admin"
+              : action === "REJECTED"
+              ? "Rejected by admin"
+              : "Kept on hold by admin",
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-
-      // 🔄 refresh approval status after action
       await fetchApproval();
-
     } catch (e) {
       setError(
         e?.response?.data?.detail ||
@@ -92,13 +88,8 @@ export default function AdminOfferView() {
     }
   };
 
-  if (loading) {
-    return <div className="p-10 text-center">Loading...</div>;
-  }
-
-  if (!offer) {
-    return <div className="p-10 text-center text-red-600">Offer not found</div>;
-  }
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
+  if (!offer) return <div className="p-10 text-center text-red-600">Offer not found</div>;
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -113,9 +104,9 @@ export default function AdminOfferView() {
       <div className="bg-white rounded-xl shadow-md p-8">
 
         {/* HEADER */}
-        <div className="flex gap-4 mb-8">
-          <div className="bg-blue-100 text-blue-900 rounded-full p-3">
-            <User />
+        <div className="flex gap-4 mb-8 items-start">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 text-blue-700 shadow-sm">
+            <UserCheck size={26} strokeWidth={2} />
           </div>
 
           <div>
@@ -123,10 +114,10 @@ export default function AdminOfferView() {
               {offer.first_name} {offer.last_name}
             </h1>
 
-            <p className="flex items-center gap-2 text-gray-700">
-              <BadgeCheck size={16} />
+            <p className="flex items-center gap-2 text-gray-700 mt-1">
+              <BadgeCheck size={16} className="text-green-600" />
               Offer Status:
-              <span className="font-medium">{offer.status}</span>
+              <span className="font-medium text-gray-900">{offer.status}</span>
             </p>
 
             {approval && (
@@ -158,47 +149,31 @@ export default function AdminOfferView() {
           />
         </div>
 
-        {/* ADMIN ACTION BUTTONS */}
+        {/* ACTION BUTTONS */}
         {approval?.action === "Pending" && (
           <div className="flex gap-4 mt-10">
-            <button
+            <ActionButton
+              label="Approve"
+              color="green"
               disabled={acting}
               onClick={() => submitAction("APPROVED")}
-              className="px-6 py-2 bg-green-700 text-white rounded-lg transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-            >
-              Approve
-            </button>
-
-            <button
+            />
+            <ActionButton
+              label="Reject"
+              color="red"
               disabled={acting}
               onClick={() => submitAction("REJECTED")}
-              className="px-6 py-2 bg-red-700 text-white rounded-lg transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-            >
-              Reject
-            </button>
-
-            <button
+            />
+            <ActionButton
+              label="On Hold"
+              color="gray"
               disabled={acting}
               onClick={() => submitAction("ON_HOLD")}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-            >
-              On Hold
-            </button>
+            />
           </div>
         )}
 
-        {error && (
-          <p className="text-red-600 mt-4 font-medium">{error}</p>
-        )}
+        {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
       </div>
     </div>
   );
@@ -227,11 +202,28 @@ function ApprovalBadge({ status, approver }) {
   };
 
   return (
-    <div
-      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
-    >
+    <div className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}>
       <span className="font-medium">{status}</span>
       {approver && <span className="text-xs">• {approver}</span>}
     </div>
+  );
+}
+
+function ActionButton({ label, color, onClick, disabled }) {
+  const colors = {
+    green: "bg-green-700 hover:bg-green-800",
+    red: "bg-red-700 hover:bg-red-800",
+    gray: "bg-gray-600 hover:bg-gray-700",
+  };
+
+  return (
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      className={`px-6 py-2 text-white rounded-lg transition-all active:translate-y-[1px]
+      disabled:opacity-60 disabled:cursor-not-allowed ${colors[color]}`}
+    >
+      {label}
+    </button>
   );
 }
