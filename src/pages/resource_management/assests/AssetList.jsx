@@ -418,6 +418,7 @@ const AssetList = () => {
                   variant="primary"
                   className="px-6 py-2.5 text-sm font-semibold shadow-md shadow-indigo-100"
                   type="submit"
+                  // onClick={(e) => e.currentTarget.form.reportValidity()}
                 >
                   {editingAsset ? "Update Asset" : "Create Asset"}
                 </Button>
