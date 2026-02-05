@@ -27,6 +27,8 @@ import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx
 import ClientPage from "./pages/resource_management/models/ClientPage.jsx";
 import AssetList from "./pages/resource_management/assests/AssetList.jsx";
 import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
+import RMSProjectList from "./pages/resource_management/projects/RMSProjectList.jsx";
+import RMSProjectDetails from "./pages/resource_management/projects/RMSProjectDetails.jsx";
 
 // Timesheets
 
@@ -714,6 +716,8 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/resource-management/projects" element={<RMSProjectList />} />
+          <Route path="/resource-management/projects/:id" element={<RMSProjectDetails />} />
         </Route>
       </Routes>
       <SaveLastPath />

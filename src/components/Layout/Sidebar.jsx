@@ -10,23 +10,17 @@ import {
   ChevronDown,
   Handshake,
   UserCog2,
-  X, // added close icon
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { is } from "date-fns/locale";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Resource Management", href: "/resource-management", icon: UserCog2 },
-  { name: "Projects", href: "/projects", icon: FolderKanban },
+  
+  // Removed "Resource Management" from here to handle it manually below with a submenu
+
   { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
-  // {
-  //   name: "Employee Onboarding",
-  //   href: "/employee-onboarding",
-  //   icon: Handshake,
-  // },
 ];
 
 const userManagementSubmenu = [
@@ -37,39 +31,69 @@ const userManagementSubmenu = [
   { label: "Access Point Manage", to: "/user-management/access-points" },
 ];
 
+// DATA FOR THE POP LABEL / SUBMENU
+const resourceManagementSubmenu = [
+  { label: "Resource Project Management", to: "/resource-management/projects" },
+  { label: "Resource Allocation", to: "/resource-management/allocation" },
+  { label: "Skill Matrix", to: "/resource-management/skills" },
+];
+
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
-  const isUserManagementActive =
-    location.pathname.startsWith("/user-management");
   const { user } = useAuth();
-  const isAdmin =
-    user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  
+  // Role checks
+  const isAdmin = user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
   const isGeneral = user?.roles?.includes("General");
-  const isManager = user?.roles?.includes("Manager");
-  const isDeveloper = user?.roles?.includes("Developer");
 
-  const [hovered, setHovered] = useState(false);
-  const [submenuTop, setSubmenuTop] = useState(0);
+  // State for User Management Hover
+  const [userHovered, setUserHovered] = useState(false);
   const userManagementRef = useRef(null);
+  
+  // State for Resource Management Hover (NEW)
+  const [rmHovered, setRmHovered] = useState(false);
+  const rmRef = useRef(null);
+  
+  const [submenuTop, setSubmenuTop] = useState(0);
   const hoverTimeout = useRef(null);
 
-  const handleMouseEnter = () => {
+  // --- Handlers for User Management ---
+  const handleUserMouseEnter = () => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     if (userManagementRef.current) {
       const rect = userManagementRef.current.getBoundingClientRect();
       setSubmenuTop(rect.top);
     }
-    setHovered(true);
+    setUserHovered(true);
+    setRmHovered(false); // Close others
   };
 
-  const handleMouseLeave = () => {
+  const handleUserMouseLeave = () => {
     hoverTimeout.current = setTimeout(() => {
-      setHovered(false);
+      setUserHovered(false);
+    }, 200);
+  };
+
+  // --- Handlers for Resource Management (NEW) ---
+  const handleRmMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    if (rmRef.current) {
+      const rect = rmRef.current.getBoundingClientRect();
+      setSubmenuTop(rect.top);
+    }
+    setRmHovered(true);
+    setUserHovered(false); // Close others
+  };
+
+  const handleRmMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => {
+      setRmHovered(false);
     }, 200);
   };
 
   useEffect(() => {
-    setHovered(false);
+    setUserHovered(false);
+    setRmHovered(false);
   }, [location.pathname]);
 
   return (
@@ -94,17 +118,12 @@ const Sidebar = ({ isCollapsed }) => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-hide">
         <style jsx>{`
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-          .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
+          .scrollbar-hide::-webkit-scrollbar { display: none; }
+          .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
 
         <ul className="space-y-1">
-          {/* Dashboard */}
+          {/* 1. Dashboard */}
           <li>
             <Link
               to="/dashboard"
@@ -120,17 +139,75 @@ const Sidebar = ({ isCollapsed }) => {
             </Link>
           </li>
 
-          {/* User Management */}
+          {/* 2. Resource Management (With Pop Label/Submenu) */}
+          <li
+            ref={rmRef}
+            className="relative"
+            onMouseEnter={handleRmMouseEnter}
+            onMouseLeave={handleRmMouseLeave}
+          >
+            <div
+              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                location.pathname.startsWith("/resource-management")
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+              }`}
+              title={isCollapsed ? "Resource Management" : ""}
+            >
+              <UserCog2 className="h-5 w-5 shrink-0" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1">Resource Management</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      rmHovered ? "rotate-180" : ""
+                    }`}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* THE POP LABEL / SUBMENU */}
+            {rmHovered && (
+              <ul
+                className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                  isCollapsed ? "left-20" : "left-64"
+                }`}
+                style={{ top: `${submenuTop}px` }}
+                onMouseEnter={handleRmMouseEnter}
+                onMouseLeave={handleRmMouseLeave}
+              >                
+                {resourceManagementSubmenu.map((item) => (
+                  <li key={item.label}>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-xs transition-colors ${
+                          isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+
+          {/* 3. User Management (Admin Only) */}
           {isAdmin && (
             <li
               ref={userManagementRef}
               className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              onMouseEnter={handleUserMouseEnter}
+              onMouseLeave={handleUserMouseLeave}
             >
               <div
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                  isUserManagementActive
+                  location.pathname.startsWith("/user-management")
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
@@ -142,22 +219,22 @@ const Sidebar = ({ isCollapsed }) => {
                     <span className="flex-1">User Management</span>
                     <ChevronDown
                       className={`h-4 w-4 transition-transform duration-200 ${
-                        hovered ? "rotate-180" : ""
+                        userHovered ? "rotate-180" : ""
                       }`}
                     />
                   </>
                 )}
               </div>
 
-              {/* Submenu */}
-              {hovered && (
+              {/* User Management Submenu */}
+              {userHovered && (
                 <ul
                   className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
                     isCollapsed ? "left-20" : "left-64"
                   }`}
                   style={{ top: `${submenuTop}px` }}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseEnter={handleUserMouseEnter}
+                  onMouseLeave={handleUserMouseLeave}
                 >
                   {userManagementSubmenu.map((item) => (
                     <li key={item.label}>
@@ -180,6 +257,7 @@ const Sidebar = ({ isCollapsed }) => {
             </li>
           )}
 
+          {/* 4. Employee Onboarding (Non-General) */}
           {!isGeneral && (
             <li className="relative">
               <Link
@@ -197,29 +275,7 @@ const Sidebar = ({ isCollapsed }) => {
             </li>
           )}
 
-          {/* Projects */}
-          {/* <li>
-            <Link
-              to={
-                isManager
-                  ? "/projects/manager"
-                  : isDeveloper
-                  ? "/projects/developer"
-                  : "/projects/admin"
-              }
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                location.pathname.startsWith("/projects")
-                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-              }`}
-              title={isCollapsed ? "Projects" : ""}
-            >
-              <FolderKanban className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span>Projects</span>}
-            </Link>
-          </li> */}
-
-          {/* Remaining Menu Items */}
+          {/* 5. Remaining Items (Leave, Timesheets, Calendar) */}
           {navigation.slice(1).map((item) => {
             const isActive = location.pathname === item.href;
             return (
