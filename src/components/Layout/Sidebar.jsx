@@ -33,9 +33,10 @@ const userManagementSubmenu = [
 
 // DATA FOR THE POP LABEL / SUBMENU
 const resourceManagementSubmenu = [
+  { label: "Resource Management", to: "/resource-management" },
   { label: "Resource Project Management", to: "/resource-management/projects" },
-  { label: "Resource Allocation", to: "/resource-management/allocation" },
-  { label: "Skill Matrix", to: "/resource-management/skills" },
+  // { label: "Resource Allo", to: "/resource-management/allocation" },
+  // { label: "Skill Matrix", to: "/resource-management/skills" },
 ];
 
 const Sidebar = ({ isCollapsed }) => {
