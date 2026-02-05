@@ -343,14 +343,14 @@ const AssetList = () => {
 
           {/* ✅ PAGINATION COMPONENT */}
           {filteredAssets.length > 0 && (
-             <div className="border-t border-gray-100 p-4 bg-gray-50/30">
-                <Pagination 
-                   currentPage={currentPage}
-                   totalPages={totalPages}
-                   onPrevious={handlePrevious}
-                   onNext={handleNext}
-                />
-             </div>
+            <div className="border-t border-gray-100 p-4 bg-gray-50/30">
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+              />
+            </div>
           )}
         </div>
 
