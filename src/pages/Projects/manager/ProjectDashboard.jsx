@@ -77,6 +77,13 @@ const ProjectDashboard = () => {
   const userIsManagerAnywhere = projects.some((item) => item.canEdit && item.canDelete);
 
   // ------------------- FETCH PROJECTS -------------------
+
+  const userRole = user?.roles?.includes("Manager") ? "MANAGER" : user?.roles?.includes("Admin") ? "ADMIN" : "EMPLOYEE";
+
+  const canManageProjects = userRole === "MANAGER" || userRole === "ADMIN";
+  console.log("User role:", userRole, "Can manage projects?", canManageProjects);
+  console.log(user);
+
   const fetchProjects = async (status) => {
     setLoading(true);
     try {
@@ -200,7 +207,7 @@ const ProjectDashboard = () => {
         <h1 className="text-3xl font-bold">Dashboard</h1>
 
         <div className="flex gap-3">
-          {userIsManagerAnywhere && (
+          {canManageProjects && (
             <>
               <Button
                 onClick={() => navigate(`/block-leave-dates/${user?.user_id}`)}
