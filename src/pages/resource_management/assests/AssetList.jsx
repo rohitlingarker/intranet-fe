@@ -522,6 +522,9 @@ const Modal = ({ title, children, onClose }) => (
   </div>
 );
 
+
+
+
 const Input = ({ label, error, ...props }) => (
   <div className="flex flex-col gap-1.5">
     <div className="flex justify-between">
