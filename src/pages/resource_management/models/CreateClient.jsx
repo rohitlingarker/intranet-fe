@@ -251,7 +251,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Status"
           value={formData.status}
-          options={["ACTIVE", "INACTIVE", "ON_HOLD"]}
+          options={["ACTIVE", "ON_HOLD"]}
           onChange={(val) => handleGenericListboxChange("status", val)}
           error={errors.includes("status")}
         />

@@ -481,6 +481,42 @@ export const assignUpdateClientAsset = async (assignmentId, assignmentData) => {
   }
 };
 
+export const returnAssetAssignment = async (assignmentId, actualReturnDate, remarks) => {
+  try {
+    const response = await axios.put(
+      `${RMS_BASE_URL}/api/client-asset-assignments/return/${assignmentId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        params: {
+          actualReturnDate: actualReturnDate,
+          remarks: remarks,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAssignmentKPI = async (assetId) => {
+  try {
+    const response = await axios.get(`${RMS_BASE_URL}/api/client-asset-assignments/kpi/${assetId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const deleteClient = async (clientId) => {
   try {
     const response = await axios.delete(

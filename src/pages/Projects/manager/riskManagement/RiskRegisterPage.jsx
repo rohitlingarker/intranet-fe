@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import axios from "axios";
 
 import CreateRiskModal from "./createRiskModal";
@@ -18,6 +18,10 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
   const [showCreateRisk, setShowCreateRisk] = useState(false);
   const [showRiskModal, setShowRiskModal] = useState(false);
+
+  /* ---------- Refresh Trigger ---------- */
+
+  const [refreshKey, setRefreshKey] = useState(0);
 
   /* ---------- Issue Summary ---------- */
 
@@ -60,7 +64,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
     }
 
     fetchSummary();
-  }, [projectId]);
+  }, [projectId, refreshKey]);
 
   /* =========================
      Issue Type Cards
@@ -92,7 +96,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
   }
 
   /* =========================
-     ✅ Load Risks (ALL + Specific)
+     Load Risks (ALL + Specific)
   ========================= */
 
   useEffect(() => {
@@ -109,11 +113,10 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
           projectId,
           page: riskPage,
           size: RISKS_PAGE_SIZE,
-          linkedType:null,
-          linkedId:null,
+          linkedType: null,
+          linkedId: null,
         };
 
-        // ✅ only when NOT "All"
         if (selectedIssue) {
           params.linkedType = selectedIssue.linkedType;
           params.linkedId = selectedIssue.linkedId;
@@ -124,9 +127,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!cancelled) {
-          setRiskData(res.data);
-        }
+        if (!cancelled) setRiskData(res.data);
       } catch (err) {
         console.error("Failed loading risks", err);
         if (!cancelled) setRiskData(null);
@@ -137,9 +138,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
 
     loadRisks();
     return () => (cancelled = true);
-
-    // ✅ IMPORTANT FIX
-  }, [selectedIssue, activeIssueType, riskPage, projectId]);
+  }, [selectedIssue, activeIssueType, riskPage, projectId, refreshKey]);
 
   /* =========================
      Render
@@ -150,10 +149,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Risk Register</h1>
-            {/* <p className="text-sm text-slate-500">Project {projectId}</p> */}
-          </div>
+          <h1 className="text-3xl font-bold">Risk Register</h1>
 
           <button
             onClick={() => setShowCreateRisk(true)}
@@ -170,6 +166,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
             onCreate={() => {
               setShowCreateRisk(false);
               setRiskPage(1);
+              setRefreshKey((prev) => prev + 1); // 🔥 refresh summary + risks
             }}
           />
         </div>
@@ -188,7 +185,7 @@ export default function RiskRegisterPage({ projectId = "P-123" }) {
                 setActiveIssueType(label);
                 setIssuePage(1);
                 setRiskPage(1);
-                setSelectedIssue(null); // ✅ All
+                setSelectedIssue(null);
                 setRiskData(null);
               }}
               className={`p-4 rounded-lg ${
