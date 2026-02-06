@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock } from "lucide-react";
-import { projectService } from "../projects/projectService";
-import ResourceList from "./components/ResourceList";
+import { getProjects } from "../../services/projectService";
+import ResourceList from "../project/RMSProjectList";
 
 const RMSProjectDetails = () => {
   const { id } = useParams();

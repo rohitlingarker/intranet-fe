@@ -14,7 +14,7 @@ import Button from "../../../../components/Button/Button";
 import Modal from "../../../../components/Modal/modal";
 import CreateClient from "../../models/CreateClient";
 import { useNavigate } from "react-router-dom";
-import FilterBar from "../../components/filters/FilterBar";
+import FilterBar from "../../components/FilterBar";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { searchClients, getAdminKPI } from "../../services/clientservice";
 import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer check
