@@ -31,3 +31,19 @@ export const getProjects = async ({
 
   return res.data;
 };
+
+export const getProjectById = async (projectId) => {
+  try {
+    const res = await axios.get(
+    `${BASE_URL}/api/projects/get-project-by-id/${projectId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
