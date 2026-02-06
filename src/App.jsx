@@ -714,7 +714,7 @@ const AppRoutes = () => {
             }
           />
           <Route path="/resource-management/projects" element={<RMSProjectList />} />
-          <Route path="/resource-management/projects/:id" element={<RMSProjectDetails />} />
+          <Route path="/resource-management/projects/:projectId" element={<RMSProjectDetails />} />
           <Route 
         path="/resource-management/workforce-availability" 
         element={<WorkforceAvailability />} 
