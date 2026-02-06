@@ -1,9 +1,7 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
-import { projectService } from "../projects/projectService";
-import ResourceList from "./components/ResourceList";
+// import { projectService } from "../projects/projectService";
 import axios from "axios";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
@@ -14,6 +12,7 @@ import {
   Globe,
   ShieldAlert,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { getProjectById } from "../../services/projectService";
 import ResourceList from "../../components/ResourceList";
@@ -41,11 +40,6 @@ const RMSProjectDetails = () => {
   };
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      const allProjects = await projectService.getProjects();
-      const found = allProjects.find((p) => String(p.id) === String(id));
-      setProject(found);
-    };
     fetchDetail();
   }, [projectId]);
 
@@ -101,13 +95,13 @@ const RMSProjectDetails = () => {
           <div>
             <h1 className="text-2xl font-bold text-[#081534] flex items-center gap-3">
               {project.name}
-              <span
+              {/* <span
                 className={`text-xs px-2 py-1 rounded-full border ${
                   project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
                 }`}
-              >
+              > */}
               <span
                 className={`text-xs px-2 py-1 rounded-full border ${
                   project.projectStatus === "ACTIVE"
@@ -127,7 +121,6 @@ const RMSProjectDetails = () => {
           </div>
         </div>
 
-        {/* Tabs */}
         {/* Tabs */}
         <div className="flex items-center gap-6 mt-8 border-b border-gray-200">
           {["overview", "resources", "financials", "overlaps"].map((tab) => (
