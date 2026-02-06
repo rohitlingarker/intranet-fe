@@ -5,6 +5,7 @@ import {
   ArrowLeft, Calendar, MapPin, Users, Globe, ShieldAlert, Lock, Download 
 } from "lucide-react";
 import { mockProjects } from "./mockData";
+import FinancialModal from "./components/FinancialModal";
 import ResourceList from "./components/ResourceList"; // Sub-component below
 
 const RMSProjectDetails = () => {
@@ -137,6 +138,10 @@ const RMSProjectDetails = () => {
       {/* TAB CONTENT: RESOURCES (Employees) */}
       {activeTab === 'resources' && (
           <ResourceList allocations={project.allocations} />
+      )}
+
+      {activeTab === 'financials' && (
+          <FinancialModal />
       )}
 
     </div>
