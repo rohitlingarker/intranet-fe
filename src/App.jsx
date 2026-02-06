@@ -27,8 +27,8 @@ import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx
 import ClientPage from "./pages/resource_management/models/ClientPage.jsx";
 import AssetList from "./pages/resource_management/assests/AssetList.jsx";
 import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
-import RMSProjectList from "./pages/resource_management/projects/RMSProjectList.jsx";
-import RMSProjectDetails from "./pages/resource_management/projects/RMSProjectDetails.jsx";
+import RMSProjectList from "./pages/resource_management/pages/project/RMSProjectList.jsx";
+import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
 
 // Timesheets
 
