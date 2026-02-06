@@ -18,7 +18,7 @@ const CreateProjectModal = ({
     currentStage: "INITIATION",
     ownerId: "",
     clientId: "",
-    resourceManagerId: "",
+    rmId: "",
     deliveryOwnerId: "",
     primaryLocation: "",
     deliveryModel: "ONSITE",
@@ -171,8 +171,8 @@ const CreateProjectModal = ({
       status: formData.status,
       currentStage: formData.currentStage,
       deliveryModel: formData.deliveryModel,
-      clientId: '8005572f-6888-4684-b371-cd672c16769a',
-      resourceManagerId: parseInt(formData.resourceManagerId, 10)||120,  
+    clientId: "8005572f-6888-4684-b371-cd672c16769a",
+      rmId: parseInt(formData.rmId, 10)||120,  
       deliveryOwnerId: parseInt(formData.deliveryOwnerId, 10)||120,
       primaryLocation: formData.primaryLocation,
       riskLevel: formData.riskLevel,
@@ -183,6 +183,7 @@ const CreateProjectModal = ({
       memberIds: formData.memberIds,
       startDate: formData.startDate ? `${formData.startDate}T00:00:00` : null,
       endDate: formData.endDate ? `${formData.endDate}T23:59:59` : null,
+
     };
 
     try {
@@ -364,7 +365,7 @@ const CreateProjectModal = ({
               className="w-full border px-4 py-2 rounded mt-1"
               value={formData.clientId}
               onChange={handleClientChange}
-              required
+            
             >
               <option value="">Select Client</option>
               {users.map((user) => user && (
@@ -379,9 +380,9 @@ const CreateProjectModal = ({
           <label className="block">
             <span className="font-medium text-sm">Resource Manager *</span>
             <select
-              name="resourceManagerId"
+              name="rmId"
               className="w-full border px-4 py-2 rounded mt-1"
-              value={formData.resourceManagerId}
+              value={formData.rmId}
               onChange={handleResourceManagerChange}
               required
             >

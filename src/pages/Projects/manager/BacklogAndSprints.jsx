@@ -10,6 +10,7 @@ import { Plus, List } from "lucide-react";
 import { ToastContainer } from "react-toastify";   // ✅ Added
 import { showStatusToast } from "../../../components/toastfy/toast";
 import {jwtDecode} from "jwt-decode";
+import { useAuth } from "../../../contexts/AuthContext";
 
 
 import Button from "../../../components/Button/Button";
@@ -23,6 +24,9 @@ import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
 import SprintPendingModal from "./Sprint/SprintPendingModal";
+import { ca } from "date-fns/locale";
+
+
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
   const navigate = useNavigate();
@@ -45,6 +49,9 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
+  const { user } = useAuth();
+  const userRole = user?.roles?.includes("Manager") ? "MANAGER" : user?.roles?.includes("Admin") ? "ADMIN" : "EMPLOYEE";
+  const canManageProjects = userRole === "MANAGER" || userRole === "ADMIN";
 
   // =======================================
   // Fetch a single story
@@ -350,7 +357,7 @@ const BacklogDropWrapper = ({ children }) => {
               <List size={18} /> Issue Tracker
             </Button>
 
-          {isManager && (
+          {canManageProjects && (
   <Button
     className="flex items-center gap-2"
     onClick={() => setShowSprintModal(true)}

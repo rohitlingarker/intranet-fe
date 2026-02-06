@@ -27,8 +27,9 @@ import AdminPannel from "./pages/resource_management/pages/admin/AdminPannel.jsx
 import ClientPage from "./pages/resource_management/models/ClientPage.jsx";
 import AssetList from "./pages/resource_management/assests/AssetList.jsx";
 import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
-import RMSProjectList from "./pages/resource_management/projects/RMSProjectList.jsx";
-import RMSProjectDetails from "./pages/resource_management/projects/RMSProjectDetails.jsx";
+import RMSProjectList from "./pages/resource_management/pages/project/RMSProjectList.jsx";
+import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
+import WorkforceAvailability from './pages/resource_management/pages/workforce/WorkforceAvailability.jsx';
 
 // Timesheets
 
@@ -714,6 +715,10 @@ const AppRoutes = () => {
           />
           <Route path="/resource-management/projects" element={<RMSProjectList />} />
           <Route path="/resource-management/projects/:id" element={<RMSProjectDetails />} />
+          <Route 
+        path="/resource-management/workforce-availability" 
+        element={<WorkforceAvailability />} 
+      />
         </Route>
       </Routes>
       <SaveLastPath />
