@@ -1,6 +1,12 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
+import { projectService } from "../projects/projectService";
+import ResourceList from "./components/ResourceList";
+import axios from "axios";
+
+const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
   ArrowLeft,
   Calendar,
@@ -18,6 +24,8 @@ const RMSProjectDetails = () => {
 
   const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [overlaps, setOverlaps] = useState([]);
+  const [loadingOverlaps, setLoadingOverlaps] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchDetail = async () => {
@@ -33,8 +41,40 @@ const RMSProjectDetails = () => {
   };
 
   useEffect(() => {
+    const fetchDetail = async () => {
+      const allProjects = await projectService.getProjects();
+      const found = allProjects.find((p) => String(p.id) === String(id));
+      setProject(found);
+    };
     fetchDetail();
   }, [projectId]);
+
+  // Fetch overlapping projects only when tab is opened
+  useEffect(() => {
+    if (activeTab === "overlaps") {
+      fetchOverlaps();
+    }
+  }, [activeTab]);
+
+  const fetchOverlaps = async () => {
+    try {
+      setLoadingOverlaps(true);
+      const res = await axios.get(
+        `${RMS_BASE_URL}/api/projects/${id}/overlaps`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setOverlaps(res.data.data || []);
+    } catch (err) {
+      console.error("Failed to load overlaps", err);
+      setOverlaps([]);
+    } finally {
+      setLoadingOverlaps(false);
+    }
+  };
 
   if (loading)
     return <div className="p-10 text-center">Loading Details...</div>;
@@ -46,8 +86,11 @@ const RMSProjectDetails = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Back */}
       <button
+       
         onClick={() => navigate(-1)}
+       
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
+      
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </button>
@@ -65,19 +108,29 @@ const RMSProjectDetails = () => {
                     : "bg-gray-100 text-gray-600"
                 }`}
               >
+              <span
+                className={`text-xs px-2 py-1 rounded-full border ${
+                  project.projectStatus === "ACTIVE"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
                 {project.projectStatus}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
+              
               {project.client?.client_name} • Project ID:{" "}
               {project.pmsProjectId}
+            
             </p>
           </div>
         </div>
 
         {/* Tabs */}
+        {/* Tabs */}
         <div className="flex items-center gap-6 mt-8 border-b border-gray-200">
-          {["overview", "resources", "financials"].map((tab) => (
+          {["overview", "resources", "financials", "overlaps"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -86,6 +139,11 @@ const RMSProjectDetails = () => {
               }`}
             >
               {tab}
+              {tab === "overlaps" && overlaps.length > 0 && (
+                <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                  {overlaps.length}
+                </span>
+              )}
               {activeTab === tab && (
                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#263383]" />
               )}
@@ -94,7 +152,7 @@ const RMSProjectDetails = () => {
         </div>
       </div>
 
-      {/* Overview */}
+      {/* OVERVIEW TAB */}
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left */}
@@ -107,11 +165,16 @@ const RMSProjectDetails = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
+                    
                     Project Manager ID
+                  
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
+                    
                     <Users className="h-4 w-4 text-gray-400" />
+                   
                     {project.projectManagerId}
+                  
                   </div>
                 </div>
 
@@ -158,14 +221,12 @@ const RMSProjectDetails = () => {
             <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">
               Delivery Model
             </h3>
-
             <div className="p-3 bg-blue-50 rounded border border-blue-100 flex justify-between items-center mb-4">
               <span className="text-sm text-gray-600">Model</span>
               <span className="font-bold text-[#263383]">
                 {project.deliveryModel}
               </span>
             </div>
-
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
               <Globe className="h-5 w-5 text-gray-400" />
               <div>
@@ -181,18 +242,50 @@ const RMSProjectDetails = () => {
         </div>
       )}
 
-      {/* Resources */}
-      {activeTab === "resources" && (
-        <ResourceList allocations={project.allocations || []} />
+      {/* OVERLAPS TAB */}
+      {activeTab === "overlaps" && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <AlertTriangle className="text-red-500 h-5 w-5" />
+            Overlapping Projects
+          </h3>
+
+          {loadingOverlaps ? (
+            <div className="text-sm text-gray-500">Checking overlaps...</div>
+          ) : overlaps.length === 0 ? (
+            <div className="text-sm text-gray-500">
+              No overlapping projects for this timeline.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {overlaps.map((p) => (
+                <div
+                  key={p.projectId}
+                  className="p-4 border rounded-lg bg-red-50 border-red-100"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-semibold text-red-700">
+                        {p.projectName}
+                      </h4>
+                      <p className="text-sm text-gray-600">{p.clientName}</p>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <div>
+                        {new Date(p.startDate).toLocaleDateString()} —{" "}
+                        {new Date(p.endDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Financials (future) */}
-      {activeTab === "financials" && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-500">
-            Financial details coming soon…
-          </p>
-        </div>
+      {activeTab === "resources" && (
+        <ResourceList allocations={project.allocations} />
       )}
     </div>
   );
