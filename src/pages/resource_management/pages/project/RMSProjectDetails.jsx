@@ -43,7 +43,6 @@ const RMSProjectDetails = () => {
     fetchDetail();
   }, [projectId]);
 
-  // Fetch overlapping projects only when tab is opened
   useEffect(() => {
     if (activeTab === "overlaps") {
       fetchOverlaps();
@@ -54,7 +53,7 @@ const RMSProjectDetails = () => {
     try {
       setLoadingOverlaps(true);
       const res = await axios.get(
-        `${RMS_BASE_URL}/api/projects/${id}/overlaps`,
+        `${RMS_BASE_URL}/api/projects/${projectId}/overlaps`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
