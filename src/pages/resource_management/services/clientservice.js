@@ -575,6 +575,25 @@ export const getAssetDashboardByClient = async (clientId) => {
     throw error;
   }
 };
+/* ===============================
+   GET OVERLAPPING PROJECTS
+   =============================== */
+export const getProjectOverlaps = async (projectId) => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/projects/${projectId}/overlaps`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Fetch Overlapping Projects Error:", error);
+    throw error;
+  }
+};
 
 
 
