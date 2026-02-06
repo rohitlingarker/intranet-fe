@@ -77,6 +77,7 @@ const RMSProjectList = () => {
     totalProjects: projects.length,
     activeProjects: projects.filter((p) => p.projectStatus === "ACTIVE").length,
     highRisk: projects.filter((p) => p.riskLevel === "HIGH").length,
+    overlapping: projects.filter(p => p.hasOverlap).length,
     avgUtilization: "82%",
   };
 
@@ -87,7 +88,6 @@ const RMSProjectList = () => {
       </div>
     );
 
-  /* ---------------- UI ---------------- */
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -170,15 +170,26 @@ const RMSProjectList = () => {
           >
             <div className="p-5 pb-3">
               <div className="flex justify-between items-start mb-2">
-                <span
-                  className={`px-2 py-1 text-[10px] font-bold uppercase rounded border ${
-                    project.riskLevel === "HIGH"
-                      ? "bg-red-50 text-red-600 border-red-100"
-                      : "bg-green-50 text-green-600 border-green-100"
-                  }`}
-                >
-                  {project.riskLevel} Risk
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-1 text-[10px] font-bold uppercase rounded border ${
+                      project.riskLevel === "HIGH"
+                        ? "bg-red-50 text-red-600 border-red-100"
+                        : "bg-green-50 text-green-600 border-green-100"
+                    }`}
+                  >
+                    {project.riskLevel} Risk
+                  </span>
+
+                  {/* 🔴 OVERLAP WARNING ICON */}
+                  {project.hasOverlap && (
+                    <div className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      <AlertTriangle className="h-3 w-3" />
+                      Overlap
+                    </div>
+                  )}
+                </div>
+
                 <MoreVertical className="h-4 w-4 text-gray-400" />
               </div>
 
