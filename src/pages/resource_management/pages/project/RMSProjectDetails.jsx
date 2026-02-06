@@ -1,18 +1,15 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-<<<<<<< HEAD:src/pages/resource_management/projects/RMSProjectDetails.jsx
 import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
 import { projectService } from "../projects/projectService";
 import ResourceList from "./components/ResourceList";
 import axios from "axios";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
-=======
 import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock } from "lucide-react";
 import { getProjects } from "../../services/projectService";
 import ResourceList from "../project/RMSProjectList";
->>>>>>> e375ac16c3cc97efc69a6c7535f2e580a68efd4c:src/pages/resource_management/pages/project/RMSProjectDetails.jsx
 
 const RMSProjectDetails = () => {
   const { id } = useParams();
