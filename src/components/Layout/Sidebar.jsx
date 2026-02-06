@@ -36,6 +36,8 @@ const resourceManagementSubmenu = [
   { label: "Resource Project Management", to: "/resource-management/projects" },
   { label: "Resource Allocation", to: "/resource-management/allocation" },
   { label: "Skill Matrix", to: "/resource-management/skills" },
+  { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
+
 ];
 
 const Sidebar = ({ isCollapsed }) => {
