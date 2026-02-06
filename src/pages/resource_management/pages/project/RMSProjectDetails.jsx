@@ -4,25 +4,48 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
 import { getProjects } from "../../services/projectService";
 import ResourceList from "./RMSProjectList";
+// import { projectService } from "../projects/projectService";
+import axios from "axios";
+
+const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  Globe,
+  ShieldAlert,
+  Lock,
+  AlertTriangle,
+} from "lucide-react";
+import { getProjectById } from "../../services/projectService";
+import ResourceList from "../../components/ResourceList";
 
 const RMSProjectDetails = () => {
-  const { id } = useParams();
+  const { projectId } = useParams();
   const navigate = useNavigate();
+
   const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [overlaps, setOverlaps] = useState([]);
   const [loadingOverlaps, setLoadingOverlaps] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await getProjectById(projectId);
+      setProject(res.data); 
+    } catch (err) {
+      console.error("Failed to fetch project details", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      const allProjects = await projectService.getProjects();
-      const found = allProjects.find((p) => String(p.id) === String(id));
-      setProject(found);
-    };
     fetchDetail();
-  }, [id]);
+  }, [projectId]);
 
-  // Fetch overlapping projects only when tab is opened
   useEffect(() => {
     if (activeTab === "overlaps") {
       fetchOverlaps();
@@ -33,7 +56,7 @@ const RMSProjectDetails = () => {
     try {
       setLoadingOverlaps(true);
       const res = await axios.get(
-        `${RMS_BASE_URL}/api/projects/${id}/overlaps`,
+        `${RMS_BASE_URL}/api/projects/${projectId}/overlaps`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -49,22 +72,38 @@ const RMSProjectDetails = () => {
     }
   };
 
-  if (!project) return <div className="p-10 text-center">Loading Details...</div>;
+  if (loading)
+    return <div className="p-10 text-center">Loading Details...</div>;
+
+  if (!project)
+    return <div className="p-10 text-center">Project not found</div>;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Back */}
       <button
+       
         onClick={() => navigate(-1)}
+       
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
+      
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </button>
 
+      {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-2xl font-bold text-[#081534] flex items-center gap-3">
               {project.name}
+              {/* <span
+                className={`text-xs px-2 py-1 rounded-full border ${
+                  project.projectStatus === "ACTIVE"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              > */}
               <span
                 className={`text-xs px-2 py-1 rounded-full border ${
                   project.projectStatus === "ACTIVE"
@@ -76,7 +115,10 @@ const RMSProjectDetails = () => {
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-              {project.clientName} • Project ID: {project.pmsProjectId}
+              
+              {project.client?.client_name} • Project ID:{" "}
+              {project.pmsProjectId}
+            
             </p>
           </div>
         </div>
@@ -108,21 +150,29 @@ const RMSProjectDetails = () => {
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 flex items-center gap-2">
                 <Lock className="h-3 w-3" /> PMS Context (Read-Only)
               </h3>
+
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    Manager ID
+                    
+                    Project Manager ID
+                  
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
+                    
                     <Users className="h-4 w-4 text-gray-400" />
+                   
                     {project.projectManagerId}
+                  
                   </div>
                 </div>
+
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
                     Risk Profile
@@ -138,6 +188,7 @@ const RMSProjectDetails = () => {
                     {project.riskLevel}
                   </div>
                 </div>
+
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
                     Lifecycle Stage
@@ -146,6 +197,7 @@ const RMSProjectDetails = () => {
                     {project.lifecycleStage}
                   </div>
                 </div>
+
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
                     Start Date
@@ -159,6 +211,7 @@ const RMSProjectDetails = () => {
             </div>
           </div>
 
+          {/* Right */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">
               Delivery Model
