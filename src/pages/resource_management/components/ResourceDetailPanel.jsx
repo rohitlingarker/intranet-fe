@@ -1,147 +1,249 @@
-// src/resource_management/components/ResourceDetailPanel.jsx
-import React from 'react';
-import { X, MapPin, Briefcase, Calendar, Star } from 'lucide-react';
+import { MapPin, Briefcase, Calendar, Star, ArrowRight } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 
-const ResourceDetailPanel = ({ resource, isOpen, onClose }) => {
-  if (!resource) return null;
+function StatusDot({ status }) {
+  const colors = {
+    available: "bg-status-available",
+    partial: "bg-status-partial",
+    allocated: "bg-status-allocated",
+  }
+  return <span className={cn("h-2 w-2 rounded-full", colors[status])} />
+}
+
+function TimelineBar({ resource }) {
+  const blocks = resource.allocationTimeline
+  if (blocks.length === 0) return null
+
+  const earliest = new Date(blocks[0].startDate).getTime()
+  const latest = Math.max(...blocks.map((b) => new Date(b.endDate).getTime()))
+  const totalSpan = latest - earliest || 1
+  const today = Date.now()
 
   return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={onClose}
-      />
+    <div className="relative">
+      <div className="relative h-8 rounded bg-muted overflow-hidden">
+        {blocks.map((block, i) => {
+          const start = new Date(block.startDate).getTime()
+          const end = new Date(block.endDate).getTime()
+          const leftPct = ((start - earliest) / totalSpan) * 100
+          const widthPct = ((end - start) / totalSpan) * 100
 
-      {/* Slide-over Panel */}
-      <div className={`fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        
-        {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex items-start justify-between bg-gray-50/50">
-          <div className="flex gap-4">
-            <div className="h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-sm">
-              {resource.id}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">{resource.name}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                <span className="text-sm text-gray-500">{resource.role}</span>
+          let color = "bg-status-available/60"
+          if (block.allocation > 100) color = "bg-destructive/60"
+          else if (block.allocation > 70) color = "bg-status-allocated/60"
+          else if (block.allocation > 20) color = "bg-status-partial/60"
+
+          return (
+            <div
+              key={`${block.project}-${i}`}
+              className={cn(
+                "absolute top-0 h-full rounded-sm",
+                block.tentative ? "bg-muted-foreground/20 border border-dashed border-muted-foreground/40" : color
+              )}
+              style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 2)}%` }}
+              title={`${block.project}: ${block.allocation}%${block.tentative ? " (Tentative)" : ""} (${block.startDate} - ${block.endDate})`}
+            />
+          )
+        })}
+        {today >= earliest && today <= latest && (
+          <div
+            className="absolute top-0 h-full w-px bg-primary z-10"
+            style={{ left: `${((today - earliest) / totalSpan) * 100}%` }}
+          />
+        )}
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-muted-foreground">{blocks[0].startDate}</span>
+        <span className="text-[10px] text-muted-foreground font-medium text-primary">Today</span>
+        <span className="text-[10px] text-muted-foreground">{blocks[blocks.length - 1].endDate}</span>
+      </div>
+    </div>
+  )
+}
+
+function UtilizationChart({ data }) {
+  const max = Math.max(...data, 100)
+  const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+  const recentMonths = data.slice(-6)
+  const recentLabels = months.slice(-6)
+
+  return (
+    <div>
+      <div className="flex items-end gap-1 h-16">
+        {recentMonths.map((val, i) => {
+          let color = "bg-status-available"
+          if (val > 80) color = "bg-status-allocated"
+          else if (val > 50) color = "bg-status-partial"
+
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+              <div className="w-full relative flex items-end justify-center" style={{ height: "48px" }}>
+                <div
+                  className={cn("w-full rounded-t-sm transition-all", color)}
+                  style={{ height: `${(val / max) * 100}%` }}
+                />
               </div>
             </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-1 mt-1">
+        {recentLabels.map((label, i) => (
+          <div key={i} className="flex-1 text-center text-[10px] text-muted-foreground">
+            {label}
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-        <div className="p-6 space-y-8">
-          
-          {/* Key Info Grid */}
-          <div className="grid grid-cols-2 gap-y-4 text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
-              <MapPin size={16} className="text-gray-400"/> {resource.location}
+function SkillMatch({ skills }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {skills.map((skill) => {
+        const matchScore = Math.floor((skill.charCodeAt(0) % 3))
+        const colors = [
+          "bg-status-available/15 text-status-available border-status-available/30",
+          "bg-status-partial/15 text-status-partial border-status-partial/30",
+          "bg-secondary text-secondary-foreground border-secondary",
+        ]
+        return (
+          <Badge key={skill} variant="outline" className={cn("text-[10px] font-normal", colors[matchScore])}>
+            {skill}
+          </Badge>
+        )
+      })}
+    </div>
+  )
+}
+
+export function ResourceDetailPanel({ resource, open, onOpenChange }) {
+  if (!resource) return null
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-[400px] sm:max-w-[400px] overflow-y-auto">
+        <SheetHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border">
+              <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+                {resource.avatar}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <SheetTitle className="text-base">{resource.name}</SheetTitle>
+              <SheetDescription className="text-xs flex items-center gap-1">
+                <StatusDot status={resource.status} />
+                {resource.role}
+              </SheetDescription>
             </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Briefcase size={16} className="text-gray-400"/> {resource.experience} years exp
+          </div>
+        </SheetHeader>
+
+        <div className="flex flex-col gap-5 pb-6">
+          {/* Quick Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" />
+              {resource.location}
             </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar size={16} className="text-gray-400"/> Avail: {resource.availableFrom}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Briefcase className="h-3.5 w-3.5" />
+              {resource.experience} years exp
             </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Star size={16} className="text-gray-400"/> Billable
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              Avail: {new Date(resource.availableFrom).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Star className="h-3.5 w-3.5" />
+              {resource.employmentType}
             </div>
           </div>
 
-          {/* Current Allocation Bar */}
+          {/* Allocation */}
           <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-semibold text-gray-900">Current Allocation</span>
-              <span className="font-bold text-gray-900">
-                {resource.allocations.reduce((acc, curr) => acc + curr.percentage, 0)}%
-              </span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-foreground">Current Allocation</span>
+              <span className="text-xs font-bold tabular-nums text-foreground">{resource.currentAllocation}%</span>
             </div>
-            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-red-500 rounded-full" 
-                style={{ width: `${resource.allocations.reduce((acc, curr) => acc + curr.percentage, 0)}%` }} 
+            <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  resource.currentAllocation > 70 ? "bg-status-allocated" :
+                  resource.currentAllocation > 20 ? "bg-status-partial" : "bg-status-available"
+                )}
+                style={{ width: `${resource.currentAllocation}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-400 mt-2">
-               <span>Project: {resource.allocations[0]?.project || "None"}</span>
-               <span className="cursor-pointer hover:text-blue-600 flex items-center">
-                 Next: Project Keystone →
-               </span>
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="text-[10px] text-muted-foreground">Project: {resource.currentProject}</span>
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                Next: {resource.nextAssignment} <ArrowRight className="h-2.5 w-2.5" />
+              </span>
             </div>
           </div>
 
-          {/* Allocation Timeline (Mini) */}
+          <Separator />
+
+          {/* Timeline */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Allocation Timeline</h3>
-            <div className="h-16 bg-gray-50 rounded border border-gray-100 relative p-2 overflow-hidden flex items-center">
-               {/* Just a visual representation of bars */}
-               {resource.allocations.map((alloc, i) => (
-                 <div 
-                   key={i}
-                   className={`h-8 rounded ${i % 2 === 0 ? 'bg-red-400' : 'bg-green-500'}`}
-                   style={{ 
-                     width: `${alloc.percentage}%`, 
-                     marginRight: '2px' 
-                   }}
-                 />
-               ))}
-               {resource.allocations.length === 0 && <span className="text-xs text-gray-400 w-full text-center">No active allocations</span>}
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
-              <span>2025-08-10</span>
-              <span className="text-blue-500 font-bold">Today</span>
-              <span>2026-06-26</span>
-            </div>
-            {/* List of projects */}
-            <div className="mt-3 space-y-2">
-              {resource.allocations.map(alloc => (
-                <div key={alloc.id} className="flex justify-between text-xs text-gray-600 border-b border-gray-50 pb-1">
-                  <span>{alloc.project}</span>
-                  <span className="font-medium">{alloc.percentage}%</span>
+            <h4 className="text-xs font-semibold text-foreground mb-3">Allocation Timeline</h4>
+            <TimelineBar resource={resource} />
+            <div className="mt-2 flex flex-col gap-1">
+              {resource.allocationTimeline.map((block, i) => (
+                <div key={i} className="flex items-center justify-between text-[10px]">
+                  <span className={cn("text-muted-foreground", block.tentative && "italic")}>
+                    {block.project}{block.tentative ? " (T)" : ""}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">{block.allocation}%</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Skills */}
+          <Separator />
+
+          {/* Skill Match */}
           <div>
-             <h3 className="text-sm font-semibold text-gray-900 mb-3">Skill Match</h3>
-             <div className="flex flex-wrap gap-2">
-               {resource.skills.map(skill => (
-                 <span key={skill} className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full border border-gray-200">
-                   {skill}
-                 </span>
-               ))}
-             </div>
+            <h4 className="text-xs font-semibold text-foreground mb-2">Skill Match</h4>
+            <SkillMatch skills={resource.skills} />
           </div>
 
-          {/* Utilization Trend (Chart) */}
+          <Separator />
+
+          {/* Utilization Trend */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Utilization Trend (6 months)</h3>
-            <div className="flex items-end justify-between h-24 gap-2">
-               {resource.utilizationTrend.map((val, idx) => (
-                 <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
-                   <div 
-                     className="w-full bg-[#ef4444] rounded-t-sm transition-all duration-500 group-hover:bg-[#dc2626]" 
-                     style={{ height: `${val}%`, opacity: val > 0 ? 1 : 0.2 }}
-                   />
-                   <span className="text-[10px] text-gray-400">
-                     {['J','F','M','A','M','J'][idx]}
-                   </span>
-                 </div>
-               ))}
-            </div>
+            <h4 className="text-xs font-semibold text-foreground mb-3">Utilization Trend (6 months)</h4>
+            <UtilizationChart data={resource.utilizationHistory} />
           </div>
 
+          <Separator />
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button className="flex-1 h-9 text-xs">
+              Create Demand
+            </Button>
+            <Button variant="outline" className="flex-1 h-9 text-xs bg-transparent">
+              Reserve Resource
+            </Button>
+          </div>
         </div>
-      </div>
-    </>
-  );
-};
-
-export default ResourceDetailPanel;
+      </SheetContent>
+    </Sheet>
+  )
+}

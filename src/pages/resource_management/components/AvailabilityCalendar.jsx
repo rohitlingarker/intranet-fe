@@ -1,76 +1,258 @@
-import React from 'react';
 
-export default function AvailabilityCalendar() {
-  // Calendar Grid Generation (Mock for Feb 2026)
-  const days = Array.from({ length: 28 }, (_, i) => i + 1);
-  const startOffset = 0; // Starts on Sunday for simplicity of mock
+import { useState, useMemo } from "react"
+import { ChevronLeft, ChevronRight, Layers, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+import { generateCalendarDays } from "../services/availabilityService"
 
-  // Mock aggregated data per day
-  const getDayStatus = (day) => {
-    // Randomize slightly for visual variance
-    const r = (day * 9301 + 49297) % 233280;
-    const available = (r % 5) + 2;
-    const partial = (r % 7) + 2;
-    const allocated = 20 - available - partial;
-    
-    // Highlight specific day logic
-    const isToday = day === 6;
-    
-    return { available, partial, allocated, isToday };
-  };
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+]
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+function getStatusColor(status) {
+  switch (status) {
+    case "available": return "bg-status-available"
+    case "partial": return "bg-status-partial"
+    case "allocated": return "bg-status-allocated"
+  }
+}
+
+function getStatusColorLight(status) {
+  switch (status) {
+    case "available": return "bg-status-available/15 border-status-available/30"
+    case "partial": return "bg-status-partial/15 border-status-partial/30"
+    case "allocated": return "bg-status-allocated/15 border-status-allocated/30"
+  }
+}
+
+function getAggregateStatus(day, resourceIds) {
+  const filtered = day.resources.filter((r) => resourceIds.has(r.resourceId))
+  const available = filtered.filter((r) => r.status === "available").length
+  const partial = filtered.filter((r) => r.status === "partial").length
+  const allocated = filtered.filter((r) => r.status === "allocated").length
+
+  let dominant = "available"
+  if (allocated >= partial && allocated >= available) dominant = "allocated"
+  else if (partial >= available) dominant = "partial"
+
+  return { available, partial, allocated, dominant }
+}
+
+export function AvailabilityCalendar({ filteredResources, onDayClick }) {
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
+  const [viewMode, setViewMode] = useState("aggregate")
+  const [selectedResource, setSelectedResource] = useState(
+    filteredResources[0]?.id || ""
+  )
+
+  const calendarDays = useMemo(() => generateCalendarDays(year, month), [year, month])
+  const filteredIds = useMemo(
+    () => new Set(filteredResources.map((r) => r.id)),
+    [filteredResources]
+  )
+
+  const firstDayOffset = calendarDays[0]?.dayOfWeek || 0
+
+  function navigateMonth(direction) {
+    const newDate = new Date(year, month + direction, 1)
+    setYear(newDate.getFullYear())
+    setMonth(newDate.getMonth())
+  }
 
   return (
-    <div className="p-4">
-      {/* Header controls would go here (Month selector), handled in parent for layout */}
-      <div className="flex justify-between items-center mb-4">
-         <div className="flex items-center gap-4">
-            <button className="p-1 hover:bg-gray-100 rounded"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg></button>
-            <h2 className="text-lg font-bold text-slate-800">February 2026</h2>
-            <button className="p-1 hover:bg-gray-100 rounded"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg></button>
-         </div>
-         <div className="flex gap-2 text-xs">
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Available</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400"></div> Partial</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Allocated</span>
-         </div>
+    <div className="rounded-lg border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent" onClick={() => navigateMonth(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-sm font-semibold text-card-foreground min-w-[140px] text-center">
+            {MONTH_NAMES[month]} {year}
+          </h2>
+          <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent" onClick={() => navigateMonth(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="aggregate" className="text-xs h-7 gap-1.5 px-2.5">
+                <Layers className="h-3.5 w-3.5" />
+                Team
+              </TabsTrigger>
+              <TabsTrigger value="individual" className="text-xs h-7 gap-1.5 px-2.5">
+                <User className="h-3.5 w-3.5" />
+                Individual
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {viewMode === "individual" && (
+            <Select value={selectedResource} onValueChange={setSelectedResource}>
+              <SelectTrigger className="h-8 w-[180px] text-xs">
+                <SelectValue placeholder="Select resource" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredResources.map((r) => (
+                  <SelectItem key={r.id} value={r.id} className="text-xs">
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-status-available" />
+              Available
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-status-partial" />
+              Partial
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-status-allocated" />
+              Allocated
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-4 text-center mb-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-            <div key={d} className="text-xs font-semibold text-slate-400 uppercase">{d}</div>
-        ))}
-      </div>
+      <TooltipProvider delayDuration={100}>
+        <div className="p-4">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {DAY_NAMES.map((d) => (
+              <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1.5">
+                {d}
+              </div>
+            ))}
+          </div>
 
-      <div className="grid grid-cols-7 gap-3 h-[500px]">
-        {days.map(day => {
-            const status = getDayStatus(day);
-            return (
-                <div 
-                    key={day} 
-                    className={`
-                        relative border rounded-lg p-2 flex flex-col items-center justify-between transition-all hover:shadow-md cursor-pointer
-                        ${status.isToday ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-400' : 'bg-red-50/30 border-gray-100'}
-                    `}
-                >
-                    <span className={`text-sm font-medium ${status.isToday ? 'text-blue-700' : 'text-slate-600'}`}>{day}</span>
-                    
-                    {/* Status Dots Visualization */}
-                    <div className="flex gap-1 mb-2">
-                        <div className="flex flex-col gap-0.5">
-                            <div className="w-8 h-1 bg-emerald-400 rounded-full opacity-80" style={{width: `${status.available * 3}px`}}></div>
-                            <div className="w-6 h-1 bg-amber-400 rounded-full opacity-80" style={{width: `${status.partial * 3}px`}}></div>
-                            <div className="w-10 h-1 bg-red-400 rounded-full opacity-80" style={{width: `${status.allocated * 3}px`}}></div>
-                        </div>
-                    </div>
-                    
-                    {/* Hover tooltip structure (simplified visually here) */}
-                    <div className="text-[10px] text-slate-500 font-mono">
-                       {status.available}/{status.partial}/{status.allocated}
-                    </div>
-                </div>
-            );
-        })}
-      </div>
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Empty cells for offset */}
+            {Array.from({ length: firstDayOffset }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+
+            {calendarDays.map((day) => {
+              const isWeekend = day.dayOfWeek === 0 || day.dayOfWeek === 6
+              const isToday =
+                day.dayOfMonth === now.getDate() &&
+                month === now.getMonth() &&
+                year === now.getFullYear()
+
+              if (viewMode === "aggregate") {
+                const agg = getAggregateStatus(day, filteredIds)
+                const total = agg.available + agg.partial + agg.allocated
+
+                return (
+                  <Tooltip key={day.date}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "aspect-square rounded-md border p-1 flex flex-col items-center justify-center gap-0.5 transition-all hover:shadow-sm",
+                          isWeekend && "opacity-50",
+                          isToday && "ring-2 ring-primary ring-offset-1",
+                          getStatusColorLight(agg.dominant)
+                        )}
+                        onClick={() => onDayClick(day.date, agg.dominant)}
+                      >
+                        <span className={cn(
+                          "text-xs font-medium",
+                          isToday ? "text-primary font-bold" : "text-card-foreground"
+                        )}>
+                          {day.dayOfMonth}
+                        </span>
+                        {total > 0 && (
+                          <div className="flex gap-px">
+                            {agg.available > 0 && (
+                              <div className="h-1 rounded-full bg-status-available" style={{ width: `${Math.max(4, (agg.available / total) * 20)}px` }} />
+                            )}
+                            {agg.partial > 0 && (
+                              <div className="h-1 rounded-full bg-status-partial" style={{ width: `${Math.max(4, (agg.partial / total) * 20)}px` }} />
+                            )}
+                            {agg.allocated > 0 && (
+                              <div className="h-1 rounded-full bg-status-allocated" style={{ width: `${Math.max(4, (agg.allocated / total) * 20)}px` }} />
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      <p className="font-semibold mb-1">{day.date}</p>
+                      <p className="text-status-available">Available: {agg.available}</p>
+                      <p className="text-status-partial">Partial: {agg.partial}</p>
+                      <p className="text-status-allocated">Allocated: {agg.allocated}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              }
+
+              // Individual view
+              const resData = day.resources.find((r) => r.resourceId === selectedResource)
+              const status = resData?.status || "available"
+              const allocation = resData?.allocation || 0
+
+              return (
+                <Tooltip key={day.date}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "aspect-square rounded-md border p-1 flex flex-col items-center justify-center gap-0.5 transition-all hover:shadow-sm",
+                        isWeekend && "opacity-50",
+                        isToday && "ring-2 ring-primary ring-offset-1",
+                        getStatusColorLight(status)
+                      )}
+                      onClick={() => onDayClick(day.date, status)}
+                    >
+                      <span className={cn(
+                        "text-xs font-medium",
+                        isToday ? "text-primary font-bold" : "text-card-foreground"
+                      )}>
+                        {day.dayOfMonth}
+                      </span>
+                      <span className="text-[10px] tabular-nums font-medium text-muted-foreground">
+                        {allocation}%
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p className="font-semibold mb-1">{day.date}</p>
+                    <p>Allocation: {allocation}%</p>
+                    <p>Project: {resData?.project || "-"}</p>
+                    <p>Role: {resData?.role || "-"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+          </div>
+        </div>
+      </TooltipProvider>
     </div>
-  );
+  )
 }
