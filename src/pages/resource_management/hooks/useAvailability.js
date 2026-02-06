@@ -1,122 +1,81 @@
-// src/resource_management/hooks/useAvailability.js
-import { useState, useEffect, useMemo } from 'react';
-import { fetchResourceData } from '../services/availabilityService';
+import { useState, useMemo, useCallback } from "react"
+import { RESOURCES, getKPIData } from "../services/availabilityService"
 
-export const useAvailability = () => {
-  const [rawData, setRawData] = useState([]);
-  const [selectedResource, setSelectedResource] = useState(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+export const defaultFilters = {
+  role: "All Roles",
+  location: "All Locations",
+  experienceRange: [0, 15],
+  allocationRange: [0, 100],
+  project: "All Projects",
+  employmentType: "All Types",
+}
 
-  // Filter State
-  const [filters, setFilters] = useState({
-    role: "All Roles",
-    location: "All Locations",
-    experience: 0, // Min experience
-    allocationMax: 100, // Max allocation filter
-    project: "All Projects",
-    type: "All Types"
-  });
+export function useAvailability() {
+  const [filters, setFilters] = useState(defaultFilters)
+  const [statusFilter, setStatusFilter] = useState(null)
+  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false)
+  const [selectedResource, setSelectedResource] = useState(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [activeView, setActiveView] = useState("calendar")
 
-  // Load Data
-  useEffect(() => {
-    const data = fetchResourceData();
-    setRawData(data);
-  }, []);
+  // Stage 1: Filter by sidebar criteria (Role, Location, etc.)
+  const sidebarFilteredResources = useMemo(() => {
+    return RESOURCES.filter((r) => {
+      if (filters.role !== "All Roles" && r.role !== filters.role) return false
+      if (filters.location !== "All Locations" && r.location !== filters.location) return false
+      if (r.experience < filters.experienceRange[0] || r.experience > filters.experienceRange[1]) return false
+      if (r.currentAllocation < filters.allocationRange[0] || r.currentAllocation > filters.allocationRange[1]) return false
+      if (filters.project !== "All Projects" && r.currentProject !== filters.project) return false
+      if (filters.employmentType !== "All Types" && r.employmentType !== filters.employmentType) return false
+      return true
+    })
+  }, [filters])
 
-  // Compute Filtered Data
+  // Update KPIs based on Sidebar Filters (so they reflect the current context)
+  const kpiData = useMemo(() => getKPIData(sidebarFilteredResources), [sidebarFilteredResources])
+
+  // Stage 2: Apply Status Filter (from KPI clicks)
   const filteredResources = useMemo(() => {
-    return rawData.filter(resource => {
-      // Role Filter
-      if (filters.role !== "All Roles" && resource.role !== filters.role) return false;
-      
-      // Location Filter
-      if (filters.location !== "All Locations" && resource.location !== filters.location) return false;
-      
-      // Experience Filter (Simple greater than check)
-      if (resource.experience < filters.experience) return false;
+    if (!statusFilter) return sidebarFilteredResources
+    return sidebarFilteredResources.filter((r) => r.status === statusFilter)
+  }, [sidebarFilteredResources, statusFilter])
 
-      // Calculate Total Current Allocation
-      const totalAllocation = resource.allocations.reduce((sum, alloc) => {
-        // Only count allocations active TODAY
-        const now = new Date();
-        const start = new Date(alloc.start);
-        const end = new Date(alloc.end);
-        return (start <= now && end >= now) ? sum + alloc.percentage : sum;
-      }, 0);
+  const handleResourceClick = useCallback((resource) => {
+    setSelectedResource(resource)
+    setDetailOpen(true)
+  }, [])
 
-      // Allocation Slider Filter (Show resources having <= this allocation)
-      // This logic can vary based on requirement. Assuming "Up to X% allocated"
-      // or we can interpret as "At least X%". Let's assume standard "Max Allocation" slider.
-      // If slider is at 80%, we show people with 0-80% allocation.
-      if (totalAllocation > filters.allocationMax) return false;
+  const handleDayClick = useCallback((_date, status) => {
+    setStatusFilter((prev) => (prev === status ? null : status))
+  }, [])
 
-      // Project Filter
-      if (filters.project !== "All Projects") {
-        const hasProject = resource.allocations.some(a => a.project === filters.project);
-        if (!hasProject) return false;
-      }
+  const handleKPIFilterClick = useCallback((status) => {
+    setStatusFilter(status)
+  }, [])
 
-      return true;
-    });
-  }, [rawData, filters]);
-
-  // Compute KPIs based on FILTERED data
-  const kpis = useMemo(() => {
-    const total = filteredResources.length;
-    let fullyAvailable = 0;
-    let partiallyAvailable = 0;
-    let fullyAllocated = 0;
-    let overAllocated = 0;
-
-    filteredResources.forEach(r => {
-      const currentAlloc = r.allocations.reduce((sum, a) => {
-         const now = new Date();
-         const start = new Date(a.start);
-         const end = new Date(a.end);
-         return (start <= now && end >= now) ? sum + a.percentage : sum;
-      }, 0);
-
-      if (currentAlloc === 0) fullyAvailable++;
-      else if (currentAlloc < 100) partiallyAvailable++;
-      else if (currentAlloc === 100) fullyAllocated++;
-      else overAllocated++;
-    });
-
-    return {
-      total,
-      fullyAvailable,
-      partiallyAvailable,
-      fullyAllocated,
-      overAllocated,
-      available30d: Math.floor(total * 0.6), // Mock logic for 30d forecast
-      benchCapacity: total > 0 ? Math.round((fullyAvailable / total) * 100) + "%" : "0%",
-      utilization: total > 0 ? Math.round(((fullyAllocated + partiallyAvailable) / total) * 100) + "%" : "0%"
-    };
-  }, [filteredResources]);
-
-  // Handlers
-  const handleResourceClick = (resource) => {
-    setSelectedResource(resource);
-    setIsPanelOpen(true);
-  };
-
-  const closePanel = () => {
-    setIsPanelOpen(false);
-    setSelectedResource(null);
-  };
-
-  const updateFilter = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+  const resetFilters = useCallback(() => {
+    setFilters(defaultFilters)
+    setStatusFilter(null)
+  }, [])
 
   return {
-    resources: filteredResources,
-    kpis,
     filters,
-    updateFilter,
+    setFilters,
+    resetFilters,
+    statusFilter,
+    setStatusFilter,
+    filterPanelCollapsed,
+    setFilterPanelCollapsed,
+    toggleFilterPanel: () => setFilterPanelCollapsed((prev) => !prev),
     selectedResource,
-    isPanelOpen,
+    detailOpen,
+    setDetailOpen,
+    activeView,
+    setActiveView,
+    kpiData,
+    filteredResources,
     handleResourceClick,
-    closePanel
-  };
-};
+    handleDayClick,
+    handleKPIFilterClick,
+  }
+}
