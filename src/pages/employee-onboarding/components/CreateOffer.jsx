@@ -11,6 +11,7 @@ import FormSelect from "../../../components/forms/FormSelect";
 // Toastify
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Select from "react-select";
 
 export default function CreateOffer() {
   const navigate = useNavigate();
@@ -19,6 +20,9 @@ export default function CreateOffer() {
   const [loadingCountries, setLoadingCountries] = useState(true);
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [ccOptions, setCcOptions] = useState([]);
+  const [loadingCC, setLoadingCC] = useState(false);
+
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -29,6 +33,7 @@ export default function CreateOffer() {
     designation: "",
     package: "",
     currency: "",
+    cc_mails: [],
   });
 
   const currencies = [
@@ -66,6 +71,38 @@ export default function CreateOffer() {
 
     load();
   }, []);
+ /* ---------------- LOAD CC USERS ---------------- */
+
+  const fetchCCUsers = async () => {
+    setLoadingCC(true);
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/admin-users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const formatted = res.data.map((u) => ({
+        value: u.mail,
+        label: `${u.name} (${u.mail})`,
+      }));
+
+      setCcOptions(formatted);
+    } catch (err) {
+      console.error("Failed to load CC users:", err);
+    }
+
+    setLoadingCC(false);
+  };
+
+  useEffect(() => {
+    fetchCCUsers();
+  }, []);
+
 
   // Handle input
   const handleChange = (e) => {
@@ -88,6 +125,7 @@ export default function CreateOffer() {
       designation: "",
       package: "",
       currency: "",
+      cc_mails: [],
     });
     setShowCancelConfirm(false);
   };
@@ -96,6 +134,13 @@ export default function CreateOffer() {
   const cancelConfirmation = () => {
     setShowCancelConfirm(false);
   };
+  const customSelectStyles = {
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: "rgb(207, 212, 231)",
+  }),
+};
+
 
   // Submit
   const handleSubmit = async (e) => {
@@ -217,6 +262,36 @@ export default function CreateOffer() {
           options={currencies}
         />
 
+         {/* ---------- CC SELECTOR ---------- */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            CC Recipients (Optional)
+          </label>
+
+          <Select
+            isMulti
+            isLoading={loadingCC}
+            options={ccOptions}
+            styles={customSelectStyles}
+            placeholder="Search and select CC recipients..."
+
+
+            value={ccOptions.filter((opt) =>
+              formData.cc_mails?.includes(opt.value)
+            )}
+
+            onChange={(selected) => {
+              const emails = selected
+                ? selected.map((item) => item.value)
+                : [];
+
+              setFormData({
+                ...formData,
+                cc_mails: emails,
+              });
+            }}
+          />
+        </div>
         {/* Buttons */}
         <div className="flex justify-end gap-4 pt-4">
           <button
