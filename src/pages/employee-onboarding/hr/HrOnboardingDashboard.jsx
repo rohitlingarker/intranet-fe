@@ -462,21 +462,24 @@ export default function HrOnboardingDashboard() {
         </h2>
 
         {!bulkJoinMode ? (
-
           <Button
-            varient="primary"
-            size="small"
-            onClick={() => setBulkJoinMode(true)}
-            disabled={
-              !filteredData.some(
-                (e) =>
-                  e.status?.toUpperCase() === "VERIFIED"
-              )
-            }
-          >
-            Bulk Join
-          </Button>
+          varient="primary"
+          size="small"
+          onClick={() => {
+            const hasVerified = filteredData.some(
+              (e) => e.status?.toUpperCase() === "VERIFIED"
+            );
 
+            if (!hasVerified) {
+              showStatusToast( "No verified candidates available for bulk join");
+              return;
+            }
+
+            setBulkJoinMode(true);
+          }}
+        >
+          Bulk Join
+        </Button>
         ) : (
 
           <div className="flex gap-3">
