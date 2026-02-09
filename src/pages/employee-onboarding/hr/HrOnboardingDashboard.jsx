@@ -118,7 +118,7 @@ export default function HrOnboardingDashboard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("SUBMITTED","REJECTED","VERIFIED");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   
   const [bulkJoinMode, setBulkJoinMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -166,23 +166,33 @@ export default function HrOnboardingDashboard() {
      FILTER (SEARCH + STATUS)
   ============================ */
 
-  const filteredData = useMemo(() => {
-    return data.filter((emp) => {
-      const searchText = `${emp.first_name} ${emp.last_name} ${emp.designation}`
-        .toLowerCase();
+ const filteredData = useMemo(() => {
+  const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
 
-      const matchesSearch = searchText.includes(
-        searchTerm.toLowerCase()
-      );
+  return data.filter((emp) => {
+    const searchText = `${emp.first_name} ${emp.last_name} ${emp.designation}`
+      .toLowerCase();
 
-      const matchesStatus =
-        statusFilter === "SUBMITTED" || statusFilter === "REJECTED" || statusFilter === "VERIFIED"
-          ? emp.status?.toUpperCase() === statusFilter
-          : true;
+    const matchesSearch = searchText.includes(
+      searchTerm.toLowerCase()
+    );
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [data, searchTerm, statusFilter]);
+    // Normalize status
+    const status = (emp.status || "").trim().toUpperCase();
+    const filter = statusFilter.trim().toUpperCase();
+
+    let matchesStatus = false;
+
+    if (filter === "ALL") {
+      matchesStatus = allowedStatuses.includes(status);
+    } else {
+      matchesStatus = status === filter;
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+}, [data, searchTerm, statusFilter]);
+
 
   /* ============================
      HELPERS
@@ -397,7 +407,7 @@ export default function HrOnboardingDashboard() {
           title="Verified"
           value={
             filteredData.filter(
-              (e) => e.status === "Verified"
+              (e) => e.status?.toUpperCase() === "VERIFIED"
             ).length
           }
           icon={Users}
@@ -407,7 +417,7 @@ export default function HrOnboardingDashboard() {
           title="Rejected"
           value={
             filteredData.filter(
-              (e) => e.status === "Rejected"
+              (e) => e.status?.toUpperCase() === "REJECTED"
             ).length
           }
           icon={Users}
@@ -431,15 +441,9 @@ export default function HrOnboardingDashboard() {
         <select
           value={statusFilter}
           onChange={(e) => {
-            
-             
             setStatusFilter(e.target.value);
-             
-
-
-            
             setCurrentPage(1);
-          }}
+            }}
           className="w-full md:w-48 px-3 py-2 border rounded-lg bg-white"
         >
           <option value="ALL">All Status</option>
