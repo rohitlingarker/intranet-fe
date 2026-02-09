@@ -5,7 +5,9 @@ import { getProjects } from "../../services/projectService";
 import ResourceList from "./RMSProjectList";
 // import { projectService } from "../projects/projectService";
 import axios from "axios";
-
+import SLAForm from "../../models/client_configuration/forms/SLAForm";
+import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm";
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
   ArrowLeft,
@@ -27,6 +29,11 @@ const RMSProjectDetails = () => {
   const [overlaps, setOverlaps] = useState([]);
   const [loadingOverlaps, setLoadingOverlaps] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const DEFAULT_FORM_STATE = {
+    activeFlag: true,
+  };
+  const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
 
   const fetchDetail = async () => {
     try {
@@ -123,7 +130,7 @@ const RMSProjectDetails = () => {
 
         {/* Tabs */}
         <div className="flex items-center gap-6 mt-8 border-b border-gray-200">
-          {["overview", "resources", "financials", "overlaps"].map((tab) => (
+          {["overview", "resources", "financials", "overlaps", "sla","compliance","escalation",].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -279,6 +286,17 @@ const RMSProjectDetails = () => {
 
       {activeTab === "resources" && (
         <ResourceList allocations={project.allocations} />
+      )}
+
+      {activeTab === "sla" && (
+        <SLAForm formData={formData} setFormData={setFormData}/>
+      )}
+
+      {activeTab === "compliance" && (
+        <ComplianceForm formData={formData} setFormData={setFormData}/>
+      )}
+      {activeTab === "escalation" && (
+        <EscalationForm formData={formData} setFormData={setFormData}/>
       )}
     </div>
   );
