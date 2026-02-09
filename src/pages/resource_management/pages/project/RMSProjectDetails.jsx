@@ -1,7 +1,6 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
 import { getProjects } from "../../services/projectService";
 import ResourceList from "./RMSProjectList";
 // import { projectService } from "../projects/projectService";
@@ -18,7 +17,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { getProjectById } from "../../services/projectService";
-import ResourceList from "../../components/ResourceList";
 
 const RMSProjectDetails = () => {
   const { projectId } = useParams();
