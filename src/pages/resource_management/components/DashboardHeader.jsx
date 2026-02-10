@@ -44,12 +44,12 @@ export function DashboardHeader() {
             />
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
               <Bell className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            </button>
+            <button className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
               <Settings className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
           <Separator orientation="vertical" className="h-6" />
           <Avatar className="h-8 w-8 border cursor-pointer ring-names ring-1 ring-transparent hover:ring-border transition-all">

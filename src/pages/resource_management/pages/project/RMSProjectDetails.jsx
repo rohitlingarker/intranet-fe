@@ -3,7 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ResourceList from "./RMSProjectList";
 import axios from "axios";
-import LoadingSpinner from "../../../../components/LoadingSpinner";
+import SLAForm from "../../models/client_configuration/forms/SLAForm";
+import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm";import LoadingSpinner from "../../../../components/LoadingSpinner";
 import DemandModal from "../../models/DemandModal";
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
@@ -30,12 +32,19 @@ const RMSProjectDetails = () => {
   const [loadingDemand, setLoadingDemand] = useState(false);
   const [demandResponse, setDemandResponse] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [openConfigModal, setOpenConfigModal] = useState(false);
+  const [configType, setConfigType] = useState(null); // "sla" | "compliance" | "escalation"
+
+  const DEFAULT_FORM_STATE = {
+    activeFlag: true,
+  };
+  const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
 
   const fetchDetail = async () => {
     try {
       setLoading(true);
       const res = await getProjectById(projectId);
-      setProject(res.data); 
+      setProject(res.data);
     } catch (err) {
       console.error("Failed to fetch project details", err);
       toast.error(err.response?.data?.message || "Failed to fetch project details.");
@@ -77,7 +86,7 @@ const RMSProjectDetails = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       setOverlaps(res.data.data || []);
     } catch (err) {
@@ -98,11 +107,10 @@ const RMSProjectDetails = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Back */}
       <button
-       
+
         onClick={() => navigate(-1)}
-       
+
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
-      
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </button>
@@ -121,20 +129,20 @@ const RMSProjectDetails = () => {
                 }`}
               > */}
               <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  project.projectStatus === "ACTIVE"
+                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
-                }`}
+                  }`}
               >
                 {project.projectStatus}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-              
+
               {project.client?.client_name} • Project ID:{" "}
               {project.pmsProjectId}
-            
+
+              {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
           </div>
           <div>
@@ -151,13 +159,20 @@ const RMSProjectDetails = () => {
 
         {/* Tabs */}
         <div className="flex items-center gap-6 mt-8 border-b border-gray-200">
-          {["overview", "resources", "financials", "overlaps"].map((tab) => (
+          {[
+            "overview",
+            "resources",
+            "financials",
+            "overlaps",
+            "sla",
+            "compliance",
+            "escalation",
+          ].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${
-                activeTab === tab ? "text-[#263383]" : "text-gray-500"
-              }`}
+              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
+                }`}
             >
               {tab}
               {tab === "overlaps" && overlaps.length > 0 && (
@@ -186,16 +201,22 @@ const RMSProjectDetails = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    
+
                     Project Manager ID
-                  
+
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    
+
                     <Users className="h-4 w-4 text-gray-400" />
-                   
+
                     {project.projectManagerId}
-                  
+
+                    Project Manager ID
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-800 font-medium">
+                    <Users className="h-4 w-4 text-gray-400" />
+
+                    {project.projectManagerId}
                   </div>
                 </div>
 
@@ -205,11 +226,10 @@ const RMSProjectDetails = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
-                      className={`h-4 w-4 ${
-                        project.riskLevel === "HIGH"
+                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
                           ? "text-red-500"
                           : "text-green-500"
-                      }`}
+                        }`}
                     />
                     {project.riskLevel}
                   </div>
@@ -307,6 +327,114 @@ const RMSProjectDetails = () => {
 
       {activeTab === "resources" && (
         <ResourceList allocations={project.allocations} />
+      )}
+
+      {activeTab === "sla" && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Project SLA Configuration</h3>
+
+            <button
+              onClick={() => {
+                setConfigType("sla");
+                setOpenConfigModal(true);
+              }}
+              className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+            >
+              + Create SLA
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            No SLA configuration added yet.
+          </p>
+        </div>
+      )}
+
+      {activeTab === "compliance" && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">
+              Project Compliance Configuration
+            </h3>
+
+            <button
+              onClick={() => {
+                setConfigType("compliance");
+                setOpenConfigModal(true);
+              }}
+              className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+            >
+              + Create Compliance
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            No compliance configuration added yet.
+          </p>
+        </div>
+      )}
+
+      {activeTab === "escalation" && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Project Escalation Matrix</h3>
+
+            <button
+              onClick={() => {
+                setConfigType("escalation");
+                setOpenConfigModal(true);
+              }}
+              className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+            >
+              + Create Escalation
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            No escalation configuration added yet.
+          </p>
+        </div>
+      )}
+      {openConfigModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+            <button
+              onClick={() => setOpenConfigModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-lg font-semibold mb-4 capitalize">
+              Create {configType} Configuration
+            </h2>
+
+            {configType === "sla" && (
+              <div className="space-y-4">
+                <SLAForm formData={formData} setFormData={setFormData} />
+                <button
+                  onClick={() => {
+                    setConfigType("sla");
+                    setOpenConfigModal(true);
+                  }}
+                  className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 justify-end"
+                >
+                  Save SLA Configuration
+                </button>
+              </div>
+            )}
+
+
+            {configType === "compliance" && (
+              <ComplianceForm formData={formData} setFormData={setFormData} />
+            )}
+
+            {configType === "escalation" && (
+              <EscalationForm formData={formData} setFormData={setFormData} />
+            )}
+          </div>
+        </div>
       )}
 
       {modalOpen && (
