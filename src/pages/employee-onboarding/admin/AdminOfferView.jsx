@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   ArrowLeft,
   Mail,
@@ -11,7 +13,10 @@ import {
   IndianRupee,
   BadgeCheck,
   UserCheck,
+  MoreVertical,
 } from "lucide-react";
+
+/* ================= MAIN COMPONENT ================= */
 
 export default function AdminOfferView() {
   const { user_uuid } = useParams();
@@ -25,23 +30,29 @@ export default function AdminOfferView() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const [rejectModal, setRejectModal] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
+
+  const [holdModal, setHoldModal] = useState(false);
+  const [holdComment, setHoldComment] = useState("");
 
   /* ---------------- FETCH OFFER ---------------- */
   const fetchOffer = async () => {
-    const res = await axios.get(
-      `${BASE}/offerletters/offer/${user_uuid}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await axios.get(`${BASE}/offerletters/offer/${user_uuid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     setOffer(res.data);
   };
 
   /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
-    const res = await axios.get(
-      `${BASE}/offer-approval/my-actions`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const found = res.data.find(item => item.user_uuid === user_uuid);
+    const res = await axios.get(`${BASE}/offer-approval/my-actions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const found = res.data.find((i) => i.user_uuid === user_uuid);
     setApproval(found || null);
   };
 
@@ -51,23 +62,41 @@ export default function AdminOfferView() {
       .finally(() => setLoading(false));
   }, [user_uuid]);
 
-  /* ---------------- SUBMIT ACTION ---------------- */
-  const submitAction = async (action) => {
-    try {
-      setActing(true);
-      setError("");
+  /* ---------------- STATUS LOGIC ---------------- */
+  const isFinalStatus =
+    approval?.action === "APPROVED" ||
+    approval?.action === "REJECTED" ||
+    approval?.action === "ON_HOLD";
 
+  const buttonsEnabled = !isFinalStatus || isEditing;
+
+  /* ---------------- SUBMIT ACTION ---------------- */
+  const submitAction = async (action, comment = null) => {
+    if (!approval) return;
+
+    if (approval.action === action) {
+      toast.info("This status is already applied.");
+      return;
+    }
+
+    const previousAction = approval.action;
+    setApproval({ ...approval, action }); // optimistic UI
+    setActing(true);
+    setError("");
+
+    try {
       await axios.put(
         `${BASE}/offer-approval/update_action`,
         {
           user_uuid,
           action,
           comments:
-            action === "APPROVED"
+            comment ??
+            (action === "APPROVED"
               ? "Approved by admin"
               : action === "REJECTED"
               ? "Rejected by admin"
-              : "Kept on hold by admin",
+              : "Kept on hold by admin"),
         },
         {
           headers: {
@@ -77,36 +106,82 @@ export default function AdminOfferView() {
         }
       );
 
-      await fetchApproval();
-    } catch (e) {
-      setError(
-        e?.response?.data?.detail ||
-        "Unable to update approval status"
+      toast.success(
+        action === "APPROVED"
+          ? "Offer approved"
+          : action === "REJECTED"
+          ? "Offer rejected"
+          : "Offer put on hold"
       );
+
+      fetchApproval();
+      setIsEditing(false);
+      setShowMenu(false);
+    } catch (e) {
+      setApproval({ ...approval, action: previousAction });
+      const msg =
+        e?.response?.data?.detail || "Unable to update approval status";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setActing(false);
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Loading...</div>;
-  if (!offer) return <div className="p-10 text-center text-red-600">Offer not found</div>;
+  if (loading)
+    return <div className="p-10 text-center">Loading...</div>;
+
+  if (!offer)
+    return (
+      <div className="p-10 text-center text-red-600">
+        Offer not found
+      </div>
+    );
+
+  /* ================= UI ================= */
 
   return (
     <div className="max-w-5xl mx-auto p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
+
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-blue-900 hover:underline mb-6 font-semibold"
       >
-        <ArrowLeft size={20} />
-        Back
+        <ArrowLeft size={20} /> Back
       </button>
 
-      <div className="bg-white rounded-xl shadow-md p-8">
+      <div className="bg-white rounded-xl shadow-md p-8 relative">
+        {/* EDIT MENU */}
+        {isFinalStatus && (
+          <div className="absolute top-6 right-6">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-full hover:bg-gray-100"
+            >
+              <MoreVertical size={20} />
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 mt-2 bg-white shadow border rounded-md w-36">
+                <button
+                  onClick={() => {
+                    setIsEditing(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-blue-700"
+                >
+                  Edit Status
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* HEADER */}
         <div className="flex gap-4 mb-8 items-start">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 text-blue-700 shadow-sm">
-            <UserCheck size={26} strokeWidth={2} />
+          <div className="w-14 h-14 flex items-center justify-center rounded-full bg-blue-100 text-blue-700">
+            <UserCheck size={26} />
           </div>
 
           <div>
@@ -117,7 +192,9 @@ export default function AdminOfferView() {
             <p className="flex items-center gap-2 text-gray-700 mt-1">
               <BadgeCheck size={16} className="text-green-600" />
               Offer Status:
-              <span className="font-medium text-gray-900">{offer.status}</span>
+              <span className="font-medium text-gray-900">
+                {offer.status}
+              </span>
             </p>
 
             {approval && (
@@ -150,40 +227,82 @@ export default function AdminOfferView() {
         </div>
 
         {/* ACTION BUTTONS */}
-        {approval?.action === "Pending" && (
+        {approval && (
           <div className="flex gap-4 mt-10">
             <ActionButton
               label="Approve"
               color="green"
-              disabled={acting}
+              disabled={!buttonsEnabled || acting}
               onClick={() => submitAction("APPROVED")}
             />
             <ActionButton
               label="Reject"
               color="red"
-              disabled={acting}
-              onClick={() => submitAction("REJECTED")}
+              disabled={!buttonsEnabled || acting}
+              onClick={() => {
+                setRejectModal(true);
+                setRejectComment("");
+              }}
             />
             <ActionButton
               label="On Hold"
               color="gray"
-              disabled={acting}
-              onClick={() => submitAction("ON_HOLD")}
+              disabled={!buttonsEnabled || acting}
+              onClick={() => {
+                setHoldModal(true);
+                setHoldComment("");
+              }}
             />
           </div>
         )}
 
-        {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
+        {error && (
+          <p className="text-red-600 mt-4 font-medium">{error}</p>
+        )}
       </div>
+
+      {/* REJECT MODAL */}
+      {rejectModal && (
+        <Modal
+          title="Reject Offer"
+          comment={rejectComment}
+          setComment={setRejectComment}
+          acting={acting}
+          onCancel={() => setRejectModal(false)}
+          onConfirm={async () => {
+            await submitAction("REJECTED", rejectComment);
+            setRejectModal(false);
+          }}
+          confirmText="Reject"
+          color="red"
+        />
+      )}
+
+      {/* HOLD MODAL */}
+      {holdModal && (
+        <Modal
+          title="Put Offer On Hold"
+          comment={holdComment}
+          setComment={setHoldComment}
+          acting={acting}
+          onCancel={() => setHoldModal(false)}
+          onConfirm={async () => {
+            await submitAction("ON_HOLD", holdComment);
+            setHoldModal(false);
+          }}
+          confirmText="Confirm"
+          color="green"
+        />
+      )}
     </div>
   );
 }
 
-/* ---------------- COMPONENTS ---------------- */
+/* ================= REUSABLE COMPONENTS ================= */
 
 function DetailCard({ icon, label, value }) {
   return (
-    <div className="border rounded-lg p-4 flex items-start gap-4">
+    <div className="border rounded-lg p-4 flex gap-4">
       <div className="text-blue-900">{icon}</div>
       <div>
         <p className="text-sm text-gray-700">{label}</p>
@@ -195,14 +314,15 @@ function DetailCard({ icon, label, value }) {
 
 function ApprovalBadge({ status, approver }) {
   const styles = {
-    PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
     APPROVED: "bg-green-100 text-green-800 border-green-300",
     REJECTED: "bg-red-100 text-red-800 border-red-300",
     ON_HOLD: "bg-gray-100 text-gray-800 border-gray-300",
   };
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}>
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
+    >
       <span className="font-medium">{status}</span>
       {approver && <span className="text-xs">• {approver}</span>}
     </div>
@@ -220,10 +340,52 @@ function ActionButton({ label, color, onClick, disabled }) {
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`px-6 py-2 text-white rounded-lg transition-all active:translate-y-[1px]
-      disabled:opacity-60 disabled:cursor-not-allowed ${colors[color]}`}
+      className={`px-6 py-2 text-white rounded-lg transition disabled:opacity-60 ${colors[color]}`}
     >
       {label}
     </button>
+  );
+}
+
+function Modal({
+  title,
+  comment,
+  setComment,
+  acting,
+  onCancel,
+  onConfirm,
+  confirmText,
+  color,
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow w-[420px]">
+        <h2 className="text-lg font-semibold mb-3">{title}</h2>
+
+        <textarea
+          className="w-full border p-2 rounded h-28"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            disabled={acting}
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-500 text-white rounded"
+          >
+            Cancel
+          </button>
+
+          <button
+            disabled={!comment.trim() || acting}
+            onClick={onConfirm}
+            className={`px-4 py-2 bg-${color}-600 text-white rounded disabled:opacity-60`}
+          >
+            {acting ? "Processing..." : confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
