@@ -93,9 +93,6 @@ const RMSProjectDetails = () => {
         onClick={() => navigate(-1)}
 
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
-
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </button>
@@ -187,7 +184,7 @@ const RMSProjectDetails = () => {
                     {project.projectManagerId}
 
                     Project Manager ID
-                  </label>
+                  </div>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <Users className="h-4 w-4 text-gray-400" />
 
