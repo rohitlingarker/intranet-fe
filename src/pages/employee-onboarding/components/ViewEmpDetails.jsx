@@ -103,7 +103,6 @@ export default function ViewEmpDetails() {
   }, [openApprovalModal]);
 
   /* ---------------- DERIVED STATE ---------------- */
-  /* ---------------- DERIVED STATE ---------------- */
 const rawStatus = approvalHistory?.[0]?.status || "";
 
 const approvalStatus = rawStatus.toUpperCase();
@@ -112,12 +111,7 @@ const isNoRequest = !rawStatus || approvalStatus === "NO REQUEST";
 const isPending = approvalStatus.includes("PENDING");
 const canModifyOfferApprovalRequest = isPending;
 
-  // const approvalStatus =
-  //   approvalHistory?.[0]?.status?.toUpperCase() || "NO REQUEST";
 
-  // const isNoRequest = approvalStatus === "NO REQUEST";
-  // const isPending = approvalStatus === "PENDING";
-  // const canModifyOfferApprovalRequest = isPending;
 
   const effectiveApprover =
     employee?.approver_name ||

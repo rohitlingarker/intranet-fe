@@ -8,6 +8,8 @@ export default function AdminApprovalActions() {
   const [loading, setLoading] = useState(true);
   const [updatingRequestId, setUpdatingRequestId] = useState(null);
 
+
+
   const token = localStorage.getItem("token");
   const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
 
@@ -36,7 +38,7 @@ export default function AdminApprovalActions() {
   }, []);
 
   /* ---------------- SUBMIT APPROVAL ACTION ---------------- */
-  const submitAction = async (user_uuid, request_id, action) => {
+  const submitAction = async (user_uuid, request_id, action, comment = null) => {
     try {
       setUpdatingRequestId(request_id);
 
@@ -48,11 +50,11 @@ export default function AdminApprovalActions() {
             user_uuid,
             action,
             comments:
-              action === "APPROVED"
-                ? "Approved by admin"
-                : action === "REJECTED"
-                ? "Rejected by admin"
-                : "Kept on hold",
+           action === "APPROVED"
+              ? "Approved by admin"
+              : action === "ON_HOLD"
+              ? "Kept on hold"
+              : "Rejected",
           },
         ],
         {
@@ -83,7 +85,6 @@ export default function AdminApprovalActions() {
   if (loading) {
     return <div className="p-10 text-center">Loading approvals...</div>;
   }
-
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">
@@ -151,6 +152,8 @@ export default function AdminApprovalActions() {
                         "REJECTED"
                       )
                     }
+                   
+
                     className="px-4 py-2 bg-red-600 text-white rounded disabled:opacity-60"
                   >
                     Reject
@@ -174,6 +177,7 @@ export default function AdminApprovalActions() {
             </div>
           ))}
         </div>
+        
       )}
     </div>
   );

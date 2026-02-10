@@ -26,6 +26,14 @@ export default function AdminOfferView() {
   const [acting, setActing] = useState(false);
   const [error, setError] = useState("");
 
+  const [rejectModal, setRejectModal] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
+
+  const [holdModal, setHoldModal] = useState(false);
+  const [holdComment, setHoldComment] = useState("");
+
+
+
   /* ---------------- FETCH OFFER ---------------- */
   const fetchOffer = async () => {
     const res = await axios.get(
@@ -52,7 +60,7 @@ export default function AdminOfferView() {
   }, [user_uuid]);
 
   /* ---------------- SUBMIT ACTION ---------------- */
-  const submitAction = async (action) => {
+  const submitAction = async (action, comment = null) => {
     try {
       setActing(true);
       setError("");
@@ -63,11 +71,12 @@ export default function AdminOfferView() {
           user_uuid,
           action,
           comments:
-            action === "APPROVED"
+            comment ??
+            (action === "APPROVED"
               ? "Approved by admin"
               : action === "REJECTED"
               ? "Rejected by admin"
-              : "Kept on hold by admin",
+              : "Kept on hold by admin"),
         },
         {
           headers: {
@@ -162,19 +171,105 @@ export default function AdminOfferView() {
               label="Reject"
               color="red"
               disabled={acting}
-              onClick={() => submitAction("REJECTED")}
+              onClick={() => {
+                setRejectModal(true);
+                setRejectComment("");
+              }}
             />
             <ActionButton
               label="On Hold"
               color="gray"
               disabled={acting}
-              onClick={() => submitAction("ON_HOLD")}
+              onClick={() => 
+              {
+                setHoldModal(true);
+                setHoldComment("");
+              }
+              }
             />
           </div>
         )}
 
         {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
       </div>
+      {rejectModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow w-[420px]">
+
+      <h2 className="text-lg font-semibold mb-3">
+        Reject Offer
+      </h2>
+
+      <textarea
+        placeholder="Enter rejection reason..."
+        className="w-full border p-2 rounded h-28 focus:outline-none focus:ring-2 focus:ring-red-400"
+        value={rejectComment}
+        onChange={(e) => setRejectComment(e.target.value)}
+      />
+
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          disabled={acting}
+          onClick={() => setRejectModal(false)}
+          className="px-4 py-2 bg-gray-500 text-white rounded"
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={!rejectComment.trim() || acting}
+          onClick={async () => {
+            await submitAction("REJECTED", rejectComment);
+            setRejectModal(false);
+          }}
+          className="px-4 py-2 bg-red-600 text-white rounded disabled:opacity-60"
+        >
+          {acting ? "Rejecting..." : "Reject"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{holdModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow w-[420px]">
+
+      <h2 className="text-lg font-semibold mb-3">
+        Put Offer On Hold
+      </h2>
+
+      <textarea
+        placeholder="Enter hold reason..."
+        className="w-full border p-2 rounded h-28 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        value={holdComment}
+        onChange={(e) => setHoldComment(e.target.value)}
+      />
+
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          disabled={acting}
+          onClick={() => setHoldModal(false)}
+          className="px-4 py-2 bg-gray-500 text-white rounded"
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={!holdComment.trim() || acting}
+          onClick={async () => {
+            await submitAction("ON_HOLD", holdComment);
+            setHoldModal(false);
+          }}
+          className="px-4 py-2 bg-green-700 text-white rounded disabled:opacity-60"
+        >
+          {acting ? "Updating..." : "Confirm"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
     </div>
   );
 }
