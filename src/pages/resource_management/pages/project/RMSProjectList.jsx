@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Pencil,
   Filter,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -13,6 +14,7 @@ import { getProjects } from "../../services/projectService";
 import ProjectKPIs from "../../components/ProjectKPIs";
 import Pagination from "../../../../components/Pagination/pagination";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
+import UpdateProjectStatusModal from "../../models/UpdateProjectStatusModal";
 
 const RMSProjectList = () => {
   const navigate = useNavigate();
@@ -28,6 +30,10 @@ const RMSProjectList = () => {
     projectStatus: "",
     riskLevel: "",
   });
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [statusUpdateModal, setStatusUpdateModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const menuRef = useRef(null);
 
   // debounce search
   useEffect(() => {
@@ -42,6 +48,17 @@ const RMSProjectList = () => {
   useEffect(() => {
     fetchProjects();
   }, [page, debouncedSearch, filters]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest("[data-menu-root]")) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -63,7 +80,7 @@ const RMSProjectList = () => {
     }
   };
 
-  const appliedFiltersCount = Object.values(filters).filter(Boolean).length;
+  // const appliedFiltersCount = Object.values(filters).filter(Boolean).length;
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
@@ -77,7 +94,7 @@ const RMSProjectList = () => {
     totalProjects: projects.length,
     activeProjects: projects.filter((p) => p.projectStatus === "ACTIVE").length,
     highRisk: projects.filter((p) => p.riskLevel === "HIGH").length,
-    overlapping: projects.filter(p => p.hasOverlap).length,
+    overlapping: projects.filter((p) => p.hasOverlap).length,
     avgUtilization: "82%",
   };
 
@@ -190,7 +207,41 @@ const RMSProjectList = () => {
                   )}
                 </div>
 
-                <MoreVertical className="h-4 w-4 text-gray-400" />
+                <div className="relative" data-menu-root>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(
+                        openMenuId === project.projectId
+                          ? null
+                          : project.projectId,
+                      );
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+
+                  {openMenuId === project.projectId && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(null);
+                          setSelectedProject(project.projectId);
+                          setStatusUpdateModal(true);                          ;
+                        }}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-xs text-blue-700 hover:bg-gray-100"
+                      >
+                        <Pencil size={12} />
+                        Update Status
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <h3 className="font-bold text-[#081534] text-lg group-hover:text-[#263383]">
@@ -245,6 +296,13 @@ const RMSProjectList = () => {
           onNext={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
         />
       )}
+
+      <UpdateProjectStatusModal 
+        open={statusUpdateModal}
+        onClose={() => setStatusUpdateModal(false)}
+        pmsProjectId={selectedProject}
+        onSuccess={() => fetchProjects()}
+      />
     </div>
   );
 };
