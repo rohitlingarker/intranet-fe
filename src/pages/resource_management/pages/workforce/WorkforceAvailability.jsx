@@ -1,5 +1,4 @@
-import { useState, useMemo, useCallback } from "react"
-import { DashboardHeader } from "../../components/DashboardHeader"
+
 import { KPIBar } from "../../components/AvailabilityKPIs"
 import { FilterPanel } from "../../components/filters/AvailabilityFilters"
 import { AvailabilityCalendar } from "../../components/AvailabilityCalendar"
@@ -32,13 +31,18 @@ export default function WorkforceAvailability() {
     handleResourceClick,
     handleDayClick,
     handleKPIFilterClick,
+    toggleFilterPanel,
   } = useAvailability()
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
 
       <main className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Workforce Availability Overview</h1>
+          <p className="text-sm text-slate-500 mt-1">A real-time snapshot of team capacity, utilization, and resource allocation across roles and locations.</p>
+
+        </div>
         {/* KPI Summary Bar */}
         <div className="mb-6">
           <KPIBar
@@ -56,7 +60,7 @@ export default function WorkforceAvailability() {
             onFiltersChange={setFilters}
             onReset={resetFilters}
             collapsed={filterPanelCollapsed}
-            onToggleCollapse={() => setFilterPanelCollapsed(!filterPanelCollapsed)}
+            onToggleCollapse={toggleFilterPanel}
           />
 
           {/* Primary Content */}
@@ -69,10 +73,19 @@ export default function WorkforceAvailability() {
                     <span className="text-xs text-muted-foreground">{filteredResources.length} resources</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <TabsList className="h-8 bg-muted/50">
-                      <TabsTrigger value="calendar" className="text-xs h-6 px-2">Calendar</TabsTrigger>
-                      <TabsTrigger value="timeline" className="text-xs h-6 px-2">Timeline</TabsTrigger>
-                      <TabsTrigger value="table" className="text-xs h-6 px-2">Table</TabsTrigger>
+                    <TabsList className="h-9 bg-muted/50 p-1">
+                      <TabsTrigger value="calendar" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        Calendar View
+                      </TabsTrigger>
+                      <TabsTrigger value="timeline" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <GanttChart className="h-3.5 w-3.5" />
+                        Timeline
+                      </TabsTrigger>
+                      <TabsTrigger value="table" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <Table2 className="h-3.5 w-3.5" />
+                        Table View
+                      </TabsTrigger>
                     </TabsList>
                   </div>
                 </div>
@@ -100,6 +113,8 @@ export default function WorkforceAvailability() {
                     <AvailabilityCalendar
                       filteredResources={filteredResources}
                       onDayClick={handleDayClick}
+                      selectedResourceId={selectedResource?.id}
+                      onSelectResource={handleResourceClick}
                     />
                     <ResourceTable
                       resources={filteredResources}

@@ -1,9 +1,6 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, Globe, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
-import { getProjects } from "../../services/projectService";
-import ResourceList from "./RMSProjectList";
 // import { projectService } from "../projects/projectService";
 import axios from "axios";
 
@@ -34,7 +31,7 @@ const RMSProjectDetails = () => {
     try {
       setLoading(true);
       const res = await getProjectById(projectId);
-      setProject(res.data); 
+      setProject(res.data);
     } catch (err) {
       console.error("Failed to fetch project details", err);
     } finally {
@@ -82,11 +79,11 @@ const RMSProjectDetails = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Back */}
       <button
-       
+
         onClick={() => navigate(-1)}
-       
+
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
-      
+
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </button>
@@ -105,20 +102,19 @@ const RMSProjectDetails = () => {
                 }`}
               > */}
               <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  project.projectStatus === "ACTIVE"
+                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
-                }`}
+                  }`}
               >
                 {project.projectStatus}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-              
+
               {project.client?.client_name} • Project ID:{" "}
               {project.pmsProjectId}
-            
+
             </p>
           </div>
         </div>
@@ -129,9 +125,8 @@ const RMSProjectDetails = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${
-                activeTab === tab ? "text-[#263383]" : "text-gray-500"
-              }`}
+              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
+                }`}
             >
               {tab}
               {tab === "overlaps" && overlaps.length > 0 && (
@@ -160,16 +155,16 @@ const RMSProjectDetails = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    
+
                     Project Manager ID
-                  
+
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    
+
                     <Users className="h-4 w-4 text-gray-400" />
-                   
+
                     {project.projectManagerId}
-                  
+
                   </div>
                 </div>
 
@@ -179,11 +174,10 @@ const RMSProjectDetails = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
-                      className={`h-4 w-4 ${
-                        project.riskLevel === "HIGH"
+                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
                           ? "text-red-500"
                           : "text-green-500"
-                      }`}
+                        }`}
                     />
                     {project.riskLevel}
                   </div>
