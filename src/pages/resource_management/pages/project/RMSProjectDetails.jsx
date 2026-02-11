@@ -1,13 +1,12 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjects } from "../../services/projectService";
 import ResourceList from "./RMSProjectList";
-// import { projectService } from "../projects/projectService";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
-import EscalationForm from "../../models/client_configuration/forms/EscalationForm";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm";import LoadingSpinner from "../../../../components/LoadingSpinner";
+import DemandModal from "../../models/DemandModal";
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
   ArrowLeft,
@@ -18,7 +17,8 @@ import {
   Lock,
   AlertTriangle,
 } from "lucide-react";
-import { getProjectById } from "../../services/projectService";
+import { getProjectById, checkDemandCreation } from "../../services/projectService";
+import { toast } from "react-toastify";
 
 const RMSProjectDetails = () => {
   const { projectId } = useParams();
@@ -29,6 +29,9 @@ const RMSProjectDetails = () => {
   const [overlaps, setOverlaps] = useState([]);
   const [loadingOverlaps, setLoadingOverlaps] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingDemand, setLoadingDemand] = useState(false);
+  const [demandResponse, setDemandResponse] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [openConfigModal, setOpenConfigModal] = useState(false);
   const [configType, setConfigType] = useState(null); // "sla" | "compliance" | "escalation"
 
@@ -44,13 +47,28 @@ const RMSProjectDetails = () => {
       setProject(res.data);
     } catch (err) {
       console.error("Failed to fetch project details", err);
+      toast.error(err.response?.data?.message || "Failed to fetch project details.");
     } finally {
       setLoading(false);
     }
   };
 
+  const checkDemand = async () => {
+    setLoadingDemand(true);
+    try {
+      const res = await checkDemandCreation(projectId);
+      setDemandResponse(res);
+    } catch (err) {
+      console.error("Failed to check demand creation", err);
+      toast.error(err.response?.data?.message || "Failed to check demand creation.");
+    } finally {
+      setLoadingDemand(false);
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
+    checkDemand();
   }, [projectId]);
 
   useEffect(() => {
@@ -80,7 +98,7 @@ const RMSProjectDetails = () => {
   };
 
   if (loading)
-    return <div className="p-10 text-center">Loading Details...</div>;
+    return <div className="p-10 text-center"><LoadingSpinner text="Loading..."/></div>;
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -126,6 +144,16 @@ const RMSProjectDetails = () => {
 
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
+          </div>
+          <div>
+            <button 
+              title={!demandResponse?.create ? demandResponse?.reason : ""} 
+              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`} 
+              disabled={loadingDemand || !demandResponse?.create} 
+              onClick={() => setModalOpen(true)}
+            >
+              Create Demand
+            </button>
           </div>
         </div>
 
@@ -407,6 +435,10 @@ const RMSProjectDetails = () => {
             )}
           </div>
         </div>
+      )}
+
+      {modalOpen && (
+        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)}/>
       )}
     </div>
   );

@@ -400,7 +400,7 @@ const canModifyOfferApprovalRequest = isPending;
         <div className="flex gap-4 mt-10">
           <button
             onClick={handleSendOffer}
-            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer}
+            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer || employee}
             className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
         active:translate-y-[1px]
         disabled:opacity-60 disabled:cursor-not-allowed
@@ -410,7 +410,9 @@ const canModifyOfferApprovalRequest = isPending;
                 : "bg-green-700 hover:bg-green-800"
             }`}
           >
-            {loadingSendOffer ? "Sending..." : "Send Offer"}
+            {employee.status === "SENT"
+    ? "Offer Sent"
+    :loadingSendOffer ? "Sending..." : "Send Offer"}
           </button>
 
           <button

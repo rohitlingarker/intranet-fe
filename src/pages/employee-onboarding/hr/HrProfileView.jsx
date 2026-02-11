@@ -78,12 +78,24 @@ export default function HrProfileView() {
 
   const groupedExperience = experience?.reduce((acc, exp) => {
     const key = `${exp.company_name}|${exp.role_title}|${exp.start_date}|${exp.end_date}`;
+
     acc[key] ||= {
       title: `${exp.company_name} – ${exp.role_title}`,
       subtitle: `${exp.start_date} to ${exp.end_date || "Present"}`,
       documents: [],
     };
-    acc[key].documents.push(exp);
+
+    // Extract documents properly
+    exp.documents?.forEach((doc, index) => {
+      acc[key].documents.push({
+        document_uuid: `${exp.experience_uuid}-${index}`, // generate unique id
+        document_name: doc.doc_type
+          ? doc.doc_type.replace(/_/g, " ")
+          : "Experience Document",
+        file_path: doc.file_path,
+      });
+    });
+
     return acc;
   }, {});
 
