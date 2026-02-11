@@ -592,7 +592,7 @@ function TextAreaField({ label, value, onChange }) {
 
 function StatCard({ title, value, icon: Icon }) {
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm flex gap-4">
+    <div className="bg-white p-4 rounded-xl border border-black/20 shadow-sm flex gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
 
       <Icon className="text-indigo-600" />
 
