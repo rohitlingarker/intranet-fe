@@ -11,6 +11,9 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
+
+const formatted = new Date().toISOString().slice(0, 7);
 
 // function countWeekdays(startDateStr, endDateStr) {
 //   const start = new Date(startDateStr.split("T")[0] + "T00:00:00");
@@ -37,6 +40,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("PENDING");
   const [selectedRequests, setSelectedRequests] = useState([]);
+  const [selectedResourceId, setSelectedResourceId] = useState([]);
   const [confirmation, setConfirmation] = useState(null); // { action, leaveId }
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState({}); // manager comments keyed by leaveId
@@ -49,7 +53,6 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 4 }, (_, i) => currentYear - i); // current + 3 past years
   const isMountedRef = useRef(false);
-  
 
   // const { user } = useAuth();
   // const permissions = user?.permissions || [];
@@ -140,7 +143,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       const types = await axios.get(
@@ -149,7 +152,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
@@ -186,7 +189,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
     () => ({
       refreshData: fetchData,
     }),
-    [fetchData]
+    [fetchData],
   );
 
   const LeaveReasonCell = ({ reason }) => {
@@ -241,7 +244,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const paginatedRequests = filteredRequests.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   useEffect(() => {
@@ -250,22 +253,27 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
 
   const selectableRequests = adminLeaveRequests.filter(
     (r) =>
-      !["approved", "rejected", "cancelled"].includes(r.status.toLowerCase())
+      !["approved", "rejected", "cancelled"].includes(r.status.toLowerCase()),
   );
 
   // Select all or none
   const handleSelectAll = (checked) => {
     setSelectedRequests(
-      checked ? selectableRequests.map((r) => r.leaveId) : []
+      checked ? selectableRequests.map((r) => r.leaveId) : [],
+    );
+    setSelectedResourceId(
+      checked ? selectableRequests.map((r) => r.employee.employeeId) : [],
     );
   };
 
   // Select single
-  const handleSelectRequest = (leaveId, checked) => {
+  const handleSelectRequest = (leaveId, checked, resourceId) => {
     if (checked) {
       setSelectedRequests((prev) => [...prev, leaveId]);
+      setSelectedResourceId((prev) => [...prev, resourceId]);
     } else {
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
+      setSelectedResourceId((prev) => prev.filter((id) => id !== resourceId));
     }
   };
 
@@ -285,10 +293,29 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       toast.success(`${selectedRequests.length} requests approved.`);
       setSelectedRequests([]);
+      selectedResourceId.forEach((empId) => {
+        try {
+          const res = axios.post(`${RMS_BASE_URL}/api/availability/recalculate/resource/${empId}`,
+            {},
+            {
+              params: {
+                yearMonth: formatted,
+              },
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            },
+          );
+          console.log("Recalculate result: ", res);
+        } catch (err) {
+          console.error("Error approving leave request:", err);
+        }
+      });
+      setSelectedResourceId([]);
       await fetchData();
     } catch (err) {
       toast.error("Failed to approve selected requests.");
@@ -312,10 +339,11 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       toast.success(`${selectedRequests.length} requests rejected.`);
       setSelectedRequests([]);
+      setSelectedResourceId([]);
       await fetchData();
     } catch (err) {
       toast.error("Error rejecting selected requests.");
@@ -325,14 +353,19 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
   };
 
   // Approve or Reject single leave, use comment from param or store
-  const handleDecision = async (action, leaveId, commentParam) => {
+  const handleDecision = async ({
+    action,
+    leaveId,
+    commentParam,
+    resourceId,
+  }) => {
     const comment = commentParam ?? (comments[leaveId] || "");
 
     if ((action === "reject" || action === "cancel") && !comment) {
       toast.error(
         action === "reject"
           ? "Manager comment required to reject."
-          : "Reason required to cancel approved leave."
+          : "Reason required to cancel approved leave.",
       );
       return;
     }
@@ -350,20 +383,39 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       toast.success(
         action === "reject"
           ? "Leave rejected successfully."
           : action === "cancel"
-          ? "Leave cancelled successfully."
-          : "Leave approved successfully."
+            ? "Leave cancelled successfully."
+            : "Leave approved successfully.",
       );
-
       setSelectedRequests((prev) => prev.filter((id) => id !== leaveId));
+      setSelectedResourceId((prev) => prev.filter((id) => id !== resourceId));
       await fetchData();
       setConfirmation(null);
+      if (action === "approve") {
+        try {
+          const res = await axios.post(
+            `${RMS_BASE_URL}/api/availability/recalculate/resource/${resourceId}`,
+            {},
+            {
+              params: {
+                yearMonth: formatted,
+              },
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            },
+          );
+          console.log("Recalculated availability result: ", res);
+        } catch (err) {
+          console.error("Failed to recalculate availability", err);
+        }
+      }
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -376,7 +428,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
     setLoading(true);
     try {
       const originalRequest = adminLeaveRequests.find(
-        (req) => req.leaveId === leaveId
+        (req) => req.leaveId === leaveId,
       );
       if (!originalRequest) {
         throw new Error("Original request not found.");
@@ -402,7 +454,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
       await fetchData(); // Refresh data
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Update failed! Please try again."
+        err.response?.data?.message || "Update failed! Please try again.",
       );
     } finally {
       setLoading(false);
@@ -590,7 +642,10 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
 
                     {/* 🧹 Clear Selection */}
                     <button
-                      onClick={() => setSelectedRequests([])}
+                      onClick={() => {
+                        setSelectedRequests([]);
+                        setSelectedResourceId([]);
+                      }}
                       className="ml-auto px-2 py-1 text-indigo-600 hover:text-indigo-900 font-semibold transition"
                       title="Clear Selection"
                     >
@@ -712,7 +767,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
               paginatedRequests.map((request) => {
                 const typeObj =
                   allLeaveTypes.find(
-                    (t) => t.leaveName === request.leaveType.leaveName
+                    (t) => t.leaveName === request.leaveType.leaveName,
                   ) || request.leaveType;
                 return (
                   <tr
@@ -725,7 +780,11 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                         type="checkbox"
                         checked={selectedRequests.includes(request.leaveId)}
                         onChange={(e) =>
-                          handleSelectRequest(request.leaveId, e.target.checked)
+                          handleSelectRequest(
+                            request.leaveId,
+                            e.target.checked,
+                            request.employee.employeeId,
+                          )
                         }
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         disabled={[
@@ -761,7 +820,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                              }
+                              },
                             )
                           : "-"}
                         <div className="text-gray-500">
@@ -781,7 +840,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                              }
+                              },
                             )
                           : "-"}
                         <div className="text-gray-500">
@@ -808,7 +867,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                              }
+                              },
                             )
                           : "-"}
                       </div>
@@ -828,7 +887,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                     <td className="px-6 py-4">
                       <span
                         className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                          request.status
+                          request.status,
                         )}`}
                       >
                         {request.status}
@@ -883,6 +942,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 setConfirmation({
                                   action: "approve",
                                   leaveId: request.leaveId,
+                                  resourceId: request.employee.employeeId,
                                 })
                               }
                               aria-label="Approve Request"
@@ -1069,7 +1129,11 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                         : "bg-red-600 hover:bg-red-700"
                     } ${loading ? "opacity-50 pointer-events-none" : ""}`}
                     onClick={() =>
-                      handleDecision(confirmation.action, confirmation.leaveId)
+                      handleDecision({
+                        action: confirmation.action,
+                        leaveId: confirmation.leaveId,
+                        resourceId: confirmation.resourceId,
+                      })
                     }
                     disabled={loading}
                   >

@@ -33,7 +33,7 @@ const ApprovalQueue = ({ actionType, payload }) => {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Field
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Value
               </th>
             </tr>
@@ -84,10 +84,10 @@ const ApprovalQueue = ({ actionType, payload }) => {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Field
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Before
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 After
               </th>
             </tr>
