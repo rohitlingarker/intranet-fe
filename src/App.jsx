@@ -81,7 +81,7 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
+// import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
@@ -392,10 +392,7 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr-configuration/education/mapping"
             element={<CountryEducationMapping />}
           />
-          <Route
-            path="/employee-onboarding/admin/my-approvals"
-            element={<AdminApprovalActions />}
-          />
+          
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
             element={<AdminApprovalDashboard />}

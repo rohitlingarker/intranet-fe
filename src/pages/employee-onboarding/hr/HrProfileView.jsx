@@ -78,12 +78,24 @@ export default function HrProfileView() {
 
   const groupedExperience = experience?.reduce((acc, exp) => {
     const key = `${exp.company_name}|${exp.role_title}|${exp.start_date}|${exp.end_date}`;
+
     acc[key] ||= {
       title: `${exp.company_name} – ${exp.role_title}`,
       subtitle: `${exp.start_date} to ${exp.end_date || "Present"}`,
       documents: [],
     };
-    acc[key].documents.push(exp);
+
+    // Extract documents properly
+    exp.documents?.forEach((doc, index) => {
+      acc[key].documents.push({
+        document_uuid: `${exp.experience_uuid}-${index}`, // generate unique id
+        document_name: doc.doc_type
+          ? doc.doc_type.replace(/_/g, " ")
+          : "Experience Document",
+        file_path: doc.file_path,
+      });
+    });
+
     return acc;
   }, {});
 
@@ -255,7 +267,7 @@ export default function HrProfileView() {
 
 function Section({ title, icon, children }) {
   return (
-    <div className="bg-white rounded-xl shadow p-6">
+    <div className="bg-white rounded-xl shadow p-6 border border-gray-200 transition-all duration-200 hover:shadow-md">
       <div className="flex gap-2 items-center border-b pb-2 mb-4">
         <span className="text-indigo-600">{icon}</span>
         <h2 className="font-bold text-lg">{title}</h2>
@@ -267,7 +279,7 @@ function Section({ title, icon, children }) {
 
 function FieldCard({ label, value }) {
   return (
-    <div className="p-4 bg-gray-50 rounded border">
+    <div className="p-4 bg-gray-50 rounded border border-gray-200 transition-all duration-200 hover:shasow-sm hover:-translate-y-[2px]">
       <p className="text-sm text-gray-500">{label}</p>
       <p className="font-semibold">{value || "—"}</p>
     </div>
@@ -296,7 +308,7 @@ function GroupedCard({ title, subtitle, documents, onView }) {
         {documents.map((doc) => (
           <div
             key={doc.document_uuid}
-            className="flex justify-between items-center bg-white p-3 rounded border"
+            className="flex justify-between items-center bg-white p-3 rounded border border-gray-200 transition-all duration-200 hover:shadow-md hover:-translate-y-[2px]"
           >
             <span>{doc.document_name || "Document"}</span>
             <button

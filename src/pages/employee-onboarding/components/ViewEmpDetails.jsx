@@ -13,6 +13,7 @@ import {
   BadgeCheck,
   Pencil,
   Wallet,
+  UserCheck,
 } from "lucide-react";
 import { set } from "date-fns";
 
@@ -34,6 +35,10 @@ export default function ViewEmpDetails() {
   const [approvalHistory, setApprovalHistory] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
   const [loadingSendOffer, setLoadingSendOffer] = useState(false);
+  // 🔴 Delete Offer states
+const [deleteOfferModal, setDeleteOfferModal] = useState(false);
+const [deletingOffer, setDeletingOffer] = useState(false);
+
 
   const [editData, setEditData] = useState({
     first_name: "",
@@ -42,8 +47,10 @@ export default function ViewEmpDetails() {
     country_code: "",
     contact_number: "",
     designation: "",
+    employee_type: "",
     package: "",
     currency: "",
+    // cc_emails: "",
   });
 
   function toTitleCase(str) {
@@ -66,6 +73,12 @@ export default function ViewEmpDetails() {
       );
       setEmployee(res.data);
       setEditData(res.data);
+      // setEditData({
+      //   ...res.data,
+      //   cc_emails: Array.isArray(res.data.cc_emails)
+      //     ? res.data.cc_emails.join(", ")
+      //     : res.data.cc_emails || "",
+      // });
     } catch {
       showStatusToast("Failed to fetch employee details");
     } finally {
@@ -90,7 +103,16 @@ export default function ViewEmpDetails() {
       `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/status/${user_uuid}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    setApprovalHistory(Array.isArray(res.data) ? res.data : [res.data]);
+    // setApprovalHistory(Array.isArray(res.data) ? res.data : [res.data]);
+    const data = Array.isArray(res.data) ? res.data : [res.data];
+
+    const mapped = data.map((item) => ({
+      ...item,
+      comments: item.comments || item.message || "",
+      }));
+
+    setApprovalHistory(mapped);
+
   };
 
   useEffect(() => {
@@ -110,12 +132,16 @@ const approvalStatus = rawStatus.toUpperCase();
 const isNoRequest = !rawStatus || approvalStatus === "NO REQUEST";
 const isPending = approvalStatus.includes("PENDING");
 const canModifyOfferApprovalRequest = isPending;
+const actionTaken =
+  ["APPROVED", "REJECTED", "ON_HOLD"].includes(approvalStatus);
+
 
 
 
   const effectiveApprover =
     employee?.approver_name ||
     approvalHistory?.[0]?.action_taker_name ||
+
     null;
 
   /* ---------------- SEND OFFER ---------------- */
@@ -207,8 +233,11 @@ const canModifyOfferApprovalRequest = isPending;
     country_code: editData.country_code,
     contact_number: editData.contact_number,
     designation: editData.designation,
+    employee_type: editData.employee_type,
     package: editData.package,
     currency: editData.currency,
+    // cc_emails: Array.isArray(editData.cc_emails)      ? editData.cc_emails
+    //   : editData.cc_emails.split(",").map(email => email.trim()),
   };
     try {
       setUpdating(true);
@@ -226,6 +255,40 @@ const canModifyOfferApprovalRequest = isPending;
       setUpdating(false);
     }
   };
+  /* ---------------- DELETE OFFER ---------------- */
+const handleDeleteOffer = async () => {
+  const token = localStorage.getItem("token");
+
+  try {
+    setDeletingOffer(true);
+
+    await axios.delete(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/delete/${user_uuid}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    showStatusToast("Offer deleted successfully");
+
+    setDeleteOfferModal(false);
+
+    // redirect to dashboard
+    setTimeout(() => navigate("/employee-dashboard"), 800);
+  } catch (e) {
+  console.log("DELETE ERROR:", e);
+  console.log("RESPONSE:", e?.response);
+  console.log("DETAIL:", e?.response?.data?.detail);
+  setDeleteOfferModal(false);
+
+  showStatusToast(
+    e?.response?.data?.detail || "Failed to delete offer"
+  );
+}
+
+finally {
+    setDeletingOffer(false);
+  }
+};
+
 
   if (loading) return <div className="p-10 text-center">Loading...</div>;
   if (!employee) return <div className="p-10 text-center">Not found</div>;
@@ -263,6 +326,7 @@ const canModifyOfferApprovalRequest = isPending;
               <ApprovalStatusBadge
                 status={approvalStatus}
                 approver={effectiveApprover}
+                comments={approvalHistory?.[0]?.comments}
               />
             </div>
           </div>
@@ -377,12 +441,26 @@ const canModifyOfferApprovalRequest = isPending;
             label="CTC"
             value={`${employee.package} ${employee.currency}`}
           />
+          <DetailCard
+            icon={<UserCheck />}
+            label="Employee Type"
+            value={employee.employee_type}
+          />
+          {/* <DetailCard
+            icon={<Mail />}
+            label="CC Emails"
+            value={
+              Array.isArray(employee?.cc_emails)
+                ? employee.cc_emails.join(", ")
+                : employee?.cc_emails || "—"
+            }
+          /> */}
         </div>
 
         <div className="flex gap-4 mt-10">
           <button
             onClick={handleSendOffer}
-            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer}
+            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer || employee}
             className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
         active:translate-y-[1px]
         disabled:opacity-60 disabled:cursor-not-allowed
@@ -392,7 +470,9 @@ const canModifyOfferApprovalRequest = isPending;
                 : "bg-green-700 hover:bg-green-800"
             }`}
           >
-            {loadingSendOffer ? "Sending..." : "Send Offer"}
+            {employee.status === "SENT"
+    ? "Offer Sent"
+    :loadingSendOffer ? "Sending..." : "Send Offer"}
           </button>
 
           <button
@@ -409,6 +489,18 @@ const canModifyOfferApprovalRequest = isPending;
           >
             Request Approval
           </button>
+          {/* 🔴 DELETE OFFER BUTTON */}
+            { (
+              <button
+                onClick={() => setDeleteOfferModal(true)}
+                className="px-6 py-2 rounded-lg text-white bg-red-700 hover:bg-red-800
+                transition-all duration-100 ease-in-out active:translate-y-[1px]"
+              >
+                Delete Offer
+              </button>
+            )}
+
+
         </div>
       </div>
       
@@ -451,6 +543,34 @@ const canModifyOfferApprovalRequest = isPending;
           </div>
         </div>
       )}
+      {/* ---------- DELETE OFFER MODAL ---------- */}
+{deleteOfferModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+    <div className="bg-white p-6 rounded w-full max-w-md">
+      <p className="text-sm text-gray-700 mb-4">
+        Are you sure you want to delete this offer?
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setDeleteOfferModal(false)}
+          className="px-4 py-2 bg-gray-300 rounded"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleDeleteOffer}
+          disabled={deletingOffer}
+          className="px-4 py-2 bg-red-600 text-white rounded disabled:opacity-60"
+        >
+          {deletingOffer ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
@@ -468,7 +588,7 @@ function DetailCard({ icon, label, value }) {
   );
 }
 
-function ApprovalStatusBadge({ status, approver }) {
+function ApprovalStatusBadge({ status, approver, comments }) {
   const styles = {
     PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
     APPROVED: "bg-green-100 text-green-800 border-green-300",
@@ -477,6 +597,7 @@ function ApprovalStatusBadge({ status, approver }) {
   };
 
   return (
+    <div className="flex mt-3 flex-col gap-2">
     <div
       className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${
         styles[status] || "bg-gray-100"
@@ -486,6 +607,19 @@ function ApprovalStatusBadge({ status, approver }) {
         {status === "PENDING" ? "Approval Pending" : status}
       </span>
       {approver && <span className="text-xs opacity-80">• {approver}</span>}
+    </div>  
+    {/* COMMENTS BADGE */}
+      {comments && comments.trim() !== "" && (
+        <div className="text-lg"
+          // className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${
+          //   styles[status] || "bg-gray-100"
+          // }`}
+        >
+          <span className="font-semibold text-red-700">Comments : </span>
+          {comments}
+        </div>
+      )}
     </div>
+
   );
 }

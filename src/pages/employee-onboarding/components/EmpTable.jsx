@@ -195,6 +195,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "Email",
     "Contact",
     "Role",
+    "Employee Type",
     "Status",
     "Action",
   ].filter(Boolean);
@@ -210,6 +211,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "mail",
     "contact",
     "designation",
+    "employee_type",
     "status",
     "action",
   ].filter(Boolean);
@@ -261,6 +263,7 @@ export default function OffersTable({ offers = [], loading = false }) {
         mail: offer.mail || "—",
         contact: offer.contact_number || "—",
         designation: offer.designation || "—",
+        employee_type: offer.employee_type || "—",
         status: offer.status || "—",
 
         action: (
