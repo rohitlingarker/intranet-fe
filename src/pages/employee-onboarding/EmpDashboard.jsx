@@ -139,15 +139,51 @@ export default function EmployeeOnboardingDashboard() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full md:w-1/4 px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full md:w-1/4 px-3 py-2 border rounded-lg shadow-sm 
+             focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="ALL">All Status</option>
-              <option value="Accepted">Accepted</option>
-              <option value="Offered">Offered</option>
-              <option value="Created">Created</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Verified">Verified</option>
-              <option value="Submitted">Submitted</option>
+              <option
+                value="ALL"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                All Status
+              </option>
+              <option
+                value="Accepted"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Accepted
+              </option>
+              <option
+                value="Offered"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Offered
+              </option>
+              <option
+                value="Created"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Created
+              </option>
+              <option
+                value="Rejected"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Rejected
+              </option>
+              <option
+                value="Verified"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Verified
+              </option>
+              <option
+                value="Submitted"
+                className="hover:bg-blue-500 hover:text-white"
+              >
+                Submitted
+              </option>
             </select>
           </div>
 
@@ -171,7 +207,7 @@ export default function EmployeeOnboardingDashboard() {
 /* Reusable Stat Card */
 function StatCard({ title, value, icon: Icon, color = "text-gray-700" }) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-4">
+    <div className="bg-white rounded-xl p-4 border border-black/20 shadow-sm flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Icon className={`h-6 w-6 ${color}`} />
       <div>
         <p className="text-sm text-gray-500">{title}</p>
