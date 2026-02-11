@@ -442,8 +442,8 @@ function ApprovalBadge({ status, approver,comments }) {
       {/* COMMENT LINE */}
       {comments && comments.trim() !== "" && (
 
-        <div className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}>
-          <span className="font-semibold text-red-900">Comments : </span> {comments}
+        <div className="text-lg">
+          <span className="font-semibold text-red-700">Comments : </span> {comments}
         </div>
         
       )}
