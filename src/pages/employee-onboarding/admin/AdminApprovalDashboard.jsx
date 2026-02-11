@@ -199,7 +199,7 @@ export default function AdminApprovalDashboard() {
 /* ---------- STAT CARD ---------- */
 function StatCard({ title, value, icon: Icon, color = "text-gray-700" }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+    <div className="bg-white rounded-xl p-4 border border-black/20 shadow-sm flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Icon className={`h-6 w-6 ${color}`} />
       <div>
         <p className="text-sm text-gray-500">{title}</p>
