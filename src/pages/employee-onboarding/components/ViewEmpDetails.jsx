@@ -44,6 +44,7 @@ export default function ViewEmpDetails() {
     designation: "",
     package: "",
     currency: "",
+    // cc_emails: "",
   });
 
   function toTitleCase(str) {
@@ -66,6 +67,12 @@ export default function ViewEmpDetails() {
       );
       setEmployee(res.data);
       setEditData(res.data);
+      // setEditData({
+      //   ...res.data,
+      //   cc_emails: Array.isArray(res.data.cc_emails)
+      //     ? res.data.cc_emails.join(", ")
+      //     : res.data.cc_emails || "",
+      // });
     } catch {
       showStatusToast("Failed to fetch employee details");
     } finally {
@@ -209,6 +216,8 @@ const canModifyOfferApprovalRequest = isPending;
     designation: editData.designation,
     package: editData.package,
     currency: editData.currency,
+    // cc_emails: Array.isArray(editData.cc_emails)      ? editData.cc_emails
+    //   : editData.cc_emails.split(",").map(email => email.trim()),
   };
     try {
       setUpdating(true);
@@ -377,6 +386,15 @@ const canModifyOfferApprovalRequest = isPending;
             label="CTC"
             value={`${employee.package} ${employee.currency}`}
           />
+          {/* <DetailCard
+            icon={<Mail />}
+            label="CC Emails"
+            value={
+              Array.isArray(employee?.cc_emails)
+                ? employee.cc_emails.join(", ")
+                : employee?.cc_emails || "—"
+            }
+          /> */}
         </div>
 
         <div className="flex gap-4 mt-10">
