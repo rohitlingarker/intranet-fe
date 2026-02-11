@@ -15,6 +15,7 @@ import {
   UserCheck,
   MoreVertical,
 } from "lucide-react";
+import { set } from "date-fns";
 
 /* ================= MAIN COMPONENT ================= */
 
@@ -49,11 +50,23 @@ export default function AdminOfferView() {
 
   /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
-    const res = await axios.get(`${BASE}/offer-approval/my-actions`, {
+    const res = await axios.get(`${BASE}/offer-approval/admin/my-actions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const found = res.data.find((i) => i.user_uuid === user_uuid);
-    setApproval(found || null);
+    if (!found) {
+      setApproval(null);
+      return;
+    }
+    const mapped= {
+      ...found,
+      action: found.action,
+      requested_by_name: found.requested_by_name,
+      comments: found.message || "",
+    };
+    setApproval(mapped);
+    console.log("Mapped Approval:", mapped);
+    // setApproval(found || null);
   };
 
   useEffect(() => {
@@ -80,7 +93,7 @@ export default function AdminOfferView() {
     }
 
     const previousAction = approval.action;
-    setApproval({ ...approval, action }); // optimistic UI
+    setApproval({ ...approval, action, comments: comment ?? approval.comments  }); // optimistic UI
     setActing(true);
     setError("");
 
@@ -118,7 +131,7 @@ export default function AdminOfferView() {
       setIsEditing(false);
       setShowMenu(false);
     } catch (e) {
-      setApproval({ ...approval, action: previousAction });
+      setApproval({ ...approval, action: previousAction, comments: approval.comments });
       const msg =
         e?.response?.data?.detail || "Unable to update approval status";
       setError(msg);
@@ -200,7 +213,8 @@ export default function AdminOfferView() {
             {approval && (
               <ApprovalBadge
                 status={approval.action}
-                approver={approval.requested_by_name}
+                approver={approval.requested_name}
+                comments={approval.comments}
               />
             )}
           </div>
@@ -223,6 +237,11 @@ export default function AdminOfferView() {
             icon={<IndianRupee />}
             label="CTC"
             value={`${offer.package} ${offer.currency}`}
+          />
+          <DetailCard
+            icon={<UserCheck/>}
+            label="Employee Type"
+            value={offer.employee_type}
           />
         </div>
 
@@ -312,19 +331,44 @@ function DetailCard({ icon, label, value }) {
   );
 }
 
-function ApprovalBadge({ status, approver }) {
+function ApprovalBadge({ status, approver,comments }) {
   const styles = {
     APPROVED: "bg-green-100 text-green-800 border-green-300",
     REJECTED: "bg-red-100 text-red-800 border-red-300",
     ON_HOLD: "bg-gray-100 text-gray-800 border-gray-300",
   };
 
+  // return (
+    
+  //   <div
+  //     className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
+  //   >
+  //     <span className="font-medium">{status}</span>
+  //     {approver && <span className="text-xs">• {approver}</span>}
+  //     {comments && (
+  //       <span className="text-xs ml-2">({approver.comments})</span>
+  //     )}
+  //   </div>
+  // );
   return (
-    <div
-      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
-    >
-      <span className="font-medium">{status}</span>
-      {approver && <span className="text-xs">• {approver}</span>}
+    <div className="mt-4 flex flex-col gap-2">
+      {/* STATUS LINE */}
+      <div
+        className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}
+      >
+        <span className="font-medium">{status}</span>
+        {approver && <span className="text-xs">• {approver}</span>}
+        
+      </div>
+
+      {/* COMMENT LINE */}
+      {comments && comments.trim() !== "" && (
+
+        <div className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}>
+          <span className="font-semibold text-red-900">Comments : </span> {comments}
+        </div>
+        
+      )}
     </div>
   );
 }
@@ -333,7 +377,7 @@ function ActionButton({ label, color, onClick, disabled }) {
   const colors = {
     green: "bg-green-700 hover:bg-green-800",
     red: "bg-red-700 hover:bg-red-800",
-    gray: "bg-gray-600 hover:bg-gray-700",
+    gray: "bg-gray-600 hover:bg-gray-800",
   };
 
   return (

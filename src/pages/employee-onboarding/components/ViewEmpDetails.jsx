@@ -13,6 +13,7 @@ import {
   BadgeCheck,
   Pencil,
   Wallet,
+  UserCheck,
 } from "lucide-react";
 import { set } from "date-fns";
 
@@ -42,6 +43,7 @@ export default function ViewEmpDetails() {
     country_code: "",
     contact_number: "",
     designation: "",
+    employee_type: "",
     package: "",
     currency: "",
     // cc_emails: "",
@@ -97,7 +99,16 @@ export default function ViewEmpDetails() {
       `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/status/${user_uuid}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    setApprovalHistory(Array.isArray(res.data) ? res.data : [res.data]);
+    // setApprovalHistory(Array.isArray(res.data) ? res.data : [res.data]);
+    const data = Array.isArray(res.data) ? res.data : [res.data];
+
+    const mapped = data.map((item) => ({
+      ...item,
+      comments: item.comments || item.message || "",
+      }));
+
+    setApprovalHistory(mapped);
+
   };
 
   useEffect(() => {
@@ -123,6 +134,7 @@ const canModifyOfferApprovalRequest = isPending;
   const effectiveApprover =
     employee?.approver_name ||
     approvalHistory?.[0]?.action_taker_name ||
+
     null;
 
   /* ---------------- SEND OFFER ---------------- */
@@ -214,6 +226,7 @@ const canModifyOfferApprovalRequest = isPending;
     country_code: editData.country_code,
     contact_number: editData.contact_number,
     designation: editData.designation,
+    employee_type: editData.employee_type,
     package: editData.package,
     currency: editData.currency,
     // cc_emails: Array.isArray(editData.cc_emails)      ? editData.cc_emails
@@ -272,6 +285,7 @@ const canModifyOfferApprovalRequest = isPending;
               <ApprovalStatusBadge
                 status={approvalStatus}
                 approver={effectiveApprover}
+                comments={approvalHistory?.[0]?.comments}
               />
             </div>
           </div>
@@ -386,6 +400,11 @@ const canModifyOfferApprovalRequest = isPending;
             label="CTC"
             value={`${employee.package} ${employee.currency}`}
           />
+          <DetailCard
+            icon={<UserCheck />}
+            label="Employee Type"
+            value={employee.employee_type}
+          />
           {/* <DetailCard
             icon={<Mail />}
             label="CC Emails"
@@ -488,7 +507,7 @@ function DetailCard({ icon, label, value }) {
   );
 }
 
-function ApprovalStatusBadge({ status, approver }) {
+function ApprovalStatusBadge({ status, approver, comments }) {
   const styles = {
     PENDING: "bg-yellow-100 text-yellow-800 border-yellow-300",
     APPROVED: "bg-green-100 text-green-800 border-green-300",
@@ -497,6 +516,7 @@ function ApprovalStatusBadge({ status, approver }) {
   };
 
   return (
+    <div className="flex mt-3 flex-col gap-2">
     <div
       className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${
         styles[status] || "bg-gray-100"
@@ -506,6 +526,19 @@ function ApprovalStatusBadge({ status, approver }) {
         {status === "PENDING" ? "Approval Pending" : status}
       </span>
       {approver && <span className="text-xs opacity-80">• {approver}</span>}
+    </div>  
+    {/* COMMENTS BADGE */}
+      {comments && comments.trim() !== "" && (
+        <div className="text-lg"
+          // className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${
+          //   styles[status] || "bg-gray-100"
+          // }`}
+        >
+          <span className="font-semibold text-red-700">Comments : </span>
+          {comments}
+        </div>
+      )}
     </div>
+
   );
 }
