@@ -1,4 +1,4 @@
-import { MapPin, Briefcase, Calendar, Star, ArrowRight } from "lucide-react"
+import { MapPin, Briefcase, Calendar, Star, ArrowRight, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -149,6 +149,12 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
                 {resource.role}
               </SheetDescription>
             </div>
+            <button
+              className="ml-auto h-7 w-7 flex items-center justify-center rounded-md border shadow-sm bg-background hover:bg-muted"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </SheetHeader>
 
@@ -184,7 +190,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
                 className={cn(
                   "h-full rounded-full transition-all",
                   resource.currentAllocation > 70 ? "bg-status-allocated" :
-                  resource.currentAllocation > 20 ? "bg-status-partial" : "bg-status-available"
+                    resource.currentAllocation > 20 ? "bg-status-partial" : "bg-status-available"
                 )}
                 style={{ width: `${resource.currentAllocation}%` }}
               />

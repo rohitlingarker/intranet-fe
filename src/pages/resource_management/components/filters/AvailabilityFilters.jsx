@@ -106,6 +106,7 @@ function SearchableDropdown({ label, value, options, onChange, placeholder }) {
           }}
           className="h-8 text-xs pr-8"
           placeholder={placeholder}
+          onClick={() => setIsOpen(true)}
         />
         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
       </div>
@@ -157,7 +158,7 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
         variant="outline"
         size="sm"
         onClick={onToggleCollapse}
-        className="flex items-center gap-2 bg-transparent"
+        className="flex items-center gap-2 bg-background border shadow-sm"
       >
         <Filter className="h-4 w-4" />
         Filters
@@ -182,25 +183,23 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {hasActiveFilters(filters) && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-muted-foreground"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground"
               onClick={onReset}
             >
               Clear
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+          <button
+            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             onClick={onToggleCollapse}
           >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -223,15 +222,15 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Experience: {filters.experienceRange[0]}-{filters.experienceRange[1]} yrs
+            Experience: {filters.experienceRange[0]}+ yrs
           </label>
           <Slider
-            value={filters.experienceRange}
+            value={[filters.experienceRange[0]]}
             min={0}
             max={15}
             step={1}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, experienceRange: value })
+              onFiltersChange({ ...filters, experienceRange: [value[0], 15] })
             }
             className="mt-2"
           />
@@ -239,15 +238,15 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Allocation: {filters.allocationRange[0]}-{filters.allocationRange[1]}%
+            Allocation: {filters.allocationRange[0]}+ %
           </label>
           <Slider
-            value={filters.allocationRange}
+            value={[filters.allocationRange[0]]}
             min={0}
             max={100}
             step={5}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, allocationRange: value })
+              onFiltersChange({ ...filters, allocationRange: [value[0], 100] })
             }
             className="mt-2"
           />

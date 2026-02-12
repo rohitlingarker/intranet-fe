@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 
 import {
   BrowserRouter as Router,
@@ -29,7 +29,7 @@ import AssetList from "./pages/resource_management/assests/AssetList.jsx";
 import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
 import RMSProjectList from "./pages/resource_management/pages/project/RMSProjectList.jsx";
 import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
-import WorkforceAvailability from './pages/resource_management/pages/workforce/WorkforceAvailability.jsx';
+import WorkforceAvailability from "./pages/resource_management/pages/workforce/WorkforceAvailability.jsx";
 
 // Timesheets
 
@@ -81,7 +81,7 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
+// import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
@@ -128,9 +128,6 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
-
-
-
 
 // function App() {
 //   return (
@@ -395,10 +392,7 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr-configuration/education/mapping"
             element={<CountryEducationMapping />}
           />
-          <Route
-            path="/employee-onboarding/admin/my-approvals"
-            element={<AdminApprovalActions />}
-          />
+          
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
             element={<AdminApprovalDashboard />}
@@ -671,19 +665,16 @@ const AppRoutes = () => {
               />
             }
           />
-
           {/* Resource Management */}
-          <Route 
+          <Route
             path="/resource-management"
             element={
-              <ProtectedRoute
-                allowedRoles={["Admin", "RESOURCE-MANAGER"]} 
-              >
+              <ProtectedRoute allowedRoles={["Admin", "RESOURCE-MANAGER"]}>
                 <AdminPannel />
               </ProtectedRoute>
             }
           />
-          <Route 
+          <Route
             path="/resource-management/client-details/:clientId"
             element={
               <ProtectedRoute
@@ -693,7 +684,7 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-          <Route 
+          <Route
             path="/assets/:clientId/:assetId"
             element={
               <ProtectedRoute
@@ -703,7 +694,7 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-          <Route 
+          <Route
             path="/manage-assets/:clientId"
             element={
               <ProtectedRoute
@@ -713,12 +704,18 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/resource-management/projects" element={<RMSProjectList />} />
-          <Route path="/resource-management/projects/:projectId" element={<RMSProjectDetails />} />
-          <Route 
-        path="/resource-management/workforce-availability" 
-        element={<WorkforceAvailability />} 
-      />
+          <Route
+            path="/resource-management/projects"
+            element={<RMSProjectList />}
+          />
+          <Route
+            path="/resource-management/projects/:projectId"
+            element={<RMSProjectDetails />}
+          />
+          <Route
+            path="/resource-management/workforce-availability"
+            element={<WorkforceAvailability />}
+          />
         </Route>
       </Routes>
       <SaveLastPath />

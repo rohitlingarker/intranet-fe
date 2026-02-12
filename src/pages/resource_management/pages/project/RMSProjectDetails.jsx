@@ -1,13 +1,12 @@
 // src/pages/resource_management/projects/ProjectDetails.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjects } from "../../services/projectService";
 import ResourceList from "./RMSProjectList";
-// import { projectService } from "../projects/projectService";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
-import EscalationForm from "../../models/client_configuration/forms/EscalationForm";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm";import LoadingSpinner from "../../../../components/LoadingSpinner";
+import DemandModal from "../../models/DemandModal";
 import { CheckSquare, Square } from "lucide-react";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
@@ -22,7 +21,8 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { getProjectById } from "../../services/projectService";
+import { getProjectById, checkDemandCreation } from "../../services/projectService";
+import { toast } from "react-toastify";
 
 const RMSProjectDetails = () => {
   const { projectId } = useParams();
@@ -39,6 +39,9 @@ const RMSProjectDetails = () => {
   const [overlaps, setOverlaps] = useState([]);
   const [loadingOverlaps, setLoadingOverlaps] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingDemand, setLoadingDemand] = useState(false);
+  const [demandResponse, setDemandResponse] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [openConfigModal, setOpenConfigModal] = useState(false);
   const [configType, setConfigType] = useState(null); // "sla" | "compliance" | "escalation"
 
@@ -492,13 +495,28 @@ const RMSProjectDetails = () => {
       setProject(res.data);
     } catch (err) {
       console.error("Failed to fetch project details", err);
+      toast.error(err.response?.data?.message || "Failed to fetch project details.");
     } finally {
       setLoading(false);
     }
   };
 
+  const checkDemand = async () => {
+    setLoadingDemand(true);
+    try {
+      const res = await checkDemandCreation(projectId);
+      setDemandResponse(res);
+    } catch (err) {
+      console.error("Failed to check demand creation", err);
+      toast.error(err.response?.data?.message || "Failed to check demand creation.");
+    } finally {
+      setLoadingDemand(false);
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
+    checkDemand();
   }, [projectId]);
 
   useEffect(() => {
@@ -545,7 +563,7 @@ const RMSProjectDetails = () => {
   };
 
   if (loading)
-    return <div className="p-10 text-center">Loading Details...</div>;
+    return <div className="p-10 text-center"><LoadingSpinner text="Loading..."/></div>;
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -554,7 +572,9 @@ const RMSProjectDetails = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Back */}
       <button
+
         onClick={() => navigate(-1)}
+
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
@@ -574,18 +594,31 @@ const RMSProjectDetails = () => {
                 }`}
               > */}
               <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  project.projectStatus === "ACTIVE"
+                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
-                }`}
+                  }`}
               >
                 {project.projectStatus}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
+
+              {project.client?.client_name} • Project ID:{" "}
+              {project.pmsProjectId}
+
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
+          </div>
+          <div>
+            <button 
+              title={!demandResponse?.create ? demandResponse?.reason : ""} 
+              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`} 
+              disabled={loadingDemand || !demandResponse?.create} 
+              onClick={() => setModalOpen(true)}
+            >
+              Create Demand
+            </button>
           </div>
         </div>
 
@@ -603,9 +636,8 @@ const RMSProjectDetails = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${
-                activeTab === tab ? "text-[#263383]" : "text-gray-500"
-              }`}
+              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
+                }`}
             >
               {tab}
               {tab === "overlaps" && overlaps.length > 0 && (
@@ -634,8 +666,17 @@ const RMSProjectDetails = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
+
                     Project Manager ID
+
                   </label>
+                  <div className="flex items-center gap-2 text-gray-800 font-medium">
+                    <Users className="h-4 w-4 text-gray-400" />
+
+                    {project.projectManagerId}
+
+                    Project Manager ID
+                  </div>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <Users className="h-4 w-4 text-gray-400" />
 
@@ -649,11 +690,10 @@ const RMSProjectDetails = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
-                      className={`h-4 w-4 ${
-                        project.riskLevel === "HIGH"
+                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
                           ? "text-red-500"
                           : "text-green-500"
-                      }`}
+                        }`}
                     />
                     {project.riskLevel}
                   </div>
@@ -1338,119 +1378,14 @@ const RMSProjectDetails = () => {
 
             {/* Escalation Form */}
             {configType === "escalation" && (
-              <>
-                {!inheritMode ? (
-                  <div className="space-y-6">
-                    <EscalationForm
-                      formData={formData}
-                      setFormData={setFormData}
-                    />
-
-                    <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100">
-                      <button
-                        type="button"
-                        onClick={handleEscalationInheritClick}
-                        className="text-[#263383] font-semibold hover:underline text-sm"
-                      >
-                        ← Inherit from Client Defaults
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleEscalationManualSave}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90 shadow-sm"
-                      >
-                        Save Escalation Configuration
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600 mb-2">
-                      Select escalation contacts to map:
-                    </p>
-
-                    <div className="max-h-60 overflow-y-auto border rounded-md">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-600">
-                          <tr>
-                            <th className="p-3 w-10">Select</th>
-                            <th className="p-3">Level</th>
-                            <th className="p-3">Name</th>
-                            <th className="p-3">Role</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {clientEscalations.map((contact) => (
-                            <tr
-                              key={contact.contactId}
-                              className={`hover:bg-gray-50 ${
-                                contact.isAlreadyMapped ? "bg-gray-50/50" : ""
-                              }`}
-                            >
-                              <td className="p-3">
-                                <input
-                                  type="checkbox"
-                                  disabled={contact.isAlreadyMapped}
-                                  checked={selectedClientEscalations.includes(
-                                    contact.contactId,
-                                  )}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedClientEscalations([
-                                        ...selectedClientEscalations,
-                                        contact.contactId,
-                                      ]);
-                                    } else {
-                                      setSelectedClientEscalations(
-                                        selectedClientEscalations.filter(
-                                          (id) => id !== contact.contactId,
-                                        ),
-                                      );
-                                    }
-                                  }}
-                                />
-                              </td>
-
-                              <td className="p-3">
-                                L{contact.escalationLevel}
-                              </td>
-
-                              <td className="p-3 font-medium text-gray-700">
-                                {contact.contactName}
-                              </td>
-
-                              <td className="p-3 text-gray-500">
-                                {contact.contactRole}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                      <button
-                        onClick={() => setInheritMode(false)}
-                        className="px-4 py-2 text-gray-500 text-sm"
-                      >
-                        Back to Manual
-                      </button>
-
-                      <button
-                        onClick={saveInheritedEscalations}
-                        disabled={selectedClientEscalations.length === 0}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300"
-                      >
-                        Map to Project
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
+              <EscalationForm formData={formData} setFormData={setFormData} />
             )}
           </div>
         </div>
+      )}
+
+      {modalOpen && (
+        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)}/>
       )}
     </div>
   );
