@@ -49,22 +49,6 @@ const EscalationForm = ({ formData, setFormData }) => {
       {/* Role */}
       {/* 🔽 ADD ROLE DROPDOWN HERE */}
       <div>
-<<<<<<< HEAD
-        <label className="text-sm font-medium">Contact Role</label>
-        <select
-          value={formData.contactRole || ""}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, contactRole: e.target.value }))
-          }
-          className="w-full border rounded px-3 py-2"
-        >
-          <option value="">Select Role</option>
-          {ESCALATION_ROLES.map((role) => (
-            <option key={role} value={role}>
-              {role.replaceAll("_", " ")}
-            </option>
-          ))}
-=======
         <label className="text-sm font-medium text-gray-700">
           Contact Role <span className="text-red-500">*</span>
         </label>
@@ -80,7 +64,6 @@ const EscalationForm = ({ formData, setFormData }) => {
           <option value="PROJECT_MANAGER">Project Manager</option>
           <option value="ACCOUNT_MANAGER">Account Manager</option>
           <option value="TECHNICAL_LEAD">Technical Lead</option>
->>>>>>> 9777411f33229b32c8bb1e5b1bb6d0dcbe188d7c
         </select>
       </div>
 
