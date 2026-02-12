@@ -48,6 +48,54 @@ export const getProjectById = async (projectId) => {
   }
 };
 
+export const checkDemandCreation = async (projectId) => {
+  try {
+    const res = await axios.get(
+    `${BASE_URL}/api/projects/check-demand-creation/${projectId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const createDemand = async (demandData) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/demand/create` ,
+      demandData,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const statusUpdate = async (readinessData) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/api/projects/readiness-status-update`, 
+      { readinessData },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getProjectEscalations = async (projectId) => {
   try {
     const res = await axios.get(

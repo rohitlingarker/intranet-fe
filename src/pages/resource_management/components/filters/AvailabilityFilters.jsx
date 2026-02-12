@@ -1,111 +1,81 @@
-import { useState, useRef, useEffect } from "react"
-import { Filter, X, ChevronDown, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Slider } from "@/components/ui/slider"
-import { Input } from "@/components/ui/input"
+import { useState, useRef, useEffect, use } from "react";
+import { Filter, X, ChevronDown, Check } from "lucide-react";
+import { toast } from "react-toastify";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 // import { defaultFilters } from "../../hooks/useAvailability" // Circular dependency risk if imported from hook file which imports service
 // Re-defining defaultFilters locally or importing from a safe place is better, but since we export it from here usually...
 // ensuring we don't break existing exports.
 // checking previous file content, defaultFilters was imported from hooks.
-import { defaultFilters } from "../../hooks/useAvailability"
-
-export { defaultFilters }
-
-const ROLES = [
-  "All Roles",
-  "Senior Frontend Engineer", "Backend Engineer", "DevOps Engineer",
-  "Full Stack Developer", "QA Lead", "Data Engineer", "UX Designer",
-  "Technical Lead", "Cloud Architect", "Mobile Developer",
-  "Product Designer", "ML Engineer", "Security Engineer", "SRE",
-  "Staff Engineer", "Platform Engineer",
-]
-
-const LOCATIONS = [
-  "All Locations",
-  "Bangalore", "New York", "London", "Toronto", "Singapore",
-  "Berlin", "San Francisco", "Tokyo", "Sydney", "Hyderabad",
-]
-
-const PROJECTS = [
-  "All Projects",
-  "Project Atlas", "Project Beacon", "Project Catalyst",
-  "Project Delta", "Project Echo", "Project Forge",
-  "Project Genesis", "Project Horizon", "Project Ion",
-]
-
-const EMPLOYMENT_TYPES = ["All Types", "Billable", "Bench", "Shadow"]
-
-function hasActiveFilters(filters) {
-  return (
-    filters.role !== "All Roles" ||
-    filters.location !== "All Locations" ||
-    filters.experienceRange[0] !== 0 ||
-    filters.experienceRange[1] !== 15 ||
-    filters.allocationRange[0] !== 0 ||
-    filters.allocationRange[1] !== 100 ||
-    filters.project !== "All Projects" ||
-    filters.employmentType !== "All Types"
-  )
-}
+import { defaultFilters } from "../../hooks/useAvailability";
+import { getWorkforceFilters } from "../../services/workforceService";
+export { defaultFilters };
 
 function SearchableDropdown({ label, value, options, onChange, placeholder }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [search, setSearch] = useState("")
-  const containerRef = useRef(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef(null);
 
   // Sync search with external value changes
   useEffect(() => {
-    setSearch(value)
-  }, [value])
+    setSearch(value);
+  }, [value]);
 
   // Handle click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false)
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
         // Revert search to selected value if closed without selection
-        setSearch(value)
+        setSearch(value);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [value])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [value]);
 
-  const filteredOptions = options.filter(opt =>
-    opt.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredOptions = options.filter((opt) =>
+    opt.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const handleSelect = (option) => {
-    onChange(option)
-    setSearch(option)
-    setIsOpen(false)
-  }
+    onChange(option);
+    setSearch(option);
+    setIsOpen(false);
+  };
 
   return (
     <div className="relative" ref={containerRef}>
-      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
+      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+        {label}
+      </label>
       <div className="relative">
         <Input
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value)
-            setIsOpen(true)
+            setSearch(e.target.value);
+            setIsOpen(true);
           }}
           onFocus={() => {
-            setIsOpen(true)
-            if (search === placeholder) setSearch("") // Optional clear on focus behavior
+            setIsOpen(true);
+            if (search === placeholder) setSearch(""); // Optional clear on focus behavior
           }}
           className="h-8 text-xs pr-8"
           placeholder={placeholder}
+          onClick={() => setIsOpen(true)}
         />
         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
       </div>
@@ -119,7 +89,8 @@ function SearchableDropdown({ label, value, options, onChange, placeholder }) {
                   key={option}
                   className={cn(
                     "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === option && "bg-accent/50 text-accent-foreground font-medium"
+                    value === option &&
+                      "bg-accent/50 text-accent-foreground font-medium",
                   )}
                   onClick={() => handleSelect(option)}
                 >
@@ -138,10 +109,16 @@ function SearchableDropdown({ label, value, options, onChange, placeholder }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onToggleCollapse }) {
+export function FilterPanel({
+  filters,
+  onFiltersChange,
+  onReset,
+  collapsed,
+  onToggleCollapse,
+}) {
   const activeCount = [
     filters.role !== "All Roles",
     filters.location !== "All Locations",
@@ -149,7 +126,55 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
     filters.allocationRange[0] !== 0 || filters.allocationRange[1] !== 100,
     filters.project !== "All Projects",
     filters.employmentType !== "All Types",
-  ].filter(Boolean).length
+  ].filter(Boolean).length;
+
+  const [loadingFilters, setLoadingFilters] = useState(false);
+  const [filtersRes, setFiltersRes] = useState({});
+  function hasActiveFilters(filters) {
+    return (
+      filters.role !== "All Roles" ||
+      filters.location !== "All Locations" ||
+      filters.experienceRange[0] !== 0 ||
+      filters.experienceRange[1] !== filtersRes.maxExperience ||
+      filters.allocationRange[0] !== 0 ||
+      filters.allocationRange[1] !== 100 ||
+      filters.project !== "All Projects" ||
+      filters.employmentType !== "All Types"
+    );
+  }
+
+  const EMPLOYMENT_TYPES = filtersRes.workforceCategory || [];
+  const LOCATIONS = filtersRes.location || [];
+  const ROLES = filtersRes.designation || [];
+  const PROJECTS = [
+    "All Projects",
+    "Project Atlas",
+    "Project Beacon",
+    "Project Catalyst",
+    "Project Delta",
+    "Project Echo",
+    "Project Forge",
+    "Project Genesis",
+    "Project Horizon",
+    "Project Ion",
+  ];
+
+  const workforceFilters = async () => {
+    setLoadingFilters(true);
+    try {
+      const res = await getWorkforceFilters();
+      setFiltersRes(res.data);
+    } catch (err) {
+      console.error("Failed to load filters", err);
+      toast.error(err.response?.data?.message || "Failed to load filters");
+    } finally {
+      setLoadingFilters(false);
+    }
+  };
+
+  useEffect(() => {
+    workforceFilters();
+  }, []);
 
   if (collapsed) {
     return (
@@ -157,7 +182,7 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
         variant="outline"
         size="sm"
         onClick={onToggleCollapse}
-        className="flex items-center gap-2 bg-transparent"
+        className="flex items-center gap-2 bg-background border shadow-sm"
       >
         <Filter className="h-4 w-4" />
         Filters
@@ -167,7 +192,7 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
           </Badge>
         )}
       </Button>
-    )
+    );
   }
 
   return (
@@ -175,32 +200,32 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-card-foreground">Filters</h3>
+          <h3 className="text-sm font-semibold text-card-foreground">
+            Filters
+          </h3>
           {activeCount > 0 && (
             <Badge className="bg-primary text-primary-foreground text-xs h-5 px-1.5">
               {activeCount}
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {hasActiveFilters(filters) && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-muted-foreground"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground"
               onClick={onReset}
             >
               Clear
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+          <button
+            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             onClick={onToggleCollapse}
           >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -223,15 +248,15 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Experience: {filters.experienceRange[0]}-{filters.experienceRange[1]} yrs
+            Experience: {filters.experienceRange[0]}+ yrs
           </label>
           <Slider
-            value={filters.experienceRange}
+            value={[filters.experienceRange[0]]}
             min={0}
             max={15}
             step={1}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, experienceRange: value })
+              onFiltersChange({ ...filters, experienceRange: [value[0], 15] })
             }
             className="mt-2"
           />
@@ -239,15 +264,15 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Allocation: {filters.allocationRange[0]}-{filters.allocationRange[1]}%
+            Allocation: {filters.allocationRange[0]}+ %
           </label>
           <Slider
-            value={filters.allocationRange}
+            value={[filters.allocationRange[0]]}
             min={0}
             max={100}
             step={5}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, allocationRange: value })
+              onFiltersChange({ ...filters, allocationRange: [value[0], 100] })
             }
             className="mt-2"
           />
@@ -266,9 +291,11 @@ export function FilterPanel({ filters, onFiltersChange, onReset, collapsed, onTo
           value={filters.employmentType}
           options={EMPLOYMENT_TYPES}
           placeholder="All Types"
-          onChange={(value) => onFiltersChange({ ...filters, employmentType: value })}
+          onChange={(value) =>
+            onFiltersChange({ ...filters, employmentType: value })
+          }
         />
       </div>
     </div>
-  )
+  );
 }

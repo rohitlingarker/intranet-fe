@@ -55,16 +55,40 @@ function getAggregateStatus(day, resourceIds) {
   return { available, partial, allocated, dominant }
 }
 
-export function AvailabilityCalendar({ filteredResources, onDayClick }) {
+export function AvailabilityCalendar({ filteredResources, onDayClick, selectedResourceId, onSelectResource }) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const [viewMode, setViewMode] = useState("aggregate")
-  const [selectedResource, setSelectedResource] = useState(
-    filteredResources[0]?.id || ""
+  // Initialize internal state with prop if available, or default to first resource
+  const [internalSelectedResource, setInternalSelectedResource] = useState(
+    selectedResourceId || filteredResources[0]?.id || ""
   )
+  const [selectedDate, setSelectedDate] = useState(null)
 
-  const calendarDays = useMemo(() => generateCalendarDays(year, month), [year, month])
+  // Sync internal state with prop changes
+  useMemo(() => {
+    if (selectedResourceId) {
+      setInternalSelectedResource(selectedResourceId)
+    }
+  }, [selectedResourceId])
+
+  const handleResourceSelect = (value) => {
+    setInternalSelectedResource(value)
+    if (onSelectResource) {
+      // Find the full resource object if needed, but the ID is usually enough for the parent to set state
+      const numId = filteredResources.find(r => r.id === value)
+      if (numId) onSelectResource(numId)
+    }
+  }
+
+  const handleDayClickInternal = (date, status) => {
+    setSelectedDate(date)
+    if (onDayClick) onDayClick(date, status)
+  }
+
+  // Pass filteredResources to the generator so the calendar reflects the sidebar filters
+  const calendarDays = useMemo(() => generateCalendarDays(year, month, filteredResources), [year, month, filteredResources])
   const filteredIds = useMemo(
     () => new Set(filteredResources.map((r) => r.id)),
     [filteredResources]
@@ -80,59 +104,64 @@ export function AvailabilityCalendar({ filteredResources, onDayClick }) {
 
   return (
     <div className="rounded-lg border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent" onClick={() => navigateMonth(-1)}>
-            <ChevronLeft className="h-4 w-4" />
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4">
+        {/* Left: Month Navigation */}
+        <div className="flex items-center gap-4 min-w-[280px]">
+          <Button variant="outline" size="icon" className="h-9 w-9 bg-white rounded-lg border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm" onClick={() => navigateMonth(-1)}>
+            <ChevronLeft className="h-4 w-4 text-slate-700" />
           </Button>
-          <h2 className="text-sm font-semibold text-card-foreground min-w-[140px] text-center">
+          <h2 className="text-lg font-bold text-slate-900 min-w-[140px] text-center font-serif tracking-tight">
             {MONTH_NAMES[month]} {year}
           </h2>
-          <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent" onClick={() => navigateMonth(1)}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-9 w-9 bg-white rounded-lg border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm" onClick={() => navigateMonth(1)}>
+            <ChevronRight className="h-4 w-4 text-slate-700" />
           </Button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="aggregate" className="text-xs h-7 gap-1.5 px-2.5">
+        {/* Right: View Toggles, Resource Selector (Reserved Space), and Legend */}
+        <div className="flex items-center gap-4">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
+            <TabsList className="h-9 bg-muted/50 p-1 rounded-lg">
+              <TabsTrigger value="aggregate" className="text-xs h-7 gap-1.5 px-3 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <Layers className="h-3.5 w-3.5" />
                 Team
               </TabsTrigger>
-              <TabsTrigger value="individual" className="text-xs h-7 gap-1.5 px-2.5">
+              <TabsTrigger value="individual" className="text-xs h-7 gap-1.5 px-3 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <User className="h-3.5 w-3.5" />
                 Individual
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {viewMode === "individual" && (
-            <Select value={selectedResource} onValueChange={setSelectedResource}>
-              <SelectTrigger className="h-8 w-[180px] text-xs">
-                <SelectValue placeholder="Select resource" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredResources.map((r) => (
-                  <SelectItem key={r.id} value={r.id} className="text-xs">
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          {/* Reserved space for Resource Selector dropdown */}
+          <div className="w-[200px] h-9 shrink-0 flex items-center">
+            {viewMode === "individual" && (
+              <Select value={internalSelectedResource} onValueChange={handleResourceSelect}>
+                <SelectTrigger className="w-full h-9 text-xs rounded-lg border-2 border-primary/20 bg-background focus:ring-0 focus:border-primary transition-colors animate-in fade-in zoom-in duration-200">
+                  <SelectValue placeholder="Select resource" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredResources.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-status-available" />
+          <div className="flex items-center gap-4 text-xs text-muted-foreground shrink-0 border-l pl-4">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-available" />
               Available
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-status-partial" />
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-partial" />
               Partial
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-status-allocated" />
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-allocated" />
               Allocated
             </span>
           </div>
@@ -163,6 +192,7 @@ export function AvailabilityCalendar({ filteredResources, onDayClick }) {
                 day.dayOfMonth === now.getDate() &&
                 month === now.getMonth() &&
                 year === now.getFullYear()
+              const isSelected = selectedDate === day.date
 
               if (viewMode === "aggregate") {
                 const agg = getAggregateStatus(day, filteredIds)
@@ -174,32 +204,36 @@ export function AvailabilityCalendar({ filteredResources, onDayClick }) {
                       <button
                         type="button"
                         className={cn(
-                          "aspect-square rounded-md border p-1 flex flex-col items-center justify-center gap-0.5 transition-all hover:shadow-sm",
-                          isWeekend && "opacity-50",
-                          isToday && "ring-2 ring-primary ring-offset-1",
-                          getStatusColorLight(agg.dominant)
+                          "aspect-square rounded-2xl border p-1.5 flex flex-col items-center justify-between transition-all hover:shadow-md group",
+                          isWeekend ? "bg-slate-50/50 border-slate-100 opacity-60" : "bg-rose-50/50 border-rose-100/50",
+                          isSelected ? "ring-2 ring-blue-500 ring-offset-1 z-10 bg-white" : ""
                         )}
-                        onClick={() => onDayClick(day.date, agg.dominant)}
+                        onClick={() => handleDayClickInternal(day.date, agg.dominant)}
                       >
                         <span className={cn(
-                          "text-xs font-medium",
-                          isToday ? "text-primary font-bold" : "text-card-foreground"
+                          "text-xs font-semibold pt-1",
+                          isToday ? "text-blue-600 font-bold" : "text-slate-600"
                         )}>
                           {day.dayOfMonth}
                         </span>
-                        {total > 0 && (
-                          <div className="flex gap-px">
-                            {agg.available > 0 && (
-                              <div className="h-1 rounded-full bg-status-available" style={{ width: `${Math.max(4, (agg.available / total) * 20)}px` }} />
-                            )}
-                            {agg.partial > 0 && (
-                              <div className="h-1 rounded-full bg-status-partial" style={{ width: `${Math.max(4, (agg.partial / total) * 20)}px` }} />
-                            )}
-                            {agg.allocated > 0 && (
-                              <div className="h-1 rounded-full bg-status-allocated" style={{ width: `${Math.max(4, (agg.allocated / total) * 20)}px` }} />
-                            )}
+
+                        <div className="flex gap-1.5 items-center pb-2">
+                          {/* Available (Green) */}
+                          <div className="flex items-center gap-0.5">
+                            <div className={cn("h-1 w-1 rounded-full shadow-sm", agg.available > 0 ? "bg-[#22c55e]" : "bg-slate-200")} />
+                            <div className={cn("h-1 w-3 rounded-full shadow-sm", agg.available > 0 ? "bg-[#22c55e]" : "bg-slate-100")} />
                           </div>
-                        )}
+                          {/* Partial (Yellow) */}
+                          <div className="flex items-center gap-0.5">
+                            <div className={cn("h-1 w-1 rounded-full shadow-sm", agg.partial > 0 ? "bg-[#eab308]" : "bg-slate-200")} />
+                            <div className={cn("h-1 w-3 rounded-full shadow-sm", agg.partial > 0 ? "bg-[#eab308]" : "bg-slate-100")} />
+                          </div>
+                          {/* Allocated (Red) */}
+                          <div className="flex items-center gap-0.5">
+                            <div className={cn("h-1 w-1 rounded-full shadow-sm", agg.allocated > 0 ? "bg-[#ef4444]" : "bg-slate-200")} />
+                            <div className={cn("h-1 w-3 rounded-full shadow-sm", agg.allocated > 0 ? "bg-[#ef4444]" : "bg-slate-100")} />
+                          </div>
+                        </div>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
@@ -213,7 +247,7 @@ export function AvailabilityCalendar({ filteredResources, onDayClick }) {
               }
 
               // Individual view
-              const resData = day.resources.find((r) => r.resourceId === selectedResource)
+              const resData = day.resources.find((r) => r.resourceId === internalSelectedResource)
               const status = resData?.status || "available"
               const allocation = resData?.allocation || 0
 
@@ -223,20 +257,19 @@ export function AvailabilityCalendar({ filteredResources, onDayClick }) {
                     <button
                       type="button"
                       className={cn(
-                        "aspect-square rounded-md border p-1 flex flex-col items-center justify-center gap-0.5 transition-all hover:shadow-sm",
-                        isWeekend && "opacity-50",
-                        isToday && "ring-2 ring-primary ring-offset-1",
-                        getStatusColorLight(status)
+                        "aspect-square rounded-2xl border p-1.5 flex flex-col items-center justify-between transition-all hover:shadow-md",
+                        isWeekend ? "bg-slate-50/50 border-slate-100 opacity-60" : "bg-rose-50/50 border-rose-100/50",
+                        isSelected ? "ring-2 ring-blue-500 ring-offset-1 z-10 bg-white" : ""
                       )}
-                      onClick={() => onDayClick(day.date, status)}
+                      onClick={() => handleDayClickInternal(day.date, status)}
                     >
                       <span className={cn(
-                        "text-xs font-medium",
-                        isToday ? "text-primary font-bold" : "text-card-foreground"
+                        "text-xs font-semibold pt-1",
+                        isToday ? "text-blue-600 font-bold" : "text-slate-600"
                       )}>
                         {day.dayOfMonth}
                       </span>
-                      <span className="text-[10px] tabular-nums font-medium text-muted-foreground">
+                      <span className="text-[10px] tabular-nums font-bold text-slate-500 pb-2">
                         {allocation}%
                       </span>
                     </button>

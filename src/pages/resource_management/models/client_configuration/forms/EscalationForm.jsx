@@ -49,6 +49,7 @@ const EscalationForm = ({ formData, setFormData }) => {
       {/* Role */}
       {/* 🔽 ADD ROLE DROPDOWN HERE */}
       <div>
+<<<<<<< HEAD
         <label className="text-sm font-medium">Contact Role</label>
         <select
           value={formData.contactRole || ""}
@@ -63,6 +64,23 @@ const EscalationForm = ({ formData, setFormData }) => {
               {role.replaceAll("_", " ")}
             </option>
           ))}
+=======
+        <label className="text-sm font-medium text-gray-700">
+          Contact Role <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="contactRole"
+          value={formData.contactRole || ""}
+          onChange={handleChange}
+          className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">Select level</option>
+          <option value="DELIVERY_HEAD">Delivery Head</option>
+          <option value="COMPLIANCE_OFFICER">Compliance Officer</option>
+          <option value="PROJECT_MANAGER">Project Manager</option>
+          <option value="ACCOUNT_MANAGER">Account Manager</option>
+          <option value="TECHNICAL_LEAD">Technical Lead</option>
+>>>>>>> 9777411f33229b32c8bb1e5b1bb6d0dcbe188d7c
         </select>
       </div>
 
@@ -103,9 +121,9 @@ const EscalationForm = ({ formData, setFormData }) => {
           className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">Select level</option>
-          <option value="1">Level 1</option>
-          <option value="2">Level 2</option>
-          <option value="3">Level 3</option>
+          <option value="Level-1">Level 1</option>
+          <option value="Level-2">Level 2</option>
+          <option value="Level-3">Level 3</option>
         </select>
       </div>
       {/* Active Flag */}

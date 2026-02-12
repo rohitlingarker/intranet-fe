@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Users, CheckCircle, XCircle, PauseCircle, Clock } from "lucide-react";
+import { Users, CheckCircle, XCircle, PauseCircle, Clock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -15,7 +15,7 @@ export default function AdminApprovalDashboard() {
   const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
 
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -28,6 +28,7 @@ export default function AdminApprovalDashboard() {
   /* ---------- FETCH DATA (ONE API) ---------- */
   useEffect(() => {
     const fetchApprovals = async () => {
+      setLoading(true);
       try {
         const res = await axios.get(
           `${BASE_URL}/offer-approval/my-actions`,
@@ -45,7 +46,7 @@ export default function AdminApprovalDashboard() {
     };
 
     fetchApprovals();
-  }, []);
+  }, [BASE_URL, token]);
 
   /* ---------- STATS ---------- */
   const totalRequests = data.length;
@@ -75,9 +76,9 @@ export default function AdminApprovalDashboard() {
     });
   }, [data, searchTerm, statusFilter]);
 
-  if (loading) {
-    return <div className="p-10 text-center">Loading admin approvals...</div>;
-  }
+  // if (loading) {
+  //   return <div className="p-10 text-center">Loading admin approvals...</div>;
+  // }
 
   return (
     <div className="p-6 space-y-6">
@@ -158,9 +159,22 @@ export default function AdminApprovalDashboard() {
           </thead>
 
           <tbody>
-            {filteredData.map((row) => (
-              <tr key={row.id} className="border-b">
-                <td className="px-4 py-3">
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="py-10 text-center">
+                  <Loader2 className="h-6 w-6 mx-auto animate-spin text-indigo-600" />
+                </td>
+              </tr>
+            ) : filteredData.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="py-10 text-center text-gray-500">
+                  No approval requests found
+                </td>
+              </tr>
+            ) : (
+              filteredData.map((row) => (
+                <tr key={row.id} className="border-b">
+                    <td className="px-4 py-3">
                   {row.first_name} {row.last_name}
                 </td>
                 <td className="px-4 py-3">{row.mail}</td>
@@ -179,15 +193,16 @@ export default function AdminApprovalDashboard() {
                   </span>
                 </td>
               </tr>
+              )
             ))}
 
-            {filteredData.length === 0 && (
+            {/* {! loading && filteredData.length === 0 && (
               <tr>
-                <td colSpan="5" className="text-center py-6 text-gray-500">
+                <td colSpan="6" className="text-center py-6 text-gray-500">
                   No approval requests found
                 </td>
               </tr>
-            )}
+            )} */}
           </tbody>
         </table>
       </div>
@@ -199,7 +214,7 @@ export default function AdminApprovalDashboard() {
 /* ---------- STAT CARD ---------- */
 function StatCard({ title, value, icon: Icon, color = "text-gray-700" }) {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-4">
+    <div className="bg-white rounded-xl p-4 border border-black/20 shadow-sm flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Icon className={`h-6 w-6 ${color}`} />
       <div>
         <p className="text-sm text-gray-500">{title}</p>

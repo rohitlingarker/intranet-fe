@@ -39,7 +39,7 @@ function seededRandom(seed) {
   return x - Math.floor(x)
 }
 
-export function generateCalendarDays(year, month) {
+export function generateCalendarDays(year, month, resources = RESOURCES) {
   const days = []
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
@@ -48,7 +48,7 @@ export function generateCalendarDays(year, month) {
     const dayOfWeek = date.getDay()
     const dateStr = date.toISOString().split("T")[0]
 
-    const resourceAllocations = RESOURCES.map((r) => {
+    const resourceAllocations = resources.map((r) => {
       // Compute real allocation from timeline blocks for this date
       let totalAlloc = 0
       let activeProject = r.currentProject
