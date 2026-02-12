@@ -120,7 +120,7 @@ export default function WorkforceAvailability() {
                     />
                   </div>
                 </TabsContent>
-
+ 
                 <TabsContent value="table" className="mt-0">
                   <ResourceTable
                     resources={filteredResources}

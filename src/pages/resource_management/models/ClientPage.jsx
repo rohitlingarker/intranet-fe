@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getProjectsByClient } from "../services/clientservice";
+import { getProjectSLA } from "../services/clientservice";
+import { getProjectCompliance } from "../services/clientservice";
+import { getProjectEscalations } from "../services/clientservice";
+import Pagination from "../../../components/Pagination/pagination";
+import { getAssetsByClient } from "../services/clientservice";
+import { getAssetsByProjectId } from "../services/clientservice";
+
 import {
   ArrowLeft,
   Building2,
@@ -24,70 +32,14 @@ import CreateClient from "./CreateClient";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
 import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
-// Added getClientPageData to imports
-import { 
-  getClientById, 
-  deleteClient, 
+import {
+  getClientById,
+  deleteClient,
   getClientPageData,
   createClientSLA,
   createClientCompliance,
   createClientEscalation,
 } from "../services/clientservice";
-
-// --- Mock Data: Client with Multiple Projects ---
-// Note: Keeping this for the project list/details which are not yet dynamic in the prompt request
-const MOCK_CLIENT_DATA = {
-  projects: [
-    {
-      id: 101,
-      name: "Global SAP Migration",
-      status: "In Progress",
-      type: "Fixed Cost",
-      manager: "Sarah Jenkins",
-      health: "On Track",
-      description:
-        "Migration of legacy ERP systems to SAP S/4HANA across 4 regions.",
-      hasSLA: true,
-      hasCompliance: true,
-      hasAssets: false,
-      hasEscalation: true,
-      slaData: { uptime: "99.9%", responseTime: "1hr", coverage: "24/7" },
-      assetsData: [],
-    },
-    {
-      id: 102,
-      name: "Q3 Staff Augmentation",
-      status: "Active",
-      type: "T&M",
-      manager: "Mike Ross",
-      health: "At Risk",
-      description:
-        "Providing 5 senior React developers for internal dashboard tools.",
-      hasSLA: false,
-      hasCompliance: true,
-      hasAssets: true,
-      hasEscalation: true,
-      assetsData: [
-        { name: "MacBook Pro M2", serial: "FVX992", assignedTo: "Dev 1" },
-        { name: "MacBook Pro M2", serial: "FVX993", assignedTo: "Dev 2" },
-      ],
-    },
-    {
-      id: 103,
-      name: "Security Audit 2025",
-      status: "Planning",
-      type: "Consulting",
-      manager: "David Kim",
-      health: "On Track",
-      description:
-        "Annual external security assessment and penetration testing.",
-      hasSLA: false,
-      hasCompliance: true,
-      hasAssets: false,
-      hasEscalation: false,
-    },
-  ],
-};
 
 /* ---------------- SUB COMPONENTS ---------------- */
 
@@ -98,119 +50,101 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
-const ProjectSLA = ({ data }) => (
-  <div className="animate-fadeIn">
-    <SectionHeader
-      title="Service Level Agreement"
-      subtitle="Contractual obligations and metrics."
-    />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-        <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">
-          Uptime Guarantee
-        </p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">
-          {data?.uptime || "N/A"}
-        </p>
-      </div>
-      <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-        <p className="text-xs font-bold text-purple-600 uppercase tracking-wide">
-          Response Time
-        </p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">
-          {data?.responseTime || "N/A"}
-        </p>
-      </div>
-      <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-        <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide">
-          Support Coverage
-        </p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">
-          {data?.coverage || "N/A"}
-        </p>
-      </div>
-    </div>
-    <div className="bg-white border rounded-lg overflow-hidden">
-      <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-        <h4 className="font-medium text-gray-900">Recent Breach Incidents</h4>
-        <button className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-          Download Report
-        </button>
-      </div>
-      <div className="p-8 text-center text-gray-500 text-sm italic">
-        No SLA breaches recorded in the last 90 days.
-      </div>
-    </div>
-  </div>
-);
+const ProjectSLA = ({ data, loading }) => {
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading SLA...</div>;
+  }
 
-const ProjectCompliance = () => (
-  <div className="animate-fadeIn">
-    <SectionHeader
-      title="Compliance & Security"
-      subtitle="Required certifications and audit status."
-    />
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {["GDPR Data Privacy", "SOC2 Type II", "ISO 27001", "HIPAA"].map(
-        (item, idx) => (
-          <div
-            key={idx}
-            className="flex items-center justify-between p-4 border rounded-lg bg-white hover:shadow-sm transition"
-          >
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-green-600" />
-              <span className="font-medium text-gray-900">{item}</span>
-            </div>
-            <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full">
-              COMPLIANT
-            </span>
-          </div>
-        )
-      )}
-    </div>
-  </div>
-);
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-sm text-gray-500">
+        No SLA configuration found for this project.
+      </div>
+    );
+  }
 
-const ProjectAssets = ({ assets }) => (
-  <div className="animate-fadeIn">
-    <SectionHeader
-      title="Assigned Assets"
-      subtitle="Hardware and licenses allocated to this project."
-    />
-    {assets && assets.length > 0 ? (
-      <div className="overflow-hidden border rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+  // ===============================
+  // COLOR HELPERS
+  // ===============================
+
+  const getSlaTypeColor = (type) => {
+    if (type === "NEW_DEMAND") return "bg-blue-100 text-blue-700";
+
+    if (type === "REPLACEMENT") return "bg-purple-100 text-purple-700";
+
+    return "bg-gray-100 text-gray-700";
+  };
+
+  const getWarningColor = (days) => {
+    if (days <= 2) return "bg-red-100 text-red-700";
+    if (days <= 4) return "bg-amber-100 text-amber-700";
+    return "bg-green-100 text-green-700";
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Service Level Agreement"
+        subtitle="Contractual obligations and metrics."
+      />
+
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {/* ===============================
+            HEADER (GRADIENT)
+        =============================== */}
+        <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b">
+          <p className="text-sm font-semibold text-gray-700">SLA Definitions</p>
+        </div>
+
+        <table className="w-full text-sm">
+          {/* TABLE HEADER */}
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Asset Name
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">
+                SLA Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Serial / ID
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">
+                Duration
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Assigned User
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">
+                Warning Threshold
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {assets.map((asset, idx) => (
-              <tr key={idx}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {asset.name}
+
+          {/* TABLE BODY */}
+          <tbody className="divide-y divide-gray-100">
+            {data.map((sla) => (
+              <tr
+                key={sla.projectSlaId}
+                className="hover:bg-gray-50 transition"
+              >
+                {/* SLA TYPE */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full ${getSlaTypeColor(
+                      sla.slaType,
+                    )}`}
+                  >
+                    {sla.slaType.replaceAll("_", " ")}
+                  </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                  {asset.serial}
+
+                {/* DURATION */}
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-700">
+                    {sla.slaDurationDays} days
+                  </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {asset.assignedTo}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    Deployed
+
+                {/* WARNING */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full ${getWarningColor(
+                      sla.warningThresholdDays,
+                    )}`}
+                  >
+                    {sla.warningThresholdDays} days
                   </span>
                 </td>
               </tr>
@@ -218,60 +152,311 @@ const ProjectAssets = ({ assets }) => (
           </tbody>
         </table>
       </div>
-    ) : (
+    </div>
+  );
+};
+
+const ProjectCompliance = ({ data, loading }) => {
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading compliance...</div>;
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-sm text-gray-500">
+        No compliance requirements configured for this project.
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-fadeIn space-y-4">
+      <SectionHeader
+        title="Compliance & Security"
+        subtitle="Required certifications and audit status."
+      />
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full text-sm text-left">
+          {/* HEADER */}
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Requirement
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Type
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Mandatory
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Source
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Status
+              </th>
+            </tr>
+          </thead>
+
+          {/* BODY */}
+          <tbody className="divide-y divide-gray-100">
+            {data.map((item) => (
+              <tr key={item.projectComplianceId} className="hover:bg-gray-50">
+                {/* REQUIREMENT */}
+                <td className="px-6 py-4 font-semibold text-gray-900">
+                  {item.requirementName}
+                </td>
+
+                {/* TYPE */}
+                <td className="px-6 py-4 text-gray-700">
+                  {item.requirementType}
+                </td>
+
+                {/* MANDATORY */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.mandatoryFlag
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
+                      }
+                    `}
+                  >
+                    {item.mandatoryFlag ? "Mandatory" : "Optional"}
+                  </span>
+                </td>
+
+                {/* SOURCE */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.isInherited
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-purple-100 text-purple-700"
+                      }
+                    `}
+                  >
+                    {item.isInherited ? "Inherited" : "Project"}
+                  </span>
+                </td>
+
+                {/* STATUS */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.activeFlag
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }
+                    `}
+                  >
+                    {item.activeFlag ? "Active" : "Inactive"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const ProjectAssets = ({ assets, loading }) => {
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading assets...</div>;
+  }
+
+  if (!assets || assets.length === 0) {
+    return (
       <div className="text-center p-6 border-2 border-dashed rounded-lg text-gray-400">
         No assets assigned
       </div>
-    )}
-  </div>
-);
+    );
+  }
 
-const ProjectEscalation = () => (
-  <div className="animate-fadeIn">
-    <SectionHeader
-      title="Escalation Matrix"
-      subtitle="Emergency contacts for critical issues."
-    />
+  return (
     <div className="space-y-4">
-      {/* Level 1 */}
-      <div className="flex items-start gap-4 p-4 border-l-4 border-blue-500 bg-white rounded-r-lg shadow-sm">
-        <div className="p-2 bg-blue-50 rounded-full text-blue-600 font-bold text-lg w-10 h-10 flex items-center justify-center">
-          1
-        </div>
-        <div className="flex-1">
-          <h4 className="text-sm font-bold text-gray-900 uppercase">
-            Level 1 - Project Manager
-          </h4>
-          <p className="text-lg font-medium text-gray-800 mt-1">
-            Michael Scott
-          </p>
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-            <span>michael.s@acme.com</span>
-            <span>•</span>
-            <span>+1 (555) 019-2834</span>
-          </div>
-        </div>
-      </div>
-      {/* Level 2 */}
-      <div className="flex items-start gap-4 p-4 border-l-4 border-orange-500 bg-white rounded-r-lg shadow-sm">
-        <div className="p-2 bg-orange-50 rounded-full text-orange-600 font-bold text-lg w-10 h-10 flex items-center justify-center">
-          2
-        </div>
-        <div className="flex-1">
-          <h4 className="text-sm font-bold text-gray-900 uppercase">
-            Level 2 - Delivery Head
-          </h4>
-          <p className="text-lg font-medium text-gray-800 mt-1">Jan Levinson</p>
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-            <span>jan.l@acme.com</span>
-            <span>•</span>
-            <span>+1 (555) 998-2122</span>
-          </div>
-        </div>
+      <SectionHeader
+        title="Assigned Assets"
+        subtitle="Hardware and licenses allocated to this project."
+      />
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full text-sm text-left">
+          {/* HEADER */}
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider">
+                Asset Name
+              </th>
+              <th className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider">
+                Serial / ID
+              </th>
+              <th className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider">
+                Assigned User
+              </th>
+              <th className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+            </tr>
+          </thead>
+
+          {/* BODY */}
+          <tbody className="divide-y divide-gray-100">
+            {assets.map((asset, index) => (
+              <tr key={index} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 font-medium text-gray-900">
+                  {asset.asset?.assetName || asset.assetName || "—"}
+                </td>
+
+                <td className="px-6 py-4 font-mono text-gray-600">
+                  {asset.serialNumber || asset.serial || "—"}
+                </td>
+
+                <td className="px-6 py-4 text-gray-700">
+                  {asset.assignedBy || asset.assignedTo || "—"}
+                </td>
+
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        (asset.asset?.status || asset.status) === "ACTIVE"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                  >
+                    {asset.asset?.status || asset.status || "UNKNOWN"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+const ProjectEscalation = ({ data, loading }) => {
+  console.log("Escalation Data:", data);
+  if (loading) {
+    return (
+      <div className="text-sm text-gray-500">Loading escalation matrix...</div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-sm text-gray-500">
+        No escalation contacts configured for this project.
+      </div>
+    );
+  }
+
+  // ===============================
+  // ✅ Extract level number safely
+  // Handles LEVEL-1, LEVEL_1, Level 1 etc
+  // ===============================
+  const getLevelNumber = (level) => {
+    const match = String(level).match(/\d+/);
+    return match ? Number(match[0]) : 1;
+  };
+
+  // ===============================
+  // ✅ GROUP CONTACTS BY LEVEL
+  // ===============================
+  const grouped = data.reduce((acc, item) => {
+    const level = item.escalationLevel || "LEVEL-1";
+    const levelNum = getLevelNumber(level);
+
+    if (!acc[levelNum]) acc[levelNum] = [];
+    acc[levelNum].push(item);
+
+    return acc;
+  }, {});
+
+  // ===============================
+  // ✅ SORT LEVELS ASCENDING
+  // ===============================
+  const sortedLevels = Object.keys(grouped)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        title="Escalation Matrix"
+        subtitle="Emergency contacts for critical issues."
+      />
+
+      {sortedLevels.map((levelNumber) => (
+        <div key={levelNumber} className="space-y-4">
+          {/* ===============================
+              LEVEL HEADER
+          =============================== */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-600 text-white font-bold shadow-sm">
+              {levelNumber}
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900">
+              Escalation Level {levelNumber}
+            </h3>
+          </div>
+
+          {/* ===============================
+              CONTACT CARDS
+          =============================== */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {grouped[levelNumber].map((esc) => (
+              <div
+                key={esc.projectEscalationId || esc.id}
+                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition duration-200"
+              >
+                {/* ROLE */}
+                <p className="text-xs uppercase text-gray-500 font-semibold tracking-wide">
+                  {esc.contactRole?.replaceAll("_", " ") || "Role"}
+                </p>
+
+                {/* NAME */}
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {esc.contactName || "Unknown"}
+                </p>
+
+                {/* CONTACT DETAILS */}
+                <div className="mt-3 space-y-1 text-sm text-gray-600">
+                  {esc.email && <p>📧 {esc.email}</p>}
+
+                  {esc.phone && <p>📞 {esc.phone}</p>}
+                </div>
+
+                {/* TRIGGERS */}
+                {esc.triggers?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {esc.triggers.map((trigger, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-1 text-xs rounded-full bg-red-50 text-red-700 font-medium"
+                      >
+                        {trigger.replaceAll("_", " ")}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 /* ---------------- MAIN PAGE ---------------- */
 
@@ -283,6 +468,8 @@ const ClientPage = () => {
   const canManageAssets = permissions.includes("ASSETS_MANAGEMENT");
   const canEditProfile = permissions.includes("EDIT_CLIENT_PROFILE");
   const navigate = useNavigate();
+
+  // State declarations - ALL hooks inside component
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [openConfigModal, setOpenConfigModal] = useState(false);
@@ -294,22 +481,85 @@ const ClientPage = () => {
   const [openUpdateClient, setOpenUpdateClient] = useState(false);
   const [openDeleteClient, setOpenDeleteClient] = useState(false);
 
-  // New State for dynamic page data
+  // Projects state
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  const [clientAssets, setClientAssets] = useState([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  useEffect(() => {
+    const fetchAssetsByProject = async () => {
+      try {
+        setLoadingAssets(true);
+
+        const res = await getAssetsByProjectId(selectedProject?.pmsProjectId);
+
+        setClientAssets(res.data || []);
+      } catch (err) {
+        setClientAssets([]);
+      } finally {
+        setLoadingAssets(false);
+      }
+    };
+
+    if (selectedProject?.pmsProjectId) {
+      fetchAssetsByProject();
+    }
+  }, [selectedProject?.pmsProjectId]);
+
+  // ✅ ADD HERE — Pagination
+  const PROJECTS_PER_PAGE = 3;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Project SLA state
+  const [projectSLA, setProjectSLA] = useState(null);
+  const [loadingSLA, setLoadingSLA] = useState(false);
+
+  // Project Compliance state
+  const [projectCompliance, setProjectCompliance] = useState([]);
+  const [loadingCompliance, setLoadingCompliance] = useState(false);
+
+  // Project Escalations state
+  const [projectEscalations, setProjectEscalations] = useState([]);
+  const [loadingEscalations, setLoadingEscalations] = useState(false);
+
+  // Client stats state
   const [clientStats, setClientStats] = useState({
     totalProjects: 0,
     activeProjects: 0,
     totalSpend: 0,
   });
 
+  const getProjectId = (project) => project?.pmsProjectId;
+
+  // useEffect(() => {
+  //   const pid = getProjectId(selectedProject);
+  //   if (pid) fetchProjectSLA(pid);
+  // }, [selectedProject]);
+
+  // useEffect(() => {
+  //   const pid = getProjectId(selectedProject);
+  //   if (pid) fetchProjectCompliance(pid);
+  // }, [selectedProject]);
+
+  // useEffect(() => {
+  //   const pid = getProjectId(selectedProject);
+  //   if (pid) fetchProjectEscalations(pid);
+  // }, [selectedProject]);
+
+  // Helper function to normalize project ID
+  // const getProjectId = (project) => project?.projectId || project?.id;
+
   // Helper to format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
+  // Fetch functions
   const fetchClientDetails = async () => {
     setLoading(true);
     try {
@@ -330,7 +580,62 @@ const ClientPage = () => {
       }
     } catch (error) {
       console.error("Failed to fetch client stats", error);
-      // Optional: toast.error("Failed to load client statistics");
+    }
+  };
+
+  const fetchClientProjects = async () => {
+    try {
+      setLoadingProjects(true);
+
+      const res = await getProjectsByClient(clientId);
+
+      const projectList = res?.data || [];
+
+      setProjects(projectList);
+    } catch (error) {
+      console.error("Failed to fetch projects", error);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const fetchProjectSLA = async (projectId) => {
+    try {
+      setLoadingSLA(true);
+      const res = await getProjectSLA(projectId);
+      setProjectSLA(res.data || res);
+    } catch (error) {
+      console.error("Failed to fetch project SLA", error);
+      setProjectSLA(null);
+    } finally {
+      setLoadingSLA(false);
+    }
+  };
+
+  const fetchProjectCompliance = async (projectId) => {
+    try {
+      setLoadingCompliance(true);
+      const res = await getProjectCompliance(projectId);
+      setProjectCompliance(res.data || res || []);
+    } catch (error) {
+      console.error("Failed to fetch compliance", error);
+      setProjectCompliance([]);
+    } finally {
+      setLoadingCompliance(false);
+    }
+  };
+
+  const fetchProjectEscalations = async (projectId) => {
+    try {
+      setLoadingEscalations(true);
+      const res = await getProjectEscalations(projectId);
+      setProjectEscalations(res.data || res || []);
+    } catch (error) {
+      console.error("Failed to fetch escalations", error);
+      setProjectEscalations([]);
+    } finally {
+      setLoadingEscalations(false);
     }
   };
 
@@ -347,13 +652,6 @@ const ClientPage = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (clientId) {
-      fetchClientDetails();
-      fetchClientStats(); // Fetch the dynamic stats
-    }
-  }, [clientId]);
 
   const handleSLACreate = async (data) => {
     setLoading(true);
@@ -407,59 +705,109 @@ const ClientPage = () => {
     setOpenConfigModal(false);
   };
 
+  // useEffect hooks - ALL inside component
+
+  // Fetch client details and stats on mount
   useEffect(() => {
-    setSelectedProject(MOCK_CLIENT_DATA.projects[0]);
-    setActiveTab(MOCK_CLIENT_DATA.projects[0].hasSLA ? "sla" : "compliance");
-  }, []);
+    if (clientId) {
+      fetchClientDetails();
+      fetchClientStats();
+      fetchClientProjects();
+    }
+  }, [clientId]);
+
+  // Set default project when projects load
+  useEffect(() => {
+    if (paginatedProjects.length > 0) {
+      setSelectedProject(paginatedProjects[0]);
+      setActiveTab("sla");
+    }
+  }, [currentPage, projects]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [clientId]);
+
+  // Fetch project SLA when selected project changes
+  useEffect(() => {
+    const pid = getProjectId(selectedProject);
+
+    if (pid) {
+      fetchProjectSLA(pid);
+    } else {
+      setProjectSLA(null);
+    }
+  }, [selectedProject?.pmsProjectId, slaRefetchKey]);
+
+  // Fetch project compliance when selected project changes
+  useEffect(() => {
+    const pid = getProjectId(selectedProject);
+    if (pid) {
+      fetchProjectCompliance(pid);
+    }
+  }, [selectedProject]);
+
+  // Fetch project escalations when selected project changes
+  useEffect(() => {
+    const pid = getProjectId(selectedProject);
+    if (pid) {
+      fetchProjectEscalations(pid);
+    }
+  }, [selectedProject]);
+
+  // Tab icon helper
+  const ActivityIcon = CheckCircle2;
 
   // Determine available tabs for the selected project
   const getTabs = () => {
-    if (!selectedProject) return [];
-    const tabs = [];
-    if (selectedProject.hasSLA)
-      tabs.push({ id: "sla", label: "SLA & Metrics", icon: ActivityIcon });
-    if (selectedProject.hasCompliance)
-      tabs.push({ id: "compliance", label: "Compliance", icon: ShieldCheck });
-    if (selectedProject.hasAssets)
-      tabs.push({ id: "assets", label: "Assets", icon: Box });
-    if (selectedProject.hasEscalation)
-      tabs.push({ id: "escalation", label: "Escalation", icon: Users });
-    return tabs;
+    return [
+      { id: "sla", label: "SLA & Metrics", icon: ActivityIcon },
+      { id: "compliance", label: "Compliance", icon: ShieldCheck },
+      { id: "assets", label: "Assets", icon: Box },
+      { id: "escalation", label: "Escalation", icon: Users },
+    ];
   };
-
-  const ActivityIcon = CheckCircle2; // Just a helper for the array above
 
   // Dynamic KPI Data Construction
   const kpiData = [
     {
       label: "Active Projects",
-      value: clientStats.activeProjects, // Dynamic
+      value: clientStats.activeProjects,
       icon: FileText,
       color: "text-blue-600",
       bg: "bg-blue-100",
     },
     {
       label: "Total Spend",
-      value: formatCurrency(clientStats.totalSpend), // Dynamic
+      value: formatCurrency(clientStats.totalSpend),
       icon: Box,
       color: "text-emerald-600",
       bg: "bg-emerald-100",
     },
     {
       label: "Satisfaction",
-      value: "98%", // Static/Mock for now as per API response limitations
+      value: "98%",
       icon: Users,
       color: "text-purple-600",
       bg: "bg-purple-100",
     },
     {
       label: "Pending Issues",
-      value: "2", // Static/Mock for now as per API response limitations
+      value: "2",
       icon: AlertTriangle,
       color: "text-orange-600",
       bg: "bg-orange-100",
     },
   ];
+
+  const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE);
+
+  const paginatedProjects = projects.slice(
+    (currentPage - 1) * PROJECTS_PER_PAGE,
+    currentPage * PROJECTS_PER_PAGE,
+  );
+
+  const projectAssets = clientAssets;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -511,7 +859,6 @@ const ClientPage = () => {
               Total Projects
             </p>
             <p className="text-xl font-bold text-gray-900">
-              {/* Dynamic Total Projects */}
               {clientStats.totalProjects}
             </p>
           </div>
@@ -524,7 +871,7 @@ const ClientPage = () => {
         </div>
       </div>
 
-      {/* 2. Client KPI's */}
+      {/* Client KPI's */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10 mb-15">
         {kpiData.map((kpi, idx) => (
           <div
@@ -587,76 +934,94 @@ const ClientPage = () => {
         </div>
       )}
 
-      {/* <div className="border-t border-gray-300"></div> */}
-
       <div className="grid grid-cols-12 gap-8 mt-10">
-        {/* 2. LEFT SIDE: Project List (The Menu) */}
-        <div className="col-span-12 lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between">
+        {/* LEFT SIDE: Project List */}
+        <div className="col-span-12 lg:col-span-4 space-y-4 max-h-[75vh] flex flex-col">
+          <div className="flex flex-col gap-3 overflow-y-auto pr-2">
             <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
-            <button className="text-sm text-indigo-600 font-medium hover:underline">
-              + New Project
-            </button>
           </div>
 
+          {/* Project Cards */}
           <div className="flex flex-col gap-3">
-            {MOCK_CLIENT_DATA.projects.map((project) => (
-              <div
-                key={project.id}
-                onClick={() => {
-                  setSelectedProject(project);
-                  setActiveTab(project.hasSLA ? "sla" : "compliance"); // Reset tab logic
-                }}
-                className={`group cursor-pointer relative p-5 rounded-xl border transition-all duration-200 ${
-                  selectedProject?.id === project.id
-                    ? "bg-white border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                    : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3
-                    className={`font-semibold ${selectedProject?.id === project.id ? "text-indigo-900" : "text-gray-900"}`}
-                  >
-                    {project.name}
-                  </h3>
-                  {selectedProject?.id === project.id && (
-                    <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Status</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        project.status === "Active" ||
-                        project.status === "In Progress"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
+            {loadingProjects ? (
+              <div className="text-sm text-gray-400">Loading projects...</div>
+            ) : projects.length === 0 ? (
+              <div className="text-sm text-gray-400">No projects found</div>
+            ) : (
+              paginatedProjects.map((project) => (
+                <div
+                  key={project.pmsProjectId}
+                  onClick={() => {
+                    setSelectedProject(project);
+                    setActiveTab("sla");
+                  }}
+                  className={`group cursor-pointer relative p-5 rounded-xl border transition-all duration-200 ${
+                    getProjectId(selectedProject) === getProjectId(project)
+                      ? "bg-white border-indigo-600 ring-1 ring-indigo-600 shadow-md"
+                      : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3
+                      className={`font-semibold ${
+                        getProjectId(selectedProject) === getProjectId(project)
+                          ? "text-indigo-900"
+                          : "text-gray-900"
                       }`}
                     >
-                      {project.status}
-                    </span>
+                      {project.name}
+                    </h3>
+                    {getProjectId(selectedProject) ===
+                      getProjectId(project) && (
+                      <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                    )}
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Type</span>
-                    <span className="text-gray-900 font-medium">
-                      {project.type}
-                    </span>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-400 line-clamp-2">
-                      {project.description}
-                    </p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Status</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          project.projectStatus === "ACTIVE"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {project.projectStatus}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Location</span>
+                      <span className="text-gray-900 font-medium">
+                        {project.primaryLocation}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-400 line-clamp-2">
+                        Stage: {project.lifecycleStage}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
+
+          {/* ✅ PAGINATION GOES HERE — INSIDE LEFT COLUMN */}
+          {projects.length > PROJECTS_PER_PAGE && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((p) => p - 1)}
+              onNext={() => setCurrentPage((p) => p + 1)}
+            />
+          )}
         </div>
 
         {/* PROJECT DETAILS */}
-        <div className="col-span-8 bg-white border rounded-xl shadow-sm">
+        <div className="col-span-12 lg:col-span-8 bg-white border rounded-xl shadow-sm">
           {selectedProject ? (
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm min-h-[600px] flex flex-col">
               {/* Project Header */}
@@ -693,7 +1058,6 @@ const ClientPage = () => {
                     {tab.label}
                   </button>
                 ))}
-                {/* Fallback if no tabs */}
                 {getTabs().length === 0 && (
                   <div className="py-4 text-sm text-gray-400 italic">
                     No detailed configurations available
@@ -704,15 +1068,30 @@ const ClientPage = () => {
               {/* Tab Content Area */}
               <div className="p-8 flex-1 bg-white rounded-b-xl">
                 {activeTab === "sla" && (
-                  <ProjectSLA data={selectedProject.slaData} />
+                  <ProjectSLA data={projectSLA} loading={loadingSLA} />
                 )}
-                {activeTab === "compliance" && <ProjectCompliance />}
-                {activeTab === "assets" && (
-                  <ProjectAssets assets={selectedProject.assetsData} />
-                )}
-                {activeTab === "escalation" && <ProjectEscalation />}
 
-                {/* Fallback/Empty State for Tabs */}
+                {activeTab === "compliance" && (
+                  <ProjectCompliance
+                    data={projectCompliance}
+                    loading={loadingCompliance}
+                  />
+                )}
+
+                {activeTab === "assets" && (
+                  <ProjectAssets
+                    assets={projectAssets}
+                    loading={loadingAssets}
+                  />
+                )}
+
+                {activeTab === "escalation" && (
+                  <ProjectEscalation
+                    data={projectEscalations}
+                    loading={loadingEscalations}
+                  />
+                )}
+
                 {!activeTab && getTabs().length > 0 && (
                   <div className="h-full flex flex-col items-center justify-center text-gray-400">
                     <FileText size={48} className="mb-4 text-gray-200" />
@@ -732,7 +1111,7 @@ const ClientPage = () => {
         </div>
       </div>
 
-      {/* Add Configuration (SINGLE DYNAMIC MODAL) */}
+      {/* Add Configuration Modal */}
       <AddConfigurationModal
         open={openConfigModal}
         onClose={() => setOpenConfigModal(false)}

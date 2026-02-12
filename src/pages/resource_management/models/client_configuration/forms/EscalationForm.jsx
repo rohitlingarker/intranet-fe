@@ -1,10 +1,35 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const EscalationForm = ({ formData, setFormData }) => {
+  useEffect(() => {
+    if (!formData.triggers) {
+      setFormData((prev) => ({ ...prev, triggers: [] }));
+    }
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target; // ✅ FIX
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  const handleTriggerChange = (trigger) => {
+    setFormData((prev) => {
+      const exists = prev.triggers?.includes(trigger);
+
+      return {
+        ...prev,
+        triggers: exists
+          ? prev.triggers.filter((t) => t !== trigger) // remove if already selected
+          : [...(prev.triggers || []), trigger], // add if not selected
+      };
+    });
+  };
+  const ESCALATION_ROLES = [
+    "COMPLIANCE_OFFICER",
+    "DELIVERY_HEAD",
+    "TECHNICAL_LEAD",
+    "PROJECT_MANAGER",
+    "ACCOUNT_MANAGER",
+  ];
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -22,16 +47,23 @@ const EscalationForm = ({ formData, setFormData }) => {
       </div>
 
       {/* Role */}
+      {/* 🔽 ADD ROLE DROPDOWN HERE */}
       <div>
-        <label className="text-sm font-medium text-gray-700">
-          Contact Role <span className="text-red-500">*</span>
-        </label>
-        <input
-          name="contactRole"
+        <label className="text-sm font-medium">Contact Role</label>
+        <select
           value={formData.contactRole || ""}
-          onChange={handleChange}
-          className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-        />
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, contactRole: e.target.value }))
+          }
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select Role</option>
+          {ESCALATION_ROLES.map((role) => (
+            <option key={role} value={role}>
+              {role.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Email */}
@@ -50,9 +82,7 @@ const EscalationForm = ({ formData, setFormData }) => {
 
       {/* Phone */}
       <div>
-        <label className="text-sm font-medium text-gray-700">
-          Phone
-        </label>
+        <label className="text-sm font-medium text-gray-700">Phone</label>
         <input
           name="phone"
           value={formData.phone || ""}
@@ -95,6 +125,40 @@ const EscalationForm = ({ formData, setFormData }) => {
         <label htmlFor="activeFlag" className="text-sm text-gray-700 ml-2">
           Active
         </label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Escalation Triggers
+          </label>
+
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.triggers?.includes("SLA_BREACH")}
+                onChange={() => handleTriggerChange("SLA_BREACH")}
+              />
+              SLA Breach
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.triggers?.includes("DELIVERY_RISK")}
+                onChange={() => handleTriggerChange("DELIVERY_RISK")}
+              />
+              Delivery Risk
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.triggers?.includes("COMPLIANCE_FAILURE")}
+                onChange={() => handleTriggerChange("COMPLIANCE_FAILURE")}
+              />
+              Compliance Failure
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   );

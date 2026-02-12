@@ -19,6 +19,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { getProjectById } from "../../services/projectService";
+import {
+  getProjectEscalations,
+  createProjectEscalation,
+  deleteProjectEscalation,
+} from "../../services/projectService";
 
 const RMSProjectDetails = () => {
   const { projectId } = useParams();
@@ -31,6 +36,8 @@ const RMSProjectDetails = () => {
   const [loading, setLoading] = useState(true);
   const [openConfigModal, setOpenConfigModal] = useState(false);
   const [configType, setConfigType] = useState(null); // "sla" | "compliance" | "escalation"
+  const [escalations, setEscalations] = useState([]);
+  const [loadingEscalations, setLoadingEscalations] = useState(false);
 
   const DEFAULT_FORM_STATE = {
     activeFlag: true,
@@ -54,10 +61,69 @@ const RMSProjectDetails = () => {
   }, [projectId]);
 
   useEffect(() => {
-    if (activeTab === "overlaps") {
-      fetchOverlaps();
-    }
+    if (activeTab === "overlaps") fetchOverlaps();
+    if (activeTab === "escalation") fetchEscalations();
   }, [activeTab]);
+
+  const fetchEscalations = async () => {
+    try {
+      setLoadingEscalations(true);
+      const res = await getProjectEscalations(projectId);
+      setEscalations(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch escalations", err);
+      setEscalations([]);
+    } finally {
+      setLoadingEscalations(false);
+    }
+  };
+
+  const handleDeleteEscalation = async (id) => {
+    try {
+      await deleteProjectEscalation(id);
+      fetchEscalations();
+    } catch (err) {
+      console.error("Failed to delete escalation", err);
+    }
+  };
+  const handleSaveEscalation = async () => {
+    try {
+      const levelMap = {
+        1: "LEVEL_1",
+        2: "LEVEL_2",
+        3: "LEVEL_3",
+      };
+
+      if (!formData.triggers || formData.triggers.length === 0) {
+        alert("Please select at least one escalation trigger.");
+        return;
+      }
+
+      if (!project?.pmsProjectId) {
+        alert("Project ID missing");
+        return;
+      }
+
+      const payload = {
+        projectId: project.pmsProjectId,
+        clientId: project.clientId,
+        contactId: formData.contactId || null,
+        contactName: formData.contactName,
+        contactEmail: formData.contactEmail,
+        contactRole: formData.contactRole,
+        escalationLevel: levelMap[formData.escalationLevel],
+        triggers: formData.triggers,
+      };
+
+      console.log("SENDING PAYLOAD 👉", payload);
+
+      await createProjectEscalation(payload);
+      setOpenConfigModal(false);
+      fetchEscalations();
+    } catch (err) {
+      console.error("Failed to save escalation", err);
+    }
+  };
 
   const fetchOverlaps = async () => {
     try {
@@ -350,9 +416,48 @@ const RMSProjectDetails = () => {
             </button>
           </div>
 
-          <p className="text-sm text-gray-500">
+          {/* <p className="text-sm text-gray-500">
             No escalation configuration added yet.
-          </p>
+          </p> */}
+          {loadingEscalations ? (
+            <p className="text-sm text-gray-500">
+              Loading escalation contacts...
+            </p>
+          ) : escalations.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No escalation contacts have been assigned to this project yet.
+            </p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-left text-gray-500 border-b">
+                <tr>
+                  <th className="py-2">Name</th>
+                  <th>Role</th>
+                  <th>Level</th>
+                  <th>Triggers</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {escalations.map((e) => (
+                  <tr key={e.id} className="border-b">
+                    <td className="py-2">{e.contactName}</td>
+                    <td>{e.contactRole}</td>
+                    <td>{e.escalationLevel}</td>
+                    <td>{e.triggers.join(", ")}</td>
+                    <td>
+                      <button
+                        onClick={() => handleDeleteEscalation(e.id)}
+                        className="text-red-500 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
       {openConfigModal && (
@@ -384,13 +489,23 @@ const RMSProjectDetails = () => {
               </div>
             )}
 
-
             {configType === "compliance" && (
               <ComplianceForm formData={formData} setFormData={setFormData} />
             )}
 
             {configType === "escalation" && (
-              <EscalationForm formData={formData} setFormData={setFormData} />
+              <div className="space-y-4">
+                <EscalationForm formData={formData} setFormData={setFormData} />
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveEscalation}
+                    className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm"
+                  >
+                    Save Escalation
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
