@@ -116,7 +116,7 @@ export default function HrOnboardingDashboard() {
 /* -------------------- State -------------------- */
 
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   
@@ -141,6 +141,7 @@ export default function HrOnboardingDashboard() {
 
   useEffect(() => {
     const fetchEmployees = async () => {
+      setLoading(true);
       try {
         const res = await axios.get(
           `${BASE_URL}/offerletters/user_id/details`,
@@ -368,13 +369,13 @@ export default function HrOnboardingDashboard() {
      LOADING
   ============================ */
 
-  if (loading) {
-    return (
-      <div className="p-10 text-center">
-        Loading HR dashboard...
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="p-10 text-center">
+  //       Loading HR dashboard...
+  //     </div>
+  //   );
+  // }
 
   /* ============================
      UI
@@ -399,14 +400,16 @@ export default function HrOnboardingDashboard() {
 
         <StatCard
           title="Total Profiles"
-          value={filteredData.length}
+          value={loading ? "0" : filteredData.length}
           icon={Users}
         />
 
         <StatCard
           title="Verified"
           value={
-            filteredData.filter(
+            loading
+            ? "0"
+            :filteredData.filter(
               (e) => e.status?.toUpperCase() === "VERIFIED"
             ).length
           }
@@ -416,7 +419,9 @@ export default function HrOnboardingDashboard() {
         <StatCard
           title="Rejected"
           value={
-            filteredData.filter(
+            loading
+            ? "0"
+            :filteredData.filter(
               (e) => e.status?.toUpperCase() === "REJECTED"
             ).length
           }
@@ -562,7 +567,6 @@ function InputField({ label, type, value, onChange }) {
       <label className="text-sm font-medium">
         {label}
       </label>
-
       <input
         type={type}
         value={value}
@@ -579,7 +583,6 @@ function TextAreaField({ label, value, onChange }) {
       <label className="text-sm font-medium">
         {label}
       </label>
-
       <textarea
         rows="3"
         value={value}
@@ -593,19 +596,15 @@ function TextAreaField({ label, value, onChange }) {
 function StatCard({ title, value, icon: Icon }) {
   return (
     <div className="bg-white p-4 rounded-xl border border-black/20 shadow-sm flex gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-
       <Icon className="text-indigo-600" />
-
       <div>
         <p className="text-sm text-gray-500">
           {title}
         </p>
-
         <p className="text-xl font-semibold text-gray-900">
           {value}
         </p>
       </div>
-
     </div>
   );
 }
