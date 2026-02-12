@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
+
 import { getProjectsByClient } from "../services/clientservice";
 import { getProjectSLA } from "../services/clientservice";
 import { getProjectCompliance } from "../services/clientservice";
@@ -24,13 +26,17 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+
+
+import { useAuth } from "../../../contexts/AuthContext";
+
 import ClientSection from "./ClientSection";
 import AddConfigurationModal from "../models/client_configuration/AddConfigurationModal";
 import Button from "../../../components/Button/Button";
 import Modal from "../../../components/Modal/modal";
 import CreateClient from "./CreateClient";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
-import { useAuth } from "../../../contexts/AuthContext";
+
 import { toast } from "react-toastify";
 import {
   getClientById,
