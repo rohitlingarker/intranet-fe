@@ -43,7 +43,7 @@ export default function WorkforceAvailability() {
     setKpiLoading(true);
     try {
       const res = await getWorkforceKPI(filters);
-      setKpiData(res);
+      setKpiData(res.data);
     } catch (err) {
       console.error("Failed to load KPI data", err);
       // toast.error(err.response?.data?.message || "Failed to load KPI data");
