@@ -1,5 +1,7 @@
 import { RESOURCES, computeStatus } from "../models/availabilityModel"
 
+export { computeStatus }
+
 export { RESOURCES }
 
 export function getKPIData(resources = RESOURCES) {
@@ -46,13 +48,17 @@ export function generateCalendarDays(year, month, resources = RESOURCES) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
     const dayOfWeek = date.getDay()
-    const dateStr = date.toISOString().split("T")[0]
+    // Correctly format date as YYYY-MM-DD in local time
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${y}-${m}-${d}`
 
     const resourceAllocations = resources.map((r) => {
       // Compute real allocation from timeline blocks for this date
       let totalAlloc = 0
       let activeProject = r.currentProject
-      for (const block of r.allocationTimeline) {
+      for (const block of (r.allocationTimeline || [])) {
         if (dateStr >= block.startDate && dateStr <= block.endDate && !block.tentative) {
           totalAlloc += block.allocation
           activeProject = block.project
@@ -60,7 +66,9 @@ export function generateCalendarDays(year, month, resources = RESOURCES) {
       }
       // Fall back to currentAllocation if no active blocks found
       if (totalAlloc === 0) {
-        const seed = r.id.charCodeAt(4) * 31 + day * 7 + month * 13
+        // Ensure ID is treated as a string for charCodeAt, or handle numeric IDs
+        const idStr = String(r.id);
+        const seed = idStr.charCodeAt(idStr.length - 1) * 31 + day * 7 + month * 13
         totalAlloc = Math.min(
           100,
           Math.max(0, r.currentAllocation + Math.floor(seededRandom(seed) * 20) - 10)

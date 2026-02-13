@@ -13,6 +13,7 @@ import { getWorkforceKPI } from "../../services/workforceService";
 import { useAvailability } from "../../hooks/useAvailability";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
+import Pagination from "../../../../components/Pagination/Pagination";
 
 export default function WorkforceAvailability() {
   const {
@@ -34,6 +35,12 @@ export default function WorkforceAvailability() {
     handleDayClick,
     handleKPIFilterClick,
     toggleFilterPanel,
+    page,
+    totalPages,
+    setPage,
+    loading,
+    currentDate,
+    setCurrentDate,
   } = useAvailability();
 
   const [kpiData, setKpiData] = useState(null);
@@ -56,12 +63,12 @@ export default function WorkforceAvailability() {
   //   fetchKPI();
   // }, [filters]);
   useEffect(() => {
-  const delay = setTimeout(() => {
-    fetchKPI();
-  }, 400); 
+    const delay = setTimeout(() => {
+      fetchKPI();
+    }, 400);
 
-  return () => clearTimeout(delay);
-}, [filters]);
+    return () => clearTimeout(delay);
+  }, [filters]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,37 +177,71 @@ export default function WorkforceAvailability() {
               <div className="p-4">
                 <TabsContent value="calendar" className="mt-0">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityCalendar
-                      filteredResources={filteredResources}
-                      onDayClick={handleDayClick}
-                      selectedResourceId={selectedResource?.id}
-                      onSelectResource={handleResourceClick}
-                    />
-                    {/* <ResourceTable
-                      resources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    /> */}
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <AvailabilityCalendar
+                          filteredResources={filteredResources}
+                          onDayClick={handleDayClick}
+                          selectedResourceId={selectedResource?.id}
+                          onSelectResource={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
+                        />
+                      </>
+                    )}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="timeline" className="mt-0">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityTimeline
-                      filteredResources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    />
-                    <ResourceTable
-                      resources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    />
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <AvailabilityTimeline
+                          filteredResources={filteredResources}
+                          onResourceClick={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
+                        />
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        />
+                      </>
+                    )}
                   </div>
                 </TabsContent>
- 
+
                 <TabsContent value="table" className="mt-0">
-                  <ResourceTable
-                    resources={filteredResources}
-                    onResourceClick={handleResourceClick}
-                  />
+                  <div className="flex flex-col gap-5">
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <ResourceTable
+                          resources={filteredResources}
+                          onResourceClick={handleResourceClick}
+                        />
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        />
+                      </>
+                    )}
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>

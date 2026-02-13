@@ -30,7 +30,7 @@ export function KPIBar({ data, activeFilter, onFilterClick }) {
     <div className="flex flex-wrap gap-3">
       <KPICard
         label="Total Resources"
-        value={data.totalResources || 0}
+        value={data?.totalResources || 0}
         icon={<Users className="h-5 w-5" />}
         color="bg-primary/10 text-primary"
         active={activeFilter === null}
@@ -38,7 +38,7 @@ export function KPIBar({ data, activeFilter, onFilterClick }) {
       />
       <KPICard
         label="Fully Available"
-        value={data.fullyAvailable || 0}
+        value={data?.fullyAvailable || 0}
         icon={<UserCheck className="h-5 w-5" />}
         color="bg-status-available/10 text-status-available"
         active={activeFilter === "available"}
@@ -46,7 +46,7 @@ export function KPIBar({ data, activeFilter, onFilterClick }) {
       />
       <KPICard
         label="Partially Available"
-        value={data.partiallyAvailable || 0}
+        value={data?.partiallyAvailable || 0}
         icon={<UserMinus className="h-5 w-5" />}
         color="bg-status-partial/10 text-status-partial"
         active={activeFilter === "partial"}
@@ -54,7 +54,7 @@ export function KPIBar({ data, activeFilter, onFilterClick }) {
       />
       <KPICard
         label="Fully Allocated"
-        value={data.fullyAllocated || 0}
+        value={data?.fullyAllocated || 0}
         icon={<Users className="h-5 w-5" />}
         color="bg-status-allocated/10 text-status-allocated"
         active={activeFilter === "allocated"}
@@ -62,26 +62,26 @@ export function KPIBar({ data, activeFilter, onFilterClick }) {
       />
       <KPICard
         label="Available (30d)"
-        value={data.upcomingAvailability || 0}
+        value={data?.upcomingAvailability || 0}
         icon={<Clock className="h-5 w-5" />}
         color="bg-primary/10 text-primary"
       />
       <KPICard
         label="Bench Capacity"
-        value={data.benchCapacity || 0}
+        value={data?.benchCapacity || 0}
         suffix="%"
         icon={<Gauge className="h-5 w-5" />}
         color="bg-primary/10 text-primary"
       />
       <KPICard
         label="Over-allocated"
-        value={data.overAllocated || 0}
+        value={data?.overAllocated || 0}
         icon={<AlertTriangle className="h-5 w-5" />}
         color="bg-destructive/10 text-destructive"
       />
       <KPICard
         label="Utilization"
-        value={data.utilization || 0}
+        value={data?.utilization || 0}
         suffix="%"
         icon={<TrendingUp className="h-5 w-5" />}
         color="bg-primary/10 text-primary"
