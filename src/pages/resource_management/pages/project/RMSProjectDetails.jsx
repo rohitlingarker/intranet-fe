@@ -5,11 +5,17 @@ import ResourceList from "./RMSProjectList";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
+<<<<<<< HEAD
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm"; import LoadingSpinner from "../../../../components/LoadingSpinner";
+import DemandModal from "../../models/DemandModal";
+import ProjectFinancialsInline from "../../components/FinancialModal";
+=======
 import EscalationForm from "../../models/client_configuration/forms/EscalationForm";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import DemandModal from "../../models/DemandModal";
 import { CheckSquare, Square } from "lucide-react";
 
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
   ArrowLeft,
@@ -688,11 +694,15 @@ const handleDeleteEscalation = (esc) => {
   };
 
   if (loading)
+<<<<<<< HEAD
+    return <div className="p-10 text-center"><LoadingSpinner text="Loading..." /></div>;
+=======
     return (
       <div className="p-10 text-center">
         <LoadingSpinner text="Loading..." />
       </div>
     );
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -721,11 +731,18 @@ const handleDeleteEscalation = (esc) => {
                 }`}
               > */}
               <span
+<<<<<<< HEAD
+                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-gray-100 text-gray-600"
+                  }`}
+=======
                 className={`text-xs px-2 py-1 rounded-full border ${
                   project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
                 }`}
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
               >
                 {project.projectStatus}
               </span>
@@ -738,7 +755,11 @@ const handleDeleteEscalation = (esc) => {
           <div>
             <button
               title={!demandResponse?.create ? demandResponse?.reason : ""}
+<<<<<<< HEAD
+              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`}
+=======
               className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${loadingDemand || !demandResponse?.create ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`}
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
               disabled={loadingDemand || !demandResponse?.create}
               onClick={() => setModalOpen(true)}
             >
@@ -812,11 +833,18 @@ const handleDeleteEscalation = (esc) => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
+<<<<<<< HEAD
+                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
+                        ? "text-red-500"
+                        : "text-green-500"
+                        }`}
+=======
                       className={`h-4 w-4 ${
                         project.riskLevel === "HIGH"
                           ? "text-red-500"
                           : "text-green-500"
                       }`}
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
                     />
                     {project.riskLevel}
                   </div>
@@ -1010,6 +1038,10 @@ const handleDeleteEscalation = (esc) => {
             </p>
           )}
         </div>
+      )}
+
+      {activeTab === "financials" && (
+        <ProjectFinancialsInline />
       )}
 
       {activeTab === "compliance" && (
@@ -1670,12 +1702,16 @@ const handleDeleteEscalation = (esc) => {
       )}
 
       {modalOpen && (
+<<<<<<< HEAD
+        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)} />
+=======
         <DemandModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           projectDetails={project}
           onSuccess={() => setModalOpen(false)}
         />
+>>>>>>> 34270e4490bb23f4d582ac63cc210f1cafcd651f
       )}
 
       <ConfirmationModal 
