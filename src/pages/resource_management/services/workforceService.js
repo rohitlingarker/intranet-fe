@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
+const LMS_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export const getWorkforceFilters = async () => {
   try {
@@ -60,6 +61,19 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
 
     const response = await axios.get(`${BASE_URL}/api/availability/timeline/window`, {
       params,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getHolidaysByYear = async (year) => {
+  try {
+    const response = await axios.get(`${LMS_BASE_URL}/api/holidays/year/${year}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },

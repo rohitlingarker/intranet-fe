@@ -35,23 +35,19 @@ export function useAvailability() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Calculate date range for the selected month
-      // We want to fetch data for the entire month currently in view
+      // Fetch data for the entire year to avoid reloading on month switch
       const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
+      const firstDay = new Date(year, 0, 1);
+      const lastDay = new Date(year, 11, 31);
 
       const payload = {
-        page: page - 1, // API uses 0-indexed pages
+        page: page - 1,
         size: 20,
         startDate: firstDay.toISOString().split('T')[0],
         endDate: lastDay.toISOString().split('T')[0],
       };
 
-      // Merge status filter into filters for the API if needed, or handle separately
       const currentFilters = { ...filters, status: statusFilter };
-
       const response = await getAvailabilityTimeline(currentFilters, payload);
 
       if (response && response.data) {
@@ -70,7 +66,7 @@ export function useAvailability() {
     } finally {
       setLoading(false);
     }
-  }, [filters, statusFilter, page, currentDate]);
+  }, [filters, statusFilter, page, currentDate.getFullYear()]);
 
   // Effect to fetch data
   useEffect(() => {

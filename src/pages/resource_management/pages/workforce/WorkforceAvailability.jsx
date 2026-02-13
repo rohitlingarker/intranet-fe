@@ -177,18 +177,22 @@ export default function WorkforceAvailability() {
               <div className="p-4">
                 <TabsContent value="calendar" className="mt-0">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityCalendar
-                      filteredResources={filteredResources}
-                      onDayClick={handleDayClick}
-                      selectedResourceId={selectedResource?.id}
-                      onSelectResource={handleResourceClick}
-                      currentDate={currentDate}
-                      onNavigate={setCurrentDate}
-                    />
-                    {/* <ResourceTable
-                      resources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    /> */}
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <AvailabilityCalendar
+                          filteredResources={filteredResources}
+                          onDayClick={handleDayClick}
+                          selectedResourceId={selectedResource?.id}
+                          onSelectResource={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
+                        />
+                      </>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -203,6 +207,8 @@ export default function WorkforceAvailability() {
                         <AvailabilityTimeline
                           filteredResources={filteredResources}
                           onResourceClick={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
                         />
                         <Pagination
                           currentPage={page}
@@ -214,7 +220,7 @@ export default function WorkforceAvailability() {
                     )}
                   </div>
                 </TabsContent>
- 
+
                 <TabsContent value="table" className="mt-0">
                   <div className="flex flex-col gap-5">
                     {loading ? (

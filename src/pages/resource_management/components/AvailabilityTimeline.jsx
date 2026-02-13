@@ -12,6 +12,10 @@ import { cn } from "@/lib/utils"
 import { Layers, User } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// ----- Constants -----
+const TRACK_HEIGHT = 36
+const ROW_PADDING = 13
+
 // ----- Helper Functions -----
 
 function addDays(date, days) {
@@ -33,19 +37,19 @@ function formatMonthYear(d) {
 }
 
 function getBarColor(allocation, tentative) {
-  if (tentative) return "bg-muted-foreground/20 border border-dashed border-muted-foreground/40"
-  if (allocation > 100) return "bg-destructive/70"
-  if (allocation > 70) return "bg-status-allocated/70"
-  if (allocation > 20) return "bg-status-partial/70"
-  return "bg-status-available/70"
+  if (tentative) return "bg-slate-200 border-slate-300 border-dashed"
+  if (allocation > 100) return "bg-red-500 border-red-600" // Over
+  if (allocation > 70) return "bg-rose-400 border-rose-500" // Allocated
+  if (allocation > 20) return "bg-amber-400 border-amber-500" // Partial
+  return "bg-emerald-500 border-emerald-600" // Available
 }
 
 function getBarHoverColor(allocation, tentative) {
-  if (tentative) return "hover:bg-muted-foreground/30"
-  if (allocation > 100) return "hover:bg-destructive/90"
-  if (allocation > 70) return "hover:bg-status-allocated/90"
-  if (allocation > 20) return "hover:bg-status-partial/90"
-  return "hover:bg-status-available/90"
+  if (tentative) return "hover:bg-slate-300"
+  if (allocation > 100) return "hover:bg-red-600"
+  if (allocation > 70) return "hover:bg-rose-500"
+  if (allocation > 20) return "hover:bg-amber-500"
+  return "hover:bg-emerald-600"
 }
 
 function getZoomConfig(zoom) {
@@ -84,11 +88,11 @@ function TimelineHeader({ zoom, startDate, endDate, dayWidth, tickInterval, toda
   }
 
   return (
-    <div className="relative h-8 border-b bg-muted/30" style={{ width: `${totalDays * dayWidth}px` }}>
+    <div className="relative h-10 border-b bg-muted/30" style={{ width: `${totalDays * dayWidth}px` }}>
       {ticks.map((tick, i) => (
         <div
           key={i}
-          className="absolute top-0 h-full flex items-center border-l border-border/50"
+          className="absolute top-0 h-full flex items-center border-l border-border/20"
           style={{ left: `${tick.offset}px` }}
         >
           <span className="text-[10px] text-muted-foreground pl-1.5 whitespace-nowrap font-medium">
@@ -96,12 +100,11 @@ function TimelineHeader({ zoom, startDate, endDate, dayWidth, tickInterval, toda
           </span>
         </div>
       ))}
-      {/* Today marker in header */}
       <div
         className="absolute top-0 h-full w-0.5 bg-primary z-20"
         style={{ left: `${todayOffset}px` }}
       >
-        <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold px-1 rounded-b leading-tight py-0.5">
+        <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 rounded-b leading-tight py-0.5 shadow-sm">
           Today
         </div>
       </div>
@@ -109,7 +112,7 @@ function TimelineHeader({ zoom, startDate, endDate, dayWidth, tickInterval, toda
   )
 }
 
-function AllocationBar({ block, startDate, dayWidth, rowHeight, resource, onResourceClick }) {
+function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, style }) {
   const blockStart = new Date(block.startDate)
   const blockEnd = new Date(block.endDate)
   const offsetDays = daysBetween(startDate, blockStart)
@@ -117,95 +120,104 @@ function AllocationBar({ block, startDate, dayWidth, rowHeight, resource, onReso
 
   const left = offsetDays * dayWidth
   const width = Math.max(durationDays * dayWidth, 4)
-  const barHeight = rowHeight - 12
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "absolute rounded-sm cursor-pointer transition-all",
-            getBarColor(block.allocation, block.tentative),
-            getBarHoverColor(block.allocation, block.tentative),
-          )}
-          style={{
-            left: `${left}px`,
-            width: `${width}px`,
-            top: `${6}px`,
-            height: `${barHeight}px`,
-          }}
-          onClick={() => onResourceClick(resource)}
-        >
-          {width > 60 && (
-            <span className={cn(
-              "text-[9px] font-medium px-1.5 truncate block leading-none",
-              block.tentative ? "text-muted-foreground" : "text-card",
-              block.allocation > 100 && !block.tentative && "text-destructive-foreground"
-            )}
-              style={{ lineHeight: `${barHeight}px` }}
-            >
-              {block.project} ({block.allocation}%)
-            </span>
-          )}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs max-w-[220px]">
-        <div className="flex flex-col gap-1">
-          <p className="font-semibold">{block.project}</p>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground">Allocation</span>
-            <span className="font-medium tabular-nums">{block.allocation}%</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground">Period</span>
-            <span className="tabular-nums">{block.startDate} to {block.endDate}</span>
-          </div>
-          {block.tentative && (
-            <Badge variant="outline" className="text-[10px] w-fit mt-0.5 border-dashed text-muted-foreground">
-              Tentative
-            </Badge>
-          )}
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
-function ResourceRow({ resource, startDate, endDate, dayWidth, todayOffset, rowHeight, onResourceClick }) {
-  const totalDays = daysBetween(startDate, endDate)
-
-  const visibleBlocks = resource.allocationTimeline.filter((b) => {
-    const bStart = new Date(b.startDate)
-    const bEnd = new Date(b.endDate)
-    return bEnd >= startDate && bStart <= endDate
-  })
+  const barHeight = TRACK_HEIGHT - 6
 
   return (
     <div
-      className="relative border-b border-border/40"
+      style={{
+        position: "absolute",
+        left: `${left}px`,
+        width: `${width}px`,
+        height: `${barHeight}px`,
+        ...style
+      }}
+      className="z-20 group"
+    >
+      <button
+        type="button"
+        className={cn(
+          "w-full h-full rounded shadow-sm border transition-colors flex items-center px-3 overflow-hidden",
+          getBarColor(block.allocation, block.tentative),
+          getBarHoverColor(block.allocation, block.tentative),
+        )}
+        onClick={() => onResourceClick(resource)}
+      >
+        {width > 60 && (
+          <span className={cn(
+            "text-[11px] font-medium truncate block leading-none",
+            block.tentative ? "text-slate-600" : "text-white",
+          )}
+          >
+            {block.project} ({block.allocation}%)
+          </span>
+        )}
+      </button>
+
+      {/* Custom Tooltip Content */}
+      <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
+        <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[220px]">
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-slate-900 border-b pb-1.5">{block.project}</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <span className="text-slate-500 text-[10px]">Allocation</span>
+              <span className="font-semibold text-slate-900 text-[10px] text-right">{block.allocation}%</span>
+
+              <span className="text-slate-500 text-[10px]">Period</span>
+              <span className="font-semibold text-slate-900 text-[10px] text-right">{block.startDate} to {block.endDate}</span>
+            </div>
+            {block.tentative && (
+              <div className="mt-1 flex items-center gap-1.5 pt-1 border-t">
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                <span className="text-[10px] font-bold text-amber-600 uppercase">Tentative</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ResourceRow({ resource, startDate, endDate, dayWidth, todayOffset, onResourceClick, rowHeight }) {
+  const totalDays = daysBetween(startDate, endDate)
+
+  const visibleBlocks = useMemo(() => {
+    return (resource.allocationTimeline || []).filter((b) => {
+      const bStart = new Date(b.startDate)
+      const bEnd = new Date(b.endDate)
+      return bEnd >= startDate && bStart <= endDate
+    })
+  }, [resource.allocationTimeline, startDate, endDate])
+
+  const blocksWithTracks = useMemo(() => {
+    return visibleBlocks.map((block, index) => ({ ...block, trackIndex: index }))
+  }, [visibleBlocks])
+
+  return (
+    <div
+      className="relative border-b border-border/30 hover:bg-slate-50/30 transition-colors"
       style={{ height: `${rowHeight}px`, width: `${totalDays * dayWidth}px` }}
     >
       {Array.from({ length: Math.floor(totalDays / 7) + 1 }).map((_, i) => (
         <div
           key={i}
-          className="absolute top-0 h-full border-l border-border/20"
+          className="absolute top-0 h-full border-l border-border/10"
           style={{ left: `${i * 7 * dayWidth}px` }}
         />
       ))}
       <div
-        className="absolute top-0 h-full w-px bg-primary/30 z-10"
+        className="absolute top-0 h-full w-px bg-primary/20 z-10"
         style={{ left: `${todayOffset}px` }}
       />
-      {visibleBlocks.map((block, i) => (
+      {blocksWithTracks.map((block, i) => (
         <AllocationBar
           key={`${block.project}-${i}`}
           block={block}
           startDate={startDate}
           dayWidth={dayWidth}
-          rowHeight={rowHeight}
           resource={resource}
           onResourceClick={onResourceClick}
+          style={{ top: `${block.trackIndex * TRACK_HEIGHT + (ROW_PADDING / 2)}px` }}
         />
       ))}
     </div>
@@ -214,65 +226,115 @@ function ResourceRow({ resource, startDate, endDate, dayWidth, todayOffset, rowH
 
 function RoleAggregateRow({ role, resources, startDate, endDate, dayWidth, todayOffset, rowHeight, onResourceClick }) {
   const totalDays = daysBetween(startDate, endDate)
-  const barHeight = Math.max(Math.floor((rowHeight - 8) / resources.length), 6)
+
+  const projectBlocks = useMemo(() => {
+    const projects = new Map()
+    resources.forEach(res => {
+      (res.allocationTimeline || []).forEach(block => {
+        const bStart = new Date(block.startDate)
+        const bEnd = new Date(block.endDate)
+        if (bEnd >= startDate && bStart <= endDate) {
+          const key = block.project
+          if (!projects.has(key)) {
+            projects.set(key, {
+              project: block.project,
+              startDate: block.startDate,
+              endDate: block.endDate,
+              allocation: block.allocation,
+              tentative: block.tentative,
+              resources: [res.name]
+            })
+          } else {
+            const existing = projects.get(key)
+            // Expand range if needed
+            if (new Date(block.startDate) < new Date(existing.startDate)) existing.startDate = block.startDate
+            if (new Date(block.endDate) > new Date(existing.endDate)) existing.endDate = block.endDate
+            if (!existing.resources.includes(res.name)) existing.resources.push(res.name)
+            existing.allocation = Math.max(existing.allocation, block.allocation)
+            existing.tentative = existing.tentative && block.tentative
+          }
+        }
+      })
+    })
+    return Array.from(projects.values())
+  }, [resources, startDate, endDate])
 
   return (
     <div
-      className="relative border-b border-border/40"
+      className="relative border-b border-border/30 hover:bg-slate-50/20 transition-colors"
       style={{ height: `${rowHeight}px`, width: `${totalDays * dayWidth}px` }}
     >
       {Array.from({ length: Math.floor(totalDays / 7) + 1 }).map((_, i) => (
         <div
           key={i}
-          className="absolute top-0 h-full border-l border-border/20"
+          className="absolute top-0 h-full border-l border-border/10"
           style={{ left: `${i * 7 * dayWidth}px` }}
         />
       ))}
       <div
-        className="absolute top-0 h-full w-px bg-primary/30 z-10"
+        className="absolute top-0 h-full w-px bg-primary/20 z-10"
         style={{ left: `${todayOffset}px` }}
       />
-      {resources.map((resource, rIdx) => {
-        const visibleBlocks = resource.allocationTimeline.filter((b) => {
-          const bStart = new Date(b.startDate)
-          const bEnd = new Date(b.endDate)
-          return bEnd >= startDate && bStart <= endDate
-        })
-        return visibleBlocks.map((block, bIdx) => {
-          const blockStart = new Date(block.startDate)
-          const blockEnd = new Date(block.endDate)
-          const offsetDaysVal = daysBetween(startDate, blockStart)
-          const durationDaysVal = daysBetween(blockStart, blockEnd)
-          const left = offsetDaysVal * dayWidth
-          const width = Math.max(durationDaysVal * dayWidth, 4)
+      {projectBlocks.map((block, i) => {
+        const blockStart = new Date(block.startDate)
+        const blockEnd = new Date(block.endDate)
+        const offsetDaysVal = daysBetween(startDate, blockStart)
+        const durationDaysVal = daysBetween(blockStart, blockEnd)
+        const left = offsetDaysVal * dayWidth
+        const width = Math.max(durationDaysVal * dayWidth, 4)
 
-          return (
-            <Tooltip key={`${resource.id}-${bIdx}`}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "absolute rounded-sm cursor-pointer transition-all",
-                    getBarColor(block.allocation, block.tentative),
-                    getBarHoverColor(block.allocation, block.tentative),
-                  )}
-                  style={{
-                    left: `${left}px`,
-                    width: `${width}px`,
-                    top: `${4 + rIdx * (barHeight + 1)}px`,
-                    height: `${barHeight}px`,
-                  }}
-                  onClick={() => onResourceClick(resource)}
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                <p className="font-semibold">{resource.name}</p>
-                <p>{block.project} - {block.allocation}%</p>
-                <p className="text-muted-foreground">{block.startDate} to {block.endDate}</p>
-              </TooltipContent>
-            </Tooltip>
-          )
-        })
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `${left}px`,
+              width: `${width}px`,
+              top: `${i * TRACK_HEIGHT + (ROW_PADDING / 2.5)}px`,
+              height: `${TRACK_HEIGHT - 6}px`,
+            }}
+            className="z-20 group"
+          >
+            <button
+              type="button"
+              className={cn(
+                "w-full h-full rounded shadow-sm border transition-colors flex items-center px-3 overflow-hidden",
+                getBarColor(block.allocation, block.tentative),
+                getBarHoverColor(block.allocation, block.tentative),
+              )}
+            >
+              {width > 60 && (
+                <span className={cn(
+                  "text-[11px] font-medium truncate block leading-none",
+                  block.tentative ? "text-slate-600" : "text-white",
+                )}
+                >
+                  {block.project}
+                </span>
+              )}
+            </button>
+
+            {/* Custom Tooltip Content */}
+            <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
+              <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[240px]">
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-slate-900 border-b pb-1.5">{block.project}</p>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                    <span className="text-slate-500 text-[10px]">Team Size</span>
+                    <span className="font-semibold text-slate-900 text-[10px] text-right">{block.resources.length} people</span>
+
+                    <span className="text-slate-500 text-[10px]">Period</span>
+                    <span className="font-semibold text-slate-900 text-[10px] text-right">{block.startDate} to {block.endDate}</span>
+                  </div>
+                  <div className="pt-1.5 border-t">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-1">Assigned Personnel</p>
+                    <p className="text-[10px] text-slate-600 line-clamp-2 leading-relaxed">{block.resources.join(", ")}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       })}
     </div>
   )
@@ -280,22 +342,52 @@ function RoleAggregateRow({ role, resources, startDate, endDate, dayWidth, today
 
 // ----- Main Timeline Component -----
 
-export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
+export function AvailabilityTimeline({ filteredResources, onResourceClick, currentDate }) {
   const [zoom, setZoom] = useState("month")
   const [viewMode, setViewMode] = useState("resource")
   const scrollRef = useRef(null)
 
   const config = getZoomConfig(zoom)
-  const today = useMemo(() => new Date(), [])
-  const startDate = useMemo(() => addDays(today, -config.totalDaysBefore), [today, config.totalDaysBefore])
-  const endDate = useMemo(() => addDays(today, config.totalDaysAfter), [today, config.totalDaysAfter])
+  const baseDate = currentDate || new Date()
+  const startDate = useMemo(() => addDays(baseDate, -config.totalDaysBefore), [baseDate, config.totalDaysBefore])
+  const endDate = useMemo(() => addDays(baseDate, config.totalDaysAfter), [baseDate, config.totalDaysAfter])
   const totalDays = daysBetween(startDate, endDate)
   const todayOffset = config.totalDaysBefore * config.dayWidth
 
   const roleGroups = useMemo(() => groupByRole(filteredResources), [filteredResources])
-  const rowHeight = viewMode === "role"
-    ? Math.max(48, Math.min(80, 20 + [...roleGroups.values()].reduce((max, g) => Math.max(max, g.length), 0) * 10))
-    : 40
+
+  const resourceRowHeights = useMemo(() => {
+    const heights = new Map()
+    filteredResources.forEach(resource => {
+      const visibleBlocks = (resource.allocationTimeline || []).filter((b) => {
+        const bStart = new Date(b.startDate)
+        const bEnd = new Date(b.endDate)
+        return bEnd >= startDate && bStart <= endDate
+      })
+      const numTracks = Math.max(1, visibleBlocks.length)
+      heights.set(resource.id, (numTracks * TRACK_HEIGHT) + ROW_PADDING)
+    })
+    return heights
+  }, [filteredResources, startDate, endDate])
+
+  const roleRowHeights = useMemo(() => {
+    const heights = new Map()
+    roleGroups.forEach((resources, role) => {
+      const projects = new Set()
+      resources.forEach(res => {
+        (res.allocationTimeline || []).forEach(b => {
+          const bStart = new Date(b.startDate)
+          const bEnd = new Date(b.endDate)
+          if (bEnd >= startDate && bStart <= endDate) {
+            projects.add(b.project)
+          }
+        })
+      })
+      const numTracks = Math.max(1, projects.size)
+      heights.set(role, (numTracks * TRACK_HEIGHT) + ROW_PADDING)
+    })
+    return heights
+  }, [roleGroups, startDate, endDate])
 
   const scrollToToday = useCallback(() => {
     if (scrollRef.current) {
@@ -304,43 +396,36 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
   }, [todayOffset])
 
   const scrolledRef = useRef(false)
-  if (!scrolledRef.current && scrollRef.current) {
-    scrollRef.current.scrollLeft = todayOffset - scrollRef.current.clientWidth / 3
-    scrolledRef.current = true
-  }
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-card-foreground">Timeline</h3>
-          <span className="text-xs text-muted-foreground">{filteredResources.length} resources</span>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-2 bg-muted/30">
+        <div className="flex items-center gap-4">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="resource" className="text-xs h-7 gap-1.5 px-2.5">
-                <User className="h-3.5 w-3.5" />
+            <TabsList className="h-8 bg-muted/50 p-1">
+              <TabsTrigger value="resource" className="text-[10px] h-6 gap-1.5 px-2 rounded-sm">
+                <User className="h-3 w-3" />
                 Resource
               </TabsTrigger>
-              <TabsTrigger value="role" className="text-xs h-7 gap-1.5 px-2.5">
-                <Layers className="h-3.5 w-3.5" />
+              <TabsTrigger value="role" className="text-[10px] h-6 gap-1.5 px-2 rounded-sm">
+                <Layers className="h-3 w-3" />
                 Role
               </TabsTrigger>
             </TabsList>
           </Tabs>
+        </div>
 
-          <div className="flex items-center rounded-md border bg-card">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-md border bg-muted/50 p-0.5">
             {["week", "month", "quarter"].map((z) => (
               <button
                 key={z}
                 type="button"
                 className={cn(
-                  "px-2.5 py-1 text-xs font-medium transition-colors capitalize",
+                  "px-3 py-1 text-[10px] font-semibold transition-all capitalize rounded-sm",
                   zoom === z
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-white text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 onClick={() => {
@@ -356,33 +441,25 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs bg-transparent"
+            className="h-7 px-3 text-[10px] font-semibold bg-white"
             onClick={scrollToToday}
           >
             Today
           </Button>
 
-          <div className="hidden lg:flex items-center gap-3 text-[10px] text-muted-foreground border-l pl-3">
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-6 rounded-sm bg-status-available/70" />
-              Available
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-6 rounded-sm bg-status-partial/70" />
-              Partial
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-6 rounded-sm bg-status-allocated/70" />
-              Allocated
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-6 rounded-sm bg-destructive/70" />
-              Over
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-6 rounded-sm border border-dashed border-muted-foreground/40 bg-muted-foreground/20" />
-              Tentative
-            </span>
+          <div className="hidden lg:flex items-center gap-3 text-[10px] font-medium text-muted-foreground border-l pl-3">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-4 rounded-sm bg-emerald-500" />
+              <span>Available</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-4 rounded-sm bg-amber-400" />
+              <span>Partial</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-4 rounded-sm bg-rose-400" />
+              <span>Allocated</span>
+            </div>
           </div>
         </div>
       </div>
@@ -390,47 +467,51 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
       <TooltipProvider delayDuration={100}>
         <div className="flex">
           {/* Sticky left column */}
-          <div className="shrink-0 border-r bg-card z-10 w-[220px]">
-            <div className="h-8 border-b bg-muted/30 flex items-center px-3">
+          <div className="shrink-0 border-r bg-white z-10 w-[240px]">
+            <div className="h-10 border-b bg-muted/40 flex items-center px-4">
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {viewMode === "resource" ? "Resource" : "Role"}
+                {viewMode === "resource" ? "Resource" : "Role Category"}
               </span>
             </div>
             {viewMode === "resource" ? (
-              filteredResources.map((resource) => (
-                <button
-                  key={resource.id}
-                  type="button"
-                  className="w-full flex items-center gap-2.5 px-3 border-b border-border/40 hover:bg-muted/40 cursor-pointer transition-colors"
-                  style={{ height: `${rowHeight}px` }}
-                  onClick={() => onResourceClick(resource)}
-                >
-                  <Avatar className="h-6 w-6 border shrink-0">
-                    <AvatarFallback className="text-[9px] font-medium bg-primary/10 text-primary">
-                      {resource.avatar}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 text-left">
-                    <p className="text-xs font-medium text-card-foreground truncate">{resource.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{resource.role}</p>
-                  </div>
-                </button>
-              ))
+              filteredResources.map((resource) => {
+                const dynamicRowHeight = resourceRowHeights.get(resource.id) || 48
+                return (
+                  <button
+                    key={resource.id}
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 border-b border-slate-100 hover:bg-muted/50 transition-colors"
+                    style={{ height: `${dynamicRowHeight}px` }}
+                    onClick={() => onResourceClick(resource)}
+                  >
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="text-[10px] font-medium bg-primary/10 text-primary">
+                        {resource.name.split(" ").map(n => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 text-left">
+                      <p className="text-xs font-semibold text-foreground truncate">{resource.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{resource.role}</p>
+                    </div>
+                  </button>
+                )
+              })
             ) : (
-              [...roleGroups.entries()].map(([role, resources]) => (
-                <div
-                  key={role}
-                  className="flex items-center gap-2.5 px-3 border-b border-border/40"
-                  style={{ height: `${rowHeight}px` }}
-                >
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-card-foreground truncate">{role}</p>
-                    <p className="text-[10px] text-muted-foreground">
+              [...roleGroups.entries()].map(([role, resources]) => {
+                const dynamicRowHeight = roleRowHeights.get(role) || 48
+                return (
+                  <div
+                    key={role}
+                    className="flex flex-col justify-center px-4 border-b border-slate-100"
+                    style={{ height: `${dynamicRowHeight}px` }}
+                  >
+                    <p className="text-sm font-bold text-slate-800 truncate">{role}</p>
+                    <p className="text-[11px] font-medium text-slate-400">
                       {resources.length} {resources.length === 1 ? "person" : "people"}
                     </p>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 
@@ -445,7 +526,7 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
                 }
               }
             }}
-            className="flex-1 overflow-x-auto overflow-y-hidden"
+            className="flex-1 overflow-x-auto bg-white"
           >
             <div style={{ width: `${totalDays * config.dayWidth}px` }}>
               <TimelineHeader
@@ -466,8 +547,8 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
                     endDate={endDate}
                     dayWidth={config.dayWidth}
                     todayOffset={todayOffset}
-                    rowHeight={rowHeight}
                     onResourceClick={onResourceClick}
+                    rowHeight={resourceRowHeights.get(resource.id) || 48}
                   />
                 ))
               ) : (
@@ -480,7 +561,7 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick }) {
                     endDate={endDate}
                     dayWidth={config.dayWidth}
                     todayOffset={todayOffset}
-                    rowHeight={rowHeight}
+                    rowHeight={roleRowHeights.get(role) || 48}
                     onResourceClick={onResourceClick}
                   />
                 ))

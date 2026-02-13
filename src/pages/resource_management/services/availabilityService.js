@@ -48,13 +48,17 @@ export function generateCalendarDays(year, month, resources = RESOURCES) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
     const dayOfWeek = date.getDay()
-    const dateStr = date.toISOString().split("T")[0]
+    // Correctly format date as YYYY-MM-DD in local time
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${y}-${m}-${d}`
 
     const resourceAllocations = resources.map((r) => {
       // Compute real allocation from timeline blocks for this date
       let totalAlloc = 0
       let activeProject = r.currentProject
-      for (const block of r.allocationTimeline) {
+      for (const block of (r.allocationTimeline || [])) {
         if (dateStr >= block.startDate && dateStr <= block.endDate && !block.tentative) {
           totalAlloc += block.allocation
           activeProject = block.project
