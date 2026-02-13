@@ -214,7 +214,7 @@ export default function WorkforceAvailability() {
                     )}
                   </div>
                 </TabsContent>
-
+ 
                 <TabsContent value="table" className="mt-0">
                   <div className="flex flex-col gap-5">
                     {loading ? (

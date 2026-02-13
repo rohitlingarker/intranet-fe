@@ -595,6 +595,68 @@ export const getProjectOverlaps = async (projectId) => {
   }
 };
 
+export const getProjectsByClient = async (clientId) => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/projects/get-project-by-client-id/${clientId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+
+  return res.data; // { success, message, data: [...] }
+};
+
+export const getProjectSLA = async (projectId) => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/project-sla/project/${projectId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+};
 
 
+
+export const getProjectCompliance = async (projectId) => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/project-compliance/project/${projectId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+};
+
+
+export const getProjectEscalations = async (projectId) => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/projects/${projectId}/escalations`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+};
+//GET ASSETS BY PROJECT ID
+export const getAssetsByProjectId = async (projectId) => {
+  const res = await axios.get(
+    `${RMS_BASE_URL}/api/client-asset-assignments/project/${projectId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+
+  return res.data;
+};
 

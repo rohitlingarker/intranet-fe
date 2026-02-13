@@ -1378,7 +1378,18 @@ const RMSProjectDetails = () => {
 
             {/* Escalation Form */}
             {configType === "escalation" && (
-              <EscalationForm formData={formData} setFormData={setFormData} />
+              <div className="space-y-4">
+                <EscalationForm formData={formData} setFormData={setFormData} />
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveEscalation}
+                    className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm"
+                  >
+                    Save Escalation
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
