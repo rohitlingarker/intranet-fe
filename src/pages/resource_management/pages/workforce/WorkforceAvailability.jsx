@@ -72,33 +72,27 @@ export default function WorkforceAvailability() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+      <main className="p-3 sm:p-4 md:p-6">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-xl sm:text-2xl font-heading font-bold text-slate-900 tracking-tight">
             Workforce Availability Overview
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             A real-time snapshot of team capacity, utilization, and resource
             allocation across roles and locations.
           </p>
         </div>
         {/* KPI Summary Bar */}
-        {kpiLoading ? (
-          <div className="flex justify-center items-center">
-            <LoadingSpinner text="Loading KPI Data..." />
-          </div>
-        ) : (
-          <div className="mb-6">
-            <KPIBar
-              data={kpiData}
-              activeFilter={statusFilter}
-              onFilterClick={handleKPIFilterClick}
-            />
-          </div>
-        )}
+        <div className="mb-4 md:mb-6 min-h-[200px]">
+          <KPIBar
+            data={kpiData}
+            activeFilter={statusFilter}
+            onFilterClick={handleKPIFilterClick}
+          />
+        </div>
 
         {/* Main Content Area */}
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-start">
           {/* Filter Panel */}
           <FilterPanel
             filters={filters}
@@ -109,16 +103,16 @@ export default function WorkforceAvailability() {
           />
 
           {/* Primary Content */}
-          <div className="flex-1 min-w-0 bg-card rounded-lg border shadow-sm">
+          <div className="flex-1 min-w-0 w-full bg-card rounded-lg border shadow-sm">
             <Tabs
               value={activeView}
               onValueChange={setActiveView}
               className="h-full flex flex-col"
             >
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between">
+              <div className="p-3 sm:p-4 border-b">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex items-center gap-4">
-                    <h3 className="text-sm font-semibold text-card-foreground">
+                    <h3 className="text-sm font-heading font-bold text-card-foreground">
                       Timeline
                     </h3>
                     <span className="text-xs text-muted-foreground">
@@ -174,73 +168,55 @@ export default function WorkforceAvailability() {
                 )}
               </div>
 
-              <div className="p-4">
-                <TabsContent value="calendar" className="mt-0">
+              <div className="p-4 min-h-[600px] relative">
+                {loading && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-b-lg">
+                    <LoadingSpinner text="Fetching resources..." />
+                  </div>
+                )}
+
+                <TabsContent value="calendar" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
-                    {loading ? (
-                      <div className="flex justify-center p-10">
-                        <LoadingSpinner />
-                      </div>
-                    ) : (
-                      <>
-                        <AvailabilityCalendar
-                          filteredResources={filteredResources}
-                          onDayClick={handleDayClick}
-                          selectedResourceId={selectedResource?.id}
-                          onSelectResource={handleResourceClick}
-                          currentDate={currentDate}
-                          onNavigate={setCurrentDate}
-                        />
-                      </>
-                    )}
+                    <AvailabilityCalendar
+                      filteredResources={filteredResources}
+                      onDayClick={handleDayClick}
+                      selectedResourceId={selectedResource?.id}
+                      onSelectResource={handleResourceClick}
+                      currentDate={currentDate}
+                      onNavigate={setCurrentDate}
+                    />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="timeline" className="mt-0">
+                <TabsContent value="timeline" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
-                    {loading ? (
-                      <div className="flex justify-center p-10">
-                        <LoadingSpinner />
-                      </div>
-                    ) : (
-                      <>
-                        <AvailabilityTimeline
-                          filteredResources={filteredResources}
-                          onResourceClick={handleResourceClick}
-                          currentDate={currentDate}
-                          onNavigate={setCurrentDate}
-                        />
-                        <Pagination
-                          currentPage={page}
-                          totalPages={totalPages}
-                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        />
-                      </>
-                    )}
+                    <AvailabilityTimeline
+                      filteredResources={filteredResources}
+                      onResourceClick={handleResourceClick}
+                      currentDate={currentDate}
+                      onNavigate={setCurrentDate}
+                    />
+                    <Pagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                      onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="table" className="mt-0">
+                <TabsContent value="table" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
-                    {loading ? (
-                      <div className="flex justify-center p-10">
-                        <LoadingSpinner />
-                      </div>
-                    ) : (
-                      <>
-                        <ResourceTable
-                          resources={filteredResources}
-                          onResourceClick={handleResourceClick}
-                        />
-                        <Pagination
-                          currentPage={page}
-                          totalPages={totalPages}
-                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        />
-                      </>
-                    )}
+                    <ResourceTable
+                      resources={filteredResources}
+                      onResourceClick={handleResourceClick}
+                    />
+                    <Pagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                      onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    />
                   </div>
                 </TabsContent>
               </div>

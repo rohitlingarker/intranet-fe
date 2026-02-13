@@ -1,23 +1,26 @@
 import { Users, UserCheck, UserMinus, Clock, TrendingUp, AlertTriangle, Gauge } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-function KPICard({ label, value, icon, color, active, onClick, suffix }) {
+function KPICard({ label, value, icon, color, active, onClick, suffix, className }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      // onClick={onClick}
       className={cn(
-        "flex flex-1 items-center gap-3 rounded-lg border bg-card p-4 text-left transition-all hover:shadow-md",
-        active ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50",
-        onClick && "cursor-pointer"
+        "flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all",
+        active ? "ring-2 ring-primary bg-primary/5 border-primary/20" : "",
+        // onClick && "cursor-pointer",
+        className
       )}
     >
       <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", color || "bg-secondary text-secondary-foreground")}>
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground truncate">{label}</p>
-        <p className="text-2xl font-bold text-card-foreground tabular-nums tracking-tight">
+        <p className="text-xs font-medium text-slate-500 mb-0.5 whitespace-nowrap">
+          {label}
+        </p>
+        <p className="text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
           {value}{suffix}
         </p>
       </div>
@@ -25,66 +28,83 @@ function KPICard({ label, value, icon, color, active, onClick, suffix }) {
   )
 }
 
-export function KPIBar({ data, activeFilter, onFilterClick }) {
+export function KPISkeleton() {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 animate-pulse">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="h-24 rounded-xl border border-slate-100 bg-slate-50/50" />
+      ))}
+      <div className="lg:col-span-3 h-24 rounded-xl border border-slate-100 bg-slate-50/50" />
+      <div className="lg:col-span-3 h-24 rounded-xl border border-slate-100 bg-slate-50/50" />
+    </div>
+  )
+}
+
+export function KPIBar({ data, activeFilter, onFilterClick }) {
+  if (!data) return <KPISkeleton />
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
       <KPICard
         label="Total Resources"
         value={data?.totalResources || 0}
         icon={<Users className="h-5 w-5" />}
-        color="bg-primary/10 text-primary"
+        color="bg-indigo-100 text-indigo-600"
         active={activeFilter === null}
-        onClick={() => onFilterClick(null)}
+      //onClick={() => onFilterClick && onFilterClick(null)}
       />
       <KPICard
         label="Fully Available"
         value={data?.fullyAvailable || 0}
         icon={<UserCheck className="h-5 w-5" />}
-        color="bg-status-available/10 text-status-available"
+        color="bg-emerald-50 text-emerald-600"
         active={activeFilter === "available"}
-        onClick={() => onFilterClick(activeFilter === "available" ? null : "available")}
+      //onClick={() => onFilterClick && onFilterClick("available")}
       />
       <KPICard
         label="Partially Available"
         value={data?.partiallyAvailable || 0}
         icon={<UserMinus className="h-5 w-5" />}
-        color="bg-status-partial/10 text-status-partial"
+        color="bg-amber-100 text-amber-600"
         active={activeFilter === "partial"}
-        onClick={() => onFilterClick(activeFilter === "partial" ? null : "partial")}
+      //onClick={() => onFilterClick && onFilterClick("partial")}
       />
       <KPICard
         label="Fully Allocated"
         value={data?.fullyAllocated || 0}
         icon={<Users className="h-5 w-5" />}
-        color="bg-status-allocated/10 text-status-allocated"
+        color="bg-rose-100 text-rose-600"
         active={activeFilter === "allocated"}
-        onClick={() => onFilterClick(activeFilter === "allocated" ? null : "allocated")}
+      //OnClick={() => onFilterClick && onFilterClick("allocated")}
       />
       <KPICard
         label="Available (30d)"
         value={data?.upcomingAvailability || 0}
         icon={<Clock className="h-5 w-5" />}
-        color="bg-primary/10 text-primary"
+        color="bg-blue-100 text-blue-600"
       />
       <KPICard
         label="Bench Capacity"
         value={data?.benchCapacity || 0}
         suffix="%"
         icon={<Gauge className="h-5 w-5" />}
-        color="bg-primary/10 text-primary"
+        color="bg-blue-100 text-blue-600"
       />
+
+      {/* Bottom row - Spanning 3 columns each on large screens */}
       <KPICard
         label="Over-allocated"
         value={data?.overAllocated || 0}
         icon={<AlertTriangle className="h-5 w-5" />}
-        color="bg-destructive/10 text-destructive"
+        color="bg-rose-100 text-rose-600"
+        className="lg:col-span-3 h-24"
       />
       <KPICard
         label="Utilization"
         value={data?.utilization || 0}
         suffix="%"
         icon={<TrendingUp className="h-5 w-5" />}
-        color="bg-primary/10 text-primary"
+        color="bg-blue-100 text-blue-600"
+        className="lg:col-span-3 h-24"
       />
     </div>
   )

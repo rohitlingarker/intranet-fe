@@ -18,21 +18,18 @@ export const getWorkforceFilters = async () => {
 
 export const getWorkforceKPI = async (filters) => {
   try {
+    const params = {};
+    if (filters.role && filters.role !== "All Roles") params.role = filters.role;
+    if (filters.location && filters.location !== "All Locations") params.location = filters.location;
+    if (filters.employmentType && filters.employmentType !== "All Types")
+      params.employmentType = filters.employmentType;
+    if (filters.experienceRange?.[0] > 0)
+      params.minExperience = filters.experienceRange[0];
+    if (filters.experienceRange?.[1] < 15)
+      params.maxExperience = filters.experienceRange[1];
+
     const response = await axios.get(`${BASE_URL}/api/rms/kpis`, {
-      params: {
-        role: filters.role !== "All Roles" ? filters.role : null,
-        location:
-          filters.location !== "All Locations" ? filters.location : null,
-        employmentType:
-          filters.employmentType !== "All Types"
-            ? filters.employmentType
-            : null,
-        minExperience: filters.experienceRange?.[0] ?? null,
-        maxExperience: filters.experienceRange?.[1] ?? null,
-        // Optional date filters (if you add them later)
-        // from: filters.fromDate || null,
-        // to: filters.toDate || null,
-      },
+      params,
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
@@ -46,18 +43,24 @@ export const getWorkforceKPI = async (filters) => {
 
 export const getAvailabilityTimeline = async (filters, pagination) => {
   try {
-    const params = {
-      page: pagination.page,
-      size: pagination.size,
-      startDate: pagination.startDate, // YYYY-MM-DD
-      endDate: pagination.endDate,     // YYYY-MM-DD
-      designation: filters.role !== "All Roles" ? filters.role : null,
-      location: filters.location !== "All Locations" ? filters.location : null,
-      employmentType: filters.employmentType !== "All Types" ? filters.employmentType : null,
-      minExp: filters.experienceRange?.[0] ?? null,
-      maxExp: filters.experienceRange?.[1] ?? null,
-      status: filters.status || null // If status filter is passed
-    };
+    const params = {};
+
+    // Pagination params
+    if (pagination.page !== undefined && pagination.page !== null) params.page = pagination.page;
+    if (pagination.size !== undefined && pagination.size !== null) params.size = pagination.size;
+    if (pagination.startDate) params.startDate = pagination.startDate;
+    if (pagination.endDate) params.endDate = pagination.endDate;
+
+    // Filter params
+    if (filters.role && filters.role !== "All Roles") params.designation = filters.role;
+    if (filters.location && filters.location !== "All Locations") params.location = filters.location;
+    if (filters.employmentType && filters.employmentType !== "All Types")
+      params.employmentType = filters.employmentType;
+    if (filters.experienceRange?.[0] > 0)
+      params.minExp = filters.experienceRange[0];
+    if (filters.experienceRange?.[1] < 15)
+      params.maxExp = filters.experienceRange[1];
+    if (filters.status) params.status = filters.status;
 
     const response = await axios.get(`${BASE_URL}/api/availability/timeline/window`, {
       params,

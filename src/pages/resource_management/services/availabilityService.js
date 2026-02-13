@@ -12,7 +12,7 @@ export function getKPIData(resources = RESOURCES) {
   const overAllocated = resources.filter((r) => r.currentAllocation > 100).length
 
   const upcomingAvailability = resources.filter((r) => {
-    const availDate = new Date(r.availableFrom)
+    const availDate = new Date(r.availableFrom || new Date())
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
     return availDate <= thirtyDaysFromNow

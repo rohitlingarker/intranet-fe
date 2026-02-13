@@ -92,6 +92,11 @@ const RESOURCE_DEFINITIONS = [
       { project: "Project Horizon", startDate: daysFromNow(-30), endDate: daysFromNow(20), allocation: 40 },
       { project: "Project Orbit", startDate: daysFromNow(35), endDate: daysFromNow(120), allocation: 100, tentative: true },
     ],
+    noticeInfo: {
+      isNoticePeriod: true,
+      noticeStartDate: daysFromNow(-10),
+      noticeEndDate: daysFromNow(20),
+    },
   },
   {
     id: "res-005",
