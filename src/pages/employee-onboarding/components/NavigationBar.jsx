@@ -30,6 +30,7 @@ export default function OnboardingNavBar() {
       path: "/employee-onboarding/hr-configuration",
     },
     { label: "HR Verification", path: "/employee-onboarding/hr" },
+    { label: "Add Tasks", path: "/employee-onboarding/add-tasks" },
   ];
 
   return (
