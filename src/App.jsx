@@ -70,6 +70,7 @@ import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign
 
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
+import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
 import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
 import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
 import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
@@ -125,6 +126,7 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
+
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
@@ -353,6 +355,12 @@ const AppRoutes = () => {
             path="/employee-onboarding/offer/:user_uuid"
             element={<ViewEmpDetails />}
           />
+
+          <Route
+            path="/employee-onboarding/employeeProfile"
+            element={<EmployeeProfileView />}
+          />
+          
           // Correct routes
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
