@@ -81,11 +81,16 @@ import EducationDashboard from "./pages/employee-onboarding/hr-configuration/edu
 import EducationLevelManagement from "./pages/employee-onboarding/hr-configuration/education/levels/EducationLevelManagement.jsx";
 import EducationDocumentManagement from "./pages/employee-onboarding/hr-configuration/education/documents/EducationDocumentManagement.jsx";
 import CountryEducationMapping from "./pages/employee-onboarding/hr-configuration/education/mapping/CountryEducationMapping.jsx";
-import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
+// import AdminApprovalActions from "./pages/employee-onboarding/admin/AdminApprovalActions.jsx";
 import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminApprovalDashboard.jsx";
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
+import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
+import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
+import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -348,13 +353,19 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-          <Route path="/employee-onboarding" element={<EmpDashboard />} />
+          {/* <Route path="/employee-onboarding" element={<EmpDashboard />} /> */}
+          
+          
+          <Route path="/employee-onboarding" element={<EmpDashboard />}
+           />
+          <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
+          <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
+          <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
+          <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route
             path="/employee-onboarding/offer/:user_uuid"
             element={<ViewEmpDetails />}
-          />
-          // Correct routes
-          <Route path="/employee-onboarding" element={<EmpDashboard />} />
+          /> 
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
           <Route
             path="/employee-onboarding/bulk-upload"
@@ -392,10 +403,7 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr-configuration/education/mapping"
             element={<CountryEducationMapping />}
           />
-          <Route
-            path="/employee-onboarding/admin/my-approvals"
-            element={<AdminApprovalActions />}
-          />
+          
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
             element={<AdminApprovalDashboard />}

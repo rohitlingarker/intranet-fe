@@ -41,6 +41,14 @@ const resourceManagementSubmenu = [
 
 ];
 
+const employeeOnboardingSubmenu = [
+  { label: "Onboarding Task", to: "/employee-onboarding/onboarding-task" },
+  { label: "Employee Directory", to: "/employee-onboarding/employee-directory" },
+  { label: "Employee Verification", to: "/employee-onboarding/employee-verification" },
+  { label: "Employee Documents Template", to: "/employee-onboarding/employee-documents-template" },
+];
+
+
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const { user } = useAuth();
@@ -52,6 +60,9 @@ const Sidebar = ({ isCollapsed }) => {
   // State for User Management Hover
   const [userHovered, setUserHovered] = useState(false);
   const userManagementRef = useRef(null);
+
+  const [ eoHovered, setEoHovered] = useState(false);
+  const eoRef = useRef(null);
   
   // State for Resource Management Hover (NEW)
   const [rmHovered, setRmHovered] = useState(false);
@@ -94,9 +105,27 @@ const Sidebar = ({ isCollapsed }) => {
     }, 200);
   };
 
+  const handleEoMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    if (eoRef.current) {
+      const rect = eoRef.current.getBoundingClientRect();
+      setSubmenuTop(rect.top);
+    }
+    setEoHovered(true);
+    setUserHovered(false);
+    setRmHovered(false);
+  };
+
+  const handleEoMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => {
+      setEoHovered(false);
+    }, 200);
+  };
+
   useEffect(() => {
     setUserHovered(false);
     setRmHovered(false);
+    setEoHovered(false);
   }, [location.pathname]);
 
   return (
@@ -262,21 +291,67 @@ const Sidebar = ({ isCollapsed }) => {
 
           {/* 4. Employee Onboarding (Non-General) */}
           {!isGeneral && (
-            <li className="relative">
-              <Link
-                to="/employee-onboarding"
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                  location.pathname.startsWith("/employee-onboarding")
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+            <li
+        ref={eoRef}
+        className="relative"
+        onMouseEnter={handleEoMouseEnter}
+        onMouseLeave={handleEoMouseLeave}
+      >
+        <div
+          className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+            location.pathname.startsWith("/employee-onboarding")
+              ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+              : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+          }`}
+          title={isCollapsed ? "Employee Onboarding" : ""}
+        >
+          <Handshake className="h-5 w-5 shrink-0" />
+
+          {!isCollapsed && (
+            <>
+              <span className="flex-1">Employee Onboarding</span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${
+                  eoHovered ? "rotate-180" : ""
                 }`}
-                title={isCollapsed ? "Employee Onboarding" : ""}
-              >
-                <Handshake className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>Employee Onboarding</span>}
-              </Link>
-            </li>
+              />
+            </>
           )}
+        </div>
+
+        {/* SAME POPUP STYLE AS RESOURCE MANAGEMENT */}
+        {eoHovered && (
+          <ul
+            className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+              isCollapsed ? "left-20" : "left-64"
+            }`}
+            style={{ top: `${submenuTop}px` }}
+            onMouseEnter={handleEoMouseEnter}
+            onMouseLeave={handleEoMouseLeave}
+          >
+            {employeeOnboardingSubmenu.map((item) => (
+              <li key={item.label}>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `block px-4 py-2 text-xs transition-colors ${
+                      isActive
+                        ? "bg-blue-100 text-[#0a174e] font-semibold"
+                        : "hover:bg-[#263383] hover:text-white"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+      )}
+
+                
+            
 
           {/* 5. Remaining Items (Leave, Timesheets, Calendar) */}
           {navigation.slice(1).map((item) => {

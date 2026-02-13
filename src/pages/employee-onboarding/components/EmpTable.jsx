@@ -129,7 +129,6 @@ export default function OffersTable({ offers = [], loading = false }) {
       showStatusToast(
         `✅ Bulk Send Complete\n\nSuccessful: ${res.data.successful}\nFailed: ${res.data.failed}`
       );
-
       cancelBulk();
     } catch (error) {
       console.error("Bulk send failed", error);
@@ -195,6 +194,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "Email",
     "Contact",
     "Role",
+    "Employee Type",
     "Status",
     "Action",
   ].filter(Boolean);
@@ -210,6 +210,7 @@ export default function OffersTable({ offers = [], loading = false }) {
     "mail",
     "contact",
     "designation",
+    "employee_type",
     "status",
     "action",
   ].filter(Boolean);
@@ -261,6 +262,7 @@ export default function OffersTable({ offers = [], loading = false }) {
         mail: offer.mail || "—",
         contact: offer.contact_number || "—",
         designation: offer.designation || "—",
+        employee_type: offer.employee_type || "—",
         status: offer.status || "—",
 
         action: (

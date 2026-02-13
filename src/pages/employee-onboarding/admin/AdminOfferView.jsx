@@ -15,6 +15,7 @@ import {
   UserCheck,
   MoreVertical,
 } from "lucide-react";
+import { set } from "date-fns";
 
 /* ================= MAIN COMPONENT ================= */
 
@@ -38,6 +39,8 @@ export default function AdminOfferView() {
 
   const [holdModal, setHoldModal] = useState(false);
   const [holdComment, setHoldComment] = useState("");
+  const [deleteModal, setDeleteModal] = useState(false);
+
 
   /* ---------------- FETCH OFFER ---------------- */
   const fetchOffer = async () => {
@@ -49,13 +52,25 @@ export default function AdminOfferView() {
 
   /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
-    const res = await axios.get(`${BASE}/offer-approval/my-actions`, {
+    const res = await axios.get(`${BASE}/offer-approval/admin/my-actions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const found = res.data.find((i) => i.user_uuid === user_uuid);
-    setApproval(found || null);
+    if (!found) {
+      setApproval(null);
+      return;
+    }
+    const mapped= {
+      ...found,
+      action: found.action,
+      requested_by_name: found.requested_by_name,
+      comments: found.message || "",
+    };
+    setApproval(mapped);
+    console.log("Mapped Approval:", mapped);
+    // setApproval(found || null);
   };
-
+  
   useEffect(() => {
     Promise.all([fetchOffer(), fetchApproval()])
       .catch(() => setError("Failed to load data"))
@@ -80,7 +95,7 @@ export default function AdminOfferView() {
     }
 
     const previousAction = approval.action;
-    setApproval({ ...approval, action }); // optimistic UI
+    setApproval({ ...approval, action, comments: comment ?? approval.comments  }); // optimistic UI
     setActing(true);
     setError("");
 
@@ -118,7 +133,7 @@ export default function AdminOfferView() {
       setIsEditing(false);
       setShowMenu(false);
     } catch (e) {
-      setApproval({ ...approval, action: previousAction });
+      setApproval({ ...approval, action: previousAction, comments: approval.comments });
       const msg =
         e?.response?.data?.detail || "Unable to update approval status";
       setError(msg);
@@ -127,6 +142,41 @@ export default function AdminOfferView() {
       setActing(false);
     }
   };
+ 
+/* ---------------- DELETE APPROVAL REQUEST ---------------- */
+const deleteApprovalRequest = async () => {
+  if (!approval) return;
+
+  try {
+    setActing(true);
+
+    await axios.delete(`${BASE}/offer-approval-requests/request/delete`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      data: [{ user_uuid }],
+    });
+
+    toast.success("Approval request deleted successfully");
+
+    // close modal
+    setDeleteModal(false);
+
+    // redirect to dashboard after short delay
+    setTimeout(() => {
+      navigate("/employee-onboarding"); // change if your dashboard route is different
+    }, 800);
+
+  } catch (e) {
+    const msg =
+      e?.response?.data?.detail || "Failed to delete approval request";
+    toast.error(msg);
+  } finally {
+    setActing(false);
+  }
+};
+
 
   if (loading)
     return <div className="p-10 text-center">Loading...</div>;
@@ -200,7 +250,8 @@ export default function AdminOfferView() {
             {approval && (
               <ApprovalBadge
                 status={approval.action}
-                approver={approval.requested_by_name}
+                approver={approval.requested_name}
+                comments={approval.comments}
               />
             )}
           </div>
@@ -223,6 +274,11 @@ export default function AdminOfferView() {
             icon={<IndianRupee />}
             label="CTC"
             value={`${offer.package} ${offer.currency}`}
+          />
+          <DetailCard
+            icon={<UserCheck/>}
+            label="Employee Type"
+            value={offer.employee_type}
           />
         </div>
 
@@ -252,7 +308,14 @@ export default function AdminOfferView() {
                 setHoldModal(true);
                 setHoldComment("");
               }}
+              
             />
+            <ActionButton
+            label="Delete Approval"
+            color="red"
+            disabled={acting}
+            onClick={() => setDeleteModal(true)}
+              />
           </div>
         )}
 
@@ -294,6 +357,40 @@ export default function AdminOfferView() {
           color="green"
         />
       )}
+      {/* DELETE MODAL */}
+{deleteModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow w-[400px]">
+      <h2 className="text-lg font-semibold mb-3 text-red-700">
+        Delete Approval Request
+      </h2>
+
+      <p className="text-sm text-gray-700 mb-4">
+        Are you sure you want to delete this approval request?  
+        This action cannot be undone.
+      </p>
+
+      <div className="flex justify-end gap-2">
+        <button
+          disabled={acting}
+          onClick={() => setDeleteModal(false)}
+          className="px-4 py-2 bg-gray-500 text-white rounded"
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={acting}
+          onClick={deleteApprovalRequest}
+          className="px-4 py-2 bg-red-600 text-white rounded disabled:opacity-60"
+        >
+          {acting ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
@@ -312,19 +409,44 @@ function DetailCard({ icon, label, value }) {
   );
 }
 
-function ApprovalBadge({ status, approver }) {
+function ApprovalBadge({ status, approver,comments }) {
   const styles = {
     APPROVED: "bg-green-100 text-green-800 border-green-300",
     REJECTED: "bg-red-100 text-red-800 border-red-300",
     ON_HOLD: "bg-gray-100 text-gray-800 border-gray-300",
   };
 
+  // return (
+    
+  //   <div
+  //     className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
+  //   >
+  //     <span className="font-medium">{status}</span>
+  //     {approver && <span className="text-xs">• {approver}</span>}
+  //     {comments && (
+  //       <span className="text-xs ml-2">({approver.comments})</span>
+  //     )}
+  //   </div>
+  // );
   return (
-    <div
-      className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
-    >
-      <span className="font-medium">{status}</span>
-      {approver && <span className="text-xs">• {approver}</span>}
+    <div className="mt-4 flex flex-col gap-2">
+      {/* STATUS LINE */}
+      <div
+        className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}
+      >
+        <span className="font-medium">{status}</span>
+        {approver && <span className="text-xs">• {approver}</span>}
+        
+      </div>
+
+      {/* COMMENT LINE */}
+      {comments && comments.trim() !== "" && (
+
+        <div className="text-lg">
+          <span className="font-semibold text-red-700">Comments : </span> {comments}
+        </div>
+        
+      )}
     </div>
   );
 }
@@ -333,7 +455,7 @@ function ActionButton({ label, color, onClick, disabled }) {
   const colors = {
     green: "bg-green-700 hover:bg-green-800",
     red: "bg-red-700 hover:bg-red-800",
-    gray: "bg-gray-600 hover:bg-gray-700",
+    gray: "bg-gray-600 hover:bg-gray-800",
   };
 
   return (

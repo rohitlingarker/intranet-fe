@@ -95,3 +95,58 @@ export const statusUpdate = async (readinessData) => {
     throw err;
   }
 };
+
+export const getProjectEscalations = async (projectId) => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/projects/${projectId}/escalations`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+// 🔹 CREATE new escalation mapping (existing or new contact)
+export const createProjectEscalation = async (payload) => {
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/api/projects/escalations`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+// 🔹 DELETE escalation mapping from project
+export const deleteProjectEscalation = async (escalationId) => {
+  try {
+    const res = await axios.delete(
+      `${BASE_URL}/api/projects/escalations/${escalationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
