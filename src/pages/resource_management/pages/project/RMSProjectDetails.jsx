@@ -5,8 +5,9 @@ import ResourceList from "./RMSProjectList";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
-import EscalationForm from "../../models/client_configuration/forms/EscalationForm";import LoadingSpinner from "../../../../components/LoadingSpinner";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm"; import LoadingSpinner from "../../../../components/LoadingSpinner";
 import DemandModal from "../../models/DemandModal";
+import ProjectFinancialsInline from "../../components/FinancialModal";
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
   ArrowLeft,
@@ -98,7 +99,7 @@ const RMSProjectDetails = () => {
   };
 
   if (loading)
-    return <div className="p-10 text-center"><LoadingSpinner text="Loading..."/></div>;
+    return <div className="p-10 text-center"><LoadingSpinner text="Loading..." /></div>;
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -130,8 +131,8 @@ const RMSProjectDetails = () => {
               > */}
               <span
                 className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-gray-100 text-gray-600"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-gray-100 text-gray-600"
                   }`}
               >
                 {project.projectStatus}
@@ -146,10 +147,10 @@ const RMSProjectDetails = () => {
             </p>
           </div>
           <div>
-            <button 
-              title={!demandResponse?.create ? demandResponse?.reason : ""} 
-              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`} 
-              disabled={loadingDemand || !demandResponse?.create} 
+            <button
+              title={!demandResponse?.create ? demandResponse?.reason : ""}
+              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`}
+              disabled={loadingDemand || !demandResponse?.create}
               onClick={() => setModalOpen(true)}
             >
               Create Demand
@@ -227,8 +228,8 @@ const RMSProjectDetails = () => {
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
                       className={`h-4 w-4 ${project.riskLevel === "HIGH"
-                          ? "text-red-500"
-                          : "text-green-500"
+                        ? "text-red-500"
+                        : "text-green-500"
                         }`}
                     />
                     {project.riskLevel}
@@ -351,6 +352,10 @@ const RMSProjectDetails = () => {
         </div>
       )}
 
+      {activeTab === "financials" && (
+        <ProjectFinancialsInline />
+      )}
+
       {activeTab === "compliance" && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
@@ -438,7 +443,7 @@ const RMSProjectDetails = () => {
       )}
 
       {modalOpen && (
-        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)}/>
+        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)} />
       )}
     </div>
   );
