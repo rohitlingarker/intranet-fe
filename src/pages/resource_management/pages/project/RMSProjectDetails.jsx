@@ -5,7 +5,8 @@ import ResourceList from "./RMSProjectList";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
-import EscalationForm from "../../models/client_configuration/forms/EscalationForm";import LoadingSpinner from "../../../../components/LoadingSpinner";
+import EscalationForm from "../../models/client_configuration/forms/EscalationForm";
+import LoadingSpinner from "../../../../components/LoadingSpinner";
 import DemandModal from "../../models/DemandModal";
 import { CheckSquare, Square } from "lucide-react";
 
@@ -21,13 +22,16 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { getProjectById, checkDemandCreation } from "../../services/projectService";
+import {
+  getProjectById,
+  checkDemandCreation,
+} from "../../services/projectService";
 import { toast } from "react-toastify";
+import ConfirmationModal from "../../../../components/confirmation_modal/ConfirmationModal";
 
 const RMSProjectDetails = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const [deleteComplianceId, setDeleteComplianceId] = useState(null);
   const [projectEscalations, setProjectEscalations] = useState([]);
   const [clientEscalations, setClientEscalations] = useState([]);
   const [selectedClientEscalations, setSelectedClientEscalations] = useState(
@@ -49,11 +53,15 @@ const RMSProjectDetails = () => {
   const [inheritMode, setInheritMode] = useState(false);
   const [clientSlas, setClientSlas] = useState([]);
   const [selectedClientSlas, setSelectedClientSlas] = useState([]);
-
-  // New states for Compliance inheritance
   const [projectCompliance, setProjectCompliance] = useState([]);
   const [clientCompliance, setClientCompliance] = useState([]);
   const [selectedClientCompliance, setSelectedClientCompliance] = useState([]);
+  const [openConfirmModal, setOpenConfirmModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [deleteConfigId, setDeleteConfigId] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);  
+
 
   const DEFAULT_FORM_STATE = {
     activeFlag: true,
@@ -175,25 +183,87 @@ const RMSProjectDetails = () => {
     const message = sla.isInherited
       ? "This SLA was inherited from client. Do you want to uninherit it from this project?"
       : "Are you sure you want to delete this custom SLA configuration?";
+    setDeleteMessage(message);
+    setDeleteConfigId(sla.projectSlaId);
+    setDeleteType("sla");
+    setOpenConfirmModal(true);
+  };
+  const handleDeleteCompliance = (comp) => {
+  const message = comp.isInherited
+    ? "This compliance was inherited from client. Do you want to uninherit it from this project?"
+    : "Are you sure you want to delete this compliance configuration?";
 
-    if (!window.confirm(message)) return;
+  setDeleteMessage(message);
+  setDeleteConfigId(comp.projectComplianceId);
+  setDeleteType("compliance");
+  setOpenConfirmModal(true);
+};
+const handleDeleteEscalation = (esc) => {
+  const message =
+    esc.source === "INHERITED"
+      ? "This escalation was inherited from client. Do you want to uninherit it?"
+      : "Are you sure you want to delete this escalation?";
 
-    try {
+  setDeleteMessage(message);
+  setDeleteConfigId(esc.projectEscalationId);
+  setDeleteType("escalation");
+  setOpenConfirmModal(true);
+};
+
+
+  const confirmDelete = async () => {
+  setDeleteLoading(true);
+
+  try {
+    if (deleteType === "sla") {
       await axios.delete(
-        `${RMS_BASE_URL}/api/project-sla/${sla.projectSlaId}`,
+        `${RMS_BASE_URL}/api/project-sla/${deleteConfigId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         },
       );
-
       fetchProjectSLAs();
-    } catch (err) {
-      console.error("Error deleting project SLA", err);
-      alert(err.response?.data?.message || "Failed to delete SLA");
+      toast.success("SLA configuration deleted successfully.");
     }
-  };
+
+    if (deleteType === "compliance") {
+      await axios.delete(
+        `${RMS_BASE_URL}/api/project-compliance/${deleteConfigId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
+      fetchProjectCompliance();
+      toast.success("Compliance configuration deleted successfully.");
+    }
+
+    if (deleteType === "escalation") {
+      await axios.delete(
+        `${RMS_BASE_URL}/api/projects/delete-escalation/${deleteConfigId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
+      fetchProjectEscalations();
+      toast.success("Escalation deleted successfully.");
+    }
+
+    setOpenConfirmModal(false);
+    setDeleteMessage("");
+    setDeleteType(null);
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Delete failed.");
+  } finally {
+    setDeleteLoading(false);
+  }
+};
+
 
   // 2. Handle Edit Logic
   const handleEditSla = (sla) => {
@@ -350,29 +420,6 @@ const RMSProjectDetails = () => {
     setInheritMode(false);
   };
 
-  const handleDeleteCompliance = async (comp) => {
-    const message = comp.isInherited
-      ? "This compliance was inherited from client. Do you want to uninherit it from this project?"
-      : "Are you sure you want to delete this compliance configuration?";
-
-    if (!window.confirm(message)) return;
-
-    try {
-      await axios.delete(
-        `${RMS_BASE_URL}/api/project-compliance/${comp.projectComplianceId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        },
-      );
-
-      fetchProjectCompliance();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete compliance");
-    }
-  };
-
   const handleEscalationManualSave = async () => {
     try {
       const payload = {
@@ -419,7 +466,6 @@ const RMSProjectDetails = () => {
 
   const handleEscalationInheritClick = async () => {
     try {
-      // 1️⃣ Get existing project escalations
       const projectRes = await axios.get(
         `${RMS_BASE_URL}/api/projects/${projectId}/escalations`,
         {
@@ -429,11 +475,10 @@ const RMSProjectDetails = () => {
         },
       );
 
-      const existingLevels = (projectRes.data.data || []).map(
-        (e) => e.escalationLevel,
+      const existingContactIds = (projectRes.data.data || []).map(
+        (e) => e.contactId,
       );
 
-      // 2️⃣ Call YOUR ClientContactController endpoint
       const clientRes = await axios.get(
         `${RMS_BASE_URL}/api/client-contact/clientContact/${project.clientId}`,
         {
@@ -442,13 +487,12 @@ const RMSProjectDetails = () => {
           },
         },
       );
-
+      console.log("Exisiting Contacts:", existingContactIds); // Debug log
       const validated = (clientRes.data.data || []).map((contact) => ({
         ...contact,
-        isAlreadyMapped: existingLevels.includes(
-          `LEVEL_${contact.escalationLevel}`,
-        ),
+        isAlreadyMapped: existingContactIds.includes(contact.contactId),
       }));
+      console.log("Validated: ", validated);
 
       setClientEscalations(validated);
       setSelectedClientEscalations([]);
@@ -488,6 +532,57 @@ const RMSProjectDetails = () => {
     }
   };
 
+  const handleEscalationUpdate = async () => {
+    try {
+      if (!formData.projectEscalationId) {
+        alert("Escalation ID missing for update.");
+        return;
+      }
+
+      const payload = {
+        escalationLevel: formData.escalationLevel,
+        contactName: formData.contactName,
+        contactRole: formData.contactRole,
+        email: formData.email,
+        phone: formData.phone,
+        activeFlag: formData.activeFlag,
+      };
+
+      await axios.put(
+        `${RMS_BASE_URL}/api/projects/update-escalation/${formData.projectEscalationId}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
+
+      setOpenConfigModal(false);
+      setFormData(DEFAULT_FORM_STATE);
+      fetchProjectEscalations();
+    } catch (err) {
+      console.error("Error updating escalation", err);
+      alert(err.response?.data?.message || "Failed to update escalation");
+    }
+  };
+
+  const handleEditEscalation = (esc) => {
+    setFormData({
+      projectEscalationId: esc.projectEscalationId,
+      escalationLevel: esc.escalationLevel,
+      contactName: esc.contactName,
+      contactRole: esc.contactRole,
+      email: esc.email,
+      phone: esc.phone,
+      activeFlag: esc.activeFlag,
+    });
+
+    setConfigType("escalation");
+    setOpenConfigModal(true);
+    setInheritMode(false);
+  };
+
   const fetchDetail = async () => {
     try {
       setLoading(true);
@@ -495,7 +590,9 @@ const RMSProjectDetails = () => {
       setProject(res.data);
     } catch (err) {
       console.error("Failed to fetch project details", err);
-      toast.error(err.response?.data?.message || "Failed to fetch project details.");
+      toast.error(
+        err.response?.data?.message || "Failed to fetch project details.",
+      );
     } finally {
       setLoading(false);
     }
@@ -508,7 +605,9 @@ const RMSProjectDetails = () => {
       setDemandResponse(res);
     } catch (err) {
       console.error("Failed to check demand creation", err);
-      toast.error(err.response?.data?.message || "Failed to check demand creation.");
+      toast.error(
+        err.response?.data?.message || "Failed to check demand creation.",
+      );
     } finally {
       setLoadingDemand(false);
     }
@@ -542,6 +641,18 @@ const RMSProjectDetails = () => {
     }
   }, [activeTab, projectId]);
 
+  useEffect(() => {
+    if (openConfigModal || modalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [openConfigModal, modalOpen]);
+
   const fetchOverlaps = async () => {
     try {
       setLoadingOverlaps(true);
@@ -562,8 +673,26 @@ const RMSProjectDetails = () => {
     }
   };
 
+  const formatLevel = (level) => {
+    if (!level) return "";
+
+    if (level.startsWith("LEVEL_")) {
+      return `L${level.split("_")[1]}`;
+    }
+
+    if (level.startsWith("L") && level.includes("Level-")) {
+      return `L${level.split("-")[1]}`;
+    }
+
+    return level;
+  };
+
   if (loading)
-    return <div className="p-10 text-center"><LoadingSpinner text="Loading..."/></div>;
+    return (
+      <div className="p-10 text-center">
+        <LoadingSpinner text="Loading..." />
+      </div>
+    );
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -572,9 +701,7 @@ const RMSProjectDetails = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Back */}
       <button
-
         onClick={() => navigate(-1)}
-
         className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
@@ -594,27 +721,25 @@ const RMSProjectDetails = () => {
                 }`}
               > */}
               <span
-                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
+                className={`text-xs px-2 py-1 rounded-full border ${
+                  project.projectStatus === "ACTIVE"
                     ? "bg-green-50 text-green-700"
                     : "bg-gray-100 text-gray-600"
-                  }`}
+                }`}
               >
                 {project.projectStatus}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-
-              {project.client?.client_name} • Project ID:{" "}
-              {project.pmsProjectId}
-
+              {project.client?.client_name} • Project ID: {project.pmsProjectId}
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
           </div>
           <div>
-            <button 
-              title={!demandResponse?.create ? demandResponse?.reason : ""} 
-              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${(loadingDemand || !demandResponse?.create) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`} 
-              disabled={loadingDemand || !demandResponse?.create} 
+            <button
+              title={!demandResponse?.create ? demandResponse?.reason : ""}
+              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${loadingDemand || !demandResponse?.create ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`}
+              disabled={loadingDemand || !demandResponse?.create}
               onClick={() => setModalOpen(true)}
             >
               Create Demand
@@ -636,8 +761,9 @@ const RMSProjectDetails = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
-                }`}
+              className={`pb-3 text-sm font-medium capitalize relative ${
+                activeTab === tab ? "text-[#263383]" : "text-gray-500"
+              }`}
             >
               {tab}
               {tab === "overlaps" && overlaps.length > 0 && (
@@ -666,15 +792,11 @@ const RMSProjectDetails = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-
                     Project Manager ID
-
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <Users className="h-4 w-4 text-gray-400" />
-
                     {project.projectManagerId}
-
                     Project Manager ID
                   </div>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
@@ -690,10 +812,11 @@ const RMSProjectDetails = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
                     <ShieldAlert
-                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
+                      className={`h-4 w-4 ${
+                        project.riskLevel === "HIGH"
                           ? "text-red-500"
                           : "text-green-500"
-                        }`}
+                      }`}
                     />
                     {project.riskLevel}
                   </div>
@@ -1033,7 +1156,7 @@ const RMSProjectDetails = () => {
                     <th className="p-4">Email</th>
                     <th className="p-4">Phone</th>
                     <th className="p-4 text-center">Status</th>
-                    <th className="p-4 text-center">Type</th>
+                    <th className="p-4 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1043,15 +1166,12 @@ const RMSProjectDetails = () => {
                       className="hover:bg-gray-50"
                     >
                       <td className="p-4 font-semibold text-gray-700">
-                        L{esc.escalationLevel}
+                        {formatLevel(esc.escalationLevel)}
                       </td>
 
                       <td className="p-4 text-gray-700">{esc.contactName}</td>
-
                       <td className="p-4 text-gray-600">{esc.contactRole}</td>
-
                       <td className="p-4 text-gray-600">{esc.email}</td>
-
                       <td className="p-4 text-gray-600">{esc.phone}</td>
 
                       <td className="p-4 text-center">
@@ -1064,18 +1184,45 @@ const RMSProjectDetails = () => {
                         >
                           {esc.activeFlag ? "ACTIVE" : "INACTIVE"}
                         </span>
+
+                        {esc.source === "INHERITED" && (
+                          <span className="ml-2 px-2 py-1 rounded text-[10px] font-bold bg-blue-50 text-blue-700">
+                            INHERITED
+                          </span>
+                        )}
                       </td>
 
                       <td className="p-4 text-center">
-                        <span
-                          className={`px-2 py-1 rounded text-[10px] font-bold ${
-                            esc.source === "MANUAL"
-                              ? "bg-purple-50 text-purple-700"
-                              : "bg-blue-50 text-blue-700"
-                          }`}
-                        >
-                          {esc.source}
-                        </span>
+                        <div className="flex justify-center gap-4">
+                          {/* EDIT */}
+                          <button
+                            onClick={() => {
+                              if (esc.source === "INHERITED") return;
+                              handleEditEscalation(esc);
+                            }}
+                            className={`${
+                              esc.source === "INHERITED"
+                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                                : "text-blue-600 hover:text-blue-800"
+                            }`}
+                            title={
+                              esc.source === "INHERITED"
+                                ? "Cannot edit inherited escalation"
+                                : "Edit"
+                            }
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          {/* DELETE */}
+                          <button
+                            onClick={() => handleDeleteEscalation(esc)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete / Uninherit"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1092,8 +1239,8 @@ const RMSProjectDetails = () => {
 
       {/* CONFIGURATION MODAL */}
       {openConfigModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative max-h-[90vh] flex flex-col">
             <button
               onClick={() => {
                 setOpenConfigModal(false);
@@ -1105,288 +1252,440 @@ const RMSProjectDetails = () => {
               ✕
             </button>
 
-            <h2 className="text-lg font-semibold mb-6 capitalize border-b pb-2">
-              {inheritMode
-                ? `Inherit ${
-                    configType === "sla"
-                      ? "SLAs"
-                      : configType === "compliance"
-                        ? "Compliance"
-                        : "Escalation Contacts"
-                  } from ${project?.client?.client_name || "Client"}`
-                : `Create ${configType} Configuration`}
-            </h2>
-            {configType === "compliance" && (
-              <>
-                {!inheritMode ? (
-                  /* MANUAL FORM VIEW */
-                  <div className="space-y-6">
-                    <ComplianceForm
-                      formData={formData}
-                      setFormData={setFormData}
-                    />
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-semibold capitalize">
+                {inheritMode
+                  ? `Inherit ${
+                      configType === "sla"
+                        ? "SLAs"
+                        : configType === "compliance"
+                          ? "Compliance"
+                          : "Escalation Contacts"
+                    } from ${project?.client?.client_name || "Client"}`
+                  : `Create ${configType} Configuration`}
+              </h2>
 
-                    {/* Action buttons placed OUTSIDE the ComplianceForm component */}
-                    <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100">
-                      <button
-                        type="button"
-                        onClick={handleComplianceInheritClick}
-                        className="text-[#263383] font-semibold hover:underline text-sm flex items-center gap-1"
-                      >
-                        ← Inherit from Client Defaults
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleComplianceManualSave}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90 shadow-sm"
-                      >
-                        Save Compliance Configuration
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* INHERITANCE TABLE VIEW */
-                  <div className="space-y-4">
-                    {clientCompliance.length > 0 &&
-                    clientCompliance.every((c) => c.isAlreadyMapped) ? (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
-                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                        <p className="text-sm text-blue-800 font-medium">
-                          All available client compliance requirements are
-                          already inherited.
-                        </p>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {configType === "compliance" && (
+                <>
+                  {!inheritMode ? (
+                    /* MANUAL FORM VIEW */
+                    <div className="space-y-6">
+                      <ComplianceForm
+                        formData={formData}
+                        setFormData={setFormData}
+                      />
+
+                      {/* Action buttons placed OUTSIDE the ComplianceForm component */}
+                      <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={handleComplianceInheritClick}
+                          className="text-[#263383] font-semibold hover:underline text-sm flex items-center gap-1"
+                        >
+                          ← Inherit from Client Defaults
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleComplianceManualSave}
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90 shadow-sm"
+                        >
+                          {formData.projectComplianceId
+                            ? "Update Compliance Configuration"
+                            : "Save Compliance Configuration"}
+                        </button>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-2">
-                        Select compliance requirements to map:
-                      </p>
-                    )}
-
-                    <div className="max-h-60 overflow-y-auto border rounded-md">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-600">
-                          <tr>
-                            <th className="p-3 w-10">Select</th>
-                            <th className="p-3">Requirement Name</th>
-                            <th className="p-3">Type</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {clientCompliance.map((comp) => (
-                            <tr
-                              key={comp.clientcomplianceId}
-                              className={`hover:bg-gray-50 ${comp.isAlreadyMapped ? "bg-gray-50/50" : ""}`}
-                            >
-                              <td className="p-3">
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4 accent-[#263383] disabled:opacity-50"
-                                  disabled={comp.isAlreadyMapped}
-                                  // CRITICAL: Bind to requirementType (Enum String)
-                                  checked={selectedClientCompliance.includes(
-                                    comp.requirementType,
-                                  )}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedClientCompliance([
-                                        ...selectedClientCompliance,
-                                        comp.requirementType,
-                                      ]);
-                                    } else {
-                                      setSelectedClientCompliance(
-                                        selectedClientCompliance.filter(
-                                          (t) => t !== comp.requirementType,
-                                        ),
-                                      );
-                                    }
-                                  }}
-                                />
-                              </td>
-                              <td className="p-3 font-medium text-gray-700">
-                                {comp.requirementName}
-                                {comp.isAlreadyMapped && (
-                                  <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">
-                                    Mapped
-                                  </span>
-                                )}
-                              </td>
-                              <td className="p-3 text-gray-500">
-                                {comp.requirementType}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
                     </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                      <button
-                        onClick={() => setInheritMode(false)}
-                        className="px-4 py-2 text-gray-500 text-sm"
-                      >
-                        Back to Manual
-                      </button>
-                      <button
-                        onClick={saveInheritedCompliance}
-                        disabled={selectedClientCompliance.length === 0}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300"
-                      >
-                        Map to Project
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* SLA Configuration Views */}
-            {configType === "sla" && (
-              <>
-                {!inheritMode ? (
-                  /* MANUAL CREATE VIEW */
-                  <div className="space-y-6">
-                    <SLAForm formData={formData} setFormData={setFormData} />
-                    <div className="flex justify-between items-center mt-6">
-                      <button
-                        onClick={handleInheritClick}
-                        className="text-[#263383] font-medium hover:underline text-sm"
-                      >
-                        ← Inherit from Client Defaults
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleManualSave();
-                        }}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90"
-                      >
-                        Save SLA Configuration
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* INHERIT FROM CLIENT VIEW */
-                  <div className="space-y-4">
-                    {/* --- PLACE THE EMPTY STATE / VALIDATION MESSAGE HERE --- */}
-                    {clientSlas.length > 0 &&
-                    clientSlas.every((sla) => sla.isAlreadyMapped) ? (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
-                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                        <p className="text-sm text-blue-800">
-                          All available client SLAs have already been inherited
-                          for this project.
+                  ) : (
+                    /* INHERITANCE TABLE VIEW */
+                    <div className="space-y-4">
+                      {clientCompliance.length > 0 &&
+                      clientCompliance.every((c) => c.isAlreadyMapped) ? (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                          <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                          <p className="text-sm text-blue-800 font-medium">
+                            All available client compliance requirements are
+                            already inherited.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-2">
+                          Select compliance requirements to map:
                         </p>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 mb-2">
-                        Select default client SLAs to map to this project:
-                      </p>
-                    )}
-                    <div className="max-h-60 overflow-y-auto border rounded-md">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-600">
-                          <tr>
-                            <th className="p-3 w-10">Select</th>
-                            <th className="p-3">Type</th>
-                            <th className="p-3 text-center">Duration</th>
-                            <th className="p-3 text-center">Warning</th>
-                          </tr>
-                        </thead>
-                        {/* Replace the tbody inside your Inherit View with this: */}
-                        <tbody className="divide-y">
-                          {clientSlas.map((sla) => (
-                            <tr
-                              key={sla.slaId}
-                              className={`hover:bg-gray-50 ${sla.isAlreadyMapped ? "bg-gray-50/50" : ""}`}
-                            >
-                              <td className="p-3">
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4 accent-[#263383] disabled:opacity-50"
-                                  checked={selectedClientSlas.includes(
-                                    sla.slaType,
-                                  )}
-                                  disabled={sla.isAlreadyMapped} // Disable if already present
-                                  onChange={(e) => {
-                                    if (e.target.checked)
-                                      setSelectedClientSlas([
-                                        ...selectedClientSlas,
-                                        sla.slaType,
-                                      ]);
-                                    else
-                                      setSelectedClientSlas(
-                                        selectedClientSlas.filter(
-                                          (t) => t !== sla.slaType,
-                                        ),
-                                      );
-                                  }}
-                                />
-                              </td>
-                              <td className="p-3 font-medium text-gray-700">
-                                {sla.slaType}
-                                {sla.isAlreadyMapped && (
-                                  <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                                    Already Inherited
-                                  </span>
-                                )}
-                              </td>
-                              <td className="p-3 text-center text-gray-500">
-                                {sla.slaDurationDays} Days
-                              </td>
-                              <td className="p-3 text-center text-gray-500">
-                                {sla.warningThresholdDays} Days
-                              </td>
-                            </tr>
-                          ))}
-                          {clientSlas.length === 0 && (
+                      )}
+
+                      <div className="max-h-60 overflow-y-auto border rounded-md">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50 text-gray-600">
                             <tr>
-                              <td
-                                colSpan="4"
-                                className="p-6 text-center text-gray-400"
-                              >
-                                No client SLAs found to inherit.
-                              </td>
+                              <th className="p-3 w-10">Select</th>
+                              <th className="p-3">Requirement Name</th>
+                              <th className="p-3">Type</th>
                             </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y">
+                            {clientCompliance.map((comp) => (
+                              <tr
+                                key={comp.clientcomplianceId}
+                                className={`hover:bg-gray-50 ${comp.isAlreadyMapped ? "bg-gray-50/50" : ""}`}
+                              >
+                                <td className="p-3">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-[#263383] disabled:opacity-50"
+                                    disabled={comp.isAlreadyMapped}
+                                    // CRITICAL: Bind to requirementType (Enum String)
+                                    checked={selectedClientCompliance.includes(
+                                      comp.requirementType,
+                                    )}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedClientCompliance([
+                                          ...selectedClientCompliance,
+                                          comp.requirementType,
+                                        ]);
+                                      } else {
+                                        setSelectedClientCompliance(
+                                          selectedClientCompliance.filter(
+                                            (t) => t !== comp.requirementType,
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </td>
+                                <td className="p-3 font-medium text-gray-700">
+                                  {comp.requirementName}
+                                  {comp.isAlreadyMapped && (
+                                    <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">
+                                      Mapped
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-gray-500">
+                                  {comp.requirementType}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
-                      <button
-                        onClick={() => setInheritMode(false)}
-                        className="px-4 py-2 text-gray-500 text-sm hover:text-gray-700"
-                      >
-                        Back to Manual
-                      </button>
-                      <button
-                        onClick={saveInheritedSlas}
-                        disabled={selectedClientSlas.length === 0}
-                        className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-                      >
-                        Map to Project
-                      </button>
+                      <div className="flex justify-end gap-3 mt-6">
+                        <button
+                          onClick={() => setInheritMode(false)}
+                          className="px-4 py-2 text-gray-500 text-sm"
+                        >
+                          Back to Manual
+                        </button>
+                        <button
+                          onClick={saveInheritedCompliance}
+                          disabled={selectedClientCompliance.length === 0}
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300"
+                        >
+                          Map to Project
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
 
-            {/* Compliance Form */}
-            {/* {configType === "compliance" && (
+              {/* SLA Configuration Views */}
+              {configType === "sla" && (
+                <>
+                  {!inheritMode ? (
+                    /* MANUAL CREATE VIEW */
+                    <div className="space-y-6">
+                      <SLAForm formData={formData} setFormData={setFormData} />
+                      <div className="flex justify-between items-center mt-6">
+                        <button
+                          onClick={handleInheritClick}
+                          className="text-[#263383] font-medium hover:underline text-sm"
+                        >
+                          ← Inherit from Client Defaults
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleManualSave();
+                          }}
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90"
+                        >
+                          Save SLA Configuration
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* INHERIT FROM CLIENT VIEW */
+                    <div className="space-y-4">
+                      {/* --- PLACE THE EMPTY STATE / VALIDATION MESSAGE HERE --- */}
+                      {clientSlas.length > 0 &&
+                      clientSlas.every((sla) => sla.isAlreadyMapped) ? (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                          <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                          <p className="text-sm text-blue-800">
+                            All available client SLAs have already been
+                            inherited for this project.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mb-2">
+                          Select default client SLAs to map to this project:
+                        </p>
+                      )}
+                      <div className="max-h-60 overflow-y-auto border rounded-md">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="p-3 w-10">Select</th>
+                              <th className="p-3">Type</th>
+                              <th className="p-3 text-center">Duration</th>
+                              <th className="p-3 text-center">Warning</th>
+                            </tr>
+                          </thead>
+                          {/* Replace the tbody inside your Inherit View with this: */}
+                          <tbody className="divide-y">
+                            {clientSlas.map((sla) => (
+                              <tr
+                                key={sla.slaId}
+                                className={`hover:bg-gray-50 ${sla.isAlreadyMapped ? "bg-gray-50/50" : ""}`}
+                              >
+                                <td className="p-3">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-[#263383] disabled:opacity-50"
+                                    checked={selectedClientSlas.includes(
+                                      sla.slaType,
+                                    )}
+                                    disabled={sla.isAlreadyMapped} // Disable if already present
+                                    onChange={(e) => {
+                                      if (e.target.checked)
+                                        setSelectedClientSlas([
+                                          ...selectedClientSlas,
+                                          sla.slaType,
+                                        ]);
+                                      else
+                                        setSelectedClientSlas(
+                                          selectedClientSlas.filter(
+                                            (t) => t !== sla.slaType,
+                                          ),
+                                        );
+                                    }}
+                                  />
+                                </td>
+                                <td className="p-3 font-medium text-gray-700">
+                                  {sla.slaType}
+                                  {sla.isAlreadyMapped && (
+                                    <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                                      Already Inherited
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center text-gray-500">
+                                  {sla.slaDurationDays} Days
+                                </td>
+                                <td className="p-3 text-center text-gray-500">
+                                  {sla.warningThresholdDays} Days
+                                </td>
+                              </tr>
+                            ))}
+                            {clientSlas.length === 0 && (
+                              <tr>
+                                <td
+                                  colSpan="4"
+                                  className="p-6 text-center text-gray-400"
+                                >
+                                  No client SLAs found to inherit.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-6">
+                        <button
+                          onClick={() => setInheritMode(false)}
+                          className="px-4 py-2 text-gray-500 text-sm hover:text-gray-700"
+                        >
+                          Back to Manual
+                        </button>
+                        <button
+                          onClick={saveInheritedSlas}
+                          disabled={selectedClientSlas.length === 0}
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                          Map to Project
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Compliance Form */}
+              {/* {configType === "compliance" && (
               <ComplianceForm formData={formData} setFormData={setFormData} />
             )} */}
 
-            {/* Escalation Form */}
-            {configType === "escalation" && (
-              <EscalationForm formData={formData} setFormData={setFormData} />
-            )}
+              {configType === "escalation" && (
+                <>
+                  {!inheritMode ? (
+                    /* ================= MANUAL VIEW ================= */
+                    <div className="space-y-6">
+                      <EscalationForm
+                        formData={formData}
+                        setFormData={setFormData}
+                      />
+
+                      <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={handleEscalationInheritClick}
+                          className="text-[#263383] font-semibold hover:underline text-sm"
+                        >
+                          ← Inherit from Client Defaults
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={
+                            formData.projectEscalationId
+                              ? handleEscalationUpdate
+                              : handleEscalationManualSave
+                          }
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90 shadow-sm"
+                        >
+                          Save Escalation Configuration
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ================= INHERIT VIEW ================= */
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600 mb-2">
+                        Select escalation contacts to map:
+                      </p>
+
+                      <div className="max-h-60 overflow-y-auto border rounded-md">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="p-3 w-10">Select</th>
+                              <th className="p-3">Level</th>
+                              <th className="p-3">Name</th>
+                              <th className="p-3">Role</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {clientEscalations.map((contact) => (
+                              <tr
+                                key={contact.contactId}
+                                className={`hover:bg-gray-50 ${
+                                  contact.isAlreadyMapped ? "bg-gray-50/50" : ""
+                                }`}
+                              >
+                                <td className="p-3">
+                                  <input
+                                    type="checkbox"
+                                    disabled={contact.isAlreadyMapped}
+                                    checked={selectedClientEscalations.includes(
+                                      contact.contactId,
+                                    )}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedClientEscalations([
+                                          ...selectedClientEscalations,
+                                          contact.contactId,
+                                        ]);
+                                      } else {
+                                        setSelectedClientEscalations(
+                                          selectedClientEscalations.filter(
+                                            (id) => id !== contact.contactId,
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </td>
+
+                                <td className="p-3">
+                                  {formatLevel(contact.escalationLevel)}
+                                </td>
+
+                                <td className="p-3 font-medium text-gray-700">
+                                  {contact.contactName}
+
+                                  {contact.isAlreadyMapped && (
+                                    <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">
+                                      Mapped
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td className="p-3 text-gray-500">
+                                  {contact.contactRole}
+                                </td>
+                              </tr>
+                            ))}
+
+                            {clientEscalations.length === 0 && (
+                              <tr>
+                                <td
+                                  colSpan="4"
+                                  className="p-6 text-center text-gray-400"
+                                >
+                                  No client escalation contacts found.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-6">
+                        <button
+                          onClick={() => setInheritMode(false)}
+                          className="px-4 py-2 text-gray-500 text-sm"
+                        >
+                          Back to Manual
+                        </button>
+
+                        <button
+                          onClick={saveInheritedEscalations}
+                          disabled={selectedClientEscalations.length === 0}
+                          className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300"
+                        >
+                          Map to Project
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {modalOpen && (
-        <DemandModal open={modalOpen} onClose={() => setModalOpen(false)} projectDetails={project} onSuccess={() => setModalOpen(false)}/>
+        <DemandModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          projectDetails={project}
+          onSuccess={() => setModalOpen(false)}
+        />
       )}
+
+      <ConfirmationModal 
+        isOpen={openConfirmModal}
+        title="Delete Project"
+        message={deleteMessage || "Are you sure you want to delete this project SLA? This action cannot be undone."}
+        onConfirm={confirmDelete}
+        onCancel={() => setOpenConfirmModal(false)}
+        isLoading={deleteLoading}
+      />
     </div>
   );
 };
