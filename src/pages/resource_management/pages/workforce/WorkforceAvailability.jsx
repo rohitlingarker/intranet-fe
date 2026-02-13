@@ -13,7 +13,7 @@ import { getWorkforceKPI } from "../../services/workforceService";
 import { useAvailability } from "../../hooks/useAvailability";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
-import Pagination from "../../../../components/Pagination/Pagination";
+import Pagination from "../../../../components/Pagination/pagination";
 
 export default function WorkforceAvailability() {
   const {
