@@ -200,7 +200,7 @@ const RMSProjectList = () => {
 
                   {/* 🔴 OVERLAP WARNING ICON */}
                   {project.hasOverlap && (
-                    <div className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <div className="flex items-center gap-1 bg-amber-100 text-amber-600 px-2 py-1 rounded text-[10px] font-bold">
                       <AlertTriangle className="h-3 w-3" />
                       Overlap
                     </div>
@@ -254,28 +254,28 @@ const RMSProjectList = () => {
               <div className="flex items-center gap-2">
                 {project.readinessStatus === "READY" && (
                   <>
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span className="text-green-700 font-medium">
-                      Staffing READY
+                      Staffing
                     </span>
+                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
                   </>
                 )}
 
                 {project.readinessStatus === "NOT_READY" && (
                   <>
-                    <XCircle className="h-4 w-4 text-red-600" />
                     <span className="text-red-700 font-medium">
-                      Staffing NOT READY
+                      Staffing
                     </span>
+                    <XCircle className="h-4 w-4 text-red-600 mt-1" />
                   </>
                 )}
 
                 {project.readinessStatus === "UPCOMING" && (
                   <>
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
                     <span className="text-amber-600 font-medium">
                       Staffing UPCOMING
                     </span>
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
                   </>
                 )}
               </div>

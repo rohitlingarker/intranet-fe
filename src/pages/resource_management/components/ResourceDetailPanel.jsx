@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { MapPin, Briefcase, Calendar, Star, ArrowRight, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { getUtilization } from "../services/workforceService"
+import { toast } from "react-toastify"
 
 function StatusDot({ status }) {
   const colors = {
@@ -72,42 +75,105 @@ function TimelineBar({ resource }) {
   )
 }
 
-function UtilizationChart({ data }) {
-  const safeData = data || []
-  const max = Math.max(...safeData, 100)
-  const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
-  const recentMonths = safeData.slice(-6)
-  const recentLabels = months.slice(-6)
+function UtilizationChart({ data, loading = false }) {
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-end gap-1 h-16">
+          {Array(6).fill(0).map((_, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5 animate-pulse">
+              <div className="w-full relative flex items-end justify-center" style={{ height: "48px" }}>
+                <div className="w-full bg-muted rounded-t-sm h-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-1 mt-1">
+          {['jan', 'feb', 'mar', 'apr', 'may', 'jun'].map((label, i) => (
+            <div key={i} className="flex-1 text-center text-[10px] text-muted-foreground bg-muted h-3 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const safeData = data || {};
+  const monthlySummary = safeData.monthlySummary || {};
+  
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", 
+                  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  
+  const recentData = months.slice(-6).map(month => {
+    const billable = monthlySummary[month]?.billableUtilization ?? 0;
+    const nonBillable = monthlySummary[month]?.nonBillableUtilization ?? 0;
+    return { month, billable, nonBillable, total: billable + nonBillable };
+  });
+  
+  const maxTotal = Math.max(...recentData.map(d => d.total), 100);
+  const displayLabels = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
 
   return (
     <div>
+      {/* Stacked Bars */}
       <div className="flex items-end gap-1 h-16">
-        {recentMonths.map((val, i) => {
-          let color = "bg-status-available"
-          if (val > 80) color = "bg-status-allocated"
-          else if (val > 50) color = "bg-status-partial"
-
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-              <div className="w-full relative flex items-end justify-center" style={{ height: "48px" }}>
-                <div
-                  className={cn("w-full rounded-t-sm transition-all", color)}
-                  style={{ height: `${(val / max) * 100}%` }}
-                />
-              </div>
+        {recentData.map((item, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 relative">
+            <div className="w-full h-[48px] relative flex flex-col justify-end">
+              {/* Non-billable (bottom, gray-ish) */}
+              <div
+                className="w-full rounded-b-sm"
+                style={{ 
+                  height: `${(item.nonBillable / maxTotal) * 100}%`,
+                  minHeight: '2px'
+                }}
+              />
+              {/* Billable (top, colored) */}
+              <div
+                className={cn(
+                  "w-full rounded-t-sm absolute bottom-0 transition-all",
+                  item.billable > 80 ? "bg-status-allocated" :
+                  item.billable > 50 ? "bg-status-partial" : 
+                  "bg-status-available"
+                )}
+                style={{ 
+                  height: `${(item.billable / maxTotal) * 100}%`,
+                  minHeight: item.billable > 0 ? '2px' : 0
+                }}
+              />
             </div>
-          )
-        })}
+            {/* Value label */}
+            <div className="text-[9px] text-muted-foreground font-mono">
+              {item.total.toFixed(0)}%
+            </div>
+          </div>
+        ))}
       </div>
+      
+      {/* Month Labels */}
       <div className="flex gap-1 mt-1">
-        {recentLabels.map((label, i) => (
+        {displayLabels.map((label, i) => (
           <div key={i} className="flex-1 text-center text-[10px] text-muted-foreground">
             {label}
           </div>
         ))}
       </div>
+      
+      {/* NEW LEGEND */}
+      <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <div className="w-3 h-2 bg-status-available rounded-sm" />
+          <span className="text-muted-foreground font-medium">Billable</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <div className="w-3 h-2 bg-muted rounded-sm" />
+          <span className="text-muted-foreground font-medium">Non-Billable</span>
+        </div>
+        {/* <div className="ml-auto text-[10px] font-mono text-muted-foreground">
+          Total: {recentData.map(d => d.total.toFixed(0)).join(' / ')}%
+        </div> */}
+      </div>
     </div>
-  )
+  );
 }
 
 function SkillMatch({ skills }) {
@@ -132,6 +198,32 @@ function SkillMatch({ skills }) {
 
 export function ResourceDetailPanel({ resource, open, onOpenChange }) {
   if (!resource) return null
+  const [loading, setLoading] = useState(false);
+  const [utilizationData, setUtilizationData] = useState(null);
+  
+  const fetchUtilizationData = async () => {
+    if (!resource.id) return;
+    setLoading(true);
+    try {
+      const response = await getUtilization(resource.id);
+      console.log("Fetched utilization:", response);  // Debug here after fetch
+      setUtilizationData(response);
+    } catch (error) {
+      console.error("Error fetching utilization:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch utilization data.");
+      setUtilizationData({ monthlySummary: {} });  // Fallback empty
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && resource) {
+      fetchUtilizationData();
+    } else {
+      setUtilizationData(null);
+    }
+  }, [open, resource?.id]);  
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -235,7 +327,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
           {/* Utilization Trend */}
           <div>
             <h4 className="text-xs font-semibold text-foreground mb-3">Utilization Trend (6 months)</h4>
-            <UtilizationChart data={resource.utilizationHistory} />
+            <UtilizationChart data={utilizationData} loading={loading} />
           </div>
 
           <Separator />
