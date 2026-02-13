@@ -129,7 +129,6 @@ export default function OffersTable({ offers = [], loading = false }) {
       showStatusToast(
         `✅ Bulk Send Complete\n\nSuccessful: ${res.data.successful}\nFailed: ${res.data.failed}`
       );
-
       cancelBulk();
     } catch (error) {
       console.error("Bulk send failed", error);
