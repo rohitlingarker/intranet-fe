@@ -2,14 +2,18 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 const LMS_BASE_URL = import.meta.env.VITE_BASE_URL;
+const TSM_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
 export const getWorkforceFilters = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/api/resource/get-all-resource-filters`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const response = await axios.get(
+      `${BASE_URL}/api/resource/get-all-resource-filters`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (err) {
     throw err;
@@ -62,12 +66,15 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
       params.maxExp = filters.experienceRange[1];
     if (filters.status) params.status = filters.status;
 
-    const response = await axios.get(`${BASE_URL}/api/availability/timeline/window`, {
-      params,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const response = await axios.get(
+      `${BASE_URL}/api/availability/timeline/window`,
+      {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (err) {
     throw err;
@@ -76,14 +83,36 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
 
 export const getHolidaysByYear = async (year) => {
   try {
-    const response = await axios.get(`${LMS_BASE_URL}/api/holidays/year/${year}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const response = await axios.get(
+      `${LMS_BASE_URL}/api/holidays/year/${year}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (err) {
     throw err;
   }
 };
 
+export const getUtilization = async (resourceId) => {
+  try {
+    const response = await axios.get(
+      `${TSM_BASE_URL}/api/utilization/monthly/${resourceId}`,
+      {
+        params: {
+          year: new Date().getFullYear(),
+          month: new Date().getMonth() + 1,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
