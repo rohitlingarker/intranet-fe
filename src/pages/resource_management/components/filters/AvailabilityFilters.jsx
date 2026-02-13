@@ -59,7 +59,7 @@ function SearchableDropdown({ label, value, options, onChange, placeholder }) {
 
   return (
     <div className="relative" ref={containerRef}>
-      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+      <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
         {label}
       </label>
       <div className="relative">
@@ -90,7 +90,7 @@ function SearchableDropdown({ label, value, options, onChange, placeholder }) {
                   className={cn(
                     "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-accent hover:text-accent-foreground",
                     value === option &&
-                      "bg-accent/50 text-accent-foreground font-medium",
+                    "bg-accent/50 text-accent-foreground font-medium",
                   )}
                   onClick={() => handleSelect(option)}
                 >
@@ -200,7 +200,7 @@ export function FilterPanel({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-card-foreground">
+          <h3 className="text-sm font-heading font-bold text-card-foreground">
             Filters
           </h3>
           {activeCount > 0 && (
@@ -247,7 +247,7 @@ export function FilterPanel({
         />
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+          <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
             Experience: {filters.experienceRange[0]}+ yrs
           </label>
           <Slider
@@ -263,7 +263,7 @@ export function FilterPanel({
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+          <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
             Allocation: {filters.allocationRange[0]}+ %
           </label>
           <Slider

@@ -236,7 +236,14 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <SheetTitle className="text-base">{resource.name}</SheetTitle>
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-base font-heading font-bold">{resource.name}</SheetTitle>
+                {resource.noticeInfo?.isNoticePeriod && (
+                  <Badge variant="destructive" className="text-[9px] h-4.5 px-1 py-0 uppercase font-bold tracking-wider">
+                    On Notice
+                  </Badge>
+                )}
+              </div>
               <SheetDescription className="text-xs flex items-center gap-1">
                 <StatusDot status={resource.status} />
                 {resource.role}
@@ -270,6 +277,14 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
               <Star className="h-3.5 w-3.5" />
               {resource.employmentType}
             </div>
+            {resource.noticeInfo?.isNoticePeriod && (
+              <div className="col-span-2 flex items-center gap-2 text-[11px] text-red-600 bg-red-50 p-2 rounded-md border border-red-100 mt-1">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>
+                  Notice Period: <strong>{resource.noticeInfo.noticeStartDate}</strong> to <strong>{resource.noticeInfo.noticeEndDate}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Allocation */}
@@ -300,7 +315,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
 
           {/* Timeline */}
           <div>
-            <h4 className="text-xs font-semibold text-foreground mb-3">Allocation Timeline</h4>
+            <h4 className="text-xs font-heading font-bold text-foreground mb-3 uppercase tracking-wider">Allocation Timeline</h4>
             <TimelineBar resource={resource} />
             <div className="mt-2 flex flex-col gap-1">
               {(resource.allocationTimeline || []).map((block, i) => (
@@ -318,7 +333,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
 
           {/* Skill Match */}
           <div>
-            <h4 className="text-xs font-semibold text-foreground mb-2">Skill Match</h4>
+            <h4 className="text-xs font-heading font-bold text-foreground mb-2 uppercase tracking-wider">Skill Match</h4>
             <SkillMatch skills={resource.skills} />
           </div>
 

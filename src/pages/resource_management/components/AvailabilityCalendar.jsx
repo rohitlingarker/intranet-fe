@@ -66,8 +66,13 @@ const ResourceCombobox = ({ resources, value, onChange }) => {
                 >
                   {({ selected, active }) => (
                     <>
-                      <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                      <span className={cn("block truncate", selected ? "font-medium" : "font-normal")}>
                         {resource.name}
+                        {resource.noticeInfo?.isNoticePeriod && (
+                          <span className="ml-2 text-[9px] font-bold text-red-500 bg-red-50 px-1 py-0.5 rounded">
+                            On Notice
+                          </span>
+                        )}
                       </span>
                       {selected ? (
                         <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-white" : "text-indigo-600"}`}>
@@ -110,7 +115,7 @@ const CalendarTooltip = ({ date, data, mode, holiday }) => {
     return (
       <div className="p-2.5 min-w-[160px] bg-white rounded-lg border-2 border-red-100 shadow-md">
         <div className="flex items-center justify-between border-b border-rose-100 pb-1.5 mb-1.5">
-          <span className="font-bold text-slate-900 text-[11px] font-serif">{date}</span>
+          <span className="font-heading font-bold text-slate-900 text-[11px]">{date}</span>
           <span className="bg-red-50 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider border border-red-100">Holiday</span>
         </div>
         <div className="flex items-start gap-2">
@@ -128,7 +133,7 @@ const CalendarTooltip = ({ date, data, mode, holiday }) => {
     return (
       <div className="space-y-1.5 min-w-[140px] p-2">
         <div className="flex items-center justify-between border-b border-border/50 pb-1">
-          <span className="font-semibold text-[11px]">{date}</span>
+          <span className="font-heading font-bold text-[11px]">{date}</span>
         </div>
         <div className="space-y-1">
           <div className="flex items-center justify-between">
@@ -303,13 +308,14 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4">
-        <div className="flex items-center gap-4 min-w-[280px]">
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 border-b p-4">
+        {/* Navigation Group */}
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 bg-white"
+            className="h-9 w-9 bg-white shrink-0"
             onClick={() => navigateMonth(-1)}
             disabled={!canNavigatePrev}
           >
@@ -318,20 +324,20 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
           <Button
             variant="outline"
             size="sm"
-            className="h-9 px-3 bg-white gap-2 text-xs font-medium"
+            className="h-9 px-3 bg-white gap-2 text-xs font-medium shrink-0"
             onClick={() => onNavigate && onNavigate(new Date())}
             disabled={!canNavigateToday}
           >
             <Calendar className="h-3.5 w-3.5" />
             Today
           </Button>
-          <h2 className="text-lg font-bold text-slate-900 min-w-[140px] text-center font-serif">
+          <h2 className="text-lg font-heading font-bold text-slate-900 px-2 min-w-[140px] text-center whitespace-nowrap">
             {MONTH_NAMES[month]} {year}
           </h2>
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 bg-white"
+            className="h-9 w-9 bg-white shrink-0"
             onClick={() => navigateMonth(1)}
             disabled={!canNavigateNext}
           >
@@ -339,7 +345,8 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
           </Button>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Controls Group */}
+        <div className="flex flex-wrap items-center gap-4">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
             <TabsList className="h-9 bg-muted/50 p-1">
               <TabsTrigger value="aggregate" className="text-xs h-7 gap-1.5 px-3">
@@ -351,25 +358,28 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
             </TabsList>
           </Tabs>
 
-          <div className="w-[200px] h-9 shrink-0 flex items-center">
-            {viewMode === "individual" && (
+          {viewMode === "individual" && (
+            <div className="w-[200px] h-9 shrink-0">
               <ResourceCombobox
                 resources={filteredResources}
                 value={internalSelectedResource}
                 onChange={handleResourceSelect}
               />
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground border-l pl-4">
-            <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-available" /> Available
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground border-l pl-4 min-h-[24px]">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-available shrink-0" /> 
+              <span>Available</span>
             </span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-partial" /> Partial
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-partial shrink-0" /> 
+              <span>Partial</span>
             </span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-allocated" /> Allocated
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-status-allocated shrink-0" /> 
+              <span>Allocated</span>
             </span>
           </div>
         </div>
@@ -379,7 +389,7 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
         <div className="p-4">
           <div className="grid grid-cols-7 gap-1 mb-1 justify-items-center">
             {DAY_NAMES.map((d) => (
-              <div key={d} className="flex items-center justify-center text-xs font-medium text-muted-foreground py-2">
+              <div key={d} className="flex items-center justify-center text-xs font-sans font-bold text-muted-foreground py-2 uppercase tracking-wide">
                 {d}
               </div>
             ))}
@@ -439,7 +449,7 @@ export function AvailabilityCalendar({ filteredResources, onDayClick, selectedRe
                         >
                           <div className="flex flex-col items-center justify-center flex-1">
                             <span className={cn(
-                              "text-[13px] font-bold leading-none",
+                              "text-[13px] font-heading font-bold leading-none",
                               isToday ? "text-blue-600 underline underline-offset-2" :
                                 holiday ? "text-red-600" : "text-slate-700"
                             )}>

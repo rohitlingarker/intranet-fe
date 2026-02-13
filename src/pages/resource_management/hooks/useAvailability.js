@@ -29,8 +29,8 @@ export function useAvailability() {
   const [loading, setLoading] = useState(false);
   const [filteredResources, setFilteredResources] = useState([]);
 
-  // Mock KPI data for now or fetch from API if available (simulating existing behavior)
-  const kpiData = useMemo(() => getKPIData(RESOURCES), []);
+  // Calculate KPI data dynamically from the fetched resources
+  const kpiData = useMemo(() => getKPIData(filteredResources), [filteredResources]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -55,6 +55,7 @@ export function useAvailability() {
           ...r,
           id: r.resourceId,
           status: computeStatus(r.currentAllocation || 0),
+          availableFrom: r.availableFrom || new Date().toISOString().split('T')[0],
           currentProject: Array.isArray(r.currentProject) ? r.currentProject.join(", ") : r.currentProject,
         }));
         setFilteredResources(mappedData);
