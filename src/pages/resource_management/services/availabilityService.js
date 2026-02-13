@@ -1,5 +1,7 @@
 import { RESOURCES, computeStatus } from "../models/availabilityModel"
 
+export { computeStatus }
+
 export { RESOURCES }
 
 export function getKPIData(resources = RESOURCES) {
@@ -60,7 +62,9 @@ export function generateCalendarDays(year, month, resources = RESOURCES) {
       }
       // Fall back to currentAllocation if no active blocks found
       if (totalAlloc === 0) {
-        const seed = r.id.charCodeAt(4) * 31 + day * 7 + month * 13
+        // Ensure ID is treated as a string for charCodeAt, or handle numeric IDs
+        const idStr = String(r.id);
+        const seed = idStr.charCodeAt(idStr.length - 1) * 31 + day * 7 + month * 13
         totalAlloc = Math.min(
           100,
           Math.max(0, r.currentAllocation + Math.floor(seededRandom(seed) * 20) - 10)
