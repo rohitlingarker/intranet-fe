@@ -137,6 +137,8 @@ function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, 
   const width = Math.max(durationDays * dayWidth, 4)
   const barHeight = TRACK_HEIGHT - 6
 
+  const isAvailability = block.isAvailability || block.allocation === 0
+
   return (
     <div
       style={{
@@ -154,8 +156,9 @@ function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, 
           "w-full h-full rounded shadow-sm border transition-colors flex items-center px-3 overflow-hidden",
           getBarColor(block.allocation, block.tentative),
           getBarHoverColor(block.allocation, block.tentative),
+          isAvailability && "cursor-default"
         )}
-        onClick={() => onResourceClick(resource)}
+        onClick={() => !isAvailability && onResourceClick(resource)}
       >
         {width > 60 && (
           <span className={cn(
@@ -163,7 +166,7 @@ function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, 
             block.tentative ? "text-slate-600" : "text-white",
           )}
           >
-            {block.project} ({block.allocation}%)
+            {isAvailability ? "Available (100%)" : `${block.project} (${block.allocation}%)`}
           </span>
         )}
       </button>
@@ -171,10 +174,12 @@ function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, 
       <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
         <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[220px]">
           <div className="space-y-2">
-            <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">{block.project}</p>
+            <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">
+              {isAvailability ? "Availability Info" : block.project}
+            </p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <span className="text-slate-500 text-[10px]">Allocation</span>
-              <span className="font-semibold text-slate-900 text-[10px] text-right">{block.allocation}%</span>
+              <span className="text-slate-500 text-[10px]">{isAvailability ? "Availability" : "Allocation"}</span>
+              <span className="font-semibold text-slate-900 text-[10px] text-right">{isAvailability ? "100%" : `${block.allocation}%`}</span>
               <span className="text-slate-500 text-[10px]">Period</span>
               <span className="font-semibold text-slate-900 text-[10px] text-right">{block.startDate} to {block.endDate}</span>
             </div>
@@ -191,19 +196,69 @@ function AllocationBar({ block, startDate, dayWidth, resource, onResourceClick, 
   )
 }
 
-function ResourceRow({ resource, startDate, endDate, dayWidth, todayOffset, onResourceClick, rowHeight, ticks, weeklyTicks }) {
+function ResourceRow({ resource, startDate, endDate, dayWidth, todayOffset, onResourceClick, rowHeight, ticks, weeklyTicks, realToday }) {
   const totalDays = daysBetween(startDate, endDate)
-  const visibleBlocks = useMemo(() => {
-    return (resource.allocationTimeline || []).filter((b) => {
+
+  const blocksWithTracks = useMemo(() => {
+    const visibleProjects = (resource.allocationTimeline || []).filter((b) => {
       const bStart = parseDate(b.startDate)
       const bEnd = parseDate(b.endDate)
       return bEnd >= startDate && bStart <= endDate
     })
-  }, [resource.allocationTimeline, startDate, endDate])
 
-  const blocksWithTracks = useMemo(() => {
-    return visibleBlocks.map((block, index) => ({ ...block, trackIndex: index }))
-  }, [visibleBlocks])
+    const projectBlocks = visibleProjects.map((block, index) => ({ ...block, trackIndex: index }))
+
+    // Find the track index of the project that ends the latest among visible ones
+    let latestTrackIndex = 0
+    if (projectBlocks.length > 0) {
+      let maxEndDate = parseDate(projectBlocks[0].endDate)
+      projectBlocks.forEach((pb) => {
+        const d = parseDate(pb.endDate)
+        if (d > maxEndDate) {
+          maxEndDate = d
+          latestTrackIndex = pb.trackIndex
+        }
+      })
+    }
+
+    // Handle availability bar
+    const timelineEndDate = endDate
+    const today = realToday || parseDate(new Date())
+    let availStart = null
+
+    if (!resource.allocationTimeline || resource.allocationTimeline.length === 0) {
+      availStart = today
+    } else {
+      // Find the latest end date among ALL projects to determine when availability actually starts
+      const globalLatestEnd = resource.allocationTimeline.reduce((latest, b) => {
+        const d = parseDate(b.endDate)
+        return d > latest ? d : latest
+      }, parseDate(resource.allocationTimeline[0].endDate))
+
+      const availableFrom = resource.availableFrom ? parseDate(resource.availableFrom) : today
+      availStart = globalLatestEnd > availableFrom ? globalLatestEnd : availableFrom
+    }
+
+    const result = [...projectBlocks]
+
+    if (availStart && availStart < timelineEndDate) {
+      // Clip start date to visible window
+      const actualStart = availStart < startDate ? startDate : availStart
+
+      if (actualStart < timelineEndDate) {
+        result.push({
+          project: "Available (100%)",
+          startDate: actualStart.toISOString().split('T')[0],
+          endDate: timelineEndDate.toISOString().split('T')[0],
+          allocation: 0,
+          isAvailability: true,
+          trackIndex: latestTrackIndex // Place on the same track as the latest ending project
+        })
+      }
+    }
+
+    return result
+  }, [resource.allocationTimeline, resource.availableFrom, startDate, endDate, realToday])
 
   return (
     <div
@@ -360,7 +415,44 @@ function RoleAggregateRow({ role, resources, startDate, endDate, dayWidth, today
   )
 }
 
-export function AvailabilityTimeline({ filteredResources, onResourceClick, currentDate }) {
+export function TimelineSkeleton() {
+  return (
+    <div className="rounded-lg border bg-card overflow-hidden shadow-sm flex flex-col h-full bg-slate-50 animate-pulse">
+      <div className="h-14 border-b p-3 bg-white flex items-center justify-between">
+        <div className="h-8 w-40 bg-slate-100 rounded" />
+        <div className="h-8 w-60 bg-slate-100 rounded" />
+      </div>
+      <div className="flex flex-1 min-h-0">
+        <div className="w-[180px] lg:w-[240px] border-r bg-white p-4 space-y-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-slate-100 shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="h-3 w-3/4 bg-slate-100 rounded" />
+                <div className="h-2 w-1/2 bg-slate-100 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex-1 bg-white relative">
+          <div className="h-10 border-b bg-slate-50 flex items-center px-4">
+            <div className="h-3 w-3/4 bg-slate-100 rounded" />
+          </div>
+          <div className="p-4 space-y-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-8 w-full bg-slate-50 rounded relative">
+                <div className="absolute top-1 left-4 h-6 w-1/3 bg-slate-100 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function AvailabilityTimeline({ filteredResources, onResourceClick, currentDate, loading }) {
+  if (loading) return <TimelineSkeleton />
   const [zoom, setZoom] = useState("month")
   const [viewMode, setViewMode] = useState("resource")
   const scrollRef = useRef(null)
@@ -447,12 +539,15 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick, curre
   const resourceRowHeights = useMemo(() => {
     const heights = new Map()
     filteredResources.forEach(resource => {
-      const visibleBlocks = (resource.allocationTimeline || []).filter((b) => {
-        const bStart = new Date(b.startDate)
-        const bEnd = new Date(b.endDate)
+      const visibleBlocksCount = (resource.allocationTimeline || []).filter((b) => {
+        const bStart = parseDate(b.startDate)
+        const bEnd = parseDate(b.endDate)
         return bEnd >= startDate && bStart <= endDate
-      })
-      const numTracks = Math.max(1, visibleBlocks.length)
+      }).length
+
+      // The availability bar now shares a track with the latest project.
+      // So the number of tracks is just the number of visible blocks (minimum 1).
+      const numTracks = Math.max(1, visibleBlocksCount)
       heights.set(resource.id, (numTracks * TRACK_HEIGHT) + ROW_PADDING)
     })
     return heights
@@ -648,6 +743,7 @@ export function AvailabilityTimeline({ filteredResources, onResourceClick, curre
                     rowHeight={resourceRowHeights.get(resource.id) || 48}
                     ticks={ticks}
                     weeklyTicks={weeklyTicks}
+                    realToday={realToday}
                   />
                 ))
               ) : (
