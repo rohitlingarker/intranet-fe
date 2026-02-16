@@ -73,7 +73,7 @@ SelectTrigger.displayName = "SelectTrigger"
 
 const SelectValue = ({ placeholder, className }) => {
     const { value, labels } = useContext(SelectContext)
-    const display = labels[value] || value || placeholder
+    const display = labels[value] 
 
     return (
         <span className={cn("block truncate", className)}>

@@ -1,14 +1,19 @@
 import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
+const LMS_BASE_URL = import.meta.env.VITE_BASE_URL;
+const TSM_BASE_URL = import.meta.env.VITE_TIMESHEET_API_ENDPOINT;
 
 export const getWorkforceFilters = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/api/resource/get-all-resource-filters`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const response = await axios.get(
+      `${BASE_URL}/api/resource/get-all-resource-filters`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (err) {
     throw err;
@@ -17,26 +22,95 @@ export const getWorkforceFilters = async () => {
 
 export const getWorkforceKPI = async (filters) => {
   try {
+    const params = {};
+    if (filters.role && filters.role !== "All Roles") params.role = filters.role;
+    if (filters.location && filters.location !== "All Locations") params.location = filters.location;
+    if (filters.employmentType && filters.employmentType !== "All Types")
+      params.employmentType = filters.employmentType;
+    if (filters.experienceRange?.[0] > 0)
+      params.minExperience = filters.experienceRange[0];
+    if (filters.experienceRange?.[1] < 15)
+      params.maxExperience = filters.experienceRange[1];
+
     const response = await axios.get(`${BASE_URL}/api/rms/kpis`, {
-      params: {
-        role: filters.role !== "All Roles" ? filters.role : null,
-        location:
-          filters.location !== "All Locations" ? filters.location : null,
-        employmentType:
-          filters.employmentType !== "All Types"
-            ? filters.employmentType
-            : null,
-        minExperience: filters.experienceRange?.[0] ?? null,
-        maxExperience: filters.experienceRange?.[1] ?? null,
-        // Optional date filters (if you add them later)
-        // from: filters.fromDate || null,
-        // to: filters.toDate || null,
-      },
+      params,
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
     });
 
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getAvailabilityTimeline = async (filters, pagination) => {
+  try {
+    const params = {};
+
+    // Pagination params
+    if (pagination.page !== undefined && pagination.page !== null) params.page = pagination.page;
+    if (pagination.size !== undefined && pagination.size !== null) params.size = pagination.size;
+    if (pagination.startDate) params.startDate = pagination.startDate;
+    if (pagination.endDate) params.endDate = pagination.endDate;
+
+    // Filter params
+    if (filters.role && filters.role !== "All Roles") params.designation = filters.role;
+    if (filters.location && filters.location !== "All Locations") params.location = filters.location;
+    if (filters.employmentType && filters.employmentType !== "All Types")
+      params.employmentType = filters.employmentType;
+    if (filters.experienceRange?.[0] > 0)
+      params.minExp = filters.experienceRange[0];
+    if (filters.experienceRange?.[1] < 15)
+      params.maxExp = filters.experienceRange[1];
+    if (filters.status) params.status = filters.status;
+
+    const response = await axios.get(
+      `${BASE_URL}/api/availability/timeline/window`,
+      {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getHolidaysByYear = async (year) => {
+  try {
+    const response = await axios.get(
+      `${LMS_BASE_URL}/api/holidays/year/${year}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getUtilization = async (resourceId) => {
+  try {
+    const response = await axios.get(
+      `${TSM_BASE_URL}/api/utilization/monthly/${resourceId}`,
+      {
+        params: {
+          year: new Date().getFullYear(),
+          month: new Date().getMonth() + 1,
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
+    );
     return response.data;
   } catch (err) {
     throw err;
