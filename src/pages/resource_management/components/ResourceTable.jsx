@@ -84,7 +84,7 @@ export function ResourceTable({ resources, onResourceClick }) {
   return (
     <div className="rounded-lg border bg-card">
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h3 className="text-sm font-semibold text-card-foreground">Resources</h3>
+        <h3 className="text-sm font-heading font-bold text-card-foreground">Resources</h3>
         <span className="text-xs text-muted-foreground">{resources.length} resources</span>
       </div>
 
@@ -98,17 +98,17 @@ export function ResourceTable({ resources, onResourceClick }) {
               <th className="text-left px-4 py-2">
                 <SortHeader label="Role" sortKeyName="role" />
               </th>
-              <th className="text-left px-4 py-2">
-                <span className="text-xs font-medium text-muted-foreground">Skills</span>
+              <th className="text-left px-4 py-2 hidden sm:table-cell">
+                <span className="text-xs font-sans font-semibold text-muted-foreground uppercase tracking-wider">Skills</span>
               </th>
               <th className="text-left px-4 py-2">
                 <SortHeader label="Allocation" sortKeyName="currentAllocation" />
               </th>
-              <th className="text-left px-4 py-2">
+              <th className="text-left px-4 py-2 hidden lg:table-cell">
                 <SortHeader label="Available From" sortKeyName="availableFrom" />
               </th>
-              <th className="text-left px-4 py-2">
-                <span className="text-xs font-medium text-muted-foreground">Project</span>
+              <th className="text-left px-4 py-2 hidden md:table-cell">
+                <span className="text-xs font-sans font-semibold text-muted-foreground uppercase tracking-wider">Project</span>
               </th>
               <th className="text-left px-4 py-2">
                 <SortHeader label="Status" sortKeyName="status" />
@@ -130,42 +130,43 @@ export function ResourceTable({ resources, onResourceClick }) {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium text-card-foreground">{resource.name}</p>
-                      <p className="text-xs text-muted-foreground">{resource.location}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-heading font-bold text-card-foreground truncate min-w-0 flex-1">{resource.name}</p>
+                        {resource.noticeInfo?.isNoticePeriod && (
+                          <span className="text-[10px] font-bold text-red-500 whitespace-nowrap px-1.5 py-0.5 bg-red-50 rounded shrink-0">
+                            On Notice
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground hidden sm:block">{resource.location}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-xs text-card-foreground">{resource.role}</span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden sm:table-cell">
                   <div className="flex flex-wrap gap-1">
                     {resource.skills.slice(0, 2).map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
+                      <Badge key={skill} variant="secondary" className="text-[10px] px-1 h-4 bg-slate-100 text-slate-600 border-none">
                         {skill}
                       </Badge>
                     ))}
                     {resource.skills.length > 2 && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
-                        +{resource.skills.length - 2}
-                      </Badge>
+                      <span className="text-[10px] text-muted-foreground font-medium">+{resource.skills.length - 2}</span>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <AllocationBar value={resource.currentAllocation} />
                 </td>
-                <td className="px-4 py-3">
-                  <span className="text-xs tabular-nums text-card-foreground">
-                    {new Date(resource.availableFrom).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  <span className="text-xs text-muted-foreground">
+                    {resource.availableFrom}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <span className="text-xs text-card-foreground">{resource.currentProject}</span>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <span className="text-xs text-card-foreground truncate max-w-[120px] block">{resource.currentProject || "No Project"}</span>
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={resource.status} />

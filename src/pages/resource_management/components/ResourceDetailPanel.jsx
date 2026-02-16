@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { MapPin, Briefcase, Calendar, Star, ArrowRight, X } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { getUtilization } from "../services/workforceService"
+import { toast } from "react-toastify"
 
 function StatusDot({ status }) {
   const colors = {
@@ -22,7 +25,7 @@ function StatusDot({ status }) {
 }
 
 function TimelineBar({ resource }) {
-  const blocks = resource.allocationTimeline
+  const blocks = resource.allocationTimeline || []
   if (blocks.length === 0) return null
 
   const earliest = new Date(blocks[0].startDate).getTime()
@@ -72,47 +75,111 @@ function TimelineBar({ resource }) {
   )
 }
 
-function UtilizationChart({ data }) {
-  const max = Math.max(...data, 100)
-  const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
-  const recentMonths = data.slice(-6)
-  const recentLabels = months.slice(-6)
+function UtilizationChart({ data, loading = false }) {
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-end gap-1 h-16">
+          {Array(6).fill(0).map((_, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5 animate-pulse">
+              <div className="w-full relative flex items-end justify-center" style={{ height: "48px" }}>
+                <div className="w-full bg-muted rounded-t-sm h-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-1 mt-1">
+          {['jan', 'feb', 'mar', 'apr', 'may', 'jun'].map((label, i) => (
+            <div key={i} className="flex-1 text-center text-[10px] text-muted-foreground bg-muted h-3 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const safeData = data || {};
+  const monthlySummary = safeData.monthlySummary || {};
+  
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", 
+                  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  
+  const recentData = months.slice(-6).map(month => {
+    const billable = monthlySummary[month]?.billableUtilization ?? 0;
+    const nonBillable = monthlySummary[month]?.nonBillableUtilization ?? 0;
+    return { month, billable, nonBillable, total: billable + nonBillable };
+  });
+  
+  const maxTotal = Math.max(...recentData.map(d => d.total), 100);
+  const displayLabels = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
 
   return (
     <div>
+      {/* Stacked Bars */}
       <div className="flex items-end gap-1 h-16">
-        {recentMonths.map((val, i) => {
-          let color = "bg-status-available"
-          if (val > 80) color = "bg-status-allocated"
-          else if (val > 50) color = "bg-status-partial"
-
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-              <div className="w-full relative flex items-end justify-center" style={{ height: "48px" }}>
-                <div
-                  className={cn("w-full rounded-t-sm transition-all", color)}
-                  style={{ height: `${(val / max) * 100}%` }}
-                />
-              </div>
+        {recentData.map((item, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 relative">
+            <div className="w-full h-[48px] relative flex flex-col justify-end">
+              {/* Non-billable (bottom, gray-ish) */}
+              <div
+                className="w-full rounded-b-sm"
+                style={{ 
+                  height: `${(item.nonBillable / maxTotal) * 100}%`,
+                  minHeight: '2px'
+                }}
+              />
+              {/* Billable (top, colored) */}
+              <div
+                className={cn(
+                  "w-full rounded-t-sm absolute bottom-0 transition-all",
+                  item.billable > 80 ? "bg-status-allocated" :
+                  item.billable > 50 ? "bg-status-partial" : 
+                  "bg-status-available"
+                )}
+                style={{ 
+                  height: `${(item.billable / maxTotal) * 100}%`,
+                  minHeight: item.billable > 0 ? '2px' : 0
+                }}
+              />
             </div>
-          )
-        })}
+            {/* Value label */}
+            <div className="text-[9px] text-muted-foreground font-mono">
+              {item.total.toFixed(0)}%
+            </div>
+          </div>
+        ))}
       </div>
+      
+      {/* Month Labels */}
       <div className="flex gap-1 mt-1">
-        {recentLabels.map((label, i) => (
+        {displayLabels.map((label, i) => (
           <div key={i} className="flex-1 text-center text-[10px] text-muted-foreground">
             {label}
           </div>
         ))}
       </div>
+      
+      {/* NEW LEGEND */}
+      <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/50">
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <div className="w-3 h-2 bg-status-available rounded-sm" />
+          <span className="text-muted-foreground font-medium">Billable</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <div className="w-3 h-2 bg-muted rounded-sm" />
+          <span className="text-muted-foreground font-medium">Non-Billable</span>
+        </div>
+        {/* <div className="ml-auto text-[10px] font-mono text-muted-foreground">
+          Total: {recentData.map(d => d.total.toFixed(0)).join(' / ')}%
+        </div> */}
+      </div>
     </div>
-  )
+  );
 }
 
 function SkillMatch({ skills }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {skills.map((skill) => {
+      {(skills || []).map((skill) => {
         const matchScore = Math.floor((skill.charCodeAt(0) % 3))
         const colors = [
           "bg-status-available/15 text-status-available border-status-available/30",
@@ -131,6 +198,32 @@ function SkillMatch({ skills }) {
 
 export function ResourceDetailPanel({ resource, open, onOpenChange }) {
   if (!resource) return null
+  const [loading, setLoading] = useState(false);
+  const [utilizationData, setUtilizationData] = useState(null);
+  
+  const fetchUtilizationData = async () => {
+    if (!resource.id) return;
+    setLoading(true);
+    try {
+      const response = await getUtilization(resource.id);
+      console.log("Fetched utilization:", response);  // Debug here after fetch
+      setUtilizationData(response);
+    } catch (error) {
+      console.error("Error fetching utilization:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch utilization data.");
+      setUtilizationData({ monthlySummary: {} });  // Fallback empty
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && resource) {
+      fetchUtilizationData();
+    } else {
+      setUtilizationData(null);
+    }
+  }, [open, resource?.id]);  
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -143,7 +236,14 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <SheetTitle className="text-base">{resource.name}</SheetTitle>
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-base font-heading font-bold">{resource.name}</SheetTitle>
+                {resource.noticeInfo?.isNoticePeriod && (
+                  <Badge variant="destructive" className="text-[9px] h-4.5 px-1 py-0 uppercase font-bold tracking-wider">
+                    On Notice
+                  </Badge>
+                )}
+              </div>
               <SheetDescription className="text-xs flex items-center gap-1">
                 <StatusDot status={resource.status} />
                 {resource.role}
@@ -177,6 +277,14 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
               <Star className="h-3.5 w-3.5" />
               {resource.employmentType}
             </div>
+            {resource.noticeInfo?.isNoticePeriod && (
+              <div className="col-span-2 flex items-center gap-2 text-[11px] text-red-600 bg-red-50 p-2 rounded-md border border-red-100 mt-1">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>
+                  Notice Period: <strong>{resource.noticeInfo.noticeStartDate}</strong> to <strong>{resource.noticeInfo.noticeEndDate}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Allocation */}
@@ -207,10 +315,10 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
 
           {/* Timeline */}
           <div>
-            <h4 className="text-xs font-semibold text-foreground mb-3">Allocation Timeline</h4>
+            <h4 className="text-xs font-heading font-bold text-foreground mb-3 uppercase tracking-wider">Allocation Timeline</h4>
             <TimelineBar resource={resource} />
             <div className="mt-2 flex flex-col gap-1">
-              {resource.allocationTimeline.map((block, i) => (
+              {(resource.allocationTimeline || []).map((block, i) => (
                 <div key={i} className="flex items-center justify-between text-[10px]">
                   <span className={cn("text-muted-foreground", block.tentative && "italic")}>
                     {block.project}{block.tentative ? " (T)" : ""}
@@ -225,7 +333,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
 
           {/* Skill Match */}
           <div>
-            <h4 className="text-xs font-semibold text-foreground mb-2">Skill Match</h4>
+            <h4 className="text-xs font-heading font-bold text-foreground mb-2 uppercase tracking-wider">Skill Match</h4>
             <SkillMatch skills={resource.skills} />
           </div>
 
@@ -234,7 +342,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
           {/* Utilization Trend */}
           <div>
             <h4 className="text-xs font-semibold text-foreground mb-3">Utilization Trend (6 months)</h4>
-            <UtilizationChart data={resource.utilizationHistory} />
+            <UtilizationChart data={utilizationData} loading={loading} />
           </div>
 
           <Separator />
