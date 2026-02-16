@@ -88,6 +88,7 @@ export default function WorkforceAvailability() {
             data={kpiData}
             activeFilter={statusFilter}
             onFilterClick={handleKPIFilterClick}
+            loading={kpiLoading}
           />
         </div>
 
@@ -169,11 +170,6 @@ export default function WorkforceAvailability() {
               </div>
 
               <div className="p-4 min-h-[600px] relative">
-                {loading && (
-                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-b-lg">
-                    <LoadingSpinner text="Fetching resources..." />
-                  </div>
-                )}
 
                 <TabsContent value="calendar" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
@@ -195,6 +191,7 @@ export default function WorkforceAvailability() {
                       onResourceClick={handleResourceClick}
                       currentDate={currentDate}
                       onNavigate={setCurrentDate}
+                      loading={loading}
                     />
                     <Pagination
                       currentPage={page}
@@ -210,6 +207,7 @@ export default function WorkforceAvailability() {
                     <ResourceTable
                       resources={filteredResources}
                       onResourceClick={handleResourceClick}
+                      loading={loading}
                     />
                     <Pagination
                       currentPage={page}
