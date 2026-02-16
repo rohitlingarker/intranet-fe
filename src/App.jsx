@@ -91,6 +91,9 @@ import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/Em
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 
+import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
+import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -133,6 +136,7 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
+
 
 // function App() {
 //   return (
@@ -420,6 +424,16 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr/profile/:user_uuid"
             element={<HrProfileView />}
           />
+          <Route
+            path="/employee-onboarding/analytics"
+            element={<HeadcountDemographicsPage />}
+          />
+          <Route
+            path="/employee-onboarding/employeelist"
+            element={<EmployeeListPage/>}
+          />
+
+
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
