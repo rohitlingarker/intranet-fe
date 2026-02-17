@@ -14,6 +14,7 @@ jobs:
       VITE_USER_MANAGEMENT_URL :  ${{secrets.VITE_USER_MANAGEMENT_URL}}
       VITE_BASE_URL:  ${{secrets.VITE_BASE_URL}}
       VITE_PMS_BASE_URL:  ${{secrets.VITE_PMS_BASE_URL}}
+      VITE_LMS_BASE_URL: ${{secrets.VITE_LMS_BASE_URL}}
 
     steps:
       - name: Checkout repo
