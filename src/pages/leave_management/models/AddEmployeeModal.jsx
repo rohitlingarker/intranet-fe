@@ -41,7 +41,7 @@ const AddEmployeeModal = ({ isOpen, onClose }) => {
       payload.managerId = { employeeId: formData.managerId }; // assuming manager expects an employee object.
     }
     try {
-      await axios.post('http://localhost:8080/api/employee/register', payload, {
+      await axios.post('http://localhost:8002/api/employee/register', payload, {
         headers: { 'Content-Type': 'application/json' }
       });
       setSuccess('Employee added successfully!');

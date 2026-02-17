@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react"; // ✅ added useEffect
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import ActionDropdownPendingLeaveRequests from "./ActionDropDownPendingLeaveRequests";
+import DateRangePicker from "./DateRangePicker";
 
 const PendingLeaveRequestsTable = ({
+  leaveBalances,
   pendingLeaves,
   leaveTypes,
   setPendingLeaves,
@@ -13,11 +15,29 @@ const PendingLeaveRequestsTable = ({
   const [editedLeave, setEditedLeave] = useState({});
   const [loading, setLoading] = useState(false);
   const [cancelId, setCancelId] = useState(null);
+  const [leaveTypeNames, setLeaveTypeNames] = useState([]);
 
   const handleEdit = (index) => {
+    const leave = pendingLeaves[index];
     setEditIndex(index);
-    setEditedLeave({ ...pendingLeaves[index] });
+    setEditedLeave({
+      ...leave,
+      leaveTypeId: leave.leaveType?.leaveTypeId,
+    });
   };
+
+  const fetchLeaveType = async () => {
+    try {
+      const res = await axios.get("http://localhost:8002/api/leave/types");
+      setLeaveTypeNames(res.data); // Backend returns [{name, label}]
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to load leave types");
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveType();
+  }, []);
 
   const handleCancelEdit = () => {
     setEditIndex(null);
@@ -31,67 +51,45 @@ const PendingLeaveRequestsTable = ({
     }));
   };
 
-  // ✅ useEffect to auto-update daysRequested
-  useEffect(() => {
-    if (editIndex !== null) {
-      const start = new Date(editedLeave.startDate);
-      const end = new Date(editedLeave.endDate);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end >= start) {
-        const oneDay = 1000 * 60 * 60 * 24;
-        const days = Math.floor((end - start) / oneDay) + 1;
-        setEditedLeave((prev) => ({
-          ...prev,
-          daysRequested: days,
-        }));
-      }
-    }
-  }, [editedLeave.startDate, editedLeave.endDate]); // ✅ recalculate when either changes
-
   const handleSave = async () => {
+    setLoading(true);
+
     try {
-      setLoading(true);
+      const { startDate, endDate, leaveTypeId } = editedLeave;
 
-      const start = new Date(editedLeave.startDate);
-      const end = new Date(editedLeave.endDate);
-
-      if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
-        toast.error("Start date and end date must be valid.");
+      if (!startDate || !endDate) {
+        toast.error("Both start and end dates are required.");
         return;
       }
 
-      if (end < start) {
-        toast.error("End date cannot be before start date.");
+      if (!leaveTypeId) {
+        toast.error("Please select a leave type.");
         return;
       }
-
-      const oneDayMs = 1000 * 60 * 60 * 24;
-      const daysRequested = Math.floor((end - start) / oneDayMs) + 1;
 
       const payload = {
-        ...editedLeave,
-        leaveTypeId:
-          editedLeave.leaveType?.leaveTypeId || editedLeave.leaveTypeId,
-        employeeId,
-        daysRequested,
+        startDate,
+        endDate,
+        reason: editedLeave.reason || "",
+        requestDate: editedLeave.requestDate,
+        leaveId: pendingLeaves[editIndex].leaveId || null,
+        leaveTypeId,
+        daysRequested: editedLeave.daysRequested || 0,
+        employeeId: employeeId || "UNKNOWN_EMPLOYEE",
+        driveLink: editedLeave.driveLink || "",
       };
 
       await axios.put(
-        "http://localhost:8080/api/leave-requests/employee/update",
-        payload,
-        {
-          withCredentials: true,
-        }
+        "http://localhost:8002/api/leave-requests/employee/update",
+        payload
       );
+      toast.success("Leave request submitted successfully");
 
+      // Update local state if request is successful
       const updated = [...pendingLeaves];
       updated[editIndex] = {
         ...editedLeave,
-        startDate: editedLeave.startDate,
-        endDate: editedLeave.endDate,
-        daysRequested,
-        leaveType: leaveTypes.find(
-          (l) => l.leaveTypeId === payload.leaveTypeId
-        ),
+        leaveType: leaveTypes.find((l) => l.leaveTypeId === leaveTypeId),
       };
 
       setPendingLeaves(updated);
@@ -99,9 +97,16 @@ const PendingLeaveRequestsTable = ({
 
       setEditIndex(null);
       setEditedLeave({});
-    } catch (err) {
-      console.error(err);
-      toast.error("Update failed");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "Something went wrong";
+        toast.error(errorMessage);
+        console.error("Axios Error:", errorMessage);
+      } else {
+        toast.error("Unexpected error occurred");
+        console.error("Unexpected Error:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,36 +115,39 @@ const PendingLeaveRequestsTable = ({
   const confirmCancel = async () => {
     try {
       setLoading(true);
-      const leaveToCancel = pendingLeaves.find(
-        (leave) => leave.leaveId === cancelId
-      );
+      const leaveToCancel = pendingLeaves.find((l) => l.leaveId === cancelId);
       if (!leaveToCancel) {
-        toast.error("Leave request not found.");
+        toast.error("Leave not found.");
         return;
       }
 
-      const employeeId =
-        leaveToCancel.employee.employeeId || "UNKNOWN_EMPLOYEE";
+      const empId = leaveToCancel.employee?.employeeId || "UNKNOWN_EMPLOYEE";
 
       await axios.put(
-        `http://localhost:8080/api/leave-requests/${cancelId}/cancel`,
+        `http://localhost:8002/api/leave-requests/${cancelId}/cancel`,
         null,
         {
-          params: { employeeId },
+          params: { employeeId: empId },
           headers: { "Cache-Control": "no-store" },
           withCredentials: true,
         }
       );
 
       setPendingLeaves((prev) => prev.filter((l) => l.leaveId !== cancelId));
-      toast.success("Leave request cancelled");
+      toast.success("Leave cancelled");
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to cancel request");
+      toast.error(err?.response?.data?.message || "Cancel failed");
     } finally {
       setCancelId(null);
       setLoading(false);
     }
+  };
+
+  // Helper: Map backend "name" to "label"
+  const getLabelFromName = (name) => {
+    const match = leaveTypeNames.find((lt) => lt.name === name);
+    return match ? match.label : name;
   };
 
   return (
@@ -149,8 +157,8 @@ const PendingLeaveRequestsTable = ({
           <thead className="bg-gray-100 text-gray-700">
             <tr>
               <th className="p-3 text-left">Leave Type</th>
-              <th className="p-3 text-left">From</th>
-              <th className="p-3 text-left">To</th>
+              <th className="p-3 text-left">Start Date</th>
+              <th className="p-3 text-left">End Date</th>
               <th className="p-3 text-left">Days</th>
               <th className="p-3 text-left">Reason</th>
               <th className="p-3 text-left">Actions</th>
@@ -158,52 +166,100 @@ const PendingLeaveRequestsTable = ({
           </thead>
           <tbody>
             {pendingLeaves.map((leave, index) => (
-              <tr key={leave.id || index} className="border-t">
+              <tr key={leave.leaveId || index} className="border-t">
                 <td className="p-3">
                   {editIndex === index ? (
                     <select
                       className="border p-2 rounded w-full"
-                      value={
-                        editedLeave.leaveTypeId || leave.leaveType?.leaveTypeId
-                      }
+                      value={editedLeave.leaveTypeId || ""}
                       onChange={(e) =>
                         handleChange("leaveTypeId", e.target.value)
                       }
                     >
                       <option value="">Select Type</option>
-                      {leaveTypes.map((type) => (
-                        <option key={type.leaveTypeId} value={type.leaveTypeId}>
-                          {type.leaveName}
-                        </option>
-                      ))}
+                      {leaveTypes
+                        .filter((type) => {
+                          const balance = leaveBalances.find(
+                            (b) => b.leaveType.leaveTypeId === type.leaveTypeId
+                          );
+                          return (
+                            balance?.remainingLeaves > 0 ||
+                            type.leaveTypeId === "L-UP"
+                          );
+                        })
+                        .map((type) => {
+                          const balance = leaveBalances.find(
+                            (b) => b.leaveType.leaveTypeId === type.leaveTypeId
+                          );
+                          const isUnpaid = type.leaveTypeId === "L-UP";
+                          const remaining = isUnpaid
+                            ? "∞"
+                            : balance?.remainingLeaves ?? 0;
+
+                          // Use label from leaveTypeNames
+                          const label = getLabelFromName(type.leaveName);
+
+                          return (
+                            <option
+                              key={type.leaveTypeId}
+                              value={type.leaveTypeId}
+                            >
+                              {label} ({remaining} days left)
+                            </option>
+                          );
+                        })}
                     </select>
                   ) : (
-                    leave.leaveType?.leaveName || "-"
+                    getLabelFromName(leave.leaveType?.leaveName) || "-"
                   )}
                 </td>
 
+                {/* Start Date */}
                 <td className="p-3">
                   {editIndex === index ? (
                     <input
                       type="date"
                       className="border p-2 rounded w-full"
                       value={editedLeave.startDate || ""}
-                      onChange={(e) =>
-                        handleChange("startDate", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        handleChange("startDate", newStart);
+
+                        if (editedLeave.endDate) {
+                          const start = new Date(newStart);
+                          const end = new Date(editedLeave.endDate);
+                          const diff =
+                            Math.floor((end - start) / (1000 * 60 * 60 * 24)) +
+                            1;
+                          handleChange("daysRequested", diff > 0 ? diff : 0);
+                        }
+                      }}
                     />
                   ) : (
                     leave.startDate
                   )}
                 </td>
 
+                {/* End Date */}
                 <td className="p-3">
                   {editIndex === index ? (
                     <input
                       type="date"
                       className="border p-2 rounded w-full"
                       value={editedLeave.endDate || ""}
-                      onChange={(e) => handleChange("endDate", e.target.value)}
+                      onChange={(e) => {
+                        const newEnd = e.target.value;
+                        handleChange("endDate", newEnd);
+
+                        if (editedLeave.startDate) {
+                          const start = new Date(editedLeave.startDate);
+                          const end = new Date(newEnd);
+                          const diff =
+                            Math.floor((end - start) / (1000 * 60 * 60 * 24)) +
+                            1;
+                          handleChange("daysRequested", diff > 0 ? diff : 0);
+                        }
+                      }}
                     />
                   ) : (
                     leave.endDate
@@ -211,13 +267,9 @@ const PendingLeaveRequestsTable = ({
                 </td>
 
                 <td className="p-3 text-center">
-                  {editIndex === index ? (
-                    <span className="text-gray-800">
-                      {editedLeave.daysRequested || "-"}
-                    </span>
-                  ) : (
-                    leave.daysRequested
-                  )}
+                  {editIndex === index
+                    ? editedLeave.daysRequested || "-"
+                    : leave.daysRequested}
                 </td>
 
                 <td className="p-3">
@@ -254,7 +306,11 @@ const PendingLeaveRequestsTable = ({
                     <ActionDropdownPendingLeaveRequests
                       onEdit={() => handleEdit(index)}
                       onCancel={() => setCancelId(leave.leaveId)}
-                      onSuccess={() => setPendingLeaves((prev) => prev.filter((l) => l.leaveId !== leave.leaveId))}
+                      onSuccess={() =>
+                        setPendingLeaves((prev) =>
+                          prev.filter((l) => l.leaveId !== leave.leaveId)
+                        )
+                      }
                     />
                   )}
                 </td>

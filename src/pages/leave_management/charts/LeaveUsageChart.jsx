@@ -6,10 +6,14 @@ import {
   Cell,
   Tooltip,
 } from "recharts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 // Color palette: Red for Used, Gray for Remaining
 const COLORS = ["#ef4444", "#e5e7eb"];
+
+
 
 // Custom Active Shape Slice
 const renderActiveShape = (props) => {
@@ -60,6 +64,9 @@ const renderActiveShape = (props) => {
   );
 };
 
+
+  
+
 export default function LeaveUsageChart({ leave }) {
   const { accruedLeaves, usedLeaves, leaveType } = leave;
   const [activeIndex, setActiveIndex] = useState(null);
@@ -82,6 +89,7 @@ export default function LeaveUsageChart({ leave }) {
   const onPieLeave = () => {
     setActiveIndex(null);
   };
+
 
   return (
     <div className="bg-white rounded-lg p-4 shadow-sm w-full h-[250px] sm:h-[220px]">

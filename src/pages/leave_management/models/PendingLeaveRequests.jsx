@@ -1,11 +1,58 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import ActionButtons from "./ActionButtons";
 import PendingLeaveRequestsTable from "./PendingLeaveRequestsTable";
 import SkeletonTable from "./SkeletonTable";
 import ReactPaginate from "react-paginate";
+import RequestLeaveModal from "./RequestLeaveModal";
 
 const ITEMS_PER_PAGE = 5;
+
+/**
+ * Reusable function to fetch pending leave requests, leave types, and balances.
+ */
+const fetchData = async (
+  employeeId,
+  setPendingLeaves,
+  setLeaveTypes,
+  setLeaveBalances,
+  setError,
+  setLoading
+) => {
+  try {
+    setLoading(true);
+
+    const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
+      axios.get(
+        `http://localhost:8002/api/leave-requests/employee/${employeeId}`,
+        {
+          withCredentials: true,
+          headers: { "Cache-Control": "no-store" },
+        }
+      ),
+      axios.get("http://localhost:8002/api/leave/get-all-leave-types"),
+      axios.get(
+        `http://localhost:8002/api/leave-balance/employee/${employeeId}`
+      ),
+    ]);
+
+    const allLeaves = Array.isArray(leaveReqRes.data?.data)
+      ? leaveReqRes.data.data
+      : [];
+    const onlyPending = allLeaves.filter(
+      (leave) => String(leave.status).toUpperCase() === "PENDING"
+    );
+
+    setPendingLeaves(onlyPending);
+    setLeaveTypes(leaveTypeRes.data || []);
+    setLeaveBalances(balanceRes.data || {});
+  } catch (err) {
+    console.error(err);
+    setError("Failed to fetch pending leave requests.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -13,48 +60,29 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const employeeId = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user")).id
     : null;
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [leaveReqRes, leaveTypeRes, balanceRes] = await Promise.all([
-        axios.get(
-          `http://localhost:8080/api/leave-requests/employee/${employeeId}`,
-          {
-            withCredentials: true,
-            headers: { "Cache-Control": "no-store" },
-          }
-        ),
-        axios.get("http://localhost:8080/api/leave/get-all-leave-types"),
-        axios.get(
-          `http://localhost:8080/api/leave-balance/employee/${employeeId}`
-        ),
-      ]);
-
-      const allLeaves = Array.isArray(leaveReqRes.data?.data)
-        ? leaveReqRes.data.data
-        : [];
-      const onlyPending = allLeaves.filter(
-        (leave) => String(leave.status).toUpperCase() === "PENDING"
-      );
-
-      setPendingLeaves(onlyPending);
-      setLeaveTypes(leaveTypeRes.data || []);
-      setLeaveBalances(balanceRes.data || {});
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch pending leave requests.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (employeeId) {
+      fetchData(
+        employeeId,
+        setPendingLeaves,
+        setLeaveTypes,
+        setLeaveBalances,
+        setError,
+        setLoading
+      );
+    }
+  }, [employeeId, refreshKey]);
+
+  const handleLeaveRequestSuccess = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
 
   const handlePageChange = ({ selected }) => setCurrentPage(selected);
 
@@ -64,19 +92,13 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h3 className="text-xl font-bold text-gray-800 flex-1">
-          Pending Leave Requests
-        </h3>
-      </div>
-
+    <>
       {loading ? (
         <SkeletonTable rows={5} columns={6} />
       ) : error ? (
         <p className="text-red-500">{error}</p>
       ) : pendingLeaves.length === 0 ? (
-        <div className=" py-12">
+        <div className="py-12">
           <h1 className="text-black-600 text-3xl font-bold">
             🎉 Cheers! No pending leave requests.
           </h1>
@@ -107,10 +129,8 @@ const PendingLeaveRequests = ({ setIsRequestLeaveModalOpen }) => {
           )}
         </>
       )}
-
-      
-    </div>
+    </>
   );
 };
 
-export default PendingLeaveRequests;
+export { PendingLeaveRequests, fetchData };

@@ -14,7 +14,7 @@ const COLORS = [
   // "#8884d8",
   // "#82ca9d",
   // "#A28BD4",
-  // "#F08080",
+  // "#F08002",
   "#8dd1e1",
 ];
 
@@ -81,7 +81,7 @@ const CustomActiveShapePieChart = ({ employeeId }) => {
     const fetchLeaves = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/leave-requests/employee/${employeeId}`
+          `http://localhost:8002/api/leave-requests/employee/${employeeId}`
         );
         const leaveRequests = res.data.data;
 

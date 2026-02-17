@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import axios from "axios";
 import CompOffRequestsTable from "./CompOffRequestsTable";
-import toast from "react-hot-toast";
+// import toast from "react-hot-toast";
 
 const CompOffPage = forwardRef(({ employeeId }, ref) => {
   const [requests, setRequests] = useState([]);

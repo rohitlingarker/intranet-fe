@@ -1,82 +1,111 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
 import useLeaveConsumption from "../hooks/useLeaveConsumption";
 import LeaveUsageChart from "./LeaveUsageChart";
-
 export default function LeaveDashboard({ employeeId }) {
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const { leaveData, loading } = useLeaveConsumption(employeeId);
+
+  const fetchLeaveTypes = async () => {
+    try {
+      const res = await axios.get("http://localhost:8002/api/leave/types");
+      setLeaveTypes(res.data);
+    } catch (err) {
+      toast.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveTypes();
+  }, []);
 
   if (loading) return <p className="text-center">Loading leave data...</p>;
 
+  const getDisplayName = (leaveName) => {
+    const matchingType = leaveTypes.find((type) => type.name === leaveName);
+    return matchingType ? matchingType.label : leaveName;
+  };
+
+  // Separate data
+  const mainLeaves = leaveData.filter((leave) => {
+    const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
+    return !name.includes("paternity") && !name.includes("maternity");
+  });
+
+  const specialLeaves = leaveData.filter((leave) => {
+    const name = getDisplayName(leave.leaveType.leaveName).toLowerCase();
+    return name.includes("paternity") || name.includes("maternity");
+  });
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-      {leaveData.map((leave) => {
-        const { leaveName } = leave.leaveType;
+    <>
+      {/* Top grid for normal leaves */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        {mainLeaves.map((leave) => {
+          const displayName = getDisplayName(leave.leaveType.leaveName);
+          const isUnpaid = displayName.toLowerCase().includes("unpaid");
 
-        if (leaveName === "Paternity Leave") return null;
+          return (
+            <div
+              key={leave.balanceId}
+              className="bg-white p-6 rounded-lg shadow-sm"
+            >
+              <div className="flex items-center w-full justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">{displayName}</h3>
+                <button className="text-indigo-600 text-sm hover:text-indigo-800 transition-colors">
+                  View details
+                </button>
+              </div>
 
-        const isUnpaid = leaveName === "Unpaid";
+              {/* Always show chart for main leaves */}
+              <LeaveUsageChart leave={leave} />
 
-        return (
-          <div
-            key={leave.balanceId}
-            className="bg-white p-6 rounded-lg shadow-sm"
-          >
-            <div className="flex items-center w-full justify-between mb-3">
-              <h3 className="font-semibold text-gray-900">{leaveName}</h3>
-              <button className="text-indigo-600 text-sm hover:text-indigo-800 transition-colors">
-                View details
-              </button>
+              {/* Stats section */}
+              <div className="space-y-2 mt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">AVAILABLE</span>
+                  <span className="text-gray-500">CONSUMED</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>
+                    {Math.max(leave.accruedLeaves - leave.usedLeaves, 0)} days
+                  </span>
+                  <span>{leave.usedLeaves} days</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">ACCRUED SO FAR</span>
+                  <span className="text-gray-500">ANNUAL QUOTA</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>{leave.accruedLeaves} days</span>
+                  <span>{leave.totalLeaves || "-"} days</span>
+                </div>
+              </div>
             </div>
+          );
+        })}
+      </div>
 
-            {!isUnpaid && <LeaveUsageChart leave={leave} />}
+      {/* Bottom section for Paternity & Maternity */}
+      {specialLeaves.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm flex">
+          <h4>Other Leaves:</h4>
+          <div className="space-y-4">
+            {specialLeaves.map((leave) => {
+              const displayName = getDisplayName(leave.leaveType.leaveName);
 
-            <div className="space-y-2 mt-4">
-              {!isUnpaid && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">AVAILABLE</span>
-                    <span className="text-gray-500">CONSUMED</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>
-                      {Math.max(leave.accruedLeaves - leave.usedLeaves, 0)} days
-                    </span>
-                    <span>{leave.usedLeaves} days</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">ACCRUED SO FAR</span>
-                    <span className="text-gray-500">ANNUAL QUOTA</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>{leave.accruedLeaves} days</span>
-                    <span>{leave.totalLeaves || "-"} days</span>
-                  </div>
-                </>
-              )}
-
-              {isUnpaid && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">CONSUMED</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>{leave.usedLeaves} days</span>
-                  </div>
-                  <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-500">AVAILABLE</span>
-                    <span className="text-gray-500">ACCRUED</span>
-                    <span className="text-gray-500">ANNUAL QUOTA</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>-</span>
-                    <span>-</span>
-                    <span>-</span>
-                  </div>
-                </>
-              )}
-            </div>
+              return (
+                <div key={leave.balanceId}>
+                  <span className="ml-4 text-sm font-medium text-gray-700">
+                    {displayName}: 
+                  </span>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
