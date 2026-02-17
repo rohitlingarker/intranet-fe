@@ -117,3 +117,33 @@ export const getUtilization = async (resourceId) => {
     throw err;
   }
 };
+
+export const getSkillCategoriesTree = async () => {
+  const response = await axios.get(
+    `${BASE_URL}/api/skill-categories/tree`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+export const createRoleExpectation = async (payload) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/admin/role-expectations`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
