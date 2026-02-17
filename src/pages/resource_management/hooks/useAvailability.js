@@ -9,6 +9,7 @@ export const defaultFilters = {
   allocationRange: [0, 100],
   project: "All Projects",
   employmentType: "All Types",
+  search: "",
 }
 
 export function useAvailability() {
@@ -47,7 +48,7 @@ export function useAvailability() {
         endDate: lastDay.toISOString().split('T')[0],
       };
 
-      const currentFilters = { ...filters, status: statusFilter };
+      const currentFilters = { ...filters };
       const response = await getAvailabilityTimeline(currentFilters, payload);
 
       if (response && response.data) {
@@ -67,7 +68,7 @@ export function useAvailability() {
     } finally {
       setLoading(false);
     }
-  }, [filters, statusFilter, page, currentDate.getFullYear()]);
+  }, [filters, page, currentDate.getFullYear()]);
 
   // Effect to fetch data
   useEffect(() => {
@@ -91,10 +92,10 @@ export function useAvailability() {
     setPage(1); // Reset to first page on filter change
   }, [])
 
-  const handleKPIFilterClick = useCallback((status) => {
-    setStatusFilter(status)
-    setPage(1);
-  }, [])
+  // const handleKPIFilterClick = useCallback((status) => {
+  //   setStatusFilter(status)
+  //   setPage(1);
+  // }, [])
 
   const resetFilters = useCallback(() => {
     setFilters(defaultFilters)
@@ -106,7 +107,7 @@ export function useAvailability() {
     filters,
     setFilters,
     resetFilters,
-    statusFilter,
+    // statusFilter,
     setStatusFilter,
     filterPanelCollapsed,
     setFilterPanelCollapsed,
@@ -120,7 +121,7 @@ export function useAvailability() {
     filteredResources,
     handleResourceClick,
     handleDayClick,
-    handleKPIFilterClick,
+    // handleKPIFilterClick,
     // Pagination exports
     page,
     setPage,
