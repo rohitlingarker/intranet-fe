@@ -22,7 +22,7 @@ function StatusDot({ status }) {
 }
 
 function TimelineBar({ resource }) {
-  const blocks = resource.allocationTimeline
+  const blocks = resource.allocationTimeline || []
   if (blocks.length === 0) return null
 
   const earliest = new Date(blocks[0].startDate).getTime()
@@ -73,9 +73,10 @@ function TimelineBar({ resource }) {
 }
 
 function UtilizationChart({ data }) {
-  const max = Math.max(...data, 100)
+  const safeData = data || []
+  const max = Math.max(...safeData, 100)
   const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
-  const recentMonths = data.slice(-6)
+  const recentMonths = safeData.slice(-6)
   const recentLabels = months.slice(-6)
 
   return (
@@ -112,7 +113,7 @@ function UtilizationChart({ data }) {
 function SkillMatch({ skills }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {skills.map((skill) => {
+      {(skills || []).map((skill) => {
         const matchScore = Math.floor((skill.charCodeAt(0) % 3))
         const colors = [
           "bg-status-available/15 text-status-available border-status-available/30",
@@ -210,7 +211,7 @@ export function ResourceDetailPanel({ resource, open, onOpenChange }) {
             <h4 className="text-xs font-semibold text-foreground mb-3">Allocation Timeline</h4>
             <TimelineBar resource={resource} />
             <div className="mt-2 flex flex-col gap-1">
-              {resource.allocationTimeline.map((block, i) => (
+              {(resource.allocationTimeline || []).map((block, i) => (
                 <div key={i} className="flex items-center justify-between text-[10px]">
                   <span className={cn("text-muted-foreground", block.tentative && "italic")}>
                     {block.project}{block.tentative ? " (T)" : ""}

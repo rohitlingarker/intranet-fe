@@ -87,6 +87,11 @@ import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminAppro
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
+import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
+import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
+import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
+
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -350,11 +355,18 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-          <Route path="/employee-onboarding" element={<EmpDashboard />} />
+          {/* <Route path="/employee-onboarding" element={<EmpDashboard />} /> */}
+          
+          
+          <Route path="/employee-onboarding" element={<EmpDashboard />}
+           />
+          <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
+          <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
+          <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
+          <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route
             path="/employee-onboarding/offer/:user_uuid"
-            element={<ViewEmpDetails />}
-          />
+            element={<ViewEmpDetails />}/>
 
           <Route
             path="/employee-onboarding/employeeProfile"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getAssetsByClient } from "../services/clientservice";
 import {
   ArrowLeft,
   Pencil,
@@ -22,6 +23,7 @@ import {
   getAssignmentKPI,
   returnAssetAssignment,
   deleteClientAssignment,
+  getProjectsByClient,
 } from "../services/clientservice";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
@@ -156,11 +158,13 @@ const AssetDetail = () => {
 
   const [formData, setFormData] = useState({
     resourceName: "",
+    // projectId: "",
     projectName: "",
     assignedDate: "",
     expectedReturnDate: "",
     assignmentStatus: "ASSIGNED",
     assignedBy: "",
+    locationType: "",
     locationDetails: "",
     description: "",
     serialNumber: "",
@@ -170,7 +174,19 @@ const AssetDetail = () => {
     conditionOnReturn: "Good",
     returnNotes: "",
   });
+  const [clientProjects, setClientProjects] = useState([]);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await getProjectsByClient(clientId);
+        setClientProjects(res?.data || []);
+      } catch (err) {
+        console.error("Failed to load projects", err);
+      }
+    };
 
+    if (clientId) fetchProjects();
+  }, [clientId]);
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -268,32 +284,36 @@ const AssetDetail = () => {
 
   const handleAssignSave = async (e) => {
     e.preventDefault();
+
     const payload = {
-      ...formData,
-      asset: { assetId: assetId },
+      asset: {
+        assetId: assetId,
+      },
+      serialNumber: formData.serialNumber,
+      resourceName: formData.resourceName,
+      projectName: formData.projectName,
+      assignedDate: formData.assignedDate,
+      expectedReturnDate: formData.expectedReturnDate,
+      assignmentStatus: formData.assignmentStatus,
+      assignedBy: formData.assignedBy,
+      locationType: formData.locationType,
+      locationDetails: formData.locationDetails,
+      description: formData.description,
+      active: true,
     };
+
     setUpdateLoading(true);
     try {
       if (editingAssignment) {
-        const res = await assignUpdateClientAsset(
-          editingAssignment.assignmentId,
-          payload,
-        );
-        if (res.success) {
-          toast.success(res.message || "Assignment updated successfully");
-        } else {
-          toast.error(res.message || "Failed to update assignment");
-        }
+        await assignUpdateClientAsset(editingAssignment.assignmentId, payload);
+        toast.success("Assignment updated successfully");
       } else {
-        const res = await assignClientAsset(payload);
-        if (res.success) {
-          toast.success(res.message || "Assignment created successfully");
-          fetchKPI();
-        } else {
-          toast.error(res.message || "Failed to create assignment");
-        }
+        await assignClientAsset(payload);
+        toast.success("Assignment created successfully");
       }
+
       await fetchData();
+      fetchKPI();
       closeModal();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save record");
@@ -363,7 +383,8 @@ const AssetDetail = () => {
       expectedReturnDate: "",
       assignmentStatus: "ASSIGNED",
       assignedBy: "",
-      location: "",
+      locationType: "",
+      locationDetails: "",
       description: "",
       serialNumber: "",
     });
@@ -529,11 +550,14 @@ const AssetDetail = () => {
                     </td>
                     {activeTab === "HISTORY" && (
                       <td className="py-3 px-4 text-slate-600 text-center">
-                        {new Date(a.actualReturnedDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(a.actualReturnedDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
                       </td>
                     )}
                     <td className="py-3 px-4 text-center">
@@ -625,13 +649,35 @@ const AssetDetail = () => {
                 onChange={handleFormChange}
                 required
               />
-              <Input
-                label="Project Name"
-                name="projectName"
-                value={formData.projectName}
-                onChange={handleFormChange}
-                required
-              />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Project
+                </label>
+                <select
+                  name="projectId"
+                  // value={formData.projectId || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      // projectId: e.target.value,
+                      projectName:
+                        clientProjects.find(
+                          (p) => p.pmsProjectId == e.target.value,
+                        )?.name || "",
+                    }))
+                  }
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">Select Project</option>
+                  {clientProjects.map((p) => (
+                    <option key={p.pmsProjectId} value={p.pmsProjectId}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Input
                 label="Serial Number"
                 name="serialNumber"
@@ -675,6 +721,25 @@ const AssetDetail = () => {
                 onChange={handleFormChange}
                 placeholder="e.g. Hyderabad"
               />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Work Type
+                </label>
+                <select
+                  id="locationType"
+                  name="locationType"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, locationType: e.target.value }))}
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="" disabled selected>
+                    Select work mode
+                  </option>
+                  <option value="HYBRID">Hybrid</option>
+                  <option value="ON_SITE">On Site</option>
+                  <option value="CLIENT_LOCATION">Client Location</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">

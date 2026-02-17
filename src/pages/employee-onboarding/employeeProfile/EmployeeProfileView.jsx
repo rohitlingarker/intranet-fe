@@ -1,191 +1,280 @@
 "use client";
 
-import React, { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
+import React, { useState, useRef } from "react";
+import {
+  Mail,
+  Phone,
+  Building2,
+  User,
+  GraduationCap,
+  Camera,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Link,
+} from "lucide-react";
+import ProfilePage from "./ProfilePage";
+import JobPage from "./JobPage";
+import DocumentsPage from "./DocumentsPage";
 
-/* ------------------ VALIDATION SCHEMA ------------------ */
-const schema = yup.object().shape({
-  personalDetails: yup.object().shape({
-    firstName: yup.string().required("First Name is required"),
-    lastName: yup.string().required("Last Name is required"),
-    personalEmail: yup.string().email("Invalid Email").required("Email is required"),
-  }),
-  professionalDetails: yup.object().shape({
-    department: yup.string().required("Department is required"),
-    designation: yup.string().required("Designation is required"),
-  }),
-});
+export default function EmployeeProfileView() {
 
-/* ------------------ MOCK DATA ------------------ */
-const mockEmployee = {
-  personalDetails: {
-    firstName: "Mounika",
-    lastName: "Pothamsetty",
-    personalEmail: "mounika@email.com",
-    alternatePhones: ["9876543210"],
-    addresses: ["Hyderabad"],
-  },
-  professionalDetails: {
-    department: "Engineering",
-    designation: "Software Developer",
-    skills: ["React", "Spring Boot"],
-    projectsHandled: ["Project A"],
-  },
-  educationDetails: [
-    { degree: "B.Tech", institution: "JNTU", specialization: "CSE", startYear: "2016", endYear: "2020", percentage: "78" },
-  ],
-  identityDocuments: [
-    { documentType: "AADHAAR", documentNumber: "1234-5678-9012" },
-  ],
-  emergencyContacts: [
-    { name: "Ravi", relation: "Father", phone: "9876543211" },
-  ],
-  socialProfiles: [
-    { platform: "LinkedIn", url: "https://linkedin.com/in/mounika" },
-  ],
-};
+  /* ---------------- ACTIVE TAB STATE ---------------- */
+  const [activeTab, setActiveTab] = useState("about");
 
-/* ------------------ COMPONENT ------------------ */
-export default function EmployeeProfile() {
-  const [activeTab, setActiveTab] = useState("personal");
-  const [editMode, setEditMode] = useState(false);
+  /* ---------------- IMAGE STATES ---------------- */
+  const [profileImg, setProfileImg] = useState(null);
+  const [coverImg, setCoverImg] = useState(
+    "https://images.unsplash.com/photo-1503264116251-35a269479413?w=1200"
+  );
 
-  const { register, control, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: mockEmployee,
-    resolver: yupResolver(schema),
-  });
+  const profileRef = useRef(null);
+  const coverRef = useRef(null);
 
-  // Dynamic arrays
-  const { fields: altPhones, append: addPhone, remove: removePhone } = useFieldArray({ control, name: "personalDetails.alternatePhones" });
-  const { fields: addresses, append: addAddress, remove: removeAddress } = useFieldArray({ control, name: "personalDetails.addresses" });
-  const { fields: skills, append: addSkill, remove: removeSkill } = useFieldArray({ control, name: "professionalDetails.skills" });
-  const { fields: projects, append: addProject, remove: removeProject } = useFieldArray({ control, name: "professionalDetails.projectsHandled" });
-  const { fields: educationFields, append: addEducation, remove: removeEducation } = useFieldArray({ control, name: "educationDetails" });
-  const { fields: identityFields, append: addIdentity, remove: removeIdentity } = useFieldArray({ control, name: "identityDocuments" });
-  const { fields: emergencyFields, append: addEmergency, remove: removeEmergency } = useFieldArray({ control, name: "emergencyContacts" });
-  const { fields: socialFields, append: addSocial, remove: removeSocial } = useFieldArray({ control, name: "socialProfiles" });
-
-  const onSubmit = (data) => {
-    console.log("API PAYLOAD:", data);
-    alert("Profile Saved! Check console.");
-    setEditMode(false);
+  const handleProfileChange = (file) => {
+    if (file) setProfileImg(URL.createObjectURL(file));
   };
 
-  const tabs = ["personal", "professional", "education", "identity", "emergency", "social"];
+  const handleCoverChange = (file) => {
+    if (file) setCoverImg(URL.createObjectURL(file));
+  };
+
+  /* ---------------- MOCK DATA ---------------- */
+  const employee = {
+    name: "Busam Lokeswari",
+    designation: "Graduate Software Engineer",
+    email: "lokeswaribusam216@gmail.com",
+    phone: "+91 8074718830",
+    office: "Hyderabad Office",
+    empId: "5100008",
+    department: "Engineering",
+    reportingManager: "Rama Gopal Durgam",
+  };
+
+  /* ---------------- ABOUT STATE ---------------- */
+  const [about, setAbout] = useState({
+    summary: "",
+    loveJob: "",
+    hobbies: "",
+  });
+
+  const [editingField, setEditingField] = useState(null);
+  const editorRef = useRef(null);
+
+  const formatText = (cmd) => {
+    document.execCommand(cmd, false, null);
+  };
+
+  const saveField = (key) => {
+    setAbout({
+      ...about,
+      [key]: editorRef.current.innerHTML,
+    });
+    setEditingField(null);
+  };
+
+  const AboutBlock = ({ title, fieldKey }) => (
+    <div className="mb-6">
+      <h4 className="font-medium mb-2">{title}</h4>
+
+      {editingField === fieldKey ? (
+        <div className="border rounded-lg overflow-hidden bg-white">
+          <div className="flex gap-3 p-2 border-b bg-gray-50 text-gray-600">
+            <button onClick={() => formatText("bold")}><Bold size={16} /></button>
+            <button onClick={() => formatText("italic")}><Italic size={16} /></button>
+            <button onClick={() => formatText("underline")}><Underline size={16} /></button>
+            <button onClick={() => formatText("insertUnorderedList")}><List size={16} /></button>
+            <button onClick={() => formatText("insertOrderedList")}><ListOrdered size={16} /></button>
+            <button onClick={() => formatText("createLink")}><Link size={16} /></button>
+          </div>
+
+          <div
+            ref={editorRef}
+            contentEditable
+            className="p-3 min-h-[120px] outline-none text-sm"
+            dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
+          />
+
+          <div className="flex justify-end gap-3 p-3 border-t bg-gray-50">
+            <button
+              onClick={() => setEditingField(null)}
+              className="px-4 py-1 text-sm border rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => saveField(fieldKey)}
+              className="px-4 py-1 text-sm bg-indigo-600 text-white rounded-md"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : about[fieldKey] ? (
+        <div
+          className="text-sm text-gray-700"
+          dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
+        />
+      ) : (
+        <button
+          onClick={() => setEditingField(fieldKey)}
+          className="text-indigo-600 border px-3 py-1 rounded-md text-sm"
+        >
+          Add your response
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <div className="p-4 md:p-8 bg-gray-100 min-h-screen">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-xl shadow-md flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">{mockEmployee.personalDetails.firstName} {mockEmployee.personalDetails.lastName}</h2>
-          <p className="text-gray-500">{mockEmployee.professionalDetails.designation}</p>
-        </div>
-        <button
-          onClick={() => setEditMode(!editMode)}
-          className={`px-4 py-2 rounded-lg text-white ${editMode ? "bg-gray-500" : "bg-indigo-600"}`}
+    <div className="min-h-screen bg-gray-100 font-sans">
+
+      {/* ---------------- HEADER ---------------- */}
+      <div className="relative h-48 w-full group overflow-hidden">
+        <img src={coverImg} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+        <div
+          onClick={() => coverRef.current.click()}
+          className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer"
         >
-          {editMode ? "Cancel ✏️" : "Edit ✏️"}
-        </button>
-      </div>
+          <Camera size={18} />
+        </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 mb-4 overflow-x-auto">
-        {tabs.map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2 px-3 capitalize border-b-2 ${activeTab === tab ? "border-indigo-600 text-indigo-600 font-semibold" : "border-transparent text-gray-500"}`}
+        <input hidden ref={coverRef} type="file" accept="image/*"
+          onChange={(e) => handleCoverChange(e.target.files[0])}
+        />
+
+        <div className="absolute bottom-6 left-10 flex items-center gap-6 text-white">
+          <div
+            onClick={() => profileRef.current.click()}
+            className="relative w-28 h-28 rounded-full border-4 border-white shadow-xl cursor-pointer overflow-hidden"
           >
-            {tab}
-          </button>
-        ))}
+            {profileImg ? (
+              <img src={profileImg} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-3xl font-semibold">
+                {employee.name.charAt(0)}
+              </div>
+            )}
+          </div>
+
+          <input hidden ref={profileRef} type="file" accept="image/*"
+            onChange={(e) => handleProfileChange(e.target.files[0])}
+          />
+
+          <div>
+            <h1 className="text-2xl font-semibold">{employee.name}</h1>
+            <p className="opacity-90">{employee.designation}</p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* ------------------ PERSONAL ------------------ */}
-        {activeTab === "personal" && (
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input {...register("personalDetails.firstName")} disabled={!editMode} className="input" placeholder="First Name" />
-              <input {...register("personalDetails.lastName")} disabled={!editMode} className="input" placeholder="Last Name" />
-              <input {...register("personalDetails.personalEmail")} disabled={!editMode} className="input" placeholder="Email" />
-              {altPhones.map((item, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input {...register(`personalDetails.alternatePhones.${i}`)} disabled={!editMode} className="input flex-1" placeholder="Alternate Phone" />
-                  {editMode && <button type="button" onClick={() => removePhone(i)} className="text-red-500">🗑️</button>}
-                </div>
-              ))}
-              {editMode && <button type="button" onClick={() => addPhone("")} className="text-indigo-600">+ Add Phone</button>}
-              {addresses.map((item, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input {...register(`personalDetails.addresses.${i}`)} disabled={!editMode} className="input flex-1" placeholder="Address" />
-                  {editMode && <button type="button" onClick={() => removeAddress(i)} className="text-red-500">🗑️</button>}
-                </div>
-              ))}
-              {editMode && <button type="button" onClick={() => addAddress("")} className="text-indigo-600">+ Add Address</button>}
-            </div>
-          </div>
-        )}
+      {/* ---------------- QUICK INFO ---------------- */}
+      <div className="bg-white px-6 py-3 shadow flex flex-wrap gap-6 text-sm">
+        <Info icon={<Mail size={16} />} text={employee.email} />
+        <Info icon={<Phone size={16} />} text={employee.phone} />
+        <Info icon={<Building2 size={16} />} text={employee.office} />
+        <Info icon={<User size={16} />} text={employee.empId} />
+      </div>
 
-        {/* ------------------ PROFESSIONAL ------------------ */}
-        {activeTab === "professional" && (
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Professional Details</h3>
-            <input {...register("professionalDetails.department")} disabled={!editMode} className="input" placeholder="Department" />
-            <input {...register("professionalDetails.designation")} disabled={!editMode} className="input" placeholder="Designation" />
-            <div className="space-y-2">
-              {skills.map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input {...register(`professionalDetails.skills.${i}`)} disabled={!editMode} className="input flex-1" placeholder="Skill" />
-                  {editMode && <button type="button" onClick={() => removeSkill(i)} className="text-red-500">🗑️</button>}
-                </div>
-              ))}
-              {editMode && <button type="button" onClick={() => addSkill("")} className="text-indigo-600">+ Add Skill</button>}
-            </div>
-            <div className="space-y-2 mt-2">
-              {projects.map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input {...register(`professionalDetails.projectsHandled.${i}`)} disabled={!editMode} className="input flex-1" placeholder="Project Handled" />
-                  {editMode && <button type="button" onClick={() => removeProject(i)} className="text-red-500">🗑️</button>}
-                </div>
-              ))}
-              {editMode && <button type="button" onClick={() => addProject("")} className="text-indigo-600">+ Add Project</button>}
-            </div>
+      {/* ---------------- DEPARTMENT ROW ---------------- */}
+      <div className="bg-white px-6 py-4 shadow text-sm">
+        <div className="flex flex-wrap gap-12">
+          <div>
+            <p className="text-xs text-gray-400">Department</p>
+            <p className="font-medium text-gray-800">{employee.department}</p>
           </div>
-        )}
 
-        {/* ------------------ EDUCATION ------------------ */}
-        {activeTab === "education" && (
-          <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Education</h3>
-            {educationFields.map((item, index) => (
-              <div key={index} className="flex flex-col md:flex-row gap-2 items-center border p-2 rounded">
-                <input {...register(`educationDetails.${index}.degree`)} disabled={!editMode} className="input flex-1" placeholder="Degree" />
-                <input {...register(`educationDetails.${index}.institution`)} disabled={!editMode} className="input flex-1" placeholder="Institution" />
-                <input {...register(`educationDetails.${index}.specialization`)} disabled={!editMode} className="input flex-1" placeholder="Specialization" />
-                <input {...register(`educationDetails.${index}.startYear`)} disabled={!editMode} className="input" placeholder="Start Year" />
-                <input {...register(`educationDetails.${index}.endYear`)} disabled={!editMode} className="input" placeholder="End Year" />
-                <input {...register(`educationDetails.${index}.percentage`)} disabled={!editMode} className="input" placeholder="Percentage" />
-                {editMode && <button type="button" onClick={() => removeEducation(index)} className="text-red-500">🗑️</button>}
+          <div>
+            <p className="text-xs text-gray-400">Reporting Manager</p>
+            <p className="font-medium text-indigo-600 hover:underline cursor-pointer transition duration-200">
+              {employee.reportingManager}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- TABS ---------------- */}
+      <div className="bg-white mt-2 px-6 border-b flex gap-6 text-sm font-medium">
+        <Tab active={activeTab === "about"} onClick={() => setActiveTab("about")}>About</Tab>
+        <Tab active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>Profile</Tab>
+        <Tab active={activeTab === "job"} onClick={() => setActiveTab("job")}>Job</Tab>
+        <Tab active={activeTab === "documents"} onClick={() => setActiveTab("documents")}>Documents</Tab>
+      </div>
+
+      {/* ---------------- CONTENT SWITCH ---------------- */}
+      {activeTab === "about" && (
+        <div className="p-6 grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Card title="About">
+              <AboutBlock title="About" fieldKey="summary" />
+              <AboutBlock title="What I love about my job?" fieldKey="loveJob" />
+              <AboutBlock title="My interests and hobbies" fieldKey="hobbies" />
+            </Card>
+          </div>
+
+          <div>
+            <Card title="Skills">
+              <div className="flex flex-col items-center justify-center py-10 text-gray-500 text-sm">
+                <GraduationCap size={40} className="mb-3 opacity-40" />
+                <p>No skills added yet :(</p>
               </div>
-            ))}
-            {editMode && <button type="button" onClick={() => addEducation({ degree: "", institution: "", specialization: "", startYear: "", endYear: "", percentage: "" })} className="text-indigo-600">+ Add Education</button>}
+            </Card>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ------------------ SAVE BUTTON ------------------ */}
-        {editMode && <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg mt-4 hover:bg-green-700 transition">Save Changes</button>}
-      </form>
+      {activeTab === "profile" && (
+        <ProfilePage
+          activeTab={activeTab}
+          employee={employee}
+          about={about}
+          setAbout={setAbout}
+          editingField={editingField}
+          setEditingField={setEditingField}
+          editorRef={editorRef}
+          formatText={formatText}
+          saveField={saveField}
+          AboutBlock={AboutBlock}
+        />
+      )}
 
-      {/* ------------------ STYLES ------------------ */}
-      <style>{`
-        .input { width: 100%; border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; }
-        .input:focus { border-color: #6366f1; outline: none; }
-      `}</style>
+      {activeTab === "job" && (
+        <JobPage employee={employee} />
+      )}
+
+      {activeTab === "documents" && (
+        <DocumentsPage employee={employee} />
+      )}
+
     </div>
   );
 }
+
+/* ---------------- COMPONENTS ---------------- */
+
+const Info = ({ icon, text }) => (
+  <div className="flex items-center gap-2 text-gray-700">
+    {icon}
+    {text}
+  </div>
+);
+
+const Tab = ({ children, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`py-3 ${active ? "border-b-2 border-indigo-600 text-indigo-600" : "text-gray-600"}`}
+  >
+    {children}
+  </button>
+);
+
+const Card = ({ title, children }) => (
+  <div className="bg-white rounded-lg shadow p-5">
+    <h3 className="font-semibold mb-4">{title}</h3>
+    {children}
+  </div>
+);

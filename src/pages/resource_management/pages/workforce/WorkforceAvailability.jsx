@@ -1,16 +1,19 @@
-
-import { KPIBar } from "../../components/AvailabilityKPIs"
-import { FilterPanel } from "../../components/filters/AvailabilityFilters"
-import { AvailabilityCalendar } from "../../components/AvailabilityCalendar"
-import { AvailabilityTimeline } from "../../components/AvailabilityTimeline"
-import { ResourceTable } from "../../components/ResourceTable"
-import { ResourceDetailPanel } from "../../components/ResourceDetailPanel"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { CalendarDays, Table2, GanttChart } from "lucide-react"
-import { RESOURCES, getKPIData } from "../../services/availabilityService"
-
-import { useAvailability } from "../../hooks/useAvailability"
+import { useState, useEffect } from "react";
+import { KPIBar } from "../../components/AvailabilityKPIs";
+import { FilterPanel } from "../../components/filters/AvailabilityFilters";
+import { AvailabilityCalendar } from "../../components/AvailabilityCalendar";
+import { AvailabilityTimeline } from "../../components/AvailabilityTimeline";
+import { ResourceTable } from "../../components/ResourceTable";
+import { ResourceDetailPanel } from "../../components/ResourceDetailPanel";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Table2, GanttChart } from "lucide-react";
+import { RESOURCES, getKPIData } from "../../services/availabilityService";
+import { getWorkforceKPI } from "../../services/workforceService";
+import { useAvailability } from "../../hooks/useAvailability";
+import { toast } from "react-toastify";
+import LoadingSpinner from "../../../../components/LoadingSpinner";
+import Pagination from "../../../../components/Pagination/Pagination";
 
 export default function WorkforceAvailability() {
   const {
@@ -26,31 +29,73 @@ export default function WorkforceAvailability() {
     setDetailOpen,
     activeView,
     setActiveView,
-    kpiData,
+    // kpiData,
     filteredResources,
     handleResourceClick,
     handleDayClick,
     handleKPIFilterClick,
     toggleFilterPanel,
-  } = useAvailability()
+    page,
+    totalPages,
+    setPage,
+    loading,
+    currentDate,
+    setCurrentDate,
+  } = useAvailability();
+
+  const [kpiData, setKpiData] = useState(null);
+  const [kpiLoading, setKpiLoading] = useState(true);
+
+  const fetchKPI = async () => {
+    setKpiLoading(true);
+    try {
+      const res = await getWorkforceKPI(filters);
+      setKpiData(res.data);
+    } catch (err) {
+      console.error("Failed to load KPI data", err);
+      // toast.error(err.response?.data?.message || "Failed to load KPI data");
+    } finally {
+      setKpiLoading(false);
+    }
+  };
+
+  // useEffect(() => {
+  //   fetchKPI();
+  // }, [filters]);
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchKPI();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [filters]);
 
   return (
     <div className="min-h-screen bg-background">
-
       <main className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Workforce Availability Overview</h1>
-          <p className="text-sm text-slate-500 mt-1">A real-time snapshot of team capacity, utilization, and resource allocation across roles and locations.</p>
-
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Workforce Availability Overview
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            A real-time snapshot of team capacity, utilization, and resource
+            allocation across roles and locations.
+          </p>
         </div>
         {/* KPI Summary Bar */}
-        <div className="mb-6">
-          <KPIBar
-            data={kpiData}
-            activeFilter={statusFilter}
-            onFilterClick={handleKPIFilterClick}
-          />
-        </div>
+        {kpiLoading ? (
+          <div className="flex justify-center items-center">
+            <LoadingSpinner text="Loading KPI Data..." />
+          </div>
+        ) : (
+          <div className="mb-6">
+            <KPIBar
+              data={kpiData}
+              activeFilter={statusFilter}
+              onFilterClick={handleKPIFilterClick}
+            />
+          </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex gap-6 items-start">
@@ -65,24 +110,41 @@ export default function WorkforceAvailability() {
 
           {/* Primary Content */}
           <div className="flex-1 min-w-0 bg-card rounded-lg border shadow-sm">
-            <Tabs value={activeView} onValueChange={setActiveView} className="h-full flex flex-col">
+            <Tabs
+              value={activeView}
+              onValueChange={setActiveView}
+              className="h-full flex flex-col"
+            >
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <h3 className="text-sm font-semibold text-card-foreground">Timeline</h3>
-                    <span className="text-xs text-muted-foreground">{filteredResources.length} resources</span>
+                    <h3 className="text-sm font-semibold text-card-foreground">
+                      Timeline
+                    </h3>
+                    <span className="text-xs text-muted-foreground">
+                      {filteredResources.length} resources
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TabsList className="h-9 bg-muted/50 p-1">
-                      <TabsTrigger value="calendar" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <TabsTrigger
+                        value="calendar"
+                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                      >
                         <CalendarDays className="h-3.5 w-3.5" />
                         Calendar View
                       </TabsTrigger>
-                      <TabsTrigger value="timeline" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <TabsTrigger
+                        value="timeline"
+                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                      >
                         <GanttChart className="h-3.5 w-3.5" />
                         Timeline
                       </TabsTrigger>
-                      <TabsTrigger value="table" className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <TabsTrigger
+                        value="table"
+                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                      >
                         <Table2 className="h-3.5 w-3.5" />
                         Table View
                       </TabsTrigger>
@@ -92,8 +154,13 @@ export default function WorkforceAvailability() {
 
                 {statusFilter && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-t mt-4 -mx-4 mb-[-16px]">
-                    <span className="text-xs text-muted-foreground">Filtering by:</span>
-                    <Badge variant="secondary" className="text-xs font-normal gap-1 pr-1">
+                    <span className="text-xs text-muted-foreground">
+                      Filtering by:
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-normal gap-1 pr-1"
+                    >
                       {statusFilter}
                       <button
                         onClick={() => setStatusFilter(null)}
@@ -110,37 +177,71 @@ export default function WorkforceAvailability() {
               <div className="p-4">
                 <TabsContent value="calendar" className="mt-0">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityCalendar
-                      filteredResources={filteredResources}
-                      onDayClick={handleDayClick}
-                      selectedResourceId={selectedResource?.id}
-                      onSelectResource={handleResourceClick}
-                    />
-                    <ResourceTable
-                      resources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    />
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <AvailabilityCalendar
+                          filteredResources={filteredResources}
+                          onDayClick={handleDayClick}
+                          selectedResourceId={selectedResource?.id}
+                          onSelectResource={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
+                        />
+                      </>
+                    )}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="timeline" className="mt-0">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityTimeline
-                      filteredResources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    />
-                    <ResourceTable
-                      resources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                    />
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <AvailabilityTimeline
+                          filteredResources={filteredResources}
+                          onResourceClick={handleResourceClick}
+                          currentDate={currentDate}
+                          onNavigate={setCurrentDate}
+                        />
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        />
+                      </>
+                    )}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="table" className="mt-0">
-                  <ResourceTable
-                    resources={filteredResources}
-                    onResourceClick={handleResourceClick}
-                  />
+                  <div className="flex flex-col gap-5">
+                    {loading ? (
+                      <div className="flex justify-center p-10">
+                        <LoadingSpinner />
+                      </div>
+                    ) : (
+                      <>
+                        <ResourceTable
+                          resources={filteredResources}
+                          onResourceClick={handleResourceClick}
+                        />
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        />
+                      </>
+                    )}
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>
@@ -155,5 +256,5 @@ export default function WorkforceAvailability() {
         onOpenChange={setDetailOpen}
       />
     </div>
-  )
+  );
 }

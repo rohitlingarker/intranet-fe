@@ -12,6 +12,15 @@ import Pagination from "../../../components/Pagination/pagination";
    CONSTANTS
 ============================ */
 const PAGE_SIZE = 5;
+const DEPARTMENTS = [
+  "Engineering",
+  "HR",
+  "Finance",
+  "Marketing",
+  "Sales",
+  "Operations",
+  "Admin",
+];
 
 /* ============================
    JOIN MODAL
@@ -23,12 +32,22 @@ function JoinModal({
   loading,
   form,
   setForm,
+  managerOptions,
+  
+  loadingManagers,
+
 }) {
   if (!open) return null;
+  const filteredManagers =
+    form.department === "Engineering"
+      ? managerOptions
+      : [];
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl w-full max-w-md p-6 relative">
+     <div className="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] p-6 relative flex flex-col">
+
 
         <button
           onClick={onClose}
@@ -41,7 +60,8 @@ function JoinModal({
           Send Joining Details
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto pr-2 flex-1">
+
 
           <InputField
             label="Joining Date *"
@@ -69,6 +89,26 @@ function JoinModal({
               setForm({ ...form, location: v })
             }
           />
+           <SelectField
+                label="Department *"
+                value={form.department}
+                options={DEPARTMENTS}
+                onChange={(v) =>
+                  setForm({ ...form, department: v, reporting_manager: "" })
+                }
+           />
+          <SearchableSelect
+                label="Reporting Manager *"
+                value={form.reporting_manager}
+                options={filteredManagers}
+                loading={loadingManagers}
+                disabled={!form.department || loadingManagers}
+                placeholder ="Search manager"
+
+                onChange={(v) =>
+                  setForm({ ...form, reporting_manager: v })
+                }
+          />
 
           <TextAreaField
             label="Additional Content"
@@ -77,7 +117,14 @@ function JoinModal({
               setForm({ ...form, custom_message: v })
             }
           />
-
+          {/* <TextAreaField
+            label="cc_mails"
+            value={form.cc_mails}
+            onChange={(v) =>
+              setForm({ ...form, cc_mails: v })
+            }
+          /> */}
+          
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
@@ -127,11 +174,17 @@ export default function HrOnboardingDashboard() {
   const [sending, setSending] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [managerOptions, setManagerOptions] = useState([]);
+  const [loadingManagers, setLoadingManagers] = useState(false);
+ 
+  
 
   const [joinForm, setJoinForm] = useState({
     joining_date: "",
     reporting_time: "",
     location: "",
+    department: "",
+    reporting_manager: "",
     custom_message: "",
   });
 
@@ -139,7 +192,7 @@ export default function HrOnboardingDashboard() {
      FETCH DATA
   ============================ */
 
-  useEffect(() => {
+   useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true);
       try {
@@ -162,6 +215,41 @@ export default function HrOnboardingDashboard() {
 
     fetchEmployees();
   }, []);
+
+ 
+const fetchManagers = async () => {
+  setLoadingManagers(true);
+
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/offer-approval/admin-users`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    // TEMP: Treat all users as managers
+    const managers = res.data.map((u) => ({
+      value: u.name,
+      label: u.name,
+    }));
+
+    setManagerOptions(managers);
+
+  } catch (err) {
+    console.error("Failed to load managers:", err);
+  }
+
+  setLoadingManagers(false);
+};
+
+
+
+ useEffect(() => {
+  fetchManagers();
+ }, []);
 
   /* ============================
      FILTER (SEARCH + STATUS)
@@ -216,6 +304,8 @@ export default function HrOnboardingDashboard() {
       joining_date: "",
       reporting_time: "",
       location: "",
+      department: "",
+      reporting_manager: "",
       custom_message: "",
     });
   };
@@ -224,11 +314,13 @@ export default function HrOnboardingDashboard() {
      SEND JOIN MAIL
   ============================ */
 
+
+
   const handleSendJoinEmail = async () => {
-    const { joining_date, reporting_time, location } =
+    const { joining_date, reporting_time, location, department, reporting_manager, custom_message } =
       joinForm;
 
-    if (!joining_date || !reporting_time || !location) {
+    if (!joining_date || !reporting_time || !location || !department || !reporting_manager) {
       showStatusToast("❌ Please fill all required fields");
       return;
     }
@@ -266,7 +358,7 @@ export default function HrOnboardingDashboard() {
 
     } catch (err) {
       console.error(err);
-      showStatusToast("❌ Failed to send emails");
+    showStatusToast("❌ Failed to send emails");
     } finally {
       setSending(false);
     }
@@ -551,6 +643,9 @@ export default function HrOnboardingDashboard() {
         loading={sending}
         form={joinForm}
         setForm={setJoinForm}
+        managerOptions={managerOptions}
+        
+        loadingManagers={loadingManagers}
       />
 
     </div>
@@ -605,6 +700,118 @@ function StatCard({ title, value, icon: Icon }) {
           {value}
         </p>
       </div>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  disabled = false,
+  loading = false,
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">
+        {label}
+      </label>
+
+      <select
+        disabled={disabled || loading}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full mt-1 px-3 py-2 border rounded-lg bg-white
+          ${disabled || loading ? "opacity-50 cursor-not-allowed" : ""}`}
+      >
+        <option value="">
+          {loading ? "Loading..." : `Select ${label}`}
+        </option>
+
+        {options.map((opt) => {
+          // If string → department
+          if (typeof opt === "string") {
+            return (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            );
+          }
+
+          // If object → manager
+          return (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          );
+        })}
+      </select>
+    </div>
+  );
+}
+
+
+function SearchableSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled = false,
+  placeholder = "Search...",
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filtered = options.filter((opt) =>
+    opt.label.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const selectedLabel =
+    options.find((o) => o.value === value)?.label || "";
+
+  return (
+    <div className="relative">
+      <label className="text-sm font-medium">
+        {label}
+      </label>
+
+      {/* Input */}
+      <input
+        disabled={disabled}
+        value={open ? query : selectedLabel}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full mt-1 px-3 py-2 border rounded-lg
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      />
+
+      {/* Dropdown */}
+      {open && !disabled && (
+        <div className="absolute z-50 w-full bg-white border rounded-lg shadow max-h-48 overflow-y-auto mt-1">
+
+          {filtered.length === 0 && (
+            <div className="p-2 text-gray-500 text-sm">
+              No results
+            </div>
+          )}
+
+          {filtered.map((opt) => (
+            <div
+              key={opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+                setQuery("");
+              }}
+              className="px-3 py-2 cursor-pointer hover:bg-indigo-50"
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
