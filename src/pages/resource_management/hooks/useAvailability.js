@@ -1,6 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from "react"
-import { RESOURCES, getKPIData, computeStatus } from "../services/availabilityService"
-import { getAvailabilityTimeline } from "../services/workforceService"
+import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  RESOURCES,
+  getKPIData,
+  computeStatus,
+} from "../services/availabilityService";
+import { getAvailabilityTimeline } from "../services/workforceService";
 
 export const defaultFilters = {
   role: "All Roles",
@@ -10,15 +14,15 @@ export const defaultFilters = {
   project: "All Projects",
   employmentType: "All Types",
   search: "",
-}
+};
 
 export function useAvailability() {
-  const [filters, setFilters] = useState(defaultFilters)
-  const [statusFilter, setStatusFilter] = useState(null)
-  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false)
-  const [selectedResource, setSelectedResource] = useState(null)
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [activeView, setActiveView] = useState("calendar")
+  const [filters, setFilters] = useState(defaultFilters);
+  const [statusFilter, setStatusFilter] = useState(null);
+  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [activeView, setActiveView] = useState("calendar");
 
   // Date State for Calendar
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -31,7 +35,10 @@ export function useAvailability() {
   const [filteredResources, setFilteredResources] = useState([]);
 
   // Calculate KPI data dynamically from the fetched resources
-  const kpiData = useMemo(() => getKPIData(filteredResources), [filteredResources]);
+  const kpiData = useMemo(
+    () => getKPIData(filteredResources),
+    [filteredResources],
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -44,20 +51,23 @@ export function useAvailability() {
       const payload = {
         page: page - 1,
         size: 20,
-        startDate: firstDay.toISOString().split('T')[0],
-        endDate: lastDay.toISOString().split('T')[0],
+        startDate: firstDay.toISOString().split("T")[0],
+        endDate: lastDay.toISOString().split("T")[0],
       };
 
       const currentFilters = { ...filters };
       const response = await getAvailabilityTimeline(currentFilters, payload);
 
       if (response && response.data) {
-        const mappedData = response.data.map(r => ({
+        const mappedData = response.data.map((r) => ({
           ...r,
           id: r.resourceId,
           status: computeStatus(r.currentAllocation || 0),
-          availableFrom: r.availableFrom || new Date().toISOString().split('T')[0],
-          currentProject: Array.isArray(r.currentProject) ? r.currentProject.join(", ") : r.currentProject,
+          availableFrom:
+            r.availableFrom || new Date().toISOString().split("T")[0],
+          currentProject: Array.isArray(r.currentProject)
+            ? r.currentProject.join(", ")
+            : r.currentProject,
         }));
         setFilteredResources(mappedData);
         setTotalPages(response.totalPages);
@@ -72,8 +82,12 @@ export function useAvailability() {
 
   // Effect to fetch data
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const delay = setTimeout(() => {
+      fetchData();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [filters, page, currentDate.getFullYear()]);
 
   // We need to use useEffect directly, but I can't easily change the imports at the top with this tool if I only replace the body.
   // I will use a separate tool call to fix imports first or do a full file replacement.
@@ -83,14 +97,14 @@ export function useAvailability() {
   // I need to add `useEffect` to the imports.
 
   const handleResourceClick = useCallback((resource) => {
-    setSelectedResource(resource)
-    setDetailOpen(true)
-  }, [])
+    setSelectedResource(resource);
+    setDetailOpen(true);
+  }, []);
 
   const handleDayClick = useCallback((_date, status) => {
-    setStatusFilter((prev) => (prev === status ? null : status))
+    setStatusFilter((prev) => (prev === status ? null : status));
     setPage(1); // Reset to first page on filter change
-  }, [])
+  }, []);
 
   // const handleKPIFilterClick = useCallback((status) => {
   //   setStatusFilter(status)
@@ -98,10 +112,10 @@ export function useAvailability() {
   // }, [])
 
   const resetFilters = useCallback(() => {
-    setFilters(defaultFilters)
-    setStatusFilter(null)
+    setFilters(defaultFilters);
+    setStatusFilter(null);
     setPage(1);
-  }, [])
+  }, []);
 
   return {
     filters,
@@ -129,6 +143,6 @@ export function useAvailability() {
     totalElements,
     loading,
     currentDate,
-    setCurrentDate
-  }
+    setCurrentDate,
+  };
 }
