@@ -60,6 +60,7 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
     if (filters.location && filters.location !== "All Locations") params.location = filters.location;
     if (filters.employmentType && filters.employmentType !== "All Types")
       params.employmentType = filters.employmentType;
+    params.search = filters.search;
     if (filters.experienceRange?.[0] > 0)
       params.minExp = filters.experienceRange[0];
     if (filters.experienceRange?.[1] < 15)

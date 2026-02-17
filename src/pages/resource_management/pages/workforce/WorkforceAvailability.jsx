@@ -33,7 +33,7 @@ export default function WorkforceAvailability() {
     filteredResources,
     handleResourceClick,
     handleDayClick,
-    handleKPIFilterClick,
+    // handleKPIFilterClick,
     toggleFilterPanel,
     page,
     totalPages,
@@ -86,8 +86,8 @@ export default function WorkforceAvailability() {
         <div className="mb-4 md:mb-6 min-h-[200px]">
           <KPIBar
             data={kpiData}
-            activeFilter={statusFilter}
-            onFilterClick={handleKPIFilterClick}
+            // activeFilter={statusFilter}
+            // onFilterClick={handleKPIFilterClick}
             loading={kpiLoading}
           />
         </div>
@@ -170,7 +170,6 @@ export default function WorkforceAvailability() {
               </div>
 
               <div className="p-4 min-h-[600px] relative">
-
                 <TabsContent value="calendar" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
                     <AvailabilityCalendar
@@ -186,19 +185,32 @@ export default function WorkforceAvailability() {
 
                 <TabsContent value="timeline" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
-                    <AvailabilityTimeline
+                    {/* <AvailabilityTimeline
                       filteredResources={filteredResources}
                       onResourceClick={handleResourceClick}
                       currentDate={currentDate}
                       onNavigate={setCurrentDate}
                       loading={loading}
+                      searchQuery={searchQuery}
+                    /> */}
+                    <AvailabilityTimeline
+                      filteredResources={filteredResources}
+                      onResourceClick={handleResourceClick}
+                      currentDate={currentDate}
+                      loading={loading}
+                      filters={filters}
+                      setFilters={setFilters}
                     />
-                    <Pagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-                      onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    />
+                    {totalPages > 1 && (
+                      <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                        onNext={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                      />
+                    )}
                   </div>
                 </TabsContent>
 
@@ -209,12 +221,16 @@ export default function WorkforceAvailability() {
                       onResourceClick={handleResourceClick}
                       loading={loading}
                     />
-                    <Pagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-                      onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    />
+                    {totalPages > 1 && (
+                      <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                        onNext={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                      />
+                    )}
                   </div>
                 </TabsContent>
               </div>
