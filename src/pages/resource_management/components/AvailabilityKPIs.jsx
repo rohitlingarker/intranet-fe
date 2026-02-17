@@ -3,16 +3,7 @@ import { cn } from "@/lib/utils"
 
 function KPICard({ label, value, icon, color, active, onClick, suffix, className }) {
   return (
-    <button
-      type="button"
-      // onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all",
-        active ? "ring-2 ring-primary bg-primary/5 border-primary/20" : "",
-        // onClick && "cursor-pointer",
-        className
-      )}
-    >
+    <div className={cn("flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all", active ? "ring-2 ring-primary bg-primary/5 border-primary/20" : "", className)}>
       <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", color || "bg-secondary text-secondary-foreground")}>
         {icon}
       </div>
@@ -24,7 +15,7 @@ function KPICard({ label, value, icon, color, active, onClick, suffix, className
           {value}{suffix}
         </p>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -67,7 +58,7 @@ export function KPIBar({ data, activeFilter, onFilterClick, loading }) {
         value={data?.totalResources || 0}
         icon={<Users className="h-5 w-5" />}
         color="bg-indigo-100 text-indigo-600"
-        active={activeFilter === null}
+        // active={activeFilter === null}
       //onClick={() => onFilterClick && onFilterClick(null)}
       />
       <KPICard
@@ -75,7 +66,7 @@ export function KPIBar({ data, activeFilter, onFilterClick, loading }) {
         value={data?.fullyAvailable || 0}
         icon={<UserCheck className="h-5 w-5" />}
         color="bg-emerald-50 text-emerald-600"
-        active={activeFilter === "available"}
+        // active={activeFilter === "available"}
       //onClick={() => onFilterClick && onFilterClick("available")}
       />
       <KPICard
@@ -83,7 +74,7 @@ export function KPIBar({ data, activeFilter, onFilterClick, loading }) {
         value={data?.partiallyAvailable || 0}
         icon={<UserMinus className="h-5 w-5" />}
         color="bg-amber-100 text-amber-600"
-        active={activeFilter === "partial"}
+        // active={activeFilter === "partial"}
       //onClick={() => onFilterClick && onFilterClick("partial")}
       />
       <KPICard
@@ -91,7 +82,7 @@ export function KPIBar({ data, activeFilter, onFilterClick, loading }) {
         value={data?.fullyAllocated || 0}
         icon={<Users className="h-5 w-5" />}
         color="bg-rose-100 text-rose-600"
-        active={activeFilter === "allocated"}
+        // active={activeFilter === "allocated"}
       //OnClick={() => onFilterClick && onFilterClick("allocated")}
       />
       <KPICard
