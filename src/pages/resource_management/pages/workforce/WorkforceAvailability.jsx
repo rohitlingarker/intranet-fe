@@ -172,13 +172,26 @@ export default function WorkforceAvailability() {
               <div className="p-4 min-h-[600px] relative">
                 <TabsContent value="calendar" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
-                    {/* <AvailabilityCalendar
+                    <AvailabilityCalendar
                       filteredResources={filteredResources}
                       onDayClick={handleDayClick}
                       selectedResourceId={selectedResource?.id}
                       onSelectResource={handleResourceClick}
                       currentDate={currentDate}
                       onNavigate={setCurrentDate}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="timeline" className="mt-0 outline-none">
+                  <div className="flex flex-col gap-5">
+                    {/* <AvailabilityTimeline
+                      filteredResources={filteredResources}
+                      onResourceClick={handleResourceClick}
+                      currentDate={currentDate}
+                      onNavigate={setCurrentDate}
+                      loading={loading}
+                      searchQuery={searchQuery}
                     /> */}
                     <AvailabilityTimeline
                       filteredResources={filteredResources}
@@ -187,19 +200,6 @@ export default function WorkforceAvailability() {
                       loading={loading}
                       filters={filters}
                       setFilters={setFilters}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="timeline" className="mt-0 outline-none">
-                  <div className="flex flex-col gap-5">
-                    <AvailabilityTimeline
-                      filteredResources={filteredResources}
-                      onResourceClick={handleResourceClick}
-                      currentDate={currentDate}
-                      onNavigate={setCurrentDate}
-                      loading={loading}
-                      searchQuery={searchQuery}
                     />
                     {totalPages > 1 && (
                       <Pagination
