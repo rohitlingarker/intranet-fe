@@ -70,6 +70,7 @@ import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign
 
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
+import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
 import CreateOffer from "./pages/employee-onboarding/components/CreateOffer";
 import BulkUpload from "./pages/employee-onboarding/components/BulkUpload.jsx";
 import ViewEmpDetails from "./pages/employee-onboarding/components/ViewEmpDetails.jsx";
@@ -92,6 +93,9 @@ import EmployeeVerification from "./pages/employee-onboarding/employee-verificat
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
 import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
+
+import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
+import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -133,8 +137,10 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
 
+
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
+
 
 // function App() {
 //   return (
@@ -368,8 +374,15 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
           <Route
             path="/employee-onboarding/offer/:user_uuid"
-            element={<ViewEmpDetails />}
-          /> 
+            element={<ViewEmpDetails />}/>
+
+          <Route
+            path="/employee-onboarding/employeeProfile"
+            element={<EmployeeProfileView />}
+          />
+          
+          // Correct routes
+          <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
           <Route
             path="/employee-onboarding/bulk-upload"
@@ -424,6 +437,16 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr/profile/:user_uuid"
             element={<HrProfileView />}
           />
+          <Route
+            path="/employee-onboarding/analytics"
+            element={<HeadcountDemographicsPage />}
+          />
+          <Route
+            path="/employee-onboarding/employeelist"
+            element={<EmployeeListPage/>}
+          />
+
+
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
