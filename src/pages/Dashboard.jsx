@@ -279,7 +279,7 @@ const Dashboard = () => {
       title: "Employee Onbording",
       description: "Create offers and onboard new employees",
       icon: Handshake,
-      href: "/employee-onboarding/summary-page",
+      href: "/employee-onboarding",
       color: "bg-[#d23369]",
       stats: "5 events today",
     },
