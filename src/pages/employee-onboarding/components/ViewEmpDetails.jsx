@@ -459,21 +459,27 @@ finally {
 
         <div className="flex gap-4 mt-10">
           <button
-            onClick={handleSendOffer}
-            disabled={(approvalStatus !== "APPROVED") || loadingSendOffer || employee}
-            className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2 ${
-              approvalStatus !== "APPROVED"
-                ? "bg-gray-400"
-                : "bg-green-700 hover:bg-green-800"
-            }`}
-          >
-            {employee.status === "SENT"
+  onClick={handleSendOffer}
+  disabled={
+    approvalStatus !== "APPROVED" ||
+    loadingSendOffer ||
+    employee?.status === "SENT"
+  }
+  className={`px-6 py-2 rounded-lg text-white transition-all duration-100 ease-in-out
+    active:translate-y-[1px]
+    disabled:opacity-60 disabled:cursor-not-allowed
+    flex items-center justify-center gap-2 ${
+      approvalStatus !== "APPROVED"
+        ? "bg-gray-400"
+        : "bg-green-700 hover:bg-green-800"
+    }`}
+>
+  {employee?.status === "SENT"
     ? "Offer Sent"
-    :loadingSendOffer ? "Sending..." : "Send Offer"}
-          </button>
+    : loadingSendOffer
+    ? "Sending..."
+    : "Send Offer"}
+</button>
 
           <button
             onClick={() => setOpenApprovalModal(true)}

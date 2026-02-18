@@ -31,6 +31,7 @@ export default function CreateOffer() {
     country_code: "",
     contact_number: "",
     designation: "",
+    employee_type: "",
     package: "",
     currency: "",
     cc_mails: [],
@@ -40,6 +41,12 @@ export default function CreateOffer() {
     { label: "INR", value: "INR" },
     { label: "USD", value: "USD" },
     { label: "EUR", value: "EUR" },
+  ];
+  const employeeTypes = [
+    { label: "Full-Time", value: "Full-Time" },
+    { label: "Part-Time", value: "Part-Time" },
+    { label: "Contractor", value: "Contractor" },
+    { label: "Intern", value: "Intern" },
   ];
 
   // Fetch countries
@@ -123,6 +130,7 @@ export default function CreateOffer() {
       country_code: "",
       contact_number: "",
       designation: "",
+      employee_type: "",
       package: "",
       currency: "",
       cc_mails: [],
@@ -244,6 +252,16 @@ export default function CreateOffer() {
           value={formData.designation}
           onChange={handleChange}
         />
+
+        {/* Employee Type */}
+        <FormSelect
+          label="Employee Type"
+          name="employee_type"
+          value={formData.employee_type}
+          onChange={handleChange}
+          options={employeeTypes}
+        />
+        
 
         {/* Package */}
         <FormInput

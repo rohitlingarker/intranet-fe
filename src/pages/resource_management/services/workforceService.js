@@ -60,6 +60,7 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
     if (filters.location && filters.location !== "All Locations") params.location = filters.location;
     if (filters.employmentType && filters.employmentType !== "All Types")
       params.employmentType = filters.employmentType;
+    params.search = filters.search;
     if (filters.experienceRange?.[0] > 0)
       params.minExp = filters.experienceRange[0];
     if (filters.experienceRange?.[1] < 15)
@@ -112,6 +113,51 @@ export const getUtilization = async (resourceId) => {
       },
     );
     return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getSkillCategoriesTree = async () => {
+  const response = await axios.get(
+    `${BASE_URL}/api/skill-categories/tree`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+export const createRoleExpectation = async (payload) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/admin/role-expectations`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getProficiencyLevels = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/proficiency/get-all-proficiency-levels`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response;
   } catch (err) {
     throw err;
   }

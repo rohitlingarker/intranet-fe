@@ -146,18 +146,7 @@ export function FilterPanel({
   const EMPLOYMENT_TYPES = filtersRes.workforceCategory || [];
   const LOCATIONS = filtersRes.location || [];
   const ROLES = filtersRes.designation || [];
-  const PROJECTS = [
-    "All Projects",
-    "Project Atlas",
-    "Project Beacon",
-    "Project Catalyst",
-    "Project Delta",
-    "Project Echo",
-    "Project Forge",
-    "Project Genesis",
-    "Project Horizon",
-    "Project Ion",
-  ];
+  const PROJECTS = filtersRes.projectNames || [];
 
   const workforceFilters = async () => {
     setLoadingFilters(true);
@@ -231,7 +220,7 @@ export function FilterPanel({
 
       <div className="flex flex-col gap-4">
         <SearchableDropdown
-          label="Role / Skill"
+          label="Role"
           value={filters.role}
           options={ROLES}
           placeholder="All Roles"

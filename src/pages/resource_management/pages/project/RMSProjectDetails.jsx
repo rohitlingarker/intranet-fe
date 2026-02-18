@@ -10,6 +10,7 @@ import DemandModal from "../../models/DemandModal";
 import ProjectFinancialsInline from "../../components/FinancialModal";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import { CheckSquare, Square } from "lucide-react";
+import AddDeliverableRoleModal from "../../models/AddDeliverableRoleModal";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
@@ -27,6 +28,12 @@ import {
   getProjectById,
   checkDemandCreation,
 } from "../../services/projectService";
+import {
+  getSkillCategoriesTree,
+  getProficiencyLevels,
+} from "../../services/workforceService";
+import { createRoleExpectation } from "../../services/workforceService";
+
 import { toast } from "react-toastify";
 import ConfirmationModal from "../../../../components/confirmation_modal/ConfirmationModal";
 
@@ -50,6 +57,23 @@ const RMSProjectDetails = () => {
   const [openConfigModal, setOpenConfigModal] = useState(false);
   const [configType, setConfigType] = useState(null); // "sla" | "compliance" | "escalation"
 
+  // ================= Deliverable Role Modal =================
+  const [openDeliverableRoleModal, setOpenDeliverableRoleModal] =
+    useState(false);
+
+  const [deliverableForm, setDeliverableForm] = useState({
+    roleName: "",
+    skillId: "",
+    subSkillId: "",
+    proficiencyLevel: "",
+    // default
+  });
+
+  const [categories, setCategories] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [subSkills, setSubSkills] = useState([]);
+  const [proficiencyLevels, setProficiencyLevels] = useState([]);
+
   const [projectSlas, setProjectSlas] = useState([]);
   const [inheritMode, setInheritMode] = useState(false);
   const [clientSlas, setClientSlas] = useState([]);
@@ -61,8 +85,7 @@ const RMSProjectDetails = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleteConfigId, setDeleteConfigId] = useState(null);
-  const [deleteType, setDeleteType] = useState(null);  
-
+  const [deleteType, setDeleteType] = useState(null);
 
   const DEFAULT_FORM_STATE = {
     activeFlag: true,
@@ -190,81 +213,79 @@ const RMSProjectDetails = () => {
     setOpenConfirmModal(true);
   };
   const handleDeleteCompliance = (comp) => {
-  const message = comp.isInherited
-    ? "This compliance was inherited from client. Do you want to uninherit it from this project?"
-    : "Are you sure you want to delete this compliance configuration?";
+    const message = comp.isInherited
+      ? "This compliance was inherited from client. Do you want to uninherit it from this project?"
+      : "Are you sure you want to delete this compliance configuration?";
 
-  setDeleteMessage(message);
-  setDeleteConfigId(comp.projectComplianceId);
-  setDeleteType("compliance");
-  setOpenConfirmModal(true);
-};
-const handleDeleteEscalation = (esc) => {
-  const message =
-    esc.source === "INHERITED"
-      ? "This escalation was inherited from client. Do you want to uninherit it?"
-      : "Are you sure you want to delete this escalation?";
+    setDeleteMessage(message);
+    setDeleteConfigId(comp.projectComplianceId);
+    setDeleteType("compliance");
+    setOpenConfirmModal(true);
+  };
+  const handleDeleteEscalation = (esc) => {
+    const message =
+      esc.source === "INHERITED"
+        ? "This escalation was inherited from client. Do you want to uninherit it?"
+        : "Are you sure you want to delete this escalation?";
 
-  setDeleteMessage(message);
-  setDeleteConfigId(esc.projectEscalationId);
-  setDeleteType("escalation");
-  setOpenConfirmModal(true);
-};
-
+    setDeleteMessage(message);
+    setDeleteConfigId(esc.projectEscalationId);
+    setDeleteType("escalation");
+    setOpenConfirmModal(true);
+  };
 
   const confirmDelete = async () => {
-  setDeleteLoading(true);
+    setDeleteLoading(true);
 
-  try {
-    if (deleteType === "sla") {
-      await axios.delete(
-        `${RMS_BASE_URL}/api/project-sla/${deleteConfigId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+    try {
+      if (deleteType === "sla") {
+        await axios.delete(
+          `${RMS_BASE_URL}/api/project-sla/${deleteConfigId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           },
-        },
-      );
-      fetchProjectSLAs();
-      toast.success("SLA configuration deleted successfully.");
-    }
+        );
+        fetchProjectSLAs();
+        toast.success("SLA configuration deleted successfully.");
+      }
 
-    if (deleteType === "compliance") {
-      await axios.delete(
-        `${RMS_BASE_URL}/api/project-compliance/${deleteConfigId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+      if (deleteType === "compliance") {
+        await axios.delete(
+          `${RMS_BASE_URL}/api/project-compliance/${deleteConfigId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           },
-        },
-      );
-      fetchProjectCompliance();
-      toast.success("Compliance configuration deleted successfully.");
-    }
+        );
+        fetchProjectCompliance();
+        toast.success("Compliance configuration deleted successfully.");
+      }
 
-    if (deleteType === "escalation") {
-      await axios.delete(
-        `${RMS_BASE_URL}/api/projects/delete-escalation/${deleteConfigId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+      if (deleteType === "escalation") {
+        await axios.delete(
+          `${RMS_BASE_URL}/api/projects/delete-escalation/${deleteConfigId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           },
-        },
-      );
-      fetchProjectEscalations();
-      toast.success("Escalation deleted successfully.");
+        );
+        fetchProjectEscalations();
+        toast.success("Escalation deleted successfully.");
+      }
+
+      setOpenConfirmModal(false);
+      setDeleteMessage("");
+      setDeleteType(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Delete failed.");
+    } finally {
+      setDeleteLoading(false);
     }
-
-    setOpenConfirmModal(false);
-    setDeleteMessage("");
-    setDeleteType(null);
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Delete failed.");
-  } finally {
-    setDeleteLoading(false);
-  }
-};
-
+  };
 
   // 2. Handle Edit Logic
   const handleEditSla = (sla) => {
@@ -448,6 +469,19 @@ const handleDeleteEscalation = (esc) => {
     }
   };
 
+  const loadProficiencyLevels = async () => {
+    try {
+      const res = await getProficiencyLevels();
+
+      console.log("RAW RESPONSE:", res); // 🔴 MUST LOG
+      console.log("DATA ARRAY:", res.data.data); // 🔴 MUST LOG
+
+      setProficiencyLevels(res.data.data);
+    } catch (err) {
+      console.error("Failed to load proficiency levels", err);
+    }
+  };
+
   const fetchProjectEscalations = async () => {
     try {
       const res = await axios.get(
@@ -462,6 +496,25 @@ const handleDeleteEscalation = (esc) => {
       setProjectEscalations(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch escalations", err);
+    }
+  };
+
+  // ================= Deliverable Role APIs =================
+  const loadCategoryTree = async () => {
+    try {
+      const res = await getSkillCategoriesTree();
+      setCategories(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch skill categories", err);
+    }
+  };
+
+  const loadSubSkills = async () => {
+    try {
+      const res = await getActiveSubSkills();
+      setSubSkills(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch sub-skills", err);
     }
   };
 
@@ -502,6 +555,64 @@ const handleDeleteEscalation = (esc) => {
       console.error("Failed to fetch client escalation contacts", err);
     }
   };
+
+  // ================= Save Deliverable Role =================
+  // ================= Save Deliverable Role =================
+  const saveDeliverableRole = async () => {
+    try {
+      if (
+        !deliverableForm.roleName ||
+        !deliverableForm.skillId ||
+        !deliverableForm.subSkillId ||
+        !deliverableForm.proficiencyLevel
+      ) {
+        toast.error("Please fill all fields");
+        return;
+      }
+
+      const payload = {
+        roleName: deliverableForm.roleName,
+        expectations: [
+          {
+            skillId: deliverableForm.skillId,
+            subSkillId: deliverableForm.subSkillId,
+            proficiencyLevel: deliverableForm.proficiencyLevel,
+          },
+        ],
+      };
+
+      await createRoleExpectation(payload);
+
+      toast.success("Deliverable role added successfully");
+
+      // Reset & close modal
+      setOpenDeliverableRoleModal(false);
+      setDeliverableForm({
+        roleName: "",
+        skillId: "",
+        subSkillId: "",
+        proficiencyLevel: "BEGINNER",
+      });
+      setSkills([]);
+      setSubSkills([]);
+    } catch (err) {
+      console.error("Failed to save deliverable role", err);
+      toast.error(
+        err.response?.data?.message || "Failed to save deliverable role",
+      );
+    }
+  };
+
+  // ================= Fetch Deliverable Role Data on Modal Open =================
+  useEffect(() => {
+    if (openDeliverableRoleModal) {
+      loadProficiencyLevels();
+    }
+  }, [openDeliverableRoleModal]);
+
+  useEffect(() => {
+    loadCategoryTree();
+  }, []);
 
   const saveInheritedEscalations = async () => {
     try {
@@ -634,6 +745,7 @@ const handleDeleteEscalation = (esc) => {
     if (activeTab === "compliance") {
       fetchProjectCompliance();
     }
+    console.log("Catogories:", categories);
   }, [activeTab, projectId]);
 
   useEffect(() => {
@@ -689,7 +801,11 @@ const handleDeleteEscalation = (esc) => {
   };
 
   if (loading)
-    return <div className="p-10 text-center"><LoadingSpinner text="Loading..." /></div>;
+    return (
+      <div className="p-10 text-center">
+        <LoadingSpinner text="Loading..." />
+      </div>
+    );
 
   if (!project)
     return <div className="p-10 text-center">Project not found</div>;
@@ -732,10 +848,26 @@ const handleDeleteEscalation = (esc) => {
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            {/* + Add Deliverable Role */}
+            <button
+              onClick={() => {
+                console.log("Deliverable Role button clicked");
+                setOpenDeliverableRoleModal(true);
+              }}
+              className="bg-white border border-[#263383] text-[#263383] px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#263383] hover:text-white transition"
+            >
+              + Add Deliverable Role
+            </button>
+
+            {/* Create Demand */}
             <button
               title={!demandResponse?.create ? demandResponse?.reason : ""}
-              className={`bg-blue-800 p-3 rounded-lg text-white text-xs hover:bg-blue-900 font-semibold ${loadingDemand || !demandResponse?.create ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-900"}`}
+              className={`bg-blue-800 px-4 py-2 rounded-lg text-white text-xs font-semibold ${
+                loadingDemand || !demandResponse?.create
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-blue-900"
+              }`}
               disabled={loadingDemand || !demandResponse?.create}
               onClick={() => setModalOpen(true)}
             >
@@ -1009,9 +1141,7 @@ const handleDeleteEscalation = (esc) => {
         </div>
       )}
 
-      {activeTab === "financials" && (
-        <ProjectFinancialsInline />
-      )}
+      {activeTab === "financials" && <ProjectFinancialsInline />}
 
       {activeTab === "compliance" && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -1265,7 +1395,6 @@ const handleDeleteEscalation = (esc) => {
                     } from ${project?.client?.client_name || "Client"}`
                   : `Create ${configType} Configuration`}
               </h2>
-
             </div>
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {configType === "compliance" && (
@@ -1679,10 +1808,29 @@ const handleDeleteEscalation = (esc) => {
         />
       )}
 
-      <ConfirmationModal 
+      {/* ================= Add Deliverable Role Modal ================= */}
+
+      <AddDeliverableRoleModal
+        open={openDeliverableRoleModal}
+        onClose={() => setOpenDeliverableRoleModal(false)}
+        deliverableForm={deliverableForm}
+        setDeliverableForm={setDeliverableForm}
+        categories={categories}
+        skills={skills}
+        subSkills={subSkills}
+        setSkills={setSkills}
+        setSubSkills={setSubSkills}
+        proficiencyLevels={proficiencyLevels}
+        onSave={saveDeliverableRole}
+      />
+
+      <ConfirmationModal
         isOpen={openConfirmModal}
         title="Delete Project"
-        message={deleteMessage || "Are you sure you want to delete this project SLA? This action cannot be undone."}
+        message={
+          deleteMessage ||
+          "Are you sure you want to delete this project SLA? This action cannot be undone."
+        }
         onConfirm={confirmDelete}
         onCancel={() => setOpenConfirmModal(false)}
         isLoading={deleteLoading}
