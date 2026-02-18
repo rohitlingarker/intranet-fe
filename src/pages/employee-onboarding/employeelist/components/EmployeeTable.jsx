@@ -19,6 +19,7 @@ export default function EmployeeTable({ data }) {
         <col style={{ width: "140px" }} />    {/* Login */}
         <col style={{ width: "180px" }} />    {/* Username */}
         <col style={{ width: "200px" }} />    {/* Dept & Loc */}
+        <col style={{ width: "120px" }} />    {/* workMode */}
         <col style={{ width: "220px" }} />    {/* Email & Status */}
         <col style={{ width: "260px" }} />    {/* ⭐ Designation (extended) */}
         <col style={{ width: "180px" }} />    {/* Manager */}
@@ -35,11 +36,12 @@ export default function EmployeeTable({ data }) {
           <th>Login Status</th>
           <th>Username</th>
           <th>Dept & Loc</th>
+          <th>workMode</th>
           <th>Email & Status</th>
           <th>Designation</th>
           <th>Manager</th>
           <th>DOJ</th>
-          <th>WorkStatus</th>
+          <th>EmployeeType</th>
           <th>Experience</th>
           <th>Actions</th>
         </tr>
