@@ -93,9 +93,10 @@ import EmployeeVerification from "./pages/employee-onboarding/employee-verificat
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
 import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-
+import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
+import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -140,6 +141,7 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
+import OnboardingDashboard from "./pages/employee-onboarding/onboarding-task/OnboardingDashboard.jsx";
 
 
 // function App() {
@@ -361,11 +363,22 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-          {/* <Route path="/employee-onboarding" element={<EmpDashboard />} /> */}
-          
           
           <Route path="/employee-onboarding" element={<EmpDashboard />}
            />
+
+          {/* ONBOARDING DASHBOARD (NEW) */}
+<Route
+  path="/employee-onboarding/onboarding-dashboard"
+  element={<OnboardingDashboard />}
+>
+  {/* DEFAULT PAGE → SUMMARY */}
+  <Route index element={<SummaryPage />} />
+
+  {/* ANALYTICS PAGE */}
+  <Route path="analytics" element={<HeadcountDemographicsPage />} />
+</Route>
+
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
           <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
@@ -444,6 +457,14 @@ const AppRoutes = () => {
           <Route
             path="/employee-onboarding/employeelist"
             element={<EmployeeListPage/>}
+          />
+          <Route
+            path="/employee-onboarding/employeedocuments"
+            element={<EmployeeDocuments/>}
+          />
+          <Route
+            path="/employee-onboarding/employee-credentials"
+            element={<EmployeeCredentials/>}
           />
 
 

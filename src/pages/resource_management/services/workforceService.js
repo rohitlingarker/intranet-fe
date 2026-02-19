@@ -146,3 +146,19 @@ export const createRoleExpectation = async (payload) => {
     throw err;
   }
 };
+
+export const getProficiencyLevels = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/proficiency/get-all-proficiency-levels`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response;
+  } catch (err) {
+    throw err;
+  }
+};
