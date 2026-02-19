@@ -12,7 +12,7 @@ export default function OnboardingNavBar() {
   const canViewAdminView = permissions.includes("VIEW_ADMIN_PAGE");
 
   const navItems = [
-    { label: "HR View", path: "/employee-onboarding" },
+    { label: "Task Dashboard", path: "/employee-onboarding" },
 
     ...(canViewAdminView
       ? [
@@ -30,7 +30,7 @@ export default function OnboardingNavBar() {
       path: "/employee-onboarding/hr-configuration",
     },
     { label: "HR Verification", path: "/employee-onboarding/hr" },
-    { label: "Add Tasks", path: "/employee-onboarding/add-tasks" },
+    { label: "Add Tasks", path: "/employee-onboarding/onboarding-task" },
   ];
 
   return (

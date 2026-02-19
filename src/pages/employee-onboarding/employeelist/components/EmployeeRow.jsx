@@ -33,6 +33,9 @@ export default function EmployeeRow({ emp , index}) {
         <div className="text-gray-500 text-sm">{emp.location}</div>
       </td>
       <td>
+        {emp.workmode}
+      </td>
+      <td>
         <div>{emp.email}</div>
         <StatusBadge text={emp.emailStatus} />
       </td>
@@ -40,7 +43,7 @@ export default function EmployeeRow({ emp , index}) {
       <td>{emp.manager}</td>
       <td>{emp.doj}</td>
       <td>
-        <StatusBadge text={emp.workStatus} />
+        {emp.employeeType} 
         </td>
       <td>{emp.experience}</td>
       <td><ActionMenu /></td>
