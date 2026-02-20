@@ -5,13 +5,14 @@ import { toast } from "react-toastify";
 const ComplianceForm = ({ formData, setFormData }) => {
   const [skills, setSkills] = useState([]);
   const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Fixed spread order: ...prev comes first so we don't overwrite it
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
       skill: {
-        skillId: prev.skill?.skillId || null,
+        id: prev.skill?.id || null,
       },
       certificate: {
         certificateId: prev.certificate?.certificateId || null,
@@ -20,21 +21,26 @@ const ComplianceForm = ({ formData, setFormData }) => {
   }, []);
 
   const fetchSkills = async () => {
+    setLoading(true);
     try {
       const res = await getSkills();
       setSkills(res.data);
     } catch (error) {
-      console.error("Error fetching skills:", error);
       toast.error("Failed to fetch skills");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchCertificates = async () => {
+    setLoading(true);
     try {
       const res = await getCertificates();
       setCertificates(res.data);
     } catch (err) {
       toast.error("Failed to fetch certificates");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,7 +60,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
     if (name === "skill") {
       setFormData((prev) => ({
         ...prev,
-        skill: { skillId: value },
+        skill: { id: value },
       }));
     } else if (name === "certificate") { // FIXED: changed from "certification" to "certificate"
       setFormData((prev) => ({
@@ -107,9 +113,10 @@ const ComplianceForm = ({ formData, setFormData }) => {
           <select
             name="skill"
             // Target the nested ID
-            value={formData.skill?.skillId || ""}
+            value={formData.skill?.id || ""}
             onChange={handleChange}
-            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+            disabled={loading}
           >
             <option value="">Select a skill</option>
             {skills.map((skill) => (
@@ -126,10 +133,10 @@ const ComplianceForm = ({ formData, setFormData }) => {
           </label>
           <select
             name="certificate"
-            // Target the nested ID
             value={formData.certificate?.certificateId || ""}
             onChange={handleChange}
-            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+            disabled={loading}
           >
             <option value="">Select a certificate</option>
             {certificates.map((cert) => (
