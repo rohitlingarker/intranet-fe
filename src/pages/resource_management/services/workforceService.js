@@ -31,6 +31,10 @@ export const getWorkforceKPI = async (filters) => {
       params.minExperience = filters.experienceRange[0];
     if (filters.experienceRange?.[1] < 15)
       params.maxExperience = filters.experienceRange[1];
+    if (filters.allocationPercentage && filters.allocationPercentage > 0)
+      params.allocationPercentage = filters.allocationPercentage;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
 
     const response = await axios.get(`${BASE_URL}/api/rms/kpis`, {
       params,
@@ -52,19 +56,34 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
     // Pagination params
     if (pagination.page !== undefined && pagination.page !== null) params.page = pagination.page;
     if (pagination.size !== undefined && pagination.size !== null) params.size = pagination.size;
-    if (pagination.startDate) params.startDate = pagination.startDate;
-    if (pagination.endDate) params.endDate = pagination.endDate;
+
+    // Date params - prioritizing pagination if provided, else filters
+    if (pagination.startDate) {
+      params.startDate = pagination.startDate;
+    } else if (filters.startDate) {
+      params.startDate = filters.startDate;
+    }
+
+    if (pagination.endDate) {
+      params.endDate = pagination.endDate;
+    } else if (filters.endDate) {
+      params.endDate = filters.endDate;
+    }
 
     // Filter params
     if (filters.role && filters.role !== "All Roles") params.designation = filters.role;
     if (filters.location && filters.location !== "All Locations") params.location = filters.location;
     if (filters.employmentType && filters.employmentType !== "All Types")
       params.employmentType = filters.employmentType;
-    params.search = filters.search;
+    if (filters.search && filters.search.trim() !== "") {
+      params.search = filters.search.trim();
+    }
     if (filters.experienceRange?.[0] > 0)
       params.minExp = filters.experienceRange[0];
     if (filters.experienceRange?.[1] < 15)
       params.maxExp = filters.experienceRange[1];
+    if (filters.allocationPercentage && filters.allocationPercentage > 0)
+      params.allocationPercentage = filters.allocationPercentage;
     if (filters.status) params.status = filters.status;
 
     const response = await axios.get(

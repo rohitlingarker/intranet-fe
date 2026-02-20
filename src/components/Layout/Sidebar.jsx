@@ -33,10 +33,10 @@ const userManagementSubmenu = [
 
 // DATA FOR THE POP LABEL / SUBMENU
 const resourceManagementSubmenu = [
-  { label: "Resource Management", to: "/resource-management" },
+  { label: "Client Management", to: "/resource-management" },
   { label: "Resource Project Management", to: "/resource-management/projects" },
-  { label: "Resource Allocation", to: "/resource-management/allocation" },
-  { label: "Skill Matrix", to: "/resource-management/skills" },
+  // { label: "Resource Allocation", to: "/resource-management/allocation" },
+  // { label: "Skill Matrix", to: "/resource-management/skills" },
   { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
 
 ];

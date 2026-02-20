@@ -1022,9 +1022,9 @@ const RMSProjectDetails = () => {
         </div>
       )}
 
-      {activeTab === "resources" && (
+      {/* {activeTab === "resources" && (
         <ResourceList allocations={project.allocations} />
-      )}
+      )} */}
 
       {activeTab === "sla" && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">

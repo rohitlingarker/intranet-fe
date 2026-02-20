@@ -123,9 +123,11 @@ export function FilterPanel({
     filters.role !== "All Roles",
     filters.location !== "All Locations",
     filters.experienceRange[0] !== 0 || filters.experienceRange[1] !== 15,
-    filters.allocationRange[0] !== 0 || filters.allocationRange[1] !== 100,
+    filters.allocationPercentage !== 0,
     filters.project !== "All Projects",
     filters.employmentType !== "All Types",
+    filters.startDate,
+    filters.endDate,
   ].filter(Boolean).length;
 
   const [loadingFilters, setLoadingFilters] = useState(false);
@@ -136,10 +138,11 @@ export function FilterPanel({
       filters.location !== "All Locations" ||
       filters.experienceRange[0] !== 0 ||
       filters.experienceRange[1] !== filtersRes.maxExperience ||
-      filters.allocationRange[0] !== 0 ||
-      filters.allocationRange[1] !== 100 ||
+      filters.allocationPercentage !== 0 ||
       filters.project !== "All Projects" ||
-      filters.employmentType !== "All Types"
+      filters.employmentType !== "All Types" ||
+      filters.startDate ||
+      filters.endDate
     );
   }
 
@@ -253,15 +256,15 @@ export function FilterPanel({
 
         <div>
           <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
-            Allocation: {filters.allocationRange[0]}+ %
+            Allocation: {filters.allocationPercentage}+ %
           </label>
           <Slider
-            value={[filters.allocationRange[0]]}
+            value={[filters.allocationPercentage]}
             min={0}
             max={100}
             step={5}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, allocationRange: [value[0], 100] })
+              onFiltersChange({ ...filters, allocationPercentage: value[0] })
             }
             className="mt-2"
           />
@@ -284,6 +287,35 @@ export function FilterPanel({
             onFiltersChange({ ...filters, employmentType: value })
           }
         />
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
+              Start Date
+            </label>
+            <Input
+              type="date"
+              value={filters.startDate || ""}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, startDate: e.target.value || null })
+              }
+              className="h-8 text-xs px-2"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-heading font-bold text-muted-foreground mb-1.5 block uppercase tracking-wider">
+              End Date
+            </label>
+            <Input
+              type="date"
+              value={filters.endDate || ""}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, endDate: e.target.value || null })
+              }
+              className="h-8 text-xs px-2"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
