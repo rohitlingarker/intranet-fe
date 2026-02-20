@@ -135,7 +135,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
             name="certificate"
             value={formData.certificate?.certificateId || ""}
             onChange={handleChange}
-            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait' : ''}`}
+            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
             disabled={loading}
           >
             <option value="">Select a certificate</option>
