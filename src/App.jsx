@@ -87,6 +87,7 @@ import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminAppro
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import BackgroundCheckPage from "./pages/employee-onboarding/hr/BackgroundCheckPage.jsx";
 import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
 import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
@@ -368,16 +369,16 @@ const AppRoutes = () => {
            />
 
           {/* ONBOARDING DASHBOARD (NEW) */}
-<Route
-  path="/employee-onboarding/onboarding-dashboard"
-  element={<OnboardingDashboard />}
->
-  {/* DEFAULT PAGE → SUMMARY */}
-  <Route index element={<SummaryPage />} />
+          <Route
+            path="/employee-onboarding/onboarding-dashboard"
+            element={<OnboardingDashboard />}
+          >
+            {/* DEFAULT PAGE → SUMMARY */}
+            <Route index element={<SummaryPage />} />
 
-  {/* ANALYTICS PAGE */}
-  <Route path="analytics" element={<HeadcountDemographicsPage />} />
-</Route>
+            {/* ANALYTICS PAGE */}
+            <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          </Route>
 
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
@@ -450,6 +451,12 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr/profile/:user_uuid"
             element={<HrProfileView />}
           />
+
+          <Route
+            path="/employee-onboarding/hr/backgroundcheck"
+            element={<BackgroundCheckPage />}
+          />  
+
           <Route
             path="/employee-onboarding/analytics"
             element={<HeadcountDemographicsPage />}
