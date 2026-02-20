@@ -11,7 +11,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
     setFormData((prev) => ({
       ...prev,
       skill: {
-        skillId: prev.skill?.skillId || null,
+        id: prev.skill?.id || null,
       },
       certificate: {
         certificateId: prev.certificate?.certificateId || null,
@@ -54,7 +54,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
     if (name === "skill") {
       setFormData((prev) => ({
         ...prev,
-        skill: { skillId: value },
+        skill: { id: value },
       }));
     } else if (name === "certificate") { // FIXED: changed from "certification" to "certificate"
       setFormData((prev) => ({
@@ -107,7 +107,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
           <select
             name="skill"
             // Target the nested ID
-            value={formData.skill?.skillId || ""}
+            value={formData.skill?.id || ""}
             onChange={handleChange}
             className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
           >
