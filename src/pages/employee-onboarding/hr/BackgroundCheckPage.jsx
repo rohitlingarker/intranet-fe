@@ -1,248 +1,365 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
-/* ================= MOCK DATA ================= */
+/* =====================================================
+   ENUMS
+===================================================== */
 
-const initialData = {
-  employee: {
-    name: "Sathwik Patel",
-    id: "EMP-510023",
-    designation: "Software Engineer",
-    joiningDate: "12 Feb 2026",
-  },
-  overallStatus: "IN_PROGRESS",
-  sections: [
-    {
-      id: 1,
-      title: "ID Verification",
-      status: "VERIFIED",
-      mode: "HR",
-      details: {
-        type: "Aadhaar",
-        number: "XXXX-XXXX-4321",
-        document: "aadhaar.pdf",
-      },
-      remarks: "Verified successfully",
-    },
-    {
-      id: 2,
-      title: "Education Verification",
-      status: "IN_REVIEW",
-      mode: "CONSULTANCY",
-      details: {
-        degree: "B.Tech CSE",
-        university: "JNTU Hyderabad",
-        year: "2022",
-      },
-      remarks: "",
-    },
-    {
-      id: 3,
-      title: "Employment Verification",
-      status: "PENDING",
-      mode: "HR",
-      details: {
-        company: "TCS",
-        designation: "Associate Engineer",
-      },
-      remarks: "",
-    },
-  ],
+const STATUS = {
+  PENDING: "PENDING",
+  IN_REVIEW: "IN_REVIEW",
+  VERIFIED: "VERIFIED",
+  REJECTED: "REJECTED",
 };
 
-/* ================= STATUS BADGE ================= */
+const MODES = {
+  HR: "HR",
+  CONSULTANCY: "CONSULTANCY",
+};
+
+/* =====================================================
+   MOCK DATA (All 9 Checks Implemented)
+===================================================== */
+
+const initialSections = [
+  {
+    id: 1,
+    title: "ID Verification",
+    status: STATUS.PENDING,
+    mode: MODES.HR,
+    details: {
+      "ID Type": "Aadhaar",
+      "Document Required":
+        "Pan card copy / Passport / Aadhaar",
+    },
+  },
+  {
+    id: 2,
+    title: "Professional Reference Check",
+    status: STATUS.PENDING,
+    mode: MODES.HR,
+    details: {
+      Name: "Rajesh Kumar",
+      Email: "rajesh@email.com",
+      Contact: "98XXXXXX21",
+      Designation: "Project Manager",
+    },
+  },
+  {
+    id: 3,
+    title: "Address Verification (Digital)",
+    status: STATUS.PENDING,
+    mode: MODES.CONSULTANCY,
+    details: {
+      Address: "Flat 302, Green Residency",
+      Landmark: "Near Metro",
+      Pincode: "500032",
+    },
+  },
+  {
+    id: 4,
+    title: "Global Compliance Screening",
+    status: STATUS.PENDING,
+    mode: MODES.CONSULTANCY,
+    details: {
+      Name: "Sathwik Patel",
+      "Father Name": "Ramesh Patel",
+      DOB: "12-06-2000",
+      Email: "sathwik@email.com",
+    },
+  },
+  {
+    id: 5,
+    title: "Employment Record Verification",
+    status: STATUS.PENDING,
+    mode: MODES.HR,
+    details: {
+      Company: "TCS",
+      "Relieving Letter": "Uploaded",
+    },
+  },
+  {
+    id: 6,
+    title: "Criminal Court Record Verification",
+    status: STATUS.PENDING,
+    mode: MODES.CONSULTANCY,
+    details: {
+      DOB: "12-06-2000",
+      "Father Name": "Ramesh Patel",
+      Address: "Hyderabad",
+    },
+  },
+  {
+    id: 7,
+    title: "Education Record Verification",
+    status: STATUS.PENDING,
+    mode: MODES.HR,
+    details: {
+      Degree: "B.Tech CSE",
+      Document:
+        "Provisional / Degree Certificate / Marks Memo",
+    },
+  },
+  {
+    id: 8,
+    title: "CIBIL Check",
+    status: STATUS.PENDING,
+    mode: MODES.CONSULTANCY,
+    details: {
+      "Present Address": "Hyderabad",
+      "Bank Statement": "Required",
+    },
+  },
+  {
+    id: 9,
+    title: "Address Verification (Physical)",
+    status: STATUS.PENDING,
+    mode: MODES.CONSULTANCY,
+    details: {
+      Address: "Flat 302, Green Residency",
+      Landmark: "Near Metro",
+      Pincode: "500032",
+    },
+  },
+];
+
+/* =====================================================
+   STATUS BADGE
+===================================================== */
 
 const StatusBadge = ({ status }) => {
   const map = {
     VERIFIED: "bg-green-100 text-green-700",
     IN_REVIEW: "bg-blue-100 text-blue-700",
-    PENDING: "bg-gray-100 text-gray-700",
+    PENDING: "bg-gray-100 text-gray-600",
     REJECTED: "bg-red-100 text-red-700",
   };
 
   return (
     <span
-      className={`px-3 py-1 text-xs rounded-full font-medium ${map[status]}`}
+      className={`px-3 py-1 text-xs font-semibold rounded-full ${map[status]}`}
     >
       {status.replace("_", " ")}
     </span>
   );
 };
 
-/* ================= MAIN COMPONENT ================= */
+/* =====================================================
+   MAIN COMPONENT
+===================================================== */
 
 export default function BackgroundCheckPage() {
-  const [data, setData] = useState(initialData);
-  const [verificationMode, setVerificationMode] = useState("HR"); // Global Mode
+  const [sections, setSections] =
+    useState(initialSections);
+  const [expanded, setExpanded] = useState(null);
+  const [role, setRole] = useState("HR"); // HR or EMPLOYEE
+  const [filter, setFilter] = useState("ALL");
 
-  const verifiedCount = data.sections.filter(
-    (s) => s.status === "VERIFIED"
-  ).length;
+  /* ================= Progress ================= */
 
-  const progress = Math.round(
-    (verifiedCount / data.sections.length) * 100
+  const verifiedCount = useMemo(
+    () =>
+      sections.filter(
+        (s) => s.status === STATUS.VERIFIED
+      ).length,
+    [sections]
   );
 
-  /* ======== HR ACTIONS ======== */
+  const progress = Math.round(
+    (verifiedCount / sections.length) * 100
+  );
 
-  const updateStatus = (id, newStatus) => {
-    const updated = data.sections.map((sec) =>
-      sec.id === id ? { ...sec, status: newStatus } : sec
+  const overallStatus =
+    progress === 100 ? "COMPLETED" : "IN_PROGRESS";
+
+  /* ================= Update Section ================= */
+
+  const updateSection = (id, changes) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, ...changes } : s
+      )
     );
-    setData({ ...data, sections: updated });
   };
 
-  const updateSectionMode = (id, mode) => {
-    const updated = data.sections.map((sec) =>
-      sec.id === id ? { ...sec, mode } : sec
-    );
-    setData({ ...data, sections: updated });
-  };
+  /* ================= Filtered Sections ================= */
+
+  const visibleSections =
+    filter === "ALL"
+      ? sections
+      : sections.filter((s) => s.status === filter);
+
+  /* =====================================================
+     UI
+  ===================================================== */
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      {/* ================= HEADER ================= */}
-      <div className="bg-white shadow rounded-2xl p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">
-          {data.employee.name}
+    <div className="min-h-screen bg-gray-50 p-8">
+      {/* HEADER */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h1 className="text-2xl font-bold">
+          Background Check
         </h1>
-        <p className="text-gray-600 text-sm">
-          {data.employee.id} | {data.employee.designation}
-        </p>
-        <p className="text-gray-600 text-sm">
-          Joining Date: {data.employee.joiningDate}
+        <p className="text-sm text-gray-600">
+          Overall Status: {overallStatus}
         </p>
 
-        {/* Progress */}
-        <div className="mt-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span>Completion</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className="bg-blue-600 h-3 rounded-full"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
+        <div className="mt-3 flex justify-between text-sm">
+          <span>{progress}% Completed</span>
+          <span>
+            {verifiedCount}/{sections.length} Verified
+          </span>
+        </div>
+
+        <div className="w-full bg-gray-200 h-3 rounded-full mt-2">
+          <div
+            className="bg-blue-600 h-3 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
-      {/* ================= VERIFICATION MODE ================= */}
-      <div className="bg-white shadow rounded-2xl p-6 mb-6">
-        <h2 className="font-semibold mb-3">Verification Mode</h2>
-
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={verificationMode === "HR"}
-              onChange={() => setVerificationMode("HR")}
-            />
-            HR Self Verification
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={verificationMode === "CONSULTANCY"}
-              onChange={() => setVerificationMode("CONSULTANCY")}
-            />
-            External Consultancy
-          </label>
-        </div>
+      {/* ROLE SWITCH */}
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={() => setRole("HR")}
+          className={`px-4 py-2 rounded-md ${
+            role === "HR"
+              ? "bg-blue-600 text-white"
+              : "bg-white shadow"
+          }`}
+        >
+          HR View
+        </button>
+        <button
+          onClick={() => setRole("EMPLOYEE")}
+          className={`px-4 py-2 rounded-md ${
+            role === "EMPLOYEE"
+              ? "bg-blue-600 text-white"
+              : "bg-white shadow"
+          }`}
+        >
+          Employee View
+        </button>
       </div>
 
-      {/* ================= SECTION CARDS ================= */}
-      <div className="space-y-6">
-        {data.sections.map((section) => (
+      {/* FILTER */}
+      <div className="mb-6">
+        <select
+          onChange={(e) => setFilter(e.target.value)}
+          className="border px-3 py-2 rounded-md"
+        >
+          <option value="ALL">All</option>
+          <option value="PENDING">Pending</option>
+          <option value="IN_REVIEW">
+            In Review
+          </option>
+          <option value="VERIFIED">Verified</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+
+      {/* SECTION CARDS */}
+      <div className="space-y-4">
+        {visibleSections.map((section) => (
           <div
             key={section.id}
-            className="bg-white shadow rounded-2xl p-6"
+            className="bg-white rounded-2xl shadow"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-lg">
+            <div
+              onClick={() =>
+                setExpanded(
+                  expanded === section.id
+                    ? null
+                    : section.id
+                )
+              }
+              className="flex justify-between items-center p-5 cursor-pointer hover:bg-gray-50"
+            >
+              <h3 className="font-semibold">
                 {section.title}
               </h3>
-              <StatusBadge status={section.status} />
+              <StatusBadge
+                status={section.status}
+              />
             </div>
 
-            {/* Details */}
-            <div className="text-sm text-gray-600 mb-4 space-y-1">
-              {Object.entries(section.details).map(([key, value]) => (
-                <p key={key}>
-                  <span className="capitalize font-medium">
-                    {key}:
-                  </span>{" "}
-                  {value}
-                </p>
-              ))}
-            </div>
+            {expanded === section.id && (
+              <div className="px-6 pb-6 border-t">
+                <div className="mt-4 space-y-2 text-sm">
+                  {Object.entries(
+                    section.details
+                  ).map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex"
+                    >
+                      <span className="w-48 font-medium">
+                        {k}:
+                      </span>
+                      <span>{v}</span>
+                    </div>
+                  ))}
+                </div>
 
-            {/* Section Level Mode */}
-            <div className="mb-4">
-              <label className="text-sm font-medium">
-                Verification Mode:
-              </label>
-              <select
-                className="ml-3 border px-3 py-1 rounded-md text-sm"
-                value={section.mode}
-                onChange={(e) =>
-                  updateSectionMode(section.id, e.target.value)
-                }
-              >
-                <option value="HR">HR</option>
-                <option value="CONSULTANCY">Consultancy</option>
-              </select>
-            </div>
+                {/* HR ACTIONS */}
+                {role === "HR" && (
+                  <div className="flex gap-3 mt-5">
+                    {section.mode ===
+                      MODES.CONSULTANCY && (
+                      <button
+                        onClick={() =>
+                          updateSection(
+                            section.id,
+                            {
+                              status:
+                                STATUS.IN_REVIEW,
+                            }
+                          )
+                        }
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md"
+                      >
+                        Send to Consultancy
+                      </button>
+                    )}
 
-            {/* HR FLOW */}
-            {section.mode === "HR" && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    updateStatus(section.id, "VERIFIED")
-                  }
-                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() =>
-                    updateStatus(section.id, "REJECTED")
-                  }
-                  className="bg-red-600 text-white px-4 py-2 rounded-md text-sm"
-                >
-                  Reject
-                </button>
-              </div>
-            )}
+                    <button
+                      onClick={() =>
+                        updateSection(
+                          section.id,
+                          {
+                            status:
+                              STATUS.VERIFIED,
+                          }
+                        )
+                      }
+                      className="bg-green-600 text-white px-4 py-2 rounded-md"
+                    >
+                      Approve
+                    </button>
 
-            {/* CONSULTANCY FLOW */}
-            {section.mode === "CONSULTANCY" && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    updateStatus(section.id, "IN_REVIEW")
-                  }
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
-                >
-                  Send to Consultancy
-                </button>
-                <button
-                  onClick={() =>
-                    updateStatus(section.id, "VERIFIED")
-                  }
-                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm"
-                >
-                  Mark Verified
-                </button>
-              </div>
-            )}
+                    <button
+                      onClick={() =>
+                        updateSection(
+                          section.id,
+                          {
+                            status:
+                              STATUS.REJECTED,
+                          }
+                        )
+                      }
+                      className="bg-red-600 text-white px-4 py-2 rounded-md"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
 
-            {/* Remarks */}
-            {section.remarks && (
-              <div className="mt-4 text-sm text-gray-500">
-                <strong>Remarks:</strong> {section.remarks}
+                {/* EMPLOYEE VIEW */}
+                {role === "EMPLOYEE" && (
+                  <div className="mt-5 text-sm text-gray-500">
+                    Waiting for verification...
+                  </div>
+                )}
               </div>
             )}
           </div>
