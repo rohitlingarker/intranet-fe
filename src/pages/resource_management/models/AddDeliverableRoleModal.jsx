@@ -1,62 +1,156 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createRoleExpectation } from "../services/workforceService";
+import SubSkillSelectionModal from "./client_configuration/SubSkillSelectionModal";
+
+/* ===================== CONSTANTS ===================== */
+const EMPTY_EXPECTATION = {
+  subSkillId: "",
+  subSkillName: "",
+  proficiencyId: "",
+  proficiencyName: "",
+  mandatoryFlag: true,
+};
 
 const AddDeliverableRoleModal = ({
   open,
   onClose,
   deliverableForm,
   setDeliverableForm,
-  categories,
-  skills,
-  subSkills,
-  setSkills,
+  categories = [],
+  skills = [],
+  subSkills = [],
   setSubSkills,
-  proficiencyLevels,
-  onSave,
+  setSkills,
+  proficiencyLevels = [],
 }) => {
+  /* ===================== LOCAL STATE ===================== */
+  const [draftRoles, setDraftRoles] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSubSkillModalOpen, setIsSubSkillModalOpen] = useState(false);
+
+  /* ===================== ENSURE EXPECTATIONS ALWAYS EXIST ===================== */
+  useEffect(() => {
+    if (!open) return;
+
+    if (!Array.isArray(deliverableForm?.expectations)) {
+      setDeliverableForm({
+        ...deliverableForm,
+        expectations: [],
+      });
+    }
+  }, [open, deliverableForm, setDeliverableForm]);
+
+  /* ===================== EARLY RETURN AFTER HOOKS ===================== */
   if (!open) return null;
+
+  const expectations = Array.isArray(deliverableForm.expectations)
+    ? deliverableForm.expectations
+    : [];
+
+  /* ===================== SOFT SAVE ===================== */
+  const handleSoftSave = () => {
+    if (!deliverableForm.deliveryName || !deliverableForm.skillId) {
+      alert("Role name and skill are required");
+      return;
+    }
+
+    const selectedExpectations = expectations.filter(
+      (e) => e.subSkillId && e.proficiencyId,
+    );
+
+    if (selectedExpectations.length === 0) {
+      alert("Please select at least one sub skill with proficiency");
+      return;
+    }
+
+    const draft = {
+      tempId: crypto.randomUUID(),
+      deliveryName: deliverableForm.deliveryName,
+      skillId: deliverableForm.skillId,
+      skillName: skills.find((s) => s.id === deliverableForm.skillId)?.name,
+      expectations: selectedExpectations,
+    };
+
+    setDraftRoles((prev) => [...prev, draft]);
+
+    /* Reset form */
+    setDeliverableForm({
+      deliveryName: "",
+      categoryId: "",
+      skillId: "",
+      expectations: [],
+    });
+
+    setSubSkills([]);
+  };
+
+  /* ===================== FINALIZE ===================== */
+  const handleFinalize = async () => {
+    const rolesToSave = draftRoles.filter((r) =>
+      selectedIds.includes(r.tempId),
+    );
+
+    if (!rolesToSave.length) {
+      alert("Please select at least one draft to finalize");
+      return;
+    }
+
+    try {
+      await Promise.all(
+        rolesToSave.map((role) =>
+          createRoleExpectation({
+            roleName: role.deliveryName,
+            expectations: role.expectations.map((e) => ({
+              skillId: role.skillId,
+              subSkillId: e.subSkillId,
+              proficiencyId: e.proficiencyId,
+              mandatoryFlag: e.mandatoryFlag,
+            })),
+          }),
+        ),
+      );
+
+      setDraftRoles([]);
+      setSelectedIds([]);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save deliverable roles");
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-3">
       <div className="bg-white rounded-lg shadow-md w-full max-w-md">
-        {/* Header */}
+        {/* ================= HEADER ================= */}
         <div className="flex justify-between items-center px-5 py-3 border-b">
           <h2 className="text-sm font-semibold text-gray-800">
             Add Deliverable Role
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
+          <button onClick={onClose} className="text-gray-400 text-lg">
             ×
           </button>
         </div>
 
-        {/* Body */}
+        {/* ================= BODY ================= */}
         <div className="px-5 py-4 space-y-4">
-          {/* Deliverable Role */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">
-              Deliverable Role
-            </label>
-            <input
-              type="text"
-              placeholder="Role name"
-              value={deliverableForm.roleName}
-              onChange={(e) =>
-                setDeliverableForm({
-                  ...deliverableForm,
-                  roleName: e.target.value,
-                })
-              }
-              className="w-full h-9 border border-gray-300 rounded px-3 text-xs focus:ring-1 focus:ring-[#263383]"
-            />
-          </div>
+          <input
+            value={deliverableForm.deliveryName || ""}
+            onChange={(e) =>
+              setDeliverableForm({
+                ...deliverableForm,
+                deliveryName: e.target.value,
+              })
+            }
+            placeholder="Deliverable Role Name"
+            className="w-full h-9 border rounded px-3 text-xs"
+          />
+          
 
-          {/* Category */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">
-              Category
-            </label>
+          
+          {/* Category + Skill (same row) */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Category */}
             <select
               value={deliverableForm.categoryId || ""}
               onChange={(e) => {
@@ -65,131 +159,139 @@ const AddDeliverableRoleModal = ({
                 );
 
                 setDeliverableForm({
-                  ...deliverableForm,
+                  deliveryName: deliverableForm.deliveryName,
                   categoryId: e.target.value,
                   skillId: "",
-                  subSkillId: "",
-                  proficiencyLevel: "",
+                  expectations: [],
                 });
 
                 setSkills(selected?.skills || []);
                 setSubSkills([]);
               }}
-              className="w-full h-9 border border-gray-300 rounded px-3 text-xs bg-white"
+              className="w-full h-9 border rounded px-3 text-xs"
             >
-              <option value="">Select</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Skill */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Skill</label>
+            {/* Skill */}
             <select
-              value={deliverableForm.skillId}
+              value={deliverableForm.skillId || ""}
+              disabled={!skills.length}
               onChange={(e) => {
-                const selectedSkill = skills.find(
-                  (s) => s.id === e.target.value,
-                );
+                const skill = skills.find((s) => s.id === e.target.value);
 
                 setDeliverableForm({
                   ...deliverableForm,
                   skillId: e.target.value,
-                  subSkillId: "",
+                  expectations: [],
                 });
 
-                setSubSkills(selectedSkill?.subSkills || []);
+                setSubSkills(skill?.subSkills || []);
               }}
-              disabled={!skills.length}
-              className="w-full h-9 border border-gray-300 rounded px-3 text-xs bg-white disabled:bg-gray-100"
+              className="w-full h-9 border rounded px-3 text-xs disabled:bg-gray-100"
             >
-              <option value="">Select</option>
-              {skills.map((skill) => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.name}
+              <option value="">Select Skill</option>
+              {skills.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Sub Skill */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">
-              Sub Skill
-            </label>
-            <select
-              value={deliverableForm.subSkillId}
-              onChange={(e) =>
-                setDeliverableForm({
-                  ...deliverableForm,
-                  subSkillId: e.target.value,
-                })
-              }
-              disabled={!subSkills.length}
-              className="w-full h-9 border border-gray-300 rounded px-3 text-xs bg-white disabled:bg-gray-100"
-            >
-              <option value="">Select</option>
-              {subSkills.map((ss) => (
-                <option key={ss.id} value={ss.id}>
-                  {ss.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* SubSkill Selector */}
+          <button
+            disabled={!deliverableForm.skillId}
+            onClick={() => setIsSubSkillModalOpen(true)}
+            className="border border-[#263383] text-[#263383] px-4 py-2 rounded text-xs"
+          >
+            Select Sub Skills
+          </button>
 
-          {/* Proficiency */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">
-              Proficiency
-            </label>
-            <select
-              value={deliverableForm.proficiencyLevel || ""}
-              onChange={(e) =>
-                setDeliverableForm({
-                  ...deliverableForm,
-                  proficiencyLevel: e.target.value,
-                })
-              }
-              className="w-full h-9 border border-gray-300 rounded px-3 text-xs bg-white"
-            >
-              <option value="">Select proficiency</option>
-
-              {Array.isArray(proficiencyLevels) &&
-                proficiencyLevels
-                  .filter((p) => p.activeFlag) // ✅ optional but recommended
-                  .sort((a, b) => a.displayOrder - b.displayOrder) // ✅ optional
-                  .map((level) => (
-                    <option
-                      key={level.proficiencyId}
-                      value={level.proficiencyId}
-                    >
-                      {level.proficiencyName}
-                    </option>
-                  ))}
-            </select>
-          </div>
+          {expectations.length > 0 && (
+            <div className="text-xs text-gray-600">
+              Selected Sub Skills:{" "}
+              {expectations.map((e) => e.subSkillName).join(", ")}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-5 py-3 border-t bg-gray-50">
-          <button
-            onClick={onClose}
-            className="text-xs text-gray-500 hover:text-gray-700"
-          >
+        {/* ================= DRAFT CARDS ================= */}
+        {draftRoles.length > 0 && (
+          <div className="px-5 pb-4 space-y-3 border-t max-h-48 overflow-y-auto">
+            <h4 className="text-xs font-semibold text-gray-700">
+              Draft Deliverable Roles
+            </h4>
+
+            {draftRoles.map((role) => (
+              <div
+                key={role.tempId}
+                className="flex justify-between items-start border p-3 rounded bg-gray-50"
+              >
+                <div>
+                  <p className="text-xs font-semibold">{role.deliveryName}</p>
+                  <p className="text-[11px] text-gray-500">
+                    Skill: {role.skillName}
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    SubSkills:{" "}
+                    {role.expectations.map((e) => e.subSkillName).join(", ")}
+                  </p>
+                </div>
+
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(role.tempId)}
+                  onChange={() =>
+                    setSelectedIds((prev) =>
+                      prev.includes(role.tempId)
+                        ? prev.filter((id) => id !== role.tempId)
+                        : [...prev, role.tempId],
+                    )
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ================= FOOTER ================= */}
+        <div className="flex justify-end gap-3 px-5 py-3 border-t">
+          <button onClick={onClose} className="text-xs text-gray-500">
             Cancel
           </button>
           <button
-            onClick={onSave}
-            className="bg-[#263383] text-white px-4 py-1.5 rounded text-xs hover:opacity-90"
+            onClick={handleSoftSave}
+            className="border px-4 py-1.5 rounded text-xs"
           >
-            Save
+            Add as Draft
+          </button>
+          <button
+            disabled={!selectedIds.length}
+            onClick={handleFinalize}
+            className="bg-[#263383] text-white px-4 py-1.5 rounded text-xs disabled:bg-gray-300"
+          >
+            Finalize Selected
           </button>
         </div>
       </div>
+
+      {/* ================= SUBSKILL MODAL ================= */}
+      <SubSkillSelectionModal
+        open={isSubSkillModalOpen}
+        onClose={() => setIsSubSkillModalOpen(false)}
+        subSkills={subSkills}
+        proficiencyLevels={proficiencyLevels}
+        expectations={expectations}
+        setExpectations={(updated) =>
+          setDeliverableForm({ ...deliverableForm, expectations: updated })
+        }
+      />
     </div>
   );
 };
