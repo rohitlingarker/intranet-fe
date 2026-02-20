@@ -93,7 +93,7 @@ import EmployeeVerification from "./pages/employee-onboarding/employee-verificat
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
 import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
+import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
