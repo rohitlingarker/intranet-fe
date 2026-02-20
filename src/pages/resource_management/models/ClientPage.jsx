@@ -674,6 +674,7 @@ const ClientPage = () => {
 
   const handleComplianceCreate = async (data) => {
     setLoading(true);
+    console.log("Creating compliance with data:", data);
     try {
       const res = await createClientCompliance(data);
       toast.success(res.message || "Compliance created successfully");
