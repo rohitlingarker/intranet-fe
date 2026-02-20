@@ -42,11 +42,47 @@ const resourceManagementSubmenu = [
 ];
 
 const employeeOnboardingSubmenu = [
-  { label: "Onboarding Task", to: "/employee-onboarding/onboarding-task" },
-  { label: "Employee Directory", to: "/employee-onboarding/employee-directory" },
-  { label: "Employee Verification", to: "/employee-onboarding/employee-verification" },
-  { label: "Employee Documents Template", to: "/employee-onboarding/employee-documents-template" },
+  {
+    label: "Onboarding Dashboard",
+    to: "/employee-onboarding/summary-page",
+    children: [
+      { label: "Summary", to: "/employee-onboarding/summary-page" },
+      { label: "Analytics", to: "/employee-onboarding/analytics" },
+    ],
+  },
+  { label: "Onboarding Task", to: "/employee-onboarding/",
+    children: [
+      { label: "Task Dashboard", to: "/employee-onboarding" },
+      { label: "Create Offer", to: "/employee-onboarding/create" },
+      { label: "BulkUpload", to: "/employee-onboarding/bulk-upload" },
+      { label: "Add task", to: "/employee-onboarding/onboarding-task" },
+      { label: "HR Configuration", to: "/employee-onboarding/hr-configuration" },
+    ], 
+  },
+  { label: "Employee Directory", to: "/employee-onboarding/employee-directory",
+    children: [
+      { label: "Employee Directory", to: "/employee-onboarding/employee-directory" },
+      { label: "Employee List", to: "/employee-onboarding/employeelist" },
+      { label: "Organization Tree ", to: "/employee-onboarding/organization-tree" },
+    ]
+   },
+  { label: "Employee Verification", to: "/employee-onboarding/hr",
+    children: [
+      { label: "Employee Verification", to: "/employee-onboarding/hr" },
+      { label: "Admin Approval Dashboard", to: "/employee-onboarding/admin/approval-dashboard" },
+      
+      { label: "Employee Credentials", to: "/employee-onboarding/employee-credentials" },
+     
+  ]},
+  { label: "Employee Documents ", to: "/employee-onboarding/employeedocuments",
+    children: [
+      { label: "Employee Documents", to: "/employee-onboarding/employeedocuments" },
+      { label: "Document Template", to: "/employee-onboarding/documents-template" },
+      { label: "Organization Documents", to: "/employee-onboarding/organization-documents" },
+  ]},
+
 ];
+
 
 
 const Sidebar = ({ isCollapsed }) => {
@@ -70,6 +106,12 @@ const Sidebar = ({ isCollapsed }) => {
   
   const [submenuTop, setSubmenuTop] = useState(0);
   const hoverTimeout = useRef(null);
+  const [childMenu, setChildMenu] = useState(null);
+  const [childTop, setChildTop] = useState(0);
+  const parentHoverRef = useRef(false);
+  const childHoverRef = useRef(false);
+  const closeTimerRef = useRef(null);
+
 
   // --- Handlers for User Management ---
   const handleUserMouseEnter = () => {
@@ -87,6 +129,49 @@ const Sidebar = ({ isCollapsed }) => {
       setUserHovered(false);
     }, 200);
   };
+
+  const handleParentHover = (item, e) => {
+  cancelClose(); 
+
+  parentHoverRef.current = true;
+
+  if (item.children) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setChildTop(rect.top);
+    setChildMenu(item.children);
+  } else {
+    setChildMenu(null);
+  }
+};
+
+
+
+const handleParentLeave = () => {
+  setTimeout(() => {
+    if (!childHoverRef.current) {
+      setChildMenu(null);
+    }
+  }, 150);
+};
+const cancelClose = () => {
+  if (closeTimerRef.current) {
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }
+};
+
+const scheduleClose = () => {
+  cancelClose();
+
+  closeTimerRef.current = setTimeout(() => {
+    if (!parentHoverRef.current && !childHoverRef.current) {
+      setChildMenu(null);
+      setEoHovered(false);
+    }
+  }, 260); // slightly higher = smoother
+};
+
+
 
   // --- Handlers for Resource Management (NEW) ---
   const handleRmMouseEnter = () => {
@@ -299,7 +384,7 @@ const Sidebar = ({ isCollapsed }) => {
       >
         <div
           className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-            location.pathname.startsWith("/employee-onboarding")
+            (location.pathname == "/employee-onboarding" || location.pathname ==  "/employee-onboarding/")
               ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
               : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
           }`}
@@ -326,11 +411,24 @@ const Sidebar = ({ isCollapsed }) => {
               isCollapsed ? "left-20" : "left-64"
             }`}
             style={{ top: `${submenuTop}px` }}
-            onMouseEnter={handleEoMouseEnter}
-            onMouseLeave={handleEoMouseLeave}
+            onMouseEnter={() => {
+              parentHoverRef.current = true;
+               cancelClose();
+              // if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+            }}
+            onMouseLeave={() => {
+              parentHoverRef.current = false;
+              scheduleClose();
+            }}
           >
             {employeeOnboardingSubmenu.map((item) => (
-              <li key={item.label}>
+              <li
+                key={item.label}
+                onMouseEnter={(e) => handleParentHover(item, e)}
+                onMouseDown={(e)=> handleParentLeave()}
+                // onMouseLeave={handleParentLeave}
+                className="relative"
+              >
                 <NavLink
                   to={item.to}
                   className={({ isActive }) =>
@@ -345,8 +443,50 @@ const Sidebar = ({ isCollapsed }) => {
                 </NavLink>
               </li>
             ))}
+
+          </ul>
+          
+        )}
+        {childMenu && (
+        <ul
+          className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+            isCollapsed ? "left-[300px]" : "left-[520px]"
+          }`}
+          style={{ top: `${childTop - 4}px` }}
+          onMouseEnter={() => {
+            childHoverRef.current = true;
+            cancelClose();
+          }}
+          onMouseLeave={() => {
+            childHoverRef.current = false;
+            scheduleClose();
+          }}
+          onMouseDown={()=>{
+            childHoverRef.current = false;
+            scheduleClose();
+          }
+          }
+        >
+
+            {childMenu.map((child) => (
+              <li key={child.label}>
+                <NavLink
+                  to={child.to}
+                  className={({ isActive }) =>
+                    `block px-4 py-2 text-xs transition-colors ${
+                      isActive
+                        ? "bg-blue-100 text-[#0a174e] font-semibold"
+                        : "hover:bg-[#263383] hover:text-white"
+                    }`
+                  }
+                >
+                  {child.label}
+                </NavLink>
+              </li>
+            ))}
           </ul>
         )}
+
       </li>
       )}
 

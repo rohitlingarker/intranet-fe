@@ -305,6 +305,7 @@ const EmployeeDirectory = () => {
   const departments = ["All", "Engineering", "HR"];
 
   return (
+    
     <div className="p-0.5 overflow-x-hidden">
 
       {/* Header */}
@@ -368,6 +369,7 @@ const EmployeeDirectory = () => {
       </div>
     </div>
   );
+ 
 };
 
 export default EmployeeDirectory;

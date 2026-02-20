@@ -10,6 +10,7 @@ import DemandModal from "../../models/DemandModal";
 import ProjectFinancialsInline from "../../components/FinancialModal";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import { CheckSquare, Square } from "lucide-react";
+import AddDeliverableRoleModal from "../../models/AddDeliverableRoleModal";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
@@ -27,7 +28,10 @@ import {
   getProjectById,
   checkDemandCreation,
 } from "../../services/projectService";
-import { getSkillCategoriesTree } from "../../services/workforceService";
+import {
+  getSkillCategoriesTree,
+  getProficiencyLevels,
+} from "../../services/workforceService";
 import { createRoleExpectation } from "../../services/workforceService";
 
 import { toast } from "react-toastify";
@@ -38,6 +42,9 @@ const RMSProjectDetails = () => {
   const navigate = useNavigate();
   const [projectEscalations, setProjectEscalations] = useState([]);
   const [clientEscalations, setClientEscalations] = useState([]);
+  // const [draftDeliverableRoles, setDraftDeliverableRoles] = useState([]);
+  // const [selectedRoleIds, setSelectedRoleIds] = useState([]);
+
   const [selectedClientEscalations, setSelectedClientEscalations] = useState(
     [],
   );
@@ -58,15 +65,17 @@ const RMSProjectDetails = () => {
     useState(false);
 
   const [deliverableForm, setDeliverableForm] = useState({
-    roleName: "",
+    deliveryName: "", // OR roleName if role is created inline
     skillId: "",
     subSkillId: "",
-    proficiencyLevel: "BEGINNER", // default
+    proficiencyId: "",
+    mandatoryFlag: true,
   });
 
   const [categories, setCategories] = useState([]);
   const [skills, setSkills] = useState([]);
   const [subSkills, setSubSkills] = useState([]);
+  const [proficiencyLevels, setProficiencyLevels] = useState([]);
 
   const [projectSlas, setProjectSlas] = useState([]);
   const [inheritMode, setInheritMode] = useState(false);
@@ -463,6 +472,19 @@ const RMSProjectDetails = () => {
     }
   };
 
+  const loadProficiencyLevels = async () => {
+    try {
+      const res = await getProficiencyLevels();
+
+      console.log("RAW RESPONSE:", res); // 🔴 MUST LOG
+      console.log("DATA ARRAY:", res.data.data); // 🔴 MUST LOG
+
+      setProficiencyLevels(res.data.data);
+    } catch (err) {
+      console.error("Failed to load proficiency levels", err);
+    }
+  };
+
   const fetchProjectEscalations = async () => {
     try {
       const res = await axios.get(
@@ -539,55 +561,130 @@ const RMSProjectDetails = () => {
 
   // ================= Save Deliverable Role =================
   // ================= Save Deliverable Role =================
-  const saveDeliverableRole = async () => {
+  const softSaveDeliverableRole = () => {
+    if (
+      !deliverableForm.deliveryName ||
+      !deliverableForm.skillId ||
+      !deliverableForm.subSkillId ||
+      !deliverableForm.proficiencyId
+    ) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    const draftRole = {
+      tempId: crypto.randomUUID(),
+      ...deliverableForm,
+      status: "DRAFT",
+    };
+
+    setDraftDeliverableRoles((prev) => [...prev, draftRole]);
+
+    // reset form
+    setDeliverableForm({
+      deliveryName: "",
+      categoryId: "",
+      skillId: "",
+      subSkillId: "",
+      proficiencyId: "",
+      mandatoryFlag: true,
+    });
+
+    setSkills([]);
+    setSubSkills([]);
+  };
+
+  // ================= FINALIZE DELIVERABLE ROLES (⬅ STEP 4 GOES HERE) =================
+  const finalizeDeliverableRoles = async () => {
+    const rolesToFinalize = draftDeliverableRoles.filter((role) =>
+      selectedRoleIds.includes(role.tempId),
+    );
+
     try {
-      if (
-        !deliverableForm.roleName ||
-        !deliverableForm.skillId ||
-        !deliverableForm.subSkillId ||
-        !deliverableForm.proficiencyLevel
-      ) {
-        toast.error("Please fill all fields");
-        return;
-      }
-
-      const payload = {
-        roleName: deliverableForm.roleName,
-        expectations: [
-          {
-            skillId: deliverableForm.skillId,
-            subSkillId: deliverableForm.subSkillId,
-            proficiencyLevel: deliverableForm.proficiencyLevel,
-          },
-        ],
-      };
-
-      await createRoleExpectation(payload);
-
-      toast.success("Deliverable role added successfully");
-
-      // Reset & close modal
-      setOpenDeliverableRoleModal(false);
-      setDeliverableForm({
-        roleName: "",
-        skillId: "",
-        subSkillId: "",
-        proficiencyLevel: "BEGINNER",
-      });
-      setSkills([]);
-      setSubSkills([]);
-    } catch (err) {
-      console.error("Failed to save deliverable role", err);
-      toast.error(
-        err.response?.data?.message || "Failed to save deliverable role",
+      await Promise.all(
+        rolesToFinalize.map((role) =>
+          createRoleExpectation({
+            roleName: role.deliveryName,
+            expectations: [
+              {
+                skillId: role.skillId,
+                subSkillId: role.subSkillId,
+                proficiencyId: role.proficiencyId,
+                mandatoryFlag: role.mandatoryFlag,
+              },
+            ],
+          }),
+        ),
       );
+
+      toast.success("Deliverable roles finalized successfully");
+
+      setDraftDeliverableRoles([]);
+      setSelectedRoleIds([]);
+    } catch (err) {
+      toast.error("Failed to finalize deliverable roles");
     }
   };
+  const DeliverableRoleCard = ({ role, checked, onCheck, onDelete }) => (
+    <div className="border rounded-lg p-4 flex justify-between items-start bg-gray-50">
+      <div>
+        <h4 className="font-semibold text-sm">{role.deliveryName}</h4>
+        <p className="text-xs text-gray-600">
+          Skill: {role.skillId} | SubSkill: {role.subSkillId}
+        </p>
+        <p className="text-xs text-gray-600">
+          Proficiency: {role.proficiencyId}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={() => onCheck(role.tempId)}
+          className="accent-[#263383]"
+        />
+        <button
+          onClick={() => onDelete(role.tempId)}
+          className="text-red-500 text-xs"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+  // {
+  //   draftDeliverableRoles.length > 0 && (
+  //     <div className="space-y-3 mt-6">
+  //       <h3 className="text-sm font-semibold">Draft Deliverable Roles</h3>
+
+  //       {/* {draftDeliverableRoles.map((role) => (
+  //         <DeliverableRoleCard
+  //           key={role.tempId}
+  //           role={role}
+  //           checked={selectedRoleIds.includes(role.tempId)}
+  //           onCheck={(id) =>
+  //             setSelectedRoleIds((prev) =>
+  //               prev.includes(id)
+  //                 ? prev.filter((x) => x !== id)
+  //                 : [...prev, id],
+  //             )
+  //           }
+  //           onDelete={(id) =>
+  //             setDraftDeliverableRoles((prev) =>
+  //               prev.filter((r) => r.tempId !== id),
+  //             )
+  //           }
+  //         />
+  //       ))} */}
+  //     </div>
+  //   );
+  // }
 
   // ================= Fetch Deliverable Role Data on Modal Open =================
   useEffect(() => {
     if (openDeliverableRoleModal) {
-      loadSubSkills();
+      loadProficiencyLevels();
     }
   }, [openDeliverableRoleModal]);
 
@@ -1790,176 +1887,92 @@ const RMSProjectDetails = () => {
       )}
 
       {/* ================= Add Deliverable Role Modal ================= */}
-      {openDeliverableRoleModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-xl">
-            {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">Add Deliverable Role</h2>
-              <button
-                onClick={() => setOpenDeliverableRoleModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+
+      <AddDeliverableRoleModal
+        open={openDeliverableRoleModal}
+        onClose={() => setOpenDeliverableRoleModal(false)}
+        deliverableForm={deliverableForm}
+        setDeliverableForm={setDeliverableForm}
+        categories={categories}
+        skills={skills}
+        subSkills={subSkills}
+        setSkills={setSkills}
+        setSubSkills={setSubSkills}
+        proficiencyLevels={proficiencyLevels}
+        onSave={softSaveDeliverableRole}
+      />
+      {/* ================= Draft Deliverable Roles ================= */}
+      {/* {draftDeliverableRoles.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-sm font-semibold text-gray-800">
+              Draft Deliverable Roles
+            </h3>
+            <span className="text-xs text-gray-500">
+              {selectedRoleIds.length} selected / {draftDeliverableRoles.length}{" "}
+              total
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {draftDeliverableRoles.map((role) => (
+              <div
+                key={role.tempId}
+                className="flex justify-between items-start border rounded-md p-4 bg-gray-50"
               >
-                ✕
-              </button>
-            </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    {role.deliveryName}
+                  </h4>
+                  <p className="text-xs text-gray-600">
+                    Skill: {role.skillId} | SubSkill: {role.subSkillId}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Proficiency: {role.proficiencyId}
+                  </p>
+                </div>
 
-            {/* Body */}
-            <div className="px-6 py-4 space-y-4">
-              {/* Deliverable Role */}
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Deliverable Role
-                </label>
-                <input
-                  type="text"
-                  value={deliverableForm.roleName}
-                  onChange={(e) =>
-                    setDeliverableForm({
-                      ...deliverableForm,
-                      roleName: e.target.value,
-                    })
-                  }
-                  className="w-full mt-1 border rounded-md px-3 py-2 text-sm"
-                />
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    className="accent-[#263383]"
+                    checked={selectedRoleIds.includes(role.tempId)}
+                    onChange={() =>
+                      setSelectedRoleIds((prev) =>
+                        prev.includes(role.tempId)
+                          ? prev.filter((id) => id !== role.tempId)
+                          : [...prev, role.tempId],
+                      )
+                    }
+                  />
+
+                  <button
+                    onClick={() =>
+                      setDraftDeliverableRoles((prev) =>
+                        prev.filter((r) => r.tempId !== role.tempId),
+                      )
+                    }
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
 
-              {/* Category */}
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Category
-                </label>
-                <select
-                  value={deliverableForm.categoryId}
-                  onChange={(e) => {
-                    const selectedCategory = categories.find(
-                      (cat) => cat.id === e.target.value,
-                    );
-
-                    setDeliverableForm({
-                      ...deliverableForm,
-                      categoryId: e.target.value,
-                      skillId: "",
-                      subSkillId: "",
-                    });
-
-                    // ✅ skills come from selected category
-                    setSkills(selectedCategory?.skills || []);
-                    setSubSkills([]);
-                  }}
-                  className="w-full mt-1 border rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="">Select Category</option>
-
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Skill */}
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Skill
-                </label>
-                <select
-                  value={deliverableForm.skillId}
-                  onChange={(e) => {
-                    const selectedSkill = skills.find(
-                      (s) => s.id === e.target.value,
-                    );
-
-                    setDeliverableForm({
-                      ...deliverableForm,
-                      skillId: e.target.value,
-                      subSkillId: "",
-                    });
-
-                    // ✅ subSkills come from selected skill
-                    setSubSkills(selectedSkill?.subSkills || []);
-                  }}
-                  disabled={!skills.length}
-                  className="w-full mt-1 border rounded-md px-3 py-2 text-sm disabled:bg-gray-100"
-                >
-                  <option value="">Select Skill</option>
-
-                  {skills.map((skill) => (
-                    <option key={skill.id} value={skill.id}>
-                      {skill.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Sub Skill */}
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Sub Skill
-                </label>
-                <select
-                  value={deliverableForm.subSkillId}
-                  onChange={(e) =>
-                    setDeliverableForm({
-                      ...deliverableForm,
-                      subSkillId: e.target.value,
-                    })
-                  }
-                  disabled={!subSkills.length}
-                  className="w-full mt-1 border rounded-md px-3 py-2 text-sm disabled:bg-gray-100"
-                >
-                  <option value="">Select Sub Skill</option>
-
-                  {subSkills.map((ss) => (
-                    <option key={ss.id} value={ss.id}>
-                      {ss.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Proficiency Level */}
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Proficiency Level
-                </label>
-                <select
-                  value={deliverableForm.proficiencyLevel}
-                  onChange={(e) =>
-                    setDeliverableForm({
-                      ...deliverableForm,
-                      proficiencyLevel: e.target.value,
-                    })
-                  }
-                  className="w-full mt-1 border rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="BEGINNER">Beginner</option>
-                  <option value="INTERMEDIATE">Intermediate</option>
-                  <option value="ADVANCED">Advanced</option>
-                  <option value="EXPERT">Expert</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-3 px-6 py-4 border-t">
-              <button
-                onClick={() => setOpenDeliverableRoleModal(false)}
-                className="text-sm px-4 py-2 text-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveDeliverableRole}
-                className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm hover:opacity-90"
-              >
-                Save Deliverable Role
-              </button>
-            </div>
+          {/* ===== FINALIZE BUTTON ===== */}
+          {/* <div className="flex justify-end mt-6">
+            <button
+              disabled={selectedRoleIds.length === 0}
+              onClick={finalizeDeliverableRoles}
+              className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Finalize Selected Roles
+            </button>
           </div>
         </div>
-      )}
+      )} */}
 
       <ConfirmationModal
         isOpen={openConfirmModal}
