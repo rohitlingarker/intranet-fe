@@ -140,7 +140,7 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
-
+import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
@@ -365,22 +365,12 @@ const AppRoutes = () => {
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
-          {/* Employee Onboarding */}
 
-          <Route path="/employee-onboarding" element={<EmpDashboard />}
-          />
-
-          {/* ONBOARDING DASHBOARD (NEW) */}
-          <Route
-            path="/employee-onboarding/onboarding-dashboard"
-            element={<OnboardingDashboard />}
-          >
-            {/* DEFAULT PAGE → SUMMARY */}
-            <Route index element={<SummaryPage />} />
-
-            {/* ANALYTICS PAGE */}
-            <Route path="analytics" element={<HeadcountDemographicsPage />} />
-          </Route>
+          {/*           
+        <Route path="/employee-onboarding" element={<EmpDashboard />}/>  
+        <Route path="/employee-onboarding/onboarding-dashboard" element={<OnboardingDashboard />}>
+        <Route index element={<SummaryPage />} />
+        <Route path="analytics" element={<HeadcountDemographicsPage />} /></Route>
 
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
@@ -393,6 +383,7 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />} />
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
+          <Route path="/employee-onboarding/employeedocuments" element={<EmployeeDocuments/>} />
           <Route
             path="/employee-onboarding/bulk-upload"
             element={<BulkUpload />}
@@ -460,8 +451,51 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/employee-credentials"
-            element={<EmployeeCredentials />}
-          />
+            element={<EmployeeCredentials/>}
+          /> */}
+          {/* ================= Employee Onboarding (WITH NAVBAR LAYOUT) ================= */}
+
+          <Route path="/employee-onboarding" element={<EmployeeOnboardingLayout />}>
+
+            {/* Dashboard */}
+            <Route index element={<EmpDashboard />} />
+            <Route path="summary-page" element={<SummaryPage />} />
+            <Route path="analytics" element={<HeadcountDemographicsPage />} />
+
+            {/* Task Section */}
+            <Route path="onboarding-task" element={<OnboardingTask />} />
+            <Route path="create" element={<CreateOffer />} />
+            <Route path="bulk-upload" element={<BulkUpload />} />
+
+            {/* HR Configuration */}
+            <Route path="hr-configuration" element={<HrConfiguration />} />
+            <Route path="hr-configuration/country" element={<CountryManagement />} />
+            <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
+            <Route path="hr-configuration/mapping" element={<CountryIdentityMapping />} />
+            <Route path="hr-configuration/education" element={<EducationDashboard />} />
+            <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
+            <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
+            <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
+
+            {/* Directory */}
+            <Route path="employee-directory" element={<EmployeeDirectory />} />
+            <Route path="employeelist" element={<EmployeeListPage />} />
+            <Route path="organization-tree" element={<OrganizationTree />} />
+
+            {/* Documents */}
+            <Route path="employeedocuments" element={<EmployeeDocuments />} />
+
+            {/* HR */}
+            <Route path="hr" element={<HrOnboardingDashboard />} />
+
+            {/* Admin */}
+            <Route path="admin/approval-dashboard" element={<AdminApprovalDashboard />} />
+
+            {/* Special Pages */}
+            <Route path="employee-credentials" element={<EmployeeCredentials />} />
+            <Route path="core-employee" element={<CoreEmployeeDetails />} />
+
+          </Route>
 
 
           {/* User Management */}
