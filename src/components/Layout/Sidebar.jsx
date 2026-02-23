@@ -42,9 +42,9 @@ const resourceManagementSubmenu = [
 const employeeOnboardingSubmenu = [
   {
     label: "Onboarding Dashboard",
-    to: "/employee-onboarding/summary-page",
+    to: "/employee-onboarding/onboarding-summary",
     children: [
-      { label: "Summary", to: "/employee-onboarding/summary-page" },
+      { label: "Summary", to: "/employee-onboarding/onboarding-summary" },
       { label: "Analytics", to: "/employee-onboarding/analytics" },
     ],
   },

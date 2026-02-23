@@ -471,14 +471,13 @@ const AppRoutes = () => {
 
 
           {/* Dashboard */}
-          <Route index element={<EmpDashboard />} />
+          {/* <Route index element={<EmpDashboard />} />
           <Route path="summary-page" element={<SummaryPage />} />
-          {/* <Route path="onbording-summary" element={<OnboardingSummaryPage />} /> */}
-          <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          <Route path="analytics" element={<HeadcountDemographicsPage />} /> */}
 
             {/* Dashboard */}
             <Route index element={<EmpDashboard />} />
-            <Route path="summary-page" element={<OnboardingSummary />} />
+            <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
 
