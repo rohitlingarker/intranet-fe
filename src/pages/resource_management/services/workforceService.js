@@ -35,6 +35,8 @@ export const getWorkforceKPI = async (filters) => {
       params.allocationPercentage = filters.allocationPercentage;
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.project && filters.project !== "All Projects")
+      params.project = filters.project;
 
     const response = await axios.get(`${BASE_URL}/api/rms/kpis`, {
       params,
@@ -85,6 +87,8 @@ export const getAvailabilityTimeline = async (filters, pagination) => {
     if (filters.allocationPercentage && filters.allocationPercentage > 0)
       params.allocationPercentage = filters.allocationPercentage;
     if (filters.status) params.status = filters.status;
+    if (filters.project && filters.project !== "All Projects")
+      params.project = filters.project;
 
     const response = await axios.get(
       `${BASE_URL}/api/availability/timeline/window`,
