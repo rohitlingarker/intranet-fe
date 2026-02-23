@@ -6,11 +6,7 @@ import EscalationForm from "./forms/EscalationForm";
 import ComplianceForm from "./forms/ComplianceForm";
 
 const CONFIG_OPTIONS = [
-  {
-    key: "slas",
-    label: "SLA Configuration",
-    enabled: (d) => d?.SLA,
-  },
+  { key: "slas", label: "SLA Configuration", enabled: (d) => d?.SLA },
   {
     key: "escalations",
     label: "Escalation Matrix",
@@ -30,9 +26,7 @@ const AddConfigurationModal = ({
   clientDetails,
   loading,
 }) => {
-  const DEFAULT_FORM_STATE = {
-    activeFlag: true,
-  };
+  const DEFAULT_FORM_STATE = { activeFlag: true };
 
   const [configType, setConfigType] = useState("");
   const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
@@ -49,40 +43,26 @@ const AddConfigurationModal = ({
       return;
     }
 
-    // Auto-select if only one option
-    if (allowedConfigs.length === 1) {
-      setConfigType(allowedConfigs[0].key);
-    } else {
-      setConfigType("");
-    }
-
+    // ✅ Default only on open (do NOT force after)
+    setConfigType((prev) => prev || "escalations");
     setFormData(DEFAULT_FORM_STATE);
-  }, [open, allowedConfigs]);
+  }, [open]);
 
-  if (!open) return null;
-
-  // No configurations allowed → don’t show modal
-  if (allowedConfigs.length === 0) return null;
+  if (!open || allowedConfigs.length === 0) return null;
 
   const handleSave = () => {
-    if (!configType) return "Select a configuration type";
-
-    const payload = {
-      client: {
-        clientId: clientDetails.clientId,
-      },
-      ...formData,
-    };
+    if (!configType) return;
 
     onSave({
       type: configType,
-      data: payload,
+      data: {
+        client: { clientId: clientDetails.clientId },
+        ...formData,
+      },
     });
   };
 
   const isSaveDisabled = () => {
-    if (!configType) return true;
-
     switch (configType) {
       case "slas":
         return (
@@ -109,10 +89,10 @@ const AddConfigurationModal = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-[60%] max-w-3xl rounded-xl shadow-xl">
         {/* ===== HEADER ===== */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 rounded-t-xl">
+          <h2 className="text-base font-semibold text-gray-900">
             Add Client Configuration
           </h2>
           <button
@@ -123,135 +103,97 @@ const AddConfigurationModal = ({
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-6">
+        {/* ===== BODY ===== */}
+        <div className="px-6 py-4 space-y-4">
           {allowedConfigs.length > 1 && (
             <div>
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-medium text-gray-600">
                 Configuration Type <span className="text-red-500">*</span>
               </label>
-              <div className="w-full mt-1">
-                <Listbox
-                  value={configType}
-                  onChange={(val) => {
-                    // Listbox returns the value directly, not an event object
-                    setConfigType(val);
-                    setFormData(DEFAULT_FORM_STATE);
-                  }}
-                >
-                  <div className="relative">
-                    {/* Button (The Display) */}
-                    <Listbox.Button className="relative w-full cursor-pointer rounded-lg border bg-white py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                      <span
-                        className={`block truncate ${!configType ? "text-gray-500" : "text-gray-900"}`}
-                      >
-                        {/* Find the label for the currently selected key */}
-                        {allowedConfigs.find((c) => c.key === configType)
-                          ?.label || "Select configuration"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown
-                          className="h-4 w-4 text-gray-400"
-                          aria-hidden="true"
-                        />
-                      </span>
-                    </Listbox.Button>
 
-                    {/* Options Dropdown */}
-                    <Transition
-                      as={Fragment}
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
+              <Listbox
+                value={configType}
+                onChange={(val) => {
+                  setConfigType(val);
+                  setFormData(DEFAULT_FORM_STATE);
+                }}
+              >
+                <div className="relative mt-1">
+                  <Listbox.Button className="w-full border rounded-md px-3 py-2 text-sm text-left bg-white focus:ring-2 focus:ring-indigo-500/20">
+                    <span
+                      className={configType ? "text-gray-900" : "text-gray-400"}
                     >
-                      <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
-                        {/* Optional: Add a 'Clear/Select' option if you need to unselect */}
+                      {allowedConfigs.find((c) => c.key === configType)
+                        ?.label || "Select configuration"}
+                    </span>
+                    <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                  </Listbox.Button>
+
+                  <Transition
+                    as={Fragment}
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <Listbox.Options className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg text-sm">
+                      {allowedConfigs.map((cfg) => (
                         <Listbox.Option
-                          value=""
+                          key={cfg.key}
+                          value={cfg.key}
                           className={({ active }) =>
-                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                            `cursor-pointer px-3 py-2 ${
                               active
                                 ? "bg-indigo-50 text-indigo-700"
-                                : "text-gray-900"
+                                : "text-gray-700"
                             }`
                           }
                         >
                           {({ selected }) => (
-                            <>
-                              <span
-                                className={`block truncate ${selected ? "font-medium" : "font-normal"} text-gray-500`}
-                              >
-                                Select configuration
-                              </span>
-                            </>
+                            <div className="flex items-center justify-between">
+                              {cfg.label}
+                              {selected && (
+                                <Check className="h-4 w-4 text-indigo-600" />
+                              )}
+                            </div>
                           )}
                         </Listbox.Option>
-
-                        {/* Map your configs */}
-                        {allowedConfigs.map((cfg) => (
-                          <Listbox.Option
-                            key={cfg.key}
-                            value={cfg.key}
-                            className={({ active }) =>
-                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-indigo-50 text-indigo-700"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected, active }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {cfg.label}
-                                </span>
-                                {selected ? (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
-                                    <Check
-                                      className="h-4 w-4"
-                                      aria-hidden="true"
-                                    />
-                                  </span>
-                                ) : null}
-                              </>
-                            )}
-                          </Listbox.Option>
-                        ))}
-                      </Listbox.Options>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+                      ))}
+                    </Listbox.Options>
+                  </Transition>
+                </div>
+              </Listbox>
             </div>
           )}
 
-          {/* ===== FORMS ===== */}
-          {configType === "slas" && (
-            <SLAForm formData={formData} setFormData={setFormData} />
-          )}
+          {/* ===== FORM AREA ===== */}
+          {/* ===== FORM AREA ===== */}
+          <div className="bg-gray-50 rounded-lg px-4 py-3">
+            {configType === "slas" && (
+              <SLAForm formData={formData} setFormData={setFormData} />
+            )}
 
-          {configType === "escalations" && (
-            <EscalationForm formData={formData} setFormData={setFormData} />
-          )}
+            {configType === "escalations" && (
+              <EscalationForm formData={formData} setFormData={setFormData} />
+            )}
 
-          {configType === "compliances" && (
-            <ComplianceForm formData={formData} setFormData={setFormData} />
-          )}
+            {configType === "compliances" && (
+              <ComplianceForm formData={formData} setFormData={setFormData} />
+            )}
+          </div>
         </div>
 
         {/* ===== FOOTER ===== */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t">
+        <div className="flex justify-end gap-3 px-6 py-3 border-t bg-gray-50 rounded-b-xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm border rounded-lg"
+            className="px-4 py-1.5 text-sm border rounded-md"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isSaveDisabled() || loading}
-            className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+            className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md disabled:opacity-50"
           >
             {loading ? "Saving..." : "Save Configuration"}
           </button>
