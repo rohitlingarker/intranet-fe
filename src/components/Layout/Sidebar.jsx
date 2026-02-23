@@ -8,6 +8,7 @@ import {
   Clock,
   PlaneTakeoff,
   ChevronDown,
+  ChevronRight,
   Handshake,
   UserCog2,
 } from "lucide-react";
@@ -15,10 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  
-  // Removed "Resource Management" from here to handle it manually below with a submenu
-
-  { name: "Leave", href: "/leave-management", icon: PlaneTakeoff },
+  { name: "Leave Management", href: "/leave-management", icon: PlaneTakeoff },
   { name: "Timesheets", href: "/timesheets", icon: Clock },
   { name: "Calendar", href: "/calendar", icon: Calendar },
 ];
@@ -50,60 +48,93 @@ const employeeOnboardingSubmenu = [
       { label: "Analytics", to: "/employee-onboarding/analytics" },
     ],
   },
-  { label: "Onboarding Task", to: "/employee-onboarding/",
+  {
+    label: "Onboarding Task",
+    to: "/employee-onboarding/",
     children: [
       { label: "Task Dashboard", to: "/employee-onboarding" },
       { label: "Create Offer", to: "/employee-onboarding/create" },
       { label: "BulkUpload", to: "/employee-onboarding/bulk-upload" },
       { label: "Add task", to: "/employee-onboarding/onboarding-task" },
-      { label: "HR Configuration", to: "/employee-onboarding/hr-configuration" },
-    ], 
+      {
+        label: "HR Configuration",
+        to: "/employee-onboarding/hr-configuration",
+      },
+    ],
   },
-  { label: "Employee Directory", to: "/employee-onboarding/employee-directory",
+  {
+    label: "Employee Directory",
+    to: "/employee-onboarding/employee-directory",
     children: [
-      { label: "Employee Directory", to: "/employee-onboarding/employee-directory" },
+      {
+        label: "Employee Directory",
+        to: "/employee-onboarding/employee-directory",
+      },
       { label: "Employee List", to: "/employee-onboarding/employeelist" },
-      { label: "Organization Tree ", to: "/employee-onboarding/organization-tree" },
-    ]
-   },
-  { label: "Employee Verification", to: "/employee-onboarding/hr",
+      {
+        label: "Organization Tree ",
+        to: "/employee-onboarding/organization-tree",
+      },
+    ],
+  },
+  {
+    label: "Employee Verification",
+    to: "/employee-onboarding/hr",
     children: [
       { label: "Employee Verification", to: "/employee-onboarding/hr" },
-      { label: "Admin Approval Dashboard", to: "/employee-onboarding/admin/approval-dashboard" },
-      
-      { label: "Employee Credentials", to: "/employee-onboarding/employee-credentials" },
-     
-  ]},
-  { label: "Employee Documents ", to: "/employee-onboarding/employeedocuments",
+      {
+        label: "Admin Approval Dashboard",
+        to: "/employee-onboarding/admin/approval-dashboard",
+      },
+
+      {
+        label: "Employee Credentials",
+        to: "/employee-onboarding/employee-credentials",
+      },
+    ],
+  },
+  {
+    label: "Employee Documents ",
+    to: "/employee-onboarding/employeedocuments",
     children: [
-      { label: "Employee Documents", to: "/employee-onboarding/employeedocuments" },
-      { label: "Document Template", to: "/employee-onboarding/documents-template" },
-      { label: "Organization Documents", to: "/employee-onboarding/organization-documents" },
-  ]},
-
+      {
+        label: "Employee Documents",
+        to: "/employee-onboarding/employeedocuments",
+      },
+      {
+        label: "Document Template",
+        to: "/employee-onboarding/documents-template",
+      },
+      {
+        label: "Organization Documents",
+        to: "/employee-onboarding/organization-documents",
+      },
+    ],
+  },
 ];
-
-
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const { user } = useAuth();
-  
+
   // Role checks
-  const isAdmin = user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  const isAdmin =
+    user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
+  const isRM = user?.roles?.includes("RESOURCE-MANAGER");
+  const isPM = user?.roles?.includes("PROJECT-MANAGER");
   const isGeneral = user?.roles?.includes("General");
 
   // State for User Management Hover
   const [userHovered, setUserHovered] = useState(false);
   const userManagementRef = useRef(null);
 
-  const [ eoHovered, setEoHovered] = useState(false);
+  const [eoHovered, setEoHovered] = useState(false);
   const eoRef = useRef(null);
-  
+
   // State for Resource Management Hover (NEW)
   const [rmHovered, setRmHovered] = useState(false);
   const rmRef = useRef(null);
-  
+
   const [submenuTop, setSubmenuTop] = useState(0);
   const hoverTimeout = useRef(null);
   const [childMenu, setChildMenu] = useState(null);
@@ -111,7 +142,6 @@ const Sidebar = ({ isCollapsed }) => {
   const parentHoverRef = useRef(false);
   const childHoverRef = useRef(false);
   const closeTimerRef = useRef(null);
-
 
   // --- Handlers for User Management ---
   const handleUserMouseEnter = () => {
@@ -131,47 +161,43 @@ const Sidebar = ({ isCollapsed }) => {
   };
 
   const handleParentHover = (item, e) => {
-  cancelClose(); 
+    cancelClose();
 
-  parentHoverRef.current = true;
+    parentHoverRef.current = true;
 
-  if (item.children) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setChildTop(rect.top);
-    setChildMenu(item.children);
-  } else {
-    setChildMenu(null);
-  }
-};
-
-
-
-const handleParentLeave = () => {
-  setTimeout(() => {
-    if (!childHoverRef.current) {
+    if (item.children) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setChildTop(rect.top);
+      setChildMenu(item.children);
+    } else {
       setChildMenu(null);
     }
-  }, 150);
-};
-const cancelClose = () => {
-  if (closeTimerRef.current) {
-    clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = null;
-  }
-};
+  };
 
-const scheduleClose = () => {
-  cancelClose();
-
-  closeTimerRef.current = setTimeout(() => {
-    if (!parentHoverRef.current && !childHoverRef.current) {
-      setChildMenu(null);
-      setEoHovered(false);
+  const handleParentLeave = () => {
+    setTimeout(() => {
+      if (!childHoverRef.current) {
+        setChildMenu(null);
+      }
+    }, 150);
+  };
+  const cancelClose = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     }
-  }, 260); // slightly higher = smoother
-};
+  };
 
+  const scheduleClose = () => {
+    cancelClose();
 
+    closeTimerRef.current = setTimeout(() => {
+      if (!parentHoverRef.current && !childHoverRef.current) {
+        setChildMenu(null);
+        setEoHovered(false);
+      }
+    }, 260); // slightly higher = smoother
+  };
 
   // --- Handlers for Resource Management (NEW) ---
   const handleRmMouseEnter = () => {
@@ -235,8 +261,13 @@ const scheduleClose = () => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-hide">
         <style jsx>{`
-          .scrollbar-hide::-webkit-scrollbar { display: none; }
-          .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
         `}</style>
 
         <ul className="space-y-1">
@@ -257,62 +288,96 @@ const scheduleClose = () => {
           </li>
 
           {/* 2. Resource Management (With Pop Label/Submenu) */}
-          <li
-            ref={rmRef}
-            className="relative"
-            onMouseEnter={handleRmMouseEnter}
-            onMouseLeave={handleRmMouseLeave}
-          >
-            <div
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                location.pathname.startsWith("/resource-management")
-                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-              }`}
-              title={isCollapsed ? "Resource Management" : ""}
+          {(isAdmin || isRM || isPM) && (
+            <li
+              ref={rmRef}
+              className="relative"
+              onMouseEnter={isRM ? handleRmMouseEnter : undefined}
+              onMouseLeave={isRM ? handleRmMouseLeave : undefined}
             >
-              <UserCog2 className="h-5 w-5 shrink-0" />
-              {!isCollapsed && (
+              {/* If Admin → Direct Link */}
+              {isAdmin && !isRM ? (
+                <Link
+                  to="/resource-management"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
+                    location.pathname.startsWith("/resource-management")
+                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  }`}
+                  title={isCollapsed ? "Resource Management" : ""}
+                >
+                  <UserCog2 className="h-5 w-5 shrink-0" />
+                  {!isCollapsed && <span>Resource Management</span>}
+                </Link>
+              ) : (isPM && !isRM) ? (
+                <Link
+                  to="/resource-management/projects"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
+                    location.pathname.startsWith("/resource-management/projects")
+                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  }`}
+                  title={isCollapsed ? "Resource Project Management" : ""}
+                >
+                  <UserCog2 className="h-5 w-5 shrink-0" />
+                  {!isCollapsed && <span>Resource Project Management</span>}
+                </Link>
+              ) : (
                 <>
-                  <span className="flex-1">Resource Management</span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      rmHovered ? "rotate-180" : ""
+                  {/* Resource Manager → Show Hover Menu */}
+                  <div
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                      location.pathname.startsWith("/resource-management")
+                        ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                        : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                     }`}
-                  />
+                  >
+                    <UserCog2 className="h-5 w-5 shrink-0" />
+
+                    {!isCollapsed && (
+                      <>
+                        <span className="flex-1">Resource Management</span>
+                        <ChevronRight
+                          className={`h-4 w-4 transition-all duration-300 ${
+                            rmHovered ? "translate-x-1" : ""
+                          }`}
+                        />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Show submenu only for Resource Manager */}
+                  {rmHovered && isRM && (
+                    <ul
+                      className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                        isCollapsed ? "left-20" : "left-64"
+                      }`}
+                      style={{ top: `${submenuTop}px` }}
+                      onMouseEnter={handleRmMouseEnter}
+                      onMouseLeave={handleRmMouseLeave}
+                    >
+                      {resourceManagementSubmenu.map((item) => (
+                        <li key={item.label}>
+                          <NavLink
+                            to={item.to}
+                            className={({ isActive }) =>
+                              `block px-4 py-2 text-xs transition-colors ${
+                                isActive
+                                  ? "bg-blue-100 text-[#0a174e] font-semibold"
+                                  : "hover:bg-[#263383] hover:text-white"
+                              }`
+                            }
+                          >
+                            {item.label}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </>
               )}
-            </div>
-
-            {/* THE POP LABEL / SUBMENU */}
-            {rmHovered && (
-              <ul
-                className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                  isCollapsed ? "left-20" : "left-64"
-                }`}
-                style={{ top: `${submenuTop}px` }}
-                onMouseEnter={handleRmMouseEnter}
-                onMouseLeave={handleRmMouseLeave}
-              >                
-                {resourceManagementSubmenu.map((item) => (
-                  <li key={item.label}>
-                    <NavLink
-                      to={item.to}
-                      className={({ isActive }) =>
-                        `block px-4 py-2 text-xs transition-colors ${
-                          isActive
-                            ? "bg-blue-100 text-[#0a174e] font-semibold"
-                            : "hover:bg-[#263383] hover:text-white"
-                        }`
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
+            </li>
+          )}
 
           {/* 3. User Management (Admin Only) */}
           {isAdmin && (
@@ -377,121 +442,114 @@ const scheduleClose = () => {
           {/* 4. Employee Onboarding (Non-General) */}
           {!isGeneral && (
             <li
-        ref={eoRef}
-        className="relative"
-        onMouseEnter={handleEoMouseEnter}
-        onMouseLeave={handleEoMouseLeave}
-      >
-        <div
-          className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-            (location.pathname == "/employee-onboarding" || location.pathname ==  "/employee-onboarding/")
-              ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-              : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-          }`}
-          title={isCollapsed ? "Employee Onboarding" : ""}
-        >
-          <Handshake className="h-5 w-5 shrink-0" />
-
-          {!isCollapsed && (
-            <>
-              <span className="flex-1">Employee Onboarding</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  eoHovered ? "rotate-180" : ""
+              ref={eoRef}
+              className="relative"
+              onMouseEnter={handleEoMouseEnter}
+              onMouseLeave={handleEoMouseLeave}
+            >
+              <div
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                  location.pathname == "/employee-onboarding" ||
+                  location.pathname == "/employee-onboarding/"
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
-              />
-            </>
-          )}
-        </div>
-
-        {/* SAME POPUP STYLE AS RESOURCE MANAGEMENT */}
-        {eoHovered && (
-          <ul
-            className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-              isCollapsed ? "left-20" : "left-64"
-            }`}
-            style={{ top: `${submenuTop}px` }}
-            onMouseEnter={() => {
-              parentHoverRef.current = true;
-               cancelClose();
-              // if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-            }}
-            onMouseLeave={() => {
-              parentHoverRef.current = false;
-              scheduleClose();
-            }}
-          >
-            {employeeOnboardingSubmenu.map((item) => (
-              <li
-                key={item.label}
-                onMouseEnter={(e) => handleParentHover(item, e)}
-                onMouseDown={(e)=> handleParentLeave()}
-                // onMouseLeave={handleParentLeave}
-                className="relative"
+                title={isCollapsed ? "Employee Onboarding" : ""}
               >
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `block px-4 py-2 text-xs transition-colors ${
-                      isActive
-                        ? "bg-blue-100 text-[#0a174e] font-semibold"
-                        : "hover:bg-[#263383] hover:text-white"
-                    }`
-                  }
+                <Handshake className="h-5 w-5 shrink-0" />
+
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">Employee Onboarding</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        eoHovered ? "rotate-180" : ""
+                      }`}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* SAME POPUP STYLE AS RESOURCE MANAGEMENT */}
+              {eoHovered && (
+                <ul
+                  className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                    isCollapsed ? "left-20" : "left-64"
+                  }`}
+                  style={{ top: `${submenuTop}px` }}
+                  onMouseEnter={() => {
+                    parentHoverRef.current = true;
+                    cancelClose();
+                    // if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+                  }}
+                  onMouseLeave={() => {
+                    parentHoverRef.current = false;
+                    scheduleClose();
+                  }}
                 >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-
-          </ul>
-          
-        )}
-        {childMenu && (
-        <ul
-          className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-            isCollapsed ? "left-[300px]" : "left-[520px]"
-          }`}
-          style={{ top: `${childTop - 4}px` }}
-          onMouseEnter={() => {
-            childHoverRef.current = true;
-            cancelClose();
-          }}
-          onMouseLeave={() => {
-            childHoverRef.current = false;
-            scheduleClose();
-          }}
-          onMouseDown={()=>{
-            childHoverRef.current = false;
-            scheduleClose();
-          }
-          }
-        >
-
-            {childMenu.map((child) => (
-              <li key={child.label}>
-                <NavLink
-                  to={child.to}
-                  className={({ isActive }) =>
-                    `block px-4 py-2 text-xs transition-colors ${
-                      isActive
-                        ? "bg-blue-100 text-[#0a174e] font-semibold"
-                        : "hover:bg-[#263383] hover:text-white"
-                    }`
-                  }
+                  {employeeOnboardingSubmenu.map((item) => (
+                    <li
+                      key={item.label}
+                      onMouseEnter={(e) => handleParentHover(item, e)}
+                      onMouseDown={(e) => handleParentLeave()}
+                      // onMouseLeave={handleParentLeave}
+                      className="relative"
+                    >
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) =>
+                          `block px-4 py-2 text-xs transition-colors ${
+                            isActive
+                              ? "bg-blue-100 text-[#0a174e] font-semibold"
+                              : "hover:bg-[#263383] hover:text-white"
+                          }`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {childMenu && (
+                <ul
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
+                    isCollapsed ? "left-[300px]" : "left-[520px]"
+                  }`}
+                  style={{ top: `${childTop - 4}px` }}
+                  onMouseEnter={() => {
+                    childHoverRef.current = true;
+                    cancelClose();
+                  }}
+                  onMouseLeave={() => {
+                    childHoverRef.current = false;
+                    scheduleClose();
+                  }}
+                  onMouseDown={() => {
+                    childHoverRef.current = false;
+                    scheduleClose();
+                  }}
                 >
-                  {child.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        )}
-
-      </li>
-      )}
-
-                
-            
+                  {childMenu.map((child) => (
+                    <li key={child.label}>
+                      <NavLink
+                        to={child.to}
+                        className={({ isActive }) =>
+                          `block px-4 py-2 text-xs transition-colors ${
+                            isActive
+                              ? "bg-blue-100 text-[#0a174e] font-semibold"
+                              : "hover:bg-[#263383] hover:text-white"
+                          }`
+                        }
+                      >
+                        {child.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          )}
 
           {/* 5. Remaining Items (Leave, Timesheets, Calendar) */}
           {navigation.slice(1).map((item) => {

@@ -7,7 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 // import Button from "../../components/Button/Button";
 import EmpTable from "./components/EmpTable";
 import axios from "axios";
-import OnboardingNavBar from "./components/NavigationBar";
+// import OnboardingNavBar from "./components/NavigationBar";
 import AdminApprovalDashboard from "./admin/AdminApprovalDashboard";
 
 export default function EmployeeOnboardingDashboard() {
@@ -73,7 +73,7 @@ export default function EmployeeOnboardingDashboard() {
       ) : (
         <>
           {/* Header */}
-          <OnboardingNavBar />
+          {/* <OnboardingNavBar /> */}
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">

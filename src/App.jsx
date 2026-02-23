@@ -98,6 +98,8 @@ import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
+import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
+import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -369,16 +371,16 @@ const AppRoutes = () => {
            />
 
           {/* ONBOARDING DASHBOARD (NEW) */}
-          <Route
-            path="/employee-onboarding/onboarding-dashboard"
-            element={<OnboardingDashboard />}
-          >
-            {/* DEFAULT PAGE → SUMMARY */}
-            <Route index element={<SummaryPage />} />
+<Route
+  path="/employee-onboarding/onboarding-dashboard"
+  element={<OnboardingDashboard />}
+>
+  {/* DEFAULT PAGE → SUMMARY */}
+  <Route index element={<SummaryPage />} />
 
-            {/* ANALYTICS PAGE */}
-            <Route path="analytics" element={<HeadcountDemographicsPage />} />
-          </Route>
+  {/* ANALYTICS PAGE */}
+  <Route path="analytics" element={<HeadcountDemographicsPage />} />
+</Route>
 
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
@@ -386,16 +388,9 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route path = "/employee-onboarding/organization-tree" element={<OrganizationTree />} />
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
-          <Route
-            path="/employee-onboarding/offer/:user_uuid"
-            element={<ViewEmpDetails />}/>
-
-          <Route
-            path="/employee-onboarding/employeeProfile"
-            element={<EmployeeProfileView />}
-          />
-          
-          // Correct routes
+          <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />}/>
+          <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />}/>
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
           <Route
@@ -451,12 +446,6 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr/profile/:user_uuid"
             element={<HrProfileView />}
           />
-
-          <Route
-            path="/employee-onboarding/hr/backgroundcheck"
-            element={<BackgroundCheckPage />}
-          />  
-
           <Route
             path="/employee-onboarding/analytics"
             element={<HeadcountDemographicsPage />}
@@ -467,7 +456,7 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/employeedocuments"
-            element={<EmployeeDocumentsPage/>}
+            element={<EmployeeDocuments/>}
           />
           <Route
             path="/employee-onboarding/employee-credentials"
