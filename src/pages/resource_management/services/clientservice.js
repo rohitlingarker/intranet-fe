@@ -569,7 +569,7 @@ export const getAssetDashboardByClient = async (clientId) => {
         },
       }
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error("Client KPI Fetch Error:", error);
     throw error;
