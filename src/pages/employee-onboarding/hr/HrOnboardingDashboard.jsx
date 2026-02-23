@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import { useEffect, useState, useMemo } from "react";
 import { Users, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +21,9 @@ const DEPARTMENTS = [
   "Operations",
   "Admin",
 ];
-
+ 
+const MANAGER_ROLES =["HR","ADMIN","MANAGER","CEO","CTO","CFO"];
+ 
 /* ============================
    JOIN MODAL
 ============================ */
@@ -33,36 +35,33 @@ function JoinModal({
   form,
   setForm,
   managerOptions,
-  
+ 
   loadingManagers,
-
+ 
 }) {
   if (!open) return null;
-  const filteredManagers =
-    form.department === "Engineering"
-      ? managerOptions
-      : [];
-
-
+ 
+ 
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] p-6 relative flex flex-col">
-
-
+ 
+ 
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
         >
           <X size={20} />
         </button>
-
+ 
         <h2 className="text-xl font-semibold mb-4">
           Send Joining Details
         </h2>
-
+ 
         <div className="space-y-4 overflow-y-auto pr-2 flex-1">
-
-
+ 
+ 
           <InputField
             label="Joining Date *"
             type="date"
@@ -71,7 +70,7 @@ function JoinModal({
               setForm({ ...form, joining_date: v })
             }
           />
-
+ 
           <InputField
             label="Reporting Time *"
             type="time"
@@ -80,7 +79,7 @@ function JoinModal({
               setForm({ ...form, reporting_time: v })
             }
           />
-
+ 
           <InputField
             label="Location *"
             type="text"
@@ -94,22 +93,22 @@ function JoinModal({
                 value={form.department}
                 options={DEPARTMENTS}
                 onChange={(v) =>
-                  setForm({ ...form, department: v, reporting_manager: "" })
+                  setForm({ ...form,department :v })
                 }
            />
           <SearchableSelect
                 label="Reporting Manager *"
                 value={form.reporting_manager}
-                options={filteredManagers}
+                options={managerOptions}
                 loading={loadingManagers}
-                disabled={!form.department || loadingManagers}
+                disabled={loadingManagers}
                 placeholder ="Search manager"
-
+ 
                 onChange={(v) =>
                   setForm({ ...form, reporting_manager: v })
                 }
           />
-
+ 
           <TextAreaField
             label="Additional Content"
             value={form.custom_message}
@@ -124,11 +123,11 @@ function JoinModal({
               setForm({ ...form, cc_mails: v })
             }
           /> */}
-          
+         
         </div>
-
+ 
         <div className="flex justify-end gap-3 mt-6">
-
+ 
           <Button
             varient="secondary"
             size="small"
@@ -137,7 +136,7 @@ function JoinModal({
           >
             Cancel
           </Button>
-
+ 
           <Button
             varient="primary"
             size="small"
@@ -146,13 +145,13 @@ function JoinModal({
           >
             {loading ? "Sending..." : "Send Email"}
           </Button>
-
+ 
         </div>
       </div>
     </div>
   );
 }
-
+ 
 /* ============================
    MAIN COMPONENT
 ============================ */
@@ -161,24 +160,24 @@ export default function HrOnboardingDashboard() {
   const token = localStorage.getItem("token");
   const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
 /* -------------------- State -------------------- */
-
+ 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  
+ 
   const [bulkJoinMode, setBulkJoinMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
-
+ 
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending] = useState(false);
-
+ 
   const [currentPage, setCurrentPage] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
  
-  
-
+ 
+ 
   const [joinForm, setJoinForm] = useState({
     joining_date: "",
     reporting_time: "",
@@ -187,11 +186,11 @@ export default function HrOnboardingDashboard() {
     reporting_manager: "",
     custom_message: "",
   });
-
+ 
   /* ============================
-     FETCH DATA
+     FETCH Employees DATA
   ============================ */
-
+ 
    useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true);
@@ -204,7 +203,7 @@ export default function HrOnboardingDashboard() {
             },
           }
         );
-
+ 
         setData(res.data || []);
       } catch (err) {
         console.error(err);
@@ -212,81 +211,116 @@ export default function HrOnboardingDashboard() {
         setLoading(false);
       }
     };
-
+ 
     fetchEmployees();
   }, []);
-
  
-const fetchManagers = async () => {
-  setLoadingManagers(true);
-
-  try {
-    const res = await axios.get(
-      `${BASE_URL}/offer-approval/admin-users`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    // TEMP: Treat all users as managers
-    const managers = res.data.map((u) => ({
-      value: u.name,
-      label: u.name,
-    }));
-
-    setManagerOptions(managers);
-
-  } catch (err) {
-    console.error("Failed to load managers:", err);
-  }
-
-  setLoadingManagers(false);
-};
-
-
-
- useEffect(() => {
-  fetchManagers();
- }, []);
-
+ 
+// const fetchManagers = async () => {
+//   setLoadingManagers(true);
+ 
+//   try {
+//     const res = await axios.get(
+//       `${BASE_URL}/offer-approval/admin-users`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+ 
+//     // TEMP: Treat all users as managers
+//     const managers = res.data.map((u) => ({
+//       value: u.name,
+//       label: u.name,
+//     }));
+ 
+//     setManagerOptions(managers);
+ 
+//   } catch (err) {
+//     console.error("Failed to load managers:", err);
+//   }
+ 
+//   setLoadingManagers(false);
+// };
+ 
+ 
+ 
+//  useEffect(() => {
+//   fetchManagers();
+//  }, []);
+ 
+ // currently all users are fetched as managers. Once the role based api  is ready, we can filter based on roles.
+ 
+ const fetchManagers = async () => {
+    setLoadingManagers(true);
+ 
+        try {
+          const res = await axios.get(
+            `${BASE_URL}/offer-approval/admin-users`,
+            { headers: { Authorization: `Bearer ${token}` } }
+             
+          );
+ 
+          console.log("Managers API Response:", res.data);
+ 
+          const managers = (res.data || []).map((u) => ({
+            value: u.name,
+            label: `${u.name} (${u.mail})`,
+          }));
+ 
+            console.log("Managers mapped:", managers);
+ 
+          setManagerOptions(managers);
+        } catch (err) {
+          console.error("Failed to load managers:", err);
+        }
+ 
+        setLoadingManagers(false);
+      };
+ 
+      useEffect(() => {
+        fetchManagers();
+      }, []);
+ 
+ 
+ 
   /* ============================
      FILTER (SEARCH + STATUS)
   ============================ */
-
+ 
  const filteredData = useMemo(() => {
   const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
-
+ 
   return data.filter((emp) => {
     const searchText = `${emp.first_name} ${emp.last_name} ${emp.designation}`
       .toLowerCase();
-
+ 
     const matchesSearch = searchText.includes(
       searchTerm.toLowerCase()
     );
-
+ 
     // Normalize status
     const status = (emp.status || "").trim().toUpperCase();
     const filter = statusFilter.trim().toUpperCase();
-
+ 
     let matchesStatus = false;
-
+ 
     if (filter === "ALL") {
       matchesStatus = allowedStatuses.includes(status);
     } else {
       matchesStatus = status === filter;
     }
-
+ 
     return matchesSearch && matchesStatus;
   });
 }, [data, searchTerm, statusFilter]);
-
-
+ 
+ 
   /* ============================
      HELPERS
   ============================ */
-
+ 
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id)
@@ -294,12 +328,12 @@ const fetchManagers = async () => {
         : [...prev, id]
     );
   };
-
+ 
   const resetBulk = () => {
     setBulkJoinMode(false);
     setSelectedIds([]);
     setShowModal(false);
-
+ 
     setJoinForm({
       joining_date: "",
       reporting_time: "",
@@ -309,65 +343,68 @@ const fetchManagers = async () => {
       custom_message: "",
     });
   };
-
+ 
   /* ============================
      SEND JOIN MAIL
   ============================ */
-
-
-
-  const handleSendJoinEmail = async () => {
-    const { joining_date, reporting_time, location, department, reporting_manager, custom_message } =
-      joinForm;
-
-    if (!joining_date || !reporting_time || !location || !department || !reporting_manager) {
-      showStatusToast("❌ Please fill all required fields");
-      return;
-    }
-
-    try {
-      setSending(true);
-
-      const emails = filteredData
-        .filter((e) => selectedIds.includes(e.user_uuid))
-        .map((e) => e.mail)
-        .filter(Boolean);
-
-      if (emails.length === 0) {
-        showStatusToast("❌ No valid emails found");
-        return;
-      }
-
-      await axios.post(
-        `${BASE_URL}/hr/offerletters/bulk-join`,
-        {
-          user_emails_list: emails,
-          ...joinForm,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      showStatusToast("✅ Joining emails sent");
-
-      resetBulk();
-
-    } catch (err) {
-      console.error(err);
-    showStatusToast("❌ Failed to send emails");
-    } finally {
-      setSending(false);
-    }
+ 
+ 
+ 
+ const handleSendJoinEmail = async () => {
+  const { joining_date, reporting_time, location, department, reporting_manager } = joinForm;
+ 
+  if (!joining_date || !reporting_time || !location || !department || !reporting_manager) {
+    showStatusToast("❌ Please fill all required fields");
+    return;
+  }
+ 
+  // ✅ emails OUTSIDE try (important)
+  const emails = filteredData
+    .filter((e) => selectedIds.includes(e.user_uuid))
+    .map((e) => e.mail)
+    .filter(Boolean);
+ 
+  if (emails.length === 0) {
+    showStatusToast("❌ No valid emails found");
+    return;
+  }
+ 
+  const payload = {
+    user_emails_list: emails,
+    ...joinForm,
   };
-
+ 
+  console.log("PAYLOAD SENT:", payload);
+ 
+  try {
+    setSending(true);
+ 
+    await axios.post(`${BASE_URL}/hr/offerletters/bulk-join`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+ 
+    showStatusToast("Joining emails sent");
+    resetBulk();
+ 
+  } catch (err) {
+    console.log("JOIN ERROR FULL:", err.response?.data);
+    console.log("JOIN ERROR DETAIL:", err.response?.data?.detail);
+    console.log("JOIN PAYLOAD:", payload);
+    console.error(err);
+ 
+    showStatusToast("❌ Failed to send emails");
+  } finally {
+    setSending(false);
+  }
+};
+ 
   /* ============================
      TABLE CONFIG
   ============================ */
-
+ 
   const headers = [
     bulkJoinMode ? "Select" : null,
     "Name",
@@ -377,7 +414,7 @@ const fetchManagers = async () => {
     "Status",
     "Action",
   ].filter(Boolean);
-
+ 
   const columns = [
     bulkJoinMode ? "select" : null,
     "name",
@@ -387,24 +424,24 @@ const fetchManagers = async () => {
     "status",
     "action",
   ].filter(Boolean);
-
+ 
   /* ============================
      ROWS + PAGINATION
   ============================ */
-
+ 
   const totalPages = Math.ceil(
     filteredData.length / PAGE_SIZE
   );
-
+ 
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-
+ 
     return filteredData
       .slice(startIndex, startIndex + PAGE_SIZE)
       .map((emp) => {
         const isVerified =
           emp.status?.toUpperCase() === "VERIFIED";
-
+ 
         return {
           ...(bulkJoinMode && {
             select: (
@@ -424,17 +461,17 @@ const fetchManagers = async () => {
               />
             ),
           }),
-
+ 
           name: `${emp.first_name} ${emp.last_name}`,
-
+ 
           mail: emp.mail || "—",
-
+ 
           contact: emp.contact_number || "—",
-
+ 
           designation: emp.designation || "—",
-
+ 
           status: emp.status || "—",
-
+ 
           action: (
             <span
               className="text-indigo-600 cursor-pointer"
@@ -456,11 +493,11 @@ const fetchManagers = async () => {
     selectedIds,
     navigate,
   ]);
-
+ 
   /* ============================
      LOADING
   ============================ */
-
+ 
   // if (loading) {
   //   return (
   //     <div className="p-10 text-center">
@@ -468,34 +505,34 @@ const fetchManagers = async () => {
   //     </div>
   //   );
   // }
-
+ 
   /* ============================
      UI
   ============================ */
-
+ 
   return (
     <div className="p-6 space-y-6">
-
+ 
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">
           HR Onboarding Dashboard
         </h1>
-
+ 
         <p className="text-gray-500">
           Verify employee documents & profiles
         </p>
       </div>
-
+ 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
+ 
         <StatCard
           title="Total Profiles"
           value={loading ? "0" : filteredData.length}
           icon={Users}
         />
-
+ 
         <StatCard
           title="Verified"
           value={
@@ -507,7 +544,7 @@ const fetchManagers = async () => {
           }
           icon={Users}
         />
-
+ 
         <StatCard
           title="Rejected"
           value={
@@ -519,12 +556,12 @@ const fetchManagers = async () => {
           }
           icon={Users}
         />
-
+ 
       </div>
-
+ 
       {/* Search + Filter */}
       <div className="flex flex-col md:flex-row gap-4">
-
+ 
         <input
           placeholder="Search by candidate name... or Role"
           value={searchTerm}
@@ -534,7 +571,7 @@ const fetchManagers = async () => {
           }}
           className="w-full md:w-1/3 px-3 py-2 border rounded-lg"
         />
-
+ 
         <select
           value={statusFilter}
           onChange={(e) => {
@@ -548,16 +585,16 @@ const fetchManagers = async () => {
           <option value="VERIFIED">Verified</option>
           <option value="REJECTED">Rejected</option>
         </select>
-
+ 
       </div>
-
+ 
       {/* Bulk Bar */}
       <div className="bg-white p-4 rounded-xl shadow-sm flex justify-between">
-
+ 
         <h2 className="font-semibold text-gray-700">
           Recent Offer Letters
         </h2>
-
+ 
         {!bulkJoinMode ? (
           <Button
           varient="primary"
@@ -566,21 +603,21 @@ const fetchManagers = async () => {
             const hasVerified = filteredData.some(
               (e) => e.status?.toUpperCase() === "VERIFIED"
             );
-
+ 
             if (!hasVerified) {
               showStatusToast( "No verified candidates available for bulk join");
               return;
             }
-
+ 
             setBulkJoinMode(true);
           }}
         >
           Bulk Join
         </Button>
         ) : (
-
+ 
           <div className="flex gap-3">
-
+ 
             <Button
               varient="primary"
               size="small"
@@ -589,7 +626,7 @@ const fetchManagers = async () => {
             >
               Send ({selectedIds.length})
             </Button>
-
+ 
             <Button
               varient="secondary"
               size="small"
@@ -597,25 +634,25 @@ const fetchManagers = async () => {
             >
               Cancel
             </Button>
-
+ 
           </div>
-
+ 
         )}
-
+ 
       </div>
-
+ 
       {/* Table + Pagination */}
       <div className="bg-white rounded-xl shadow-sm relative overflow-visible">
-
+ 
         <Table
           headers={headers}
           columns={columns}
           rows={rows}
           loading={loading}
         />
-
+ 
         {filteredData.length > PAGE_SIZE && (
-
+ 
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -630,11 +667,11 @@ const fetchManagers = async () => {
               )
             }
           />
-
+ 
         )}
-
+ 
       </div>
-
+ 
       {/* Modal */}
       <JoinModal
         open={showModal}
@@ -644,18 +681,18 @@ const fetchManagers = async () => {
         form={joinForm}
         setForm={setJoinForm}
         managerOptions={managerOptions}
-        
+       
         loadingManagers={loadingManagers}
       />
-
+ 
     </div>
   );
 }
-
+ 
 /* ============================
    SMALL COMPONENTS
 ============================ */
-
+ 
 function InputField({ label, type, value, onChange }) {
   return (
     <div>
@@ -671,7 +708,7 @@ function InputField({ label, type, value, onChange }) {
     </div>
   );
 }
-
+ 
 function TextAreaField({ label, value, onChange }) {
   return (
     <div>
@@ -687,7 +724,7 @@ function TextAreaField({ label, value, onChange }) {
     </div>
   );
 }
-
+ 
 function StatCard({ title, value, icon: Icon }) {
   return (
     <div className="bg-white p-4 rounded-xl border border-black/20 shadow-sm flex gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -703,7 +740,7 @@ function StatCard({ title, value, icon: Icon }) {
     </div>
   );
 }
-
+ 
 function SelectField({
   label,
   value,
@@ -717,7 +754,7 @@ function SelectField({
       <label className="text-sm font-medium">
         {label}
       </label>
-
+ 
       <select
         disabled={disabled || loading}
         value={value}
@@ -728,7 +765,7 @@ function SelectField({
         <option value="">
           {loading ? "Loading..." : `Select ${label}`}
         </option>
-
+ 
         {options.map((opt) => {
           // If string → department
           if (typeof opt === "string") {
@@ -738,7 +775,7 @@ function SelectField({
               </option>
             );
           }
-
+ 
           // If object → manager
           return (
             <option key={opt.value} value={opt.value}>
@@ -750,8 +787,8 @@ function SelectField({
     </div>
   );
 }
-
-
+ 
+ 
 function SearchableSelect({
   label,
   value,
@@ -762,20 +799,20 @@ function SearchableSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-
+ 
   const filtered = options.filter((opt) =>
     opt.label.toLowerCase().includes(query.toLowerCase())
   );
-
+ 
   const selectedLabel =
     options.find((o) => o.value === value)?.label || "";
-
+ 
   return (
     <div className="relative">
       <label className="text-sm font-medium">
         {label}
       </label>
-
+ 
       {/* Input */}
       <input
         disabled={disabled}
@@ -786,17 +823,17 @@ function SearchableSelect({
         className={`w-full mt-1 px-3 py-2 border rounded-lg
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       />
-
+ 
       {/* Dropdown */}
       {open && !disabled && (
         <div className="absolute z-50 w-full bg-white border rounded-lg shadow max-h-48 overflow-y-auto mt-1">
-
+ 
           {filtered.length === 0 && (
             <div className="p-2 text-gray-500 text-sm">
               No results
             </div>
           )}
-
+ 
           {filtered.map((opt) => (
             <div
               key={opt.value}
@@ -815,3 +852,4 @@ function SearchableSelect({
     </div>
   );
 }
+ 
