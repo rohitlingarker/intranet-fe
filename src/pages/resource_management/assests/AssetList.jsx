@@ -14,7 +14,7 @@ import {
   Activity,
 } from "lucide-react";
 import Button from "../../../components/Button/Button";
-import Pagination from "../../../components/Pagination/pagination"; 
+import Pagination from "../../../components/Pagination/pagination";
 
 import {
   getAssetsByClient,
@@ -108,7 +108,7 @@ const AssetList = () => {
   };
 
   /* ---------------- HELPER: RESET STATE ---------------- */
-  
+
   const closeModal = () => {
     setShowModal(false);
     setEditingAsset(null);
@@ -128,7 +128,7 @@ const AssetList = () => {
     const form = e.target;
     const assetName = form.asset_name.value.trim();
     const quantity = Number(form.quantity.value);
-    
+
     // VALIDATION
     const errors = {};
     if (!assetName) {
@@ -182,10 +182,10 @@ const AssetList = () => {
       await deleteClientAsset(deleteTarget.assetId);
       toast.success("Asset deleted successfully");
       setDeleteTarget(null);
-      
+
       await fetchAssets();
       await fetchKpi();
-      
+
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete asset");
@@ -195,7 +195,7 @@ const AssetList = () => {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 space-y-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -229,12 +229,12 @@ const AssetList = () => {
 
         {/* KPI SECTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Kpi title="Total Assets" value={kpi.totalAssets} icon={Box} color="blue" />
-          <Kpi title="Assigned Assets" value={kpi.assignedAssets} icon={Users} color="violet" />
-          <Kpi title="Available Assets" value={kpi.availableAssets} icon={Laptop} color="emerald" />
+          <Kpi title="Total Assets" value={kpi.totalAssets || 0} icon={Box} color="blue" />
+          <Kpi title="Assigned Assets" value={kpi.assignedAssets || 0} icon={Users} color="violet" />
+          <Kpi title="Available Assets" value={kpi.availableAssets || 0} icon={Laptop} color="emerald" />
           <Kpi
             title="Utilization"
-            value={`${kpi.utilizationPercentage}%`}
+            value={`${kpi.utilizationPercentage || 0}%`}
             icon={Activity}
             color="amber"
             isPercentage
@@ -244,7 +244,7 @@ const AssetList = () => {
 
         {/* TABLE SECTION */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          
+
           {/* Table Header / Search */}
           <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/30">
             <div>
@@ -300,7 +300,7 @@ const AssetList = () => {
                       <td className="px-6 py-4 text-center">
                         <StatusBadge status={asset.status} />
                       </td>
-                      
+
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <button
@@ -344,7 +344,7 @@ const AssetList = () => {
           {/* ✅ PAGINATION COMPONENT */}
           {filteredAssets.length > 0 && (
             <div className="border-t border-gray-100 p-4 bg-gray-50/30">
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPrevious={handlePrevious}
@@ -366,7 +366,7 @@ const AssetList = () => {
                 name="asset_name"
                 defaultValue={editingAsset?.assetName}
                 placeholder="e.g. MacBook Pro M1"
-                error={validationErrors.asset_name} 
+                error={validationErrors.asset_name}
               />
 
               <Input
@@ -383,7 +383,7 @@ const AssetList = () => {
                   options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
                   defaultValue={editingAsset?.assetCategory}
                 />
-                
+
                 <Select
                   label="Type"
                   name="asset_type"
@@ -393,7 +393,7 @@ const AssetList = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-5">
-                 <Input
+                <Input
                   label="Quantity"
                   name="quantity"
                   type="number"
@@ -402,7 +402,7 @@ const AssetList = () => {
                   placeholder="0"
                   error={validationErrors.quantity}
                 />
-                <div className="hidden sm:block"></div> 
+                <div className="hidden sm:block"></div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -418,7 +418,7 @@ const AssetList = () => {
                   variant="primary"
                   className="px-6 py-2.5 text-sm font-semibold shadow-md shadow-indigo-100"
                   type="submit"
-                  // onClick={(e) => e.currentTarget.form.reportValidity()}
+                // onClick={(e) => e.currentTarget.form.reportValidity()}
                 >
                   {editingAsset ? "Update Asset" : "Create Asset"}
                 </Button>
@@ -466,9 +466,9 @@ const Kpi = ({ title, value, icon: Icon, color = "indigo", isPercentage, highlig
     amber: "bg-amber-50 text-amber-600 border-amber-100",
     violet: "bg-violet-50 text-violet-600 border-violet-100",
   };
-  
+
   const getHighlightColor = (val) => {
-    if(!isPercentage) return "text-gray-900";
+    if (!isPercentage) return "text-gray-900";
     if (val >= 80) return "text-emerald-600";
     if (val >= 50) return "text-amber-600";
     return "text-red-600";
@@ -496,7 +496,7 @@ const StatusBadge = ({ status }) => {
     ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/10",
     INACTIVE: "bg-gray-50 text-gray-600 border-gray-200 ring-gray-500/10",
   };
-  
+
   const currentStyle = styles[status] || styles.INACTIVE;
 
   return (
@@ -511,8 +511,8 @@ const Modal = ({ title, children, onClose }) => (
     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
         <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="p-1 hover:bg-white rounded-full transition-colors text-gray-400 hover:text-gray-600"
         >
           <X size={20} />
@@ -533,14 +533,14 @@ const Input = ({ label, error, ...props }) => (
         {label}
       </label>
     </div>
-    
+
     <input
       {...props}
       className={`
         w-full bg-gray-50 border rounded-lg px-4 py-2.5 text-sm transition-all placeholder:text-gray-400
         focus:bg-white focus:outline-none focus:ring-2 
-        ${error 
-          ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10" 
+        ${error
+          ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
           : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
         }
       `}
@@ -571,7 +571,7 @@ const Select = ({ label, options, defaultValue, ...props }) => (
         ))}
       </select>
       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
       </div>
     </div>
   </div>

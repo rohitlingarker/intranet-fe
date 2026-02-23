@@ -11,9 +11,12 @@ export const defaultFilters = {
   location: "All Locations",
   experienceRange: [0, 15],
   allocationRange: [0, 100],
+  allocationPercentage: 0,
   project: "All Projects",
   employmentType: "All Types",
   search: "",
+  startDate: null,
+  endDate: null,
 };
 
 export function useAvailability() {
@@ -43,16 +46,9 @@ export function useAvailability() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch data for the entire year to avoid reloading on month switch
-      const year = currentDate.getFullYear();
-      const firstDay = new Date(year, 0, 1);
-      const lastDay = new Date(year, 11, 31);
-
       const payload = {
         page: page - 1,
         size: 20,
-        startDate: firstDay.toISOString().split("T")[0],
-        endDate: lastDay.toISOString().split("T")[0],
       };
 
       const currentFilters = { ...filters };

@@ -19,7 +19,8 @@ export const getProjects = async ({
   if (filters.priorityLevel) params.priorityLevel = filters.priorityLevel;
   if (filters.riskLevel) params.riskLevel = filters.riskLevel;
 
-  const res = await axios.get(
+  try{
+    const res = await axios.get(
     `${BASE_URL}/api/projects/get-projects`,
     {
       params,
@@ -28,21 +29,24 @@ export const getProjects = async ({
       },
     }
   );
-
-  return res.data;
+ return res.data;
+  }
+  catch(err){
+    throw err;
+  }
 };
 
 export const getProjectById = async (projectId) => {
   try {
     const res = await axios.get(
-    `${BASE_URL}/api/projects/get-project-by-id/${projectId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }
-  );
-  return res.data;
+      `${BASE_URL}/api/projects/get-project-by-id/${projectId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return res.data;
   } catch (err) {
     throw err;
   }
@@ -51,14 +55,14 @@ export const getProjectById = async (projectId) => {
 export const checkDemandCreation = async (projectId) => {
   try {
     const res = await axios.get(
-    `${BASE_URL}/api/projects/check-demand-creation/${projectId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }
-  );
-  return res.data;
+      `${BASE_URL}/api/projects/check-demand-creation/${projectId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return res.data;
   } catch (err) {
     throw err;
   }
@@ -66,7 +70,7 @@ export const checkDemandCreation = async (projectId) => {
 
 export const createDemand = async (demandData) => {
   try {
-    const response = await axios.post(`${BASE_URL}/api/demand/create` ,
+    const response = await axios.post(`${BASE_URL}/api/demand/create`,
       demandData,
       {
         headers: {
@@ -82,8 +86,8 @@ export const createDemand = async (demandData) => {
 
 export const statusUpdate = async (readinessData) => {
   try {
-    const response = await axios.put(`${BASE_URL}/api/projects/readiness-status-update`, 
-      { readinessData },
+    const response = await axios.put(`${BASE_URL}/api/projects/readiness-status-update`,
+      readinessData,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
