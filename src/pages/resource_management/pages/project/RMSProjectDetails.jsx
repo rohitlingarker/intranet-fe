@@ -42,6 +42,9 @@ const RMSProjectDetails = () => {
   const navigate = useNavigate();
   const [projectEscalations, setProjectEscalations] = useState([]);
   const [clientEscalations, setClientEscalations] = useState([]);
+  // const [draftDeliverableRoles, setDraftDeliverableRoles] = useState([]);
+  // const [selectedRoleIds, setSelectedRoleIds] = useState([]);
+
   const [selectedClientEscalations, setSelectedClientEscalations] = useState(
     [],
   );
@@ -62,11 +65,11 @@ const RMSProjectDetails = () => {
     useState(false);
 
   const [deliverableForm, setDeliverableForm] = useState({
-    roleName: "",
+    deliveryName: "", // OR roleName if role is created inline
     skillId: "",
     subSkillId: "",
-    proficiencyLevel: "",
-    // default
+    proficiencyId: "",
+    mandatoryFlag: true,
   });
 
   const [categories, setCategories] = useState([]);
@@ -558,50 +561,125 @@ const RMSProjectDetails = () => {
 
   // ================= Save Deliverable Role =================
   // ================= Save Deliverable Role =================
-  const saveDeliverableRole = async () => {
+  const softSaveDeliverableRole = () => {
+    if (
+      !deliverableForm.deliveryName ||
+      !deliverableForm.skillId ||
+      !deliverableForm.subSkillId ||
+      !deliverableForm.proficiencyId
+    ) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    const draftRole = {
+      tempId: crypto.randomUUID(),
+      ...deliverableForm,
+      status: "DRAFT",
+    };
+
+    setDraftDeliverableRoles((prev) => [...prev, draftRole]);
+
+    // reset form
+    setDeliverableForm({
+      deliveryName: "",
+      categoryId: "",
+      skillId: "",
+      subSkillId: "",
+      proficiencyId: "",
+      mandatoryFlag: true,
+    });
+
+    setSkills([]);
+    setSubSkills([]);
+  };
+
+  // ================= FINALIZE DELIVERABLE ROLES (⬅ STEP 4 GOES HERE) =================
+  const finalizeDeliverableRoles = async () => {
+    const rolesToFinalize = draftDeliverableRoles.filter((role) =>
+      selectedRoleIds.includes(role.tempId),
+    );
+
     try {
-      if (
-        !deliverableForm.roleName ||
-        !deliverableForm.skillId ||
-        !deliverableForm.subSkillId ||
-        !deliverableForm.proficiencyLevel
-      ) {
-        toast.error("Please fill all fields");
-        return;
-      }
-
-      const payload = {
-        roleName: deliverableForm.roleName,
-        expectations: [
-          {
-            skillId: deliverableForm.skillId,
-            subSkillId: deliverableForm.subSkillId,
-            proficiencyLevel: deliverableForm.proficiencyLevel,
-          },
-        ],
-      };
-
-      await createRoleExpectation(payload);
-
-      toast.success("Deliverable role added successfully");
-
-      // Reset & close modal
-      setOpenDeliverableRoleModal(false);
-      setDeliverableForm({
-        roleName: "",
-        skillId: "",
-        subSkillId: "",
-        proficiencyLevel: "BEGINNER",
-      });
-      setSkills([]);
-      setSubSkills([]);
-    } catch (err) {
-      console.error("Failed to save deliverable role", err);
-      toast.error(
-        err.response?.data?.message || "Failed to save deliverable role",
+      await Promise.all(
+        rolesToFinalize.map((role) =>
+          createRoleExpectation({
+            roleName: role.deliveryName,
+            expectations: [
+              {
+                skillId: role.skillId,
+                subSkillId: role.subSkillId,
+                proficiencyId: role.proficiencyId,
+                mandatoryFlag: role.mandatoryFlag,
+              },
+            ],
+          }),
+        ),
       );
+
+      toast.success("Deliverable roles finalized successfully");
+
+      setDraftDeliverableRoles([]);
+      setSelectedRoleIds([]);
+    } catch (err) {
+      toast.error("Failed to finalize deliverable roles");
     }
   };
+  const DeliverableRoleCard = ({ role, checked, onCheck, onDelete }) => (
+    <div className="border rounded-lg p-4 flex justify-between items-start bg-gray-50">
+      <div>
+        <h4 className="font-semibold text-sm">{role.deliveryName}</h4>
+        <p className="text-xs text-gray-600">
+          Skill: {role.skillId} | SubSkill: {role.subSkillId}
+        </p>
+        <p className="text-xs text-gray-600">
+          Proficiency: {role.proficiencyId}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={() => onCheck(role.tempId)}
+          className="accent-[#263383]"
+        />
+        <button
+          onClick={() => onDelete(role.tempId)}
+          className="text-red-500 text-xs"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+  // {
+  //   draftDeliverableRoles.length > 0 && (
+  //     <div className="space-y-3 mt-6">
+  //       <h3 className="text-sm font-semibold">Draft Deliverable Roles</h3>
+
+  //       {/* {draftDeliverableRoles.map((role) => (
+  //         <DeliverableRoleCard
+  //           key={role.tempId}
+  //           role={role}
+  //           checked={selectedRoleIds.includes(role.tempId)}
+  //           onCheck={(id) =>
+  //             setSelectedRoleIds((prev) =>
+  //               prev.includes(id)
+  //                 ? prev.filter((x) => x !== id)
+  //                 : [...prev, id],
+  //             )
+  //           }
+  //           onDelete={(id) =>
+  //             setDraftDeliverableRoles((prev) =>
+  //               prev.filter((r) => r.tempId !== id),
+  //             )
+  //           }
+  //         />
+  //       ))} */}
+  //     </div>
+  //   );
+  // }
 
   // ================= Fetch Deliverable Role Data on Modal Open =================
   useEffect(() => {
@@ -815,9 +893,9 @@ const RMSProjectDetails = () => {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
+        className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm mb-3"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        <ArrowLeft size={18} /> 
       </button>
 
       {/* Header */}
@@ -844,7 +922,6 @@ const RMSProjectDetails = () => {
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-              {project.client?.client_name} • Project ID: {project.pmsProjectId}
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
           </div>
@@ -924,13 +1001,7 @@ const RMSProjectDetails = () => {
                     Project Manager ID
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    {project.projectManagerId}
-                    Project Manager ID
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    <Users className="h-4 w-4 text-gray-400" />
-
+                    <Users className="h-4 w-4 text-blue-800" />
                     {project.projectManagerId}
                   </div>
                 </div>
@@ -939,7 +1010,7 @@ const RMSProjectDetails = () => {
                   <label className="text-xs text-gray-500 block mb-1">
                     Risk Profile
                   </label>
-                  <div className="flex items-center gap-2 text-gray-800 font-medium">
+                  <div className="flex items-center gap-2 text-gray-600 font-medium">
                     <ShieldAlert
                       className={`h-4 w-4 ${
                         project.riskLevel === "HIGH"
@@ -955,7 +1026,7 @@ const RMSProjectDetails = () => {
                   <label className="text-xs text-gray-500 block mb-1">
                     Lifecycle Stage
                   </label>
-                  <div className="text-sm font-medium text-gray-800 uppercase">
+                  <div className="text-sm font-medium text-gray-600 uppercase">
                     {project.lifecycleStage}
                   </div>
                 </div>
@@ -965,7 +1036,7 @@ const RMSProjectDetails = () => {
                     Start Date
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 text-sm">
-                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Calendar className="h-4 w-4 text-red-600" />
                     {new Date(project.startDate).toLocaleDateString()}
                   </div>
                 </div>
@@ -979,13 +1050,13 @@ const RMSProjectDetails = () => {
               Delivery Model
             </h3>
             <div className="p-3 bg-blue-50 rounded border border-blue-100 flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-600">Model</span>
+              <span className="text-sm text-gray-600 font-semibold">Model</span>
               <span className="font-bold text-[#263383]">
                 {project.deliveryModel}
               </span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
-              <Globe className="h-5 w-5 text-gray-400" />
+              <Globe className="h-5 w-5 text-blue-600" />
               <div>
                 <span className="text-xs text-gray-500 block">
                   Primary Location
@@ -1821,8 +1892,80 @@ const RMSProjectDetails = () => {
         setSkills={setSkills}
         setSubSkills={setSubSkills}
         proficiencyLevels={proficiencyLevels}
-        onSave={saveDeliverableRole}
+        onSave={softSaveDeliverableRole}
       />
+      {/* ================= Draft Deliverable Roles ================= */}
+      {/* {draftDeliverableRoles.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-sm font-semibold text-gray-800">
+              Draft Deliverable Roles
+            </h3>
+            <span className="text-xs text-gray-500">
+              {selectedRoleIds.length} selected / {draftDeliverableRoles.length}{" "}
+              total
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {draftDeliverableRoles.map((role) => (
+              <div
+                key={role.tempId}
+                className="flex justify-between items-start border rounded-md p-4 bg-gray-50"
+              >
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    {role.deliveryName}
+                  </h4>
+                  <p className="text-xs text-gray-600">
+                    Skill: {role.skillId} | SubSkill: {role.subSkillId}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Proficiency: {role.proficiencyId}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    className="accent-[#263383]"
+                    checked={selectedRoleIds.includes(role.tempId)}
+                    onChange={() =>
+                      setSelectedRoleIds((prev) =>
+                        prev.includes(role.tempId)
+                          ? prev.filter((id) => id !== role.tempId)
+                          : [...prev, role.tempId],
+                      )
+                    }
+                  />
+
+                  <button
+                    onClick={() =>
+                      setDraftDeliverableRoles((prev) =>
+                        prev.filter((r) => r.tempId !== role.tempId),
+                      )
+                    }
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ===== FINALIZE BUTTON ===== */}
+      {/* <div className="flex justify-end mt-6">
+            <button
+              disabled={selectedRoleIds.length === 0}
+              onClick={finalizeDeliverableRoles}
+              className="bg-[#263383] text-white px-6 py-2 rounded-lg text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Finalize Selected Roles
+            </button>
+          </div>
+        </div>
+      )} */}
 
       <ConfirmationModal
         isOpen={openConfirmModal}
