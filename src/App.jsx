@@ -507,6 +507,9 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
 
+            <Route path="employeeProfile" element={<EmployeeProfileView />} />
+            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+
           </Route>
 
 
