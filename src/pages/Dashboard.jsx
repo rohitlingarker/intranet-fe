@@ -32,6 +32,8 @@ const Dashboard = () => {
   const roles = user?.roles || [];
   const isAdminOrSuperAdmin =
     roles.includes("Super Admin") || roles.includes("Admin");
+  const isRM = roles.includes("RESOURCE-MANAGER");
+  const isPM = roles.includes("PROJECT-MANAGER");
   const isGeneral = user?.roles?.includes("General");
   const isDeveloper = roles.includes("Developer");
   const isManager = roles.includes("Manager");
@@ -230,15 +232,17 @@ const Dashboard = () => {
 
   // ✅ Module cards remain same for all roles
   const moduleCards = [
+    ...(isAdminOrSuperAdmin || isRM || isPM) ? [
     {
-      title: "Resource Management",
+      title: (isPM && !isRM) ? "Resource Project Management" : "Resource Management",
       description:
         "Make the right people available to the right projects at the right time",
       icon: UserCog2,
-      href: "/resource-management",
+      href: (isPM && !isRM) ? "/resource-management/projects" : "/resource-management",
       color: "bg-[#263383]",
       stats: "Manage resources effectively",
     },
+  ] : [],
     {
       title: "Leave Management",
       description: "Handle leave requests and approvals",

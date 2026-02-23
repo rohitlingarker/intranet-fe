@@ -893,9 +893,9 @@ const RMSProjectDetails = () => {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-500 mb-4 hover:text-[#263383] text-sm"
+        className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm mb-3"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        <ArrowLeft size={18} /> 
       </button>
 
       {/* Header */}
@@ -922,7 +922,6 @@ const RMSProjectDetails = () => {
               </span>
             </h1>
             <p className="text-gray-500 mt-1">
-              {project.client?.client_name} • Project ID: {project.pmsProjectId}
               {project.client?.client_name} • Project ID: {project.pmsProjectId}
             </p>
           </div>
@@ -1002,13 +1001,7 @@ const RMSProjectDetails = () => {
                     Project Manager ID
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    {project.projectManagerId}
-                    Project Manager ID
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-800 font-medium">
-                    <Users className="h-4 w-4 text-gray-400" />
-
+                    <Users className="h-4 w-4 text-blue-800" />
                     {project.projectManagerId}
                   </div>
                 </div>
@@ -1017,7 +1010,7 @@ const RMSProjectDetails = () => {
                   <label className="text-xs text-gray-500 block mb-1">
                     Risk Profile
                   </label>
-                  <div className="flex items-center gap-2 text-gray-800 font-medium">
+                  <div className="flex items-center gap-2 text-gray-600 font-medium">
                     <ShieldAlert
                       className={`h-4 w-4 ${
                         project.riskLevel === "HIGH"
@@ -1033,7 +1026,7 @@ const RMSProjectDetails = () => {
                   <label className="text-xs text-gray-500 block mb-1">
                     Lifecycle Stage
                   </label>
-                  <div className="text-sm font-medium text-gray-800 uppercase">
+                  <div className="text-sm font-medium text-gray-600 uppercase">
                     {project.lifecycleStage}
                   </div>
                 </div>
@@ -1043,7 +1036,7 @@ const RMSProjectDetails = () => {
                     Start Date
                   </label>
                   <div className="flex items-center gap-2 text-gray-800 text-sm">
-                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Calendar className="h-4 w-4 text-red-600" />
                     {new Date(project.startDate).toLocaleDateString()}
                   </div>
                 </div>
@@ -1057,13 +1050,13 @@ const RMSProjectDetails = () => {
               Delivery Model
             </h3>
             <div className="p-3 bg-blue-50 rounded border border-blue-100 flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-600">Model</span>
+              <span className="text-sm text-gray-600 font-semibold">Model</span>
               <span className="font-bold text-[#263383]">
                 {project.deliveryModel}
               </span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
-              <Globe className="h-5 w-5 text-gray-400" />
+              <Globe className="h-5 w-5 text-blue-600" />
               <div>
                 <span className="text-xs text-gray-500 block">
                   Primary Location
@@ -1962,7 +1955,7 @@ const RMSProjectDetails = () => {
           </div>
 
           {/* ===== FINALIZE BUTTON ===== */}
-          {/* <div className="flex justify-end mt-6">
+      {/* <div className="flex justify-end mt-6">
             <button
               disabled={selectedRoleIds.length === 0}
               onClick={finalizeDeliverableRoles}
