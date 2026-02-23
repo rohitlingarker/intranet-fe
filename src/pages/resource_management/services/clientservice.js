@@ -660,3 +660,28 @@ export const getAssetsByProjectId = async (projectId) => {
   return res.data;
 };
 
+export const getSkills = async () => {
+  try {
+    const response = await axios.get(`${RMS_BASE_URL}/api/skills/active`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getCertificates = async () => {
+  try {
+    const response = await axios.get(`${RMS_BASE_URL}/api/certificates`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

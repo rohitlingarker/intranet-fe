@@ -13,10 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-// import { defaultFilters } from "../../hooks/useAvailability" // Circular dependency risk if imported from hook file which imports service
-// Re-defining defaultFilters locally or importing from a safe place is better, but since we export it from here usually...
-// ensuring we don't break existing exports.
-// checking previous file content, defaultFilters was imported from hooks.
 import { defaultFilters } from "../../hooks/useAvailability";
 import { getWorkforceFilters } from "../../services/workforceService";
 export { defaultFilters };
@@ -185,7 +181,7 @@ export function FilterPanel({
   }
 
   return (
-    <div className="w-64 shrink-0 rounded-lg border bg-card p-4">
+    <div className="w-64 shrink-0 rounded-lg border bg-card p-4 max-h-[20%] overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />

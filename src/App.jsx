@@ -87,16 +87,19 @@ import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminAppro
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import BackgroundCheckPage from "./pages/employee-onboarding/hr/BackgroundCheckPage.jsx";
 import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
 import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
 import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
+import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
+import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
+import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -385,16 +388,9 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route path = "/employee-onboarding/organization-tree" element={<OrganizationTree />} />
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
-          <Route
-            path="/employee-onboarding/offer/:user_uuid"
-            element={<ViewEmpDetails />}/>
-
-          <Route
-            path="/employee-onboarding/employeeProfile"
-            element={<EmployeeProfileView />}
-          />
-          
-          // Correct routes
+          <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />}/>
+          <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />}/>
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
           <Route
