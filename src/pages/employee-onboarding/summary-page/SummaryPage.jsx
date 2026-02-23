@@ -17,6 +17,7 @@ import {
   UserCog,
 } from "lucide-react";
 
+
 /* ================= LOGIN DATA ================= */
 const loginData = [
   { day: "30 Jan", count: 1 },
@@ -56,6 +57,7 @@ const pending = [
 
 export default function OnboardingSummaryPage() {
   return (
+    <>
     <div className="min-h-screen bg-[#f5f6fa] text-[13px] font-sans">
       <div className="max-w-[1400px] mx-auto px-4 py-4">
 
@@ -202,6 +204,7 @@ export default function OnboardingSummaryPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

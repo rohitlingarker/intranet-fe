@@ -550,7 +550,7 @@ const AssetDetail = () => {
                     </td>
                     {activeTab === "HISTORY" && (
                       <td className="py-3 px-4 text-slate-600 text-center">
-                        {new Date(a.actualReturnedDate).toLocaleDateString(
+                        {new Date(a.actualReturnDate).toLocaleDateString(
                           "en-US",
                           {
                             month: "short",

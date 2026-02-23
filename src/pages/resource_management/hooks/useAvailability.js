@@ -11,9 +11,12 @@ export const defaultFilters = {
   location: "All Locations",
   experienceRange: [0, 15],
   allocationRange: [0, 100],
+  allocationPercentage: 0,
   project: "All Projects",
   employmentType: "All Types",
   search: "",
+  startDate: null,
+  endDate: null,
 };
 
 export function useAvailability() {
@@ -43,19 +46,27 @@ export function useAvailability() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch data for the entire year to avoid reloading on month switch
-      const year = currentDate.getFullYear();
-      const firstDay = new Date(year, 0, 1);
-      const lastDay = new Date(year, 11, 31);
-
       const payload = {
         page: page - 1,
         size: 20,
-        startDate: firstDay.toISOString().split("T")[0],
-        endDate: lastDay.toISOString().split("T")[0],
       };
 
+      // If no explicit date filters are set, pass the current view month as window
       const currentFilters = { ...filters };
+      if (!currentFilters.startDate && !currentFilters.endDate) {
+        const firstDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          1,
+        );
+        const lastDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          0,
+        );
+        currentFilters.startDate = firstDay.toLocaleDateString("en-CA");
+        currentFilters.endDate = lastDay.toLocaleDateString("en-CA");
+      }
       const response = await getAvailabilityTimeline(currentFilters, payload);
 
       if (response && response.data) {
@@ -78,7 +89,7 @@ export function useAvailability() {
     } finally {
       setLoading(false);
     }
-  }, [filters, page, currentDate.getFullYear()]);
+  }, [filters, page, currentDate]);
 
   // Effect to fetch data
   useEffect(() => {
@@ -87,7 +98,7 @@ export function useAvailability() {
     }, 400);
 
     return () => clearTimeout(delay);
-  }, [filters, page, currentDate.getFullYear()]);
+  }, [filters, page, currentDate]);
 
   // We need to use useEffect directly, but I can't easily change the imports at the top with this tool if I only replace the body.
   // I will use a separate tool call to fix imports first or do a full file replacement.

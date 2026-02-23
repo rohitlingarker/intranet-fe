@@ -29,9 +29,9 @@ const UpdateProjectStatusModal = ({ open, onClose, onSuccess, pmsProjectId }) =>
     if (!validate()) return;
 
     const payload = {
-        status,
-        reason,
-        pmsProjectId,
+        "status": status,
+        "reason": reason,
+        "pmsProjectId": pmsProjectId,
     }
 
     setLoading(true);

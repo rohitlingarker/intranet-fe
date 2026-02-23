@@ -31,6 +31,7 @@ export default function ProfilePage({ activeTab }) {
     personal_email: "lokeswari.busam@gmail.com",
     country_code: "+91",
     mobile_number: "8074718830",
+    emergency_number: "9876543210",
     work_number: "",
     residence_number: "",
   });
@@ -67,7 +68,8 @@ export default function ProfilePage({ activeTab }) {
   /* ---------------- EDUCATION STATE ---------------- */
 
   const [educationData, setEducationData] = useState({
-    degree: "B.Tech in Computer Science",
+    degree: "B.Tech",
+    specialization: "Computer Science and Engineering",
     institution: "Padmavati College of Engineering",
     year: "2024",
   });
@@ -85,6 +87,13 @@ export default function ProfilePage({ activeTab }) {
   const [identityData, setIdentityData] = useState({
     aadhaar: "XXXX-XXXX-1234",
     pan: "ABCDE1234F",
+  });
+  
+  /* ---------------- SOCIAL MEDIA STATE ---------------- */
+
+  const [socialData, setSocialData] = useState({
+    github: "https://github.com/username",
+    linkedin: "https://linkedin.com/in/username",
   });
 
   return (
@@ -107,6 +116,7 @@ export default function ProfilePage({ activeTab }) {
           <Row label="Work Email" value={contactData.work_email} />
           <Row label="Personal Email" value={contactData.personal_email} />
           <Row label="Mobile Number" value={`${contactData.country_code} ${contactData.mobile_number}`} />
+          <Row label="Emergency Number" value={`${contactData.country_code} ${contactData.emergency_number}`} />
         </Section>
 
       </div>
@@ -131,8 +141,10 @@ export default function ProfilePage({ activeTab }) {
 
         <Section title="Education" onEdit={() => setEditSection("education")}>
           <Row label="Degree" value={educationData.degree} />
-          <Row label="Institution" value={educationData.institution} />
+          <Row label="Specialization" value={educationData.specialization} />
+          <Row label="Institution/College" value={educationData.institution} />
           <Row label="Year" value={educationData.year} />
+
         </Section>
 
         <Section title="Experience" onEdit={() => setEditSection("experience")}>
@@ -150,6 +162,11 @@ export default function ProfilePage({ activeTab }) {
           <Row label="Aadhaar" value={identityData.aadhaar} />
           <Row label="PAN" value={identityData.pan} />
         </Section>
+        
+        <Section title="Social Media" onEdit={() => setEditSection("social")}>
+          <Row label="GitHub" value={socialData.github} />
+          <Row label="LinkedIn" value={socialData.linkedin} />
+        </Section>
 
       </div>
 
@@ -161,6 +178,7 @@ export default function ProfilePage({ activeTab }) {
       {editSection === "education" && <EducationModal data={educationData} setData={setEducationData} onClose={() => setEditSection(null)} />}
       {editSection === "experience" && <ExperienceModal data={experienceData} setData={setExperienceData} onClose={() => setEditSection(null)} />}
       {editSection === "identity" && <IdentityModal data={identityData} setData={setIdentityData} onClose={() => setEditSection(null)} />}
+      {editSection === "social" && <SocialModal data={socialData} setData={setSocialData} onClose={() => setEditSection(null)} />}
 
     </div>
   );
@@ -222,15 +240,20 @@ const PrimaryModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Primary Details" onClose={onClose}>
     <Input label="First Name" name="first_name" value={data.first_name} onChange={(e)=>setData({...data,first_name:e.target.value})}/>
     <Input label="Last Name" name="last_name" value={data.last_name} onChange={(e)=>setData({...data,last_name:e.target.value})}/>
+    <Input label="Gender" name="gender" value={data.gender} onChange={(e)=>setData({...data,gender:e.target.value})}/>
     <Input label="Date of Birth" type="date" name="dob" value={data.dob} onChange={(e)=>setData({...data,dob:e.target.value})}/>
+    <Input label="Blood Group" name="blood_group" value={data.blood_group} onChange={(e)=>setData({...data,blood_group:e.target.value})}/>
+    <Input label="Marital Status" name="marital_status" value={data.marital_status} onChange={(e)=>setData({...data,marital_status:e.target.value})}/>
     <Input label="Nationality" name="nationality" value={data.nationality} onChange={(e)=>setData({...data,nationality:e.target.value})}/>
   </ModalWrapper>
 );
 
 const ContactModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Contact Details" onClose={onClose}>
+    <Input label="Work Email" name="work_email" value={data.work_email} onChange={(e)=>setData({...data,work_email:e.target.value})}/>
     <Input label="Personal Email" name="personal_email" value={data.personal_email} onChange={(e)=>setData({...data,personal_email:e.target.value})}/>
     <Input label="Mobile Number" name="mobile_number" value={data.mobile_number} onChange={(e)=>setData({...data,mobile_number:e.target.value})}/>
+    <Input label="Emergency Number" name="emergency_number" value={data.emergency_number} onChange={(e)=>setData({...data,emergency_number:e.target.value})}/>
   </ModalWrapper>
 );
 
@@ -251,6 +274,7 @@ const RelationsModal = ({ data, setData, onClose }) => (
 const EducationModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Education" onClose={onClose}>
     <Input label="Degree" name="degree" value={data.degree} onChange={(e)=>setData({...data,degree:e.target.value})}/>
+    <Input label="Specialization" name="specialization" value={data.specialization} onChange={(e)=>setData({...data,specialization:e.target.value})}/>
     <Input label="Institution" name="institution" value={data.institution} onChange={(e)=>setData({...data,institution:e.target.value})}/>
   </ModalWrapper>
 );
@@ -266,5 +290,22 @@ const IdentityModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Identity Information" onClose={onClose}>
     <Input label="Aadhaar" name="aadhaar" value={data.aadhaar} onChange={(e)=>setData({...data,aadhaar:e.target.value})}/>
     <Input label="PAN" name="pan" value={data.pan} onChange={(e)=>setData({...data,pan:e.target.value})}/>
+  </ModalWrapper>
+);
+
+const SocialModal = ({ data, setData, onClose }) => (
+  <ModalWrapper title="Social Media Links" onClose={onClose}>
+    <Input
+      label="GitHub Profile URL"
+      name="github"
+      value={data.github}
+      onChange={(e) => setData({ ...data, github: e.target.value })}
+    />
+    <Input
+      label="LinkedIn Profile URL"
+      name="linkedin"
+      value={data.linkedin}
+      onChange={(e) => setData({ ...data, linkedin: e.target.value })}
+    />
   </ModalWrapper>
 );
