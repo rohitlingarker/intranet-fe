@@ -97,6 +97,7 @@ import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
+import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -385,6 +386,7 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route path = "/employee-onboarding/organization-tree" element={<OrganizationTree />} />
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
+          <Route path="/employee-onboarding/onboarding-summary" element={<OnboardingSummary />} />
           <Route
             path="/employee-onboarding/offer/:user_uuid"
             element={<ViewEmpDetails />}/>
