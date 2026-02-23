@@ -460,6 +460,7 @@ const AppRoutes = () => {
           {/* Dashboard */}
           <Route index element={<EmpDashboard />} />
           <Route path="summary-page" element={<SummaryPage />} />
+          {/* <Route path="onbording-summary" element={<OnboardingSummaryPage />} /> */}
           <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
           {/* Task Section */}
