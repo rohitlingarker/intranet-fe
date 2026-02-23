@@ -51,7 +51,22 @@ export function useAvailability() {
         size: 20,
       };
 
+      // If no explicit date filters are set, pass the current view month as window
       const currentFilters = { ...filters };
+      if (!currentFilters.startDate && !currentFilters.endDate) {
+        const firstDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          1,
+        );
+        const lastDay = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          0,
+        );
+        currentFilters.startDate = firstDay.toLocaleDateString("en-CA");
+        currentFilters.endDate = lastDay.toLocaleDateString("en-CA");
+      }
       const response = await getAvailabilityTimeline(currentFilters, payload);
 
       if (response && response.data) {
@@ -74,7 +89,7 @@ export function useAvailability() {
     } finally {
       setLoading(false);
     }
-  }, [filters, page, currentDate.getFullYear()]);
+  }, [filters, page, currentDate]);
 
   // Effect to fetch data
   useEffect(() => {
@@ -83,7 +98,7 @@ export function useAvailability() {
     }, 400);
 
     return () => clearTimeout(delay);
-  }, [filters, page, currentDate.getFullYear()]);
+  }, [filters, page, currentDate]);
 
   // We need to use useEffect directly, but I can't easily change the imports at the top with this tool if I only replace the body.
   // I will use a separate tool call to fix imports first or do a full file replacement.

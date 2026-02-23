@@ -93,13 +93,13 @@ import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/Em
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
-import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
+import SummaryPage from "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
 import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
-import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
+import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -366,31 +366,31 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-          
+
           <Route path="/employee-onboarding" element={<EmpDashboard />}
-           />
+          />
 
           {/* ONBOARDING DASHBOARD (NEW) */}
-<Route
-  path="/employee-onboarding/onboarding-dashboard"
-  element={<OnboardingDashboard />}
->
-  {/* DEFAULT PAGE → SUMMARY */}
-  <Route index element={<SummaryPage />} />
+          <Route
+            path="/employee-onboarding/onboarding-dashboard"
+            element={<OnboardingDashboard />}
+          >
+            {/* DEFAULT PAGE → SUMMARY */}
+            <Route index element={<SummaryPage />} />
 
-  {/* ANALYTICS PAGE */}
-  <Route path="analytics" element={<HeadcountDemographicsPage />} />
-</Route>
+            {/* ANALYTICS PAGE */}
+            <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          </Route>
 
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
           <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
           <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
-          <Route path = "/employee-onboarding/organization-tree" element={<OrganizationTree />} />
+          <Route path="/employee-onboarding/organization-tree" element={<OrganizationTree />} />
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
           <Route path="analytics" element={<HeadcountDemographicsPage />} />
-          <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />}/>
-          <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />}/>
+          <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />} />
+          <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />} />
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
           <Route
@@ -429,7 +429,7 @@ const AppRoutes = () => {
             path="/employee-onboarding/hr-configuration/education/mapping"
             element={<CountryEducationMapping />}
           />
-          
+
           <Route
             path="/employee-onboarding/admin/approval-dashboard"
             element={<AdminApprovalDashboard />}
@@ -452,15 +452,15 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/employeelist"
-            element={<EmployeeListPage/>}
+            element={<EmployeeListPage />}
           />
           <Route
             path="/employee-onboarding/employeedocuments"
-            element={<EmployeeDocuments/>}
+            element={<EmployeeDocumentsPage />}
           />
           <Route
             path="/employee-onboarding/employee-credentials"
-            element={<EmployeeCredentials/>}
+            element={<EmployeeCredentials />}
           />
 
 
