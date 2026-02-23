@@ -97,6 +97,8 @@ import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/Emp
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
+import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
+import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -363,110 +365,79 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-          
-          <Route path="/employee-onboarding" element={<EmpDashboard />}
-           />
-
-          {/* ONBOARDING DASHBOARD (NEW) */}
-<Route
-  path="/employee-onboarding/onboarding-dashboard"
-  element={<OnboardingDashboard />}
->
-  {/* DEFAULT PAGE → SUMMARY */}
-  <Route index element={<SummaryPage />} />
-
-  {/* ANALYTICS PAGE */}
-  <Route path="analytics" element={<HeadcountDemographicsPage />} />
-</Route>
-
+   
+          {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
           <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
           <Route path="/employee-onboarding/employee-documents-template" element={<EmployeeDocumentsTemplate />} />
           <Route path = "/employee-onboarding/organization-tree" element={<OrganizationTree />} />
           <Route path="/employee-onboarding/summary-page" element={<SummaryPage />} />
-          <Route
-            path="/employee-onboarding/offer/:user_uuid"
-            element={<ViewEmpDetails />}/>
-
-          <Route
-            path="/employee-onboarding/employeeProfile"
-            element={<EmployeeProfileView />}
-          />
-          
-          // Correct routes
+          <Route path="analytics" element={<HeadcountDemographicsPage />} />
+          <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />}/>
+          <Route path="/employee-onboarding/employeeProfile" element={<EmployeeProfileView />}/>
           <Route path="/employee-onboarding" element={<EmpDashboard />} />
           <Route path="/employee-onboarding/create" element={<CreateOffer />} />
-          <Route
-            path="/employee-onboarding/bulk-upload"
-            element={<BulkUpload />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/country"
-            element={<CountryManagement />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration"
-            element={<HrConfiguration />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/identity"
-            element={<IdentityTypeManagement />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/mapping"
-            element={<CountryIdentityMapping />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/education"
-            element={<EducationDashboard />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/education/levels"
-            element={<EducationLevelManagement />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/education/documents"
-            element={<EducationDocumentManagement />}
-          />
-          <Route
-            path="/employee-onboarding/hr-configuration/education/mapping"
-            element={<CountryEducationMapping />}
-          />
-          
-          <Route
-            path="/employee-onboarding/admin/approval-dashboard"
-            element={<AdminApprovalDashboard />}
-          />
-          <Route
-            path="/employee-onboarding/admin/offer/:user_uuid"
-            element={<AdminOfferView />}
-          />
-          <Route
-            path="/employee-onboarding/hr"
-            element={<HrOnboardingDashboard />}
-          />
-          <Route
-            path="/employee-onboarding/hr/profile/:user_uuid"
-            element={<HrProfileView />}
-          />
-          <Route
-            path="/employee-onboarding/analytics"
-            element={<HeadcountDemographicsPage />}
-          />
-          <Route
-            path="/employee-onboarding/employeelist"
-            element={<EmployeeListPage/>}
-          />
-          <Route
-            path="/employee-onboarding/employeedocuments"
-            element={<EmployeeDocuments/>}
-          />
-          <Route
-            path="/employee-onboarding/employee-credentials"
-            element={<EmployeeCredentials/>}
-          />
+          <Route path="/employee-onboarding/bulk-upload" element={<BulkUpload />}/>
+          <Route path="/employee-onboarding/hr-configuration/country" element={<CountryManagement />}/>
+          <Route path="/employee-onboarding/hr-configuration" element={<HrConfiguration />}/>
+          <Route path="/employee-onboarding/hr-configuration/identity" element={<IdentityTypeManagement />}/>
+          <Route path="/employee-onboarding/hr-configuration/mapping" element={<CountryIdentityMapping />}/>
+          <Route path="/employee-onboarding/hr-configuration/education" element={<EducationDashboard />}/>
+          <Route path="/employee-onboarding/hr-configuration/education/levels" element={<EducationLevelManagement />}/>
+          <Route path="/employee-onboarding/hr-configuration/education/documents" element={<EducationDocumentManagement />}/>
+          <Route path="/employee-onboarding/hr-configuration/education/mapping" element={<CountryEducationMapping />}/>
+          <Route path="/employee-onboarding/admin/approval-dashboard" element={<AdminApprovalDashboard />}/>
+          <Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />}/>
+          <Route path="/employee-onboarding/hr" element={<HrOnboardingDashboard />}/>
+          <Route path="/employee-onboarding/hr/profile/:user_uuid" element={<HrProfileView />}/>
+          <Route path="/employee-onboarding/analytics" element={<HeadcountDemographicsPage />}/>
+          <Route path="/employee-onboarding/employeelist" element={<EmployeeListPage/>}/>
+          <Route path="/employee-onboarding/employeedocuments" element={<EmployeeDocuments/>}/>
+          <Route path="/employee-onboarding/employee-credentials" element={<EmployeeCredentials/>}/>
+          <Route path="/employee-onboarding/core-employee" element={<CoreEmployeeDetails/>}/> */}
 
+          {/* Employee Onboarding */}
+          <Route path="/employee-onboarding" element={<EmployeeOnboardingLayout />}>
+
+            <Route index element={<EmpDashboard />} />
+
+            <Route path="create" element={<CreateOffer />} />
+            <Route path="bulk-upload" element={<BulkUpload />} />
+            <Route path="onboarding-task" element={<OnboardingTask />} />
+
+          <Route path="hr-configuration" element={<HrConfiguration />} />
+          <Route path="hr-configuration/country" element={<CountryManagement />} />
+          <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
+          <Route path="hr-configuration/mapping" element={<CountryIdentityMapping />} />
+          <Route path="hr-configuration/education" element={<EducationDashboard />} />
+          <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
+          <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
+          <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
+
+          <Route path="hr" element={<HrOnboardingDashboard />} />
+          <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
+
+            <Route path="admin/approval-dashboard" element={<AdminApprovalDashboard />} />
+            <Route path="admin/offer/:user_uuid" element={<AdminOfferView />} />
+
+            <Route path="employee-directory" element={<EmployeeDirectory />} />
+            <Route path="employeelist" element={<EmployeeListPage />} />
+            <Route path="organization-tree" element={<OrganizationTree />} />
+
+            <Route path="employee-verification" element={<EmployeeVerification />} />
+            <Route path="employee-documents-template" element={<EmployeeDocumentsTemplate />} />
+            <Route path="employeedocuments" element={<EmployeeDocuments />} />
+            <Route path="employee-credentials" element={<EmployeeCredentials />} />
+            <Route path="employeeProfile" element={<EmployeeProfileView />} />
+            <Route path="core-employee" element={<CoreEmployeeDetails />} />
+
+            <Route path="summary-page" element={<SummaryPage />} />
+            <Route path="analytics" element={<HeadcountDemographicsPage />} />
+
+            <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
+
+          </Route>
 
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
