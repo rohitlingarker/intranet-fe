@@ -9,6 +9,7 @@ export default function JobPage() {
     date_of_joining: "23 Apr 2023",
     primary_job: "Graduate Software Engineer",
     employment_type: "Permanent",
+    time_type: "Full Time",
     notice_period: "90 Days",
     contract_status: "Not Applicable",
   };
@@ -49,8 +50,9 @@ export default function JobPage() {
         <Card title="Job Details">
           <Row label="Employee Number" value={jobData.employee_number} />
           <Row label="Date of Joining" value={jobData.date_of_joining} />
-          <Row label="Primary Job Title" value={jobData.primary_job} />
+          <Row label="Designation" value={jobData.primary_job} />
           <Row label="Employment Type" value={jobData.employment_type} />
+          <Row label="Time Type" value={jobData.time_type} />
           <Row label="Notice Period" value={jobData.notice_period} />
           <Row label="Contract Status" value={jobData.contract_status} />
         </Card>
