@@ -31,8 +31,8 @@ export default function OnboardingNavBar() {
 const parentNav = [
   {
     label: "Onboarding Dashboard",
-    match: ["/employee-onboarding/summary-page", "/employee-onboarding/analytics"],
-    redirect: "/employee-onboarding/summary-page",
+    match: ["/employee-onboarding/onboarding-summary", "/employee-onboarding/analytics"],
+    redirect: "/employee-onboarding/onboarding-summary",
   },
   {
     label: "Onboarding Task",
@@ -94,7 +94,7 @@ const parentNav = [
   /* ================= DASHBOARD NAV ================= */
 
   const dashboardNav = [
-    { label: "Summary", path: "/employee-onboarding/summary-page" },
+    { label: "Summary", path: "/employee-onboarding/onboarding-summary" },
     { label: "Analytics", path: "/employee-onboarding/analytics" },
   ];
 
@@ -121,7 +121,7 @@ const parentNav = [
   let navToRender = null;
 
   if (
-    location.pathname.startsWith("/employee-onboarding/summary-page") ||
+    location.pathname.startsWith("/employee-onboarding/onboarding-summary") ||
     location.pathname.startsWith("/employee-onboarding/analytics")
   ) {
     navToRender = dashboardNav;
