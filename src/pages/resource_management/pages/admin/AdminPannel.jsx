@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import FilterBar from "../../components/FilterBar";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { searchClients, getAdminKPI } from "../../services/clientservice";
-import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer check
+import { toast } from "react-toastify"; // Removed ToastContainer check
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import ExcelJS from "exceljs/dist/exceljs.min.js"; // Robust Vite Import
 import { saveAs } from "file-saver";
@@ -236,7 +236,7 @@ const AdminPannel = () => {
   return (
     <div className="p-6 space-y-8">
       {/* Ensures toasts appear if not already in App.jsx */}
-      <ToastContainer position="top-right" />
+
 
       <div className="flex justify-between items-start">
         <div>
@@ -253,10 +253,9 @@ const AdminPannel = () => {
             onClick={handleExport}
             disabled={exporting}
             className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center transition-all active:scale-[0.98] 
-              ${
-                exporting
-                  ? "bg-indigo-400 cursor-not-allowed text-white"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+              ${exporting
+                ? "bg-indigo-400 cursor-not-allowed text-white"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
               }`}
           >
             {exporting ? (
@@ -317,107 +316,107 @@ const AdminPannel = () => {
             <LoadingSpinner text="loading..." />
           </div>
         ) : (
-         clientDetails.length > 0 ? (
-           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {clientDetails.map((client) => (
-                <div
-                  key={client.clientId}
-                  onClick={() =>
-                    navigate(
-                      `/resource-management/client-details/${client.clientId}`,
-                    )
-                  }
-                  className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-gray-900">
-                      {client.clientName}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColor[client.priorityLevel] || "bg-gray-50 text-gray-600"}`}
-                    >
-                      {client.priorityLevel}
-                    </span>
-                  </div>
-                  <div className="mt-4 space-y-2 text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium text-gray-800">Type:</span>{" "}
-                      {client.clientType}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">
-                        Country:
-                      </span>{" "}
-                      {client.countryName}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Status:</span>{" "}
+          clientDetails.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {clientDetails.map((client) => (
+                  <div
+                    key={client.clientId}
+                    onClick={() =>
+                      navigate(
+                        `/resource-management/client-details/${client.clientId}`,
+                      )
+                    }
+                    className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-gray-900">
+                        {client.clientName}
+                      </h3>
                       <span
-                        className={`${statusColor[client.status] || "text-gray-600"}`}
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${priorityColor[client.priorityLevel] || "bg-gray-50 text-gray-600"}`}
                       >
-                        {client.status}
+                        {client.priorityLevel}
                       </span>
-                    </p>
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm text-gray-600">
+                      <p>
+                        <span className="font-medium text-gray-800">Type:</span>{" "}
+                        {client.clientType}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-800">
+                          Country:
+                        </span>{" "}
+                        {client.countryName}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-800">Status:</span>{" "}
+                        <span
+                          className={`${statusColor[client.status] || "text-gray-600"}`}
+                        >
+                          {client.status}
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Pagination Section */}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                Showing{" "}
-                <span className="font-medium">{clientDetails.length}</span> of{" "}
-                <span className="font-medium">{pageInfo.totalElements}</span>{" "}
-                results
-              </p>
+              {/* Pagination Section */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <p className="text-sm text-gray-600">
+                  Showing{" "}
+                  <span className="font-medium">{clientDetails.length}</span> of{" "}
+                  <span className="font-medium">{pageInfo.totalElements}</span>{" "}
+                  results
+                </p>
 
-              <div className="flex items-center gap-4">
-                {/* Page Status Indicator */}
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
-                  Page{" "}
-                  <span className="text-indigo-600">
-                    {pageInfo.current + 1}
-                  </span>{" "}
-                  of {Math.max(1, pageInfo.totalPages)}
-                  {pageInfo.current + 1 === pageInfo.totalPages &&
-                    pageInfo.totalPages > 0 && (
-                      <span className="ml-2 text-emerald-600 font-bold">
-                        • Last Page
-                      </span>
-                    )}
-                </span>
+                <div className="flex items-center gap-4">
+                  {/* Page Status Indicator */}
+                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
+                    Page{" "}
+                    <span className="text-indigo-600">
+                      {pageInfo.current + 1}
+                    </span>{" "}
+                    of {Math.max(1, pageInfo.totalPages)}
+                    {pageInfo.current + 1 === pageInfo.totalPages &&
+                      pageInfo.totalPages > 0 && (
+                        <span className="ml-2 text-emerald-600 font-bold">
+                          • Last Page
+                        </span>
+                      )}
+                  </span>
 
-                <div className="flex gap-2">
-                  <button
-                    disabled={pageInfo.current === 0}
-                    onClick={() =>
-                      setPageInfo((p) => ({ ...p, current: p.current - 1 }))
-                    }
-                    className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={pageInfo.current === 0}
+                      onClick={() =>
+                        setPageInfo((p) => ({ ...p, current: p.current - 1 }))
+                      }
+                      className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
 
-                  <button
-                    disabled={pageInfo.current >= pageInfo.totalPages - 1}
-                    onClick={() =>
-                      setPageInfo((p) => ({ ...p, current: p.current + 1 }))
-                    }
-                    className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                    <button
+                      disabled={pageInfo.current >= pageInfo.totalPages - 1}
+                      onClick={() =>
+                        setPageInfo((p) => ({ ...p, current: p.current + 1 }))
+                      }
+                      className="p-2 border rounded-md disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-gray-500">No clients found</p>
             </div>
-          </>
-         ) : (
-           <div className="flex items-center justify-center py-12">
-            <p className="text-sm text-gray-500">No clients found</p>
-           </div>
-         )
+          )
         )
         }
       </div>

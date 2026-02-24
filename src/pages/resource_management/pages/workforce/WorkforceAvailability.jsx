@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { KPIBar } from "../../components/AvailabilityKPIs";
 import { FilterPanel } from "../../components/filters/AvailabilityFilters";
 import { AvailabilityCalendar } from "../../components/AvailabilityCalendar";
 import { AvailabilityTimeline } from "../../components/AvailabilityTimeline";
 import { ResourceTable } from "../../components/ResourceTable";
-import { ResourceDetailPanel } from "../../components/ResourceDetailPanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Table2, GanttChart } from "lucide-react";
@@ -16,6 +16,7 @@ import LoadingSpinner from "../../../../components/LoadingSpinner";
 import Pagination from "../../../../components/Pagination/pagination";
 
 export default function WorkforceAvailability() {
+  const navigate = useNavigate();
   const {
     filters,
     setFilters,
@@ -24,14 +25,10 @@ export default function WorkforceAvailability() {
     setStatusFilter,
     filterPanelCollapsed,
     setFilterPanelCollapsed,
-    selectedResource,
-    detailOpen,
-    setDetailOpen,
     activeView,
     setActiveView,
     // kpiData,
     filteredResources,
-    handleResourceClick,
     handleDayClick,
     // handleKPIFilterClick,
     toggleFilterPanel,
@@ -43,6 +40,18 @@ export default function WorkforceAvailability() {
     setCurrentDate,
   } = useAvailability();
 
+  // Navigate to Resource Intelligence page instead of opening a modal
+  const handleResourceClick = (resource) => {
+    const id = resource.id || resource.resourceId;
+    if (!id) {
+      console.warn("Resource has no id or resourceId:", resource);
+      return;
+    }
+    navigate(`/resource-management/workforce-availability/resource/${id}`, {
+      state: { resource },
+    });
+  };
+
   const [kpiData, setKpiData] = useState(null);
   const [kpiLoading, setKpiLoading] = useState(true);
 
@@ -53,7 +62,7 @@ export default function WorkforceAvailability() {
       setKpiData(res.data);
     } catch (err) {
       console.error("Failed to load KPI data", err);
-      // toast.error(err.response?.data?.message || "Failed to load KPI data");
+      toast.error(err.response?.data?.message || "Failed to load KPI data");
     } finally {
       setKpiLoading(false);
     }
@@ -175,7 +184,7 @@ export default function WorkforceAvailability() {
                     <AvailabilityCalendar
                       filteredResources={filteredResources}
                       onDayClick={handleDayClick}
-                      selectedResourceId={selectedResource?.id}
+                      selectedResourceId={null}
                       onSelectResource={handleResourceClick}
                       currentDate={currentDate}
                       onNavigate={setCurrentDate}
@@ -239,12 +248,7 @@ export default function WorkforceAvailability() {
         </div>
       </main>
 
-      {/* Resource Detail Side Panel */}
-      <ResourceDetailPanel
-        resource={selectedResource}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
+
     </div>
   );
 }
