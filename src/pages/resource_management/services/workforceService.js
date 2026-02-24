@@ -185,3 +185,38 @@ export const getProficiencyLevels = async () => {
     throw err;
   }
 };
+
+// ─── Skill Gap Analysis APIs ────────────────────────────────────────────────
+
+export const fetchDemands = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/demand/demands`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data.data; // Return the actual array
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getSkillGapAnalysis = async (demandId, resourceId) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/matching/skill-gap-analysis`,
+      { demandId, resourceId },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data.data; // Return the analysis object
+  } catch (err) {
+    throw err;
+  }
+};
