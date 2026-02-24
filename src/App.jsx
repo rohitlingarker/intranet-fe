@@ -272,6 +272,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         >
+          
           {/* Main */}
           <Route path="/dashboard" element={<Dashboard />} />
           {/* <Route path="/projects/manager" element={<ProjectManager />} /> */}
@@ -513,7 +514,10 @@ const AppRoutes = () => {
             {/* Special Pages */}
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
-
+            <Route path="/employee-onboarding/employee-verification" element={<EmployeeVerification />} />
+            <Route path="/employee-onboarding/admin/offer/:user_uuid" element={<AdminOfferView />} />
+            <Route path="/employee-onboarding/hr/profile/:user_uuid" element={<HrProfileView />}/>
+            <Route path="/employee-onboarding/offer/:user_uuid" element={<ViewEmpDetails />}/>
           </Route>
 
 
