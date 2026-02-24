@@ -97,10 +97,10 @@ export default function ProfilePage({ activeTab }) {
   });
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen space-y-6">
+    <div className="space-y-6">
 
       {/* ROW 1 */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Primary Details" onEdit={() => setEditSection("primary")}>
           <Row label="First Name" value={primaryData.first_name} />
@@ -122,7 +122,7 @@ export default function ProfilePage({ activeTab }) {
       </div>
 
       {/* ROW 2 */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Addresses" onEdit={() => setEditSection("address")}>
           <Row label="Current Address" value={`${addressData.current.line1}, ${addressData.current.city}`} />
@@ -137,7 +137,7 @@ export default function ProfilePage({ activeTab }) {
       </div>
 
       {/* ROW 3 */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Education" onEdit={() => setEditSection("education")}>
           <Row label="Degree" value={educationData.degree} />
@@ -156,7 +156,7 @@ export default function ProfilePage({ activeTab }) {
       </div>
 
       {/* ROW 4 */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Identity Information" onEdit={() => setEditSection("identity")}>
           <Row label="Aadhaar" value={identityData.aadhaar} />
@@ -187,8 +187,8 @@ export default function ProfilePage({ activeTab }) {
 /* ---------------- COMMON UI COMPONENTS ---------------- */
 
 const Section = ({ title, children, onEdit }) => (
-  <div className="bg-white border border-gray-200 shadow-sm">
-    <div className="flex justify-between items-center px-5 py-3 border-b bg-gray-100">
+  <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md border border-indigo-100 overflow-hidden">
+    <div className="flex justify-between items-center px-6 py-4 border-b border-indigo-100 bg-indigo-50/60">
       <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
       <button onClick={onEdit} className="flex items-center gap-1 text-xs text-indigo-600">
         <Pencil size={14} /> Edit
@@ -199,9 +199,11 @@ const Section = ({ title, children, onEdit }) => (
 );
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between text-sm">
-    <span className="text-gray-500">{label}</span>
-    <span className="text-gray-900 font-medium text-right max-w-[55%]">{value}</span>
+  <div className="flex justify-between gap-4 text-sm min-w-0">
+    <span className="text-gray-500 shrink-0">{label}</span>
+    <span className="text-gray-900 font-medium text-right break-words min-w-0">
+      {value}
+    </span>
   </div>
 );
 
@@ -220,12 +222,12 @@ const Input = ({ label, name, value, onChange, type = "text" }) => (
 
 const ModalWrapper = ({ title, onClose, children }) => (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white w-full max-w-4xl rounded shadow-xl">
+    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
       <div className="flex justify-between items-center px-8 py-5 border-b">
         <h3 className="text-xl font-medium">{title}</h3>
         <button onClick={onClose}><X size={22} /></button>
       </div>
-      <div className="px-10 py-8 grid md:grid-cols-2 gap-8 text-sm">{children}</div>
+      <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">{children}</div>
       <div className="flex justify-end gap-4 px-8 py-6 border-t bg-gray-50">
         <button onClick={onClose} className="px-6 py-2 border rounded text-sm">Cancel</button>
         <button onClick={onClose} className="px-6 py-2 bg-indigo-600 text-white rounded text-sm">Update</button>

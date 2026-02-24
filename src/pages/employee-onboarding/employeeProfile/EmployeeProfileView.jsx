@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import ProfilePage from "./ProfilePage";
+import JobPage from "./JobPage";
+import DocumentsPage from "./DocumentsPage";  
 
 export default function EmployeeProfileView() {
   const [activeTab, setActiveTab] = useState("about");
@@ -88,7 +90,7 @@ export default function EmployeeProfileView() {
           <div
             ref={editorRef}
             contentEditable
-            className="p-4 min-h-[140px] text-sm outline-none break-words whitespace-pre-wrap overflow-auto"
+            className="p-4 min-h-[140px] text-sm outline-none break-words whitespace-pre-wrap overflow-auto max-w-full"
             dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
           />
 
@@ -109,7 +111,7 @@ export default function EmployeeProfileView() {
         </div>
       ) : about[fieldKey] ? (
         <div
-          className="text-sm text-gray-700 break-words whitespace-pre-wrap"
+          className="text-sm text-gray-700 break-words whitespace-pre-wrap overflow-hidden"
           dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
         />
       ) : (
@@ -125,12 +127,12 @@ export default function EmployeeProfileView() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 sm:px-6 lg:px-10 py-10">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8">
 
         {/* LEFT SIDEBAR */}
-        <div className="space-y-6">
+        <div className="space-y-6 md:col-span-1">
 
-          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-6 text-center border border-indigo-100">
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-6 text-center border border-indigo-100 overflow-hidden">
             <div
               onClick={() => profileRef.current.click()}
               className="relative w-36 h-36 mx-auto rounded-full overflow-hidden border-4 border-indigo-200 cursor-pointer bg-gradient-to-br from-indigo-400 to-purple-400 group"
@@ -198,7 +200,7 @@ export default function EmployeeProfileView() {
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="lg:col-span-3">
+        <div className="md:col-span-2 xl:col-span-3 min-w-0">
 
           <div className="border-b border-indigo-100 mb-6 flex flex-wrap gap-6 text-sm">
             <Tab active={activeTab === "about"} onClick={() => setActiveTab("about")}>About</Tab>
@@ -229,6 +231,12 @@ export default function EmployeeProfileView() {
           {activeTab === "profile" && (
             <ProfilePage activeTab={activeTab} />
           )}
+          {activeTab === "job" && (
+            <JobPage />
+          )}
+          {activeTab === "documents" && (
+            <DocumentsPage employee={employee}/>
+           )}
 
         </div>
       </div>
@@ -237,9 +245,9 @@ export default function EmployeeProfileView() {
 }
 
 const Info = ({ icon, text }) => (
-  <div className="flex items-start gap-2 break-words text-indigo-700">
+  <div className="flex items-start gap-2 text-indigo-700 min-w-0">
     <div className="shrink-0 mt-0.5">{icon}</div>
-    <span className="break-words">{text}</span>
+    <span className="break-words min-w-0">{text}</span>
   </div>
 );
 
