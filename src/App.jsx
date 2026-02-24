@@ -99,6 +99,7 @@ import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeL
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
 import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
+import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -145,6 +146,7 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
 import OnboardingDashboard from "./pages/employee-onboarding/onboarding-task/OnboardingDashboard.jsx";
+import OnboardingSummaryPage from "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
 
 
 // function App() {
@@ -435,9 +437,11 @@ const AppRoutes = () => {
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
+            <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
+
 
           </Route>
 
