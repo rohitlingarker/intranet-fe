@@ -88,11 +88,10 @@ experience:false,
 
 setDocStatus({});
 setActiveTab("overview");
-const saved = localStorage.getItem(`hr_verify_${user_uuid}`);
-
-if(!saved){
+// remove old verification progress if status is Submitted
 localStorage.removeItem(`hr_verify_${user_uuid}`);
-}
+
+const saved = localStorage.getItem(`hr_verify_${user_uuid}`);
 
 // restore progress if HR already started verification
 if(saved){
@@ -501,7 +500,7 @@ Verify Section
 </button>
 )}
 
-{activeTab!=="documents" ? (
+{activeTab!=="identity documents" ? (
 
 <button
 onClick={()=>setActiveTab(tabs[tabs.indexOf(activeTab)+1])}
