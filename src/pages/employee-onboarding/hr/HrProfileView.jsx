@@ -15,7 +15,7 @@ const navigate = useNavigate();
 const token = localStorage.getItem("token");
 const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
 
-const tabs = ["overview","education","experience","documents"];
+const tabs = ["overview","education","experience","identity documents"];
 
 const [profile,setProfile] = useState(null);
 const [loading,setLoading] = useState(true);
@@ -26,7 +26,7 @@ const [sectionStatus,setSectionStatus] = useState({
 overview:false,
 education:false,
 experience:false,
-documents:false
+"identity documents":false
 });
 
 const [docStatus,setDocStatus] = useState({});
@@ -59,7 +59,7 @@ setSectionStatus({
 overview:true,
 education:true,
 experience:true,
-documents:true
+"identity documents":true
 });
 
 const allDocs = {};
@@ -83,7 +83,7 @@ setSectionStatus({
 overview:false,
 education:false,
 experience:false,
-documents:false
+"identity documents":false
 });
 
 setDocStatus({});
@@ -187,7 +187,7 @@ activeTab==="education"
 ? profile.education_documents || []
 : activeTab==="experience"
 ? profile.experience?.flatMap(e=>e.documents || []) || []
-: activeTab==="documents"
+: activeTab==="identity documents"
 ? profile.identity_documents || []
 : [];
 
@@ -252,7 +252,7 @@ setSectionStatus({
 overview:true,
 education:true,
 experience:true,
-documents:true
+"identity documents":true
 });
 const allDocs = {};
 
@@ -457,10 +457,12 @@ verificationStatus={verificationStatus}/>
 
 ))}
 
-{activeTab==="documents" &&
+{activeTab==="identity documents" &&
 Object.values(groupedIdentity).map((doc,i)=>(
 
-<Section key={i} title={doc.title} verified={sectionStatus.documents}>
+<Section key={i} title={doc.title} verified={sectionStatus["identity documents"]}>
+
+
 
 <DocCard documents={doc.documents}
 docStatus={docStatus}
@@ -720,8 +722,13 @@ className="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
 <div>
 
 <p className="font-medium">
-{d.document_name || d.doc_type}
+{d.document_name || d.doc_type || d.identity_type}
 </p>
+{d.identity_file_number && (
+<p className="text-xs text-gray-600">
+ID Number: {d.identity_file_number}
+</p>
+)}
 {remarks && (
 <p className="text-xs text-red-600 mt-1">
 Reason: {remarks}
