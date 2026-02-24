@@ -456,7 +456,7 @@ const AppRoutes = () => {
           />
           <Route
             path="/employee-onboarding/employeedocuments"
-            element={<EmployeeDocuments/>}
+            element={<EmployeeDocumentsPage/>}
           />
           <Route
             path="/employee-onboarding/employee-credentials"
