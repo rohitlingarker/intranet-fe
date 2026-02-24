@@ -708,3 +708,12 @@ export const getAvailableSerialsByAssetId = async (assetId) => {
     throw error;
   }
 };
+
+export function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
+};
