@@ -52,7 +52,7 @@ export default function AdminOfferView() {
 
   /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
-    const res = await axios.get(`${BASE}/offer-approval/admin/my-actions`, {
+    const res = await axios.get(`${BASE}/offer-approval/my-actions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const found = res.data.find((i) => i.user_uuid === user_uuid);

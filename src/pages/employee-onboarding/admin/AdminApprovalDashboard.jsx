@@ -20,6 +20,10 @@ export default function AdminApprovalDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
+  const handleKpiClick = (status) => {
+    setStatusFilter(status);
+  };
+
    const getStatus = (row) => {
     return row.action ? row.action.toUpperCase() : "PENDING";
   };
@@ -113,11 +117,11 @@ export default function AdminApprovalDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Requests" value={totalRequests} icon={Users} />
-        <StatCard title="Approved" value={approvedCount} icon={CheckCircle} color="text-green-600" />
-        <StatCard title="Rejected" value={rejectedCount} icon={XCircle} color="text-red-600" />
-        <StatCard title="On Hold" value={onHoldCount} icon={PauseCircle} color="text-yellow-600" />
-        <StatCard title="Pending" value={pendingCount} icon={Clock} color="text-gray-600" />
+        <StatCard title="Total Requests" value={totalRequests} icon={Users} onClick={() => handleKpiClick("ALL")} />
+        <StatCard title="Approved" value={approvedCount} icon={CheckCircle} color="text-green-600" onClick={() => handleKpiClick("APPROVED")} />
+        <StatCard title="Rejected" value={rejectedCount} icon={XCircle} color="text-red-600" onClick={() => handleKpiClick("REJECTED")} />
+        <StatCard title="On Hold" value={onHoldCount} icon={PauseCircle} color="text-yellow-600" onClick={() => handleKpiClick("ON_HOLD")} />
+        <StatCard title="Pending" value={pendingCount} icon={Clock} color="text-gray-600" onClick={() => handleKpiClick("PENDING")} />
       </div>
 
       {/* Search & Filter */}
@@ -212,9 +216,14 @@ export default function AdminApprovalDashboard() {
 }
 
 /* ---------- STAT CARD ---------- */
-function StatCard({ title, value, icon: Icon, color = "text-gray-700" }) {
+function StatCard({ title, value, icon: Icon, color = "text-gray-700", onClick }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-black/20 shadow-sm flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl p-4 border border-black/20 shadow-sm 
+                 flex items-center gap-4 transition-all duration-300 
+                 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+    >
       <Icon className={`h-6 w-6 ${color}`} />
       <div>
         <p className="text-sm text-gray-500">{title}</p>

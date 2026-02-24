@@ -6,7 +6,6 @@ import {
   Phone,
   Building2,
   User,
-  GraduationCap,
   Camera,
   Bold,
   Italic,
@@ -14,34 +13,19 @@ import {
   List,
   ListOrdered,
   Link,
+  Briefcase,
+  FileText,
 } from "lucide-react";
+
 import ProfilePage from "./ProfilePage";
 import JobPage from "./JobPage";
-import DocumentsPage from "./DocumentsPage";
+import DocumentsPage from "./DocumentsPage";  
 
 export default function EmployeeProfileView() {
-
-  /* ---------------- ACTIVE TAB STATE ---------------- */
   const [activeTab, setActiveTab] = useState("about");
-
-  /* ---------------- IMAGE STATES ---------------- */
   const [profileImg, setProfileImg] = useState(null);
-  const [coverImg, setCoverImg] = useState(
-    "https://images.unsplash.com/photo-1503264116251-35a269479413?w=1200"
-  );
-
   const profileRef = useRef(null);
-  const coverRef = useRef(null);
 
-  const handleProfileChange = (file) => {
-    if (file) setProfileImg(URL.createObjectURL(file));
-  };
-
-  const handleCoverChange = (file) => {
-    if (file) setCoverImg(URL.createObjectURL(file));
-  };
-
-  /* ---------------- MOCK DATA ---------------- */
   const employee = {
     name: "Busam Lokeswari",
     designation: "Graduate Software Engineer",
@@ -51,17 +35,30 @@ export default function EmployeeProfileView() {
     empId: "5100008",
     department: "Engineering",
     reportingManager: "Rama Gopal Durgam",
+    joiningDate: "01 Jan 2024",
+    employmentType: "Full-Time",
   };
 
-  /* ---------------- ABOUT STATE ---------------- */
   const [about, setAbout] = useState({
     summary: "",
     loveJob: "",
     hobbies: "",
   });
 
+  const [skills] = useState([
+    "Java",
+    "Spring Boot",
+    "React",
+    "SQL",
+    "Microservices",
+  ]);
+
   const [editingField, setEditingField] = useState(null);
   const editorRef = useRef(null);
+
+  const handleProfileChange = (file) => {
+    if (file) setProfileImg(URL.createObjectURL(file));
+  };
 
   const formatText = (cmd) => {
     document.execCommand(cmd, false, null);
@@ -76,12 +73,12 @@ export default function EmployeeProfileView() {
   };
 
   const AboutBlock = ({ title, fieldKey }) => (
-    <div className="mb-6">
-      <h4 className="font-medium mb-2">{title}</h4>
+    <div className="mb-8 w-full">
+      <h4 className="font-semibold text-indigo-800 mb-3">{title}</h4>
 
       {editingField === fieldKey ? (
-        <div className="border rounded-lg overflow-hidden bg-white">
-          <div className="flex gap-3 p-2 border-b bg-gray-50 text-gray-600">
+        <div className="border border-indigo-100 rounded-xl bg-white shadow-md w-full">
+          <div className="flex flex-wrap gap-4 p-3 border-b bg-indigo-50 text-indigo-700">
             <button onClick={() => formatText("bold")}><Bold size={16} /></button>
             <button onClick={() => formatText("italic")}><Italic size={16} /></button>
             <button onClick={() => formatText("underline")}><Underline size={16} /></button>
@@ -93,20 +90,20 @@ export default function EmployeeProfileView() {
           <div
             ref={editorRef}
             contentEditable
-            className="p-3 min-h-[120px] outline-none text-sm"
+            className="p-4 min-h-[140px] text-sm outline-none break-words whitespace-pre-wrap overflow-auto max-w-full"
             dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
           />
 
-          <div className="flex justify-end gap-3 p-3 border-t bg-gray-50">
+          <div className="flex justify-end gap-3 p-3 border-t bg-indigo-50">
             <button
               onClick={() => setEditingField(null)}
-              className="px-4 py-1 text-sm border rounded-md"
+              className="px-4 py-1 text-sm border border-indigo-200 rounded-md text-indigo-600"
             >
               Cancel
             </button>
             <button
               onClick={() => saveField(fieldKey)}
-              className="px-4 py-1 text-sm bg-indigo-600 text-white rounded-md"
+              className="px-4 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
             >
               Save
             </button>
@@ -114,167 +111,161 @@ export default function EmployeeProfileView() {
         </div>
       ) : about[fieldKey] ? (
         <div
-          className="text-sm text-gray-700"
+          className="text-sm text-gray-700 break-words whitespace-pre-wrap overflow-hidden"
           dangerouslySetInnerHTML={{ __html: about[fieldKey] }}
         />
       ) : (
         <button
           onClick={() => setEditingField(fieldKey)}
-          className="text-indigo-600 border px-3 py-1 rounded-md text-sm"
+          className="text-sm text-indigo-500 hover:text-indigo-700"
         >
-          Add your response
+          + Add your response
         </button>
       )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 sm:px-6 lg:px-10 py-10">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8">
 
-      {/* ---------------- HEADER ---------------- */}
-      <div className="relative h-48 w-full group overflow-hidden">
-        <img src={coverImg} className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        {/* LEFT SIDEBAR */}
+        <div className="space-y-6 md:col-span-1">
 
-        <div
-          onClick={() => coverRef.current.click()}
-          className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer"
-        >
-          <Camera size={18} />
-        </div>
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-6 text-center border border-indigo-100 overflow-hidden">
+            <div
+              onClick={() => profileRef.current.click()}
+              className="relative w-36 h-36 mx-auto rounded-full overflow-hidden border-4 border-indigo-200 cursor-pointer bg-gradient-to-br from-indigo-400 to-purple-400 group"
+            >
+              {profileImg ? (
+                <img src={profileImg} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-semibold text-white">
+                  {employee.name.charAt(0)}
+                </div>
+              )}
 
-        <input hidden ref={coverRef} type="file" accept="image/*"
-          onChange={(e) => handleCoverChange(e.target.files[0])}
-        />
-
-        <div className="absolute bottom-6 left-10 flex items-center gap-6 text-white">
-          <div
-            onClick={() => profileRef.current.click()}
-            className="relative w-28 h-28 rounded-full border-4 border-white shadow-xl cursor-pointer overflow-hidden"
-          >
-            {profileImg ? (
-              <img src={profileImg} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-3xl font-semibold">
-                {employee.name.charAt(0)}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                <div className="text-white text-xs flex flex-col items-center">
+                  <Camera size={18} />
+                  Edit Photo
+                </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          <input hidden ref={profileRef} type="file" accept="image/*"
-            onChange={(e) => handleProfileChange(e.target.files[0])}
-          />
+            <input
+              hidden
+              ref={profileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleProfileChange(e.target.files[0])}
+            />
 
-          <div>
-            <h1 className="text-2xl font-semibold">{employee.name}</h1>
-            <p className="opacity-90">{employee.designation}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ---------------- QUICK INFO ---------------- */}
-      <div className="bg-white px-6 py-3 shadow flex flex-wrap gap-6 text-sm">
-        <Info icon={<Mail size={16} />} text={employee.email} />
-        <Info icon={<Phone size={16} />} text={employee.phone} />
-        <Info icon={<Building2 size={16} />} text={employee.office} />
-        <Info icon={<User size={16} />} text={employee.empId} />
-      </div>
-
-      {/* ---------------- DEPARTMENT ROW ---------------- */}
-      <div className="bg-white px-6 py-4 shadow text-sm">
-        <div className="flex flex-wrap gap-12">
-          <div>
-            <p className="text-xs text-gray-400">Department</p>
-            <p className="font-medium text-gray-800">{employee.department}</p>
-          </div>
-
-          <div>
-            <p className="text-xs text-gray-400">Reporting Manager</p>
-            <p className="font-medium text-indigo-600 hover:underline cursor-pointer transition duration-200">
-              {employee.reportingManager}
+            <h2 className="mt-4 text-xl font-semibold text-indigo-900 break-words">
+              {employee.name}
+            </h2>
+            <p className="text-indigo-600 text-sm break-words">
+              {employee.designation}
             </p>
           </div>
-        </div>
-      </div>
 
-      {/* ---------------- TABS ---------------- */}
-      <div className="bg-white mt-2 px-6 border-b flex gap-6 text-sm font-medium">
-        <Tab active={activeTab === "about"} onClick={() => setActiveTab("about")}>About</Tab>
-        <Tab active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>Profile</Tab>
-        <Tab active={activeTab === "job"} onClick={() => setActiveTab("job")}>Job</Tab>
-        <Tab active={activeTab === "documents"} onClick={() => setActiveTab("documents")}>Documents</Tab>
-      </div>
-
-      {/* ---------------- CONTENT SWITCH ---------------- */}
-      {activeTab === "about" && (
-        <div className="p-6 grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <Card title="About">
-              <AboutBlock title="About" fieldKey="summary" />
-              <AboutBlock title="What I love about my job?" fieldKey="loveJob" />
-              <AboutBlock title="My interests and hobbies" fieldKey="hobbies" />
-            </Card>
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-5 text-sm space-y-3 border border-indigo-100">
+            <Info icon={<Mail size={14} />} text={employee.email} />
+            <Info icon={<Phone size={14} />} text={employee.phone} />
+            <Info icon={<Building2 size={14} />} text={employee.office} />
+            <Info icon={<User size={14} />} text={`ID: ${employee.empId}`} />
           </div>
 
-          <div>
-            <Card title="Skills">
-              <div className="flex flex-col items-center justify-center py-10 text-gray-500 text-sm">
-                <GraduationCap size={40} className="mb-3 opacity-40" />
-                <p>No skills added yet :(</p>
+          {/* Department Section */}
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-5 text-sm border border-indigo-100">
+            <div className="mb-3">
+              <p className="text-xs text-indigo-400 uppercase tracking-wide">
+                Department
+              </p>
+              <p className="font-semibold text-indigo-900 break-words">
+                {employee.department}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-indigo-400 uppercase tracking-wide">
+                Reporting Manager
+              </p>
+              <p className="font-semibold text-indigo-900 break-words">
+                {employee.reportingManager}
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT SIDE */}
+        <div className="md:col-span-2 xl:col-span-3 min-w-0">
+
+          <div className="border-b border-indigo-100 mb-6 flex flex-wrap gap-6 text-sm">
+            <Tab active={activeTab === "about"} onClick={() => setActiveTab("about")}>About</Tab>
+            <Tab active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>Profile</Tab>
+            <Tab active={activeTab === "job"} onClick={() => setActiveTab("job")}>Job</Tab>
+            <Tab active={activeTab === "documents"} onClick={() => setActiveTab("documents")}>Documents</Tab>
+          </div>
+
+          {activeTab === "about" && (
+            <div className="space-y-6">
+              <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-6 border border-indigo-100">
+                <AboutBlock title="About" fieldKey="summary" />
+                <AboutBlock title="What I love about my job?" fieldKey="loveJob" />
+                <AboutBlock title="My interests and hobbies" fieldKey="hobbies" />
               </div>
-            </Card>
-          </div>
+
+              <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-6 border border-indigo-100">
+                <h3 className="text-lg font-semibold text-indigo-900 mb-4">Skillset</h3>
+                <div className="flex flex-wrap gap-3">
+                  {skills.map((skill, index) => (
+                    <SkillTag key={index} name={skill} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "profile" && (
+            <ProfilePage activeTab={activeTab} />
+          )}
+          {activeTab === "job" && (
+            <JobPage />
+          )}
+          {activeTab === "documents" && (
+            <DocumentsPage employee={employee}/>
+           )}
+
         </div>
-      )}
-
-      {activeTab === "profile" && (
-        <ProfilePage
-          activeTab={activeTab}
-          employee={employee}
-          about={about}
-          setAbout={setAbout}
-          editingField={editingField}
-          setEditingField={setEditingField}
-          editorRef={editorRef}
-          formatText={formatText}
-          saveField={saveField}
-          AboutBlock={AboutBlock}
-        />
-      )}
-
-      {activeTab === "job" && (
-        <JobPage employee={employee} />
-      )}
-
-      {activeTab === "documents" && (
-        <DocumentsPage employee={employee} />
-      )}
-
+      </div>
     </div>
   );
 }
 
-/* ---------------- COMPONENTS ---------------- */
-
 const Info = ({ icon, text }) => (
-  <div className="flex items-center gap-2 text-gray-700">
-    {icon}
-    {text}
+  <div className="flex items-start gap-2 text-indigo-700 min-w-0">
+    <div className="shrink-0 mt-0.5">{icon}</div>
+    <span className="break-words min-w-0">{text}</span>
   </div>
 );
 
 const Tab = ({ children, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`py-3 ${active ? "border-b-2 border-indigo-600 text-indigo-600" : "text-gray-600"}`}
+    className={`pb-3 transition ${
+      active
+        ? "border-b-2 border-indigo-600 text-indigo-700 font-semibold"
+        : "text-gray-500 hover:text-indigo-600"
+    }`}
   >
     {children}
   </button>
 );
 
-const Card = ({ title, children }) => (
-  <div className="bg-white rounded-lg shadow p-5">
-    <h3 className="font-semibold mb-4">{title}</h3>
-    {children}
+const SkillTag = ({ name }) => (
+  <div className="px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 rounded-full text-sm font-medium hover:from-indigo-200 hover:to-purple-200 transition">
+    {name}
   </div>
 );
