@@ -151,7 +151,7 @@ const RMSProjectList = () => {
         </div>
 
         <select
-          className="border rounded-md px-3 py-2 text-sm"
+          className="border rounded-md px-6 py-2 text-sm"
           value={filters.readinessStatus}
           onChange={(e) =>
             handleFilterChange("readinessStatus", e.target.value)
@@ -164,7 +164,7 @@ const RMSProjectList = () => {
         </select>
 
         <select
-          className="border rounded-md px-3 py-2 text-sm"
+          className="border rounded-md px-6 py-2 text-sm"
           value={filters.projectStatus}
           onChange={(e) => handleFilterChange("projectStatus", e.target.value)}
         >
@@ -174,7 +174,7 @@ const RMSProjectList = () => {
         </select>
 
         <select
-          className="border rounded-md px-3 py-2 text-sm"
+          className="border rounded-md px-6 py-2 text-sm"
           value={filters.riskLevel}
           onChange={(e) => handleFilterChange("riskLevel", e.target.value)}
         >

@@ -216,10 +216,10 @@ export function FilterPanel({
       </Button>
     );
   }
-
+// className="w-64 shrink-0 rounded-lg border bg-card flex flex-col max-h-[calc(100vh-180px)] sticky top-6 shadow-sm overflow-hidden"
   return (
     <div
-      className="w-64 shrink-0 rounded-lg border bg-card flex flex-col max-h-[calc(100vh-180px)] sticky top-6 shadow-sm overflow-hidden"
+      className="w-64 shrink-0 rounded-lg border bg-card flex flex-col"
     >
       <div className="flex items-center justify-between p-4 border-b bg-card z-10">
         <div className="flex items-center gap-2">

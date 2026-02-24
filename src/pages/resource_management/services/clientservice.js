@@ -305,16 +305,17 @@ export const getClientEscalation = async (clientId) => {
   }
 };
 
-export const createClientAsset = async (assetData) => {
+export const createClientAsset = async (assetData, clientId) => {
   try {
     const response = await axios.post(
-      `${RMS_BASE_URL}/api/client-assets`,
+      `${RMS_BASE_URL}/api/client-assets/clients/${clientId}/assets`,
       assetData,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -333,8 +334,9 @@ export const updateClientAsset = async (assetId, assetData) => {
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -684,4 +686,34 @@ export const getCertificates = async () => {
   } catch (error) {
     throw error;
   }
+};
+
+
+/* ===============================
+   GET AVAILABLE SERIAL NUMBERS BY ASSET ID
+   =============================== */
+export const getAvailableSerialsByAssetId = async (assetId) => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/client-assets/${assetId}/available-serials`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data; // [{ serialNumber, status }]
+  } catch (error) {
+    console.error("Fetch Available Serials Error:", error);
+    throw error;
+  }
+};
+
+export function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
 };

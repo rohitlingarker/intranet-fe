@@ -43,10 +43,18 @@ const AddConfigurationModal = ({
       return;
     }
 
-    // ✅ Default only on open (do NOT force after)
-    setConfigType((prev) => prev || "escalations");
+    // ✅ Priority order
+    const PRIORITY_ORDER = ["escalations", "slas", "compliances"];
+
+    // Find first available config based on priority
+    const defaultConfig =
+      PRIORITY_ORDER.find((key) =>
+        allowedConfigs.some((cfg) => cfg.key === key),
+      ) || "";
+
+    setConfigType(defaultConfig);
     setFormData(DEFAULT_FORM_STATE);
-  }, [open]);
+  }, [open, allowedConfigs]);
 
   if (!open || allowedConfigs.length === 0) return null;
 
