@@ -171,7 +171,7 @@ const CreateProjectModal = ({
       status: formData.status,
       currentStage: formData.currentStage,
       deliveryModel: formData.deliveryModel,
-    clientId: "a9450ec0-079d-4a7d-9e18-1c07d0ac1101",
+    clientId: "2b4c8164-ebb8-4f58-8478-9fe139acf8ba",
       rmId: parseInt(formData.rmId, 10)||120,  
       deliveryOwnerId: parseInt(formData.deliveryOwnerId, 10)||120,
       primaryLocation: formData.primaryLocation,
@@ -466,7 +466,7 @@ const CreateProjectModal = ({
 
           {dateError && (
             <p className="text-red-600 text-sm mt-1">
-              ⚠️ End date cannot be before Start date
+              End date cannot be before Start date
             </p>
           )}
 
