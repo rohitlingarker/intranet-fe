@@ -175,8 +175,11 @@ export default function HrOnboardingDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
- 
- 
+  
+  const handleKpiClick = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  };
  
   const [joinForm, setJoinForm] = useState({
     joining_date: "",
@@ -284,37 +287,41 @@ export default function HrOnboardingDashboard() {
       }, []);
  
  
+
+  /*Adding page data for KPI filtering*/
+  const pageData = useMemo(() => {
+    const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
+
+    return data.filter((emp) =>
+      allowedStatuses.includes(
+        (emp.status || "").trim().toUpperCase()
+      )
+    );
+  }, [data]);
  
   /* ============================
      FILTER (SEARCH + STATUS)
   ============================ */
  
- const filteredData = useMemo(() => {
-  const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
- 
-  return data.filter((emp) => {
-    const searchText = `${emp.first_name} ${emp.last_name} ${emp.designation}`
-      .toLowerCase();
- 
-    const matchesSearch = searchText.includes(
-      searchTerm.toLowerCase()
-    );
- 
-    // Normalize status
-    const status = (emp.status || "").trim().toUpperCase();
-    const filter = statusFilter.trim().toUpperCase();
- 
-    let matchesStatus = false;
- 
-    if (filter === "ALL") {
-      matchesStatus = allowedStatuses.includes(status);
-    } else {
-      matchesStatus = status === filter;
-    }
- 
-    return matchesSearch && matchesStatus;
-  });
-}, [data, searchTerm, statusFilter]);
+  const filteredData = useMemo(() => {
+    return pageData.filter((emp) => {
+      const searchText = `${emp.first_name} ${emp.last_name} ${emp.designation}`
+        .toLowerCase();
+
+      const matchesSearch = searchText.includes(
+        searchTerm.toLowerCase()
+      );
+
+      const status = (emp.status || "").trim().toUpperCase();
+      const filter = statusFilter.trim().toUpperCase();
+
+      if (filter === "ALL") {
+        return matchesSearch;
+      }
+
+      return matchesSearch && status === filter;
+    });
+  }, [pageData, searchTerm, statusFilter]);
  
  
   /* ============================
@@ -529,8 +536,9 @@ export default function HrOnboardingDashboard() {
  
         <StatCard
           title="Total Profiles"
-          value={loading ? "0" : filteredData.length}
+          value={loading ? "0" : pageData.length}
           icon={Users}
+          onClick={() => handleKpiClick("ALL")}
         />
  
         <StatCard
@@ -538,11 +546,12 @@ export default function HrOnboardingDashboard() {
           value={
             loading
             ? "0"
-            :filteredData.filter(
+            :pageData.filter(
               (e) => e.status?.toUpperCase() === "VERIFIED"
             ).length
           }
           icon={Users}
+          onClick={() => handleKpiClick("VERIFIED")}
         />
  
         <StatCard
@@ -550,11 +559,12 @@ export default function HrOnboardingDashboard() {
           value={
             loading
             ? "0"
-            :filteredData.filter(
+            :pageData.filter(
               (e) => e.status?.toUpperCase() === "REJECTED"
             ).length
           }
           icon={Users}
+          onClick={() => handleKpiClick("REJECTED")}
         />
  
       </div>
@@ -725,9 +735,14 @@ function TextAreaField({ label, value, onChange }) {
   );
 }
  
-function StatCard({ title, value, icon: Icon }) {
+function StatCard({ title, value, icon: Icon, onClick }) {
   return (
-    <div className="bg-white p-4 rounded-xl border border-black/20 shadow-sm flex gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div
+      onClick={onClick}
+      className="bg-white p-4 rounded-xl border border-black/20 shadow-sm 
+                 flex gap-4 transition-all duration-300 
+                 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+    >
       <Icon className="text-indigo-600" />
       <div>
         <p className="text-sm text-gray-500">

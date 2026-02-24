@@ -44,6 +44,7 @@ const AssetList = () => {
 
   const [validationErrors, setValidationErrors] = useState({});
 
+  const [serialFile, setSerialFile] = useState(null);
   /* ---------------- FETCH ASSETS ---------------- */
 
   const fetchAssets = async () => {
@@ -84,7 +85,7 @@ const AssetList = () => {
     (a) =>
       a.assetName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.assetCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.assetType?.toLowerCase().includes(searchTerm.toLowerCase())
+      a.assetType?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // 2. Reset to Page 1 if search changes
@@ -145,18 +146,24 @@ const AssetList = () => {
 
     setValidationErrors({});
 
-    const payload = {
-      client: { clientId },
-      assetName: assetName,
-      assetCategory: form.asset_category.value,
-      assetType: form.asset_type.value,
-      description: form.description.value,
-      quantity: quantity,
-    };
+    const payload = new FormData();
+
+    payload.append("clientId", clientId);
+    payload.append("assetName", assetName);
+    payload.append("assetCategory", form.asset_category.value);
+    payload.append("assetType", form.asset_type.value);
+    payload.append("description", form.description.value);
+    payload.append("quantity", quantity);
+
+    // ✅ THIS WAS MISSING
+    if (serialFile) {
+      payload.append("serialFile", serialFile);
+    }
+    console.log("Payload data: ", payload);
 
     const savePromise = editingAsset
-      ? updateClientAsset(editingAsset.assetId, payload)
-      : createClientAsset(payload);
+      ? updateClientAsset(editingAsset.assetId, payload, true)
+      : createClientAsset(payload, clientId, true);
 
     try {
       const res = await savePromise;
@@ -185,7 +192,6 @@ const AssetList = () => {
 
       await fetchAssets();
       await fetchKpi();
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete asset");
@@ -195,7 +201,6 @@ const AssetList = () => {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 space-y-8">
       <div className="max-w-7xl mx-auto space-y-8">
-
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -203,14 +208,19 @@ const AssetList = () => {
               onClick={() => navigate(-1)}
               className="group p-2.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition-all duration-200"
             >
-              <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft
+                size={20}
+                className="group-hover:-translate-x-1 transition-transform"
+              />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                 Asset Management
               </h1>
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">Client</span>
+                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">
+                  Client
+                </span>
                 <span>•</span>
                 <span>Inventory & Dashboard</span>
               </div>
@@ -229,9 +239,24 @@ const AssetList = () => {
 
         {/* KPI SECTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Kpi title="Total Assets" value={kpi.totalAssets || 0} icon={Box} color="blue" />
-          <Kpi title="Assigned Assets" value={kpi.assignedAssets || 0} icon={Users} color="violet" />
-          <Kpi title="Available Assets" value={kpi.availableAssets || 0} icon={Laptop} color="emerald" />
+          <Kpi
+            title="Total Assets"
+            value={kpi.totalAssets || 0}
+            icon={Box}
+            color="blue"
+          />
+          <Kpi
+            title="Assigned Assets"
+            value={kpi.assignedAssets || 0}
+            icon={Users}
+            color="violet"
+          />
+          <Kpi
+            title="Available Assets"
+            value={kpi.availableAssets || 0}
+            icon={Laptop}
+            color="emerald"
+          />
           <Kpi
             title="Utilization"
             value={`${kpi.utilizationPercentage || 0}%`}
@@ -244,16 +269,22 @@ const AssetList = () => {
 
         {/* TABLE SECTION */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-
           {/* Table Header / Search */}
           <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/30">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Asset Inventory</h2>
-              <p className="text-xs text-gray-500 mt-1">Manage physical and digital assets</p>
+              <h2 className="text-lg font-bold text-gray-800">
+                Asset Inventory
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Manage physical and digital assets
+              </p>
             </div>
 
             <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"
+                size={16}
+              />
               <input
                 className="w-full sm:w-72 pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 focus:outline-none transition-all shadow-sm"
                 placeholder="Search by name, category, or type..."
@@ -268,12 +299,24 @@ const AssetList = () => {
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Asset Name</th>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-center">Qty</th>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-center">Status</th>
-                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">
+                    Asset Name
+                  </th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-center">
+                    Qty
+                  </th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-center">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 font-semibold text-xs text-gray-500 uppercase tracking-wider text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
@@ -283,20 +326,26 @@ const AssetList = () => {
                     <tr
                       key={asset.assetId}
                       className="group hover:bg-gray-50/80 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/assets/${clientId}/${asset.assetId}`)}
+                      onClick={() =>
+                        navigate(`/assets/${clientId}/${asset.assetId}`)
+                      }
                     >
                       <td className="px-6 py-4">
                         <div className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                           {asset.assetName}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{asset.assetCategory}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {asset.assetCategory}
+                      </td>
                       <td className="px-6 py-4 text-gray-600">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                           {asset.assetType}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center font-medium text-gray-700">{asset.quantity}</td>
+                      <td className="px-6 py-4 text-center font-medium text-gray-700">
+                        {asset.quantity}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <StatusBadge status={asset.status} />
                       </td>
@@ -329,7 +378,10 @@ const AssetList = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-gray-400 bg-white">
+                    <td
+                      colSpan={6}
+                      className="py-16 text-center text-gray-400 bg-white"
+                    >
                       <div className="flex flex-col items-center gap-2">
                         <Box size={40} className="text-gray-200" />
                         <p>No assets found matching your search</p>
@@ -361,21 +413,28 @@ const AssetList = () => {
             onClose={closeModal}
           >
             <form onSubmit={handleSaveAsset} className="space-y-5" noValidate>
-              <Input
-                label="Asset Name"
-                name="asset_name"
-                defaultValue={editingAsset?.assetName}
-                placeholder="e.g. MacBook Pro M1"
-                error={validationErrors.asset_name}
-              />
+              {/* ROW 1: Asset Name & Quantity */}
+              <div className="grid grid-cols-2 gap-5">
+                <Input
+                  label="Asset Name"
+                  name="asset_name"
+                  defaultValue={editingAsset?.assetName}
+                  placeholder="e.g. MacBook Pro M1"
+                  error={validationErrors.asset_name}
+                />
 
-              <Input
-                label="Description"
-                name="description"
-                defaultValue={editingAsset?.description}
-                placeholder="Brief details regarding the asset..."
-              />
+                <Input
+                  label="Quantity"
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  defaultValue={editingAsset?.quantity}
+                  placeholder="e.g. 10"
+                  error={validationErrors.quantity}
+                />
+              </div>
 
+              {/* ROW 2: Category & Type */}
               <div className="grid grid-cols-2 gap-5">
                 <Select
                   label="Category"
@@ -392,34 +451,46 @@ const AssetList = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <Input
-                  label="Quantity"
-                  name="quantity"
-                  type="number"
-                  min="1"
-                  defaultValue={editingAsset?.quantity}
-                  placeholder="0"
-                  error={validationErrors.quantity}
+              {/* ROW 3: Description */}
+              <Input
+                label="Description"
+                name="description"
+                defaultValue={editingAsset?.description}
+                placeholder="Brief description about the asset..."
+              />
+
+              {/* ROW 4: Serial Number Upload */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                  Asset Serial Numbers (Excel)
+                </label>
+
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setSerialFile(e.target.files[0])}
+                  className="block w-full text-sm text-gray-600
+        file:mr-4 file:py-2.5 file:px-4
+        file:rounded-lg file:border-0
+        file:text-sm file:font-semibold
+        file:bg-indigo-50 file:text-indigo-700
+        hover:file:bg-indigo-100
+        cursor-pointer
+      "
                 />
-                <div className="hidden sm:block"></div>
+
+                <p className="text-xs text-gray-400">
+                  Upload an Excel file containing serial numbers. Number of rows
+                  must match the quantity entered.
+                </p>
               </div>
 
+              {/* ACTIONS */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                <Button
-                  variant="secondary"
-                  className="px-5 py-2.5 text-sm"
-                  type="button"
-                  onClick={closeModal}
-                >
+                <Button variant="secondary" type="button" onClick={closeModal}>
                   Cancel
                 </Button>
-                <Button
-                  variant="primary"
-                  className="px-6 py-2.5 text-sm font-semibold shadow-md shadow-indigo-100"
-                  type="submit"
-                // onClick={(e) => e.currentTarget.form.reportValidity()}
-                >
+                <Button variant="primary" type="submit">
                   {editingAsset ? "Update Asset" : "Create Asset"}
                 </Button>
               </div>
@@ -435,13 +506,20 @@ const AssetList = () => {
                 <AlertTriangle className="text-red-500" size={32} />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-gray-900">Are you sure?</h4>
+                <h4 className="text-lg font-bold text-gray-900">
+                  Are you sure?
+                </h4>
                 <p className="text-sm text-gray-500 mt-1">
-                  You are about to delete <strong>{deleteTarget.assetName}</strong>. This action cannot be undone.
+                  You are about to delete{" "}
+                  <strong>{deleteTarget.assetName}</strong>. This action cannot
+                  be undone.
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-4">
-                <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setDeleteTarget(null)}
+                >
                   Cancel
                 </Button>
                 <Button variant="danger" onClick={confirmDelete}>
@@ -458,7 +536,14 @@ const AssetList = () => {
 
 /* ---------------- UI HELPERS ---------------- */
 
-const Kpi = ({ title, value, icon: Icon, color = "indigo", isPercentage, highlight }) => {
+const Kpi = ({
+  title,
+  value,
+  icon: Icon,
+  color = "indigo",
+  isPercentage,
+  highlight,
+}) => {
   const colorMap = {
     indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
     blue: "bg-blue-50 text-blue-600 border-blue-100",
@@ -472,18 +557,24 @@ const Kpi = ({ title, value, icon: Icon, color = "indigo", isPercentage, highlig
     if (val >= 80) return "text-emerald-600";
     if (val >= 50) return "text-amber-600";
     return "text-red-600";
-  }
+  };
 
   return (
     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
-          <p className={`text-2xl font-bold mt-2 ${isPercentage ? getHighlightColor(highlight) : 'text-gray-900'}`}>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {title}
+          </p>
+          <p
+            className={`text-2xl font-bold mt-2 ${isPercentage ? getHighlightColor(highlight) : "text-gray-900"}`}
+          >
             {value}
           </p>
         </div>
-        <div className={`p-3 rounded-xl border ${colorMap[color] || colorMap.indigo}`}>
+        <div
+          className={`p-3 rounded-xl border ${colorMap[color] || colorMap.indigo}`}
+        >
           <Icon size={22} />
         </div>
       </div>
@@ -493,14 +584,17 @@ const Kpi = ({ title, value, icon: Icon, color = "indigo", isPercentage, highlig
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/10",
+    ACTIVE:
+      "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/10",
     INACTIVE: "bg-gray-50 text-gray-600 border-gray-200 ring-gray-500/10",
   };
 
   const currentStyle = styles[status] || styles.INACTIVE;
 
   return (
-    <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ring-1 ring-inset ${currentStyle}`}>
+    <span
+      className={`px-2.5 py-1 rounded-md text-xs font-medium border ring-1 ring-inset ${currentStyle}`}
+    >
       {status}
     </span>
   );
@@ -518,18 +612,19 @@ const Modal = ({ title, children, onClose }) => (
           <X size={20} />
         </button>
       </div>
-      <div className="p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">{children}</div>
+      <div className="p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        {children}
+      </div>
     </div>
   </div>
 );
 
-
-
-
 const Input = ({ label, error, ...props }) => (
   <div className="flex flex-col gap-1.5">
     <div className="flex justify-between">
-      <label className={`text-xs font-bold uppercase tracking-wide ${error ? "text-red-500" : "text-gray-500"}`}>
+      <label
+        className={`text-xs font-bold uppercase tracking-wide ${error ? "text-red-500" : "text-gray-500"}`}
+      >
         {label}
       </label>
     </div>
@@ -539,9 +634,10 @@ const Input = ({ label, error, ...props }) => (
       className={`
         w-full bg-gray-50 border rounded-lg px-4 py-2.5 text-sm transition-all placeholder:text-gray-400
         focus:bg-white focus:outline-none focus:ring-2 
-        ${error
-          ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
-          : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
+        ${
+          error
+            ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
+            : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
         }
       `}
     />
@@ -571,7 +667,19 @@ const Select = ({ label, options, defaultValue, ...props }) => (
         ))}
       </select>
       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </div>
     </div>
   </div>

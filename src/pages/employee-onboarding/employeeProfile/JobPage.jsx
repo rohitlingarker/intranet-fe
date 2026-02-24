@@ -3,7 +3,6 @@
 import React from "react";
 
 export default function JobPage() {
-
   const jobData = {
     employee_number: "5100008",
     date_of_joining: "23 Apr 2023",
@@ -42,11 +41,10 @@ export default function JobPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen space-y-6">
+    <div className="space-y-6">
 
       {/* ROW 1 */}
-      <div className="grid md:grid-cols-2 gap-6">
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
         <Card title="Job Details">
           <Row label="Employee Number" value={jobData.employee_number} />
           <Row label="Date of Joining" value={jobData.date_of_joining} />
@@ -67,12 +65,10 @@ export default function JobPage() {
           <Row label="Manager" value={organizationData.manager} />
           <Row label="Direct Reports" value={organizationData.direct_reports} />
         </Card>
-
       </div>
 
       {/* ROW 2 */}
-      <div className="grid md:grid-cols-2 gap-6">
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
         <Card title="Employee Time">
           <Row label="Shift" value={timeData.shift} />
           <Row label="Weekly Off Policy" value={timeData.weekly_policy} />
@@ -88,9 +84,7 @@ export default function JobPage() {
           <Row label="Loan Policy" value={otherData.loan_policy} />
           <Row label="AR Ticket Policy" value={otherData.ar_ticket_policy} />
         </Card>
-
       </div>
-
     </div>
   );
 }
@@ -98,20 +92,20 @@ export default function JobPage() {
 /* ---------------- UI COMPONENTS ---------------- */
 
 const Card = ({ title, children }) => (
-  <div className="bg-white border border-gray-200 shadow-sm">
-    <div className="px-5 py-3 border-b bg-gray-100">
-      <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+  <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md border border-indigo-100 overflow-hidden">
+    <div className="px-6 py-4 border-b border-indigo-100 bg-indigo-50/60">
+      <h3 className="text-sm font-semibold text-indigo-800">{title}</h3>
     </div>
-    <div className="p-5 space-y-3">
+    <div className="p-6 space-y-3 text-sm">
       {children}
     </div>
   </div>
 );
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between text-sm">
-    <span className="text-gray-500">{label}</span>
-    <span className="text-gray-900 font-medium text-right max-w-[60%]">
+  <div className="flex justify-between gap-4 text-sm min-w-0">
+    <span className="text-gray-500 shrink-0">{label}</span>
+    <span className="text-gray-900 font-medium text-right break-words min-w-0">
       {value}
     </span>
   </div>

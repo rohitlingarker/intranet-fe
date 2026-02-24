@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+import { X } from "lucide-react";
+import Button from "../../../../components/Button/Button";
 
 export default function LargeModal({
   isOpen,
@@ -6,49 +10,64 @@ export default function LargeModal({
   title,
   subtitle,
   children,
+  primaryText = "Save",
+  onPrimaryClick,
+  loading = false,
 }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 
-      {/* Modal Container */}
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] p-6 relative flex flex-col">
 
-        {/* HEADER */}
-        <div className="px-6 py-4 border-b flex justify-between items-start">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-            {subtitle && (
-              <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-            )}
-          </div>
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+        >
+          <X size={20} />
+        </button>
 
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-lg"
-          >
-            ✕
-          </button>
+        {/* Header */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {title}
+          </h2>
+
+          {subtitle && (
+            <p className="text-sm text-gray-500 mt-1">
+              {subtitle}
+            </p>
+          )}
         </div>
 
-        {/* BODY */}
-        <div className="px-6 py-5 overflow-y-auto flex-1">
+        {/* Body */}
+        <div className="space-y-4 overflow-y-auto pr-2 flex-1">
           {children}
         </div>
 
-        {/* FOOTER */}
-        <div className="px-6 py-4 border-t flex justify-end gap-3 bg-white">
-          <button
+        {/* Footer */}
+        <div className="flex justify-end gap-3 mt-6">
+
+          <Button
+            varient="secondary"
+            size="small"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100"
+            disabled={loading}
           >
             Cancel
-          </button>
+          </Button>
 
-          <button className="px-6 py-2 rounded-lg bg-indigo-700 text-white hover:bg-indigo-800">
-            Save Employee
-          </button>
+          <Button
+            varient="primary"
+            size="small"
+            onClick={onPrimaryClick}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : primaryText}
+          </Button>
+
         </div>
       </div>
     </div>
