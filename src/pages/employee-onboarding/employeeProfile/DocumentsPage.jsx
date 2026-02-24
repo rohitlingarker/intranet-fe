@@ -31,7 +31,7 @@ export default function DocumentsPage({ employee }) {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6">
 
       <h2 className="text-lg font-semibold mb-6">My Documents</h2>
 
@@ -74,21 +74,19 @@ export default function DocumentsPage({ employee }) {
 /* ---------------- DOCUMENT SECTION ---------------- */
 
 const DocumentSection = ({ title, children }) => (
-  <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-
-    <div className="flex justify-between items-center px-5 py-3 border-b bg-gray-100">
+  <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md border border-indigo-100 overflow-hidden">
+    <div className="flex justify-between items-center px-6 py-4 border-b border-indigo-100 bg-indigo-50/60">
       <div className="flex items-center gap-2">
         <FileText size={16} className="text-indigo-600" />
-        <h3 className="text-sm font-semibold text-gray-700">
+        <h3 className="text-sm font-semibold text-indigo-800">
           {title}
         </h3>
       </div>
     </div>
 
-    <div className="p-5 grid md:grid-cols-2 gap-4 text-sm">
+    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
       {children}
     </div>
-
   </div>
 );
 

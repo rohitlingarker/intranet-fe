@@ -21,6 +21,10 @@ export default function EmployeeOnboardingDashboard() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [viewRole, setViewRole] = useState("HR"); // HR | ADMIN
 
+  const handleKpiClick = (status) => {
+    setStatusFilter(status);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -87,42 +91,48 @@ export default function EmployeeOnboardingDashboard() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard title="Total Offers" value={offers.length} icon={Users} />
+            <StatCard title="Total Offers" value={offers.length} icon={Users} onClick={() => handleKpiClick("ALL")} />
             <StatCard
               title="Accepted Offers"
               value={acceptCount}
               icon={Clock}
               color="text-orange-600"
+              onClick={() => handleKpiClick("Accepted")}
             />
             <StatCard
               title="Sent Offers"
               value={sentCount}
               icon={Send}
               color="text-green-600"
+              onClick={() => handleKpiClick("Offered")}
             />
             <StatCard
               title="Draft Offers"
               value={draftCount}
               icon={FileText}
               color="text-blue-600"
+              onClick={() => handleKpiClick("Created")}
             />
             <StatCard
               title="Submitted Offers"
               value={submittedCount}
               icon={FileText}
               color="text-purple-600"
+              onClick={() => handleKpiClick("Submitted")}
             />
             <StatCard
               title="Verified Offers"
               value={offers.filter((o) => o.status === "Verified").length}
               icon={FileText}
               color="text-teal-600"
+              onClick={() => handleKpiClick("Verified")}
             />
             <StatCard
               title="Rejected Offers"
               value={offers.filter((o) => o.status === "Rejected").length}
               icon={FileText}
               color="text-red-600"
+              onClick={() => handleKpiClick("Rejected")}
             />
           </div>
 
@@ -205,9 +215,14 @@ export default function EmployeeOnboardingDashboard() {
 }
 
 /* Reusable Stat Card */
-function StatCard({ title, value, icon: Icon, color = "text-gray-700" }) {
+function StatCard({ title, value, icon: Icon, color = "text-gray-700", onClick }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-black/20 shadow-sm flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl p-4 border border-black/20 shadow-sm 
+                 flex items-center gap-4 transition-all duration-300 
+                 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+    >
       <Icon className={`h-6 w-6 ${color}`} />
       <div>
         <p className="text-sm text-gray-500">{title}</p>
