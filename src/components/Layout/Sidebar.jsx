@@ -360,6 +360,7 @@ const Sidebar = ({ isCollapsed }) => {
                         <li key={item.label}>
                           <NavLink
                             to={item.to}
+                            end
                             className={({ isActive }) =>
                               `block px-4 py-2 text-xs transition-colors ${
                                 isActive
