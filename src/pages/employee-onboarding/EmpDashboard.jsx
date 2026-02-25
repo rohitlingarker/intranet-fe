@@ -7,8 +7,8 @@ import { useAuth } from "../../contexts/AuthContext";
 // import Button from "../../components/Button/Button";
 import EmpTable from "./components/EmpTable";
 import axios from "axios";
-// import OnboardingNavBar from "./components/NavigationBar";
 import AdminApprovalDashboard from "./admin/AdminApprovalDashboard";
+
 
 export default function EmployeeOnboardingDashboard() {
   const navigate = useNavigate();

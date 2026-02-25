@@ -9,6 +9,7 @@ import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import { useEffect, useRef } from "react";
 import { Mail } from "lucide-react";
+import StatusBadge from "../../../components/status/statusbadge";
 
 const PAGE_SIZE = 5;
 
@@ -263,7 +264,11 @@ export default function OffersTable({ offers = [], loading = false }) {
         contact: offer.contact_number || "—",
         designation: offer.designation || "—",
         employee_type: offer.employee_type || "—",
-        status: offer.status || "—",
+        status: offer.status ? (
+          <StatusBadge label={offer.status} size="sm" />
+        ) : (
+          "—"
+        ),
 
         action: (
           <ActionMenu
