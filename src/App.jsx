@@ -30,6 +30,7 @@ import AssetDetail from "./pages/resource_management/assests/AssetDetail.jsx";
 import RMSProjectList from "./pages/resource_management/pages/project/RMSProjectList.jsx";
 import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
 import WorkforceAvailability from "./pages/resource_management/pages/workforce/WorkforceAvailability.jsx";
+import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
 
 // Timesheets
 
@@ -99,6 +100,7 @@ import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeL
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
 import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
+import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -145,6 +147,7 @@ import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegist
 import { showStatusToast } from "./components/toastfy/toast";
 import { IdentificationIcon } from "@heroicons/react/24/outline";
 import OnboardingDashboard from "./pages/employee-onboarding/onboarding-task/OnboardingDashboard.jsx";
+import OnboardingSummaryPage from "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
 
 
 // function App() {
@@ -194,7 +197,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return <>{children}</>;
 };
 
-// ✅ Save last path including query params (?tab=)
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
@@ -230,28 +232,27 @@ const ProjectManager = () => {
 const AppRoutes = () => {
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only perform auto-restoration if we are on the landing page or login redirect
+    const currentPath = location.pathname;
+
+    if (isAuthenticated && (currentPath === "/" || currentPath === "/login")) {
       const lastPath = localStorage.getItem("lastPath");
 
-      // Special case first
-
-      if (lastPath === "/change-password") {
+      if (lastPath === "/change-password" && currentPath !== "/change-password") {
         navigate("/change-password", { replace: true });
       }
-
-      // Other valid last paths
-      else if (lastPath && lastPath !== "/" && lastPath !== "/login") {
+      else if (lastPath && lastPath !== "/" && lastPath !== "/login" && lastPath !== currentPath) {
+        // Only restore if we have a valid last path and aren't already there
         navigate(lastPath, { replace: true });
       }
-
-      // Default fallback
-      else {
-        navigate("/", { replace: true });
+      else if (currentPath === "/") {
+        navigate("/dashboard", { replace: true });
       }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]); // Removed location dependency to avoid navigation loops on every click
 
   return (
     <>
@@ -435,9 +436,11 @@ const AppRoutes = () => {
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
+            <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
+
 
           </Route>
 
@@ -748,18 +751,13 @@ const AppRoutes = () => {
             path="/resource-management/workforce-availability"
             element={<WorkforceAvailability />}
           />
+          <Route
+            path="/resource-management/workforce-availability/resource/:resourceId"
+            element={<ResourceIntelligenceCenter />}
+          />
         </Route>
       </Routes>
       <SaveLastPath />
-      {/* <<<<<<<<< Temporary merge branch 1
-      {/* <Routes>
-          <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes> */}
-      {/* ========= */}
-      {/* <Routes>
-        <Route path="/unauthorized" element={<Unauthorized />} />
-      </Routes> */}
-      {/* >>>>>>>>> Temporary merge branch 2 */}
     </>
   );
 };

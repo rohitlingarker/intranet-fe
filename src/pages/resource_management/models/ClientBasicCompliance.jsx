@@ -29,10 +29,11 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
   const [openComfirmModal, setOpenConfirmModal] = useState(false);
   const [selectedComplianceId, setSelectedComplianceId] = useState(null);
 
-  const ITEMS_PER_PAGE = 1;
+  const ITEMS_PER_PAGE = 3;
 
   const handleSetFormData = (data) => {
     if (!data) return;
+
     setFormData({
       client: {
         clientId: clientId,
@@ -42,6 +43,16 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
       requirementName: data.requirementName,
       mandatoryFlag: data.mandatoryFlag ?? true,
       activeFlag: data.activeFlag ?? true,
+
+      skill:
+        data.requirementType === "SKILL"
+          ? { id: data.skill?.id || null }
+          : undefined,
+
+      certificate:
+        data.requirementType === "CERTIFICATION"
+          ? { certificateId: data.certificate?.certificateId || null }
+          : undefined,
     });
   };
 
@@ -143,97 +154,136 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
   }
 
   const totalPages = Math.ceil(complianceList.length / ITEMS_PER_PAGE);
-  const currentCompliance = complianceList[currentPage - 1];
-
-  console.log("Current - Compliance", currentCompliance);
+  const paginatedData = complianceList.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   return (
     <div className="p-4">
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-3">
-        <div className="flex justify-between items-start relative">
-          <div>
-            <h2 className="text-xl font-semibold mb-3">
-              Basic Compliance Information
-            </h2>
-          </div>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-max w-full text-sm text-center">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Requirement
+                </th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Mandatory
+                </th>
+                {/* <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                Source
+              </th> */}
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
 
-          {canEditConfig && (
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setOpenMenu((prev) => !prev)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <MoreHorizontal />
-              </button>
+            {/* BODY */}
+            <tbody className="divide-y divide-gray-100">
+              {paginatedData.map((item) => (
+                <tr key={item.complianceId} className="hover:bg-gray-50">
+                  {/* REQUIREMENT */}
+                  <td className="px-6 py-4 font-semibold text-gray-900">
+                    {item.requirementName}
+                  </td>
 
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
-                  <button
-                    onClick={() => {
-                      handleSetFormData(currentCompliance);
-                      setOpenMenu(false);
-                      setOpenUpdateCompliance(true);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
+                  {/* TYPE */}
+                  <td className="px-6 py-4 text-gray-700">
+                    {item.requirementType}
+                  </td>
+
+                  {/* MANDATORY */}
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.mandatoryFlag
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
+                      }
+                    `}
+                    >
+                      {item.mandatoryFlag ? "Mandatory" : "Optional"}
+                    </span>
+                  </td>
+
+                  {/* SOURCE */}
+                  {/* <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.isInherited
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-purple-100 text-purple-700"
+                      }
+                    `}
                   >
-                    <Pencil size={14} />
-                    Update
-                  </button>
+                    {item.isInherited ? "Inherited" : "Project"}
+                  </span>
+                </td> */}
 
-                  <button
-                    onClick={() => {
-                      setSelectedComplianceId(currentCompliance.complianceId);
-                      setOpenMenu(false);
-                      setOpenConfirmModal(true);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">Requirement Type</span>
-          <span className="font-medium">
-            {currentCompliance.requirementType}
-          </span>
-        </div>
+                  {/* STATUS */}
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full
+                      ${
+                        item.activeFlag
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }
+                    `}
+                    >
+                      {item.activeFlag ? "Active" : "Inactive"}
+                    </span>
+                  </td>
 
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">Requirement Name</span>
-          <span className="font-medium">
-            {currentCompliance.requirementName}
-          </span>
-        </div>
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4">
+                    {canEditConfig ? (
+                      <div className="flex justify-center items-center gap-4">
+                        <button
+                          title="Edit Compliance"
+                          onClick={() => {
+                            handleSetFormData(item);
+                            setOpenMenu(false);
+                            setOpenUpdateCompliance(true);
+                          }}
+                          className="px-2 text-blue-600 hover:text-blue-800 transition"
+                        >
+                          <Pencil size={14} />
+                        </button>
 
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Mandatory</span>
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              currentCompliance.mandatoryFlag
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-600"
-            }`}
-          >
-            {currentCompliance.mandatoryFlag ? "Yes" : "No"}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Status</span>
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              currentCompliance.activeFlag
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-600"
-            }`}
-          >
-            {currentCompliance.activeFlag ? "Active" : "Inactive"}
-          </span>
+                        <button
+                          title="Delete Compliance"
+                          onClick={() => {
+                            setSelectedComplianceId(item.complianceId);
+                            setOpenMenu(false);
+                            setOpenConfirmModal(true);
+                          }}
+                          className="p-1 text-red-600 hover:text-red-800 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 italic text-xs">
+                        Don't have permission to take actions
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -50,7 +50,7 @@ const [deletingOffer, setDeletingOffer] = useState(false);
     employee_type: "",
     package: "",
     currency: "",
-    // cc_emails: "",
+    cc_emails: "",
   });
 
   function toTitleCase(str) {
@@ -73,13 +73,17 @@ const [deletingOffer, setDeletingOffer] = useState(false);
       );
       setEmployee(res.data);
       setEditData(res.data);
-      // setEditData({
-      //   ...res.data,
-      //   cc_emails: Array.isArray(res.data.cc_emails)
-      //     ? res.data.cc_emails.join(", ")
-      //     : res.data.cc_emails || "",
-      // });
-    } catch {
+      setEditData({
+        ...res.data,
+        cc_emails: Array.isArray(res.data.cc_emails)
+        ? res.data.cc_emails.join(", ")
+        : (res.data.cc_emails || "")
+            .split(",")
+            .map(e => e.trim())
+            .filter(e => e !== "")
+            .join(", "),
+      });
+    } catch (error) {
       showStatusToast("Failed to fetch employee details");
     } finally {
       setLoading(false);
@@ -236,8 +240,14 @@ const actionTaken =
     employee_type: editData.employee_type,
     package: editData.package,
     currency: editData.currency,
-    // cc_emails: Array.isArray(editData.cc_emails)      ? editData.cc_emails
-    //   : editData.cc_emails.split(",").map(email => email.trim()),
+    cc_emails: Array.isArray(editData.cc_emails)
+  ? editData.cc_emails
+  : [...new Set(
+      editData.cc_emails
+        .split(",")
+        .map(e => e.trim())
+        .filter(e => e !== "")
+    )],
   };
     try {
       setUpdating(true);
@@ -446,15 +456,19 @@ finally {
             label="Employee Type"
             value={employee.employee_type}
           />
-          {/* <DetailCard
-            icon={<Mail />}
-            label="CC Emails"
-            value={
-              Array.isArray(employee?.cc_emails)
-                ? employee.cc_emails.join(", ")
-                : employee?.cc_emails || "—"
-            }
-          /> */}
+         <DetailCard
+          icon={<Mail />}
+          label="CC Emails"
+          value={
+            employee?.cc_emails
+              ? employee.cc_emails
+                  .split(",")
+                  .map(e => e.trim())
+                  .filter(Boolean)
+                  .join(", ")
+              : "—"
+          }
+          />
         </div>
 
         <div className="flex gap-4 mt-10">
