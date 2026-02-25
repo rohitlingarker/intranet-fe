@@ -4,7 +4,7 @@ import React from "react";
 
 export default function JobPage() {
   const jobData = {
-    employee_number: "5100008",
+    employee_number: "PAVS001",
     date_of_joining: "23 Apr 2023",
     primary_job: "Graduate Software Engineer",
     employment_type: "Permanent",
@@ -19,7 +19,7 @@ export default function JobPage() {
     location: "Hyderabad Office",
     cost_center: "Not Set",
     legal_entity: "Paves Global Fintech Private Limited",
-    reports_to: "Rama Gopal Durgam",
+    reports_to: "Ram Gopal Varma",
     manager: "Sambi Reddy",
     direct_reports: "0 Employees",
   };
@@ -29,7 +29,7 @@ export default function JobPage() {
     weekly_policy: "Standard Weekly Off (Fri)",
     leave_plan: "General Leave Plan",
     holiday_calendar: "2026",
-    attendance_number: "5100008",
+    attendance_number: "PAVS001",
     attendance_policy: "General Attendance Policy",
     overtime: "Not Set",
   };
