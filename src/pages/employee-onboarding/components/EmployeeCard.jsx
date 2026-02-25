@@ -1,7 +1,8 @@
-import React from "react";
+import React, { use } from "react";
 import { Mail, MoreHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import EmployeeProfileModal from "./EmployeeProfileModal";
+import { useNavigate } from "react-router-dom";
 
 
 const colors = [
@@ -40,6 +41,7 @@ const getInitials = (name) => {
 
 const EmployeeCard = ({ employee, index }) => {
     const [open,setOpen] = useState(false);
+    const navigation = useNavigate();
      const bgColor = getSafeColor(index);
   return (
     <>
@@ -100,7 +102,8 @@ const EmployeeCard = ({ employee, index }) => {
 
       {/* Actions */}
       <div className="mt-5 flex items-center gap-3">
-        <button className="flex-1 bg-blue-800 hover:bg-blue-900 text-white py-2 rounded-lg font-medium transition">
+        <button className="flex-1 bg-blue-800 hover:bg-blue-900 text-white py-2 rounded-lg font-medium transition"
+        onClick={() => navigation(`/employee-onboarding/employeeProfile`)}>
           View Profile
         </button>
 

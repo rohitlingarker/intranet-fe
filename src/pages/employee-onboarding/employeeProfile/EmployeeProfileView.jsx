@@ -21,6 +21,7 @@ import ProfilePage from "./ProfilePage";
 import JobPage from "./JobPage";
 import DocumentsPage from "./DocumentsPage";  
 
+
 export default function EmployeeProfileView() {
   const [activeTab, setActiveTab] = useState("about");
   const [profileImg, setProfileImg] = useState(null);
