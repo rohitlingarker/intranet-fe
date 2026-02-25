@@ -1,7 +1,7 @@
 "use client";
  
 import { useEffect, useState, useMemo } from "react";
-import { Users, X } from "lucide-react";
+import { Users, X, XCircle, ShieldCheck} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
@@ -550,7 +550,7 @@ export default function HrOnboardingDashboard() {
               (e) => e.status?.toUpperCase() === "VERIFIED"
             ).length
           }
-          icon={Users}
+          icon={ShieldCheck}
           onClick={() => handleKpiClick("VERIFIED")}
         />
  
@@ -563,7 +563,7 @@ export default function HrOnboardingDashboard() {
               (e) => e.status?.toUpperCase() === "REJECTED"
             ).length
           }
-          icon={Users}
+          icon={XCircle}
           onClick={() => handleKpiClick("REJECTED")}
         />
  
