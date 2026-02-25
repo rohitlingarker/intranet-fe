@@ -792,7 +792,7 @@ const RMSProjectDetails = () => {
     setLoadingDemand(true);
     try {
       const res = await checkDemandCreation(projectId);
-      setDemandResponse(res);
+      setDemandResponse(res.data);
     } catch (err) {
       console.error("Failed to check demand creation", err);
       toast.error(

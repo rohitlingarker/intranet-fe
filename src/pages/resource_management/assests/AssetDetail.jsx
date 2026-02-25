@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, Fragment } from "react";
+import {jwtDecode} from "jwt-decode";
+
 import { useNavigate, useParams } from "react-router-dom";
 import { getAssetsByClient } from "../services/clientservice";
+import { getAvailableSerialsByAssetId } from "../services/clientservice";
 import {
   ArrowLeft,
   Pencil,
@@ -156,6 +159,37 @@ const AssetDetail = () => {
   const [returnItem, setReturnItem] = useState(null);
   const [kpiData, setKPIData] = useState(null);
 
+  const [availableSerials, setAvailableSerials] = useState([]);
+  const [serialLoading, setSerialLoading] = useState(false);
+
+  const getLoggedInUserName = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return "System";
+
+    const decoded = jwtDecode(token);
+    return decoded?.name || decoded?.email || "System";
+  };
+  const fetchAvailableSerials = async () => {
+    if (!assetId) return;
+
+    setSerialLoading(true);
+    try {
+      const res = await getAvailableSerialsByAssetId(assetId);
+
+      // HARD FILTER: remove any serial already assigned
+      const filtered = (res || []).filter(
+        (s) => !assignedSerialNumbers.includes(s.serialNumber),
+      );
+
+      setAvailableSerials(filtered);
+    } catch (err) {
+      console.error("Failed to fetch serial numbers", err);
+      toast.error("Failed to load available serial numbers");
+    } finally {
+      setSerialLoading(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     resourceName: "",
     // projectId: "",
@@ -205,6 +239,12 @@ const AssetDetail = () => {
       setLoading(false);
     }
   };
+  const assignedSerialNumbers = useMemo(() => {
+    return assignments
+      .filter((a) => a.assignmentStatus !== "RETURNED")
+      .map((a) => a.serialNumber)
+      .filter(Boolean);
+  }, [assignments]);
 
   const fetchKPI = async () => {
     setKPILoading(true);
@@ -359,17 +399,20 @@ const AssetDetail = () => {
 
   const openEditModal = (a) => {
     setEditingAssignment(a);
+
     setFormData({
       resourceName: a.resourceName || "",
       projectName: a.projectName || "",
       assignedDate: a.assignedDate || "",
       expectedReturnDate: a.expectedReturnDate || "",
       assignmentStatus: a.assignmentStatus || "ASSIGNED",
-      assignedBy: a.assignedBy || "",
+      assignedBy: a.assignedBy || getLoggedInUserName(), // 🔥 fallback
       locationDetails: a.locationDetails || "",
       description: a.description || "",
       serialNumber: a.serialNumber || "",
     });
+
+    fetchAvailableSerials();
     setShowModal(true);
   };
 
@@ -420,7 +463,17 @@ const AssetDetail = () => {
             </p>
           </div>
         </div>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
+        <Button
+          variant="primary"
+          onClick={() => {
+            setFormData((prev) => ({
+              ...prev,
+              assignedBy: getLoggedInUserName(),
+            }));
+            setShowModal(true);
+            fetchAvailableSerials();
+          }}
+        >
           Assign Asset
         </Button>
       </div>
@@ -678,19 +731,44 @@ const AssetDetail = () => {
                 </select>
               </div>
 
-              <Input
-                label="Serial Number"
-                name="serialNumber"
-                value={formData.serialNumber}
-                onChange={handleFormChange}
-                required
-              />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Serial Number
+                </label>
+
+                <select
+                  name="serialNumber"
+                  value={formData.serialNumber}
+                  onChange={handleFormChange}
+                  required
+                  disabled={serialLoading}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">
+                    {serialLoading
+                      ? "Loading serials..."
+                      : "Select Serial Number"}
+                  </option>
+
+                  {/* Keep current serial visible in edit mode */}
+                  {editingAssignment && formData.serialNumber && (
+                    <option value={formData.serialNumber}>
+                      {formData.serialNumber} (Current)
+                    </option>
+                  )}
+
+                  {availableSerials.map((s) => (
+                    <option key={s.serialNumber} value={s.serialNumber}>
+                      {s.serialNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Input
                 label="Assigned By"
                 name="assignedBy"
                 value={formData.assignedBy}
-                onChange={handleFormChange}
-                required
+                disabled
               />
               <Input
                 label="Assigned Date"
@@ -728,7 +806,12 @@ const AssetDetail = () => {
                 <select
                   id="locationType"
                   name="locationType"
-                  onChange={(e) => setFormData((prev) => ({ ...prev, locationType: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      locationType: e.target.value,
+                    }))
+                  }
                   required
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                 >

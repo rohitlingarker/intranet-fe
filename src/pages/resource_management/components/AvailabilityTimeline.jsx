@@ -848,60 +848,60 @@ export function AvailabilityTimeline({
             <div className="flex-1 overflow-y-auto no-scrollbar">
               {viewMode === "resource"
                 ? filteredResources.map((resource) => {
-                    const dynamicRowHeight =
-                      resourceRowHeights.get(resource.id) || 48;
-                    return (
-                      <button
-                        key={resource.id}
-                        type="button"
-                        className="w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-4 border-b border-slate-100 hover:bg-muted/50 transition-colors shrink-0"
-                        style={{ height: `${dynamicRowHeight}px` }}
-                        onClick={() => onResourceClick(resource)}
-                      >
-                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
-                          <AvatarFallback className="text-[8px] sm:text-[10px] font-medium bg-primary/10 text-primary">
-                            {resource.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 text-left">
-                          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                            <p className="text-[10px] sm:text-xs font-heading font-bold text-foreground truncate min-w-0 flex-1">
-                              {resource.name}
-                            </p>
-                            {resource.noticeInfo?.isNoticePeriod && (
-                              <span className="text-[7px] sm:text-[9px] font-bold text-red-500 whitespace-nowrap px-0.5 sm:px-1 py-0.5 bg-red-50 rounded shrink-0 hidden xs:inline-block">
-                                On Notice
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">
-                            {resource.role}
+                  const dynamicRowHeight =
+                    resourceRowHeights.get(resource.id) || 48;
+                  return (
+                    <button
+                      key={resource.id}
+                      type="button"
+                      className="w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-4 border-b border-slate-100 hover:bg-muted/50 transition-colors shrink-0"
+                      style={{ height: `${dynamicRowHeight}px` }}
+                      onClick={() => onResourceClick(resource)}
+                    >
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
+                        <AvatarFallback className="text-[8px] sm:text-[10px] font-medium bg-primary/10 text-primary">
+                          {resource.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 text-left">
+                        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                          <p className="text-[10px] sm:text-xs font-heading font-bold text-foreground truncate min-w-0 flex-1">
+                            {resource.name}
                           </p>
+                          {resource.noticeInfo?.isNoticePeriod && (
+                            <span className="text-[7px] sm:text-[9px] font-bold text-red-500 whitespace-nowrap px-0.5 sm:px-1 py-0.5 bg-red-50 rounded shrink-0 hidden xs:inline-block">
+                              On Notice
+                            </span>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })
-                : [...roleGroups.entries()].map(([role, resources]) => {
-                    const dynamicRowHeight = roleRowHeights.get(role) || 48;
-                    return (
-                      <div
-                        key={role}
-                        className="flex flex-col justify-center px-4 border-b border-slate-100"
-                        style={{ height: `${dynamicRowHeight}px` }}
-                      >
-                        <p className="text-sm font-heading font-bold text-slate-800 truncate">
-                          {role}
-                        </p>
-                        <p className="text-[11px] font-sans font-medium text-slate-400">
-                          {resources.length}{" "}
-                          {resources.length === 1 ? "person" : "people"}
+                        <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">
+                          {resource.role}
                         </p>
                       </div>
-                    );
-                  })}
+                    </button>
+                  );
+                })
+                : [...roleGroups.entries()].map(([role, resources]) => {
+                  const dynamicRowHeight = roleRowHeights.get(role) || 48;
+                  return (
+                    <div
+                      key={role}
+                      className="flex flex-col justify-center px-4 border-b border-slate-100"
+                      style={{ height: `${dynamicRowHeight}px` }}
+                    >
+                      <p className="text-sm font-heading font-bold text-slate-800 truncate">
+                        {role}
+                      </p>
+                      <p className="text-[11px] font-sans font-medium text-slate-400">
+                        {resources.length}{" "}
+                        {resources.length === 1 ? "person" : "people"}
+                      </p>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 
@@ -920,35 +920,35 @@ export function AvailabilityTimeline({
 
               {viewMode === "resource"
                 ? filteredResources.map((resource) => (
-                    <ResourceRow
-                      key={resource.id}
-                      resource={resource}
-                      startDate={startDate}
-                      endDate={endDate}
-                      dayWidth={config.dayWidth}
-                      todayOffset={todayOffset}
-                      onResourceClick={onResourceClick}
-                      rowHeight={resourceRowHeights.get(resource.id) || 48}
-                      ticks={ticks}
-                      weeklyTicks={weeklyTicks}
-                      realToday={realToday}
-                    />
-                  ))
+                  <ResourceRow
+                    key={resource.id}
+                    resource={resource}
+                    startDate={startDate}
+                    endDate={endDate}
+                    dayWidth={config.dayWidth}
+                    todayOffset={todayOffset}
+                    onResourceClick={onResourceClick}
+                    rowHeight={resourceRowHeights.get(resource.id) || 48}
+                    ticks={ticks}
+                    weeklyTicks={weeklyTicks}
+                    realToday={realToday}
+                  />
+                ))
                 : [...roleGroups.entries()].map(([role, resources]) => (
-                    <RoleAggregateRow
-                      key={role}
-                      role={role}
-                      resources={resources}
-                      startDate={startDate}
-                      endDate={endDate}
-                      dayWidth={config.dayWidth}
-                      todayOffset={todayOffset}
-                      rowHeight={roleRowHeights.get(role) || 48}
-                      onResourceClick={onResourceClick}
-                      ticks={ticks}
-                      weeklyTicks={weeklyTicks}
-                    />
-                  ))}
+                  <RoleAggregateRow
+                    key={role}
+                    role={role}
+                    resources={resources}
+                    startDate={startDate}
+                    endDate={endDate}
+                    dayWidth={config.dayWidth}
+                    todayOffset={todayOffset}
+                    rowHeight={roleRowHeights.get(role) || 48}
+                    onResourceClick={onResourceClick}
+                    ticks={ticks}
+                    weeklyTicks={weeklyTicks}
+                  />
+                ))}
             </div>
           </div>
         </div>

@@ -30,15 +30,16 @@ export default function EmployeeProfileView() {
   const employee = {
     name: "Busam Lokeswari",
     designation: "Graduate Software Engineer",
-    email: "lokeswaribusam216@gmail.com",
-    phone: "+91 8074718830",
+    email: "lokeswari.busam@gmailpavestechnologies.com",
+    phone: "+91 9876543213",
     office: "Hyderabad Office",
-    empId: "5100008",
+    empId: "PAVS001",
     department: "Engineering",
-    reportingManager: "Rama Gopal Durgam",
+    reportingManager: "Rama Gopal Varma",
     joiningDate: "01 Jan 2024",
     employmentType: "Full-Time",
   };
+
 
   const [about, setAbout] = useState({
     summary: "",

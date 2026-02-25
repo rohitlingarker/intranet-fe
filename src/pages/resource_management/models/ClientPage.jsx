@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
-
+import { formatCurrency } from "../services/clientservice";
 import { getProjectsByClient } from "../services/clientservice";
 import { getProjectSLA } from "../services/clientservice";
 import { getProjectCompliance } from "../services/clientservice";
@@ -95,9 +94,6 @@ const ProjectSLA = ({ data, loading }) => {
       />
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        {/* ===============================
-            HEADER (GRADIENT)
-        =============================== */}
         <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b">
           <p className="text-sm font-semibold text-gray-700">SLA Definitions</p>
         </div>
@@ -555,15 +551,6 @@ const ClientPage = () => {
 
   // Helper function to normalize project ID
   // const getProjectId = (project) => project?.projectId || project?.id;
-
-  // Helper to format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   // Fetch functions
   const fetchClientDetails = async () => {

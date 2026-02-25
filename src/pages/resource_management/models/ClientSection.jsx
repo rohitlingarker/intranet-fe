@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ClientBasicSLA from "./ClientBasicSLA";
 import ClientBasicCompliance from "./ClientBasicCompliance";
 import ClientEscalationContact from "./ClientEscalationContact";
+import ClientEscalationSection from "./ClientEscalationSection";
 // import ClientAssets from "./ClientAssets";
 
 export default function ClientSection({ clientDetails, slaRefetchKey, complianceRefetchKey, escalationRefetchKey }) {
@@ -88,9 +89,10 @@ const visibleTabs = useMemo(
           </motion.div>
         )}
 
-        {activeTab === "escalation" && (
+        {activeTab === "escalation"  && (
           <motion.div key="escalation" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <ClientEscalationContact clientId={clientDetails.clientId} escalationRefetchKey={escalationRefetchKey} />
+            {/* <ClientEscalationContact clientId={clientDetails.clientId} escalationRefetchKey={escalationRefetchKey} /> */}
+            <ClientEscalationSection clientId={clientDetails.clientId} clientContactRefetchKey={escalationRefetchKey} />
           </motion.div>
         )}
       </AnimatePresence>
