@@ -8,6 +8,7 @@ import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
+import StatusBadge from "../../../components/status/statusbadge";
 /* ============================
    CONSTANTS
 ============================ */
@@ -477,7 +478,11 @@ export default function HrOnboardingDashboard() {
  
           designation: emp.designation || "—",
  
-          status: emp.status || "—",
+          status: emp.status ? (
+              <StatusBadge label={emp.status} size="sm" />
+            ) : (
+              "—"
+            ),
  
           action: (
             <span
