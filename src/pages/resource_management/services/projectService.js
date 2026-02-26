@@ -14,24 +14,24 @@ export const getProjects = async ({
   };
 
   if (search) params.search = search;
-  if (filters.readinessStatus) params.readinessStatus = filters.readinessStatus;
-  if (filters.projectStatus) params.projectStatus = filters.projectStatus;
-  if (filters.priorityLevel) params.priorityLevel = filters.priorityLevel;
-  if (filters.riskLevel) params.riskLevel = filters.riskLevel;
+  // if (filters.readinessStatus) params.readinessStatus = filters.readinessStatus;
+  // if (filters.projectStatus) params.projectStatus = filters.projectStatus;
+  // if (filters.priorityLevel) params.priorityLevel = filters.priorityLevel;
+  // if (filters.riskLevel) params.riskLevel = filters.riskLevel;
 
-  try{
+  try {
     const res = await axios.get(
-    `${BASE_URL}/api/projects/get-projects`,
-    {
-      params,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }
-  );
- return res.data;
+      `${BASE_URL}/api/projects/get-projects`,
+      {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return res.data;
   }
-  catch(err){
+  catch (err) {
     throw err;
   }
 };
