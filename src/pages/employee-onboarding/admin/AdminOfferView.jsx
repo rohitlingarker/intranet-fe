@@ -66,7 +66,7 @@ export default function AdminOfferView() {
     const mapped= {
       ...found,
       action: found.action,
-      requested_by_name_name: found.requested_by_name || null,
+      approver_name: found.approver_name || null,
       comments: found.message || found.comments|| "",
       mail: found.mail || "",
     };
@@ -447,7 +447,7 @@ function ApprovalBadge({ status, approver,comments }) {
         }`}
       >
         <span className="font-medium">{status}</span>
-        {requested_by_name && <span className="text-xs opacity-80">• {requested_by_name}</span>}
+        {approver && <span className="text-xs opacity-80">• {approver}</span>}
       </div>
 
       {comments && comments.trim() !== "" && (
