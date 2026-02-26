@@ -2,18 +2,7 @@ import React, { useState } from "react";
 import TaskColumn from "./TaskColumn";
 
 export default function TaskBoard({ tasks, setTasks, onCardClick }) {
-  const [draggedTask, setDraggedTask] = useState(null);
 
-  const updateStatus = (status) => {
-    if (!draggedTask) return;
-
-    const updated = tasks.map((t) =>
-      t.id === draggedTask.id ? { ...t, status } : t
-    );
-
-    setTasks(updated);
-    setDraggedTask(null);
-  };
 
   const todo = tasks.filter((t) => t.status === "todo");
   const progress = tasks.filter((t) => t.status === "progress");
@@ -32,8 +21,6 @@ export default function TaskBoard({ tasks, setTasks, onCardClick }) {
         title="To Do"
         tasks={todo}
         status="todo"
-        onDrop={updateStatus}
-        onDragStart={setDraggedTask}
         onCardClick={onCardClick}
       />
 
@@ -41,8 +28,6 @@ export default function TaskBoard({ tasks, setTasks, onCardClick }) {
         title="In Progress"
         tasks={progress}
         status="progress"
-        onDrop={updateStatus}
-        onDragStart={setDraggedTask}
         onCardClick={onCardClick}
       />
 
@@ -50,8 +35,6 @@ export default function TaskBoard({ tasks, setTasks, onCardClick }) {
         title="Completed"
         tasks={completed}
         status="completed"
-        onDrop={updateStatus}
-        onDragStart={setDraggedTask}
         onCardClick={onCardClick}
       />
     </div>

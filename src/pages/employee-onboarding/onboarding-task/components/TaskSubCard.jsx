@@ -121,6 +121,26 @@ export default function TaskSubCard({ task, anchorRef, onClose, onSave }) {
               </select>
             )}
           </div>
+          <div>
+            <div style={labelStyle}>Status</div>
+
+            {!editMode ? (
+              <div style={{ textTransform: "capitalize" }}>
+                {task.status}
+              </div>
+            ) : (
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                style={inputStyle}
+              >
+                <option value="todo">To Do</option>
+                <option value="progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            )}
+          </div>
 
           <div>
             <div style={labelStyle}>Description</div>

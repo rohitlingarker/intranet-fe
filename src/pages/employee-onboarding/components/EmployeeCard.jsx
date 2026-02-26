@@ -36,9 +36,6 @@ const getInitials = (name) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-
-
-
 const EmployeeCard = ({ employee, index }) => {
     const [open,setOpen] = useState(false);
     const navigation = useNavigate();
