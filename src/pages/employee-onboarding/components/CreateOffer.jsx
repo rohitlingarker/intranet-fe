@@ -34,7 +34,7 @@ export default function CreateOffer() {
     employee_type: "",
     package: "",
     currency: "",
-    cc_mails: [],
+    cc_emails: [],
   });
 
   const currencies = [
@@ -133,7 +133,7 @@ export default function CreateOffer() {
       employee_type: "",
       package: "",
       currency: "",
-      cc_mails: [],
+      cc_emails: [],
     });
     setShowCancelConfirm(false);
   };
@@ -295,7 +295,7 @@ export default function CreateOffer() {
 
 
             value={ccOptions.filter((opt) =>
-              formData.cc_mails?.includes(opt.value)
+              formData.cc_emails?.includes(opt.value)
             )}
 
             onChange={(selected) => {
@@ -305,7 +305,7 @@ export default function CreateOffer() {
 
               setFormData({
                 ...formData,
-                cc_mails: emails,
+                cc_emails: emails,
               });
             }}
           />
