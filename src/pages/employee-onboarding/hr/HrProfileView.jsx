@@ -88,8 +88,8 @@ experience:false,
 
 setDocStatus({});
 setActiveTab("overview");
-// remove old verification progress if status is Submitted
-localStorage.removeItem(`hr_verify_${user_uuid}`);
+// // remove old verification progress if status is Submitted
+// localStorage.removeItem(`hr_verify_${user_uuid}`);
 
 const saved = localStorage.getItem(`hr_verify_${user_uuid}`);
 
