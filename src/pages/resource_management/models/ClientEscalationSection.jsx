@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ClientEscalationContact from "./ClientEscalationContact";
+import CompanyEscalation from "./CompanyEscalation";
 
 export default function ClientEscalationSection({ clientId, clientContactRefetchKey }) {
   const [activeTab, setActiveTab] = useState("client");
@@ -83,7 +84,7 @@ export default function ClientEscalationSection({ clientId, clientContactRefetch
               transition={{ duration: 0.3 }}
               className="absolute w-full"
             >
-              <ClientEscalationContact clientId={clientId} escalationRefetchKey={clientContactRefetchKey} />
+              <CompanyEscalation />
             </motion.div>
           )}
         </AnimatePresence>
