@@ -10,7 +10,7 @@ export default function ClientSection({ clientDetails, slaRefetchKey, compliance
   // const [activeTab, setActiveTab] = useState("escalation");
   const TAB_CONFIG = [
   { key: "sla", label: "SLA", enabled: (d) => d?.SLA },
-  { key: "compliance", label: "Compliance", enabled: (d) => d?.compliance },
+  { key: "compliance", label: "Pre-requisites", enabled: (d) => d?.compliance },
   {
     key: "escalation",
     label: "Escalation Contact",

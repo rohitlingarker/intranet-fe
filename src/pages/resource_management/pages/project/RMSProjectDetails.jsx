@@ -820,7 +820,7 @@ const RMSProjectDetails = () => {
   }, [activeTab, projectId]);
 
   useEffect(() => {
-    if (activeTab === "compliance") {
+    if (activeTab === "pre-requisites") {
       fetchProjectCompliance();
     }
     console.log("Catogories:", categories);
@@ -895,7 +895,7 @@ const RMSProjectDetails = () => {
         onClick={() => navigate(-1)}
         className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm mb-3"
       >
-        <ArrowLeft size={18} /> 
+        <ArrowLeft size={18} />
       </button>
 
       {/* Header */}
@@ -912,11 +912,10 @@ const RMSProjectDetails = () => {
                 }`}
               > */}
               <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  project.projectStatus === "ACTIVE"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-gray-100 text-gray-600"
-                }`}
+                className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-gray-100 text-gray-600"
+                  }`}
               >
                 {project.projectStatus}
               </span>
@@ -940,11 +939,10 @@ const RMSProjectDetails = () => {
             {/* Create Demand */}
             <button
               title={!demandResponse?.create ? demandResponse?.reason : ""}
-              className={`bg-blue-800 px-4 py-2 rounded-lg text-white text-xs font-semibold ${
-                loadingDemand || !demandResponse?.create
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-blue-900"
-              }`}
+              className={`bg-blue-800 px-4 py-2 rounded-lg text-white text-xs font-semibold ${loadingDemand || !demandResponse?.create
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-900"
+                }`}
               disabled={loadingDemand || !demandResponse?.create}
               onClick={() => setModalOpen(true)}
             >
@@ -961,15 +959,14 @@ const RMSProjectDetails = () => {
             "financials",
             "overlaps",
             "sla",
-            "compliance",
+            "pre-requisites",
             "escalation",
           ].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${
-                activeTab === tab ? "text-[#263383]" : "text-gray-500"
-              }`}
+              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
+                }`}
             >
               {tab}
               {tab === "overlaps" && overlaps.length > 0 && (
@@ -1012,11 +1009,10 @@ const RMSProjectDetails = () => {
                   </label>
                   <div className="flex items-center gap-2 text-gray-600 font-medium">
                     <ShieldAlert
-                      className={`h-4 w-4 ${
-                        project.riskLevel === "HIGH"
-                          ? "text-red-500"
-                          : "text-green-500"
-                      }`}
+                      className={`h-4 w-4 ${project.riskLevel === "HIGH"
+                        ? "text-red-500"
+                        : "text-green-500"
+                        }`}
                     />
                     {project.riskLevel}
                   </div>
@@ -1127,11 +1123,10 @@ const RMSProjectDetails = () => {
                 setConfigType("sla");
                 setOpenConfigModal(true);
               }}
-              className={`px-4 py-2 rounded-lg text-sm transition-all ${
-                projectSlas.length >= 3
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#263383] text-white hover:opacity-90"
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm transition-all ${projectSlas.length >= 3
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#263383] text-white hover:opacity-90"
+                }`}
             >
               {projectSlas.length >= 3 ? "Limit Reached (3/3)" : "+ Create SLA"}
             </button>
@@ -1175,11 +1170,10 @@ const RMSProjectDetails = () => {
                               if (sla.isInherited) return; // 🔒 Prevent inherited edit
                               handleEditSla(sla);
                             }}
-                            className={`transition-colors ${
-                              sla.isInherited
-                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
-                                : "text-blue-600 hover:text-blue-800"
-                            }`}
+                            className={`transition-colors ${sla.isInherited
+                              ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                              : "text-blue-600 hover:text-blue-800"
+                              }`}
                             title={
                               sla.isInherited
                                 ? "Cannot edit inherited SLAs"
@@ -1214,21 +1208,21 @@ const RMSProjectDetails = () => {
 
       {activeTab === "financials" && <ProjectFinancialsInline />}
 
-      {activeTab === "compliance" && (
+      {activeTab === "pre-requisites" && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-semibold">
-              Project Compliance Configuration
+              Project Pre-requisites Configuration
             </h3>
             <button
               onClick={() => {
                 setFormData(DEFAULT_FORM_STATE);
-                setConfigType("compliance");
+                setConfigType("pre-requisites");
                 setOpenConfigModal(true);
               }}
               className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
             >
-              + Create Compliance
+              + Create Pre-requisites
             </button>
           </div>
 
@@ -1268,11 +1262,10 @@ const RMSProjectDetails = () => {
                         <td className="p-4 text-center">
                           <div className="flex justify-center items-center gap-2">
                             <span
-                              className={`px-2 py-1 rounded text-[10px] font-bold ${
-                                comp.activeFlag
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-red-50 text-red-700"
-                              }`}
+                              className={`px-2 py-1 rounded text-[10px] font-bold ${comp.activeFlag
+                                ? "bg-green-50 text-green-700"
+                                : "bg-red-50 text-red-700"
+                                }`}
                             >
                               {comp.activeFlag ? "ACTIVE" : "INACTIVE"}
                             </span>
@@ -1294,11 +1287,10 @@ const RMSProjectDetails = () => {
                                 if (comp.isInherited) return; // 🔒 Prevent inherited edit
                                 handleEditCompliance(comp);
                               }}
-                              className={`${
-                                comp.isInherited
-                                  ? "text-gray-300 cursor-not-allowed pointer-events-none"
-                                  : "text-blue-600 hover:text-blue-800"
-                              }`}
+                              className={`${comp.isInherited
+                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                                : "text-blue-600 hover:text-blue-800"
+                                }`}
                               title={
                                 comp.isInherited
                                   ? "Cannot edit inherited compliance"
@@ -1378,11 +1370,10 @@ const RMSProjectDetails = () => {
 
                       <td className="p-4 text-center">
                         <span
-                          className={`px-2 py-1 rounded text-[10px] font-bold ${
-                            esc.activeFlag
-                              ? "bg-green-50 text-green-700"
-                              : "bg-red-50 text-red-700"
-                          }`}
+                          className={`px-2 py-1 rounded text-[10px] font-bold ${esc.activeFlag
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                            }`}
                         >
                           {esc.activeFlag ? "ACTIVE" : "INACTIVE"}
                         </span>
@@ -1402,11 +1393,10 @@ const RMSProjectDetails = () => {
                               if (esc.source === "INHERITED") return;
                               handleEditEscalation(esc);
                             }}
-                            className={`${
-                              esc.source === "INHERITED"
-                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
-                                : "text-blue-600 hover:text-blue-800"
-                            }`}
+                            className={`${esc.source === "INHERITED"
+                              ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                              : "text-blue-600 hover:text-blue-800"
+                              }`}
                             title={
                               esc.source === "INHERITED"
                                 ? "Cannot edit inherited escalation"
@@ -1457,13 +1447,12 @@ const RMSProjectDetails = () => {
             <div className="px-6 py-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-semibold capitalize">
                 {inheritMode
-                  ? `Inherit ${
-                      configType === "sla"
-                        ? "SLAs"
-                        : configType === "compliance"
-                          ? "Compliance"
-                          : "Escalation Contacts"
-                    } from ${project?.client?.client_name || "Client"}`
+                  ? `Inherit ${configType === "sla"
+                    ? "SLAs"
+                    : configType === "compliance"
+                      ? "Compliance"
+                      : "Escalation Contacts"
+                  } from ${project?.client?.client_name || "Client"}`
                   : `Create ${configType} Configuration`}
               </h2>
             </div>
@@ -1502,7 +1491,7 @@ const RMSProjectDetails = () => {
                     /* INHERITANCE TABLE VIEW */
                     <div className="space-y-4">
                       {clientCompliance.length > 0 &&
-                      clientCompliance.every((c) => c.isAlreadyMapped) ? (
+                        clientCompliance.every((c) => c.isAlreadyMapped) ? (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
                           <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
                           <p className="text-sm text-blue-800 font-medium">
@@ -1622,7 +1611,7 @@ const RMSProjectDetails = () => {
                     <div className="space-y-4">
                       {/* --- PLACE THE EMPTY STATE / VALIDATION MESSAGE HERE --- */}
                       {clientSlas.length > 0 &&
-                      clientSlas.every((sla) => sla.isAlreadyMapped) ? (
+                        clientSlas.every((sla) => sla.isAlreadyMapped) ? (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
                           <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
                           <p className="text-sm text-blue-800">
@@ -1783,9 +1772,8 @@ const RMSProjectDetails = () => {
                             {clientEscalations.map((contact) => (
                               <tr
                                 key={contact.contactId}
-                                className={`hover:bg-gray-50 ${
-                                  contact.isAlreadyMapped ? "bg-gray-50/50" : ""
-                                }`}
+                                className={`hover:bg-gray-50 ${contact.isAlreadyMapped ? "bg-gray-50/50" : ""
+                                  }`}
                               >
                                 <td className="p-3">
                                   <input

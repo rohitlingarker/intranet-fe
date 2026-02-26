@@ -95,8 +95,8 @@ import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/Em
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
-import SummaryPage from "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
+import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
+import EmployeeDocumentsPage from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
@@ -432,7 +432,7 @@ const AppRoutes = () => {
 
             <Route path="employee-verification" element={<EmployeeVerification />} />
             <Route path="employee-documents-template" element={<EmployeeDocumentsTemplate />} />
-            <Route path="employeedocuments" element={<EmployeeDocuments />} />
+            <Route path="employeedocuments" element={<EmployeeDocumentsPage />} />
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />

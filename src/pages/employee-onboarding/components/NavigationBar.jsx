@@ -44,6 +44,7 @@ const parentNav = [
       "/employee-onboarding/hr-configuration",
       "/employee-onboarding/admin",
     ],
+    exactRoot: true,
     redirect: "/employee-onboarding",
   },
   {
@@ -57,7 +58,7 @@ const parentNav = [
   },
   {
     label: "Employee Verification",
-    match: ["/employee-onboarding/hr"],
+    match: ["/employee-onboarding/hr/"],
     redirect: "/employee-onboarding/hr",
   },
   {
@@ -158,14 +159,24 @@ const parentNav = [
 
     {/* ================= PARENT NAVBAR (TOP) ================= */}
 
-    <div className="border-b bg-white">
+    <div className="relative border-b bg-white z-30">
       <div className="flex gap-12 px-6 pt-3">
 
         {parentNav.map((item) => {
 
-          const isActive = item.match.some((path) =>
-            location.pathname.startsWith(path)
-          );
+          // const isActive = item.match.some((path) =>
+          //   location.pathname === path ||
+          //   location.pathname.startsWith(path)
+          // );
+          const isActive = item.match.some((path) => {
+            if (item.exactRoot && path === "/employee-onboarding") {
+              return location.pathname === "/employee-onboarding";
+            }
+            return (
+              location.pathname === path ||
+              location.pathname.startsWith(path + "/")
+            );
+          });
 
           return (
             <div
@@ -186,10 +197,10 @@ const parentNav = [
               {/* Green triangle indicator */}
               {isActive && (
                 <span
-                  className="absolute left-1/2 -bottom-1 h-0 w-0 
-                  -translate-x-1/2 
-                  border-l-6 border-r-6 border-b-6
-                  border-l-transparent border-r-transparent border-b-green-500"
+                 className="absolute left-1/2 -bottom-[10px] -translate-x-1/2
+                  h-0 w-0 z-40
+                  border-l-8 border-r-8 border-b-8
+                  border-l-transparent border-r-transparent border-b-blue-700"
                 />
               )}
             </div>
@@ -198,7 +209,7 @@ const parentNav = [
       </div>
     </div>
 
-    <div className="border-b border-gray-200 mt-4">
+    <div className="relative border-b bg-gray-200 mt-4 z-10">
       <div className="flex gap-10 px-6">
         {navToRender.map((item) => {
 

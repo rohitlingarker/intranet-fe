@@ -107,7 +107,7 @@ const ClientEscalationContact = ({ clientId, escalationRefetchKey }) => {
   if (loading) {
     return (
       <div className="p-4 flex justify-center items-center">
-        <LoadingSpinner text="Loading SLA Information..." />
+        <LoadingSpinner text="Loading Escalation Information..." />
       </div>
     );
   }
