@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import TaskBoard from "./components/TaskBoard";
 import AddTaskModal from "./components/AddTaskModal";
-import TaskDetailsDrawer from "./components/TaskDetailsDrawer"
+
 
 export default function OnboardingTask() {
   const [tasks, setTasks] = useState([
@@ -123,12 +123,6 @@ export default function OnboardingTask() {
         onSave={(task) => setTasks([...tasks, task])}
       />
 
-      {/* Drawer (optional — currently not triggered) */}
-      <TaskDetailsDrawer
-        task={selectedTask}
-        onClose={() => setSelectedTask(null)}
-        onUpdate={updateTask}
-      />
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default function ProfilePage({ activeTab }) {
     work_email: "lokeswari.busam@pavestechnologies.com",
     personal_email: "lokeswari.busam@gmail.com",
     country_code: "+91",
-    mobile_number: "8074718830",
+    mobile_number: "9876543213",
     emergency_number: "9876543210",
     work_number: "",
     residence_number: "",

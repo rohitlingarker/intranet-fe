@@ -100,20 +100,13 @@ const GenericTable = ({
                 }`}
               >
                 {columns.map((col, colIndex) => (
+                  // 
                   <td
-                    key={colIndex}
-                    className={`p-3 text-gray-700 font-medium relative overflow-visible ${
-                      col.toLowerCase() === "status"
-                        ? row[col]?.toUpperCase() === "APPROVED"  ||  row[col]?.toUpperCase() === "ACTIVE"
-                          ? "text-green-600"
-                          : row[col]?.toUpperCase() === "REJECTED" ||  row[col]?.toUpperCase() === "InACTIVE"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                        : ""
-                    }`}
-                  >
-                    {row[col]}
-                  </td>
+                  key={colIndex}
+                  className="p-3 text-gray-700 font-medium relative overflow-visible"
+                >
+                 {row[col]}
+                </td>
                 ))}
               </tr>
             ))}

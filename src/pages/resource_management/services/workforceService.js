@@ -170,6 +170,22 @@ export const createRoleExpectation = async (payload) => {
   }
 };
 
+export const getRoleExpectations = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/admin/role-expectations`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getProficiencyLevels = async () => {
   try {
     const response = await axios.get(

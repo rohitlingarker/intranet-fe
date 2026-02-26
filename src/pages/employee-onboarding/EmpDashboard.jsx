@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { FileText, Send, Users, Clock } from "lucide-react";
+import { FileEdit, Send, Users, ShieldCheck, XCircle, FileText, Handshake } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 // import Button from "../../components/Button/Button";
 import EmpTable from "./components/EmpTable";
 import axios from "axios";
-// import OnboardingNavBar from "./components/NavigationBar";
 import AdminApprovalDashboard from "./admin/AdminApprovalDashboard";
+
 
 export default function EmployeeOnboardingDashboard() {
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ export default function EmployeeOnboardingDashboard() {
             <StatCard
               title="Accepted Offers"
               value={acceptCount}
-              icon={Clock}
+              icon={Handshake}
               color="text-orange-600"
               onClick={() => handleKpiClick("Accepted")}
             />
@@ -109,7 +109,7 @@ export default function EmployeeOnboardingDashboard() {
             <StatCard
               title="Draft Offers"
               value={draftCount}
-              icon={FileText}
+              icon={FileEdit}
               color="text-blue-600"
               onClick={() => handleKpiClick("Created")}
             />
@@ -123,14 +123,14 @@ export default function EmployeeOnboardingDashboard() {
             <StatCard
               title="Verified Offers"
               value={offers.filter((o) => o.status === "Verified").length}
-              icon={FileText}
+              icon={ShieldCheck}
               color="text-teal-600"
               onClick={() => handleKpiClick("Verified")}
             />
             <StatCard
               title="Rejected Offers"
               value={offers.filter((o) => o.status === "Rejected").length}
-              icon={FileText}
+              icon={XCircle}
               color="text-red-600"
               onClick={() => handleKpiClick("Rejected")}
             />

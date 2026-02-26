@@ -29,7 +29,7 @@ const EmployeeProfileModal = ({ employee, onClose }) => {
           </div>
 
           <div className="flex items-center gap-4 text-gray-500">
-            <ExternalLink className="w-5 h-5 cursor-pointer hover:text-gray-700" />
+            {/* <ExternalLink className="w-5 h-5 cursor-pointer hover:text-gray-700" /> */}
             <X
               className="w-5 h-5 cursor-pointer hover:text-gray-700"
               onClick={onClose}

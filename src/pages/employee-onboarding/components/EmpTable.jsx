@@ -9,6 +9,7 @@ import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
 import { useEffect, useRef } from "react";
 import { Mail } from "lucide-react";
+import StatusBadge from "../../../components/status/statusbadge";
 
 const PAGE_SIZE = 5;
 
@@ -138,48 +139,9 @@ export default function OffersTable({ offers = [], loading = false }) {
     }
   };
 
-  /*
-  const handleBulkJoin = () => {
-    if (selectedIds.length === 0) return;
+ 
 
-    const selectedUsers = offers.filter((offer) =>
-      selectedIds.includes(offer.user_uuid)
-    );
 
-    const emailList = selectedUsers
-      .map((user) => user.mail)
-      .filter(Boolean)
-      .join(";");
-
-    if (!emailList) {
-      showStatusToast("❌ No valid email addresses found");
-      return;
-    }
-
-    const subject = encodeURIComponent("Joining Letter – Welcome Aboard");
-
-    const body = encodeURIComponent(
-      `Hello Team,
-
-      Please find your joining details below.
-
-      Joining Date: [DD/MM/YYYY]
-      Reporting Time: 9:30 AM
-      Location: Office / Remote
-
-      Regards,
-      HR Team`
-    );
-
-    const mailtoLink = `mailto:${emailList}?subject=${subject}&body=${body}`;
-
-    showStatusToast(`Redirecting to email app`, "info");
-
-    window.location.href = mailtoLink;
-
-    cancelBulkJoin();
-  };
-  */
 
   /* -------------------- Table Config -------------------- */
 
@@ -222,10 +184,6 @@ export default function OffersTable({ offers = [], loading = false }) {
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
 
-      /*
-      const isStatusVerified =
-        String(offer.status || "").trim().toUpperCase() === "VERIFIED";
-      */
 
       const isSubmitted =
         String(offer.status || "").trim().toUpperCase() === "SUBMITTED";
@@ -257,13 +215,20 @@ export default function OffersTable({ offers = [], loading = false }) {
         }),
 
         candidate_name:
-          `${offer.first_name || ""} ${offer.last_name || ""}`.trim() || "—",
+          `${offer.first_name || ""} ${offer.last_name || ""}`
+          .toLowerCase()
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+          .trim() || "—",
 
-        mail: offer.mail || "—",
+        mail: offer.mail ? offer.mail.toLowerCase() : "—" ,
         contact: offer.contact_number || "—",
-        designation: offer.designation || "—",
+        designation: offer.designation ? offer.designation.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()): "—",
         employee_type: offer.employee_type || "—",
-        status: offer.status || "—",
+        status: offer.status ? (
+          <StatusBadge label={offer.status} size="sm" />
+        ) : (
+          "—"
+        ),
 
         action: (
           <ActionMenu

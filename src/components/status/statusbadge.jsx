@@ -1,12 +1,22 @@
 import React from "react";
 import clsx from "clsx";
 
-/**
- * Reusable Status Badge
- * Colors are fixed: green (+ve), yellow (pending/holding), red (-ve)
- * Text is dynamic (any status label)
- */
+
+// const normalizeStatus = (label = "") => {
+//   const map = {
+//     accepted: "active",
+//     verified: "active",
+//     submitted: "pending",
+//     rejected: "reject",
+//   };
+
+//   const key = label.toLowerCase();
+//   return map[key] || key;
+// };
+
+
 const StatusBadge = ({ label, size = "md" }) => {
+  const raw = label?.toLowerCase() || "";
   const normalized = label.toLowerCase();
 
   let bgColor = "bg-gray-200";
@@ -16,7 +26,7 @@ const StatusBadge = ({ label, size = "md" }) => {
     normalized.includes("approve") ||
     normalized.includes("complete") ||
     normalized.includes("release") ||
-    normalized.includes("active")
+    normalized.includes("active") 
   ) {
     bgColor = "bg-green-100";
     textColor = "text-green-700";
@@ -36,6 +46,37 @@ const StatusBadge = ({ label, size = "md" }) => {
     bgColor = "bg-red-100";
     textColor = "text-red-600";
   }
+
+  if (raw === "offered") {
+    bgColor = "bg-blue-100";
+    textColor = "text-blue-700";
+  }
+
+  if (raw === "created") {
+    bgColor = "bg-gray-100";
+    textColor = "text-gray-700";
+  }
+
+  if (raw === "reject") {
+    bgColor = "bg-red-100";
+    textColor = "text-red-700";
+  }
+
+  if (raw === "verified") {
+    bgColor = "bg-green-100";
+    textColor = "text-green-700";
+  }
+
+  if (raw === "accepted") {
+    bgColor = "bg-orange-100";
+    textColor = "text-orange-700";
+  }
+
+  if (raw === "submitted") {
+    bgColor = "bg-yellow-100";
+    textColor = "text-yellow-700";
+  }
+
 
   const sizeStyles = {
     sm: "text-xs px-2 py-0.5",

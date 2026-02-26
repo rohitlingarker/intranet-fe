@@ -9,16 +9,16 @@ export default function DocumentsPage({ employee }) {
 
   const documents = {
     aadhaar: {
-      number: "XXXX-XXXX-4779",
+      number: "XXXX-XXXX-4557",
       name: employee.name,
-      address: "5-15, Eshwar Colony",
+      address: "34/87-1, Anjay Colony",
       gender: "Female",
       status: "submitted"
     },
     pan: {
       number: "XXXXX473G",
       name: employee.name,
-      dob: "13 Jun 2001",
+      dob: "16 Dec 2002",
       parent_name: "Venkata Narasayya",
       status: "submitted"
     },

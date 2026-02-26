@@ -31,6 +31,8 @@ import RMSProjectList from "./pages/resource_management/pages/project/RMSProject
 import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
 import WorkforceAvailability from "./pages/resource_management/pages/workforce/WorkforceAvailability.jsx";
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
+import DemandWorkspace from "./pages/resource_management/demand/pages/DemandWorkspace.jsx";
+import DemandDetailsPage from "./pages/resource_management/demand/pages/DemandDetailsPage.jsx";
 
 // Timesheets
 
@@ -94,12 +96,12 @@ import EmployeeVerification from "./pages/employee-onboarding/employee-verificat
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
 import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-import EmployeeDocuments from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
+import EmployeeDocumentsPage from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
-import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
+import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx";
 import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
 
 // ✅ User Management
@@ -367,7 +369,7 @@ const AppRoutes = () => {
             element={<RiskRegisterPage />}
           />
           {/* Employee Onboarding */}
-   
+
           {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
           <Route path="/employee-onboarding/onboarding-task" element={<OnboardingTask />} />
           <Route path="/employee-onboarding/employee-directory" element={<EmployeeDirectory />} />
@@ -409,17 +411,17 @@ const AppRoutes = () => {
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
 
-          <Route path="hr-configuration" element={<HrConfiguration />} />
-          <Route path="hr-configuration/country" element={<CountryManagement />} />
-          <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
-          <Route path="hr-configuration/mapping" element={<CountryIdentityMapping />} />
-          <Route path="hr-configuration/education" element={<EducationDashboard />} />
-          <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
-          <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
-          <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
+            <Route path="hr-configuration" element={<HrConfiguration />} />
+            <Route path="hr-configuration/country" element={<CountryManagement />} />
+            <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
+            <Route path="hr-configuration/mapping" element={<CountryIdentityMapping />} />
+            <Route path="hr-configuration/education" element={<EducationDashboard />} />
+            <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
+            <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
+            <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
 
-          <Route path="hr" element={<HrOnboardingDashboard />} />
-          <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
+            <Route path="hr" element={<HrOnboardingDashboard />} />
+            <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
 
             <Route path="admin/approval-dashboard" element={<AdminApprovalDashboard />} />
             <Route path="admin/offer/:user_uuid" element={<AdminOfferView />} />
@@ -430,7 +432,7 @@ const AppRoutes = () => {
 
             <Route path="employee-verification" element={<EmployeeVerification />} />
             <Route path="employee-documents-template" element={<EmployeeDocumentsTemplate />} />
-            <Route path="employeedocuments" element={<EmployeeDocuments />} />
+            <Route path="employeedocuments" element={<EmployeeDocumentsPage />} />
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
@@ -754,6 +756,22 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/workforce-availability/resource/:resourceId"
             element={<ResourceIntelligenceCenter />}
+          />
+          <Route
+            path="/resource-management/demand"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <DemandWorkspace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/demand/:demandId"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <DemandDetailsPage />
+              </ProtectedRoute>
+            }
           />
         </Route>
       </Routes>
