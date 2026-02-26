@@ -33,10 +33,8 @@ const userManagementSubmenu = [
 const resourceManagementSubmenu = [
   { label: "Client Management", to: "/resource-management" },
   { label: "Resource Project Management", to: "/resource-management/projects" },
-  // { label: "Resource Allocation", to: "/resource-management/allocation" },
-  // { label: "Skill Matrix", to: "/resource-management/skills" },
   { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
-
+  { label: "Demand Management", to: "/resource-management/demand" },
 ];
 
 const employeeOnboardingSubmenu = [
@@ -241,9 +239,8 @@ const Sidebar = ({ isCollapsed }) => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-64"
-      } border-r border-[#0f1a3a]`}
+      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"
+        } border-r border-[#0f1a3a]`}
     >
       {/* Branding */}
       <div className="p-6 border-b border-[#0f1a3a] flex items-center justify-between gap-3">
@@ -275,11 +272,10 @@ const Sidebar = ({ isCollapsed }) => {
           <li>
             <Link
               to="/dashboard"
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                location.pathname === "/dashboard"
+              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname === "/dashboard"
                   ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                   : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-              }`}
+                }`}
               title={isCollapsed ? "Dashboard" : ""}
             >
               <LayoutDashboard className="h-5 w-5 shrink-0" />
@@ -299,11 +295,10 @@ const Sidebar = ({ isCollapsed }) => {
               {isAdmin && !isRM ? (
                 <Link
                   to="/resource-management"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    location.pathname.startsWith("/resource-management")
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management")
                       ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                       : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
+                    }`}
                   title={isCollapsed ? "Resource Management" : ""}
                 >
                   <UserCog2 className="h-5 w-5 shrink-0" />
@@ -312,11 +307,10 @@ const Sidebar = ({ isCollapsed }) => {
               ) : (isPM && !isRM) ? (
                 <Link
                   to="/resource-management/projects"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    location.pathname.startsWith("/resource-management/projects")
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management/projects")
                       ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                       : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
+                    }`}
                   title={isCollapsed ? "Resource Project Management" : ""}
                 >
                   <UserCog2 className="h-5 w-5 shrink-0" />
@@ -326,11 +320,10 @@ const Sidebar = ({ isCollapsed }) => {
                 <>
                   {/* Resource Manager → Show Hover Menu */}
                   <div
-                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                      location.pathname.startsWith("/resource-management")
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/resource-management")
                         ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                         : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                    }`}
+                      }`}
                   >
                     <UserCog2 className="h-5 w-5 shrink-0" />
 
@@ -338,9 +331,8 @@ const Sidebar = ({ isCollapsed }) => {
                       <>
                         <span className="flex-1">Resource Management</span>
                         <ChevronRight
-                          className={`h-4 w-4 transition-all duration-300 ${
-                            rmHovered ? "translate-x-1" : ""
-                          }`}
+                          className={`h-4 w-4 transition-all duration-300 ${rmHovered ? "translate-x-1" : ""
+                            }`}
                         />
                       </>
                     )}
@@ -349,9 +341,8 @@ const Sidebar = ({ isCollapsed }) => {
                   {/* Show submenu only for Resource Manager */}
                   {rmHovered && isRM && (
                     <ul
-                      className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                        isCollapsed ? "left-20" : "left-64"
-                      }`}
+                      className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                        }`}
                       style={{ top: `${submenuTop}px` }}
                       onMouseEnter={handleRmMouseEnter}
                       onMouseLeave={handleRmMouseLeave}
@@ -362,10 +353,9 @@ const Sidebar = ({ isCollapsed }) => {
                             to={item.to}
                             end
                             className={({ isActive }) =>
-                              `block px-4 py-2 text-xs transition-colors ${
-                                isActive
-                                  ? "bg-blue-100 text-[#0a174e] font-semibold"
-                                  : "hover:bg-[#263383] hover:text-white"
+                              `block px-4 py-2 text-xs transition-colors ${isActive
+                                ? "bg-blue-100 text-[#0a174e] font-semibold"
+                                : "hover:bg-[#263383] hover:text-white"
                               }`
                             }
                           >
@@ -389,11 +379,10 @@ const Sidebar = ({ isCollapsed }) => {
               onMouseLeave={handleUserMouseLeave}
             >
               <div
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                  location.pathname.startsWith("/user-management")
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/user-management")
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                }`}
+                  }`}
                 title={isCollapsed ? "User Management" : ""}
               >
                 <Users className="h-5 w-5 shrink-0" />
@@ -401,9 +390,8 @@ const Sidebar = ({ isCollapsed }) => {
                   <>
                     <span className="flex-1">User Management</span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        userHovered ? "rotate-180" : ""
-                      }`}
+                      className={`h-4 w-4 transition-transform duration-200 ${userHovered ? "rotate-180" : ""
+                        }`}
                     />
                   </>
                 )}
@@ -412,9 +400,8 @@ const Sidebar = ({ isCollapsed }) => {
               {/* User Management Submenu */}
               {userHovered && (
                 <ul
-                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-20" : "left-64"
-                  }`}
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                    }`}
                   style={{ top: `${submenuTop}px` }}
                   onMouseEnter={handleUserMouseEnter}
                   onMouseLeave={handleUserMouseLeave}
@@ -424,10 +411,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -449,12 +435,11 @@ const Sidebar = ({ isCollapsed }) => {
               onMouseLeave={handleEoMouseLeave}
             >
               <div
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                  location.pathname == "/employee-onboarding" ||
-                  location.pathname == "/employee-onboarding/"
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname == "/employee-onboarding" ||
+                    location.pathname == "/employee-onboarding/"
                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                }`}
+                  }`}
                 title={isCollapsed ? "Employee Onboarding" : ""}
               >
                 <Handshake className="h-5 w-5 shrink-0" />
@@ -463,9 +448,8 @@ const Sidebar = ({ isCollapsed }) => {
                   <>
                     <span className="flex-1">Employee Onboarding</span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        eoHovered ? "rotate-180" : ""
-                      }`}
+                      className={`h-4 w-4 transition-transform duration-200 ${eoHovered ? "rotate-180" : ""
+                        }`}
                     />
                   </>
                 )}
@@ -474,9 +458,8 @@ const Sidebar = ({ isCollapsed }) => {
               {/* SAME POPUP STYLE AS RESOURCE MANAGEMENT */}
               {eoHovered && (
                 <ul
-                  className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-20" : "left-64"
-                  }`}
+                  className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                    }`}
                   style={{ top: `${submenuTop}px` }}
                   onMouseEnter={() => {
                     parentHoverRef.current = true;
@@ -499,10 +482,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -514,9 +496,8 @@ const Sidebar = ({ isCollapsed }) => {
               )}
               {childMenu && (
                 <ul
-                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-[300px]" : "left-[520px]"
-                  }`}
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-[300px]" : "left-[520px]"
+                    }`}
                   style={{ top: `${childTop - 4}px` }}
                   onMouseEnter={() => {
                     childHoverRef.current = true;
@@ -536,10 +517,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={child.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -559,11 +539,10 @@ const Sidebar = ({ isCollapsed }) => {
               <li key={item.name}>
                 <Link
                   to={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    isActive
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${isActive
                       ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                       : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
+                    }`}
                   title={isCollapsed ? item.name : ""}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
