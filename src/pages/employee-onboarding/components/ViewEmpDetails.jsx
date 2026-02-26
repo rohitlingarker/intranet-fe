@@ -75,8 +75,8 @@ const [deletingOffer, setDeletingOffer] = useState(false);
   
       setEditData({
         ...res.data,
-        cc_emails:  data?.cc_emails
-        ? data.cc_emails
+        cc_emails:  res.data?.cc_emails
+        ? res.data.cc_emails
             .split(",")
             .map(e => e.trim())
             .filter(Boolean)
