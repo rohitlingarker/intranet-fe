@@ -75,14 +75,14 @@ const [deletingOffer, setDeletingOffer] = useState(false);
       setEditData(res.data);
       setEditData({
         ...res.data,
-        cc_emails: Array.isArray(res.data.cc_emails)
-        ? res.data.cc_emails.join(", ")
-        : (res.data.cc_emails || "")
+        cc_emails:  data?.cc_emails
+        ? data.cc_emails
             .split(",")
             .map(e => e.trim())
-            .filter(e => e !== "")
-            .join(", "),
-      });
+            .filter(Boolean)
+            .join(", ")
+        : "",
+    });
     } catch (error) {
       showStatusToast("Failed to fetch employee details");
     } finally {
