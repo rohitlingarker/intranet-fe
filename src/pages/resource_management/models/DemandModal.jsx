@@ -6,6 +6,8 @@ import {
   XMarkIcon,
 } from "@heroicons/react/20/solid";
 import { createDemand } from "../services/projectService";
+import { getRoleExpectations } from "../services/workforceService";
+import { getLocations } from "../services/projectService";
 import { toast } from "react-toastify";
 
 /* -------------------- Constants -------------------- */
@@ -19,65 +21,98 @@ const DEMAND_STATUSES = [
   "CLOSED",
 ];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+const DELIVERY_MODELS = ["ONSITE", "OFFSHORE", "HYBRID"];
 
 /* -------------------- Listbox Field -------------------- */
 
-const ListboxField = ({ label, value, onChange, options, error, required = true }) => (
-  <div className="w-full">
-    <label className="text-xs text-gray-600 mb-1 block">
-      {label} {required && <span className="text-red-600">*</span>}
-    </label>
+const ListboxField = ({ label, value, onChange, options, error, required = true, placeholder = "Select" }) => {
+  const selectedOption = options.find((opt) =>
+    typeof opt === "string" ? opt === value : opt.value === value
+  );
+  const displayLabel = typeof selectedOption === "string" ? selectedOption : (selectedOption?.label || placeholder);
 
-    <Listbox value={value} onChange={onChange}>
-      <div className="relative">
-        <Listbox.Button
-          className={`w-full rounded-md border bg-white py-2 pl-3 pr-10 text-left text-sm
-            ${error ? "border-red-500" : "border-gray-300"}
-          `}
-        >
-          <span className="block truncate">{value || "Select"}</span>
-          <ChevronUpDownIcon className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
-        </Listbox.Button>
+  return (
+    <div className="w-full">
+      <label className="text-xs text-gray-600 mb-1 block font-medium">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
 
-        <Listbox.Options className="absolute z-20 mt-1 w-full rounded-md bg-white shadow border max-h-60 overflow-auto">
-          {options.map((opt) => (
-            <Listbox.Option
-              key={opt}
-              value={opt}
-              className={({ active }) =>
-                `cursor-pointer px-3 py-2 text-sm ${
-                  active ? "bg-indigo-600 text-white" : "text-gray-900"
-                }`
-              }
-            >
-              {({ selected }) => (
-                <div className="flex justify-between">
-                  {opt}
-                  {selected && <CheckIcon className="h-4 w-4" />}
+      <Listbox value={value} onChange={onChange}>
+        <div className="relative">
+          <Listbox.Button
+            className={`w-full rounded-md border bg-white py-2 pl-3 pr-10 text-left text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500
+              ${error ? "border-red-500" : "border-gray-300 hover:border-gray-400"}
+            `}
+          >
+            <span className={`block truncate ${!value ? "text-gray-400" : "text-gray-900"}`}>
+              {displayLabel}
+            </span>
+            <ChevronUpDownIcon className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+          </Listbox.Button>
+
+          <Transition
+            as={Fragment}
+            leave="transition ease-in duration-100"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <Listbox.Options className="absolute z-20 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto focus:outline-none">
+              {options.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500 text-center italic">
+                  No options available
                 </div>
+              ) : (
+                options.map((opt, idx) => {
+                  const optValue = typeof opt === "string" ? opt : opt.value;
+                  const optLabel = typeof opt === "string" ? opt : opt.label;
+                  return (
+                    <Listbox.Option
+                      key={idx}
+                      value={optValue}
+                      className={({ active }) =>
+                        `cursor-pointer select-none px-3 py-2 text-sm transition-colors ${active ? "bg-blue-600 text-white" : "text-gray-900 hover:bg-blue-50"
+                        }`
+                      }
+                    >
+                      {({ selected }) => (
+                        <div className="flex items-center justify-between">
+                          <span className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}>
+                            {optLabel}
+                          </span>
+                          {selected && <CheckIcon className="h-4 w-4" />}
+                        </div>
+                      )}
+                    </Listbox.Option>
+                  );
+                })
               )}
-            </Listbox.Option>
-          ))}
-        </Listbox.Options>
-      </div>
-    </Listbox>
+            </Listbox.Options>
+          </Transition>
+        </div>
+      </Listbox>
 
-    {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
-  </div>
-);
+      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+    </div>
+  );
+};
 
 /* -------------------- Initial State -------------------- */
 
 const emptyForm = {
-  demandJustification: "",
+  demandName: "",
   demandStartDate: "",
   demandEndDate: "",
+  roleId: "",
+  projectId: "",
+  minExp: "",
+  resourceRequired: "",
   allocationPercentage: "",
   locationRequirement: "",
   deliveryModel: "",
   demandType: "",
   demandStatus: "DRAFT",
   demandPriority: "",
+  demandJustification: "",
 };
 
 /* -------------------- Modal -------------------- */
@@ -86,21 +121,41 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [locations, setLocations] = useState([]);
 
   const startDateRef = useRef(null);
+
+  const fetchRoles = async () => {
+    try {
+      const res = await getRoleExpectations();
+      setRoles(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const res = await getLocations();
+      setLocations(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   /* -------- Initialize / Reset Form -------- */
 
   useEffect(() => {
     if (!open) return;
 
+    fetchRoles();
+    fetchLocations();
+
     setForm({
       ...emptyForm,
+      projectId: projectDetails?.pmsProjectId || projectDetails?._id || "",
       ...initialData,
-      project: {
-        pmsProjectId: projectDetails?.pmsProjectId,
-      },
-      demandStatus: initialData?.demandStatus || "DRAFT",
     });
 
     setErrors({});
@@ -113,6 +168,7 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
   const validateForm = () => {
     const e = {};
 
+    if (!form.demandName) e.demandName = "Demand name is required";
     if (!form.demandStartDate) e.demandStartDate = "Start date is required";
     if (!form.demandEndDate) e.demandEndDate = "End date is required";
 
@@ -126,12 +182,15 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
 
     if (!form.demandType) e.demandType = "Demand type is required";
     if (!form.demandPriority) e.demandPriority = "Priority is required";
-    if(!form.allocationPercentage) e.allocationPercentage = "Allocation Percentage is required";
+    if (!form.allocationPercentage) e.allocationPercentage = "Allocation Percentage is required";
+    if (!form.roleId) e.roleId = "Role is required";
+    if (!form.locationRequirement) e.locationRequirement = "Location Requirement is required";
+    if (!form.deliveryModel) e.deliveryModel = "Delivery Model is required";
+    if (!form.demandJustification) e.demandJustification = "Demand Justification is required";
+    if (!form.minExp) e.minExp = "Minimum Experience is required";
+    if (!form.resourceRequired || form.resourceRequired < 1) e.resourceRequired = "At least 1 resource is required";
 
-    // status required only when updating
-    if (initialData && !form.demandStatus) {
-      e.demandStatus = "Status is required";
-    }
+    if (!form.demandStatus) e.demandStatus = "Status is required";
 
     return e;
   };
@@ -140,7 +199,7 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
 
   const handleSubmit = async () => {
     const validationErrors = validateForm();
-
+    console.log("Validations form: ", validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast.warning("Please fill all required fields");
@@ -200,9 +259,41 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
             </Dialog.Title>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Project & Name */}
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block font-medium">
+                    Project
+                  </label>
+                  <input
+                    type="text"
+                    value={projectDetails?.name || "N/A"}
+                    disabled
+                    className="w-full border border-gray-200 rounded-md p-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block font-medium">
+                    Demand Name <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter Demand Name"
+                    value={form.demandName}
+                    onChange={(e) => update("demandName", e.target.value)}
+                    className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.demandName ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                      }`}
+                  />
+                  {errors.demandName && (
+                    <p className="text-red-600 text-xs mt-1">{errors.demandName}</p>
+                  )}
+                </div>
+              </div>
+
               {/* Dates */}
               <div>
-                <label className="text-xs">
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
                   Demand Start Date <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -210,9 +301,8 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
                   type="date"
                   value={form.demandStartDate}
                   onChange={(e) => update("demandStartDate", e.target.value)}
-                  className={`w-full border rounded p-2 text-sm ${
-                    errors.demandStartDate ? "border-red-500" : ""
-                  }`}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.demandStartDate ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
                 />
                 {errors.demandStartDate && (
                   <p className="text-red-600 text-xs mt-1">
@@ -222,16 +312,15 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
               </div>
 
               <div>
-                <label className="text-xs">
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
                   Demand End Date <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="date"
                   value={form.demandEndDate}
                   onChange={(e) => update("demandEndDate", e.target.value)}
-                  className={`w-full border rounded p-2 text-sm ${
-                    errors.demandEndDate ? "border-red-500" : ""
-                  }`}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.demandEndDate ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
                 />
                 {errors.demandEndDate && (
                   <p className="text-red-600 text-xs mt-1">
@@ -240,13 +329,107 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
                 )}
               </div>
 
-              {/* Enums */}
+              {/* Role & Type */}
+              <ListboxField
+                label="Role"
+                value={form.roleId}
+                onChange={(v) => update("roleId", v)}
+                options={roles.map((r) => ({ label: r.role, value: r.dev_role_id }))}
+                error={errors.roleId}
+                placeholder="Select Role"
+              />
+
               <ListboxField
                 label="Demand Type"
                 value={form.demandType}
                 onChange={(v) => update("demandType", v)}
                 options={DEMAND_TYPES}
                 error={errors.demandType}
+                placeholder="Select Type"
+              />
+
+              {/* Experience & Resources */}
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
+                  Min Experience <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Yrs"
+                  value={form.minExp}
+                  onChange={(e) => update("minExp", e.target.value)}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.minExp ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                />
+                {errors.minExp && (
+                  <p className="text-red-600 text-xs mt-1">{errors.minExp}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
+                  Resources Required <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Count"
+                  value={form.resourceRequired}
+                  onChange={(e) => update("resourceRequired", e.target.value)}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.resourceRequired ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                />
+                {errors.resourceRequired && (
+                  <p className="text-red-600 text-xs mt-1">{errors.resourceRequired}</p>
+                )}
+              </div>
+
+              {/* Allocation & Priority */}
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
+                  Allocation % <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="0-100"
+                  value={form.allocationPercentage}
+                  onChange={(e) => update("allocationPercentage", e.target.value)}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.allocationPercentage ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                />
+                {errors.allocationPercentage && (
+                  <p className="text-red-600 text-xs mt-1">
+                    {errors.allocationPercentage}
+                  </p>
+                )}
+              </div>
+
+              <ListboxField
+                label="Priority"
+                value={form.demandPriority}
+                onChange={(v) => update("demandPriority", v)}
+                options={PRIORITIES}
+                error={errors.demandPriority}
+                placeholder="Select Priority"
+              />
+
+              {/* Location & Delivery */}
+              <ListboxField
+                label="Location Requirement"
+                value={form.locationRequirement}
+                onChange={(v) => update("locationRequirement", v)}
+                options={locations}
+                error={errors.locationRequirement}
+                placeholder="Select Location"
+              />
+
+              <ListboxField
+                label="Delivery Model"
+                value={form.deliveryModel}
+                onChange={(v) => update("deliveryModel", v)}
+                options={DELIVERY_MODELS}
+                error={errors.deliveryModel}
+                placeholder="Select Model"
               />
 
               <ListboxField
@@ -255,52 +438,28 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
                 onChange={(v) => update("demandStatus", v)}
                 options={DEMAND_STATUSES}
                 error={errors.demandStatus}
-                required={!!initialData}
+                placeholder="Select Status"
               />
 
-              <ListboxField
-                label="Priority"
-                value={form.demandPriority}
-                onChange={(v) => update("demandPriority", v)}
-                options={PRIORITIES}
-                error={errors.demandPriority}
-              />
-
-              {/* Others */}
-              <input
-                placeholder="Delivery Model"
-                value={form.deliveryModel}
-                onChange={(e) => update("deliveryModel", e.target.value)}
-                className="w-full border rounded p-2 text-sm"
-              />
-
-              <input
-                type="number"
-                placeholder="Allocation %"
-                value={form.allocationPercentage}
-                onChange={(e) => update("allocationPercentage", e.target.value)}
-                className={`w-full border rounded p-2 text-sm ${errors.allocationPercentage ? "border-red-500" : ""}`}
-              />
-              {errors.allocationPercentage && (
-                <p className="text-red-600 text-xs">
-                  {errors.allocationPercentage}
-                </p>
-              )}
-
-              <input
-                placeholder="Location Requirement"
-                value={form.locationRequirement}
-                onChange={(e) => update("locationRequirement", e.target.value)}
-                className="w-full border rounded p-2 text-sm"
-              />
-
-              <textarea
-                rows={3}
-                placeholder="Demand Justification"
-                value={form.demandJustification}
-                onChange={(e) => update("demandJustification", e.target.value)}
-                className="md:col-span-2 w-full border rounded p-2 text-sm"
-              />
+              {/* Justification */}
+              <div className="md:col-span-2">
+                <label className="text-xs text-gray-600 mb-1 block font-medium">
+                  Demand Justification <span className="text-red-600">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Why is this resource needed?"
+                  value={form.demandJustification}
+                  onChange={(e) => update("demandJustification", e.target.value)}
+                  className={`w-full border rounded-md p-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.demandJustification ? "border-red-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                />
+                {errors.demandJustification && (
+                  <p className="text-red-600 text-xs mt-1">
+                    {errors.demandJustification}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -315,8 +474,8 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
                 {loading
                   ? "Submitting..."
                   : initialData
-                  ? "Update Demand"
-                  : "Create Demand"}
+                    ? "Update Demand"
+                    : "Create Demand"}
               </button>
             </div>
           </Dialog.Panel>

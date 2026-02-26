@@ -154,3 +154,19 @@ export const deleteProjectEscalation = async (escalationId) => {
     throw err;
   }
 };
+
+export const getLocations = async () => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/projects/get-locations`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
