@@ -294,9 +294,9 @@ export default function CreateOffer() {
             placeholder="Search and select CC recipients..."
 
 
-            value={ccOptions.filter((opt) =>
-              formData.cc_emails?.includes(opt.value)
-            )}
+           value={ccOptions.filter((opt) =>
+  formData.cc_emails?.includes(opt.value)
+)}
 
             onChange={(selected) => {
               const emails = selected
