@@ -1481,7 +1481,7 @@ const RMSProjectDetails = () => {
                 </h2>
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                {configType === "compliance" && (
+                {configType === "pre-requisites" && (
                   <>
                     {!inheritMode ? (
                       /* MANUAL FORM VIEW */
