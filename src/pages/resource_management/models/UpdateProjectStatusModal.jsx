@@ -3,13 +3,12 @@ import { X } from "lucide-react";
 import { toast } from "react-toastify";
 import { statusUpdate } from "../services/projectService";
 
-const STATUS_OPTIONS = [
-  { label: "READY", value: "READY" },
-  { label: "UPCOMING", value: "UPCOMING" },
-  { label: "NOT READY", value: "NOT_READY" },
-];
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const UpdateProjectStatusModal = ({ open, onClose, onSuccess, pmsProjectId }) => {
+  const { getEnumValues } = useEnums();
+  const STATUS_OPTIONS = getEnumValues("StaffingReadinessStatus");
+
   const [status, setStatus] = useState("");
   const [reason, setReason] = useState("");
   const [errors, setErrors] = useState({});
@@ -29,24 +28,24 @@ const UpdateProjectStatusModal = ({ open, onClose, onSuccess, pmsProjectId }) =>
     if (!validate()) return;
 
     const payload = {
-        "status": status,
-        "reason": reason,
-        "pmsProjectId": pmsProjectId,
+      "status": status,
+      "reason": reason,
+      "pmsProjectId": pmsProjectId,
     }
 
     setLoading(true);
     try {
-        const res = await statusUpdate(payload);
-        toast.success(res.message || "Project status updated successfully!");
-        onSuccess?.();
-        onClose();
-        setStatus("");
-        setReason("");
+      const res = await statusUpdate(payload);
+      toast.success(res.message || "Project status updated successfully!");
+      onSuccess?.();
+      onClose();
+      setStatus("");
+      setReason("");
     } catch (err) {
-        console.error("Failed to update project status", err);
-        toast.error(err.response?.data?.message || "Failed to update project status");
+      console.error("Failed to update project status", err);
+      toast.error(err.response?.data?.message || "Failed to update project status");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -73,14 +72,13 @@ const UpdateProjectStatusModal = ({ open, onClose, onSuccess, pmsProjectId }) =>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none ${
-                errors.status ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none ${errors.status ? "border-red-500" : "border-gray-300"
+                }`}
             >
               <option value="">Select status</option>
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {STATUS_OPTIONS.map((val) => (
+                <option key={val} value={val}>
+                  {val.replace(/_/g, " ")}
                 </option>
               ))}
             </select>
@@ -99,9 +97,8 @@ const UpdateProjectStatusModal = ({ open, onClose, onSuccess, pmsProjectId }) =>
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Explain why the status is being updated..."
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none resize-none ${
-                errors.reason ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none resize-none ${errors.reason ? "border-red-500" : "border-gray-300"
+                }`}
             />
             {errors.reason && (
               <p className="text-xs text-red-500 mt-1">{errors.reason}</p>
