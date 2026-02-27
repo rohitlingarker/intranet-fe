@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { getSkills, getCertificates } from "../../../services/clientservice";
 import { toast } from "react-toastify";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const ComplianceForm = ({ formData, setFormData }) => {
+  const { getEnumValues } = useEnums();
+  const REQUIREMENT_TYPES = getEnumValues("RequirementType");
+
   const [skills, setSkills] = useState([]);
+
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -72,7 +77,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
       setFormData((prev) => {
         // Destructure to remove skill and certificate from state
         const { skill, certificate, ...rest } = prev;
-        
+
         // Return the clean state with the new requirementType
         return {
           ...rest,
@@ -100,55 +105,57 @@ const ComplianceForm = ({ formData, setFormData }) => {
             className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm bg-white"
           >
             <option value="">Select</option>
-            <option value="CERTIFICATION">Certification</option>
-            <option value="CLEARANCE">Clearance</option>
-            <option value="TOOL_ACCESS">Tool Access</option>
-            <option value="SKILL">Skill</option>
-        </select>
+            {REQUIREMENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+              </option>
+            ))}
+          </select>
+
         </div>
 
-      {formData.requirementType === "SKILL" ? (
-        <div>
-          <label className="text-sm font-medium text-gray-700">
-            Skills <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="skill"
-            // Target the nested ID
-            value={formData.skill?.id || ""}
-            onChange={handleChange}
-            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
-            disabled={loading}
-          >
-            <option value="">Select a skill</option>
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : formData.requirementType === "CERTIFICATION" ? (
-        <div>
-          <label className="text-sm font-medium text-gray-700">
-            Certificate <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="certificate"
-            value={formData.certificate?.certificateId || ""}
-            onChange={handleChange}
-            className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
-            disabled={loading}
-          >
-            <option value="">Select a certificate</option>
-            {certificates.map((cert) => (
-              <option key={cert.certificateId} value={cert.certificateId}>
-                {cert.providerName}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
+        {formData.requirementType === "SKILL" ? (
+          <div>
+            <label className="text-sm font-medium text-gray-700">
+              Skills <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="skill"
+              // Target the nested ID
+              value={formData.skill?.id || ""}
+              onChange={handleChange}
+              className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+              disabled={loading}
+            >
+              <option value="">Select a skill</option>
+              {skills.map((skill) => (
+                <option key={skill.id} value={skill.id}>
+                  {skill.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : formData.requirementType === "CERTIFICATION" ? (
+          <div>
+            <label className="text-sm font-medium text-gray-700">
+              Certificate <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="certificate"
+              value={formData.certificate?.certificateId || ""}
+              onChange={handleChange}
+              className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+              disabled={loading}
+            >
+              <option value="">Select a certificate</option>
+              {certificates.map((cert) => (
+                <option key={cert.certificateId} value={cert.certificateId}>
+                  {cert.providerName}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         {/* Requirement Name */}
         <div className="col-span-2">

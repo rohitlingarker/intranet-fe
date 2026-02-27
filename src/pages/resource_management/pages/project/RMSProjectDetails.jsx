@@ -36,8 +36,16 @@ import { createRoleExpectation } from "../../services/workforceService";
 
 import { toast } from "react-toastify";
 import ConfirmationModal from "../../../../components/confirmation_modal/ConfirmationModal";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const RMSProjectDetails = () => {
+  const { getEnumValues } = useEnums();
+  const PROJECT_STATUSES = getEnumValues("ProjectStatus");
+  const PRIORITY_LEVELS = getEnumValues("PriorityLevel");
+  const RISK_LEVELS = getEnumValues("RiskLevel");
+  const DELIVERY_MODELS = getEnumValues("DeliveryModel");
+  const SLA_TYPES = getEnumValues("SLAType");
+
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [projectEscalations, setProjectEscalations] = useState([]);
