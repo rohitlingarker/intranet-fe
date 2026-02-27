@@ -201,7 +201,7 @@ const emptyForm = {
   demandStartDate: "",
   demandEndDate: "",
   allocationPercentage: "",
-  resourceRequired: 1,
+  resourcesRequired: 1,
   minExp: "",
   deliveryModel: "",
   demandStatus: "DRAFT",
@@ -332,9 +332,9 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails, onSucc
       e.allocationPercentage = "Allocation must be 1-100";
     }
 
-    const resReq = parseInt(form.resourceRequired);
+    const resReq = parseInt(form.resourcesRequired);
     if (isNaN(resReq) || resReq < 1) {
-      e.resourceRequired = "At least 1 resource is required";
+      e.resourcesRequired = "At least 1 resource is required";
     }
 
     if (!form.minExp) e.minExp = "Minimum experience is required";
@@ -366,7 +366,14 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails, onSucc
 
     setLoading(true);
     try {
-      const res = await createDemand(form);
+      // Append time components to satisfy java.time.LocalDateTime requirement
+      const submissionData = {
+        ...form,
+        demandStartDate: form.demandStartDate ? `${form.demandStartDate}T00:00:00` : null,
+        demandEndDate: form.demandEndDate ? `${form.demandEndDate}T23:59:59` : null,
+      };
+
+      const res = await createDemand(submissionData);
       toast.success(res.message || "Demand saved successfully");
       if (onSuccess) onSuccess();
       onClose();
@@ -563,14 +570,14 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails, onSucc
                     </FormField>
 
                     {/* Resources Required */}
-                    <FormField id="field-resourceRequired" label="Resources Required" error={errors.resourceRequired} required>
+                    <FormField id="field-resourcesRequired" label="Resources Required" error={errors.resourcesRequired} required>
                       <input
                         type="number"
                         min="1"
                         placeholder="min 1"
-                        value={form.resourceRequired}
-                        onChange={(e) => update("resourceRequired", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourceRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
+                        value={form.resourcesRequired}
+                        onChange={(e) => update("resourcesRequired", e.target.value)}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
                           }`}
                       />
                     </FormField>
