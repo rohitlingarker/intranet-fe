@@ -15,6 +15,7 @@ import ProjectKPIs from "../../components/ProjectKPIs";
 import Pagination from "../../../../components/Pagination/pagination";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import UpdateProjectStatusModal from "../../models/UpdateProjectStatusModal";
+import { formatCurrency } from "../../services/clientservice";
 
 const RMSProjectList = () => {
   const navigate = useNavigate();
@@ -201,8 +202,8 @@ const RMSProjectList = () => {
                   <div className="flex items-center gap-2">
                     <span
                       className={`px-2 py-1 text-[10px] font-bold uppercase rounded border ${project.riskLevel === "HIGH"
-                          ? "bg-red-50 text-red-600 border-red-100"
-                          : "bg-green-50 text-green-600 border-green-100"
+                        ? "bg-red-50 text-red-600 border-red-100"
+                        : "bg-green-50 text-green-600 border-green-100"
                         }`}
                     >
                       {project.riskLevel} Risk
@@ -286,7 +287,7 @@ const RMSProjectList = () => {
                   )}
                 </div>
                 <div className="font-bold text-gray-700">
-                  USD ${project.projectBudget?.toLocaleString()}
+                  USD {formatCurrency(project.projectBudget)}
                 </div>
               </div>
             </div>
