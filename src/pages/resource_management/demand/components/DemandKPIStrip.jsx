@@ -31,6 +31,7 @@ const DemandKPIStrip = ({ data }) => {
         if (lowerLabel.includes('active')) return <LayoutDashboard className="h-5 w-5" />;
         if (lowerLabel.includes('pending')) return <Clock className="h-5 w-5" />;
         if (lowerLabel.includes('approved')) return <CheckCircle2 className="h-5 w-5" />;
+        if (lowerLabel.includes('fulfilled')) return <UserCheck className="h-5 w-5" />;
         if (lowerLabel.includes('risk')) return <AlertTriangle className="h-5 w-5" />;
         if (lowerLabel.includes('breach')) return <XCircle className="h-5 w-5" />;
         if (lowerLabel.includes('emergency')) return <AlertTriangle className="h-5 w-5 animate-pulse" />;
@@ -42,21 +43,33 @@ const DemandKPIStrip = ({ data }) => {
         if (lowerLabel.includes('active')) return "bg-indigo-50 text-indigo-600";
         if (lowerLabel.includes('pending')) return "bg-amber-50 text-amber-600";
         if (lowerLabel.includes('approved')) return "bg-emerald-50 text-emerald-600";
+        if (lowerLabel.includes('fulfilled')) return "bg-blue-50 text-blue-600";
         if (lowerLabel.includes('risk')) return "bg-orange-50 text-orange-600";
         if (lowerLabel.includes('breach')) return "bg-rose-50 text-rose-600";
         if (lowerLabel.includes('emergency')) return "bg-red-50 text-red-600";
         return "bg-slate-100 text-slate-600";
     };
 
+    const gridCols = {
+        1: 'lg:grid-cols-1',
+        2: 'lg:grid-cols-2',
+        3: 'lg:grid-cols-3',
+        4: 'lg:grid-cols-4',
+        5: 'lg:grid-cols-5',
+        6: 'lg:grid-cols-6',
+        7: 'lg:grid-cols-7',
+        8: 'lg:grid-cols-8',
+    };
+
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", gridCols[data.length] || 'lg:grid-cols-6')}>
             {data.map((kpi, idx) => (
                 <KPICard
                     key={idx}
                     label={kpi.label}
                     value={kpi.count}
                     icon={getIcon(kpi.label)}
-                    color={getColor(kpi.label)}
+                    color={kpi.color || getColor(kpi.label)}
                 />
             ))}
         </div>

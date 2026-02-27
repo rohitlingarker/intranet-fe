@@ -5,18 +5,20 @@ import DemandKPIStrip from '../components/DemandKPIStrip';
 import DemandList from '../components/DemandList';
 import DemandFilters from '../components/DemandFilters';
 import { MOCK_DEMANDS, KPI_DATA } from '../models/demand.mock';
-import { ListFilter, Search, X, Filter } from "lucide-react";
+import { Search, Filter, Clock, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Redefined KPIs for Demand Workspace
 const DEMAND_KPIS = [
-    { label: "Active Demands", count: 24, color: "bg-indigo-50 text-indigo-600" },
+    { label: "Active", count: 24, color: "bg-indigo-50 text-indigo-600" },
+    { label: "Soft", count: 1, color: "bg-red-50 text-red-600" },
     { label: "Pending", count: 8, color: "bg-amber-50 text-amber-600" },
     { label: "Approved", count: 12, color: "bg-emerald-50 text-emerald-600" },
     { label: "SLA At Risk", count: 3, color: "bg-orange-50 text-orange-600" },
-    { label: "SLA Breached", count: 2, color: "bg-rose-50 text-rose-600" },
-    { label: "Emergency", count: 1, color: "bg-red-50 text-red-600" }
+    { label: "SLA Breached", count: 2, color: "bg-rose-50 text-rose-600" }
+
 ];
 
 const DemandWorkspace = () => {
@@ -29,6 +31,7 @@ const DemandWorkspace = () => {
     // Advanced Filter States
     const [clientFilter, setClientFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
+    const [activeTab, setActiveTab] = useState('breached');
 
     // Handle dropdown positioning ONLY at opening time
     useEffect(() => {
@@ -90,6 +93,16 @@ const DemandWorkspace = () => {
         navigate(`/resource-management/demand/${demand.id}`);
     };
 
+    const tabCounts = useMemo(() => {
+        const raw = MOCK_DEMANDS.filter(d => d.lifecycleState !== 'CANCELLED' && d.lifecycleState !== 'CLOSED');
+        return {
+            breached: raw.filter(d => d.slaDays < 0).length,
+            at_risk: raw.filter(d => d.slaDays >= 0 && d.slaDays <= 5).length,
+            approved: raw.filter(d => d.lifecycleState === 'APPROVED').length,
+            soft: raw.filter(d => d.lifecycleState === 'SOFT' || d.lifecycleState === 'REQUESTED').length
+        };
+    }, []);
+
     const filteredDemands = useMemo(() => {
         let list = [...MOCK_DEMANDS];
 
@@ -104,6 +117,17 @@ const DemandWorkspace = () => {
 
         // Default filter: exclude cancelled/closed
         list = list.filter(d => d.lifecycleState !== 'CANCELLED' && d.lifecycleState !== 'CLOSED');
+
+        // Tab Filtering
+        if (activeTab === 'breached') {
+            list = list.filter(d => d.slaDays < 0);
+        } else if (activeTab === 'at_risk') {
+            list = list.filter(d => d.slaDays >= 0 && d.slaDays <= 5);
+        } else if (activeTab === 'approved') {
+            list = list.filter(d => d.lifecycleState === 'APPROVED');
+        } else if (activeTab === 'soft') {
+            list = list.filter(d => d.lifecycleState === 'SOFT' || d.lifecycleState === 'REQUESTED');
+        }
 
 
         // Advanced Filters
@@ -149,19 +173,20 @@ const DemandWorkspace = () => {
                 <div className="flex flex-col gap-4">
                     {/* Primary Content Container */}
                     <div className="flex-1 min-w-0 w-full bg-card rounded-lg border shadow-sm overflow-hidden flex flex-col">
-                        {/* Header Bar - Matching Workforce Tab List Area */}
-                        <div className="p-3 sm:p-4 border-b bg-white">
-                            <div className="flex items-center justify-between relative">
-                                <div className="flex items-center gap-4">
+                        <div className="bg-white border-b-0">
+                            {/* Top row: Title and Search/Filters */}
+                            <div className="px-5 pt-6 pb-2 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
                                     <h3 className="text-sm font-heading font-bold text-slate-900">
                                         Demand Pipeline
                                     </h3>
-                                    <span className="text-xs text-muted-foreground font-medium">
+                                    <span className="text-[11px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
                                         {filteredDemands.length} records
                                     </span>
                                 </div>
+
                                 <div className="flex items-center gap-3">
-                                    {/* Search Input - Matching Admin Panel FilterBar */}
+                                    {/* Search Input */}
                                     <div className="relative group">
                                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-600 transition-colors" />
                                         <input
@@ -173,7 +198,7 @@ const DemandWorkspace = () => {
                                         />
                                     </div>
 
-                                    {/* Filter Toggle Button - Matching Admin Panel FilterBar */}
+                                    {/* Filter Toggle Button */}
                                     <button
                                         ref={filterButtonRef}
                                         onClick={() => setFilterCollapsed(!filterCollapsed)}
@@ -186,8 +211,6 @@ const DemandWorkspace = () => {
                                     >
                                         <Filter className={cn("h-3.5 w-3.5", !filterCollapsed ? "text-white" : "text-slate-500")} />
                                         Filters
-
-                                        {/* Notification Badge - Identical to Admin Panel */}
                                         {filterCollapsed && activeFilterCount > 0 && (
                                             <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-200">
                                                 {activeFilterCount}
@@ -195,36 +218,62 @@ const DemandWorkspace = () => {
                                         )}
                                     </button>
                                 </div>
-
-                                {/* Overlay Filter Panel - Absolute Page Anchor with Snap-to-Open logic */}
-                                {!filterCollapsed && dropdownPos && createPortal(
-                                    <div
-                                        id="filter-portal-root"
-                                        className={cn(
-                                            "absolute bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[280px] flex flex-col overflow-hidden animate-in fade-in duration-200",
-                                            dropdownPos.align === 'up' ? "slide-in-from-bottom-2 origin-bottom" : "slide-in-from-top-2 origin-top"
-                                        )}
-                                        style={{
-                                            top: dropdownPos.align === 'up' ? 'auto' : `${dropdownPos.top}px`,
-                                            bottom: dropdownPos.align === 'up' ? `${document.documentElement.scrollHeight - dropdownPos.top}px` : 'auto',
-                                            right: `${dropdownPos.right}px`,
-                                            maxHeight: `${dropdownPos.maxHeight}px`
-                                        }}
-                                    >
-                                        <DemandFilters
-                                            clientFilter={clientFilter}
-                                            onClientChange={setClientFilter}
-                                            priorityFilter={priorityFilter}
-                                            onPriorityChange={setPriorityFilter}
-                                            onReset={resetFilters}
-                                            activeCount={activeFilterCount}
-                                            inline={true}
-                                            onToggleCollapse={() => setFilterCollapsed(true)}
-                                        />
-                                    </div>,
-                                    document.body
-                                )}
                             </div>
+
+                            {/* Tabs row: Flush with the content below */}
+                            <div className="px-5 border-b border-slate-200 bg-white flex items-center justify-start gap-1">
+                                {[
+                                    { id: 'breached', label: 'SLA Breached Demands' },
+                                    { id: 'at_risk', label: 'SLA At Risk' },
+                                    { id: 'approved', label: 'Approved Demands' },
+                                    { id: 'soft', label: 'Soft Demand' }
+                                ].map((tab) => {
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={cn(
+                                                "px-4 py-3 text-xs font-bold transition-all border-b-2 relative -mb-px flex-shrink-0",
+                                                isActive
+                                                    ? "text-indigo-600 border-indigo-600"
+                                                    : "text-slate-400 border-transparent hover:text-slate-700"
+                                            )}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Overlay Filter Panel - Portal logic remains same */}
+                            {!filterCollapsed && dropdownPos && createPortal(
+                                <div
+                                    id="filter-portal-root"
+                                    className={cn(
+                                        "absolute bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[280px] flex flex-col overflow-hidden animate-in fade-in duration-200",
+                                        dropdownPos.align === 'up' ? "slide-in-from-bottom-2 origin-bottom" : "slide-in-from-top-2 origin-top"
+                                    )}
+                                    style={{
+                                        top: dropdownPos.align === 'up' ? 'auto' : `${dropdownPos.top}px`,
+                                        bottom: dropdownPos.align === 'up' ? `${document.documentElement.scrollHeight - dropdownPos.top}px` : 'auto',
+                                        right: `${dropdownPos.right}px`,
+                                        maxHeight: `${dropdownPos.maxHeight}px`
+                                    }}
+                                >
+                                    <DemandFilters
+                                        clientFilter={clientFilter}
+                                        onClientChange={setClientFilter}
+                                        priorityFilter={priorityFilter}
+                                        onPriorityChange={setPriorityFilter}
+                                        onReset={resetFilters}
+                                        activeCount={activeFilterCount}
+                                        inline={true}
+                                        onToggleCollapse={() => setFilterCollapsed(true)}
+                                    />
+                                </div>,
+                                document.body
+                            )}
                         </div>
 
                         {/* Structured Table Header */}
