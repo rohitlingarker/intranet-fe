@@ -211,12 +211,14 @@ const emptyForm = {
 
 /* -------------------- Modal -------------------- */
 
-const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
+const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails }) => {
   const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetchingResources, setFetchingResources] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectResources, setProjectResources] = useState([]);
 
   // Master Data
   const [roles, setRoles] = useState([]);
@@ -227,7 +229,10 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
   const PRIORITIES = getEnumValues("PriorityLevel");
   const DELIVERY_MODELS = getEnumValues("DeliveryModel");
 
+  const COMMITMENT_TYPES = getEnumValues("DemandCommitment");
+
   const startDateRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const fetchRoles = async () => {
     try {
@@ -263,7 +268,7 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
 
   useEffect(() => {
     if (open) {
-      fetchData();
+      fetchRoles();
       const initialProjectId = projectDetails?.pmsProjectId || projectDetails?.projectId || projectDetails?._id || initialData?.projectId || initialData?.ProjectId || "";
       const initialStartDate = projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : "";
       const initialEndDate = projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : "";
