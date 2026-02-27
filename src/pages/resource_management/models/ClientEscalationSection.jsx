@@ -60,7 +60,7 @@ export default function ClientEscalationSection({ clientId, clientContactRefetch
         </div>
       </div>
 
-      <div className="mt-4 relative min-h-[200px]">
+      <div className="mt-4 relative min-h-[250px]">
         <AnimatePresence mode="wait">
           {activeTab === "client" && (
             <motion.div

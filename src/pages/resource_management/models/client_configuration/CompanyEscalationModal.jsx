@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "../../../../components/Button/Button";
 
-const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
+const CompanyEscalationModal = ({
+  mode = "create",        // "create" | "edit"
+  initialData = null,     // contact data for edit
+  onSave,
+  onClose,
+  loading,
+}) => {
   const [formData, setFormData] = useState({
     contactName: "",
     contactRole: "",
@@ -11,8 +17,26 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
     activeFlag: true,
   });
 
+  // ✅ Populate form in EDIT mode
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      setFormData({
+        contactId: initialData.contactId,   // needed for update
+        contactName: initialData.contactName || "",
+        contactRole: initialData.contactRole || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        escalationLevel: initialData.escalationLevel || "L1",
+        activeFlag: initialData.activeFlag ?? true,
+      });
+    }
+  }, [mode, initialData]);
+
   const handleChange = (key, value) => {
-    setFormData({ ...formData, [key]: value });
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   const handleSubmit = () => {
@@ -20,13 +44,13 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
       alert("Contact Name, Role and Email are mandatory");
       return;
     }
+
     onSave(formData);
   };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Add Escalation Contact</h3>
-
+      {/* Contact Name */}
       <input
         className="w-full border rounded-lg p-2"
         placeholder="Contact Name"
@@ -34,6 +58,7 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
         onChange={(e) => handleChange("contactName", e.target.value)}
       />
 
+      {/* Role */}
       <select
         className="w-full border rounded-lg p-2"
         value={formData.contactRole}
@@ -46,6 +71,7 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
         <option value="RESOURCE_MANAGER">Resource Manager</option>
       </select>
 
+      {/* Email */}
       <input
         className="w-full border rounded-lg p-2"
         placeholder="Email"
@@ -53,6 +79,7 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
         onChange={(e) => handleChange("email", e.target.value)}
       />
 
+      {/* Phone */}
       <input
         className="w-full border rounded-lg p-2"
         placeholder="Phone"
@@ -60,35 +87,42 @@ const CompanyEscalationContactModal = ({ onClose, onSave, loading }) => {
         onChange={(e) => handleChange("phone", e.target.value)}
       />
 
+      {/* Escalation Level */}
       <select
         className="w-full border rounded-lg p-2"
         value={formData.escalationLevel}
-        onChange={(e) => handleChange("escalationLevel", e.target.value)}
+        onChange={(e) =>
+          handleChange("escalationLevel", e.target.value)
+        }
       >
         <option value="L1">Level 1</option>
         <option value="L2">Level 2</option>
         <option value="L3">Level 3</option>
       </select>
 
+      {/* Active */}
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
           checked={formData.activeFlag}
-          onChange={(e) => handleChange("activeFlag", e.target.checked)}
+          onChange={(e) =>
+            handleChange("activeFlag", e.target.checked)
+          }
         />
         Active
       </label>
 
+      {/* Actions */}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
         <Button variant="primary" loading={loading} onClick={handleSubmit}>
-          Save
+          {mode === "edit" ? "Update" : "Save"}
         </Button>
       </div>
     </div>
   );
 };
 
-export default CompanyEscalationContactModal;
+export default CompanyEscalationModal;

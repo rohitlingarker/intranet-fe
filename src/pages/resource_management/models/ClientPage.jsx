@@ -8,7 +8,7 @@ import { getProjectEscalations } from "../services/clientservice";
 import Pagination from "../../../components/Pagination/pagination";
 import { getAssetsByClient } from "../services/clientservice";
 import { getAssetsByProjectId } from "../services/clientservice";
-import CompanyEscalationContactModal from "../models/client_configuration/CompanyEscalationModal";
+import CompanyEscalationModal from "./client_configuration/CompanyEscalationModal";
 import { createCompanyContact } from "../services/clientservice";
 import {
   ArrowLeft,
@@ -483,6 +483,8 @@ const ClientPage = () => {
   const [openUpdateClient, setOpenUpdateClient] = useState(false);
   const [openDeleteClient, setOpenDeleteClient] = useState(false);
   const [openCompanyEscalation, setOpenCompanyEscalation] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
 
   const handleCompanyContactCreate = async (payload) => {
     setLoading(true);
@@ -909,8 +911,11 @@ const ClientPage = () => {
           {canConfigAgreements && (
             <Button
               variant="secondary"
-              onClick={() => setOpenCompanyEscalation(true)}
-              className="px-4 py-2 text-sm border rounded-lg"
+              onClick={() => {
+                setEditMode(false); // ✅ CREATE
+                setSelectedContact(null);
+                setOpenCompanyEscalation(true);
+              }}
             >
               Company Escalation
             </Button>
@@ -1159,17 +1164,25 @@ const ClientPage = () => {
 
       <Modal
         isOpen={openCompanyEscalation}
-        title="Company Escalation"
-        subtitle="Add escalation contact"
+        title={editMode ? "Edit Escalation Contact" : "Company Escalation"}
+        subtitle={
+          editMode ? "Update escalation contact" : "Add escalation contact"
+        }
         onClose={() => setOpenCompanyEscalation(false)}
       >
-        <CompanyEscalationContactModal
+        <CompanyEscalationModal
+          mode={editMode ? "edit" : "create"}
+          initialData={selectedContact}
           loading={loading}
           onClose={() => setOpenCompanyEscalation(false)}
           onSave={async (payload) => {
-            await handleCompanyContactCreate(payload);
+            if (editMode) {
+              await handleUpdateCompanyContact(payload);
+            } else {
+              await handleCompanyContactCreate(payload);
+            }
+
             setOpenCompanyEscalation(false);
-            // IMPORTANT: refresh contacts list
             window.dispatchEvent(new Event("refresh-company-escalation"));
           }}
         />
