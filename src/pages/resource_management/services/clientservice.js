@@ -717,3 +717,77 @@ export function formatCurrency(value) {
     maximumFractionDigits: 2,
   }).format(value);
 };
+
+/**
+ * ===============================
+ * CREATE Company Escalation Contact
+ * POST /api/company-contact/create
+ * ===============================
+ */
+export const createCompanyContact = async (companyContactData) => {
+  try {
+    const response = await axios.post(
+      `${RMS_BASE_URL}/api/company-contact/create`,
+      companyContactData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * GET Company Escalation Contacts by Company ID
+ * GET /api/company-contact/companyContact/{companyId}
+ * ===============================
+ */
+export const getCompanyContactsByCompanyId = async () => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/company-contact/all`,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * UPDATE Company Escalation Contact
+ * PUT /api/company-contact/update
+ * ===============================
+ */
+export const updateCompanyContact = async (companyContactData) => {
+  try {
+    const response = await axios.put(
+      `${RMS_BASE_URL}/api/company-contact/update/${contactId}`,
+      companyContactData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * DELETE Company Escalation Contact
+ * DELETE /api/company-contact/delete/{id}
+ * ===============================
+ */
+export const deleteCompanyContact = async (contactId) => {
+  try {
+    const response = await axios.delete(
+      `${RMS_BASE_URL}/api/company-contact/delete/${contactId}`,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

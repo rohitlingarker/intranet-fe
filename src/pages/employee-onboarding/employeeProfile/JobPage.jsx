@@ -26,7 +26,7 @@ export default function JobPage() {
 
   const timeData = {
     shift: "Shift 1",
-    weekly_policy: "Standard Weekly Off (Fri)",
+    weekly_policy: "Standard Weekly Off (Sat-Sun)",
     leave_plan: "General Leave Plan",
     holiday_calendar: "2026",
     attendance_number: "PAVS001",

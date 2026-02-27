@@ -90,6 +90,7 @@ import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminAppro
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import BackgroundCheckPage from "./pages/employee-onboarding/hr/BackgroundCheckPage.jsx";
 import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
 import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
@@ -442,6 +443,7 @@ const AppRoutes = () => {
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
+            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
 
 
           </Route>
