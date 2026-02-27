@@ -10,13 +10,11 @@ import { createDemand, getProjects, getLocations } from "../services/projectServ
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
 import { toast } from "react-toastify";
 
-/* -------------------- Constants -------------------- */
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
-const DEMAND_TYPES = ["NET_NEW", "BACKFILL", "EMERGENCY", "REPLACEMENT"];
-const DEMAND_STATUSES = ["DRAFT", "SUBMITTED", "APPROVED", "ALLOCATED", "CLOSED"];
-const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const DELIVERY_MODELS = ["ONSITE", "OFFSHORE", "HYBRID"];
-const COMMITMENT_TYPES = ["CONFIRMED", "SOFT"];
+/* -------------------- Constants -------------------- */
+// These are now handled dynamically via useEnums hook
+
 
 /* -------------------- Shared Components -------------------- */
 
@@ -213,7 +211,8 @@ const emptyForm = {
 
 /* -------------------- Modal -------------------- */
 
-const DemandModal = ({ open, onClose, initialData = null, projectDetails, onSuccess }) => {
+const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
+  const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -221,14 +220,16 @@ const DemandModal = ({ open, onClose, initialData = null, projectDetails, onSucc
 
   // Master Data
   const [roles, setRoles] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [projectResources, setProjectResources] = useState([]);
+  const [locations, setLocations] = useState([]);
 
-  const scrollRef = useRef(null);
+  const DEMAND_TYPES = getEnumValues("DemandType");
+  const DEMAND_STATUSES = getEnumValues("DemandStatus");
+  const PRIORITIES = getEnumValues("PriorityLevel");
+  const DELIVERY_MODELS = getEnumValues("DeliveryModel");
 
-  /* -------- Data Fetching -------- */
+  const startDateRef = useRef(null);
 
-  const fetchData = async () => {
+  const fetchRoles = async () => {
     try {
       const [rolesRes, projectsRes] = await Promise.all([
         getRoleExpectations(),
