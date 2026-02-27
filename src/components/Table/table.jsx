@@ -105,9 +105,7 @@ const GenericTable = ({
                   key={colIndex}
                   className="p-3 text-gray-700 font-medium relative overflow-visible"
                 >
-                  {typeof row[col] === "string"
-                    ? row[col].toUpperCase()
-                    : row[col]}
+                 {row[col]}
                 </td>
                 ))}
               </tr>

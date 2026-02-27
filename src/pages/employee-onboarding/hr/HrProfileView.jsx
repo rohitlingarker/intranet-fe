@@ -21,6 +21,7 @@ const [profile,setProfile] = useState(null);
 const [loading,setLoading] = useState(true);
 const [verificationStatus,setVerificationStatus] = useState(null);
 const [activeTab,setActiveTab] = useState("overview");
+const [loadingDoc,setLoadingDoc] = useState(null);
 
 const [sectionStatus,setSectionStatus] = useState({
 overview:false,
@@ -88,8 +89,8 @@ experience:false,
 
 setDocStatus({});
 setActiveTab("overview");
-// remove old verification progress if status is Submitted
-localStorage.removeItem(`hr_verify_${user_uuid}`);
+// // remove old verification progress if status is Submitted
+// localStorage.removeItem(`hr_verify_${user_uuid}`);
 
 const saved = localStorage.getItem(`hr_verify_${user_uuid}`);
 
@@ -132,26 +133,30 @@ localStorage.setItem(`hr_verify_${user_uuid}`,JSON.stringify(data));
 
 
 /* open document */
-
-async function openFileInNewTab(url){
+async function openFileInNewTab(url,key){
 
 if(!url) return;
 
-const tab = window.open("","_blank");
+setLoadingDoc(key);
 
 try{
 
 const res = await axios.get(`${BASE_URL}/hr/view_documents`,{
-params:{file_path:encodeURIComponent(url)},
+params:{file_path: encodeURIComponent(url)},
 headers:{Authorization:`Bearer ${token}`}
 });
 
-tab.location.href = res.data.replace(/^"+|"+$/g,"");
+const fileUrl = res.data.replace(/^"+|"+$/g,"");
+
+window.open(fileUrl,"_blank");
 
 }catch{
 
-tab.close();
 showStatusToast("Failed to open document","error");
+
+}finally{
+
+setLoadingDoc(null);
 
 }
 
@@ -424,6 +429,7 @@ onView={openFileInNewTab}
 setRejectDocKey={setRejectDocKey}
 setRejectModal={setRejectModal}
 verificationStatus={verificationStatus}
+loadingDoc={loadingDoc}
 />
 
 </Section>
@@ -450,7 +456,9 @@ setDocStatus={setDocStatus}
 onView={openFileInNewTab}
 setRejectDocKey={setRejectDocKey}
 setRejectModal={setRejectModal}
-verificationStatus={verificationStatus}/>
+verificationStatus={verificationStatus}
+loadingDoc={loadingDoc}
+/>
 
 </Section>
 
@@ -470,6 +478,7 @@ onView={openFileInNewTab}
 setRejectDocKey={setRejectDocKey}
 setRejectModal={setRejectModal}
 verificationStatus={verificationStatus}
+loadingDoc={loadingDoc}
 />
 </Section>
 
@@ -531,32 +540,7 @@ Final Verify Profile
 
 </div>
 
-{/* sticky panel */}
 
-{verificationStatus!=="Verified" && (
-
-<div className="fixed bottom-6 right-6 bg-white border shadow-lg rounded-xl p-4 w-64">
-
-<p className="text-sm font-semibold mb-2">
-Verification Status
-</p>
-
-<p className="text-xs text-gray-500 mb-3">
-Sections Verified:
-{Object.values(sectionStatus).filter(Boolean).length}/{tabs.length}
-</p>
-
-<button
-onClick={()=>setShowConfirm(true)}
-disabled={!allSectionsVerified || !allDocsVerified}
-className="w-full bg-green-600 text-white py-2 rounded disabled:opacity-40"
->
-Final Verify
-</button>
-
-</div>
-
-)}
 
 {/* confirm modal */}
 
@@ -565,7 +549,7 @@ Final Verify
 <Modal>
 
 <h2 className="text-lg font-semibold">
-Verify this profile?
+Are you sure want to verify this profile?
 </h2>
 
 <div className="flex gap-3 justify-center mt-4">
@@ -703,7 +687,9 @@ docStatus,
 setDocStatus,
 setRejectDocKey,
 setRejectModal,
-verificationStatus
+verificationStatus,
+loadingDoc
+
 })=>(
 <div className="space-y-3">
 
@@ -742,12 +728,12 @@ Uploaded: {new Date(d.uploaded_at).toLocaleDateString()}
 </div>
 
 <div className="flex items-center gap-3">
-
 <button
-onClick={()=>onView(d.file_path)}
+onClick={()=>onView(d.file_path,key)}
 className="text-indigo-600 text-sm"
+disabled={loadingDoc === key}
 >
-View
+{loadingDoc === key ? "Opening..." : "View"}
 </button>
 
 {verificationStatus === "Verified" ? (

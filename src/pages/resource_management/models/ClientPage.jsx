@@ -8,7 +8,8 @@ import { getProjectEscalations } from "../services/clientservice";
 import Pagination from "../../../components/Pagination/pagination";
 import { getAssetsByClient } from "../services/clientservice";
 import { getAssetsByProjectId } from "../services/clientservice";
-
+import CompanyEscalationContactModal from "../models/client_configuration/CompanyEscalationModal";
+import { createCompanyContact } from "../services/clientservice";
 import {
   ArrowLeft,
   Building2,
@@ -25,7 +26,6 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-
 
 import { useAuth } from "../../../contexts/AuthContext";
 
@@ -219,9 +219,10 @@ const ProjectCompliance = ({ data, loading }) => {
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${item.mandatoryFlag
-                        ? "bg-red-100 text-red-700"
-                        : "bg-gray-100 text-gray-600"
+                      ${
+                        item.mandatoryFlag
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
                       }
                     `}
                   >
@@ -233,9 +234,10 @@ const ProjectCompliance = ({ data, loading }) => {
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${item.isInherited
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "bg-purple-100 text-purple-700"
+                      ${
+                        item.isInherited
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-purple-100 text-purple-700"
                       }
                     `}
                   >
@@ -247,9 +249,10 @@ const ProjectCompliance = ({ data, loading }) => {
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${item.activeFlag
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                      ${
+                        item.activeFlag
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
                       }
                     `}
                   >
@@ -324,9 +327,10 @@ const ProjectAssets = ({ assets, loading }) => {
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${(asset.asset?.status || asset.status) === "ACTIVE"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                      ${
+                        (asset.asset?.status || asset.status) === "ACTIVE"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
                       }`}
                   >
                     {asset.asset?.status || asset.status || "UNKNOWN"}
@@ -478,6 +482,22 @@ const ClientPage = () => {
   const [escalationRefetchKey, setEscalationRefetchKey] = useState(0);
   const [openUpdateClient, setOpenUpdateClient] = useState(false);
   const [openDeleteClient, setOpenDeleteClient] = useState(false);
+  const [openCompanyEscalation, setOpenCompanyEscalation] = useState(false);
+
+  const handleCompanyContactCreate = async (payload) => {
+    setLoading(true);
+    try {
+      const res = await createCompanyContact({
+        ...payload,
+        clientId, // VERY IMPORTANT
+      });
+      toast.success(res.message || "Escalation contact created");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create contact");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Projects state
   const [projects, setProjects] = useState([]);
@@ -885,6 +905,16 @@ const ClientPage = () => {
 
       {(canConfigAgreements || canManageAssets) && (
         <div className="flex justify-end gap-3 mt-5">
+          {/* ✅ COMPANY ESCALATION BUTTON */}
+          {canConfigAgreements && (
+            <Button
+              variant="secondary"
+              onClick={() => setOpenCompanyEscalation(true)}
+              className="px-4 py-2 text-sm border rounded-lg"
+            >
+              Company Escalation
+            </Button>
+          )}
           {canConfigAgreements &&
             (clientDetails.compliance ||
               clientDetails.SLA ||
@@ -914,15 +944,15 @@ const ClientPage = () => {
       {(clientDetails.compliance ||
         clientDetails.SLA ||
         clientDetails.escalationContact) && (
-          <div className="mt-8 mb-10">
-            <ClientSection
-              clientDetails={clientDetails}
-              slaRefetchKey={slaRefetchKey}
-              complianceRefetchKey={complianceRefetchKey}
-              escalationRefetchKey={escalationRefetchKey}
-            />
-          </div>
-        )}
+        <div className="mt-8 mb-10">
+          <ClientSection
+            clientDetails={clientDetails}
+            slaRefetchKey={slaRefetchKey}
+            complianceRefetchKey={complianceRefetchKey}
+            escalationRefetchKey={escalationRefetchKey}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-8 mt-10">
         {/* LEFT SIDE: Project List */}
@@ -945,34 +975,37 @@ const ClientPage = () => {
                     setSelectedProject(project);
                     setActiveTab("sla");
                   }}
-                  className={`group cursor-pointer relative p-5 rounded-xl border transition-all duration-200 ${getProjectId(selectedProject) === getProjectId(project)
+                  className={`group cursor-pointer relative p-5 rounded-xl border transition-all duration-200 ${
+                    getProjectId(selectedProject) === getProjectId(project)
                       ? "bg-white border-indigo-600 ring-1 ring-indigo-600 shadow-md"
                       : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                    }`}
+                  }`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3
-                      className={`font-semibold ${getProjectId(selectedProject) === getProjectId(project)
+                      className={`font-semibold ${
+                        getProjectId(selectedProject) === getProjectId(project)
                           ? "text-indigo-900"
                           : "text-gray-900"
-                        }`}
+                      }`}
                     >
                       {project.name}
                     </h3>
                     {getProjectId(selectedProject) ===
                       getProjectId(project) && (
-                        <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                      )}
+                      <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Status</span>
                       <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${project.projectStatus === "ACTIVE"
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          project.projectStatus === "ACTIVE"
                             ? "bg-green-100 text-green-700"
                             : "bg-gray-100 text-gray-600"
-                          }`}
+                        }`}
                       >
                         {project.projectStatus}
                       </span>
@@ -1035,10 +1068,11 @@ const ClientPage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-4 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                    className={`flex items-center gap-2 py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab.id
                         ? "border-indigo-600 text-indigo-600"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`}
+                    }`}
                   >
                     <tab.icon size={16} />
                     {tab.label}
@@ -1119,6 +1153,24 @@ const ClientPage = () => {
           onSuccess={() => {
             fetchClientDetails();
             setOpenUpdateClient(false);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={openCompanyEscalation}
+        title="Company Escalation"
+        subtitle="Add escalation contact"
+        onClose={() => setOpenCompanyEscalation(false)}
+      >
+        <CompanyEscalationContactModal
+          loading={loading}
+          onClose={() => setOpenCompanyEscalation(false)}
+          onSave={async (payload) => {
+            await handleCompanyContactCreate(payload);
+            setOpenCompanyEscalation(false);
+            // IMPORTANT: refresh contacts list
+            window.dispatchEvent(new Event("refresh-company-escalation"));
           }}
         />
       </Modal>
