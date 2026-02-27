@@ -1,6 +1,12 @@
 import React, { useEffect } from "react";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const EscalationForm = ({ formData, setFormData }) => {
+  const { getEnumValues } = useEnums();
+  const CONTACT_ROLES = getEnumValues("ContactRole");
+  const ESCALATION_LEVELS = getEnumValues("EscalationLevel");
+  const ESCALATION_TRIGGERS = getEnumValues("EscalationTriggerType");
+
   useEffect(() => {
     if (!formData.triggers) {
       setFormData((prev) => ({ ...prev, triggers: [] }));
@@ -53,11 +59,11 @@ const EscalationForm = ({ formData, setFormData }) => {
             className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm bg-white"
           >
             <option value="">Select</option>
-            <option value="DELIVERY_HEAD">Delivery Head</option>
-            <option value="COMPLIANCE_OFFICER">Compliance Officer</option>
-            <option value="PROJECT_MANAGER">Project Manager</option>
-            <option value="ACCOUNT_MANAGER">Account Manager</option>
-            <option value="TECHNICAL_LEAD">Technical Lead</option>
+            {CONTACT_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -73,9 +79,11 @@ const EscalationForm = ({ formData, setFormData }) => {
             className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm bg-white"
           >
             <option value="">Select</option>
-            <option value="Level-1">Level 1</option>
-            <option value="Level-2">Level 2</option>
-            <option value="Level-3">Level 3</option>
+            {ESCALATION_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level.replace(/_/g, " ")}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -136,27 +144,22 @@ const EscalationForm = ({ formData, setFormData }) => {
         </label>
 
         <div className="flex gap-3">
-          {[
-            { key: "SLA_BREACH", label: "SLA Breach" },
-            { key: "DELIVERY_RISK", label: "Delivery Risk" },
-            { key: "COMPLIANCE_FAILURE", label: "Compliance Failure" },
-          ].map((t) => (
+          {ESCALATION_TRIGGERS.map((trigger) => (
             <label
-              key={t.key}
+              key={trigger}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs cursor-pointer
-                ${
-                  formData.triggers?.includes(t.key)
-                    ? "bg-indigo-50 border-indigo-400 text-indigo-700"
-                    : "bg-white border-gray-300 text-gray-600"
+                ${formData.triggers?.includes(trigger)
+                  ? "bg-indigo-50 border-indigo-400 text-indigo-700"
+                  : "bg-white border-gray-300 text-gray-600"
                 }`}
             >
               <input
                 type="checkbox"
-                checked={formData.triggers?.includes(t.key)}
-                onChange={() => handleTriggerChange(t.key)}
+                checked={formData.triggers?.includes(trigger)}
+                onChange={() => handleTriggerChange(trigger)}
                 className="hidden"
               />
-              {t.label}
+              {trigger.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
             </label>
           ))}
         </div>

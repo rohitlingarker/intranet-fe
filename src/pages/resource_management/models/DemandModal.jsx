@@ -10,18 +10,11 @@ import { getRoleExpectations } from "../services/workforceService";
 import { getLocations } from "../services/projectService";
 import { toast } from "react-toastify";
 
-/* -------------------- Constants -------------------- */
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
-const DEMAND_TYPES = ["NET_NEW", "BACKFILL", "EMERGENCY", "REPLACEMENT"];
-const DEMAND_STATUSES = [
-  "DRAFT",
-  "SUBMITTED",
-  "APPROVED",
-  "ALLOCATED",
-  "CLOSED",
-];
-const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const DELIVERY_MODELS = ["ONSITE", "OFFSHORE", "HYBRID"];
+/* -------------------- Constants -------------------- */
+// These are now handled dynamically via useEnums hook
+
 
 /* -------------------- Listbox Field -------------------- */
 
@@ -118,11 +111,17 @@ const emptyForm = {
 /* -------------------- Modal -------------------- */
 
 const DemandModal = ({ open, onClose, initialData = null, projectDetails }) => {
+  const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState([]);
   const [locations, setLocations] = useState([]);
+
+  const DEMAND_TYPES = getEnumValues("DemandType");
+  const DEMAND_STATUSES = getEnumValues("DemandStatus");
+  const PRIORITIES = getEnumValues("PriorityLevel");
+  const DELIVERY_MODELS = getEnumValues("DeliveryModel");
 
   const startDateRef = useRef(null);
 

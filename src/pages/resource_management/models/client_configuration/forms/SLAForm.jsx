@@ -1,6 +1,9 @@
-import React from "react";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const SLAForm = ({ formData, setFormData }) => {
+  const { getEnumValues } = useEnums();
+  const SLA_TYPES = getEnumValues("SLAType");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -22,11 +25,14 @@ const SLAForm = ({ formData, setFormData }) => {
             className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm bg-white"
           >
             <option value="">Select</option>
-            <option value="NEW_DEMAND">New Demand</option>
-            <option value="REPLACEMENT">Replacement</option>
-            <option value="EMERGENCY">Emergency</option>
+            {SLA_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type.replace(/_/g, " ")}
+              </option>
+            ))}
           </select>
         </div>
+
 
         {/* SLA Duration */}
         <div>

@@ -16,9 +16,16 @@ import Pagination from "../../../../components/Pagination/pagination";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import UpdateProjectStatusModal from "../../models/UpdateProjectStatusModal";
 import { formatCurrency } from "../../services/clientservice";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const RMSProjectList = () => {
+  const { getEnumValues } = useEnums();
+  const READINESS_STATUSES = getEnumValues("StaffingReadinessStatus");
+  const PROJECT_STATUSES = getEnumValues("ProjectStatus");
+  const RISK_LEVELS = getEnumValues("RiskLevel");
+
   const navigate = useNavigate();
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
@@ -159,9 +166,11 @@ const RMSProjectList = () => {
           }
         >
           <option value="">All Readiness</option>
-          <option value="READY">Ready</option>
-          <option value="UPCOMING">Upcoming</option>
-          <option value="NOT_READY">Not Ready</option>
+          {READINESS_STATUSES.map((val) => (
+            <option key={val} value={val}>
+              {val.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+            </option>
+          ))}
         </select>
 
         <select
@@ -170,8 +179,11 @@ const RMSProjectList = () => {
           onChange={(e) => handleFilterChange("projectStatus", e.target.value)}
         >
           <option value="">All Status</option>
-          <option value="APPROVED">Approved</option>
-          <option value="PLANNING">Planning</option>
+          {PROJECT_STATUSES.map((val) => (
+            <option key={val} value={val}>
+              {val.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+            </option>
+          ))}
         </select>
 
         <select
@@ -180,9 +192,11 @@ const RMSProjectList = () => {
           onChange={(e) => handleFilterChange("riskLevel", e.target.value)}
         >
           <option value="">All Risk</option>
-          <option value="HIGH">High</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="LOW">Low</option>
+          {RISK_LEVELS.map((val) => (
+            <option key={val} value={val}>
+              {val.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+            </option>
+          ))}
         </select>
       </div>
 
