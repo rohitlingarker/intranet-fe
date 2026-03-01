@@ -31,8 +31,8 @@ import RMSProjectList from "./pages/resource_management/pages/project/RMSProject
 import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
 import WorkforceAvailability from "./pages/resource_management/pages/workforce/WorkforceAvailability.jsx";
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
-import DemandWorkspace from "./pages/resource_management/demand/pages/DemandWorkspace.jsx";
-import DemandDetailsPage from "./pages/resource_management/demand/pages/DemandDetailsPage.jsx";
+import DemandWorkspacePage from "./pages/resource_management/demand/pages/DemandWorkspacePage.jsx";
+import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDetailPage.jsx";
 
 // Timesheets
 
@@ -203,7 +203,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
-    localStorage.setItem("lastPath", location.pathname + location.search);
+    if (location.pathname !== "/" && location.pathname !== "/login") {
+      localStorage.setItem("lastPath", location.pathname + location.search);
+    }
   }, [location]);
   return null;
 };
@@ -248,7 +250,6 @@ const AppRoutes = () => {
         navigate("/change-password", { replace: true });
       }
       else if (lastPath && lastPath !== "/" && lastPath !== "/login" && lastPath !== currentPath) {
-        // Only restore if we have a valid last path and aren't already there
         navigate(lastPath, { replace: true });
       }
       else if (currentPath === "/") {
@@ -763,7 +764,7 @@ const AppRoutes = () => {
             path="/resource-management/demand"
             element={
               <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
-                <DemandWorkspace />
+                <DemandWorkspacePage />
               </ProtectedRoute>
             }
           />
@@ -771,7 +772,7 @@ const AppRoutes = () => {
             path="/resource-management/demand/:demandId"
             element={
               <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
-                <DemandDetailsPage />
+                <DemandDetailPage />
               </ProtectedRoute>
             }
           />

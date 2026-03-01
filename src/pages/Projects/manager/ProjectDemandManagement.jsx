@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import DemandKPIStrip from '../../resource_management/demand/components/DemandKPIStrip';
 import DemandList from '../../resource_management/demand/components/DemandList';
 import DemandFilters from '../../resource_management/demand/components/DemandFilters';
-import { MOCK_DEMANDS } from '../../resource_management/demand/models/demand.mock';
 import { Search, Filter, Plus, FilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
@@ -146,12 +145,9 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         navigate(`/resource-management/demand/${demand.id}`);
     };
 
-    // Filter demands for this specific project
+    // Filter demands for this specific project (Empty until API linked)
     const projectDemands = useMemo(() => {
-        return MOCK_DEMANDS.filter(d =>
-            d.projectName === projectName ||
-            (projectName && d.projectName.toLowerCase().includes(projectName.toLowerCase()))
-        );
+        return [];
     }, [projectName]);
 
     // Calculate dynamic KPIs for this project
