@@ -129,27 +129,27 @@ export default function WorkforceAvailability() {
                       {filteredResources.length} resources
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <TabsList className="h-9 bg-muted/50 p-1">
+                  <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar -mb-px">
+                    <TabsList className="h-9 bg-muted/50 p-1 w-full sm:w-auto inline-flex min-w-max">
                       <TabsTrigger
                         value="calendar"
-                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                        className="text-[11px] sm:text-xs h-7 px-2.5 sm:px-4 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none whitespace-nowrap transition-all"
                       >
-                        <CalendarDays className="h-3.5 w-3.5" />
+                        <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                         Calendar View
                       </TabsTrigger>
                       <TabsTrigger
                         value="timeline"
-                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                        className="text-[11px] sm:text-xs h-7 px-2.5 sm:px-4 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none whitespace-nowrap transition-all"
                       >
-                        <GanttChart className="h-3.5 w-3.5" />
+                        <GanttChart className="h-3.5 w-3.5 shrink-0" />
                         Timeline
                       </TabsTrigger>
                       <TabsTrigger
                         value="table"
-                        className="text-xs h-7 px-3 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                        className="text-[11px] sm:text-xs h-7 px-2.5 sm:px-4 gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none whitespace-nowrap transition-all"
                       >
-                        <Table2 className="h-3.5 w-3.5" />
+                        <Table2 className="h-3.5 w-3.5 shrink-0" />
                         Table View
                       </TabsTrigger>
                     </TabsList>
