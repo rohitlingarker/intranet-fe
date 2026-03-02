@@ -9,10 +9,10 @@ import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
 import { Pencil, Trash2 } from "lucide-react";
-// import Modal from "../../../components/Modal/modal";
-// import EscalationForm from "./client_configuration/forms/EscalationForm";
+import Modal from "../../../components/Modal/modal";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
 import { useAuth } from "../../../contexts/AuthContext";
+import CompanyEscalationContactModal from "./client_configuration/CompanyEscalationModal";
 
 const CompanyEscalation = () => {
   const { user } = useAuth();
@@ -24,27 +24,27 @@ const CompanyEscalation = () => {
   const [updateLoading, setUpdateLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [openUpdateContact, setOpenUpdateContact] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [selectedContact, setSelectedContact] = useState(null);
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState(null);
 
   const ITEMS_PER_PAGE = 3;
 
-  const handleSetFormData = (data) => {
-    if (!data) return;
-    setFormData({
-      client: {
-        clientId: clientId,
-      },
-      contactId: data.contactId,
-      contactName: data.contactName,
-      contactRole: data.contactRole,
-      email: data.email,
-      phone: data.phone,
-      escalationLevel: data.escalationLevel,
-      activeFlag: data.activeFlag ?? true,
-    });
-  };
+  // const handleSetFormData = (data) => {
+  //   if (!data) return;
+  //   setFormData({
+  //     client: {
+  //       clientId: clientId,
+  //     },
+  //     contactId: data.contactId,
+  //     contactName: data.contactName,
+  //     contactRole: data.contactRole,
+  //     email: data.email,
+  //     phone: data.phone,
+  //     escalationLevel: data.escalationLevel,
+  //     activeFlag: data.activeFlag ?? true,
+  //   });
+  // };
 
   const fetchContact = async () => {
     setLoading(true);
@@ -66,15 +66,21 @@ const CompanyEscalation = () => {
     }
   };
 
-  const handleUpdateContact = async () => {
+  const handleUpdateContact = async (data) => {
     setUpdateLoading(true);
     try {
-      const res = await updateCompanyContact(formData);
-      toast.success(res.message || "Contact updated successfully.");
+      if (selectedContact) {
+        const res = await updateCompanyContact(data);
+        toast.success(res.message || "Contact updated successfully.");
+      } else {
+        const res = await createCompanyContact(data);
+        toast.success(res.message || "Contact created successfully.");
+      }
       setOpenUpdateContact(false);
+      setSelectedContact(null);
       fetchContact();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update Contact.");
+      toast.error(error.response?.data?.message || "Failed to save contact.");
     } finally {
       setUpdateLoading(false);
     }
@@ -218,7 +224,7 @@ const CompanyEscalation = () => {
                       <div className="flex justify-center items-center gap-4">
                         <button
                           onClick={() => {
-                            handleSetFormData(item);
+                            setSelectedContact(item);
                             setOpenUpdateContact(true);
                           }}
                           className="px-2 text-blue-600 hover:text-blue-800 transition"
@@ -259,23 +265,25 @@ const CompanyEscalation = () => {
       )}
 
       {/* Update Contact Modal */}
-      {/* <Modal
-        title="Update Escalation Contact"
-        subtitle="Update Escalation Contact details."
+      <Modal
+        title="Escalation Contact"
+        subtitle="Create or update escalation contact."
         isOpen={openUpdateContact}
-        onClose={() => setOpenUpdateContact(false)}
+        onClose={() => {
+          setOpenUpdateContact(false);
+          setSelectedContact(null);
+        }}
       >
-        <EscalationForm formData={formData} setFormData={setFormData} />
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={handleUpdateContact}
-            disabled={updateLoading}
-            className={`px-4 py-2 rounded-xl bg-blue-700 text-white hover:bg-blue-800 ${updateLoading && "opacity-50 cursor-not-allowed"}`}
-          >
-            {updateLoading ? "Updating..." : "Update"}
-          </button>
-        </div>
-      </Modal> */}
+        <CompanyEscalationContactModal
+          initialData={selectedContact}
+          loading={updateLoading}
+          onClose={() => {
+            setOpenUpdateContact(false);
+            setSelectedContact(null);
+          }}
+          onSave={async (data) => handleUpdateContact(data)}
+        />
+      </Modal>
 
       {/* Confirm Modal */}
       <ConfirmationModal

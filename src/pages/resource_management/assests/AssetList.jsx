@@ -206,12 +206,9 @@ const AssetList = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="group p-2.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition-all duration-200"
+              className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm"
             >
-              <ArrowLeft
-                size={20}
-                className="group-hover:-translate-x-1 transition-transform"
-              />
+              <ArrowLeft size={18} />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -219,7 +216,7 @@ const AssetList = () => {
               </h1>
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                 <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">
-                  Client
+                  {/* Client */} {assets[0]?.client?.client_name}
                 </span>
                 <span>•</span>
                 <span>Inventory & Dashboard</span>
@@ -227,14 +224,16 @@ const AssetList = () => {
             </div>
           </div>
 
-          <Button
-            variant="primary"
-            className="flex items-center gap-2 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all"
-            onClick={() => openModal()}
-          >
-            <Plus size={18} strokeWidth={2.5} />
-            <span>New Asset</span>
-          </Button>
+          <div className="flex justify-start sm:justify-end">
+            <Button
+              variant="primary"
+              className="flex items-center gap-2 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all w-full sm:w-auto justify-center sm:justify-start"
+              onClick={() => openModal()}
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              <span>New Asset</span>
+            </Button>
+          </div>
         </div>
 
         {/* KPI SECTION */}
@@ -412,85 +411,102 @@ const AssetList = () => {
             title={editingAsset ? "Edit Asset Details" : "Add New Asset"}
             onClose={closeModal}
           >
-            <form onSubmit={handleSaveAsset} className="space-y-5" noValidate>
-              {/* ROW 1: Asset Name & Quantity */}
-              <div className="grid grid-cols-2 gap-5">
-                <Input
-                  label="Asset Name"
-                  name="asset_name"
-                  defaultValue={editingAsset?.assetName}
-                  placeholder="e.g. MacBook Pro M1"
-                  error={validationErrors.asset_name}
-                />
+            <form onSubmit={handleSaveAsset} className="flex flex-col max-h-[calc(80vh-60px)]" noValidate>
+              {/* BODY */}
+              <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+                {/* ROW 1: Asset Name & Quantity */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <Input
+                    label="Asset Name"
+                    name="asset_name"
+                    defaultValue={editingAsset?.assetName}
+                    placeholder="e.g. MacBook Pro M1"
+                    error={validationErrors.asset_name}
+                  />
 
-                <Input
-                  label="Quantity"
-                  name="quantity"
-                  type="number"
-                  min="1"
-                  defaultValue={editingAsset?.quantity}
-                  placeholder="e.g. 10"
-                  error={validationErrors.quantity}
-                />
+                  <Input
+                    label="Quantity"
+                    name="quantity"
+                    type="number"
+                    min="1"
+                    defaultValue={editingAsset?.quantity}
+                    placeholder="e.g. 10"
+                    error={validationErrors.quantity}
+                  />
+                </div>
+
+                {/* ROW 2: Category & Type */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <Select
+                    label="Category"
+                    name="asset_category"
+                    options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
+                    defaultValue={editingAsset?.assetCategory}
+                  />
+
+                  <Select
+                    label="Type"
+                    name="asset_type"
+                    options={["Laptop", "Mobile", "License", "VPN", "Tool"]}
+                    defaultValue={editingAsset?.assetType}
+                  />
+                </div>
+
+                {/* ROW 3: Description */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    defaultValue={editingAsset?.description}
+                    placeholder="Brief description about the asset..."
+                    rows={3}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+                  />
+                </div>
+
+                {/* ROW 4: Serial Number Upload */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Asset Serial Numbers (Excel)
+                  </label>
+
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={(e) => setSerialFile(e.target.files[0])}
+                      className="block w-full text-sm text-gray-600
+                        file:mr-4 file:py-2.5 file:px-4
+                        file:rounded-xl file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-indigo-600 file:text-white
+                        hover:file:bg-indigo-700
+                        file:cursor-pointer file:transition-colors
+                        cursor-pointer bg-white border border-dashed border-gray-300 rounded-xl p-2
+                      "
+                    />
+                    {serialFile && (
+                      <p className="mt-2 text-xs text-indigo-600 font-medium flex items-center gap-1">
+                        <Check size={14} /> Selected: {serialFile.name}
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Upload an Excel file containing serial numbers. Number of rows
+                    must match the quantity entered.
+                  </p>
+                </div>
               </div>
 
-              {/* ROW 2: Category & Type */}
-              <div className="grid grid-cols-2 gap-5">
-                <Select
-                  label="Category"
-                  name="asset_category"
-                  options={["DEVICE", "SOFTWARE", "ACCESS", "TOOLS"]}
-                  defaultValue={editingAsset?.assetCategory}
-                />
-
-                <Select
-                  label="Type"
-                  name="asset_type"
-                  options={["Laptop", "Mobile", "License", "VPN", "Tool"]}
-                  defaultValue={editingAsset?.assetType}
-                />
-              </div>
-
-              {/* ROW 3: Description */}
-              <Input
-                label="Description"
-                name="description"
-                defaultValue={editingAsset?.description}
-                placeholder="Brief description about the asset..."
-              />
-
-              {/* ROW 4: Serial Number Upload */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                  Asset Serial Numbers (Excel)
-                </label>
-
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={(e) => setSerialFile(e.target.files[0])}
-                  className="block w-full text-sm text-gray-600
-        file:mr-4 file:py-2.5 file:px-4
-        file:rounded-lg file:border-0
-        file:text-sm file:font-semibold
-        file:bg-indigo-50 file:text-indigo-700
-        hover:file:bg-indigo-100
-        cursor-pointer
-      "
-                />
-
-                <p className="text-xs text-gray-400">
-                  Upload an Excel file containing serial numbers. Number of rows
-                  must match the quantity entered.
-                </p>
-              </div>
-
-              {/* ACTIONS */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                <Button variant="secondary" type="button" onClick={closeModal}>
+              {/* FOOTER ACTIONS */}
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+                <Button variant="secondary" type="button" onClick={closeModal} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
+                <Button variant="primary" type="submit" className="w-full sm:w-auto">
                   {editingAsset ? "Update Asset" : "Create Asset"}
                 </Button>
               </div>
@@ -501,30 +517,32 @@ const AssetList = () => {
         {/* DELETE CONFIRMATION */}
         {deleteTarget && (
           <Modal title="Confirm Deletion" onClose={() => setDeleteTarget(null)}>
-            <div className="space-y-4 text-center py-4">
-              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
-                <AlertTriangle className="text-red-500" size={32} />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-gray-900">
-                  Are you sure?
-                </h4>
-                <p className="text-sm text-gray-500 mt-1">
-                  You are about to delete{" "}
-                  <strong>{deleteTarget.assetName}</strong>. This action cannot
-                  be undone.
-                </p>
-              </div>
-              <div className="flex justify-center gap-3 pt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => setDeleteTarget(null)}
-                >
-                  Cancel
-                </Button>
-                <Button variant="danger" onClick={confirmDelete}>
-                  Yes, Delete It
-                </Button>
+            <div className="p-6">
+              <div className="space-y-4 text-center py-4">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
+                  <AlertTriangle className="text-red-500" size={32} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">
+                    Are you sure?
+                  </h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    You are about to delete{" "}
+                    <strong>{deleteTarget.assetName}</strong>. This action cannot
+                    be undone.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-3 pt-4">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setDeleteTarget(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="danger" onClick={confirmDelete}>
+                    Yes, Delete It
+                  </Button>
+                </div>
               </div>
             </div>
           </Modal>
@@ -601,9 +619,15 @@ const StatusBadge = ({ status }) => {
 };
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 md:p-10">
+    {/* Backdrop */}
+    <div
+      className="fixed inset-0 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    />
+
+    <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
         <h3 className="text-lg font-bold text-gray-800">{title}</h3>
         <button
           onClick={onClose}
@@ -612,7 +636,7 @@ const Modal = ({ title, children, onClose }) => (
           <X size={20} />
         </button>
       </div>
-      <div className="p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-hidden flex flex-col">
         {children}
       </div>
     </div>
@@ -634,10 +658,9 @@ const Input = ({ label, error, ...props }) => (
       className={`
         w-full bg-gray-50 border rounded-lg px-4 py-2.5 text-sm transition-all placeholder:text-gray-400
         focus:bg-white focus:outline-none focus:ring-2 
-        ${
-          error
-            ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
-            : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
+        ${error
+          ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
+          : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
         }
       `}
     />

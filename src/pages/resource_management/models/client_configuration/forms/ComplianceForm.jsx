@@ -90,41 +90,39 @@ const ComplianceForm = ({ formData, setFormData }) => {
   };
 
   return (
-    <div className="border-t pt-4 space-y-4">
-      {/* ===== REQUIREMENT DETAILS ===== */}
-      <div className="grid grid-cols-3 gap-3 items-end">
+    <div className="border-t pt-4 space-y-5">
+      {/* ===== REQUIREMENT DETAILS (RESPONSIVE GRID) ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
         {/* Requirement Type */}
-        <div>
-          <label className="text-xs font-medium text-gray-600">
+        <div className="sm:col-span-1">
+          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
             Requirement Type *
           </label>
           <select
             name="requirementType"
             value={formData.requirementType || ""}
             onChange={handleChange}
-            className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm bg-white"
+            className="w-full mt-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
           >
-            <option value="">Select</option>
+            <option value="">Select Type</option>
             {REQUIREMENT_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
               </option>
             ))}
           </select>
-
         </div>
 
         {formData.requirementType === "SKILL" ? (
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Skills <span className="text-red-500">*</span>
+          <div className="sm:col-span-1">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Skills *
             </label>
             <select
               name="skill"
-              // Target the nested ID
               value={formData.skill?.id || ""}
               onChange={handleChange}
-              className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+              className={`w-full mt-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none ${loading ? 'opacity-50 cursor-wait' : ''}`}
               disabled={loading}
             >
               <option value="">Select a skill</option>
@@ -136,15 +134,15 @@ const ComplianceForm = ({ formData, setFormData }) => {
             </select>
           </div>
         ) : formData.requirementType === "CERTIFICATION" ? (
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Certificate <span className="text-red-500">*</span>
+          <div className="sm:col-span-1">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Certificate *
             </label>
             <select
               name="certificate"
               value={formData.certificate?.certificateId || ""}
               onChange={handleChange}
-              className={`w-full mt-1 border rounded-lg px-3 py-2 text-sm ${loading ? 'opacity-50 cursor-wait bg-gray-500' : ''}`}
+              className={`w-full mt-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none ${loading ? 'opacity-50 cursor-wait' : ''}`}
               disabled={loading}
             >
               <option value="">Select a certificate</option>
@@ -158,23 +156,27 @@ const ComplianceForm = ({ formData, setFormData }) => {
         ) : null}
 
         {/* Requirement Name */}
-        <div className="col-span-2">
-          <label className="text-xs font-medium text-gray-600">
+        <div className={`${formData.requirementType === "SKILL" || formData.requirementType === "CERTIFICATION"
+          ? "sm:col-span-2 lg:col-span-1"
+          : "sm:col-span-1 lg:col-span-2"
+          }`}>
+          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
             Requirement Name *
           </label>
           <input
             name="requirementName"
+            placeholder="e.g. ISO 27001"
             value={formData.requirementName || ""}
             onChange={handleChange}
-            className="w-full mt-1 border rounded-md px-2 py-1.5 text-sm"
+            className="w-full mt-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
           />
         </div>
       </div>
 
-      {/* ===== FLAGS ===== */}
-      <div className="flex items-center gap-6">
+      {/* ===== FLAGS (MODERN TOGGLES) ===== */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-2">
         {/* Mandatory */}
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+        <div className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id="mandatoryFlag"
@@ -185,13 +187,16 @@ const ComplianceForm = ({ formData, setFormData }) => {
                 mandatoryFlag: e.target.checked,
               }))
             }
-            className="h-4 w-4 text-indigo-600"
+            className="sr-only peer"
           />
-          Mandatory
-        </label>
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+          <label htmlFor="mandatoryFlag" className="ml-3 text-sm font-medium text-gray-700">
+            Mandatory Requirement
+          </label>
+        </div>
 
         {/* Active */}
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+        <div className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id="activeFlag"
@@ -202,10 +207,13 @@ const ComplianceForm = ({ formData, setFormData }) => {
                 activeFlag: e.target.checked,
               }))
             }
-            className="h-4 w-4 text-indigo-600"
+            className="sr-only peer"
           />
-          Active
-        </label>
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          <label htmlFor="activeFlag" className="ml-3 text-sm font-medium text-gray-700">
+            Active Status
+          </label>
+        </div>
       </div>
     </div>
   );
