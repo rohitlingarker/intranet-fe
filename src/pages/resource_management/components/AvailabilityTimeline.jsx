@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -138,10 +138,16 @@ function groupByRole(resources) {
 
 // ----- Sub-components -----
 
-function TimelineHeader({ zoom, ticks, todayOffset, totalDays, dayWidth }) {
+const TimelineHeader = memo(function TimelineHeader({
+  zoom,
+  ticks,
+  todayOffset,
+  totalDays,
+  dayWidth,
+}) {
   return (
     <div
-      className="relative h-10 border-b bg-muted/30 z-10"
+      className="sticky top-0 h-10 border-b bg-white/95 backdrop-blur-sm z-30"
       style={{ width: `${totalDays * dayWidth}px` }}
     >
       {ticks.map((tick, i) => (
@@ -167,9 +173,9 @@ function TimelineHeader({ zoom, ticks, todayOffset, totalDays, dayWidth }) {
       )}
     </div>
   );
-}
+});
 
-function AllocationBar({
+const AllocationBar = memo(function AllocationBar({
   block,
   startDate,
   dayWidth,
@@ -177,86 +183,46 @@ function AllocationBar({
   onResourceClick,
   style,
 }) {
-  const blockStart = parseDate(block.startDate);
-  const blockEnd = parseDate(block.endDate);
-  const offsetDays = daysBetween(startDate, blockStart);
-  const durationDays = daysBetween(blockStart, blockEnd);
+  const startOffset = daysBetween(startDate, parseDate(block.startDate)) * dayWidth;
+  const durationDays = daysBetween(parseDate(block.startDate), parseDate(block.endDate)) + 1;
+  const width = durationDays * dayWidth;
 
-  const left = offsetDays * dayWidth;
-  const width = Math.max(durationDays * dayWidth, 4);
-  const barHeight = TRACK_HEIGHT - 6;
-
-  const isAvailability = block.isAvailability || block.allocation === 0;
+  const barColor = getBarColor(block.allocation, block.tentative);
+  const hoverColor = getBarHoverColor(block.allocation, block.tentative);
 
   return (
     <div
+      className={cn(
+        "absolute top-1 bottom-1 rounded-md border-y flex flex-col justify-center px-1.5 sm:px-2 min-w-[20px] transition-all cursor-pointer group/bar shadow-sm overflow-hidden",
+        barColor,
+        hoverColor,
+      )}
       style={{
-        position: "absolute",
-        left: `${left}px`,
+        left: `${startOffset}px`,
         width: `${width}px`,
-        height: `${barHeight}px`,
         ...style,
       }}
-      className="z-20 group hover:z-[100]"
+      onClick={() => onResourceClick && onResourceClick(resource)}
     >
-      <button
-        type="button"
-        className={cn(
-          "w-full h-full rounded shadow-sm border transition-colors flex items-center px-3 overflow-hidden",
-          getBarColor(block.allocation, block.tentative),
-          getBarHoverColor(block.allocation, block.tentative),
-          isAvailability && "cursor-default",
-        )}
-        onClick={() => !isAvailability && onResourceClick(resource)}
-      >
-        {width > 60 && (
-          <span
-            className={cn(
-              "text-[11px] font-medium truncate block leading-none",
-              block.tentative ? "text-slate-600" : "text-white",
-            )}
-          >
-            {isAvailability
-              ? "Available (100%)"
-              : `${block.project} (${block.allocation}%)`}
-          </span>
-        )}
-      </button>
-
-      <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
-        <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[220px]">
-          <div className="space-y-2">
-            <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">
-              {isAvailability ? "Availability Info" : block.project}
-            </p>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <span className="text-slate-500 text-[10px]">
-                {isAvailability ? "Availability" : "Allocation"}
-              </span>
-              <span className="font-semibold text-slate-900 text-[10px] text-right">
-                {isAvailability ? "100%" : `${block.allocation}%`}
-              </span>
-              <span className="text-slate-500 text-[10px]">Period</span>
-              <span className="font-semibold text-slate-900 text-[10px] text-right">
-                {block.startDate} to {block.endDate}
-              </span>
-            </div>
-            {block.tentative && (
-              <div className="mt-1 flex items-center gap-1.5 pt-1 border-t">
-                <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                <span className="text-[10px] font-bold text-amber-600 uppercase">
-                  Tentative
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-1 sm:gap-2 truncate max-w-full">
+        {block.tentative && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+        <span className="text-[7px] sm:text-[9px] font-sans font-bold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)] truncate whitespace-nowrap">
+          {block.allocation}% {block.tentative ? "(Proposed)" : ""}
+        </span>
       </div>
+      {(block.projectName || block.demandName) && width > 40 && (
+        <p className="text-[6px] sm:text-[7px] font-sans font-medium text-white/90 truncate leading-none mt-0.5 whitespace-nowrap">
+          {block.projectName || block.demandName}
+        </p>
+      )}
+
+      {/* Hover Information Layer */}
+      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity" />
     </div>
   );
-}
+});
 
-function ResourceRow({
+const ResourceRow = memo(function ResourceRow({
   resource,
   startDate,
   endDate,
@@ -268,125 +234,75 @@ function ResourceRow({
   weeklyTicks,
   realToday,
 }) {
-  const totalDays = daysBetween(startDate, endDate);
-
-  const blocksWithTracks = useMemo(() => {
-    const visibleProjects = (resource.allocationTimeline || []).filter((b) => {
-      const bStart = parseDate(b.startDate);
-      const bEnd = parseDate(b.endDate);
-      return bEnd >= startDate && bStart <= endDate;
-    });
-
-    const projectBlocks = visibleProjects.map((block, index) => ({
-      ...block,
-      trackIndex: index,
-    }));
-
-    // Find the track index of the project that ends the latest among visible ones
-    let latestTrackIndex = 0;
-    if (projectBlocks.length > 0) {
-      let maxEndDate = parseDate(projectBlocks[0].endDate);
-      projectBlocks.forEach((pb) => {
-        const d = parseDate(pb.endDate);
-        if (d > maxEndDate) {
-          maxEndDate = d;
-          latestTrackIndex = pb.trackIndex;
-        }
-      });
-    }
-
-    // Handle availability bar
-    const timelineEndDate = endDate;
-    const today = realToday || parseDate(new Date());
-    let availStart = null;
-
-    if (
-      !resource.allocationTimeline ||
-      resource.allocationTimeline.length === 0
-    ) {
-      availStart = today;
-    } else {
-      // Find the latest end date among ALL projects to determine when availability actually starts
-      const globalLatestEnd = resource.allocationTimeline.reduce(
-        (latest, b) => {
-          const d = parseDate(b.endDate);
-          return d > latest ? d : latest;
-        },
-        parseDate(resource.allocationTimeline[0].endDate),
-      );
-
-      const availableFrom = resource.availableFrom
-        ? parseDate(resource.availableFrom)
-        : today;
-      availStart =
-        globalLatestEnd > availableFrom ? globalLatestEnd : availableFrom;
-    }
-
-    const result = [...projectBlocks];
-
-    if (availStart && availStart < timelineEndDate) {
-      // Clip start date to visible window
-      const actualStart = availStart < startDate ? startDate : availStart;
-
-      if (actualStart < timelineEndDate) {
-        result.push({
-          project: "Available (100%)",
-          startDate: actualStart.toISOString().split("T")[0],
-          endDate: timelineEndDate.toISOString().split("T")[0],
-          allocation: 0,
-          isAvailability: true,
-          trackIndex: latestTrackIndex, // Place on the same track as the latest ending project
-        });
-      }
-    }
-
-    return result;
-  }, [
-    resource.allocationTimeline,
-    resource.availableFrom,
-    startDate,
-    endDate,
-    realToday,
-  ]);
+  const totalDays = dayWidth > 0 ? daysBetween(startDate, endDate) : 0;
 
   return (
     <div
-      className="relative border-b border-border/30 hover:bg-slate-50/30 transition-colors hover:z-50"
-      style={{ height: `${rowHeight}px`, width: `${totalDays * dayWidth}px` }}
+      className="relative flex items-center group/row border-b border-slate-50 hover:bg-slate-50/10 transition-colors shrink-0"
+      style={{
+        height: `${rowHeight}px`,
+        width: `${totalDays * dayWidth}px`,
+      }}
     >
-      {/* Background Grid - Combine major and minor ticks */}
-      {(weeklyTicks || ticks).map((tick, i) => (
+      {/* Background Month Stripes */}
+      <div className="absolute inset-0 flex pointer-events-none opacity-[0.02]">
+        {ticks.map((tick, i) => (
+          <div
+            key={i}
+            className={cn("h-full border-r border-slate-900 last:border-0")}
+            style={{ width: `${tick.width}px` }}
+          />
+        ))}
+      </div>
+
+      {/* Weekly Grid Lines (Light) */}
+      {weeklyTicks?.map((tick, i) => (
         <div
           key={i}
-          className={cn(
-            "absolute top-0 h-full border-l",
-            tick.isMonth ? "border-border/20" : "border-border/10",
-          )}
+          className="absolute top-0 bottom-0 border-l border-slate-100/50 pointer-events-none"
           style={{ left: `${tick.offset}px` }}
         />
       ))}
+
+      {/* Today Highlight Column */}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary/20 z-10"
-          style={{ left: `${todayOffset}px` }}
+          className="absolute top-0 bottom-0 bg-blue-500/5 border-x border-blue-500/10 z-0 pointer-events-none"
+          style={{ left: `${todayOffset}px`, width: `${dayWidth}px` }}
         />
       )}
-      {blocksWithTracks.map((block, i) => (
-        <AllocationBar
-          key={`${block.project}-${i}`}
-          block={block}
-          startDate={startDate}
-          dayWidth={dayWidth}
-          resource={resource}
-          onResourceClick={onResourceClick}
-          style={{
-            top: `${block.trackIndex * TRACK_HEIGHT + ROW_PADDING / 2}px`,
-          }}
-        />
-      ))}
+
+      {/* Allocation Blocks */}
+      <div className="absolute inset-0 px-[0.5px]">
+        {(resource.allocations || []).map((block, idx) => (
+          <AllocationBar
+            key={`${resource.id}-${idx}`}
+            block={block}
+            startDate={startDate}
+            dayWidth={dayWidth}
+            resource={resource}
+            onResourceClick={onResourceClick}
+          />
+        ))}
+
+        {/* Bench Periods (Visual only) */}
+        {(resource.benchPeriods || []).map((period, idx) => {
+          const start = Math.max(0, daysBetween(startDate, parseDate(period.startDate)) * dayWidth);
+          const endDay = daysBetween(parseDate(period.startDate), parseDate(period.endDate)) + 1;
+          const width = endDay * dayWidth;
+
+          return (
+            <div
+              key={`bench-${idx}`}
+              className="absolute top-3 bottom-3 border border-slate-200 border-dashed rounded opacity-40 bg-slate-50"
+              style={{ left: `${start}px`, width: `${width}px` }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
-}
+});
 
 function RoleAggregateRow({
   role,
@@ -571,8 +487,37 @@ export function TimelineSkeleton() {
     </div>
   );
 }
+export function TimelineSkeletonContent() {
+  return (
+    <div className="flex flex-1 min-h-0 animate-pulse">
+      <div className="w-[120px] sm:w-[180px] lg:w-[240px] border-r bg-white p-4 space-y-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-slate-100 shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-3 w-3/4 bg-slate-100 rounded" />
+              <div className="h-2 w-1/2 bg-slate-100 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 bg-white relative">
+        <div className="h-10 border-b bg-slate-50 flex items-center px-4">
+          <div className="h-3 w-3/4 bg-slate-100 rounded" />
+        </div>
+        <div className="p-4 space-y-8">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-8 w-full bg-slate-50 rounded relative">
+              <div className="absolute top-1 left-4 h-6 w-1/3 bg-slate-100 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-export function AvailabilityTimeline({
+export default function AvailabilityTimeline({
   filteredResources,
   onResourceClick,
   currentDate,
@@ -580,13 +525,11 @@ export function AvailabilityTimeline({
   filters,
   setFilters,
 }) {
-  if (loading) return <TimelineSkeleton />;
-  const [zoom, setZoom] = useState("month");
-  const [viewMode, setViewMode] = useState("resource");
   const scrollRef = useRef(null);
   const scrolledRef = useRef(false);
 
-  // Use actual current date
+  const [viewMode, setViewMode] = useState("resource"); // 'resource' or 'role'
+  const [zoom, setZoom] = useState("month"); // 'week', 'month', 'quarter'
   const realToday = parseDate(new Date());
 
   const baseDate = useMemo(() => parseDate(currentDate), [currentDate]);
@@ -730,7 +673,7 @@ export function AvailabilityTimeline({
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden shadow-sm flex flex-col h-full bg-slate-50">
-      {/* Header Controls */}
+      {/* ─── STATIC HEADER (PERSISTENT) ─────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative z-50">
         <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar pr-2">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
@@ -786,7 +729,6 @@ export function AvailabilityTimeline({
         )}
 
         <div className="flex flex-col gap-2 sm:gap-3">
-          {/* Top Row → Zoom + Today */}
           <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3">
             <div className="flex items-center rounded-md border bg-muted/50 p-0.5">
               {["week", "month", "quarter"].map((z) => (
@@ -818,7 +760,6 @@ export function AvailabilityTimeline({
             </button>
           </div>
 
-          {/* Bottom Row → Status Legend */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] font-medium text-muted-foreground">
             <div className="flex items-center gap-1 whitespace-nowrap">
               <div className="h-2 w-3 sm:w-4 rounded-sm bg-emerald-500 shrink-0" />
@@ -836,123 +777,128 @@ export function AvailabilityTimeline({
         </div>
       </div>
 
-      <TooltipProvider delayDuration={100}>
-        <div className="flex flex-1 overflow-hidden min-h-0">
-          {/* Sidebar */}
-          <div className="shrink-0 border-r bg-white z-40 w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
-            <div className="h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0">
-              <span className="text-[8px] sm:text-[10px] font-heading font-bold text-muted-foreground uppercase tracking-wider truncate">
-                {viewMode === "resource" ? "Resource" : "Role Category"}
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-              {viewMode === "resource"
-                ? filteredResources.map((resource) => {
-                  const dynamicRowHeight =
-                    resourceRowHeights.get(resource.id) || 48;
-                  return (
-                    <button
-                      key={resource.id}
-                      type="button"
-                      className="w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-4 border-b border-slate-100 hover:bg-muted/50 transition-colors shrink-0"
-                      style={{ height: `${dynamicRowHeight}px` }}
-                      onClick={() => onResourceClick(resource)}
-                    >
-                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
-                        <AvatarFallback className="text-[8px] sm:text-[10px] font-medium bg-primary/10 text-primary">
-                          {resource.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 text-left">
-                        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                          <p className="text-[10px] sm:text-xs font-heading font-bold text-foreground truncate min-w-0 flex-1">
-                            {resource.name}
+      {/* ─── DYNAMIC CONTENT (LOADS BELOW HEADER) ────────────────────── */}
+      {loading ? (
+        <TimelineSkeletonContent />
+      ) : (
+        <TooltipProvider delayDuration={100}>
+          <div className="flex flex-1 overflow-hidden min-h-0">
+            {/* Sidebar */}
+            <div className="shrink-0 border-r bg-white z-40 w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
+              <div className="sticky top-0 h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0 z-50">
+                <span className="text-[8px] sm:text-[10px] font-heading font-bold text-muted-foreground uppercase tracking-wider truncate">
+                  {viewMode === "resource" ? "Resource" : "Role Category"}
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto no-scrollbar">
+                {viewMode === "resource"
+                  ? filteredResources.map((resource) => {
+                    const dynamicRowHeight =
+                      resourceRowHeights.get(resource.id) || 48;
+                    return (
+                      <button
+                        key={resource.id}
+                        type="button"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-4 border-b border-slate-100 hover:bg-muted/50 transition-colors shrink-0"
+                        style={{ height: `${dynamicRowHeight}px` }}
+                        onClick={() => onResourceClick(resource)}
+                      >
+                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
+                          <AvatarFallback className="text-[8px] sm:text-[10px] font-medium bg-primary/10 text-primary">
+                            {resource.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 text-left">
+                          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                            <p className="text-[10px] sm:text-xs font-heading font-bold text-foreground truncate min-w-0 flex-1">
+                              {resource.name}
+                            </p>
+                            {resource.noticeInfo?.isNoticePeriod && (
+                              <span className="text-[7px] sm:text-[9px] font-bold text-red-500 whitespace-nowrap px-0.5 sm:px-1 py-0.5 bg-red-50 rounded shrink-0 hidden xs:inline-block">
+                                On Notice
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">
+                            {resource.role}
                           </p>
-                          {resource.noticeInfo?.isNoticePeriod && (
-                            <span className="text-[7px] sm:text-[9px] font-bold text-red-500 whitespace-nowrap px-0.5 sm:px-1 py-0.5 bg-red-50 rounded shrink-0 hidden xs:inline-block">
-                              On Notice
-                            </span>
-                          )}
                         </div>
-                        <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">
-                          {resource.role}
+                      </button>
+                    );
+                  })
+                  : [...roleGroups.entries()].map(([role, resources]) => {
+                    const dynamicRowHeight = roleRowHeights.get(role) || 48;
+                    return (
+                      <div
+                        key={role}
+                        className="flex flex-col justify-center px-4 border-b border-slate-100"
+                        style={{ height: `${dynamicRowHeight}px` }}
+                      >
+                        <p className="text-sm font-heading font-bold text-slate-800 truncate">
+                          {role}
+                        </p>
+                        <p className="text-[11px] font-sans font-medium text-slate-400">
+                          {resources.length}{" "}
+                          {resources.length === 1 ? "person" : "people"}
                         </p>
                       </div>
-                    </button>
-                  );
-                })
-                : [...roleGroups.entries()].map(([role, resources]) => {
-                  const dynamicRowHeight = roleRowHeights.get(role) || 48;
-                  return (
-                    <div
+                    );
+                  })}
+              </div>
+            </div>
+
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-x-auto bg-white relative z-20"
+            >
+              <div style={{ width: `${totalDays * config.dayWidth}px` }}>
+                <TimelineHeader
+                  zoom={zoom}
+                  ticks={ticks}
+                  todayOffset={todayOffset}
+                  totalDays={totalDays}
+                  dayWidth={config.dayWidth}
+                />
+
+                {viewMode === "resource"
+                  ? filteredResources.map((resource) => (
+                    <ResourceRow
+                      key={resource.id}
+                      resource={resource}
+                      startDate={startDate}
+                      endDate={endDate}
+                      dayWidth={config.dayWidth}
+                      todayOffset={todayOffset}
+                      onResourceClick={onResourceClick}
+                      rowHeight={resourceRowHeights.get(resource.id) || 48}
+                      ticks={ticks}
+                      weeklyTicks={weeklyTicks}
+                      realToday={realToday}
+                    />
+                  ))
+                  : [...roleGroups.entries()].map(([role, resources]) => (
+                    <RoleAggregateRow
                       key={role}
-                      className="flex flex-col justify-center px-4 border-b border-slate-100"
-                      style={{ height: `${dynamicRowHeight}px` }}
-                    >
-                      <p className="text-sm font-heading font-bold text-slate-800 truncate">
-                        {role}
-                      </p>
-                      <p className="text-[11px] font-sans font-medium text-slate-400">
-                        {resources.length}{" "}
-                        {resources.length === 1 ? "person" : "people"}
-                      </p>
-                    </div>
-                  );
-                })}
+                      role={role}
+                      resources={resources}
+                      startDate={startDate}
+                      endDate={endDate}
+                      dayWidth={config.dayWidth}
+                      todayOffset={todayOffset}
+                      rowHeight={roleRowHeights.get(role) || 48}
+                      onResourceClick={onResourceClick}
+                      ticks={ticks}
+                      weeklyTicks={weeklyTicks}
+                    />
+                  ))}
+              </div>
             </div>
           </div>
-
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-x-auto bg-white relative z-20"
-          >
-            <div style={{ width: `${totalDays * config.dayWidth}px` }}>
-              <TimelineHeader
-                zoom={zoom}
-                ticks={ticks}
-                todayOffset={todayOffset}
-                totalDays={totalDays}
-                dayWidth={config.dayWidth}
-              />
-
-              {viewMode === "resource"
-                ? filteredResources.map((resource) => (
-                  <ResourceRow
-                    key={resource.id}
-                    resource={resource}
-                    startDate={startDate}
-                    endDate={endDate}
-                    dayWidth={config.dayWidth}
-                    todayOffset={todayOffset}
-                    onResourceClick={onResourceClick}
-                    rowHeight={resourceRowHeights.get(resource.id) || 48}
-                    ticks={ticks}
-                    weeklyTicks={weeklyTicks}
-                    realToday={realToday}
-                  />
-                ))
-                : [...roleGroups.entries()].map(([role, resources]) => (
-                  <RoleAggregateRow
-                    key={role}
-                    role={role}
-                    resources={resources}
-                    startDate={startDate}
-                    endDate={endDate}
-                    dayWidth={config.dayWidth}
-                    todayOffset={todayOffset}
-                    rowHeight={roleRowHeights.get(role) || 48}
-                    onResourceClick={onResourceClick}
-                    ticks={ticks}
-                    weeklyTicks={weeklyTicks}
-                  />
-                ))}
-            </div>
-          </div>
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      )}
     </div>
   );
 }

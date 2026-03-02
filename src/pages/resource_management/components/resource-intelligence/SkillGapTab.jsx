@@ -128,8 +128,8 @@ export default function SkillGapTab({ resource }) {
 
             {/* ── ROW 1: SELECTION & CONTROLS ────────────────────────────── */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row items-end gap-4">
-                    <div className="flex-1 w-full max-w-[280px] space-y-1.5">
+                <div className="flex flex-col md:flex-row items-stretch md:items-end gap-5">
+                    <div className="flex-1 w-full md:max-w-[320px] space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Target Demand Pipeline</label>
                         <div className="relative group">
                             <Combobox value={selectedDemand} onChange={setSelectedDemand}>
@@ -137,7 +137,7 @@ export default function SkillGapTab({ resource }) {
                                     <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-slate-50 border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all">
                                         <Combobox.Button as="div" className="w-full">
                                             <Combobox.Input
-                                                className="w-full border-none py-2.5 pl-4 pr-10 text-xs font-bold text-slate-900 bg-transparent focus:ring-0 outline-none placeholder:text-slate-400 font-sans"
+                                                className="w-full border-none py-3 pl-4 pr-10 text-xs font-bold text-slate-900 bg-transparent focus:ring-0 outline-none placeholder:text-slate-400 font-sans"
                                                 displayValue={(d) => d ? (d.demandName || d.name) : ""}
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 placeholder="Search demand..."
@@ -170,7 +170,7 @@ export default function SkillGapTab({ resource }) {
                     <Button
                         onClick={runAnalysis}
                         disabled={!selectedDemand || analysisLoading}
-                        className="h-10 px-8 text-xs font-bold gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:-translate-y-0.5"
+                        className="h-11 md:h-12 px-8 text-xs font-bold gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:-translate-y-0.5 w-full md:w-auto"
                     >
                         {analysisLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-white/20" />}
                         RUN ANALYSIS
@@ -180,7 +180,7 @@ export default function SkillGapTab({ resource }) {
 
             {/* ── ROW 2: KPI INSIGHTS ────────────────────────────────────── */}
             {analysis ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
                     <KPICard label="Total Match Score" value={`${Number(analysis.matchPercentage || 0).toFixed(2)}%`} icon={Target} colorClass="bg-indigo-50 text-indigo-500">
                         <MatchGauge percentage={analysis.matchPercentage} size={40} />
                     </KPICard>
@@ -229,10 +229,10 @@ export default function SkillGapTab({ resource }) {
                                     <table className="w-full font-sans">
                                         <thead>
                                             <tr className="bg-slate-50/30 border-b border-slate-100">
-                                                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Skill Layer</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Asset</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                                                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[180px]">Skill Layer</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[80px]">Target</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[80px]">Asset</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[100px]">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
