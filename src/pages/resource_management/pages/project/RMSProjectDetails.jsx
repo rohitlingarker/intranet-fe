@@ -72,17 +72,7 @@ const RMSProjectDetails = () => {
   const [openDeliverableRoleModal, setOpenDeliverableRoleModal] =
     useState(false);
 
-  const [deliverableForm, setDeliverableForm] = useState({
-    deliveryName: "", // OR roleName if role is created inline
-    skillId: "",
-    subSkillId: "",
-    proficiencyId: "",
-    mandatoryFlag: true,
-  });
-
   const [categories, setCategories] = useState([]);
-  const [skills, setSkills] = useState([]);
-  const [subSkills, setSubSkills] = useState([]);
   const [proficiencyLevels, setProficiencyLevels] = useState([]);
 
   const [projectSlas, setProjectSlas] = useState([]);
@@ -520,15 +510,6 @@ const RMSProjectDetails = () => {
     }
   };
 
-  const loadSubSkills = async () => {
-    try {
-      const res = await getActiveSubSkills();
-      setSubSkills(res.data || []);
-    } catch (err) {
-      console.error("Failed to fetch sub-skills", err);
-    }
-  };
-
   const handleEscalationInheritClick = async () => {
     try {
       const projectRes = await axios.get(
@@ -567,127 +548,9 @@ const RMSProjectDetails = () => {
     }
   };
 
-  // ================= Save Deliverable Role =================
-  // ================= Save Deliverable Role =================
-  const softSaveDeliverableRole = () => {
-    if (
-      !deliverableForm.deliveryName ||
-      !deliverableForm.skillId ||
-      !deliverableForm.subSkillId ||
-      !deliverableForm.proficiencyId
-    ) {
-      toast.error("Please fill all required fields");
-      return;
-    }
+  // No longer needed: handled internally by AddDeliverableRoleModal
 
-    const draftRole = {
-      tempId: crypto.randomUUID(),
-      ...deliverableForm,
-      status: "DRAFT",
-    };
-
-    setDraftDeliverableRoles((prev) => [...prev, draftRole]);
-
-    // reset form
-    setDeliverableForm({
-      deliveryName: "",
-      categoryId: "",
-      skillId: "",
-      subSkillId: "",
-      proficiencyId: "",
-      mandatoryFlag: true,
-    });
-
-    setSkills([]);
-    setSubSkills([]);
-  };
-
-  // ================= FINALIZE DELIVERABLE ROLES (⬅ STEP 4 GOES HERE) =================
-  const finalizeDeliverableRoles = async () => {
-    const rolesToFinalize = draftDeliverableRoles.filter((role) =>
-      selectedRoleIds.includes(role.tempId),
-    );
-
-    try {
-      await Promise.all(
-        rolesToFinalize.map((role) =>
-          createRoleExpectation({
-            roleName: role.deliveryName,
-            expectations: [
-              {
-                skillId: role.skillId,
-                subSkillId: role.subSkillId,
-                proficiencyId: role.proficiencyId,
-                mandatoryFlag: role.mandatoryFlag,
-              },
-            ],
-          }),
-        ),
-      );
-
-      toast.success("Deliverable roles finalized successfully");
-
-      setDraftDeliverableRoles([]);
-      setSelectedRoleIds([]);
-    } catch (err) {
-      toast.error("Failed to finalize deliverable roles");
-    }
-  };
-  const DeliverableRoleCard = ({ role, checked, onCheck, onDelete }) => (
-    <div className="border rounded-lg p-4 flex justify-between items-start bg-gray-50">
-      <div>
-        <h4 className="font-semibold text-sm">{role.deliveryName}</h4>
-        <p className="text-xs text-gray-600">
-          Skill: {role.skillId} | SubSkill: {role.subSkillId}
-        </p>
-        <p className="text-xs text-gray-600">
-          Proficiency: {role.proficiencyId}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => onCheck(role.tempId)}
-          className="accent-[#263383]"
-        />
-        <button
-          onClick={() => onDelete(role.tempId)}
-          className="text-red-500 text-xs"
-        >
-          Remove
-        </button>
-      </div>
-    </div>
-  );
-  // {
-  //   draftDeliverableRoles.length > 0 && (
-  //     <div className="space-y-3 mt-6">
-  //       <h3 className="text-sm font-semibold">Draft Deliverable Roles</h3>
-
-  //       {/* {draftDeliverableRoles.map((role) => (
-  //         <DeliverableRoleCard
-  //           key={role.tempId}
-  //           role={role}
-  //           checked={selectedRoleIds.includes(role.tempId)}
-  //           onCheck={(id) =>
-  //             setSelectedRoleIds((prev) =>
-  //               prev.includes(id)
-  //                 ? prev.filter((x) => x !== id)
-  //                 : [...prev, id],
-  //             )
-  //           }
-  //           onDelete={(id) =>
-  //             setDraftDeliverableRoles((prev) =>
-  //               prev.filter((r) => r.tempId !== id),
-  //             )
-  //           }
-  //         />
-  //       ))} */}
-  //     </div>
-  //   );
-  // }
+  // ================= Fetch Deliverable Role Data on Modal Open =================
 
   // ================= Fetch Deliverable Role Data on Modal Open =================
   useEffect(() => {
@@ -1899,15 +1762,8 @@ const RMSProjectDetails = () => {
       <AddDeliverableRoleModal
         open={openDeliverableRoleModal}
         onClose={() => setOpenDeliverableRoleModal(false)}
-        deliverableForm={deliverableForm}
-        setDeliverableForm={setDeliverableForm}
         categories={categories}
-        skills={skills}
-        subSkills={subSkills}
-        setSkills={setSkills}
-        setSubSkills={setSubSkills}
         proficiencyLevels={proficiencyLevels}
-        onSave={softSaveDeliverableRole}
       />
       {/* ================= Draft Deliverable Roles ================= */}
       {/* {draftDeliverableRoles.length > 0 && (
