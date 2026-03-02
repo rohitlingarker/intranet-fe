@@ -34,16 +34,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
     // Deliverable Role Data
     const [categories, setCategories] = useState([]);
-    const [skills, setSkills] = useState([]);
-    const [subSkills, setSubSkills] = useState([]);
     const [proficiencyLevels, setProficiencyLevels] = useState([]);
-    const [deliverableForm, setDeliverableForm] = useState({
-        deliveryName: "",
-        skillId: "",
-        subSkillId: "",
-        proficiencyId: "",
-        mandatoryFlag: true,
-    });
 
     // Fetch Project and Demand Check
     useEffect(() => {
@@ -84,10 +75,6 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         loadMasterData();
     }, []);
 
-    const handleSaveDeliverable = () => {
-        toast.success("Deliverable role draft saved");
-        setDeliverableModalOpen(false);
-    };
 
     // Handle dropdown positioning
     useEffect(() => {
@@ -386,15 +373,8 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
             <AddDeliverableRoleModal
                 open={deliverableModalOpen}
                 onClose={() => setDeliverableModalOpen(false)}
-                deliverableForm={deliverableForm}
-                setDeliverableForm={setDeliverableForm}
                 categories={categories}
-                skills={skills}
-                subSkills={subSkills}
-                setSkills={setSkills}
-                setSubSkills={setSubSkills}
                 proficiencyLevels={proficiencyLevels}
-                onSave={handleSaveDeliverable}
             />
         </div>
     );
