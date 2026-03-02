@@ -30,7 +30,7 @@ function MatchGauge({ percentage, size = 48 }) {
                 <circle cx={size / 2} cy={size / 2} r={radius} className="stroke-slate-100" strokeWidth={strokeWidth} fill="none" />
                 <circle cx={size / 2} cy={size / 2} r={radius} className={cn(color, "transition-all duration-1000 ease-out")} strokeWidth={strokeWidth} fill="none" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
             </svg>
-            <span className="absolute text-[8px] font-black text-slate-900 leading-none font-sans">{p}%</span>
+            <span className="absolute text-[8px] font-black text-slate-900 leading-none font-sans">{p.toFixed(0)}%</span>
         </div>
     );
 }
@@ -45,14 +45,14 @@ function KPICard({ label, value, subValue, icon: Icon, colorClass, children }) {
                     <Icon className="h-5 w-5" />
                 </div>
             )}
-            <div className="flex-[2] min-w-0">
+            <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-bold text-slate-600 font-sans mb-0.5 whitespace-nowrap">{label}</div>
-                <div className="flex items-baseline gap-1.5">
-                    <div className="text-xl font-black text-slate-900 font-sans tracking-tight truncate">{value}</div>
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <div className="text-xl font-black text-slate-900 font-sans tracking-tight shrink-0">{value}</div>
                     {subValue && <div className="text-[9px] font-bold text-slate-400 font-sans truncate">{subValue}</div>}
                 </div>
             </div>
-            <div className="flex-[1.2] flex items-center justify-center pt-2">
+            <div className="flex-shrink-0 flex items-center justify-center pt-2">
                 {children}
             </div>
         </div>
@@ -181,7 +181,7 @@ export default function SkillGapTab({ resource }) {
             {/* ── ROW 2: KPI INSIGHTS ────────────────────────────────────── */}
             {analysis ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <KPICard label="Total Match Score" value={`${analysis.matchPercentage}%`} icon={Target} colorClass="bg-indigo-50 text-indigo-500">
+                    <KPICard label="Total Match Score" value={`${Number(analysis.matchPercentage || 0).toFixed(2)}%`} icon={Target} colorClass="bg-indigo-50 text-indigo-500">
                         <MatchGauge percentage={analysis.matchPercentage} size={40} />
                     </KPICard>
 

@@ -1,56 +1,71 @@
 import React from 'react';
-import { PriorityBadge, StateBadge, SLABadge, DemandTypeBadge } from './DemandBadges';
-import { ChevronRight, Briefcase } from "lucide-react";
+import { PriorityBadge, StateBadge, SLABadge, DemandTypeBadge, ScoreBadge } from './FormalBadges';
+import { ChevronRight, Target, ExternalLink, Briefcase, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * DemandCardRow: Informative Workforce View
+ * Redesigned for maximum clarity and logical information grouping.
+ */
 const DemandCardRow = ({ demand, onView }) => {
     return (
         <div
-            className="group flex items-center bg-white border-b border-slate-100 hover:bg-slate-50/50 transition-all cursor-pointer px-4"
+            className="group flex items-center bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
             onClick={() => onView(demand)}
         >
-            <div className="flex-1 py-3.5 grid grid-cols-12 items-center gap-4">
-                {/* 1. DEMAND SUMMARY */}
-                <div className="col-span-5 flex items-center gap-4 min-w-0">
-                    <div className="h-9 w-9 bg-slate-50 rounded-lg flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-white transition-colors">
-                        <Briefcase className="h-4.5 w-4.5 text-indigo-500" />
+            <div className="flex-1 py-4 grid grid-cols-12 items-center gap-4 px-10">
+
+                {/* 1. Demand Specifications & Context (Expanded) */}
+                <div className="col-span-6 flex items-center gap-5 min-w-0">
+                    <div className="h-11 w-11 bg-slate-900 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-indigo-600 transition-all shadow-md">
+                        <Target className="h-6 w-6 text-white" />
                     </div>
-                    <div className="min-w-0">
-                        <h3 className="text-[13px] font-bold text-slate-900 leading-none truncate">
-                            {demand.projectName}
-                        </h3>
-                        <div className="mt-1.5 flex flex-col gap-0.5">
-                            <span className="text-[11px] font-medium text-slate-500 leading-none">{demand.client}</span>
-                            <span className="text-[10px] text-slate-400 font-medium leading-none">{demand.role}</span>
+                    <div className="min-w-0 flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-slate-900 truncate tracking-tight group-hover:text-indigo-600 transition-colors">
+                                {demand.projectName}
+                            </h3>
+                            <div className="px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 tracking-tighter">
+                                ID: {demand.id?.split('-')[0]}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Briefcase className="h-3.5 w-3.5 text-slate-400" />
+                                <span className="text-xs font-semibold text-slate-600 truncate">{demand.client}</span>
+                            </div>
+                            <div className="h-3 w-[1px] bg-slate-200" />
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <User className="h-3.5 w-3.5 text-slate-400" />
+                                <span className="text-xs text-slate-500 truncate">{demand.role}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 2. PRIORITY */}
-                <div className="col-span-2">
+                {/* 2. Priority Score (Raw data emphasis) */}
+                <div className="col-span-1 flex justify-center">
+                    <div className="text-center group-hover:scale-110 transition-transform">
+                        <span className="text-lg font-black text-slate-900 tracking-tighter leading-none">
+                            {demand.priorityScore || 0}
+                        </span>
+                        <div className="text-[9px] font-bold text-slate-400 tracking-widest mt-0.5">Points</div>
+                    </div>
+                </div>
+
+                {/* 3. Governance Priority */}
+                <div className="col-span-2 flex justify-center">
                     <PriorityBadge priority={demand.priority} />
                 </div>
 
-                {/* 3. SLA */}
-                <div className="col-span-2">
+                {/* 4. SLA Compliance */}
+                <div className="col-span-2 flex justify-center">
                     <SLABadge days={demand.slaDays} />
                 </div>
 
-                {/* 4. STATUS */}
-                <div className="col-span-1">
+                {/* 5. Status */}
+                <div className="col-span-1 flex justify-center">
                     <StateBadge state={demand.lifecycleState} />
-                </div>
-
-                {/* 5. TYPE */}
-                <div className="col-span-1">
-                    <DemandTypeBadge type={demand.intent} />
-                </div>
-
-                {/* 6. ACTION */}
-                <div className="col-span-1 flex justify-end">
-                    <div className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
-                        <ChevronRight className="h-4.5 w-4.5" />
-                    </div>
                 </div>
             </div>
         </div>

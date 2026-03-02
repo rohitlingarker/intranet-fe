@@ -11,6 +11,7 @@ import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
+import ProjectDemandManagement from "./ProjectDemandManagement";
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -100,6 +101,14 @@ const ProjectTabs = () => {
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
+    if (selectedTab === "demand-management") {
+      return (
+        <ProjectDemandManagement
+          projectId={pid}
+          projectName={projectName}
+        />
+      );
+    }
 
     return null;
   };
@@ -118,6 +127,7 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
     { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
+    { name: "Demand Management", tab: "demand-management" },
     //  { name: "Timelines", tab:"timelines" },
     // { name: "Calendar", tab: "calendar" },
   ];
