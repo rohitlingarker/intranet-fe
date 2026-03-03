@@ -40,6 +40,7 @@ export const StateBadge = ({ state }) => {
         'ACTIVE': { dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', label: 'Active' },
         'SOFT': { dot: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', label: 'Soft' },
         'PENDING': { dot: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50', label: 'Pending' },
+        'REQUESTED': { dot: 'bg-violet-400', text: 'text-violet-700', bg: 'bg-violet-50', label: 'Requested' },
         'REJECTED': { dot: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', label: 'Rejected' },
     };
     const c = config[s] || { dot: 'bg-slate-300', text: 'text-slate-500', bg: 'bg-slate-50', label: state || 'Unknown' };
@@ -63,7 +64,7 @@ export const SLABadge = ({ days, isSoft }) => {
                     <Clock className="h-2 w-2 opacity-40" />
                     <span className="text-[8px] font-black tracking-widest uppercase text-slate-400">SLA</span>
                 </div>
-                <span className="text-[11px] font-black tabular-nums">None</span>
+                <span className="text-[11px] font-black tabular-nums">NO</span>
             </div>
         );
     }

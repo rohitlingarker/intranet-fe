@@ -1,6 +1,6 @@
 import React from 'react';
 import { PriorityBadge, StateBadge, SLABadge, DemandTypeBadge, ScoreBadge } from './FormalBadges';
-import { Pencil, Trash2, Target, Briefcase, User } from "lucide-react";
+import { Pencil, Trash2, Target, Briefcase, User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../../../../contexts/AuthContext";
 
@@ -61,7 +61,14 @@ const DemandCardRow = ({ demand, onView, activeTab }) => {
 
                 {/* 4. SLA Compliance */}
                 <div className="col-span-2 flex justify-center">
-                    <SLABadge days={demand.slaDays} isSoft={activeTab === 'soft'} />
+                    <SLABadge
+                        days={demand.slaDays}
+                        isSoft={
+                            activeTab === 'soft' ||
+                            demand.demandCommitment?.toUpperCase() === 'SOFT' ||
+                            demand.lifecycleState?.toUpperCase() === 'SOFT'
+                        }
+                    />
                 </div>
 
                 {/* 5. Status */}

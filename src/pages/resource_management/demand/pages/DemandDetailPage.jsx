@@ -404,11 +404,16 @@ const DemandDetailPage = () => {
     const role = demand.role || {};
     const isApproved = ['APPROVED', 'OPEN', 'ACTIVE'].includes(demand.demandStatus?.toUpperCase());
 
+    const isSoft =
+        demand.demandCommitment?.toUpperCase() === 'SOFT' ||
+        demand.demandStatus?.toUpperCase() === 'SOFT' ||
+        demand.demandStatus?.toUpperCase() === 'REQUESTED';
+
     const TABS = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
-        { id: 'slaInsights', label: 'SLA Insights', icon: Clock }
+        ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : [])
     ];
 
     return (
@@ -458,23 +463,23 @@ const DemandDetailPage = () => {
                             <div className="flex flex-wrap items-center gap-4 sm:border-l sm:border-slate-100 sm:pl-6 xl:pl-10 w-full sm:w-auto">
                                 <StateBadge state={demand.demandStatus} className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-[10px] sm:text-[11px]" />
 
-                                <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <div className="flex items-center gap-3 sm:gap-4 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <div className="flex flex-col items-end pr-2 border-r border-slate-200 text-right">
-                                        <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Health</span>
-                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap", (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
-                                            {sla?.remainingDays || 0} Days Remaining
+                                        <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Status</span>
+                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap", isSoft ? "text-slate-400" : (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
+                                            {isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
                                         </span>
                                     </div>
                                     <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
                                         <svg className="h-8 w-8 sm:h-10 sm:w-10 transform -rotate-90">
                                             <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke="#e2e8f0" />
-                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={(sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
+                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
                                                 strokeDasharray="100 100"
-                                                strokeDashoffset={100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
+                                                strokeDashoffset={isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
                                             />
                                         </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                                            {isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
                                         </div>
                                     </div>
                                 </div>
