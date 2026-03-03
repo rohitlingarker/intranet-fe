@@ -66,7 +66,8 @@ const DemandCardRow = ({ demand, onView, activeTab }) => {
                         isSoft={
                             activeTab === 'soft' ||
                             demand.demandCommitment?.toUpperCase() === 'SOFT' ||
-                            demand.lifecycleState?.toUpperCase() === 'SOFT'
+                            demand.lifecycleState?.toUpperCase() === 'SOFT' ||
+                            demand.lifecycleState?.toUpperCase() === 'REQUESTED'
                         }
                     />
                 </div>

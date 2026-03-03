@@ -394,6 +394,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         <DemandList
                             demands={filteredDemands}
                             onViewDetail={handleViewDetail}
+                            activeTab={activeTab}
                         />
                     ) : (
                         <div className="py-24 text-center">
