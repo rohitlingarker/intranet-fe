@@ -19,66 +19,82 @@ const SearchableSelect = ({ label, value, onChange, options, placeholder, disabl
 
   return (
     <div className="w-full">
-      {label && <label className="block text-xs text-gray-500 mb-1">{label}</label>}
-      <Combobox value={value} onChange={onChange} disabled={disabled}>
-        <div className="relative mt-1">
-          <div className="relative w-full cursor-default overflow-hidden rounded-md bg-white text-left border border-gray-200 focus-within:ring-1 focus-within:ring-indigo-500 transition-all sm:text-sm">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" aria-hidden="true" />
-            </div>
-            <Combobox.Input
-              className="w-full border-none py-2 pl-9 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 outline-none disabled:bg-gray-50"
-              displayValue={() => selectedOption?.name || ""}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={placeholder}
-            />
-            <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-              <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
+      {label && <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">{label}</label>}
+      <Combobox
+        value={value}
+        onChange={(val) => {
+          onChange(val);
+          setQuery("");
+        }}
+        disabled={disabled}
+      >
+        {({ open }) => (
+          <div className="relative">
+            <Combobox.Button as="div" className={`relative w-full cursor-pointer overflow-hidden rounded-lg bg-white text-left border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all duration-200 shadow-sm sm:text-sm ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <Combobox.Input
+                className="w-full border-none py-2.5 pl-9 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 outline-none disabled:bg-gray-50 bg-transparent"
+                displayValue={() => selectedOption?.name || ""}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={placeholder}
+                autoComplete="off"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180 text-indigo-600' : ''}`} />
+              </div>
             </Combobox.Button>
+
+            <Transition
+              as={Fragment}
+              show={open}
+              enter="transition ease-out duration-200"
+              enterFrom="opacity-0 translate-y-1 scale-95"
+              enterTo="opacity-100 translate-y-0 scale-100"
+              leave="transition ease-in duration-100"
+              leaveFrom="opacity-100 translate-y-0 scale-100"
+              leaveTo="opacity-0 translate-y-1 scale-95"
+              afterLeave={() => setQuery("")}
+            >
+              <Combobox.Options
+                static
+                className="absolute z-[100] mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1.5 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm border border-gray-100"
+              >
+                {filteredOptions.length === 0 && query !== "" ? (
+                  <div className="relative cursor-default select-none py-4 px-4 text-gray-500 italic text-center text-sm bg-gray-50 m-2 rounded-lg">
+                    No results found for "{query}"
+                  </div>
+                ) : (
+                  <div className="p-1">
+                    {filteredOptions.map((opt) => (
+                      <Combobox.Option
+                        key={opt.id}
+                        value={opt.id}
+                        className={({ active, selected }) =>
+                          `relative cursor-pointer select-none py-2.5 pl-10 pr-4 transition-all duration-150 rounded-md mb-0.5 last:mb-0 ${active ? "bg-indigo-50 text-indigo-700 font-medium" :
+                            selected ? "bg-indigo-600 text-white font-semibold shadow-md z-10" : "text-gray-700 hover:bg-gray-50"
+                          }`
+                        }
+                      >
+                        {({ selected, active }) => (
+                          <>
+                            <span className="block truncate">{opt.name}</span>
+                            {selected && (
+                              <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? 'text-indigo-600' : 'text-white'}`}>
+                                <Check className={`h-4 w-4 stroke-[3px]`} />
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Combobox.Option>
+                    ))}
+                  </div>
+                )}
+              </Combobox.Options>
+            </Transition>
           </div>
-          <Transition
-            as={Fragment}
-            leave="transition ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-            afterLeave={() => setQuery("")}
-          >
-            <Combobox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
-              {filteredOptions.length === 0 && query !== "" ? (
-                <div className="relative cursor-default select-none py-2 px-4 text-gray-700 italic">
-                  Nothing found.
-                </div>
-              ) : (
-                filteredOptions.map((opt) => (
-                  <Combobox.Option
-                    key={opt.id}
-                    value={opt.id}
-                    className={({ active }) =>
-                      `relative cursor-default select-none py-2 pl-10 pr-4 transition-colors ${active ? "bg-indigo-600 text-white" : "text-gray-900"
-                      }`
-                    }
-                  >
-                    {({ selected, active }) => (
-                      <>
-                        <span className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}>
-                          {opt.name}
-                        </span>
-                        {selected ? (
-                          <span
-                            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-white" : "text-indigo-600"
-                              }`}
-                          >
-                            <Check className="h-4 w-4" aria-hidden="true" />
-                          </span>
-                        ) : null}
-                      </>
-                    )}
-                  </Combobox.Option>
-                ))
-              )}
-            </Combobox.Options>
-          </Transition>
-        </div>
+        )}
       </Combobox>
     </div>
   );
@@ -120,6 +136,12 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
   const [stagingSubSkill, setStagingSubSkill] = useState(null); // { subSkillId: "", proficiencyId: "", mandatoryFlag: false }
   const [availableSkills, setAvailableSkills] = useState([]);
   const [availableSubSkills, setAvailableSubSkills] = useState([]);
+
+  // Map proficiencies for consistent SearchableSelect usage
+  const mappedProficiencies = proficiencyLevels.map(p => ({
+    id: p.id || p.proficiencyId,
+    name: p.name || p.proficiencyName
+  }));
 
   // Sync available skills when category changes
   useEffect(() => {
@@ -296,17 +318,13 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
             <div className="border-t border-gray-100 pt-6">
               <h3 className="text-sm font-semibold text-gray-900 mb-4">Skill Configuration</h3>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Category</label>
-                  <select
-                    value={formState.categoryId}
-                    onChange={(e) => setFormState(p => ({ ...p, categoryId: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
+                <SearchableSelect
+                  label="Category"
+                  placeholder="Search and select category"
+                  value={formState.categoryId}
+                  options={categories}
+                  onChange={(val) => setFormState(p => ({ ...p, categoryId: val }))}
+                />
 
                 <SearchableSelect
                   label="Skill"
@@ -318,21 +336,13 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
                 />
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Proficiency *</label>
-                    <select
-                      value={formState.proficiencyId}
-                      onChange={(e) => setFormState(p => ({ ...p, proficiencyId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
-                    >
-                      <option value="">Select proficiency</option>
-                      {proficiencyLevels.map(p => (
-                        <option key={p.id || p.proficiencyId} value={p.id || p.proficiencyId}>
-                          {p.name || p.proficiencyName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <SearchableSelect
+                    label="Proficiency *"
+                    placeholder="Select proficiency"
+                    value={formState.proficiencyId}
+                    options={mappedProficiencies}
+                    onChange={(val) => setFormState(p => ({ ...p, proficiencyId: val }))}
+                  />
                   <div className="flex items-end pb-2">
                     <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
                       <input
@@ -373,21 +383,13 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
                         options={availableSubSkills}
                         onChange={(val) => setStagingSubSkill(p => ({ ...p, subSkillId: val }))}
                       />
-                      <div>
-                        <label className="block text-[10px] text-gray-400 uppercase font-bold mt-1">Proficiency</label>
-                        <select
-                          value={stagingSubSkill.proficiencyId}
-                          onChange={(e) => setStagingSubSkill(p => ({ ...p, proficiencyId: e.target.value }))}
-                          className="w-full px-2 py-2 border border-gray-200 rounded text-xs outline-none bg-white h-[38px] mt-1"
-                        >
-                          <option value="">Select</option>
-                          {proficiencyLevels.map(p => (
-                            <option key={p.id || p.proficiencyId} value={p.id || p.proficiencyId}>
-                              {p.name || p.proficiencyName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <SearchableSelect
+                        label="Proficiency"
+                        placeholder="Select"
+                        value={stagingSubSkill.proficiencyId}
+                        options={mappedProficiencies}
+                        onChange={(val) => setStagingSubSkill(p => ({ ...p, proficiencyId: val }))}
+                      />
                     </div>
                     <div className="flex justify-between items-center">
                       <label className="flex items-center gap-2 text-xs text-gray-600">

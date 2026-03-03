@@ -59,7 +59,7 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
     <FormField id={id} label={label} error={error} required={required}>
       <Combobox value={value} onChange={onChange} disabled={disabled}>
         <div className="relative">
-          <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+          <Combobox.Button as="div" className={`relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all ${disabled ? "bg-slate-50 cursor-not-allowed" : ""}`}>
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
             </div>
@@ -68,11 +68,12 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
               displayValue={() => displayLabel}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={placeholder}
+              autoComplete="off"
             />
-            <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
               <ChevronUpDownIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
-            </Combobox.Button>
-          </div>
+            </div>
+          </Combobox.Button>
           <Transition
             as={Fragment}
             leave="transition ease-in duration-100"
