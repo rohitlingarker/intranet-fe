@@ -47,6 +47,7 @@ const InfoRow = ({ label, value, icon: Icon, colorClass = "text-slate-900" }) =>
  * --- TAB 1: OVERVIEW ---
  */
 const OverviewTab = ({ demand, project, sla }) => {
+    console.log("Demand: ", demand);
     const warningThreshold = 5;
     const remainingDays = sla?.remainingDays ?? 0;
     const progress = Math.min(100, Math.max(0, ((sla?.slaDurationDays - remainingDays) / sla?.slaDurationDays) * 100)) || 0;
