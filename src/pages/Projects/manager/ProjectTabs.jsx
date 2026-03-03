@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { lazy, Suspense } from "react";
 
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
@@ -11,7 +12,8 @@ import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
-import ProjectDemandManagement from "./ProjectDemandManagement";
+
+const ProjectDemandManagement = lazy(() => import("./ProjectDemandManagement"));
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -103,10 +105,12 @@ const ProjectTabs = () => {
     }
     if (selectedTab === "demand-management") {
       return (
-        <ProjectDemandManagement
-          projectId={pid}
-          projectName={projectName}
-        />
+        <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Demand Management...</div>}>
+          <ProjectDemandManagement
+            projectId={pid}
+            projectName={projectName}
+          />
+        </Suspense>
       );
     }
 
