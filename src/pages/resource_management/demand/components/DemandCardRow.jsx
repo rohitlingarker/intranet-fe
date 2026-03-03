@@ -2,18 +2,22 @@ import React from 'react';
 import { PriorityBadge, StateBadge, SLABadge, DemandTypeBadge, ScoreBadge } from './FormalBadges';
 import { Pencil, Trash2, Target, Briefcase, User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 /**
  * DemandCardRow: Informative Workforce View
  * Redesigned for maximum clarity and logical information grouping.
  */
-const DemandCardRow = ({ demand, onView }) => {
+const DemandCardRow = ({ demand, onView, activeTab }) => {
+    const { user } = useAuth();
+    const roles = user?.roles || [];
+    const isRM = roles.includes("RESOURCE-MANAGER");
     return (
         <div
             className="group flex items-center bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
             onClick={() => onView(demand)}
         >
-            <div className="flex-1 py-3 grid grid-cols-10 items-center gap-4 px-6">
+            <div className="flex-1 py-1.5 grid grid-cols-10 items-center gap-4 px-5">
 
                 {/* 1. Demand Specifications & Context (Expanded) */}
                 <div className="col-span-3 flex items-center gap-4 min-w-0">
@@ -56,13 +60,15 @@ const DemandCardRow = ({ demand, onView }) => {
                 </div>
 
                 {/* 4. SLA Compliance */}
-                <div className="col-span-2 flex flex-col items-center justify-center gap-1">
-                    {(['SOFT', 'REQUESTED'].includes(demand.lifecycleState?.toUpperCase()) ||
-                        demand.demandCommitment?.toUpperCase() === 'SOFT') ? (
-                        <span className="text-xs font-black text-slate-300 tracking-widest uppercase">No</span>
-                    ) : (
-                        <SLABadge days={demand.slaDays} />
-                    )}
+                <div className="col-span-2 flex justify-center">
+                    <SLABadge
+                        days={demand.slaDays}
+                        isSoft={
+                            activeTab === 'soft' ||
+                            demand.demandCommitment?.toUpperCase() === 'SOFT' ||
+                            demand.lifecycleState?.toUpperCase() === 'SOFT'
+                        }
+                    />
                 </div>
 
                 {/* 5. Status */}
@@ -79,13 +85,15 @@ const DemandCardRow = ({ demand, onView }) => {
                     >
                         <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
                     </button>
-                    <button
-                        title='Delete'
-                        onClick={(e) => { e.stopPropagation(); /* Handle Delete */ }}
-                    // className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
-                    >
-                        <Trash2 className="h-3.5 w-3.5 text-red-700 hover:text-red-800" />
-                    </button>
+                    {!isRM && (
+                        <button
+                            title='Delete'
+                            onClick={(e) => { e.stopPropagation(); /* Handle Delete */ }}
+                        // className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                        >
+                            <Trash2 className="h-3.5 w-3.5 text-red-700 hover:text-red-800" />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
