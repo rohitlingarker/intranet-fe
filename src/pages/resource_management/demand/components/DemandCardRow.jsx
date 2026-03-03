@@ -1,6 +1,6 @@
 import React from 'react';
 import { PriorityBadge, StateBadge, SLABadge, DemandTypeBadge, ScoreBadge } from './FormalBadges';
-import { ChevronRight, Target, ExternalLink, Briefcase, User } from "lucide-react";
+import { ChevronRight, Target, ExternalLink, Briefcase, User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -59,8 +59,14 @@ const DemandCardRow = ({ demand, onView }) => {
                 </div>
 
                 {/* 4. SLA Compliance */}
-                <div className="col-span-2 flex justify-center">
+                <div className="col-span-2 flex flex-col items-center justify-center gap-1">
                     <SLABadge days={demand.slaDays} />
+                    {demand.slaDueAt && (
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                            <Clock className="w-2.5 h-2.5" />
+                            Due: {new Date(demand.slaDueAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                        </div>
+                    )}
                 </div>
 
                 {/* 5. Status */}

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import ProjectDemandDetail from './ProjectDemandDetail';
 import DemandKPIStrip from '../../resource_management/demand/components/DemandKPIStrip';
 import DemandList from '../../resource_management/demand/components/DemandList';
 import DemandFilters from '../../resource_management/demand/components/DemandFilters';
 import demandService from '../../resource_management/demand/services/demandService';
-import { Search, Filter, Plus, FilePlus, Layers } from "lucide-react";
+import { Search, Filter, Plus, FilePlus, Layers, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
 import { getProjectById, checkDemandCreation } from '../../resource_management/services/projectService';
@@ -15,6 +16,9 @@ import AddDeliverableRoleModal from "../../resource_management/models/AddDeliver
 
 const ProjectDemandManagement = ({ projectId, projectName }) => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const demandId = searchParams.get('demandId');
+
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCollapsed, setFilterCollapsed] = useState(true);
     const filterButtonRef = useRef(null);
@@ -137,8 +141,17 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, [filterCollapsed]);
 
     const handleViewDetail = (demand) => {
-        navigate(`/resource-management/demand/${demand.id}`);
+        const id = demand.id || demand.demandId;
+        searchParams.set('demandId', id);
+        setSearchParams(searchParams);
     };
+
+    const handleBackToList = () => {
+        searchParams.delete('demandId');
+        setSearchParams(searchParams);
+    };
+
+
 
     // Map fields from project-specific demands
     const projectDemands = useMemo(() => {
@@ -149,8 +162,10 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
             client: d.clientName || d.client,
             role: d.demandName || d.role,
             priority: d.demandPriority || d.priority,
+            slaDueAt: d.slaDueAt, // New field from response
             slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
-            lifecycleState: d.demandStatus || d.lifecycleState
+            lifecycleState: d.demandStatus || d.lifecycleState,
+            priorityScore: d.priorityScore || d.score
         }));
     }, [allDemands]);
 
@@ -230,14 +245,39 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         setPriorityFilter('All');
     };
 
+    if (demandId) {
+        return (
+            <ProjectDemandDetail
+                projectId={projectId}
+                demandId={demandId}
+                onBack={handleBackToList}
+            />
+        );
+    }
+
     return (
         <div className="bg-white min-h-[600px] border rounded-lg shadow-sm">
             <div className="p-4 border-b">
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center">
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-1">
                             <h2 className="text-xl font-bold text-slate-800">Demand Management</h2>
-                            <p className="text-sm text-slate-500">View and manage resource demands for {projectName}</p>
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <span className="font-medium text-slate-600 truncate max-w-[200px]">{projectName}</span>
+                                {project?.startDate && project?.endDate && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-3 w-[1px] bg-slate-300 mx-1" />
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">
+                                            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                                {new Date(project.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <span className="mx-1 text-slate-300">—</span>
+                                                {new Date(project.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-3">
