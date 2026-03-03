@@ -68,12 +68,14 @@ const DemandCardRow = ({ demand, onView }) => {
                 {/* 6. Actions */}
                 <div className="col-span-1 flex items-center justify-center gap-4">
                     <button
+                        title='Edit'
                         onClick={(e) => { e.stopPropagation(); /* Handle Edit */ }}
                     // className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all"
                     >
                         <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
                     </button>
                     <button
+                        title='Delete'
                         onClick={(e) => { e.stopPropagation(); /* Handle Delete */ }}
                     // className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
                     >
