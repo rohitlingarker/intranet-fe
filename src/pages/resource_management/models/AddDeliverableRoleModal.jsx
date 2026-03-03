@@ -1,267 +1,528 @@
 import React, { useState, useEffect, Fragment } from "react";
 import toast from "react-hot-toast";
-import { X, Plus, Trash2, ShieldCheck, Layers, CheckCircle2, Check, ChevronDown, ListPlus, Send } from "lucide-react";
-import { createRoleExpectation } from "../services/workforceService";
-import Modal from "../../../components/Modal/modal";
-import Button from "../../../components/Button/Button";
+import { X, Plus, Trash2, Edit2, ChevronDown, Search, Check } from "lucide-react";
+import { Combobox, Transition } from "@headlessui/react";
+import { createRoleExpectation, updateRoleExpectation } from "../services/workforceService";
 
-/* ===================== IMPROVED COMPONENTS ===================== */
+/* ===================== SEARCHABLE SELECT COMPONENT ===================== */
 
-const InputLabel = ({ children, required }) => (
-  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5">
-    {children} {required && <span className="text-red-500">*</span>}
-  </label>
-);
+const SearchableSelect = ({ label, value, onChange, options, placeholder, disabled }) => {
+  const [query, setQuery] = useState("");
 
-const SimpleSelect = ({ label, value, onChange, options, placeholder, disabled, required }) => (
-  <div className="flex-1 w-full">
-    <InputLabel required={required}>{label}</InputLabel>
-    <div className="relative group">
-      <select
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className="w-full h-10 pl-3 pr-10 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none appearance-none transition-all cursor-pointer disabled:bg-gray-50 disabled:cursor-not-allowed group-hover:border-gray-300"
-      >
-        <option value="" disabled>{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt.id} value={opt.id}>{opt.name}</option>
-        ))}
-      </select>
-      <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-600 pointer-events-none transition-colors" />
+  const filteredOptions = query === ""
+    ? options
+    : options.filter((opt) =>
+      opt.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+  const selectedOption = options.find((opt) => String(opt.id) === String(value));
+
+  return (
+    <div className="w-full">
+      {label && <label className="block text-xs text-gray-500 mb-1">{label}</label>}
+      <Combobox value={value} onChange={onChange} disabled={disabled}>
+        <div className="relative mt-1">
+          <div className="relative w-full cursor-default overflow-hidden rounded-md bg-white text-left border border-gray-200 focus-within:ring-1 focus-within:ring-indigo-500 transition-all sm:text-sm">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            </div>
+            <Combobox.Input
+              className="w-full border-none py-2 pl-9 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 outline-none disabled:bg-gray-50"
+              displayValue={() => selectedOption?.name || ""}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={placeholder}
+            />
+            <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            </Combobox.Button>
+          </div>
+          <Transition
+            as={Fragment}
+            leave="transition ease-in duration-100"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+            afterLeave={() => setQuery("")}
+          >
+            <Combobox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+              {filteredOptions.length === 0 && query !== "" ? (
+                <div className="relative cursor-default select-none py-2 px-4 text-gray-700 italic">
+                  Nothing found.
+                </div>
+              ) : (
+                filteredOptions.map((opt) => (
+                  <Combobox.Option
+                    key={opt.id}
+                    value={opt.id}
+                    className={({ active }) =>
+                      `relative cursor-default select-none py-2 pl-10 pr-4 transition-colors ${active ? "bg-indigo-600 text-white" : "text-gray-900"
+                      }`
+                    }
+                  >
+                    {({ selected, active }) => (
+                      <>
+                        <span className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}>
+                          {opt.name}
+                        </span>
+                        {selected ? (
+                          <span
+                            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-white" : "text-indigo-600"
+                              }`}
+                          >
+                            <Check className="h-4 w-4" aria-hidden="true" />
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </Combobox.Option>
+                ))
+              )}
+            </Combobox.Options>
+          </Transition>
+        </div>
+      </Combobox>
     </div>
-  </div>
-);
+  );
+};
 
 /* ===================== MAIN MODAL ===================== */
 
-const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLevels = [] }) => {
-  const [draftRole, setDraftRole] = useState({ roleId: crypto.randomUUID(), roleName: "", skills: [] });
-  const [formState, setFormState] = useState({ categoryId: "", skillId: "", skillName: "", mandatoryFlag: true, proficiencyId: "", subSkills: [] });
+const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLevels = [], initialData = null }) => {
+  const [draftRole, setDraftRole] = useState({
+    roleName: "",
+    skills: []
+  });
+
+  // Load initial data if provided (for updates)
+  useEffect(() => {
+    if (open && initialData) {
+      setDraftRole({
+        roleId: initialData.roleId,
+        roleName: initialData.roleName,
+        skills: initialData.skills || []
+      });
+    } else if (open) {
+      setDraftRole({
+        roleName: "",
+        skills: []
+      });
+    }
+  }, [open, initialData]);
+
+  const [formState, setFormState] = useState({
+    categoryId: "",
+    skillId: "",
+    skillName: "",
+    proficiencyId: "",
+    mandatoryFlag: false,
+    subSkills: []
+  });
+
+  const [stagingSubSkill, setStagingSubSkill] = useState(null); // { subSkillId: "", proficiencyId: "", mandatoryFlag: false }
   const [availableSkills, setAvailableSkills] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [availableSubSkills, setAvailableSubSkills] = useState([]);
 
   // Sync available skills when category changes
   useEffect(() => {
     const category = categories.find(c => String(c.id) === String(formState.categoryId));
-    setAvailableSkills(category?.skills?.map(s => ({ id: s.id, name: s.name || s.skillName })) || []);
-  }, [formState.categoryId, categories]);
+    setAvailableSkills(category?.skills || []);
+    // Reset skill if not in new category
+    if (!category?.skills?.find(s => String(s.id) === String(formState.skillId))) {
+      setFormState(prev => ({ ...prev, skillId: "", skillName: "", subSkills: [] }));
+    }
+  }, [formState.categoryId, categories, formState.skillId]);
+
+  // Sync available subskills when skill changes
+  useEffect(() => {
+    const skill = availableSkills.find(s => String(s.id) === String(formState.skillId));
+    setAvailableSubSkills(skill?.subSkills || []);
+  }, [formState.skillId, availableSkills]);
+
+  const handleAddSubSkillToStaging = () => {
+    if (!stagingSubSkill.subSkillId || !stagingSubSkill.proficiencyId) {
+      return toast.error("Select subskill and proficiency");
+    }
+
+    const subSkillName = availableSubSkills.find(s => String(s.id) === String(stagingSubSkill.subSkillId))?.name;
+    const proficiencyName = proficiencyLevels.find(p => String(p.id || p.proficiencyId) === String(stagingSubSkill.proficiencyId))?.name || proficiencyLevels.find(p => String(p.id || p.proficiencyId) === String(stagingSubSkill.proficiencyId))?.proficiencyName;
+
+    setFormState(prev => ({
+      ...prev,
+      subSkills: [...prev.subSkills, { ...stagingSubSkill, subSkillName, proficiencyName, id: Date.now() }]
+    }));
+    setStagingSubSkill(null);
+  };
+
+  const handleRemoveStagedSubSkill = (id) => {
+    setFormState(prev => ({
+      ...prev,
+      subSkills: prev.subSkills.filter(s => s.id !== id)
+    }));
+  };
 
   const handleAddSkillToDraft = () => {
-    if (!draftRole.roleName.trim()) return toast.error("Role Name is required");
-    if (!formState.skillId) return toast.error("Please select a skill");
-    if (!formState.proficiencyId) return toast.error("Please select a proficiency level");
+    if (!draftRole.roleName || draftRole.roleName.length < 3) {
+      return toast.error("Role Name must be at least 3 characters");
+    }
+    if (!formState.skillId || !formState.proficiencyId) {
+      return toast.error("Select skill and proficiency");
+    }
 
     const skillName = availableSkills.find(s => String(s.id) === String(formState.skillId))?.name;
-    const isDuplicate = draftRole.skills.some(s => String(s.skillId) === String(formState.skillId));
+    const proficiencyName = proficiencyLevels.find(p => String(p.id || p.proficiencyId) === String(formState.proficiencyId))?.name || proficiencyLevels.find(p => String(p.id || p.proficiencyId) === String(formState.proficiencyId))?.proficiencyName;
 
-    if (isDuplicate) return toast.error("Skill already in draft");
+    const existingSkillIndex = draftRole.skills.findIndex(s => String(s.skillId) === String(formState.skillId));
 
+    if (existingSkillIndex > -1) {
+      const updatedSkills = [...draftRole.skills];
+      const existingSkill = updatedSkills[existingSkillIndex];
+
+      // Merge subskills (avoid duplicates by ID)
+      const existingSubSkillIds = new Set(existingSkill.subSkills.map(ss => String(ss.subSkillId)));
+      const newSubSkills = formState.subSkills.filter(ss => !existingSubSkillIds.has(String(ss.subSkillId)));
+
+      updatedSkills[existingSkillIndex] = {
+        ...formState,
+        skillName,
+        proficiencyName,
+        id: existingSkill.id, // Keep original ID for stability
+        subSkills: [...existingSkill.subSkills, ...newSubSkills]
+      };
+      setDraftRole(prev => ({ ...prev, skills: updatedSkills }));
+      toast.success("Skill updated in draft");
+    } else {
+      setDraftRole(prev => ({
+        ...prev,
+        skills: [...prev.skills, { ...formState, skillName, proficiencyName, id: Date.now() }]
+      }));
+      toast.success("Skill added to draft");
+    }
+
+    setFormState({
+      categoryId: "",
+      skillId: "",
+      skillName: "",
+      proficiencyId: "",
+      mandatoryFlag: false,
+      subSkills: []
+    });
+    setStagingSubSkill(null);
+  };
+
+  const handleEditSkill = (skill) => {
+    // Find category for this skill
+    const category = categories.find(c => c.skills?.some(s => String(s.id) === String(skill.skillId)));
+    setFormState({
+      categoryId: category?.id || "",
+      skillId: skill.skillId,
+      skillName: skill.skillName,
+      proficiencyId: skill.proficiencyId,
+      mandatoryFlag: skill.mandatoryFlag,
+      subSkills: skill.subSkills || []
+    });
+  };
+
+  const handleRemoveSkillFromDraft = (skillId) => {
     setDraftRole(prev => ({
       ...prev,
-      skills: [...prev.skills, { ...formState, skillName, id: Date.now() }]
+      skills: prev.skills.filter(s => s.skillId !== skillId)
     }));
-
-    // Reset Skill fields but KEEP Category
-    setFormState(prev => ({ ...prev, skillId: "", skillName: "", mandatoryFlag: true, proficiencyId: "", subSkills: [] }));
-    toast.success("Skill added to draft");
+    toast.success("Skill removed from draft");
   };
 
   const handleFinalize = async () => {
-    if (!draftRole.roleName.trim()) return toast.error("Role Name is required");
-    if (draftRole.skills.length === 0) return toast.error("At least one skill is required");
+    if (!draftRole.roleName) return toast.error("Role name required");
+    if (draftRole.skills.length === 0) return toast.error("At least one skill required");
 
-    setLoading(true);
+    const payload = {
+      roleName: draftRole.roleName,
+      skills: draftRole.skills.map(s => ({
+        skillId: s.skillId,
+        mandatoryFlag: s.mandatoryFlag,
+        proficiencyId: s.proficiencyId,
+        subSkills: s.subSkills.map(ss => ({
+          subSkillId: ss.subSkillId,
+          proficiencyId: ss.proficiencyId,
+          mandatoryFlag: ss.mandatoryFlag
+        }))
+      }))
+    };
+
     try {
-      await createRoleExpectation(draftRole);
-      toast.success("Role deployment successful!");
+      if (draftRole.roleId) {
+        // Update case: PUT /api/admin/role-expectations/{roleId}
+        await updateRoleExpectation(draftRole.roleId, payload);
+        toast.success("Role updated successfully");
+      } else {
+        // Create case: POST /api/admin/role-expectations
+        await createRoleExpectation(payload);
+        toast.success("Role created successfully");
+      }
       onClose();
-      // Reset state on success
-      setDraftRole({ roleId: crypto.randomUUID(), roleName: "", skills: [] });
+      // Reset state
+      setDraftRole({ roleName: "", skills: [] });
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to finalize role configuration");
-    } finally {
-      setLoading(false);
+      toast.error(draftRole.roleId ? "Failed to update role" : "Failed to create role");
     }
-  };
-
-  const removeSkillFromDraft = (id) => {
-    setDraftRole(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) }));
   };
 
   if (!open) return null;
 
   return (
-    <Modal
-      isOpen={open}
-      onClose={onClose}
-      title="Create Deliverable Role"
-      subtitle="Configure competency expectations for this project role"
-      className="max-w-[80vw]"
-      bodyClassName="p-0"
-    >
-      <div className="flex flex-col lg:grid lg:grid-cols-12 min-h-0 lg:max-h-[75vh]">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white w-[70%] max-h-[85vh] overflow-hidden rounded-lg shadow-lg flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800">Configure Deliverable Role</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={20} />
+          </button>
+        </div>
 
-        {/* LEFT: COMPOSER (65%) */}
-        <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-gray-100 bg-white">
-          <div className="max-w-xl mx-auto space-y-8">
+        {/* Body */}
+        <div className="grid grid-cols-2 gap-6 p-6 overflow-y-auto">
+          {/* LEFT: FORM */}
+          <div className="space-y-6">
+            <section>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Role Name *</label>
+              <input
+                type="text"
+                value={draftRole.roleName}
+                onChange={(e) => setDraftRole(p => ({ ...p, roleName: e.target.value }))}
+                placeholder="Enter role name"
+                className="w-full px-3 py-2 border border-gray-200 rounded-md shadow-sm text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </section>
 
-            {/* Essential Info Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
-                  <ShieldCheck size={16} />
+            <div className="border-t border-gray-100 pt-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Skill Configuration</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Category</label>
+                  <select
+                    value={formState.categoryId}
+                    onChange={(e) => setFormState(p => ({ ...p, categoryId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
                 </div>
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">General Identity</h3>
-              </div>
 
-              <div className="space-y-1">
-                <InputLabel required>Role Designation</InputLabel>
-                <input
-                  type="text"
-                  value={draftRole.roleName}
-                  onChange={(e) => setDraftRole(p => ({ ...p, roleName: e.target.value }))}
-                  placeholder="e.g. Associate Solution Architect"
-                  className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-sm font-medium transition-all group-hover:border-gray-300"
-                />
-              </div>
-            </div>
-
-            {/* Competency Builder Section */}
-            <div className="space-y-5 pt-1 border-t border-gray-50 mt-6 pt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
-                  <Plus size={16} />
-                </div>
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Skill Builder</h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <SimpleSelect
-                  label="Category"
-                  placeholder="Select Category"
-                  value={formState.categoryId}
-                  options={categories}
-                  required
-                  onChange={(e) => setFormState(p => ({ ...p, categoryId: e.target.value, skillId: "" }))}
-                />
-                <SimpleSelect
+                <SearchableSelect
                   label="Skill"
-                  placeholder="Select Skill"
+                  placeholder="Search and select skill"
                   value={formState.skillId}
                   options={availableSkills}
                   disabled={!formState.categoryId}
-                  required
-                  onChange={(e) => setFormState(p => ({ ...p, skillId: e.target.value }))}
+                  onChange={(val) => setFormState(p => ({ ...p, skillId: val }))}
                 />
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-end">
-                <SimpleSelect
-                  label="Min. Proficiency"
-                  placeholder="Select Level"
-                  value={formState.proficiencyId}
-                  options={proficiencyLevels.map(p => ({ id: p.id || p.proficiencyId, name: p.name || p.proficiencyName }))}
-                  required
-                  onChange={(e) => setFormState(p => ({ ...p, proficiencyId: e.target.value }))}
-                />
-                <button
-                  onClick={() => setFormState(p => ({ ...p, mandatoryFlag: !p.mandatoryFlag }))}
-                  className={`h-10 group flex items-center justify-between px-3 rounded-lg border transition-all ${formState.mandatoryFlag ? "bg-rose-50/50 border-rose-200 text-rose-700" : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${formState.mandatoryFlag ? "bg-rose-600" : "bg-gray-300"}`}>
-                      <Check size={8} className="text-white" strokeWidth={5} />
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Mandatory Req.</span>
-                  </div>
-                  <div className={`w-7 h-3.5 rounded-full relative transition-colors ${formState.mandatoryFlag ? "bg-rose-200" : "bg-gray-200"}`}>
-                    <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm ${formState.mandatoryFlag ? "left-[13px]" : "left-0.5"}`} />
-                  </div>
-                </button>
-              </div>
-
-              <button
-                onClick={handleAddSkillToDraft}
-                className="w-full h-11 bg-gray-900 hover:bg-indigo-600 text-white rounded-lg font-bold text-xs uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-200 hover:shadow-indigo-200 active:scale-[0.98]"
-              >
-                <ListPlus size={16} /> Add Competency to List
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: LIVE DRAFT (35%) */}
-        <div className="lg:col-span-5 bg-gray-50 flex flex-col h-full border-t lg:border-t-0">
-          <div className="p-4 px-6 border-b border-gray-200 bg-white/50 backdrop-blur-sm flex justify-between items-center shrink-0">
-            <div className="flex items-center gap-2">
-              <Layers size={16} className="text-gray-400" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Configuration Draft</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full bg-gray-100 font-bold">
-                {draftRole.skills.length} Items
-              </span>
-            </div>
-          </div>
-
-          <div className="h-[250px] lg:h-full flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
-            {draftRole.skills.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-3xl flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
-                  <Layers size={28} className="text-gray-300 opacity-50" />
-                </div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Staging Area Empty</h4>
-                <p className="text-[11px] text-gray-400 max-w-[180px] leading-relaxed">Add skills from the left to start building your role profile</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {draftRole.skills.map((skill) => (
-                  <div key={skill.id} className="bg-white border border-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group animate-in slide-in-from-right-2 duration-300">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm shadow-indigo-100">
-                          {proficiencyLevels.find(p => String(p.id || p.proficiencyId) === String(skill.proficiencyId))?.name || "L1"}
-                        </span>
-                        {skill.mandatoryFlag && (
-                          <span className="text-[9px] bg-rose-50 text-rose-600 border border-rose-100 px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">
-                            Critical
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="text-sm font-bold text-gray-800 truncate leading-tight">{skill.skillName}</h4>
-                    </div>
-                    <button
-                      onClick={() => removeSkillFromDraft(skill.id)}
-                      className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Proficiency *</label>
+                    <select
+                      value={formState.proficiencyId}
+                      onChange={(e) => setFormState(p => ({ ...p, proficiencyId: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
                     >
-                      <Trash2 size={16} />
-                    </button>
+                      <option value="">Select proficiency</option>
+                      {proficiencyLevels.map(p => (
+                        <option key={p.id || p.proficiencyId} value={p.id || p.proficiencyId}>
+                          {p.name || p.proficiencyName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ))}
+                  <div className="flex items-end pb-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={formState.mandatoryFlag}
+                        onChange={(e) => setFormState(p => ({ ...p, mandatoryFlag: e.target.checked }))}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      Mark as Mandatory
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SubSkills section - only if availableSubSkills exists */}
+            {availableSubSkills.length > 0 && (
+              <div className="border-t border-gray-100 pt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">SubSkills (Optional)</h3>
+                  <button
+                    type="button"
+                    onClick={() => setStagingSubSkill({ subSkillId: "", proficiencyId: "", mandatoryFlag: false })}
+                    disabled={!formState.skillId}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 disabled:text-gray-400"
+                  >
+                    <Plus size={14} /> Add SubSkill
+                  </button>
+                </div>
+
+                {stagingSubSkill && (
+                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <SearchableSelect
+                        label="SubSkill"
+                        placeholder="Search subskill"
+                        value={stagingSubSkill.subSkillId}
+                        options={availableSubSkills}
+                        onChange={(val) => setStagingSubSkill(p => ({ ...p, subSkillId: val }))}
+                      />
+                      <div>
+                        <label className="block text-[10px] text-gray-400 uppercase font-bold mt-1">Proficiency</label>
+                        <select
+                          value={stagingSubSkill.proficiencyId}
+                          onChange={(e) => setStagingSubSkill(p => ({ ...p, proficiencyId: e.target.value }))}
+                          className="w-full px-2 py-2 border border-gray-200 rounded text-xs outline-none bg-white h-[38px] mt-1"
+                        >
+                          <option value="">Select</option>
+                          {proficiencyLevels.map(p => (
+                            <option key={p.id || p.proficiencyId} value={p.id || p.proficiencyId}>
+                              {p.name || p.proficiencyName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <label className="flex items-center gap-2 text-xs text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={stagingSubSkill.mandatoryFlag}
+                          onChange={(e) => setStagingSubSkill(p => ({ ...p, mandatoryFlag: e.target.checked }))}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 scale-75"
+                        />
+                        Mandatory
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setStagingSubSkill(null)}
+                          className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 font-medium"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleAddSubSkillToStaging}
+                          className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded font-semibold hover:bg-indigo-700 shadow-sm"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {formState.subSkills.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Staged SubSkills:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formState.subSkills.map(ss => (
+                        <div key={ss.id} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-2.5 py-1.5 rounded border border-indigo-100 text-xs font-medium">
+                          <span>{ss.subSkillName} | {ss.proficiencyName} | {ss.mandatoryFlag ? "Mand" : "Opt"}</span>
+                          <button onClick={() => handleRemoveStagedSubSkill(ss.id)} className="text-indigo-400 hover:text-indigo-600">
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            <button
+              onClick={handleAddSkillToDraft}
+              disabled={!draftRole.roleName || !formState.skillId || !formState.proficiencyId}
+              className="w-full py-2.5 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors mt-4 shadow-sm"
+            >
+              Add Skill to Draft
+            </button>
           </div>
 
-          {/* Deployment Footer */}
-          <div className="p-5 bg-white border-t border-gray-100 shrink-0">
-            <button
-              onClick={handleFinalize}
-              disabled={loading || draftRole.skills.length === 0 || !draftRole.roleName.trim()}
-              className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-100 text-white rounded-xl font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 disabled:shadow-none transition-all active:scale-[0.98]"
-            >
-              {loading ? (
-                "Deploying Role Profile..."
+          {/* RIGHT: DRAFT PREVIEW */}
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 flex flex-col h-full overflow-hidden">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4 h-fit">Draft Summary</h3>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {draftRole.skills.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
+                  No skills added yet
+                </div>
               ) : (
-                <>Deploy Configuration <Send size={16} className="translate-x-1 -translate-y-0.5" /></>
+                draftRole.skills.map(skill => (
+                  <div key={skill.id} className="bg-white p-4 rounded-md border border-gray-200 shadow-sm space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-800">{skill.skillName}</h4>
+                        <div className="flex gap-2 mt-1">
+                          <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">
+                            {skill.proficiencyName}
+                          </span>
+                          {skill.mandatoryFlag && (
+                            <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-medium uppercase">
+                              Mandatory
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditSkill(skill)}
+                          className="p-1 text-gray-400 hover:text-indigo-600"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveSkillFromDraft(skill.skillId)}
+                          className="p-1 text-gray-400 hover:text-rose-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {skill.subSkills.length > 0 && (
+                      <div className="pl-3 border-l-2 border-gray-100 space-y-1">
+                        <p className="text-[10px] text-gray-400 uppercase font-black">SubSkills:</p>
+                        {skill.subSkills.map(ss => (
+                          <div key={ss.id} className="text-[11px] text-gray-600 flex items-center gap-1">
+                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                            {ss.subSkillName} | {ss.proficiencyName} | {ss.mandatoryFlag ? "Mandatory" : "Optional"}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
-            </button>
+            </div>
           </div>
         </div>
 
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleFinalize}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            {draftRole.roleId ? "Update Role" : "Finalize Role"}
+          </button>
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 };
 
 export default AddDeliverableRoleModal;
+
