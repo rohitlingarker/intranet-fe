@@ -18,7 +18,9 @@ const DemandFilters = ({
     onPriorityChange,
     onReset,
     activeCount,
-    inline = false
+    inline = false,
+    clients = [],
+    priorities = ['Critical', 'High', 'Medium', 'Low']
 }) => {
     // Local draft state to match Admin Panel functionality
     const [draft, setDraft] = useState({
@@ -79,9 +81,9 @@ const DemandFilters = ({
                                 </SelectTrigger>
                                 <SelectContent className="z-[110]">
                                     <SelectItem value="All">All Clients</SelectItem>
-                                    <SelectItem value="Alpha Corp">Alpha Corp</SelectItem>
-                                    <SelectItem value="Global Tech">Global Tech</SelectItem>
-                                    <SelectItem value="OldGuard Inc">OldGuard Inc</SelectItem>
+                                    {clients.map(client => (
+                                        <SelectItem key={client} value={client}>{client}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -98,10 +100,9 @@ const DemandFilters = ({
                                 </SelectTrigger>
                                 <SelectContent className="z-[110]">
                                     <SelectItem value="All">All Priorities</SelectItem>
-                                    <SelectItem value="Critical">Critical</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Low">Low</SelectItem>
+                                    {priorities.map(p => (
+                                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -165,9 +166,9 @@ const DemandFilters = ({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="All">All Clients</SelectItem>
-                            <SelectItem value="Alpha Corp">Alpha Corp</SelectItem>
-                            <SelectItem value="Global Tech">Global Tech</SelectItem>
-                            <SelectItem value="OldGuard Inc">OldGuard Inc</SelectItem>
+                            {clients.map(client => (
+                                <SelectItem key={client} value={client}>{client}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -178,7 +179,7 @@ const DemandFilters = ({
                         Priority level
                     </label>
                     <div className="grid grid-cols-1 gap-2">
-                        {['All', 'Critical', 'High', 'Medium', 'Low'].map((p) => (
+                        {['All', ...priorities].map((p) => (
                             <button
                                 key={p}
                                 onClick={() => onPriorityChange(p)}
