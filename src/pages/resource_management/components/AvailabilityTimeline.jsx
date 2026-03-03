@@ -732,34 +732,34 @@ export function AvailabilityTimeline({
     <div className="rounded-lg border bg-card overflow-hidden shadow-sm flex flex-col h-full bg-slate-50">
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative z-50">
-        <div className="flex items-center justify-between sm:justify-start gap-4">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)}>
-            <TabsList className="h-8 bg-muted/50 p-1">
+        <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar pr-2">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
+            <TabsList className="h-8 bg-muted/50 p-1 shrink-0 min-w-max">
               <TabsTrigger
                 value="resource"
-                className="text-[10px] h-6 gap-1.5 px-2 sm:px-3 rounded-sm"
+                className="text-[10px] h-6 gap-1.5 px-3 rounded-sm whitespace-nowrap"
               >
                 <User className="h-3 w-3" />
-                <span className="hidden xs:inline">Resource</span>
-                <span className="xs:hidden">Resources</span>
+                <span className="hidden xs:inline">Resource View</span>
+                <span className="xs:hidden font-bold">Resources</span>
               </TabsTrigger>
               <TabsTrigger
                 value="role"
-                className="text-[10px] h-6 gap-1.5 px-2 sm:px-3 rounded-sm"
+                className="text-[10px] h-6 gap-1.5 px-3 rounded-sm whitespace-nowrap"
               >
                 <Layers className="h-3 w-3" />
-                Role
+                Role View
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
         {viewMode === "resource" && (
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
               placeholder="Search by name..."
-              className="h-7 px-2 sm:px-3 text-[10px] font-medium border rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all w-40 sm:w-52"
+              className="h-7 px-2 sm:px-3 text-[10px] font-medium border rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all w-full sm:w-52"
               value={filters.search}
               onChange={(e) =>
                 setFilters((prev) => ({
