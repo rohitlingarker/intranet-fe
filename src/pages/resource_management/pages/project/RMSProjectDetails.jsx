@@ -789,8 +789,7 @@ const RMSProjectDetails = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full lg:w-auto">
-            {/* + Add Deliverable Role */}
+          {/* <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full lg:w-auto">
             <button
               onClick={() => {
                 console.log("Deliverable Role button clicked");
@@ -800,8 +799,6 @@ const RMSProjectDetails = () => {
             >
               + Add Deliverable Role
             </button>
-
-            {/* Create Demand */}
             <button
               title={!demandResponse?.create ? demandResponse?.reason : ""}
               className={`bg-blue-800 px-4 py-2 rounded-lg text-white text-xs font-semibold ${loadingDemand || !demandResponse?.create
@@ -813,7 +810,7 @@ const RMSProjectDetails = () => {
             >
               Create Demand
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Tabs - Scrollable on mobile */}

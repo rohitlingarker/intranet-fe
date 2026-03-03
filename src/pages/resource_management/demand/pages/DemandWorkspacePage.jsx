@@ -159,10 +159,10 @@ const DemandWorkspacePage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50/50">
-            <main className="max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
+            <main className="w-full px-4 py-4 md:px-6 md:py-6">
 
                 {/* --- HEADER (Workforce Style) --- */}
-                <header className="mb-6 md:mb-8">
+                <header className="mb-4 md:mb-5">
                     <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                         Demand Pipeline Management
                     </h1>
@@ -172,7 +172,7 @@ const DemandWorkspacePage = () => {
                 </header>
 
                 {/* --- KPI RIBBON (Workforce Style) --- */}
-                <div className="mb-6 md:mb-8 min-h-[100px]">
+                <div className="mb-4 md:mb-6">
                     <DemandKPIStrip data={activeKPIs} isLoading={isLoading} />
                 </div>
 
@@ -180,19 +180,19 @@ const DemandWorkspacePage = () => {
                 <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
 
                     {/* Integrated Control Header */}
-                    <div className="px-6 py-4 border-b border-slate-100 bg-white">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="px-5 py-3 border-b border-slate-100 bg-white">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
 
                             {/* Tabs */}
-                            <div className="flex items-center gap-6">
-                                <div className="flex items-center gap-2.5">
-                                    <h3 className="text-[13px] font-bold text-slate-900 tracking-tight">Pipeline View</h3>
+                            <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-[12px] font-bold text-slate-900 tracking-tight">Pipeline View</h3>
                                     <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-500">
                                         {filteredDemands.length}
                                     </span>
                                 </div>
 
-                                <div className="flex bg-slate-100/80 p-1 rounded-lg border border-slate-200/60">
+                                <div className="flex bg-slate-100/80 p-0.5 rounded-lg border border-slate-200/60">
                                     {[
                                         { id: 'breached', label: 'Breached', icon: ShieldAlert, color: 'text-rose-600' },
                                         { id: 'at_risk', label: 'At Risk', icon: AlertTriangle, color: 'text-orange-600' },
@@ -203,7 +203,7 @@ const DemandWorkspacePage = () => {
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
                                             className={cn(
-                                                "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-md transition-all",
+                                                "flex items-center gap-1 px-3 py-1 text-[10px] font-bold rounded-md transition-all",
                                                 activeTab === tab.id
                                                     ? "bg-white text-slate-900 shadow-sm"
                                                     : "text-slate-400 hover:text-slate-600"
@@ -225,27 +225,9 @@ const DemandWorkspacePage = () => {
                                         placeholder="Search pipeline..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="h-9 w-[240px] pl-9 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-[12px] outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all placeholder:text-slate-400"
+                                        className="h-8 w-[240px] pl-9 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-[12px] outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                                     />
                                 </div>
-                                {/* <button
-                                    ref={filterButtonRef}
-                                    onClick={() => setFilterCollapsed(!filterCollapsed)}
-                                    className={cn(
-                                        "h-9 px-4 flex items-center gap-2 rounded-lg text-[11px] font-bold transition-all border shadow-sm",
-                                        !filterCollapsed
-                                            ? "bg-slate-900 border-slate-900 text-white"
-                                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                                    )}
-                                >
-                                    <Filter className="h-3.5 w-3.5" />
-                                    Filter
-                                    {activeFilterCount > 0 && (
-                                        <span className="h-3.5 w-3.5 rounded-full bg-indigo-600 text-[8px] flex items-center justify-center text-white ring-2 ring-white">
-                                            {activeFilterCount}
-                                        </span>
-                                    )}
-                                </button> */}
                             </div>
                         </div>
                     </div>
@@ -254,10 +236,10 @@ const DemandWorkspacePage = () => {
                     <div className="overflow-x-auto border-t border-slate-100">
                         <div className="min-w-[1000px]">
                             {/* Table Header */}
-                            <div className="grid grid-cols-10 items-center gap-4 px-6 py-3 bg-slate-50 border-b border-slate-100">
+                            <div className="grid grid-cols-10 items-center gap-4 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
                                 <div className="col-span-3 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Demand Specifications & Context</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score</div>
-                                <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Gov</div>
+                                <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Priority</div>
                                 <div className="col-span-2 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">SLA Compliance</div>
                                 <div className="col-span-2 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Status</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Actions</div>
@@ -293,6 +275,7 @@ const DemandWorkspacePage = () => {
                                     <DemandList
                                         demands={filteredDemands}
                                         onViewDetail={handleViewDetail}
+                                        activeTab={activeTab}
                                     />
                                 )}
                             </div>

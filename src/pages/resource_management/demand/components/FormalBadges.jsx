@@ -55,7 +55,19 @@ export const StateBadge = ({ state }) => {
     );
 };
 
-export const SLABadge = ({ days }) => {
+export const SLABadge = ({ days, isSoft }) => {
+    if (isSoft) {
+        return (
+            <div className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-lg border min-w-[80px] transition-all bg-slate-50 border-slate-100 text-slate-400">
+                <div className="flex items-center gap-1">
+                    <Clock className="h-2 w-2 opacity-40" />
+                    <span className="text-[8px] font-black tracking-widest uppercase text-slate-400">SLA</span>
+                </div>
+                <span className="text-[11px] font-black tabular-nums">None</span>
+            </div>
+        );
+    }
+
     const isBreached = days < 0;
     const isAtRisk = days >= 0 && days <= 5;
 
