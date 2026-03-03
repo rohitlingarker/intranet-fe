@@ -1,5 +1,4 @@
 import React, { useState, useEffect, Fragment } from "react";
-import React, { useState, useEffect, Fragment } from "react";
 import toast from "react-hot-toast";
 import { X, Plus, Trash2, Edit2, ChevronDown, Search, Check } from "lucide-react";
 import { Combobox, Transition } from "@headlessui/react";
