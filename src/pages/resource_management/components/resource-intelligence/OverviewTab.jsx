@@ -13,12 +13,12 @@ import Pagination from "../../../../components/Pagination/pagination";
 // ── Mini Info Row ──────────────────────────────────────────────────────────
 function MiniInfoRow({ label, value, icon: Icon }) {
     return (
-        <div className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0 font-sans">
-            <div className="flex items-center gap-2 text-slate-400">
+        <div className="flex flex-wrap items-center justify-between py-2 border-b border-slate-50 last:border-0 font-sans gap-2">
+            <div className="flex items-center gap-2 text-slate-400 min-w-[100px]">
                 <Icon className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium text-slate-500">{label}</span>
+                <span className="text-[11px] sm:text-xs font-medium text-slate-500 whitespace-nowrap">{label}</span>
             </div>
-            <span className="text-xs font-bold text-slate-900">{value || "—"}</span>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-900 truncate max-w-[120px] sm:max-w-none">{value || "—"}</span>
         </div>
     );
 }
@@ -133,14 +133,14 @@ export default function OverviewTab({ resource }) {
 
                 {/* COLUMN 2: Allocation Metrics (45%) */}
                 <div className="md:col-span-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm h-full transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-5">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
                         <h3 className="text-sm font-heading font-bold text-slate-900 flex items-center gap-2">
                             <TrendingUp className="h-4 w-4 text-indigo-500" /> Performance & Utilization
                         </h3>
                         {!utilLoading && (
-                            <div className="flex gap-4 text-[10px] font-bold font-sans">
-                                <span className="flex items-center gap-1.5 text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Billable</span>
-                                <span className="flex items-center gap-1.5 text-slate-400"><span className="h-2 w-2 rounded-full bg-slate-200" /> Non-Billable</span>
+                            <div className="flex flex-wrap gap-3 sm:gap-4 text-[9px] sm:text-[10px] font-bold font-sans">
+                                <div className="flex items-center gap-1.5 text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Billable</div>
+                                <div className="flex items-center gap-1.5 text-slate-400"><span className="h-2 w-2 rounded-full bg-slate-200" /> Non-Billable</div>
                             </div>
                         )}
                     </div>
@@ -210,11 +210,11 @@ export default function OverviewTab({ resource }) {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-3 mt-auto">
-                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-4">
+                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full">
                                 Create Demand
                             </Button>
-                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm">
+                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full">
                                 Reserve
                             </Button>
                         </div>
@@ -281,9 +281,9 @@ export default function OverviewTab({ resource }) {
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
                     <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                         <h3 className="text-sm font-heading font-bold text-slate-900 flex items-center gap-2">
-                            <FolderKanban className="h-4.5 w-4.5 text-indigo-500" /> Current Engagements
+                            <FolderKanban className="h-4.5 w-4.5 text-indigo-500" /> Employment History
                         </h3>
-                        <Badge className="bg-slate-100 text-slate-600 text-[10px] font-bold border-none px-2.5 font-sans">{currentProjects.length} Projects</Badge>
+                        <Badge className="bg-slate-100 text-slate-600 text-[10px] font-bold border-none px-2.5 font-sans whitespace-nowrap">{currentProjects.length} Projects</Badge>
                     </div>
                     <div className="p-0 flex-1 flex flex-col">
                         {paginatedProjs.length > 0 ? (

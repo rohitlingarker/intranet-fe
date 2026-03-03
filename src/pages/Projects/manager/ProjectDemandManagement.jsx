@@ -380,12 +380,13 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
             {/* List Content Area */}
             <div className="p-0 relative">
-                <div className="grid grid-cols-12 items-center gap-4 px-10 py-3 bg-slate-50 border-b">
-                    <div className="col-span-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Demand Specifications & Context</div>
-                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Score</div>
-                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Priority</div>
-                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SLA status</div>
-                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</div>
+                <div className="grid grid-cols-10 items-center gap-4 px-6 py-3 bg-slate-50 border-b">
+                    <div className="col-span-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Demand Specifications & Context</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left pl-2">Score</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Priority</div>
+                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SLA Compliance</div>
+                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Actions</div>
                 </div>
 
                 <div className="flex flex-col">

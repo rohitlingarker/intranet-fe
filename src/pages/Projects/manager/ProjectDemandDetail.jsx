@@ -4,7 +4,7 @@ import {
     FileText, Building2, ShieldCheck, Code2,
     CheckCircle2, Info, AlertTriangle, Shield,
     Zap, Globe, MapPin, UserCheck, Briefcase,
-    Layers, MessageSquareQuote, SplitSquareVertical, User
+    Layers, MessageSquareQuote, SplitSquareVertical, User, Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import demandService from '../../resource_management/demand/services/demandService';
@@ -129,7 +129,10 @@ const ProjectDemandDetail = ({ projectId, demandId, onBack }) => {
             <div className="px-8 border-b border-slate-200 bg-white flex gap-2">
                 <TabButton id="overview" label="Requirement Overview" icon={FileText} active={activeTab === 'overview'} onClick={setActiveTab} />
                 <TabButton id="technical" label="Role Blueprint" icon={Code2} active={activeTab === 'technical'} onClick={setActiveTab} />
-                <TabButton id="sla" label="SLA & Governance" icon={ShieldCheck} active={activeTab === 'sla'} onClick={setActiveTab} />
+                {!['SOFT', 'REQUESTED'].includes(demand.demandStatus?.toUpperCase()) &&
+                    demand.demandCommitment?.toUpperCase() !== 'SOFT' && (
+                        <TabButton id="sla" label="SLA & Governance" icon={ShieldCheck} active={activeTab === 'sla'} onClick={setActiveTab} />
+                    )}
             </div>
 
             {/* Content Area */}
@@ -173,37 +176,98 @@ const ProjectDemandDetail = ({ projectId, demandId, onBack }) => {
                     )}
 
                     {activeTab === 'technical' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <DetailCard title="Technical Blueprint" icon={Layers}>
-                                <div className="space-y-1">
-                                    <InfoRow label="Designation / Role" value={actualRole.roleName} icon={UserCheck} />
-                                    <InfoRow label="Primary Skill" value={skill.name} icon={Zap} />
-                                    <InfoRow label="Sub Capability" value={subSkill.name} icon={Layers} />
-                                    <InfoRow label="Experience Requirement" value={`${demand.minExp} Years`} icon={Activity} />
-                                    <InfoRow label="Proficiency Level" value={proficiency.proficiencyName} icon={Shield} colorClass="text-indigo-600" />
-                                    <InfoRow label="Mandatory Requirement" value={roleMeta.mandatoryFlag ? "Yes" : "No"} icon={ShieldCheck} colorClass={roleMeta.mandatoryFlag ? "text-rose-600" : "text-emerald-600"} />
+                        <div className="flex flex-col gap-6">
+                            {/* 1. Compact Role Header */}
+                            <div className="bg-[#1e293b] rounded-2xl p-6 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between shadow-lg border border-white/5">
+                                <div className="flex items-center gap-6 relative z-10 w-full md:w-auto">
+                                    <div className="h-14 w-14 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg border border-white/10 shrink-0">
+                                        <Code2 className="h-7 w-7 text-white" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <h3 className="text-2xl font-bold tracking-tight text-white">{actualRole.roleName || "N/A"}</h3>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Allocation:</span>
+                                                <span className="text-xs font-semibold text-white/90">{demand.allocationPercentage}%</span>
+                                            </div>
+                                            <span className="h-3 w-px bg-white/10" />
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Exp:</span>
+                                                <span className="text-xs font-semibold text-white/90">{demand.minExp} Yrs</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </DetailCard>
 
-                            <div className="bg-slate-900 rounded-xl p-8 text-white relative overflow-hidden flex flex-col justify-center">
-                                <div className="absolute right-0 bottom-0 opacity-5 scale-150"><Code2 className="h-48 w-48" /></div>
-                                <div className="relative z-10">
-                                    <h4 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-2">Role Expectation</h4>
-                                    <h3 className="text-3xl font-bold tracking-tight mb-4">{actualRole.roleName || "Unspecified"}</h3>
-                                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mb-6">
-                                        <div className="h-full bg-indigo-500" style={{ width: '75%' }} />
+                                <div className="flex items-center gap-3 relative z-10 mt-4 md:mt-0">
+                                    <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-300">Mandatory: {roleMeta.mandatoryFlag ? "Yes" : "No"}</span>
                                     </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase text-white/40 font-bold mb-1">Availability</span>
-                                            <span className="text-lg font-bold">Standard Shift</span>
-                                        </div>
-                                        <div className="h-8 w-px bg-white/10" />
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase text-white/40 font-bold mb-1">Verification</span>
-                                            <span className="text-lg font-bold">Structural Validated</span>
-                                        </div>
+                                    <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Validated</span>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* 2. Simplified Skills Matrix */}
+                            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                                <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/30">
+                                    <Award className="h-4 w-4 text-indigo-500" />
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Technical Blueprint & Skills Matrix</h3>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse min-w-full">
+                                        <thead>
+                                            <tr className="bg-slate-50/50">
+                                                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Primary Skill</th>
+                                                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sub Skill</th>
+                                                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Proficiency</th>
+                                                <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mandatory</th>
+                                                <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            <tr className="hover:bg-slate-50/30 transition-colors">
+                                                <td className="px-6 py-5 text-left align-middle">
+                                                    <span className="text-sm font-bold text-slate-900">{skill.name || "N/A"}</span>
+                                                </td>
+                                                <td className="px-6 py-5 text-left align-middle">
+                                                    <span className="text-xs text-slate-600 font-medium">{subSkill.name || "N/A"}</span>
+                                                </td>
+                                                <td className="px-6 py-5 text-left align-middle">
+                                                    <div className="flex flex-col gap-1.5 w-32">
+                                                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">{proficiency.proficiencyName || "N/A"}</span>
+                                                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-indigo-500 rounded-full"
+                                                                style={{
+                                                                    width: proficiency.proficiencyName?.toLowerCase().includes('expert') ? '100%' :
+                                                                        proficiency.proficiencyName?.toLowerCase().includes('advanced') ? '75%' :
+                                                                            proficiency.proficiencyName?.toLowerCase().includes('intermediate') ? '50%' : '25%'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 align-middle">
+                                                    <div className="flex justify-center">
+                                                        <div className={cn(
+                                                            "h-2 w-2 rounded-full",
+                                                            roleMeta.mandatoryFlag ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-slate-200"
+                                                        )} />
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 align-middle">
+                                                    <div className="flex justify-center">
+                                                        <span className="inline-flex px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase rounded-lg border border-emerald-100">
+                                                            Active
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>

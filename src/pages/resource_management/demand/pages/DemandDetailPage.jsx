@@ -47,6 +47,7 @@ const InfoRow = ({ label, value, icon: Icon, colorClass = "text-slate-900" }) =>
  * --- TAB 1: OVERVIEW ---
  */
 const OverviewTab = ({ demand, project, sla }) => {
+    console.log("Demand: ", demand);
     const warningThreshold = 5;
     const remainingDays = sla?.remainingDays ?? 0;
     const progress = Math.min(100, Math.max(0, ((sla?.slaDurationDays - remainingDays) / sla?.slaDurationDays) * 100)) || 0;
@@ -56,7 +57,7 @@ const OverviewTab = ({ demand, project, sla }) => {
     else if (remainingDays <= warningThreshold) slaColor = "bg-orange-500";
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Card 1: Demand Summary */}
             <DetailCard title="Demand Summary" icon={FileText}>
                 <div className="space-y-1">
@@ -146,23 +147,23 @@ const RoleInfoTab = ({ demand, role }) => {
             {/* Role Header */}
             <div className="bg-slate-900 rounded-2xl p-6 text-white border border-slate-800 shadow-xl overflow-hidden relative">
                 <div className="absolute right-0 top-0 p-8 opacity-5 scale-150"><Target className="h-32 w-32" /></div>
-                <div className="flex flex-wrap items-center justify-between gap-6 relative">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative">
                     <div className="flex items-center gap-5">
-                        <div className="h-14 w-14 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-                            <Code2 className="h-8 w-8 text-white" />
+                        <div className="h-12 w-12 sm:h-14 sm:w-14 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+                            <Code2 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight">{role.roleName || "Java Tester"}</h2>
-                            <div className="flex items-center gap-4 mt-1">
-                                <span className="text-[10px] font-black text-indigo-400 tracking-widest">Allocation: 40%</span>
-                                <div className="h-1 w-1 rounded-full bg-white/20" />
-                                <span className="text-[10px] font-black text-white/40 tracking-widest">Min Exp: {demand.minExp || 0} Years</span>
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight">{role.roleName || "Java Tester"}</h2>
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-1">
+                                <span className="text-[9px] sm:text-[10px] font-black text-indigo-400 tracking-widest">Allocation: 40%</span>
+                                <div className="hidden sm:block h-1 w-1 rounded-full bg-white/20" />
+                                <span className="text-[9px] sm:text-[10px] font-black text-white/40 tracking-widest">Min Exp: {demand.minExp || 0} Years</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-3">
-                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black tracking-widest text-indigo-400">Mandatory: Yes</div>
-                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black tracking-widest text-indigo-400">Structural Valid</div>
+                    <div className="flex gap-3 mt-4 sm:mt-0">
+                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] sm:text-[10px] font-black tracking-widest text-indigo-400">Mandatory: Yes</div>
+                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] sm:text-[10px] font-black tracking-widest text-indigo-400">Structural Valid</div>
                     </div>
                 </div>
             </div>
@@ -173,14 +174,14 @@ const RoleInfoTab = ({ demand, role }) => {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-slate-100">
-                                <th className="text-left py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Primary Skill</th>
-                                <th className="text-left py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Sub Skill</th>
-                                <th className="text-left py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Proficiency</th>
+                                <th className="text-center py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Primary Skill</th>
+                                <th className="text-center py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Sub Skill</th>
+                                <th className="text-center py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Proficiency</th>
                                 <th className="text-center py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Mandatory</th>
-                                <th className="text-right py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Status</th>
+                                <th className="text-center py-4 px-4 text-[10px] font-black text-slate-400 tracking-widest">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-50 text-center">
                             {skills.map((skill, i) => (
                                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="py-4 px-4">
@@ -188,7 +189,7 @@ const RoleInfoTab = ({ demand, role }) => {
                                     </td>
                                     <td className="py-4 px-4 text-xs font-bold text-slate-500 tracking-tight">{skill.sub}</td>
                                     <td className="py-4 px-4">
-                                        <div className="flex flex-col gap-1.5 w-32">
+                                        <div className="flex flex-col items-center gap-1.5 w-32 mx-auto">
                                             <span className="text-[9px] font-black text-indigo-600 italic">{skill.proficiency}</span>
                                             <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                                                 <div className="h-full bg-indigo-500" style={{ width: '60%' }} />
@@ -204,7 +205,7 @@ const RoleInfoTab = ({ demand, role }) => {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 text-right">
+                                    <td className="py-4 px-4">
                                         <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-black border border-emerald-100">Active</span>
                                     </td>
                                 </tr>
@@ -231,15 +232,17 @@ const ApprovalFlowTab = ({ demand }) => {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <DetailCard title="Sequential Governance Pipeline" icon={ShieldCheck}>
-                <div className="py-12 px-6">
-                    <div className="flex items-center justify-between relative">
-                        {/* Connecting Lines */}
-                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+                <div className="py-6 sm:py-12 px-2 sm:px-6">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative gap-8 md:gap-0">
+                        {/* Connecting Lines (Desktop) */}
+                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+                        {/* Connecting Lines (Mobile) */}
+                        <div className="md:hidden absolute left-5 top-0 w-0.5 h-full bg-slate-100 z-0" />
 
                         {steps.map((step, i) => (
-                            <div key={i} className="flex flex-col items-center gap-4 relative z-10 w-1/4">
+                            <div key={i} className="flex flex-row md:flex-col items-center md:items-center gap-4 relative z-10 w-full md:w-1/4">
                                 <div className={cn(
-                                    "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all shadow-sm",
+                                    "h-10 w-10 min-w-[40px] rounded-full flex items-center justify-center border-2 transition-all shadow-sm",
                                     step.status === 'complete' ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-emerald-500/10" :
                                         step.status === 'pending' ? "bg-amber-50 border-amber-500 text-amber-600 animate-pulse shadow-amber-500/10" :
                                             "bg-white border-slate-200 text-slate-300"
@@ -248,7 +251,7 @@ const ApprovalFlowTab = ({ demand }) => {
                                         step.status === 'pending' ? <History className="h-5 w-5" /> :
                                             <div className="h-2 w-2 rounded-full bg-slate-200" />}
                                 </div>
-                                <div className="text-center px-4">
+                                <div className="text-left md:text-center px-0 md:px-4">
                                     <p className={cn(
                                         "text-[10px] font-black tracking-tight mb-1",
                                         step.status === 'complete' ? "text-slate-900" :
@@ -264,12 +267,12 @@ const ApprovalFlowTab = ({ demand }) => {
                 </div>
             </DetailCard>
 
-            <div className="p-6 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-between shadow-sm">
+            <div className="p-4 sm:p-6 bg-amber-50 border border-amber-100 rounded-2xl gap-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4 text-amber-700">
-                    <Info className="h-5 w-5" />
-                    <span className="text-[11px] font-bold tracking-wider">Action Required: This demand currently awaits parallel verification from structural leads.</span>
+                    <Info className="h-5 w-5 shrink-0" />
+                    <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">Action Required: This demand currently awaits parallel verification from structural leads.</span>
                 </div>
-                <div className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black tracking-[0.15em] shadow-lg shadow-amber-600/20">Requires Additional Approval: Yes</div>
+                <div className="w-full sm:w-auto text-center px-4 py-2 bg-amber-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-amber-600/20">Requires Additional Approval: Yes</div>
             </div>
         </div>
     );
@@ -414,40 +417,37 @@ const DemandDetailPage = () => {
             {/* --- TOP HEADER (Resource Profile Style) --- */}
             <header className="bg-white border-b border-slate-200 sticky top-0 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
                 <div className="max-w-[1500px] mx-auto px-6 py-5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
 
                         {/* Header Left */}
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 sm:gap-6">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => navigate('/resource-management/demand')}
-                                className="h-10 w-10 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-transparent hover:border-slate-200 transition-all"
+                                className="h-10 w-10 min-w-[40px] text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-transparent hover:border-slate-200 transition-all"
                             >
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
 
-                            <div className="flex items-center gap-5">
-                                <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shrink-0 group hover:bg-indigo-600 transition-colors">
-                                    <Target className="h-7 w-7 text-white" />
-                                </div>
+                            <div className="flex items-center gap-3 sm:gap-5">
                                 <div className="space-y-1">
-                                    <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">{demand.demandName || "Java Tester Requirement"}</h1>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-[11px] font-black text-indigo-600 tracking-widest">{role.roleName || "Java Tester"}</span>
-                                        <div className="h-1 w-1 rounded-full bg-slate-300" />
-                                        <span className="text-[11px] font-black text-slate-500 tracking-widest">{project.name || "Stable Coin"}</span>
-                                        <div className="h-1 w-1 rounded-full bg-slate-300" />
-                                        <span className="text-[11px] font-black text-slate-400 tracking-widest">{project.primaryLocation || "Chennai"}</span>
+                                    <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none break-words">{demand.demandName || "Java Tester Requirement"}</h1>
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                        <span className="text-[10px] sm:text-[11px] font-black text-indigo-600 tracking-widest">{role.roleName || "Java Tester"}</span>
+                                        <div className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block" />
+                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-500 tracking-widest">{project.name || "Stable Coin"}</span>
+                                        <div className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block" />
+                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-400 tracking-widest">{project.primaryLocation || "Chennai"}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Header Right */}
-                        <div className="flex items-center gap-10">
-                            <div className="flex flex-col items-end gap-1.5 ml-auto">
-                                <div className="flex items-center justify-between w-full">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10">
+                            <div className="hidden md:flex flex-col items-end gap-1.5">
+                                <div className="flex items-center justify-between w-full min-w-[120px]">
                                     <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Allocation</span>
                                     <span className="text-[10px] font-black text-slate-900 tracking-widest">{demand.allocation?.percentage || 40}%</span>
                                 </div>
@@ -455,60 +455,62 @@ const DemandDetailPage = () => {
                                     <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${demand.allocation?.percentage || 40}%` }} />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 border-l border-slate-100 pl-10">
-                                <StateBadge state={demand.demandStatus} className="px-5 py-2.5 rounded-xl font-black text-[11px]" />
+                            <div className="flex flex-wrap items-center gap-4 sm:border-l sm:border-slate-100 sm:pl-6 xl:pl-10 w-full sm:w-auto">
+                                <StateBadge state={demand.demandStatus} className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-[10px] sm:text-[11px]" />
 
-                                <div className="flex items-center gap-4 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <div className="flex flex-col items-end pr-2 border-r border-slate-200 text-right">
-                                        <span className="text-[9px] font-black text-slate-400 tracking-tight">SLA Health</span>
-                                        <span className={cn("text-xs font-black whitespace-nowrap", (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
+                                        <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Health</span>
+                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap", (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
                                             {sla?.remainingDays || 0} Days Remaining
                                         </span>
                                     </div>
-                                    <div className="relative h-10 w-10 flex items-center justify-center">
-                                        <svg className="h-10 w-10 transform -rotate-90">
-                                            <circle cx="20" cy="20" r="16" fill="none" strokeWidth="4" stroke="#e2e8f0" />
-                                            <circle cx="20" cy="20" r="16" fill="none" strokeWidth="4" stroke={(sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
-                                                strokeDasharray={`${(100)} 100`}
+                                    <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
+                                        <svg className="h-8 w-8 sm:h-10 sm:w-10 transform -rotate-90">
+                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke="#e2e8f0" />
+                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={(sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
+                                                strokeDasharray="100 100"
                                                 strokeDashoffset={100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
                                             />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <Clock className="h-4 w-4 text-slate-400" />
+                                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <button className="px-6 py-3 ml-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 border border-indigo-500">
+                                <button className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500">
                                     <Plus className="h-4 w-4" />
-                                    Allocate Resource
+                                    <span className="whitespace-nowrap">Allocate Resource</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Navigation Tabs */}
-                    <nav className="flex gap-10 mt-6 -mb-[21px]">
-                        {TABS.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "group flex items-center gap-3 pb-4 text-[11px] font-black transition-all border-b-4 relative tracking-[0.1em]",
-                                        isActive
-                                            ? "text-indigo-600 border-indigo-600"
-                                            : "text-slate-400 border-transparent hover:text-slate-600 hover:border-slate-300"
-                                    )}
-                                >
-                                    <Icon className={cn("h-4 w-4 transition-colors", isActive ? "text-indigo-600" : "text-slate-300 group-hover:text-slate-400")} />
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </nav>
+                    <div className="overflow-x-auto no-scrollbar -mx-6 px-6">
+                        <nav className="flex gap-6 sm:gap-10 mt-6 -mb-[21px] min-w-max">
+                            {TABS.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "group flex items-center gap-2 sm:gap-3 pb-4 text-[10px] sm:text-[11px] font-black transition-all border-b-4 relative tracking-[0.1em] whitespace-nowrap",
+                                            isActive
+                                                ? "text-indigo-600 border-indigo-600"
+                                                : "text-slate-400 border-transparent hover:text-slate-600 hover:border-slate-300"
+                                        )}
+                                    >
+                                        <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 transition-colors", isActive ? "text-indigo-600" : "text-slate-300 group-hover:text-slate-400")} />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
                 </div>
             </header >
 

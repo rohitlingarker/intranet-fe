@@ -55,8 +55,8 @@ export default function CertificationsTab({ resource }) {
 
     return (
         <div className="space-y-6 font-sans">
-            <div className="flex items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-xs group">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="relative w-full sm:max-w-xs group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                     <input
                         type="text"
@@ -66,12 +66,12 @@ export default function CertificationsTab({ resource }) {
                         className="w-full h-9 pl-10 pr-4 text-xs font-medium border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm font-sans"
                     />
                 </div>
-                <Badge variant="outline" className="h-7 px-3 text-xs font-bold bg-indigo-50 text-indigo-600 border-indigo-100 rounded-full font-sans">
+                <Badge variant="outline" className="h-7 px-3 text-xs font-bold bg-indigo-50 text-indigo-600 border-indigo-100 rounded-full font-sans whitespace-nowrap">
                     {filtered.length} Records
                 </Badge>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {paginatedCerts.map((cert) => {
                     const isExpired = cert.expiry && new Date(cert.expiry) < new Date();
 
