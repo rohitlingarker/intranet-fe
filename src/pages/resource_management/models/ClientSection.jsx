@@ -9,15 +9,15 @@ import ClientEscalationSection from "./ClientEscalationSection";
 export default function ClientSection({ clientDetails, slaRefetchKey, complianceRefetchKey, escalationRefetchKey }) {
   // const [activeTab, setActiveTab] = useState("escalation");
   const TAB_CONFIG = [
-  { key: "sla", label: "SLA", enabled: (d) => d?.SLA },
-  { key: "compliance", label: "Pre-requisites", enabled: (d) => d?.compliance },
-  {
-    key: "escalation",
-    label: "Escalation Contact",
-    enabled: (d) => d?.escalationContact,
-  },
-];
-const visibleTabs = useMemo(
+    { key: "sla", label: "SLA", enabled: (d) => d?.SLA },
+    { key: "compliance", label: "Pre-requisites", enabled: (d) => d?.compliance },
+    {
+      key: "escalation",
+      label: "Escalation Contact",
+      enabled: (d) => d?.escalationContact,
+    },
+  ];
+  const visibleTabs = useMemo(
     () => TAB_CONFIG.filter((t) => t.enabled(clientDetails)),
     [clientDetails]
   );
@@ -38,9 +38,9 @@ const visibleTabs = useMemo(
 
 
   return (
-    <div className="w-full mb-8"> 
-      <div className="flex items-center justify-between border-b border-gray-200 mb-6">
-        <div className="flex space-x-6">
+    <div className="w-full mb-8">
+      <div className="flex items-center justify-between border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar">
+        <div className="flex space-x-6 min-w-max">
           {visibleTabs.map((tab) => (
             <button
               key={tab.key}
@@ -72,30 +72,30 @@ const visibleTabs = useMemo(
       {/* Content Container - REMOVED fixed height and absolute positioning */}
       <div className="w-full">
         <AnimatePresence mode="wait">
-        {activeTab === "sla" && (
-          <motion.div
-            key="sla"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <ClientBasicSLA clientId={clientDetails.clientId} slaRefetchKey={slaRefetchKey} />
-          </motion.div>
-        )}
+          {activeTab === "sla" && (
+            <motion.div
+              key="sla"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <ClientBasicSLA clientId={clientDetails.clientId} slaRefetchKey={slaRefetchKey} />
+            </motion.div>
+          )}
 
-        {activeTab === "compliance" && (
-          <motion.div key="compliance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <ClientBasicCompliance clientId={clientDetails.clientId} complianceRefetchKey={complianceRefetchKey} />
-          </motion.div>
-        )}
+          {activeTab === "compliance" && (
+            <motion.div key="compliance" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <ClientBasicCompliance clientId={clientDetails.clientId} complianceRefetchKey={complianceRefetchKey} />
+            </motion.div>
+          )}
 
-        {activeTab === "escalation"  && (
-          <motion.div key="escalation" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            {/* <ClientEscalationContact clientId={clientDetails.clientId} escalationRefetchKey={escalationRefetchKey} /> */}
-            <ClientEscalationSection clientId={clientDetails.clientId} clientContactRefetchKey={escalationRefetchKey} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {activeTab === "escalation" && (
+            <motion.div key="escalation" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              {/* <ClientEscalationContact clientId={clientDetails.clientId} escalationRefetchKey={escalationRefetchKey} /> */}
+              <ClientEscalationSection clientId={clientDetails.clientId} clientContactRefetchKey={escalationRefetchKey} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

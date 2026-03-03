@@ -72,17 +72,7 @@ const RMSProjectDetails = () => {
   const [openDeliverableRoleModal, setOpenDeliverableRoleModal] =
     useState(false);
 
-  const [deliverableForm, setDeliverableForm] = useState({
-    deliveryName: "", // OR roleName if role is created inline
-    skillId: "",
-    subSkillId: "",
-    proficiencyId: "",
-    mandatoryFlag: true,
-  });
-
   const [categories, setCategories] = useState([]);
-  const [skills, setSkills] = useState([]);
-  const [subSkills, setSubSkills] = useState([]);
   const [proficiencyLevels, setProficiencyLevels] = useState([]);
 
   const [projectSlas, setProjectSlas] = useState([]);
@@ -520,15 +510,6 @@ const RMSProjectDetails = () => {
     }
   };
 
-  const loadSubSkills = async () => {
-    try {
-      const res = await getActiveSubSkills();
-      setSubSkills(res.data || []);
-    } catch (err) {
-      console.error("Failed to fetch sub-skills", err);
-    }
-  };
-
   const handleEscalationInheritClick = async () => {
     try {
       const projectRes = await axios.get(
@@ -567,127 +548,9 @@ const RMSProjectDetails = () => {
     }
   };
 
-  // ================= Save Deliverable Role =================
-  // ================= Save Deliverable Role =================
-  const softSaveDeliverableRole = () => {
-    if (
-      !deliverableForm.deliveryName ||
-      !deliverableForm.skillId ||
-      !deliverableForm.subSkillId ||
-      !deliverableForm.proficiencyId
-    ) {
-      toast.error("Please fill all required fields");
-      return;
-    }
+  // No longer needed: handled internally by AddDeliverableRoleModal
 
-    const draftRole = {
-      tempId: crypto.randomUUID(),
-      ...deliverableForm,
-      status: "DRAFT",
-    };
-
-    setDraftDeliverableRoles((prev) => [...prev, draftRole]);
-
-    // reset form
-    setDeliverableForm({
-      deliveryName: "",
-      categoryId: "",
-      skillId: "",
-      subSkillId: "",
-      proficiencyId: "",
-      mandatoryFlag: true,
-    });
-
-    setSkills([]);
-    setSubSkills([]);
-  };
-
-  // ================= FINALIZE DELIVERABLE ROLES (⬅ STEP 4 GOES HERE) =================
-  const finalizeDeliverableRoles = async () => {
-    const rolesToFinalize = draftDeliverableRoles.filter((role) =>
-      selectedRoleIds.includes(role.tempId),
-    );
-
-    try {
-      await Promise.all(
-        rolesToFinalize.map((role) =>
-          createRoleExpectation({
-            roleName: role.deliveryName,
-            expectations: [
-              {
-                skillId: role.skillId,
-                subSkillId: role.subSkillId,
-                proficiencyId: role.proficiencyId,
-                mandatoryFlag: role.mandatoryFlag,
-              },
-            ],
-          }),
-        ),
-      );
-
-      toast.success("Deliverable roles finalized successfully");
-
-      setDraftDeliverableRoles([]);
-      setSelectedRoleIds([]);
-    } catch (err) {
-      toast.error("Failed to finalize deliverable roles");
-    }
-  };
-  const DeliverableRoleCard = ({ role, checked, onCheck, onDelete }) => (
-    <div className="border rounded-lg p-4 flex justify-between items-start bg-gray-50">
-      <div>
-        <h4 className="font-semibold text-sm">{role.deliveryName}</h4>
-        <p className="text-xs text-gray-600">
-          Skill: {role.skillId} | SubSkill: {role.subSkillId}
-        </p>
-        <p className="text-xs text-gray-600">
-          Proficiency: {role.proficiencyId}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => onCheck(role.tempId)}
-          className="accent-[#263383]"
-        />
-        <button
-          onClick={() => onDelete(role.tempId)}
-          className="text-red-500 text-xs"
-        >
-          Remove
-        </button>
-      </div>
-    </div>
-  );
-  // {
-  //   draftDeliverableRoles.length > 0 && (
-  //     <div className="space-y-3 mt-6">
-  //       <h3 className="text-sm font-semibold">Draft Deliverable Roles</h3>
-
-  //       {/* {draftDeliverableRoles.map((role) => (
-  //         <DeliverableRoleCard
-  //           key={role.tempId}
-  //           role={role}
-  //           checked={selectedRoleIds.includes(role.tempId)}
-  //           onCheck={(id) =>
-  //             setSelectedRoleIds((prev) =>
-  //               prev.includes(id)
-  //                 ? prev.filter((x) => x !== id)
-  //                 : [...prev, id],
-  //             )
-  //           }
-  //           onDelete={(id) =>
-  //             setDraftDeliverableRoles((prev) =>
-  //               prev.filter((r) => r.tempId !== id),
-  //             )
-  //           }
-  //         />
-  //       ))} */}
-  //     </div>
-  //   );
-  // }
+  // ================= Fetch Deliverable Role Data on Modal Open =================
 
   // ================= Fetch Deliverable Role Data on Modal Open =================
   useEffect(() => {
@@ -899,41 +762,34 @@ const RMSProjectDetails = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+          <div className="flex items-center gap-3 md:gap-4 w-full lg:w-auto">
             {/* Back Arrow */}
             <button
               onClick={() => navigate(-1)}
-              className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm"
+              className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm shrink-0"
             >
               <ArrowLeft size={18} />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-[#081534] flex items-center gap-3">
-                {project.name}
-                {/* <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  project.projectStatus === "ACTIVE"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              > */}
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-[#081534] flex flex-wrap items-center gap-2 md:gap-3">
+                <span className="truncate max-w-[200px] md:max-w-none">{project.name}</span>
                 <span
-                  className={`text-xs px-2 py-1 rounded-full border ${project.projectStatus === "ACTIVE"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-gray-100 text-gray-600"
+                  className={`text-[10px] md:text-xs px-2 py-0.5 md:py-1 rounded-full border whitespace-nowrap ${project.projectStatus === "ACTIVE"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-gray-100 text-gray-600 border-gray-200"
                     }`}
                 >
                   {project.projectStatus}
                 </span>
               </h1>
-              <p className="text-gray-500 mt-1">
-                {project.client?.client_name} • Project ID: {project.pmsProjectId}
+              <p className="text-xs md:text-sm text-gray-500 mt-1 truncate">
+                {project.client?.client_name} • <span className="hidden sm:inline">Project ID:</span> {project.pmsProjectId}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full lg:w-auto">
             {/* + Add Deliverable Role */}
             <button
               onClick={() => {
@@ -960,8 +816,8 @@ const RMSProjectDetails = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-6 mt-8 border-b border-gray-200">
+        {/* Tabs - Scrollable on mobile */}
+        <div className="flex items-center gap-6 mt-6 md:mt-8 border-b border-gray-200 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap -mx-4 md:mx-0 px-4 md:px-0">
           {[
             "overview",
             "resources",
@@ -974,7 +830,7 @@ const RMSProjectDetails = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize relative ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
+              className={`pb-3 text-sm font-medium capitalize relative shrink-0 ${activeTab === tab ? "text-[#263383]" : "text-gray-500"
                 }`}
             >
               {tab === "sla"
@@ -1006,7 +862,7 @@ const RMSProjectDetails = () => {
                   <Lock className="h-3 w-3" /> PMS Context (Read-Only)
                 </h3>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                   <div>
                     <label className="text-xs text-gray-500 block mb-1">
                       Project Manager ID
@@ -1091,29 +947,48 @@ const RMSProjectDetails = () => {
             </h3>
 
             {loadingOverlaps ? (
-              <div className="text-sm text-gray-500">Checking overlaps...</div>
+              <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <LoadingSpinner />
+                <p className="text-sm text-gray-400 font-medium animate-pulse">Analyzing project timelines...</p>
+              </div>
             ) : overlaps.length === 0 ? (
-              <div className="text-sm text-gray-500">
-                No overlapping projects for this timeline.
+              <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                  <CheckSquare className="text-green-500 h-8 w-8" />
+                </div>
+                <h4 className="text-base font-bold text-gray-900">No Conflict Detected</h4>
+                <p className="text-sm text-gray-500 max-w-[240px] mt-1 leading-relaxed"> This project's timeline is completely clear of resource overlaps.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {overlaps.map((p) => (
                   <div
                     key={p.projectId}
-                    className="p-4 border rounded-lg bg-red-50 border-red-100"
+                    className="group bg-white p-5 rounded-2xl border border-gray-100 hover:border-red-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden"
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold text-red-700">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 origin-bottom transition-transform group-hover:scale-y-110" />
+
+                    <div className="flex flex-col h-full space-y-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <AlertTriangle size={14} className="text-red-500 shrink-0" />
+                          <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter">Timeline Conflict</span>
+                        </div>
+                        <h4 className="font-bold text-[#081534] truncate text-sm md:text-base group-hover:text-red-700 transition-colors" title={p.projectName}>
                           {p.projectName}
                         </h4>
-                        <p className="text-sm text-gray-600">{p.clientName}</p>
+                        <p className="text-xs text-gray-500 font-medium truncate" title={p.clientName}>{p.clientName}</p>
                       </div>
-                      <div className="text-sm text-gray-700">
-                        <div>
-                          {new Date(p.startDate).toLocaleDateString()} —{" "}
-                          {new Date(p.endDate).toLocaleDateString()}
+
+                      <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Overlap Period</span>
+                          <span className="text-xs text-gray-700 font-bold mt-0.5">
+                            {new Date(p.startDate).toLocaleDateString()} — {new Date(p.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all cursor-pointer shadow-sm">
+                          <ArrowLeft className="h-4 w-4 rotate-180" />
                         </div>
                       </div>
                     </div>
@@ -1132,18 +1007,18 @@ const RMSProjectDetails = () => {
       {
         activeTab === "sla" && (
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-lg font-semibold">Project SLA Configuration</h3>
               <button
-                disabled={projectSlas.length >= 3} // Disable when 3 items exist
+                disabled={projectSlas.length >= 3}
                 onClick={() => {
                   setFormData(DEFAULT_FORM_STATE);
                   setConfigType("sla");
                   setOpenConfigModal(true);
                 }}
-                className={`px-4 py-2 rounded-lg text-sm transition-all ${projectSlas.length >= 3
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-bold transition-all ${projectSlas.length >= 3
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#263383] text-white hover:opacity-90"
+                  : "bg-[#263383] text-white hover:opacity-90 shadow-md active:scale-95"
                   }`}
               >
                 {projectSlas.length >= 3 ? "Limit Reached (3/3)" : "+ Create SLA"}
@@ -1151,8 +1026,8 @@ const RMSProjectDetails = () => {
             </div>
 
             {projectSlas.length > 0 ? (
-              <div className="overflow-x-auto border rounded-lg">
-                <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                <table className="w-full text-sm text-left min-w-[650px]">
                   <thead className="bg-gray-50 text-gray-600 font-medium">
                     <tr>
                       <th className="p-4">Type</th>
@@ -1230,7 +1105,7 @@ const RMSProjectDetails = () => {
       {
         activeTab === "pre-requisites" && (
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-lg font-semibold">
                 Project Pre-requisites Configuration
               </h3>
@@ -1240,15 +1115,15 @@ const RMSProjectDetails = () => {
                   setConfigType("pre-requisites");
                   setOpenConfigModal(true);
                 }}
-                className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+                className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
               >
                 + Create Pre-requisites
               </button>
             </div>
 
             {projectCompliance.length > 0 ? (
-              <div className="overflow-x-auto border rounded-lg">
-                <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                <table className="w-full text-sm text-left min-w-[750px]">
                   <thead className="bg-gray-50 text-gray-600 font-medium">
                     <tr>
                       <th className="p-4">Requirement Type</th>
@@ -1347,7 +1222,7 @@ const RMSProjectDetails = () => {
       {
         activeTab === "escalation" && (
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-lg font-semibold">Project Escalation Matrix</h3>
 
               <button
@@ -1355,15 +1230,15 @@ const RMSProjectDetails = () => {
                   setConfigType("escalation");
                   setOpenConfigModal(true);
                 }}
-                className="bg-[#263383] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
+                className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
               >
                 + Create Escalation
               </button>
             </div>
 
             {projectEscalations.length > 0 ? (
-              <div className="overflow-x-auto border rounded-lg">
-                <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                <table className="w-full text-sm text-left min-w-[950px]">
                   <thead className="bg-gray-50 text-gray-600 font-medium">
                     <tr>
                       <th className="p-4">Level</th>
@@ -1529,8 +1404,8 @@ const RMSProjectDetails = () => {
                           </p>
                         )}
 
-                        <div className="max-h-60 overflow-y-auto border rounded-md">
-                          <table className="w-full text-sm text-left">
+                        <div className="max-h-60 overflow-y-auto border rounded-xl no-scrollbar px-1">
+                          <table className="w-full text-sm text-left min-w-[500px]">
                             <thead className="bg-gray-50 text-gray-600">
                               <tr>
                                 <th className="p-3 w-10">Select</th>
@@ -1648,8 +1523,8 @@ const RMSProjectDetails = () => {
                             Select default client SLAs to map to this project:
                           </p>
                         )}
-                        <div className="max-h-60 overflow-y-auto border rounded-md">
-                          <table className="w-full text-sm text-left">
+                        <div className="max-h-60 overflow-y-auto border rounded-xl no-scrollbar px-1">
+                          <table className="w-full text-sm text-left min-w-[500px]">
                             <thead className="bg-gray-50 text-gray-600">
                               <tr>
                                 <th className="p-3 w-10">Select</th>
@@ -1899,15 +1774,8 @@ const RMSProjectDetails = () => {
       <AddDeliverableRoleModal
         open={openDeliverableRoleModal}
         onClose={() => setOpenDeliverableRoleModal(false)}
-        deliverableForm={deliverableForm}
-        setDeliverableForm={setDeliverableForm}
         categories={categories}
-        skills={skills}
-        subSkills={subSkills}
-        setSkills={setSkills}
-        setSubSkills={setSubSkills}
         proficiencyLevels={proficiencyLevels}
-        onSave={softSaveDeliverableRole}
       />
       {/* ================= Draft Deliverable Roles ================= */}
       {/* {draftDeliverableRoles.length > 0 && (

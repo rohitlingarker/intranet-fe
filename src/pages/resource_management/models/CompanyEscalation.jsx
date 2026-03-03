@@ -9,12 +9,9 @@ import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
 import { Pencil, Trash2 } from "lucide-react";
 import Modal from "../../../components/Modal/modal";
-import CompanyEscalationModal from "./client_configuration/CompanyEscalationModal";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
 import { useAuth } from "../../../contexts/AuthContext";
-import { useParams } from "react-router-dom";
-
-const ITEMS_PER_PAGE = 3;
+import CompanyEscalationContactModal from "./client_configuration/CompanyEscalationModal";
 
 const CompanyEscalation = () => {
   const { user } = useAuth();
@@ -31,17 +28,32 @@ const CompanyEscalation = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
+  // const [selectedContact, setSelectedContact] = useState(null);
 
   const [openUpdateContact, setOpenUpdateContact] = useState(false);
-  const [formData, setFormData] = useState(null);
-
+  const [selectedContact, setSelectedContact] = useState(null);
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState(null);
 
-  /* ================= FETCH CONTACTS ================= */
+  const ITEMS_PER_PAGE = 3;
 
-  const fetchContacts = async () => {
+  // const handleSetFormData = (data) => {
+  //   if (!data) return;
+  //   setFormData({
+  //     client: {
+  //       clientId: clientId,
+  //     },
+  //     contactId: data.contactId,
+  //     contactName: data.contactName,
+  //     contactRole: data.contactRole,
+  //     email: data.email,
+  //     phone: data.phone,
+  //     escalationLevel: data.escalationLevel,
+  //     activeFlag: data.activeFlag ?? true,
+  //   });
+  // };
+
+  const fetchContact = async () => {
     setLoading(true);
     try {
       const res = await getCompanyContactsByCompanyId(companyId);
@@ -77,33 +89,21 @@ const CompanyEscalation = () => {
 
   /* ================= UPDATE ================= */
 
-  const handleUpdateContact = async () => {
-    console.log("RAW FORM DATA:", formData);
-
+  const handleUpdateContact = async (data) => {
     setUpdateLoading(true);
     try {
-      const payload = {
-        contactId: formData.contactId,
-        contactName: formData.contactName,
-        contactRole: formData.contactRole,
-        email: formData.email,
-        phone: formData.phone,
-        escalationLevel: formData.escalationLevel,
-        activeFlag: formData.activeFlag,
-      };
-
-      console.log("FINAL UPDATE PAYLOAD:", payload);
-
-      await updateCompanyContact(payload);
-
-      toast.success("Escalation contact updated successfully");
+      if (selectedContact) {
+        const res = await updateCompanyContact(data);
+        toast.success(res.message || "Contact updated successfully.");
+      } else {
+        const res = await createCompanyContact(data);
+        toast.success(res.message || "Contact created successfully.");
+      }
       setOpenUpdateContact(false);
-      fetchContacts();
+      setSelectedContact(null);
+      fetchContact();
     } catch (error) {
-      console.error("UPDATE ERROR:", error.response);
-      toast.error(
-        error.response?.data?.message || "Failed to update escalation contact",
-      );
+      toast.error(error.response?.data?.message || "Failed to save contact.");
     } finally {
       setUpdateLoading(false);
     }
@@ -206,8 +206,7 @@ const CompanyEscalation = () => {
                       <div className="flex justify-center gap-4">
                         <button
                           onClick={() => {
-                            setEditMode(true); // ✅ EDIT
-                            setSelectedContact(item); // pass selected row data
+                            setSelectedContact(item);
                             setOpenUpdateContact(true);
                           }}
                           className="text-blue-600 hover:text-blue-800"
@@ -247,31 +246,24 @@ const CompanyEscalation = () => {
         />
       )}
 
-      {/* UPDATE MODAL */}
+      {/* Update Contact Modal */}
       <Modal
-        title={editMode ? "Edit Escalation Contact" : "Add Escalation Contact"}
-        subtitle={
-          editMode
-            ? "Update escalation contact details"
-            : "Add new escalation contact"
-        }
+        title="Escalation Contact"
+        subtitle="Create or update escalation contact."
         isOpen={openUpdateContact}
-        onClose={() => setOpenUpdateContact(false)}
+        onClose={() => {
+          setOpenUpdateContact(false);
+          setSelectedContact(null);
+        }}
       >
-        <CompanyEscalationModal
-          mode={editMode ? "edit" : "create"}
+        <CompanyEscalationContactModal
           initialData={selectedContact}
           loading={updateLoading}
-          onClose={() => setOpenUpdateContact(false)}
-          onSave={async (payload) => {
-            if (editMode) {
-              await handleUpdateContact(payload);
-            } else {
-              await handleCreateContact(payload);
-            }
+          onClose={() => {
             setOpenUpdateContact(false);
-            fetchContacts();
+            setSelectedContact(null);
           }}
+          onSave={async (data) => handleUpdateContact(data)}
         />
       </Modal>
 

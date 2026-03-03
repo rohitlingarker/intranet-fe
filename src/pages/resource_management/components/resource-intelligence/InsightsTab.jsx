@@ -109,15 +109,15 @@ export default function InsightsTab({ resource }) {
             </div>
 
             {/* Strategic Advisory */}
-            <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 flex items-start gap-4 font-sans">
+            <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 flex flex-col sm:flex-row items-start gap-4 font-sans">
                 <Info className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
-                <div>
+                <div className="flex-1">
                     <p className="text-xs font-bold text-indigo-900 font-heading">Strategic Roadmap Insights</p>
                     <p className="text-[10px] font-medium text-indigo-700/70 mt-1 leading-relaxed italic font-sans">
                         AI-driven projections are based on internal resource trends, certification velocity, and current market demand signals.
                     </p>
                 </div>
-                <Button variant="outline" size="sm" className="ml-auto text-[10px] font-bold h-7 gap-1.5 bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-sans">
+                <Button variant="outline" size="sm" className="w-full sm:w-auto mt-2 sm:mt-0 text-[10px] font-bold h-7 gap-1.5 bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-sans">
                     View Methodology <ArrowUpRight className="h-3 w-3" />
                 </Button>
             </div>
