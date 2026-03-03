@@ -14,11 +14,11 @@ import { cn } from "@/lib/utils";
 const KPICard = ({ label, value, icon: Icon, colorClass, active, onClick, suffix, className, isLoading }) => {
     if (isLoading) {
         return (
-            <div className="h-24 rounded-xl border border-slate-100 bg-white p-4 flex items-center gap-3 animate-pulse">
-                <div className="h-10 w-10 rounded-lg bg-slate-100 shrink-0" />
+            <div className="h-20 rounded-xl border border-slate-100 bg-white p-3 flex items-center gap-3 animate-pulse">
+                <div className="h-8 w-8 rounded-lg bg-slate-100 shrink-0" />
                 <div className="space-y-2 flex-1">
-                    <div className="h-3 w-2/3 bg-slate-100 rounded" />
-                    <div className="h-6 w-1/3 bg-slate-100 rounded" />
+                    <div className="h-2 w-2/3 bg-slate-100 rounded" />
+                    <div className="h-4 w-1/3 bg-slate-100 rounded" />
                 </div>
             </div>
         );
@@ -26,25 +26,25 @@ const KPICard = ({ label, value, icon: Icon, colorClass, active, onClick, suffix
 
     return (
         <div className={cn(
-            "flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all shadow-sm",
+            "flex items-center gap-2.5 rounded-xl border bg-white p-3 text-left transition-all shadow-sm",
             active ? "ring-2 ring-indigo-600 bg-indigo-50/10 border-indigo-200" : "border-slate-100 hover:border-slate-200",
             className
         )}>
             <div className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform",
                 colorClass || "bg-slate-100 text-slate-600"
             )}>
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-                <p className="text-xs font-medium text-slate-500 mb-0.5 whitespace-nowrap tracking-tight">
+                <p className="text-[10px] font-semibold text-slate-500 mb-0.5 whitespace-nowrap tracking-tight uppercase">
                     {label}
                 </p>
                 <div className="flex items-baseline gap-1">
-                    <p className="text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
+                    <p className="text-xl font-bold text-slate-900 tabular-nums tracking-tight">
                         {value}
                     </p>
-                    {suffix && <span className="text-sm font-bold text-slate-400">{suffix}</span>}
+                    {suffix && <span className="text-xs font-bold text-slate-400">{suffix}</span>}
                 </div>
             </div>
         </div>
