@@ -184,40 +184,70 @@ const AllocationBar = memo(function AllocationBar({
   style,
 }) {
   const startOffset = daysBetween(startDate, parseDate(block.startDate)) * dayWidth;
-  const durationDays = daysBetween(parseDate(block.startDate), parseDate(block.endDate)) + 1;
-  const width = durationDays * dayWidth;
+  const durationDays = daysBetween(parseDate(block.startDate), parseDate(block.endDate));
+  const width = Math.max(durationDays * dayWidth, 4);
 
-  const barColor = getBarColor(block.allocation, block.tentative);
-  const hoverColor = getBarHoverColor(block.allocation, block.tentative);
+  const isAvailability = block.isAvailability || block.allocation === 0;
+  const barColor = isAvailability
+    ? "bg-slate-50 border-slate-200 border-dashed"
+    : getBarColor(block.allocation, block.tentative);
+  const hoverColor = isAvailability
+    ? "hover:bg-slate-100"
+    : getBarHoverColor(block.allocation, block.tentative);
+
+  const projectName = block.project || block.projectName || block.demandName || (isAvailability ? "Available" : "Project");
 
   return (
     <div
       className={cn(
-        "absolute top-1 bottom-1 rounded-md border-y flex flex-col justify-center px-1.5 sm:px-2 min-w-[20px] transition-all cursor-pointer group/bar shadow-sm overflow-hidden",
+        "absolute rounded-md border flex flex-col justify-center px-1.5 sm:px-2 transition-all group/bar shadow-sm overflow-hidden",
         barColor,
         hoverColor,
+        isAvailability ? "cursor-default text-slate-400" : "cursor-pointer text-white",
       )}
       style={{
         left: `${startOffset}px`,
         width: `${width}px`,
         ...style,
       }}
-      onClick={() => onResourceClick && onResourceClick(resource)}
+      onClick={() => !isAvailability && onResourceClick && onResourceClick(resource)}
     >
       <div className="flex items-center gap-1 sm:gap-2 truncate max-w-full">
         {block.tentative && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
-        <span className="text-[7px] sm:text-[9px] font-sans font-bold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)] truncate whitespace-nowrap">
-          {block.allocation}% {block.tentative ? "(Proposed)" : ""}
+        <span className={cn(
+          "text-[7px] sm:text-[9px] font-sans font-bold truncate whitespace-nowrap",
+          !isAvailability && "drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]"
+        )}>
+          {isAvailability ? "Available" : `${block.allocation}%`} {block.tentative ? "(Proposed)" : ""}
         </span>
       </div>
-      {(block.projectName || block.demandName) && width > 40 && (
-        <p className="text-[6px] sm:text-[7px] font-sans font-medium text-white/90 truncate leading-none mt-0.5 whitespace-nowrap">
-          {block.projectName || block.demandName}
+      {width > 40 && (
+        <p className={cn(
+          "text-[6px] sm:text-[7px] font-sans font-medium truncate leading-none mt-0.5 whitespace-nowrap",
+          !isAvailability ? "text-white/90" : "text-slate-400"
+        )}>
+          {projectName}
         </p>
       )}
 
-      {/* Hover Information Layer */}
-      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+      {/* Tooltip Overlay (Desktop) */}
+      {!isAvailability && (
+        <div className="absolute hidden group-hover/bar:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[100] pointer-events-none">
+          <div className="bg-white p-2 shadow-xl border border-border rounded-md min-w-[140px] text-slate-900">
+            <p className="text-[10px] font-bold border-b pb-1 mb-1">{projectName}</p>
+            <div className="space-y-0.5">
+              <div className="flex justify-between gap-4 text-[9px]">
+                <span className="text-slate-500">Allocation:</span>
+                <span className="font-bold">{block.allocation}%</span>
+              </div>
+              <div className="flex justify-between gap-4 text-[9px]">
+                <span className="text-slate-500">Period:</span>
+                <span className="font-medium">{block.startDate} - {block.endDate}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -235,6 +265,34 @@ const ResourceRow = memo(function ResourceRow({
   realToday,
 }) {
   const totalDays = dayWidth > 0 ? daysBetween(startDate, endDate) : 0;
+  const timelineBlocks = resource.allocationTimeline || resource.allocations || [];
+
+  // Logic to handle overlapping projects (tracks)
+  const blocksWithTracks = useMemo(() => {
+    const visibleBlocks = timelineBlocks.filter((b) => {
+      const bStart = parseDate(b.startDate);
+      const bEnd = parseDate(b.endDate);
+      return bEnd >= startDate && bStart <= endDate;
+    });
+
+    // Simple track assignment
+    const tracks = [];
+    return visibleBlocks.map((block) => {
+      const bStart = parseDate(block.startDate);
+      const bEnd = parseDate(block.endDate);
+
+      let trackIndex = 0;
+      while (tracks[trackIndex] && tracks[trackIndex] > bStart) {
+        trackIndex++;
+      }
+      tracks[trackIndex] = bEnd;
+
+      return { ...block, trackIndex };
+    });
+  }, [timelineBlocks, startDate, endDate]);
+
+  const barHeight = 28;
+  const barPadding = 4;
 
   return (
     <div
@@ -274,7 +332,7 @@ const ResourceRow = memo(function ResourceRow({
 
       {/* Allocation Blocks */}
       <div className="absolute inset-0 px-[0.5px]">
-        {(resource.allocations || []).map((block, idx) => (
+        {blocksWithTracks.map((block, idx) => (
           <AllocationBar
             key={`${resource.id}-${idx}`}
             block={block}
@@ -282,14 +340,18 @@ const ResourceRow = memo(function ResourceRow({
             dayWidth={dayWidth}
             resource={resource}
             onResourceClick={onResourceClick}
+            style={{
+              top: `${block.trackIndex * (barHeight + barPadding) + 6}px`,
+              height: `${barHeight}px`,
+            }}
           />
         ))}
 
         {/* Bench Periods (Visual only) */}
         {(resource.benchPeriods || []).map((period, idx) => {
           const start = Math.max(0, daysBetween(startDate, parseDate(period.startDate)) * dayWidth);
-          const endDay = daysBetween(parseDate(period.startDate), parseDate(period.endDate)) + 1;
-          const width = endDay * dayWidth;
+          const duration = daysBetween(parseDate(period.startDate), parseDate(period.endDate)) + 1;
+          const width = duration * dayWidth;
 
           return (
             <div
@@ -517,7 +579,7 @@ export function TimelineSkeletonContent() {
   );
 }
 
-export default function AvailabilityTimeline({
+export function AvailabilityTimeline({
   filteredResources,
   onResourceClick,
   currentDate,
@@ -902,3 +964,5 @@ export default function AvailabilityTimeline({
     </div>
   );
 }
+
+export default AvailabilityTimeline;
