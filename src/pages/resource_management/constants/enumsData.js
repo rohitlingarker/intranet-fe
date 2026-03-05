@@ -13,7 +13,11 @@ export const STATIC_ENUMS = {
     "RequirementType": ["CERTIFICATION", "CLEARANCE", "TOOL_ACCESS", "SKILL"],
     "SLAType": ["NET_NEW", "REPLACEMENT", "BACKFILL", "EMERGENCY"],
     "DemandCommitment": ["SOFT", "CONFIRMED"],
-    "DemandStatus": ["DRAFT", "REQUESTED", "APPROVED", "REJECTED", "CANCELLED"],
+<<<<<<< HEAD
+    "DemandStatus": ["DRAFT", "REQUESTED", "CANCELLED"],
+=======
+    "DemandStatus": ["DRAFT", "REQUESTED", "APPROVED", "REJECTED", "CANCELLED", "FULFILLED"],
+>>>>>>> 2ac2f99ca77b39bbadc1161c478dc9a30db60692
     "DemandType": ["NET_NEW", "REPLACEMENT", "BACKFILL", "EMERGENCY"],
     "EscalationLevel": ["LEVEL_1", "LEVEL_2", "EXECUTIVE"],
     "EscalationSource": ["INHERITED", "MANUAL"],
