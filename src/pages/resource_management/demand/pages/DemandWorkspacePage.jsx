@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
@@ -9,12 +9,9 @@ import DemandKPIStrip from '../components/DemandKPIStrip';
 import DemandList from '../components/DemandList';
 import DemandFilters from '../components/DemandFilters';
 import { useDemand } from '../hooks/useDemand';
+import DemandModal from '../../models/DemandModal';
+import Pagination from '../../../../components/Pagination/pagination';
 
-/**
- * DemandWorkspacePage: High-Fidelity Workforce Edition
- * This page uses the useDemand hook (the reactive engine) but maintains
- * the original popover-based UI layout as requested.
- */
 const DemandWorkspacePage = () => {
     const navigate = useNavigate();
     const {
@@ -26,14 +23,24 @@ const DemandWorkspacePage = () => {
         isLoading,
         filteredDemands,
         activeKPIs,
+        demandRoleOptions,
+        selectedRole,
+        setSelectedRole,
+        effectiveRole,
+        refreshData,
+        availableClients,
+        totalPages,
+        totalElements,
+        page,
+        setPage
     } = useDemand();
 
-    // UI state for popover filters (not part of the engine core)
     const [filterCollapsed, setFilterCollapsed] = useState(true);
     const filterButtonRef = useRef(null);
     const [dropdownPos, setDropdownPos] = useState(null);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingDemand, setEditingDemand] = useState(null);
 
-    // Dropdown Positioning logic for Portal
     useEffect(() => {
         if (!filterCollapsed && filterButtonRef.current) {
             const rect = filterButtonRef.current.getBoundingClientRect();
@@ -82,35 +89,47 @@ const DemandWorkspacePage = () => {
     return (
         <div className="min-h-screen bg-slate-50/50">
             <main className="w-full px-4 py-4 md:px-6 md:py-6">
-
-                {/* --- HEADER --- */}
                 <header className="mb-4 md:mb-5">
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                        Demand Pipeline Management
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                        A real-time snapshot of resource mandates, SLA compliance, and fulfillment status across the enterprise.
-                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                                Demand Pipeline Management
+                            </h1>
+                            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                                A real-time snapshot of resource mandates, SLA compliance, and fulfillment status across the enterprise.
+                            </p>
+                        </div>
+                        {demandRoleOptions.length > 1 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-semibold text-slate-500">View As:</span>
+                                <select
+                                    value={selectedRole || effectiveRole || ""}
+                                    onChange={(e) => setSelectedRole(e.target.value)}
+                                    className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                >
+                                    {demandRoleOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </header>
 
-                {/* --- KPI RIBBON --- */}
                 <div className="mb-4 md:mb-6">
                     <DemandKPIStrip data={activeKPIs} isLoading={isLoading} />
                 </div>
 
-                {/* --- PIPELINE CONTAINER --- */}
                 <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-
-                    {/* Integrated Control Header */}
                     <div className="px-5 py-3 border-b border-slate-100 bg-white">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-
-                            {/* Tabs */}
                             <div className="flex items-center gap-5">
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-[12px] font-bold text-slate-900 tracking-tight">Pipeline View</h3>
                                     <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-500">
-                                        {filteredDemands.length}
+                                        {totalElements}
                                     </span>
                                 </div>
 
@@ -138,7 +157,6 @@ const DemandWorkspacePage = () => {
                                 </div>
                             </div>
 
-                            {/* Search & Filters */}
                             <div className="flex items-center gap-2">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -170,10 +188,8 @@ const DemandWorkspacePage = () => {
                         </div>
                     </div>
 
-                    {/* Table View */}
                     <div className="overflow-x-auto border-t border-slate-100">
                         <div className="min-w-[1000px]">
-                            {/* Table Header */}
                             <div className="grid grid-cols-10 items-center gap-4 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
                                 <div className="col-span-3 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Demand Specifications & Context</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score</div>
@@ -183,7 +199,6 @@ const DemandWorkspacePage = () => {
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Actions</div>
                             </div>
 
-                            {/* Data Rows */}
                             <div className="bg-white min-h-[400px]">
                                 {isLoading ? (
                                     <div className="flex flex-col">
@@ -210,11 +225,27 @@ const DemandWorkspacePage = () => {
                                         <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search terms</p>
                                     </div>
                                 ) : (
-                                    <DemandList
-                                        demands={filteredDemands}
-                                        onViewDetail={(demand) => navigate(`/resource-management/demand/${demand.id}`)}
-                                        activeTab={activeTab}
-                                    />
+                                    <>
+                                        <DemandList
+                                            demands={filteredDemands}
+                                            onViewDetail={(demand) => navigate(`/resource-management/demand/${demand.id}`)}
+                                            onEdit={(demand) => {
+                                                setEditingDemand(demand);
+                                                setEditModalOpen(true);
+                                            }}
+                                            activeTab={activeTab}
+                                        />
+                                        {totalPages > 1 && (
+                                            <div className="py-6 border-t border-slate-100">
+                                                <Pagination
+                                                    currentPage={page}
+                                                    totalPages={totalPages}
+                                                    onPrevious={() => setPage((p) => Math.max(1, p - 1))}
+                                                    onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -222,7 +253,6 @@ const DemandWorkspacePage = () => {
                 </section>
             </main>
 
-            {/* --- FILTER PORTAL --- */}
             {!filterCollapsed && dropdownPos && createPortal(
                 <div
                     id="filter-workspace-portal"
@@ -247,10 +277,29 @@ const DemandWorkspacePage = () => {
                             activeCount={activeFilterCount}
                             inline={true}
                             onToggleCollapse={() => setFilterCollapsed(true)}
+                            clients={availableClients}
                         />
                     </div>
                 </div>,
                 document.body
+            )}
+
+            {editModalOpen && (
+                <DemandModal
+                    open={editModalOpen}
+                    mode="edit"
+                    initialData={editingDemand}
+                    userRole={effectiveRole || ""}
+                    onClose={() => {
+                        setEditModalOpen(false);
+                        setEditingDemand(null);
+                    }}
+                    onSuccess={() => {
+                        setEditModalOpen(false);
+                        setEditingDemand(null);
+                        refreshData();
+                    }}
+                />
             )}
         </div>
     );

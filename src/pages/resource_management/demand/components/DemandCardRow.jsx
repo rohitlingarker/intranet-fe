@@ -8,7 +8,7 @@ import { useAuth } from "../../../../contexts/AuthContext";
  * DemandCardRow: Informative Workforce View
  * Redesigned for maximum clarity and logical information grouping.
  */
-const DemandCardRow = ({ demand, onView, activeTab }) => {
+const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
     const { user } = useAuth();
     const roles = user?.roles || [];
     const isRM = roles.includes("RESOURCE-MANAGER");
@@ -81,8 +81,10 @@ const DemandCardRow = ({ demand, onView, activeTab }) => {
                 <div className="col-span-1 flex items-center justify-center gap-4">
                     <button
                         title='Edit'
-                        onClick={(e) => { e.stopPropagation(); /* Handle Edit */ }}
-                    // className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onEdit) onEdit(demand);
+                        }}
                     >
                         <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
                     </button>
@@ -90,7 +92,6 @@ const DemandCardRow = ({ demand, onView, activeTab }) => {
                         <button
                             title='Delete'
                             onClick={(e) => { e.stopPropagation(); /* Handle Delete */ }}
-                        // className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
                         >
                             <Trash2 className="h-3.5 w-3.5 text-red-700 hover:text-red-800" />
                         </button>

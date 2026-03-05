@@ -101,9 +101,14 @@ import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
-import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
+import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetailsDashboard.jsx";
 import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx";
 import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
+import DepartmentsMappingDashboard from "./pages/employee-onboarding/hr-configuration/departments/DepartmentsMappingDashboard.jsx";
+import DepartmentsList from "./pages/employee-onboarding/hr-configuration/departments/departmentsList/DepartmentsList.jsx";
+import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
+
+
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -421,6 +426,9 @@ const AppRoutes = () => {
             <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
             <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
             <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
+            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard/>} />
+            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList/>} />
+            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList/>} />
 
             <Route path="hr" element={<HrOnboardingDashboard />} />
             <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
@@ -438,6 +446,7 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
@@ -445,6 +454,7 @@ const AppRoutes = () => {
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
             <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+
 
 
           </Route>
