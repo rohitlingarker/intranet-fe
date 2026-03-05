@@ -764,7 +764,7 @@ export const getCompanyContactsByCompanyId = async () => {
 export const updateCompanyContact = async (companyContactData) => {
   try {
     const response = await axios.put(
-      `${RMS_BASE_URL}/api/company-contact/update/${contactId}`,
+      `${RMS_BASE_URL}/api/company-contact/update/${companyContactData.contactId}`,
       companyContactData,
       getAuthHeader()
     );

@@ -1,0 +1,143 @@
+import { useState, useMemo, useCallback, useEffect } from "react";
+import demandService from "../services/demandService";
+
+export const defaultFilters = {
+    search: "",
+    client: "All",
+    priority: "All",
+    status: "All",
+};
+
+export function useDemand(projectId = null) {
+    const [filters, setFilters] = useState(defaultFilters);
+    const [statusFilter, setStatusFilter] = useState(null);
+    const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
+    const [activeTab, setActiveTab] = useState("active"); // breached, at_risk, active, soft
+    const [isLoading, setIsLoading] = useState(true);
+    const [demands, setDemands] = useState([]);
+    const [kpiData, setKpiData] = useState(null);
+
+    // Fetch master demands and kpis
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            let demandsData, kpis;
+            if (projectId) {
+                [demandsData, kpis] = await Promise.all([
+                    demandService.getProjectDemands(projectId),
+                    demandService.getProjectKPIs(projectId)
+                ]);
+            } else {
+                [demandsData, kpis] = await Promise.all([
+                    demandService.getAllDemands(),
+                    demandService.getKPISummary()
+                ]);
+            }
+            setDemands(demandsData || []);
+            setKpiData(kpis);
+        } catch (error) {
+            console.error("Demand Hook Fetch Error:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [projectId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const filteredDemands = useMemo(() => {
+        let list = [...demands];
+
+        // Tab Filtering (Segmented Logic)
+        if (activeTab === 'breached') {
+            list = list.filter(d => d.remainingDays < 0);
+        } else if (activeTab === 'at_risk') {
+            list = list.filter(d => d.remainingDays >= 0 && d.remainingDays <= 5);
+        } else if (activeTab === 'active') {
+            list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab === 'soft') {
+            list = list.filter(d => ['SOFT', 'REQUESTED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab === 'fulfilled') {
+            list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED' || d.demandStatus?.toUpperCase() === 'FULFILLED');
+        }
+        // 'all' fallthrough shows everything minus cancelled/closed if we want to be strict, 
+        // but usually 'all' means all relevant demands.
+
+        // Standard Filter: Remove Cancelled/Closed unless explicitly requested
+        if (activeTab !== 'all') {
+            list = list.filter(d => !['CANCELLED', 'CLOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        }
+
+        // Search
+        if (filters.search) {
+            const query = filters.search.toLowerCase();
+            list = list.filter(d =>
+                d.projectName?.toLowerCase().includes(query) ||
+                d.role?.toLowerCase()?.includes(query) ||
+                d.demandName?.toLowerCase().includes(query) ||
+                d.clientName?.toLowerCase().includes(query)
+            );
+        }
+
+        // Advanced Filters
+        if (filters.client !== 'All') {
+            list = list.filter(d => d.clientName === filters.client || d.client === filters.client);
+        }
+        if (filters.priority !== 'All') {
+            list = list.filter(d => (d.demandPriority || d.priority)?.toUpperCase() === filters.priority.toUpperCase());
+        }
+
+        return list.map(d => ({
+            ...d,
+            id: d.demandId || d.id,
+            client: d.clientName || d.client,
+            role: d.demandName || d.role,
+            priority: d.demandPriority || d.priority,
+            slaDueAt: d.slaDueAt,
+            slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
+            lifecycleState: d.demandStatus || d.lifecycleState,
+            priorityScore: d.priorityScore || d.score || 85
+        }));
+    }, [demands, activeTab, filters]);
+
+    const activeKPIs = useMemo(() => {
+        if (!kpiData) return [];
+        return [
+            { label: "Active", count: kpiData.active || 0 },
+            { label: "Approved", count: kpiData.approved || 0 },
+            { label: "Pending", count: kpiData.pending || 0 },
+            { label: "Soft", count: kpiData.soft || 0 },
+            { label: "SLA At Risk", count: kpiData.slaAtRisk || 0 },
+            { label: "SLA Breached", count: kpiData.slaBreached || 0 }
+        ];
+    }, [kpiData]);
+
+    const availableClients = useMemo(() => {
+        const clients = new Set(demands.map(d => d.clientName || d.client).filter(Boolean));
+        return Array.from(clients).sort();
+    }, [demands]);
+
+    const resetFilters = useCallback(() => {
+        setFilters(defaultFilters);
+        setActiveTab("active");
+    }, []);
+
+    return {
+        filters,
+        setFilters,
+        resetFilters,
+        filterPanelCollapsed,
+        setFilterPanelCollapsed,
+        toggleFilterPanel: () => setFilterPanelCollapsed((prev) => !prev),
+        activeTab,
+        setActiveTab,
+        isLoading,
+        demands,
+        filteredDemands,
+        activeKPIs,
+        availableClients,
+        kpiData,
+        refreshData: fetchData
+    };
+}

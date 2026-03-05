@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import ProjectDemandDetail from './ProjectDemandDetail';
 import DemandKPIStrip from '../../resource_management/demand/components/DemandKPIStrip';
 import DemandList from '../../resource_management/demand/components/DemandList';
 import DemandFilters from '../../resource_management/demand/components/DemandFilters';
-import { Search, Filter, Plus, FilePlus } from "lucide-react";
+import demandService from '../../resource_management/demand/services/demandService';
+import { Search, Filter, Plus, FilePlus, Layers, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
 import { getProjectById, checkDemandCreation } from '../../resource_management/services/projectService';
@@ -14,6 +16,9 @@ import AddDeliverableRoleModal from "../../resource_management/models/AddDeliver
 
 const ProjectDemandManagement = ({ projectId, projectName }) => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const demandId = searchParams.get('demandId');
+
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCollapsed, setFilterCollapsed] = useState(true);
     const filterButtonRef = useRef(null);
@@ -22,13 +27,15 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     // Advanced Filter States
     const [clientFilter, setClientFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState('all');
 
     // Project & Modal states
     const [project, setProject] = useState(null);
     const [loadingProject, setLoadingProject] = useState(true);
-    const [demandResponse, setDemandResponse] = useState(null);
+    const [allDemands, setAllDemands] = useState([]);
+    const [kpiData, setKpiData] = useState(null);
     const [loadingDemand, setLoadingDemand] = useState(false);
+    const [demandResponse, setDemandResponse] = useState(null);
     const [demandModalOpen, setDemandModalOpen] = useState(false);
     const [deliverableModalOpen, setDeliverableModalOpen] = useState(false);
 
@@ -37,26 +44,31 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const [proficiencyLevels, setProficiencyLevels] = useState([]);
 
     // Fetch Project and Demand Check
-    useEffect(() => {
-        const fetchContext = async () => {
-            try {
-                setLoadingProject(true);
-                const [projRes, demandRes] = await Promise.all([
-                    getProjectById(projectId),
-                    checkDemandCreation(projectId)
-                ]);
-                setProject(projRes.data);
-                setDemandResponse(demandRes.data);
-            } catch (err) {
-                console.error("Failed to fetch project context", err);
-                toast.error("Failed to load project details for demand creation");
-            } finally {
-                setLoadingProject(false);
-            }
-        };
-
-        if (projectId) fetchContext();
+    const fetchContext = useCallback(async () => {
+        if (!projectId) return;
+        try {
+            setLoadingProject(true);
+            const [projRes, demandRes, projectDemandsData, kpis] = await Promise.all([
+                getProjectById(projectId),
+                checkDemandCreation(projectId),
+                demandService.getProjectDemands(projectId),
+                demandService.getProjectKPIs(projectId)
+            ]);
+            setProject(projRes.data);
+            setDemandResponse(demandRes.data);
+            setAllDemands(projectDemandsData || []);
+            setKpiData(kpis);
+        } catch (err) {
+            console.error("Failed to fetch project context", err);
+            toast.error("Failed to load project details for demand creation");
+        } finally {
+            setLoadingProject(false);
+        }
     }, [projectId]);
+
+    useEffect(() => {
+        fetchContext();
+    }, [fetchContext]);
 
     // Load Deliverable Role master data
     useEffect(() => {
@@ -129,30 +141,66 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, [filterCollapsed]);
 
     const handleViewDetail = (demand) => {
-        navigate(`/resource-management/demand/${demand.id}`);
+        const id = demand.id || demand.demandId;
+        searchParams.set('demandId', id);
+        setSearchParams(searchParams);
     };
 
-    // Filter demands for this specific project (Empty until API linked)
-    const projectDemands = useMemo(() => {
-        return [];
-    }, [projectName]);
+    const handleBackToList = () => {
+        searchParams.delete('demandId');
+        setSearchParams(searchParams);
+    };
 
-    // Calculate dynamic KPIs for this project
+
+
+    // Map fields from project-specific demands
+    const projectDemands = useMemo(() => {
+        if (!allDemands) return [];
+        return allDemands.map(d => ({
+            ...d,
+            id: d.demandId || d.id,
+            client: d.clientName || d.client,
+            role: d.demandName || d.role,
+            priority: d.demandPriority || d.priority,
+            slaDueAt: d.slaDueAt, // New field from response
+            slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
+            lifecycleState: d.demandStatus || d.lifecycleState,
+            priorityScore: d.priorityScore || d.score
+        }));
+    }, [allDemands]);
+
+    // Calculate dynamic KPIs for this project using API data
     const projectKPIs = useMemo(() => {
-        const active = projectDemands.filter(d => d.lifecycleState === 'ACTIVE').length;
-        const fulfilled = projectDemands.filter(d => d.lifecycleState === 'FULFILLED').length;
-        const soft = projectDemands.filter(d => d.lifecycleState === 'SOFT' || d.lifecycleState === 'REQUESTED').length;
-        const pending = projectDemands.filter(d => d.lifecycleState === 'PENDING').length;
-        const approved = projectDemands.filter(d => d.lifecycleState === 'APPROVED').length;
+        const total = projectDemands.length;
+        const active = projectDemands.filter(d => ['ACTIVE', 'OPEN', 'APPROVED'].includes(d.lifecycleState?.toUpperCase())).length;
+        const fulfilled = projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED').length;
+        const soft = projectDemands.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase())).length;
+        const pending = projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'PENDING').length;
+
+        if (total === 0 && kpiData) {
+            return [
+                { label: "Total", count: kpiData.total || 0, color: "bg-slate-50 text-slate-600" },
+                { label: "Active", count: (kpiData.active || 0) + (kpiData.approved || 0), color: "bg-indigo-50 text-indigo-600" },
+                { label: "Fulfilled", count: kpiData.fulfilled || 0, color: "bg-emerald-50 text-emerald-600" },
+                { label: "Soft", count: kpiData.soft || 0, color: "bg-amber-50 text-amber-600" },
+                { label: "Pending", count: kpiData.pending || 0, color: "bg-blue-50 text-blue-600" }
+            ];
+        }
 
         return [
+            { label: "Total", count: total, color: "bg-slate-50 text-slate-600" },
             { label: "Active", count: active, color: "bg-indigo-50 text-indigo-600" },
             { label: "Fulfilled", count: fulfilled, color: "bg-emerald-50 text-emerald-600" },
-            { label: "Soft", count: soft, color: "bg-red-50 text-red-600" },
-            { label: "Pending", count: pending, color: "bg-amber-50 text-amber-600" },
-            { label: "Approved", count: approved, color: "bg-blue-50 text-blue-600" }
+            { label: "Soft", count: soft, color: "bg-amber-50 text-amber-600" },
+            { label: "Pending", count: pending, color: "bg-blue-50 text-blue-600" }
         ];
+    }, [projectDemands, kpiData]);
+
+    const availableClients = useMemo(() => {
+        return Array.from(new Set(projectDemands.map(d => d.client).filter(Boolean))).sort();
     }, [projectDemands]);
+
+    const availablePriorities = useMemo(() => ['Critical', 'High', 'Medium', 'Low'], []);
 
     const filteredDemands = useMemo(() => {
         let list = [...projectDemands];
@@ -160,26 +208,27 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             list = list.filter(d =>
-                d.projectName.toLowerCase().includes(query) ||
-                d.role.toLowerCase().includes(query)
+                (d.projectName && d.projectName.toLowerCase().includes(query)) ||
+                (d.role && d.role.toLowerCase().includes(query))
             );
         }
 
-        list = list.filter(d => d.lifecycleState !== 'CANCELLED' && d.lifecycleState !== 'CLOSED');
+        list = list.filter(d => !['CANCELLED', 'CLOSED'].includes(d.lifecycleState?.toUpperCase()));
 
         if (activeTab === 'fulfilled') {
-            list = list.filter(d => d.lifecycleState === 'FULFILLED');
+            list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED');
         } else if (activeTab === 'active') {
-            list = list.filter(d => d.lifecycleState === 'ACTIVE' || d.lifecycleState === 'APPROVED');
+            list = list.filter(d => ['ACTIVE', 'APPROVED', 'OPEN'].includes(d.lifecycleState?.toUpperCase()));
         } else if (activeTab === 'soft') {
-            list = list.filter(d => d.lifecycleState === 'SOFT' || d.lifecycleState === 'REQUESTED');
+            list = list.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase()));
         }
+        // 'all' tab doesn't need additional filtering beyond the CANCELLED/CLOSED filter
 
         if (clientFilter !== 'All') {
             list = list.filter(d => d.client === clientFilter);
         }
         if (priorityFilter !== 'All') {
-            list = list.filter(d => d.priority === priorityFilter.toUpperCase());
+            list = list.filter(d => d.priority?.toUpperCase() === priorityFilter.toUpperCase());
         }
 
         return list;
@@ -196,14 +245,39 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         setPriorityFilter('All');
     };
 
+    if (demandId) {
+        return (
+            <ProjectDemandDetail
+                projectId={projectId}
+                demandId={demandId}
+                onBack={handleBackToList}
+            />
+        );
+    }
+
     return (
         <div className="bg-white min-h-[600px] border rounded-lg shadow-sm">
             <div className="p-4 border-b">
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center">
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-1">
                             <h2 className="text-xl font-bold text-slate-800">Demand Management</h2>
-                            <p className="text-sm text-slate-500">View and manage resource demands for {projectName}</p>
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <span className="font-medium text-slate-600 truncate max-w-[200px]">{projectName}</span>
+                                {project?.startDate && project?.endDate && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-3 w-[1px] bg-slate-300 mx-1" />
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">
+                                            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                                {new Date(project.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <span className="mx-1 text-slate-300">—</span>
+                                                {new Date(project.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -279,9 +353,10 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
                     <div className="flex items-center justify-start gap-1 border-b -mx-4 px-4 pt-2">
                         {[
+                            { id: 'all', label: 'All Demands' },
+                            { id: 'active', label: 'Active & Approved' },
                             { id: 'fulfilled', label: 'Fullfilled' },
-                            { id: 'active', label: 'Active' },
-                            { id: 'soft', label: 'Soft demands' }
+                            { id: 'soft', label: 'Soft Demands' }
                         ].map((tab) => {
                             const isActive = activeTab === tab.id;
                             return (
@@ -289,10 +364,10 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        "px-4 py-3 text-xs font-bold transition-all border-b-2 relative -mb-px flex-shrink-0",
+                                        "px-6 py-3 text-xs font-bold transition-all border-b-2 relative -mb-px flex-shrink-0",
                                         isActive
-                                            ? "text-indigo-600 border-indigo-600"
-                                            : "text-slate-400 border-transparent hover:text-slate-700"
+                                            ? "text-indigo-600 border-indigo-600 bg-indigo-50/30"
+                                            : "text-slate-400 border-transparent hover:text-slate-700 hover:bg-slate-50/50"
                                     )}
                                 >
                                     {tab.label}
@@ -305,13 +380,13 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
             {/* List Content Area */}
             <div className="p-0 relative">
-                <div className="grid grid-cols-12 items-center gap-4 px-4 py-2.5 bg-slate-50 border-b">
-                    <div className="col-span-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Demand</div>
-                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Priority</div>
-                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">SLA status</div>
-                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</div>
-                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</div>
-                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Action</div>
+                <div className="grid grid-cols-10 items-center gap-4 px-6 py-3 bg-slate-50 border-b">
+                    <div className="col-span-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Demand Specifications & Context</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left pl-2">Score</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Priority</div>
+                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SLA Compliance</div>
+                    <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</div>
+                    <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Actions</div>
                 </div>
 
                 <div className="flex flex-col">
@@ -319,6 +394,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         <DemandList
                             demands={filteredDemands}
                             onViewDetail={handleViewDetail}
+                            activeTab={activeTab}
                         />
                     ) : (
                         <div className="py-24 text-center">
@@ -352,6 +428,8 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         activeCount={activeFilterCount}
                         inline={true}
                         onToggleCollapse={() => setFilterCollapsed(true)}
+                        clients={availableClients}
+                        priorities={availablePriorities}
                     />
                 </div>,
                 document.body
@@ -365,7 +443,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                     projectDetails={project}
                     onSuccess={() => {
                         setDemandModalOpen(false);
-                        // Optional: trigger list refresh
+                        fetchContext(); // Reload data after creation
                     }}
                 />
             )}
