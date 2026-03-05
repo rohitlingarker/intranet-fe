@@ -17,10 +17,9 @@ export default function ProfileForm({ form, handleChange, isGenerated }) {
       <FormSelect label="Gender" name="gender" value={form.gender || ""} onChange={handleChange}
         options={["Male","Female","Other"]}/>
       <FormInput label="Contact" name="contact" value={form.contact || ""} onChange={handleChange}/>
-      <FormInput label="Father Name" name="fatherName" value={form.fatherName || ""} onChange={handleChange}/>
-      <FormInput label="Relation to You" name="fatherRelation" value={form.fatherRelation || ""} onChange={handleChange}/>
-      <FormInput label="Mother Name" name="motherName" value={form.motherName || ""} onChange={handleChange}/>
-      <FormInput label="Relation to You" name="motherRelation" value={form.motherRelation || ""} onChange={handleChange}/>
+      <FormInput label="Blood Group" name="bloodGroup" value={form.bloodGroup || ""} onChange={handleChange}/>
+      <FormInput label="Marital Status" name="maritalStatus" value={form.maritalStatus || ""} onChange={handleChange}
+       options={["Single","Married","Divorced"]}/>
     </div>
   );
 }
