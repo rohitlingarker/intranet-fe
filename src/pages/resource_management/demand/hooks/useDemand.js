@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import demandService from "../services/demandService";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 export const defaultFilters = {
     search: "",
@@ -8,7 +9,47 @@ export const defaultFilters = {
     status: "All",
 };
 
+const ROLE_PRIORITY = [
+    "RESOURCE-MANAGER",
+    "DELIVERY-MANAGER",
+    "PROJECT-MANAGER",
+    "MANAGER",
+    "ADMIN",
+    "SUPER ADMIN",
+    "SUPER-ADMIN",
+    "GENERAL"
+];
+
+const DEMAND_ROLE_LABELS = {
+    "RESOURCE-MANAGER": "Resource Manager",
+    "DELIVERY-MANAGER": "Delivery Manager"
+};
+
+const normalizeRoleKey = (role = "") => {
+    if (!role) return "";
+    return role.toUpperCase()
+        .replace(/^ROLE[-_]/, "") // Strip ROLE- or ROLE_ prefix
+        .replace(/_/g, "-")       // Standardize underscores to hyphens
+        .trim();
+};
+
+const getDemandRoleOptions = (roles = []) => {
+    if (!Array.isArray(roles) || roles.length === 0) return [];
+    const normalized = roles.map(normalizeRoleKey);
+    const options = ROLE_PRIORITY.filter((role) => normalized.includes(role))
+        .filter((role) => DEMAND_ROLE_LABELS[role])
+        .map((role) => ({ value: role, label: DEMAND_ROLE_LABELS[role] }));
+    return options;
+};
+
+const pickPrimaryDemandRole = (roles = []) => {
+    if (!Array.isArray(roles) || roles.length === 0) return null;
+    const normalized = roles.map(normalizeRoleKey);
+    return ROLE_PRIORITY.find((role) => normalized.includes(role)) || roles[0];
+};
+
 export function useDemand(projectId = null) {
+    const { user } = useAuth();
     const [filters, setFilters] = useState(defaultFilters);
     const [statusFilter, setStatusFilter] = useState(null);
     const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
@@ -16,6 +57,25 @@ export function useDemand(projectId = null) {
     const [isLoading, setIsLoading] = useState(true);
     const [demands, setDemands] = useState([]);
     const [kpiData, setKpiData] = useState(null);
+    const [selectedRole, setSelectedRole] = useState(null);
+
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+
+    const demandRoleOptions = useMemo(() => getDemandRoleOptions(user?.roles), [user?.roles]);
+    const effectiveRole = useMemo(
+        () => selectedRole || pickPrimaryDemandRole(user?.roles),
+        [selectedRole, user?.roles]
+    );
+
+    useEffect(() => {
+        if (!selectedRole) return;
+        const roleExists = demandRoleOptions.some((option) => option.value === selectedRole);
+        if (!roleExists) {
+            setSelectedRole(null);
+        }
+    }, [demandRoleOptions, selectedRole]);
 
     // Fetch master demands and kpis
     const fetchData = useCallback(async () => {
@@ -29,8 +89,8 @@ export function useDemand(projectId = null) {
                 ]);
             } else {
                 [demandsData, kpis] = await Promise.all([
-                    demandService.getAllDemands(),
-                    demandService.getKPISummary()
+                    demandService.getRoleScopedDemands(effectiveRole),
+                    demandService.getRoleScopedKPISummary(effectiveRole)
                 ]);
             }
             setDemands(demandsData || []);
@@ -40,7 +100,7 @@ export function useDemand(projectId = null) {
         } finally {
             setIsLoading(false);
         }
-    }, [projectId]);
+    }, [effectiveRole, projectId]);
 
     useEffect(() => {
         fetchData();
@@ -101,6 +161,18 @@ export function useDemand(projectId = null) {
         }));
     }, [demands, activeTab, filters]);
 
+    const totalElements = filteredDemands.length;
+    const totalPages = Math.ceil(totalElements / pageSize);
+
+    const paginatedDemands = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredDemands.slice(start, start + pageSize);
+    }, [filteredDemands, page, pageSize]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [activeTab, filters]);
+
     const activeKPIs = useMemo(() => {
         if (!kpiData) return [];
         return [
@@ -134,10 +206,21 @@ export function useDemand(projectId = null) {
         setActiveTab,
         isLoading,
         demands,
-        filteredDemands,
+        filteredDemands: paginatedDemands,
+        allFilteredDemands: filteredDemands,
         activeKPIs,
         availableClients,
         kpiData,
-        refreshData: fetchData
+        demandRoleOptions,
+        selectedRole,
+        setSelectedRole,
+        effectiveRole,
+        refreshData: fetchData,
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        totalPages,
+        totalElements
     };
 }

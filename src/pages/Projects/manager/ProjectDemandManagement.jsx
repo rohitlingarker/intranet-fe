@@ -13,8 +13,11 @@ import { getProjectById, checkDemandCreation } from '../../resource_management/s
 import { getSkillCategoriesTree, getProficiencyLevels } from "../../resource_management/services/workforceService";
 import DemandModal from "../../resource_management/models/DemandModal";
 import AddDeliverableRoleModal from "../../resource_management/models/AddDeliverableRoleModal";
+import Pagination from '../../../components/Pagination/pagination';
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ProjectDemandManagement = ({ projectId, projectName }) => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const demandId = searchParams.get('demandId');
@@ -38,6 +41,19 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const [demandResponse, setDemandResponse] = useState(null);
     const [demandModalOpen, setDemandModalOpen] = useState(false);
     const [deliverableModalOpen, setDeliverableModalOpen] = useState(false);
+
+    // Edit Modal State
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingDemand, setEditingDemand] = useState(null);
+
+    const handleEdit = (demand) => {
+        setEditingDemand(demand);
+        setEditModalOpen(true);
+    };
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(20);
 
     // Deliverable Role Data
     const [categories, setCategories] = useState([]);
@@ -201,7 +217,6 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, [projectDemands]);
 
     const availablePriorities = useMemo(() => ['Critical', 'High', 'Medium', 'Low'], []);
-
     const filteredDemands = useMemo(() => {
         let list = [...projectDemands];
 
@@ -222,7 +237,6 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         } else if (activeTab === 'soft') {
             list = list.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase()));
         }
-        // 'all' tab doesn't need additional filtering beyond the CANCELLED/CLOSED filter
 
         if (clientFilter !== 'All') {
             list = list.filter(d => d.client === clientFilter);
@@ -233,6 +247,19 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
         return list;
     }, [projectDemands, searchQuery, clientFilter, priorityFilter, activeTab]);
+
+
+    const totalElements = filteredDemands.length;
+    const totalPages = Math.ceil(totalElements / pageSize);
+
+    const paginatedDemands = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredDemands.slice(start, start + pageSize);
+    }, [filteredDemands, page, pageSize]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, clientFilter, priorityFilter, activeTab]);
 
     const activeFilterCount = [
         clientFilter !== 'All',
@@ -314,7 +341,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                 Project Demand Pipeline
                             </h3>
                             <span className="text-[11px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                                {filteredDemands.length} records
+                                {totalElements} records
                             </span>
                         </div>
 
@@ -390,12 +417,25 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                 </div>
 
                 <div className="flex flex-col">
-                    {filteredDemands.length > 0 ? (
-                        <DemandList
-                            demands={filteredDemands}
-                            onViewDetail={handleViewDetail}
-                            activeTab={activeTab}
-                        />
+                    {paginatedDemands.length > 0 ? (
+                        <div className="flex flex-col">
+                            <DemandList
+                                demands={paginatedDemands}
+                                onViewDetail={handleViewDetail}
+                                onEdit={handleEdit}
+                                activeTab={activeTab}
+                            />
+                            {totalPages > 1 && (
+                                <div className="py-6 border-t border-slate-100">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                                        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="py-24 text-center">
                             <p className="text-sm font-medium text-slate-400">No demands found for this project matching criteria.</p>
@@ -441,9 +481,27 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                     open={demandModalOpen}
                     onClose={() => setDemandModalOpen(false)}
                     projectDetails={project}
+                    userRole={user?.roles?.map(r => r.toUpperCase().replace(/^ROLE[-_]/, "").replace(/_/g, "-")).find(r => ["RESOURCE-MANAGER", "DELIVERY-MANAGER"].includes(r)) || ""}
                     onSuccess={() => {
                         setDemandModalOpen(false);
                         fetchContext(); // Reload data after creation
+                    }}
+                />
+            )}
+
+            {editModalOpen && (
+                <DemandModal
+                    open={editModalOpen}
+                    onClose={() => {
+                        setEditModalOpen(false);
+                        setEditingDemand(null);
+                    }}
+                    initialData={editingDemand}
+                    mode="edit"
+                    userRole={user?.roles?.map(r => r.toUpperCase().replace(/^ROLE[-_]/, "").replace(/_/g, "-")).find(r => ["RESOURCE-MANAGER", "DELIVERY-MANAGER"].includes(r)) || ""}
+                    onSuccess={() => {
+                        setEditModalOpen(false);
+                        fetchContext(); // Reload data after update
                     }}
                 />
             )}

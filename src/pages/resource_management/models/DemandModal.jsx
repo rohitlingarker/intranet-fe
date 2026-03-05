@@ -6,8 +6,9 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/20/solid";
-import { createDemand, getProjects, getLocations } from "../services/projectService";
+import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
+import demandService from "../demand/services/demandService";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -50,10 +51,13 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
       return optLabel.toLowerCase().includes(query.toLowerCase());
     });
 
-  const selectedOption = options.find((opt) =>
-    typeof opt === "string" ? opt === value : opt.value === value
-  );
-  const displayLabel = typeof selectedOption === "string" ? selectedOption : (selectedOption?.label || "");
+  const selectedOption = options.find((opt) => {
+    const optValue = typeof opt === "string" ? opt : opt.value;
+    return String(optValue) === String(value);
+  });
+  const displayLabel = typeof selectedOption === "string"
+    ? selectedOption
+    : (selectedOption?.label || (typeof value === "string" ? value : ""));
 
   return (
     <FormField id={id} label={label} error={error} required={required}>
@@ -124,10 +128,13 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
 };
 
 const ListboxField = ({ id, label, value, onChange, options, error, required = true, placeholder = "Select", disabled = false }) => {
-  const selectedOption = options.find((opt) =>
-    typeof opt === "string" ? opt === value : opt.value === value
-  );
-  const displayLabel = typeof selectedOption === "string" ? selectedOption : (selectedOption?.label || placeholder);
+  const selectedOption = options.find((opt) => {
+    const optValue = typeof opt === "string" ? opt : opt.value;
+    return String(optValue) === String(value);
+  });
+  const displayLabel = typeof selectedOption === "string"
+    ? selectedOption
+    : (selectedOption?.label || (typeof value === "string" && value ? value : placeholder));
 
   return (
     <FormField id={id} label={label} error={error} required={required}>
@@ -192,6 +199,8 @@ const ListboxField = ({ id, label, value, onChange, options, error, required = t
 /* -------------------- Initial State (PascalCase) -------------------- */
 
 const emptyForm = {
+  id: "",
+  demandId: "",
   projectId: "",
   demandName: "",
   deliveryRole: "",
@@ -212,7 +221,7 @@ const emptyForm = {
 
 /* -------------------- Modal -------------------- */
 
-const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails }) => {
+const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails, mode = "create", userRole = "" }) => {
   const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
@@ -222,15 +231,66 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
   const [projectResources, setProjectResources] = useState([]);
 
   // Master Data
+  const DEMAND_TYPES = getEnumValues("DemandType").length > 0 ? getEnumValues("DemandType") : [
+    { label: "Net New", value: "NET_NEW" },
+    { label: "Replacement", value: "REPLACEMENT" }
+  ];
+  const DEMAND_STATUSES = getEnumValues("DemandStatus");
+  const PRIORITIES = getEnumValues("PriorityLevel").length > 0 ? getEnumValues("PriorityLevel") : [
+    { label: "High", value: "HIGH" },
+    { label: "Medium", value: "MEDIUM" },
+    { label: "Low", value: "LOW" }
+  ];
+  const DELIVERY_MODELS = getEnumValues("DeliveryModel").length > 0 ? getEnumValues("DeliveryModel") : [
+    { label: "Offshore", value: "OFFSHORE" },
+    { label: "Onsite", value: "ONSITE" },
+    { label: "Hybrid", value: "HYBRID" }
+  ];
+  const COMMITMENT_TYPES = getEnumValues("DemandCommitment").length > 0 ? getEnumValues("DemandCommitment") : [
+    { label: "Confirmed", value: "CONFIRMED" },
+    { label: "Soft", value: "SOFT" }
+  ];
+
   const [roles, setRoles] = useState([]);
   const [locations, setLocations] = useState([]);
 
-  const DEMAND_TYPES = getEnumValues("DemandType");
-  const DEMAND_STATUSES = getEnumValues("DemandStatus");
-  const PRIORITIES = getEnumValues("PriorityLevel");
-  const DELIVERY_MODELS = getEnumValues("DeliveryModel");
+  const activeStatuses = DEMAND_STATUSES.length > 0 ? DEMAND_STATUSES : fallbackStatuses;
 
-  const COMMITMENT_TYPES = getEnumValues("DemandCommitment");
+  const normalizedRole = String(userRole || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+  const normalizeStatusOptions = (statuses = []) =>
+    statuses
+      .map((s) => (typeof s === "string" ? { label: s, value: s } : s))
+      .filter((s) => s && s.value);
+
+  const computedEditStatuses = (() => {
+    let normalized = normalizeStatusOptions(activeStatuses);
+
+    // Always ensure the current status is an option, even if it's not a standard transition
+    const currentStatusValue = String(form.demandStatus || "").toUpperCase();
+    if (currentStatusValue && !normalized.some(s => String(s.value).toUpperCase() === currentStatusValue)) {
+      normalized.push({ label: form.demandStatus, value: form.demandStatus });
+    }
+
+    const isRM = normalizedRole === "RESOURCEMANAGER";
+    const isDM = normalizedRole === "DELIVERYMANAGER";
+
+    if (isDM) {
+      const allowed = ["APPROVED", "REJECTED"];
+      let filtered = normalized.filter((s) => allowed.includes(String(s.value).toUpperCase()) || String(s.value).toUpperCase() === currentStatusValue);
+      return filtered.length > 0 ? filtered : normalized;
+    }
+
+    if (isRM) {
+      const allowed = ["FULFILLED", "REJECTED"];
+      let filtered = normalized.filter((s) => allowed.includes(String(s.value).toUpperCase()) || String(s.value).toUpperCase() === currentStatusValue);
+      return filtered.length > 0 ? filtered : normalized;
+    }
+
+    return normalized;
+  })();
 
   const startDateRef = useRef(null);
   const scrollRef = useRef(null);
@@ -269,25 +329,120 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
 
   useEffect(() => {
     if (open) {
+      const isEdit = mode === "edit";
       fetchRoles();
-      const initialProjectId = projectDetails?.pmsProjectId || projectDetails?.projectId || projectDetails?._id || initialData?.projectId || initialData?.ProjectId || "";
-      const initialStartDate = projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : "";
-      const initialEndDate = projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : "";
 
-      setForm({
-        ...emptyForm,
-        projectId: initialProjectId,
-        demandStartDate: initialStartDate,
-        demandEndDate: initialEndDate,
-        ...initialData,
-      });
+      const getFormattedDate = (date) => {
+        if (!date) return "";
+        try {
+          // Handle both ISO strings and yyyy-MM-dd
+          const d = new Date(date);
+          if (isNaN(d.getTime())) return "";
+          return d.toISOString().split('T')[0];
+        } catch (e) {
+          console.error("Date parsing error:", e, date);
+          return "";
+        }
+      };
 
-      console.log("Roles: ", roles);
+      const pId = projectDetails?.pmsProjectId || projectDetails?.projectId || projectDetails?._id || initialData?.projectId || initialData?.ProjectId || initialData?.pmsProjectId || "";
+      const sDate = (isEdit && initialData?.demandStartDate)
+        ? getFormattedDate(initialData.demandStartDate)
+        : (projectDetails?.startDate ? getFormattedDate(projectDetails.startDate) : (initialData?.demandStartDate ? getFormattedDate(initialData.demandStartDate) : (initialData?.slaCreatedAt ? getFormattedDate(initialData.slaCreatedAt) : "")));
+      const eDate = (isEdit && initialData?.demandEndDate)
+        ? getFormattedDate(initialData.demandEndDate)
+        : (projectDetails?.endDate ? getFormattedDate(projectDetails.endDate) : (initialData?.demandEndDate ? getFormattedDate(initialData.demandEndDate) : (initialData?.slaDueAt ? getFormattedDate(initialData.slaDueAt) : "")));
 
-      if (initialProjectId) fetchProjectResources(initialProjectId);
+      if (isEdit && initialData) {
+        console.log("[DemandModal] Edit Mode Prefilling with:", initialData);
+
+        const getVal = (paths, fallback = "") => {
+          for (const key of paths) {
+            const val = initialData[key];
+            if (val !== undefined && val !== null) return val;
+          }
+          return fallback;
+        };
+
+        const rawAlloc = getVal(['allocationPercentage', 'Allocation', 'allocation_percentage'], initialData.allocation?.percentage || initialData.allocation || "");
+        let allocation = parseFloat(rawAlloc);
+        if (!isNaN(allocation) && allocation > 0 && allocation <= 1) {
+          allocation = allocation * 100; // Convert decimal to percentage
+        }
+
+        // Search for deliveryRole ID by name if missing
+        let roleIdFromData = getVal(['deliveryRole', 'dev_role_id', 'roleId', 'role_id', 'RoleID', 'delivery_role_id', 'delivery_role_uuid']);
+        if (!roleIdFromData && (initialData.role || initialData.demandName)) {
+          const rName = initialData.role || initialData.demandName;
+          const found = roles.find(r => r.role === rName || r.name === rName);
+          if (found) roleIdFromData = found.dev_role_id || found.id;
+        }
+
+        const mappedData = {
+          ...emptyForm,
+          id: getVal(['id', 'demandId', 'demand_id']),
+          demandId: getVal(['demandId', 'id', 'demand_id']),
+          projectId: pId,
+          demandName: getVal(['demandName', 'role', 'demand_name', 'Name', 'demandRole', 'roleName']),
+          demandStartDate: sDate || getFormattedDate(getVal(['demandStartDate', 'startDate', 'start_date', 'demand_start_date', 'slaCreatedAt'])),
+          demandEndDate: eDate || getFormattedDate(getVal(['demandEndDate', 'endDate', 'end_date', 'demand_end_date', 'slaDueAt'])),
+          allocationPercentage: isNaN(allocation) ? "" : Math.round(allocation),
+          deliveryRole: roleIdFromData,
+          demandStatus: String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
+          demandType: String(getVal(['demandType', 'type', 'type_of_demand', 'DemandType', 'demand_type'], "NET_NEW")).toUpperCase().replace(/ /g, "_"),
+          demandPriority: String(getVal(['demandPriority', 'priority', 'Priority', 'demand_priority'], "MEDIUM")).toUpperCase().trim(),
+          demandCommitment: String(getVal(['demandCommitment', 'commitment', 'Commitment', 'demand_commitment'], "CONFIRMED")).toUpperCase().trim(),
+          resourcesRequired: parseInt(getVal(['resourcesRequired', 'count', 'requiredCount', 'ResourcesRequired', 'resource_required', 'quantity'], 1)),
+          minExp: getVal(['minExp', 'experience', 'min_experience', 'MinExperience', 'experience_required', 'min_experience']),
+          deliveryModel: String(getVal(['deliveryModel', 'model', 'DeliveryModel', 'delivery_model'], "OFFSHORE")).toUpperCase().trim(),
+          demandJustification: getVal(['demandJustification', 'justification', 'Justification', 'demand_justification', 'reason', 'demandJustification']),
+          requiresAdditionalApproval: !!getVal(['requiresAdditionalApproval', 'additionalApproval', 'RequiresAdditionalApproval', 'additional_approval'], false),
+          outgoingResourceId: getVal(['outgoingResourceId', 'outgoing_resource_id', 'replaced_resource_id', 'replacedResourceId']),
+        };
+
+        setForm(mappedData);
+
+        // Fetch full detail in background for edit mode if we have an ID
+        const dId = mappedData.demandId || mappedData.id;
+        if (dId && isEdit) {
+          demandService.getDemandById(dId).then(detail => {
+            if (detail) {
+              console.log("[DemandModal] Fetched full detail for edit:", detail);
+              // Merge detail into form
+              setForm(prev => {
+                const detailAllocRaw = detail.allocationPercentage || detail.Allocation || detail.allocation?.percentage || "";
+                let detailAlloc = parseFloat(detailAllocRaw);
+                if (!isNaN(detailAlloc) && detailAlloc > 0 && detailAlloc <= 1) detailAlloc *= 100;
+
+                return {
+                  ...prev,
+                  demandStartDate: getFormattedDate(detail.demandStartDate || detail.startDate) || prev.demandStartDate,
+                  demandEndDate: getFormattedDate(detail.demandEndDate || detail.endDate) || prev.demandEndDate,
+                  allocationPercentage: isNaN(detailAlloc) ? prev.allocationPercentage : Math.round(detailAlloc),
+                  resourcesRequired: detail.resourcesRequired || detail.resourceCount || prev.resourcesRequired,
+                  minExp: detail.minExp || detail.experience || prev.minExp,
+                  demandJustification: detail.demandJustification || detail.justification || prev.demandJustification,
+                  deliveryRole: detail.deliveryRole || detail.roleId || prev.deliveryRole,
+                  projectId: detail.projectId || prev.projectId,
+                };
+              });
+            }
+          }).catch(err => console.error("Detail fetch failed", err));
+        }
+      } else {
+        setForm({
+          ...emptyForm,
+          projectId: pId,
+          demandStartDate: sDate,
+          demandEndDate: eDate,
+          ...initialData,
+        });
+      }
+
+      if (pId) fetchProjectResources(pId);
       setErrors({});
     }
-  }, [open, initialData, projectDetails]);
+  }, [open, initialData, projectDetails, mode, roles.length]);
 
   // Handle Project Change
   useEffect(() => {
@@ -318,6 +473,18 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
 
   const validateForm = () => {
     const e = {};
+
+    if (mode === "edit") {
+      const allowedEditStatuses = computedEditStatuses.map((s) => String(s.value).toUpperCase());
+      const selectedStatus = String(form.demandStatus || "").toUpperCase();
+      if (!selectedStatus) {
+        e.demandStatus = "Status is required";
+      } else if (!allowedEditStatuses.includes(selectedStatus)) {
+        e.demandStatus = "Select a valid status";
+      }
+      // If we only wanted to validate status in edit mode, we would return here.
+      // But we want to validate all fields for a full update.
+    }
 
     if (!form.projectId) e.projectId = "Project selection is required";
     if (!form.demandName?.trim()) e.demandName = "Demand name is required";
@@ -373,6 +540,23 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
 
     setLoading(true);
     try {
+      if (mode === "edit") {
+        const id = form.demandId || form.id || initialData?.demandId || initialData?.id;
+        // Append time components to satisfy java.time.LocalDateTime requirement
+        const submissionData = {
+          ...form,
+          id,
+          demandId: id,
+          demandStartDate: form.demandStartDate ? (form.demandStartDate.includes('T') ? form.demandStartDate : `${form.demandStartDate}T00:00:00`) : null,
+          demandEndDate: form.demandEndDate ? (form.demandEndDate.includes('T') ? form.demandEndDate : `${form.demandEndDate}T23:59:59`) : null,
+        };
+        const res = await updateDemandStatus(submissionData);
+        toast.success(res.message || "Demand updated successfully");
+        if (onSuccess) onSuccess();
+        onClose();
+        return;
+      }
+
       // Append time components to satisfy java.time.LocalDateTime requirement
       const submissionData = {
         ...form,
@@ -435,7 +619,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
                   <div>
                     <Dialog.Title className="text-lg font-bold text-slate-900">
-                      {initialData ? "Update Demand" : "Create New Demand"}
+                      {mode === "edit" || initialData ? "Update Demand" : "Create New Demand"}
                     </Dialog.Title>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Configure staffing requirements for your project
@@ -464,7 +648,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           type="text"
                           value={projectDetails?.name || projectDetails?.projectName || initialData?.projectName || initialData?.ProjectName || "Loading..."}
                           disabled
-                          className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm text-slate-500 cursor-not-allowed"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm text-slate-500 cursor-not-allowed font-medium"
                         />
                       </FormField>
                     ) : (
@@ -477,6 +661,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         error={errors.projectId}
                         placeholder="Select Project"
                         required
+                        disabled={mode === "edit"}
                       />
                     )}
 
@@ -487,8 +672,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. Senior Frontend Dev"
                         value={form.demandName}
                         onChange={(e) => update("demandName", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
 
@@ -541,8 +725,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : ""}
                         max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
                         onChange={(e) => update("demandStartDate", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
 
@@ -554,8 +737,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={form.demandStartDate || (projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : "")}
                         max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
                         onChange={(e) => update("demandEndDate", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
 
@@ -569,8 +751,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           placeholder="1 - 100"
                           value={form.allocationPercentage}
                           onChange={(e) => update("allocationPercentage", e.target.value)}
-                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                            }`}
+                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">%</span>
                       </div>
@@ -584,8 +765,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="min 1"
                         value={form.resourcesRequired}
                         onChange={(e) => update("resourcesRequired", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
 
@@ -597,8 +777,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. 5"
                         value={form.minExp}
                         onChange={(e) => update("minExp", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
 
@@ -620,7 +799,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       label="Demand Status"
                       value={form.demandStatus}
                       onChange={(v) => update("demandStatus", v)}
-                      options={DEMAND_STATUSES}
+                      options={mode === "edit" ? computedEditStatuses : normalizeStatusOptions(activeStatuses)}
                       error={errors.demandStatus}
                       placeholder="Select Status"
                       required
@@ -656,7 +835,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         checked={form.requiresAdditionalApproval}
                         onChange={(v) => update("requiresAdditionalApproval", v)}
                         className={`${form.requiresAdditionalApproval ? 'bg-blue-600' : 'bg-slate-200'
-                          } relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75`}
+                          } relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75 cursor-pointer`}
                       >
                         <span className="sr-only">Additional Approval</span>
                         <span
@@ -677,8 +856,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="Explain why this resource is needed..."
                         value={form.demandJustification}
                         onChange={(e) => update("demandJustification", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"
-                          }`}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
                       />
                     </FormField>
                   </div>
@@ -714,7 +892,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         Submitting...
                       </>
                     ) : (
-                      initialData ? "Update Demand" : "Create Demand"
+                      mode === "edit" || initialData ? "Update Demand" : "Create Demand"
                     )}
                   </button>
                 </div>
