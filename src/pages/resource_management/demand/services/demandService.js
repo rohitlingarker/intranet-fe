@@ -12,6 +12,31 @@ const getAuthHeader = () => {
     };
 };
 
+const ROLE_ALIAS_MAP = {
+    "RESOURCE-MANAGER": "RESOURCE_MANAGER",
+    "RESOURCE MANAGER": "RESOURCE_MANAGER",
+    "RESOURCE_MANAGER": "RESOURCE_MANAGER",
+    "DELIVERY-MANAGER": "DELIVERY_MANAGER",
+    "DELIVERY MANAGER": "DELIVERY_MANAGER",
+    "DELIVERY_MANAGER": "DELIVERY_MANAGER"
+};
+
+const DEMAND_API_BY_ROLE = {
+    RESOURCE_MANAGER: {
+        kpi: "/api/demand/rm/kpi",
+        demands: "/api/demand/rm/demands"
+    },
+    DELIVERY_MANAGER: {
+        kpi: "/api/demand/dm/kpi",
+        demands: "/api/demand/dm/demands"
+    }
+};
+
+const normalizeRoleKey = (role) => {
+    if (!role) return null;
+    return ROLE_ALIAS_MAP[role?.toUpperCase()] || null;
+};
+
 /**
  * Enterprise Demand Service
  */
@@ -62,6 +87,52 @@ export const demandService = {
         } catch (error) {
             console.error('Error in getKPISummary:', error);
             return null; // Return null to allow fallback to 0s
+        }
+    },
+
+    /**
+     * Fetches KPI summary data for a role-specific demand workspace.
+     * Falls back to generic KPI endpoint if role is unknown.
+     * @param {string} role
+     */
+    getRoleScopedKPISummary: async (role) => {
+        const roleKey = normalizeRoleKey(role);
+        const endpoints = roleKey ? DEMAND_API_BY_ROLE[roleKey] : null;
+        if (!endpoints?.kpi) {
+            return demandService.getKPISummary();
+        }
+        try {
+            const response = await axios.get(`${BASE_URL}${endpoints.kpi}`, getAuthHeader());
+            if (response.data && response.data.success) {
+                return response.data.data;
+            }
+            return null;
+        } catch (error) {
+            console.error(`Error in getRoleScopedKPISummary for role ${role}:`, error);
+            return null;
+        }
+    },
+
+    /**
+     * Fetches demands for a role-specific demand workspace.
+     * Falls back to generic demands endpoint if role is unknown.
+     * @param {string} role
+     */
+    getRoleScopedDemands: async (role) => {
+        const roleKey = normalizeRoleKey(role);
+        const endpoints = roleKey ? DEMAND_API_BY_ROLE[roleKey] : null;
+        if (!endpoints?.demands) {
+            return demandService.getAllDemands();
+        }
+        try {
+            const response = await axios.get(`${BASE_URL}${endpoints.demands}`, getAuthHeader());
+            if (response.data && response.data.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data?.message || `Failed to fetch demands for role ${role}`);
+        } catch (error) {
+            console.error(`Error in getRoleScopedDemands for role ${role}:`, error);
+            throw error;
         }
     },
 

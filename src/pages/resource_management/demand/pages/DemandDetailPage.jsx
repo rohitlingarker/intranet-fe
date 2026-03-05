@@ -11,6 +11,8 @@ import {
     TrendingUp, Award, Layers, Hash, Building2, GitCompare, Code2, Percent, Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SkillGapTab from '../../components/resource-intelligence/SkillGapTab';
+import AllocationModal from '../components/AllocationModal';
 import demandService from '../services/demandService';
 import { PriorityBadge, StateBadge } from '../components/FormalBadges';
 import { Button } from "@/components/ui/button";
@@ -360,6 +362,7 @@ const DemandDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -412,6 +415,7 @@ const DemandDetailPage = () => {
     const TABS = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
+        { id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare },
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
         ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : [])
     ];
@@ -484,7 +488,10 @@ const DemandDetailPage = () => {
                                     </div>
                                 </div>
 
-                                <button className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500">
+                                <button
+                                    onClick={() => setIsAllocationModalOpen(true)}
+                                    className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
+                                >
                                     <Plus className="h-4 w-4" />
                                     <span className="whitespace-nowrap">Allocate Resource</span>
                                 </button>
@@ -524,10 +531,17 @@ const DemandDetailPage = () => {
                 <div className="max-w-[1500px] mx-auto px-6 py-10 font-sans">
                     {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} />}
                     {activeTab === 'roleInfo' && <RoleInfoTab demand={demand} role={role} />}
+                    {activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
                     {activeTab === 'approvalFlow' && <ApprovalFlowTab demand={demand} />}
                     {activeTab === 'slaInsights' && <SLAInsightsTab sla={sla} />}
                 </div>
             </main >
+
+            <AllocationModal
+                isOpen={isAllocationModalOpen}
+                onClose={() => setIsAllocationModalOpen(false)}
+                demand={demand}
+            />
         </div >
     );
 };
