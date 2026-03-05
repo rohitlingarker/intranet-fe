@@ -18,24 +18,28 @@ import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 /* -------------------- Shared Components -------------------- */
 
-const FormField = ({ id, label, error, required, children, className = "" }) => (
+const FormField = ({ id, label, error, note, required, children, className = "" }) => (
   <div className={`w-full ${className}`} id={id}>
     <label className="text-[11px] text-slate-500 mb-1.5 block font-semibold uppercase tracking-wider">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     {children}
     <div className="h-5">
-      <Transition
-        show={!!error}
-        enter="transition-all duration-200"
-        enterFrom="opacity-0 -translate-y-1"
-        enterTo="opacity-100 translate-y-0"
-        leave="transition-all duration-150"
-        leaveFrom="opacity-100 translate-y-0"
-        leaveTo="opacity-0 -translate-y-1"
-      >
-        <p className="text-red-500 text-[10px] mt-1 font-medium">{error}</p>
-      </Transition>
+      {error ? (
+        <Transition
+          show={!!error}
+          enter="transition-all duration-200"
+          enterFrom="opacity-0 -translate-y-1"
+          enterTo="opacity-100 translate-y-0"
+          leave="transition-all duration-150"
+          leaveFrom="opacity-100 translate-y-0"
+          leaveTo="opacity-0 -translate-y-1"
+        >
+          <p className="text-red-500 text-[10px] mt-1 font-medium">{error}</p>
+        </Transition>
+      ) : note ? (
+        <p className="text-red-500 text-[10px] mt-1 font-medium italic">{note}</p>
+      ) : null}
     </div>
   </div>
 );
@@ -123,14 +127,14 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
   );
 };
 
-const ListboxField = ({ id, label, value, onChange, options, error, required = true, placeholder = "Select", disabled = false }) => {
+const ListboxField = ({ id, label, value, onChange, options, error, note, required = true, placeholder = "Select", disabled = false }) => {
   const selectedOption = options.find((opt) =>
     typeof opt === "string" ? opt === value : opt.value === value
   );
   const displayLabel = typeof selectedOption === "string" ? selectedOption : (selectedOption?.label || placeholder);
 
   return (
-    <FormField id={id} label={label} error={error} required={required}>
+    <FormField id={id} label={label} error={error} note={note} required={required}>
       <Listbox value={value} onChange={onChange} disabled={disabled}>
         <div className="relative">
           <Listbox.Button
@@ -638,7 +642,6 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       required
                     />
 
-                    {/* Commitment */}
                     <ListboxField
                       id="field-demandCommitment"
                       label="Demand Commitment"
@@ -646,6 +649,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       onChange={(v) => update("demandCommitment", v)}
                       options={COMMITMENT_TYPES}
                       error={errors.demandCommitment}
+                      note={form.demandCommitment === "SOFT" ? "Note: This Demand will expire in 30 days" : ""}
                       placeholder="Select Commitment"
                       required
                     />
