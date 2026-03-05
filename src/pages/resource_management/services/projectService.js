@@ -170,3 +170,20 @@ export const getLocations = async () => {
     throw err;
   }
 };
+
+export const updateDemandStatus = async (payload) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/api/demand/update`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
