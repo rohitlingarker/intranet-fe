@@ -221,6 +221,7 @@ const emptyForm = {
   demandCommitment: "CONFIRMED",
   requiresAdditionalApproval: false,
   demandJustification: "",
+  rejectionReason: "",
 };
 
 /* -------------------- Modal -------------------- */
@@ -269,10 +270,18 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       .map((s) => (typeof s === "string" ? { label: s, value: s } : s))
       .filter((s) => s && s.value);
 
-  const computedEditStatuses = [
-    { label: "Fulfilled", value: "FULFILLED" },
-    { label: "Rejected", value: "REJECTED" }
-  ];
+  const computedEditStatuses = (() => {
+    if (normalizedRole === "DELIVERYMANAGER") {
+      return [
+        { label: "Accepted", value: "APPROVED" },
+        { label: "Rejected", value: "REJECTED" }
+      ];
+    }
+    return [
+      { label: "FULFILLED", value: "FULFILLED" },
+      { label: "REJECTED", value: "REJECTED" }
+    ];
+  })();
 
 
   const startDateRef = useRef(null);
@@ -464,6 +473,10 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
         e.demandStatus = "Status is required";
       } else if (!allowedEditStatuses.includes(selectedStatus)) {
         e.demandStatus = "Select a valid status";
+      }
+
+      if (normalizedRole === "DELIVERYMANAGER" && selectedStatus === "REJECTED" && !form.rejectionReason?.trim()) {
+        e.rejectionReason = "Reason for rejection is required";
       }
       // If we only wanted to validate status in edit mode, we would return here.
       // But we want to validate all fields for a full update.
@@ -796,6 +809,19 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       placeholder="Select Status"
                       required
                     />
+
+                    {/* Rejection Reason for Delivery Manager */}
+                    {mode === "edit" && normalizedRole === "DELIVERYMANAGER" && form.demandStatus === "REJECTED" && (
+                      <FormField id="field-rejectionReason" label="Rejection Reason" error={errors.rejectionReason} required className="md:col-span-2">
+                        <textarea
+                          rows={2}
+                          placeholder="Explain why this demand is being rejected..."
+                          value={form.rejectionReason}
+                          onChange={(e) => update("rejectionReason", e.target.value)}
+                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.rejectionReason ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        />
+                      </FormField>
+                    )}
 
                     {/* Priority */}
                     <ListboxField
