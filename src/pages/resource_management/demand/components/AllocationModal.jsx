@@ -13,7 +13,7 @@ import { fetchResources, resourceAllocation } from "../../services/resource";
 import { toast } from 'react-toastify';
 import { cn } from "@/lib/utils";
 
-const AllocationModal = ({ isOpen, onClose, demand }) => {
+const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
     const [resources, setResources] = useState([]);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,9 +98,12 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
             const result = await resourceAllocation(formData);
             if (result.success) {
                 toast.success(result.message || "Resources allocated successfully");
+                if (onSuccess) onSuccess(result);
                 onClose();
             } else {
                 toast.error(result.message || "Allocation failed");
+                if (onSuccess) onSuccess(result);
+                onClose();
             }
         } catch (error) {
             console.error("Allocation error:", error);
