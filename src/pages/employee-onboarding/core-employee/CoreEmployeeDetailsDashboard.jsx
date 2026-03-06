@@ -10,15 +10,6 @@ import EmployeeCreateModal from "./components/EmployeeCreateModal";
 
 const PAGE_SIZE = 5;
 
-const DEPARTMENTS = [
-  "Engineering",
-  "HR",
-  "Finance",
-  "Marketing",
-  "Sales",
-  "Operations",
-];
-
 function ActionMenu({ onView }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -69,14 +60,17 @@ export default function EmployeeOnboardingPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
+
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   /* ============================
      FETCH EMPLOYEES
@@ -109,9 +103,73 @@ export default function EmployeeOnboardingPage() {
     }
   };
 
+  /* ============================
+     FETCH DEPARTMENTS
+  ============================ */
+
+  const fetchDepartments = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/departments/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    setDepartments(Array.isArray(data) ? data : data.data || []);
+
+  } catch (error) {
+    console.error("Failed to fetch departments", error);
+  }
+};
+
+const fetchDesignations = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/designations/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+    setDesignations(data || []);
+
+  } catch (err) {
+    console.error("Failed to fetch designations", err);
+  }
+};
+
   useEffect(() => {
     fetchEmployees();
+    fetchDepartments();
+    fetchDesignations();
   }, []);
+  
+   /* ============================
+     CREATE UUID → NAME MAPS
+  ============================ */
+   const departmentMap = Object.fromEntries(
+    departments.map((d) => [d.department_uuid, d.department_name])
+    );
+  const designationMap = Object.fromEntries(
+      designations.map((d) => [d.designation_uuid, d.designation_name])
+    );
+
 
   /* ============================
      RECEIVE UUID FROM HR PAGE
@@ -172,11 +230,11 @@ export default function EmployeeOnboardingPage() {
 
       const departmentMatch =
         departmentFilter === "ALL" ||
-        emp.department === departmentFilter;
+        departmentMap[emp.department_uuid] === departmentFilter;
 
       return matchesSearch && statusMatch && departmentMatch;
     });
-  }, [employees, searchTerm, statusFilter, departmentFilter]);
+  }, [employees, searchTerm, statusFilter, departmentFilter,]);
 
 
   /* ============================
@@ -227,9 +285,9 @@ export default function EmployeeOnboardingPage() {
 
         contact: emp.contact_number || "—",
 
-        department: emp.department || "—",
+        department: departmentMap[emp.department_uuid] || "—",
 
-        designation: emp.designation || "—",
+        designation: designationMap[emp.designation_uuid] || "—",
 
         doj: emp.joining_date || "—",
 
@@ -250,7 +308,7 @@ export default function EmployeeOnboardingPage() {
         ),
       }));
 
-  }, [employees, currentPage, navigate]);
+  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap, navigate]);
 
   return (
     <div className="p-6 space-y-6">
@@ -330,11 +388,11 @@ export default function EmployeeOnboardingPage() {
         >
           <option value="ALL">All Departments</option>
 
-          {DEPARTMENTS.map((dept) => (
-            <option key={dept} value={dept}>
-              {dept}
-            </option>
-          ))}
+          {departments.map((dept) => (
+          <option key={dept.department_uuid} value={dept.department_name}>
+            {dept.department_name}
+          </option>
+        ))}
         </select>
       </div>
 
@@ -403,64 +461,3 @@ function StatCard({ title, value, icon: Icon }) {
     </div>
   );
 }
-
-
-
-// import React, { useEffect, useState } from "react";
-// import { useLocation } from "react-router-dom";
-
-// import EmployeeCreateModal from "./components/EmployeeCreateModal";
-
-
-// export default function EmployeeOnboardingPage() {
-//   const location = useLocation();
-
-//   const [isCreateOpen, setIsCreateOpen] = useState(false);
-//   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
-
-//   // useEffect(() => {
-//   //   if (userUuid) {
-//   //     setIsCreateOpen(true);
-//   //   }
-//   // }, [userUuid]);
-
-//   useEffect(() => {
-//   if (location.state?.userUuid) {
-//     setSelectedUserUuid(location.state.userUuid);
-//   }
-// }, [location.state]);
-  
-
-//   return (
-//     <div className="p-6">
-
-//       {/* HEADER ROW */}
-//       <div className="flex justify-between items-center mb-4">
-//         <div>
-//           <h1 className="text-4xl font-semibold text-gray-800">
-//             Employee Onboarding
-//           </h1>
-//           <p className="text-sm text-gray-500">
-//             Manage employee onboarding workflow
-//           </p>
-//         </div>
-
-//         {/* CREATE BUTTON */}
-//         <button
-//           onClick={() => setIsCreateOpen(true)}
-//           // onClose={handleCloseModal}
-//           className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm"
-//         >
-//           + Create Employee
-//         </button>
-//       </div>
-
-//       {/* MODAL */}
-//       <EmployeeCreateModal
-//         isOpen={isCreateOpen}
-//         onClose={() => setIsCreateOpen(false)}
-//         userUuid={selectedUserUuid}
-//       />
-//     </div>
-//   );
-// }

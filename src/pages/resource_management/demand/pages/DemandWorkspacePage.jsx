@@ -10,6 +10,13 @@ import DemandList from '../components/DemandList';
 import DemandFilters from '../components/DemandFilters';
 import { useDemand } from '../hooks/useDemand';
 import DemandModal from '../../models/DemandModal';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import Pagination from '../../../../components/Pagination/pagination';
 
 const DemandWorkspacePage = () => {
@@ -29,6 +36,10 @@ const DemandWorkspacePage = () => {
         effectiveRole,
         refreshData,
         availableClients,
+        availableStatuses,
+        availableDemandNames,
+        availableDemandTypes,
+        availableDeliveryModels,
         totalPages,
         totalElements,
         page,
@@ -40,23 +51,62 @@ const DemandWorkspacePage = () => {
     const [dropdownPos, setDropdownPos] = useState(null);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingDemand, setEditingDemand] = useState(null);
+    const [draftFilters, setDraftFilters] = useState(filters);
+
+    // Sync draft with global filters when they change externally (like Reset)
+    useEffect(() => {
+        setDraftFilters(filters);
+    }, [filters]);
 
     useEffect(() => {
-        if (!filterCollapsed && filterButtonRef.current) {
-            const rect = filterButtonRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const popupHeight = 420;
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            const align = (spaceBelow < popupHeight && spaceAbove > spaceBelow) ? 'up' : 'down';
+        const updatePosition = () => {
+            if (filterButtonRef.current) {
+                const rect = filterButtonRef.current.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                const popupHeight = 450;
+                const popupWidth = 340;
 
-            setDropdownPos({
-                top: align === 'up' ? (rect.top + window.scrollY - 8) : (rect.bottom + window.scrollY + 8),
-                right: window.innerWidth - (rect.right + window.scrollX),
-                align,
-                maxHeight: Math.min(viewportHeight * 0.7, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
-            });
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                const spaceRight = viewportWidth - rect.left;
+                const spaceLeft = rect.right;
+
+                // Priority 1: Vertical positioning (Below is preferred)
+                let align = 'down';
+                if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
+                    align = 'up';
+                }
+
+                // Priority 2: Horizontal positioning (Align right edge of button and modal)
+                let horizontalPos = { right: viewportWidth - rect.right };
+
+                // If modal would overflow left side of screen
+                if (rect.right < popupWidth) {
+                    horizontalPos = { left: rect.left };
+                    delete horizontalPos.right;
+                }
+
+                setDropdownPos({
+                    top: align === 'up' ? 'auto' : (rect.bottom + 8),
+                    bottom: align === 'up' ? (viewportHeight - rect.top + 8) : 'auto',
+                    ...horizontalPos,
+                    align,
+                    maxHeight: Math.min(viewportHeight * 0.85, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
+                });
+            }
+        };
+
+        if (!filterCollapsed) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
         }
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
     }, [filterCollapsed]);
 
     useEffect(() => {
@@ -82,8 +132,12 @@ const DemandWorkspacePage = () => {
     }, [filterCollapsed]);
 
     const activeFilterCount = [
-        filters.client !== 'All',
-        filters.priority !== 'All'
+        filters.client !== 'ALL',
+        filters.priority !== 'ALL',
+        filters.status !== 'ALL',
+        filters.demandName !== 'ALL',
+        filters.demandType !== 'ALL',
+        filters.deliveryModel !== 'ALL'
     ].filter(Boolean).length;
 
     return (
@@ -100,19 +154,27 @@ const DemandWorkspacePage = () => {
                             </p>
                         </div>
                         {demandRoleOptions.length > 1 && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-semibold text-slate-500">View As:</span>
-                                <select
-                                    value={selectedRole || effectiveRole || ""}
-                                    onChange={(e) => setSelectedRole(e.target.value)}
-                                    className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-[12px] font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                            <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                                <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">View As:</span>
+                                <Select
+                                    value={selectedRole || effectiveRole}
+                                    onValueChange={(v) => setSelectedRole(v)}
                                 >
-                                    {demandRoleOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger className="h-9 min-w-[170px] rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm shadow-indigo-100/10">
+                                        <SelectValue placeholder="View As" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {demandRoleOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                                className="text-xs font-semibold py-2"
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         )}
                     </div>
@@ -177,7 +239,7 @@ const DemandWorkspacePage = () => {
                                     )}
                                 >
                                     <Filter className="h-3.5 w-3.5" />
-                                    Filters
+                                    {filters.client !== 'ALL' ? filters.client : 'Filters'}
                                     {activeFilterCount > 0 && (
                                         <span className="ml-1 px-1 bg-indigo-100 text-indigo-600 rounded-sm text-[9px]">
                                             {activeFilterCount}
@@ -257,29 +319,42 @@ const DemandWorkspacePage = () => {
                 <div
                     id="filter-workspace-portal"
                     className={cn(
-                        "absolute bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] w-[340px] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200",
-                        dropdownPos.align === 'up' ? "origin-bottom" : "origin-top"
+                        "fixed bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[100] w-[340px] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200",
+                        dropdownPos.align === 'up' ? "origin-bottom-right" : "origin-top-right"
                     )}
                     style={{
-                        top: dropdownPos.align === 'up' ? 'auto' : `${dropdownPos.top}px`,
-                        bottom: dropdownPos.align === 'up' ? `${document.documentElement.scrollHeight - dropdownPos.top}px` : 'auto',
-                        right: `${dropdownPos.right}px`,
-                        maxHeight: `${dropdownPos.maxHeight}px`
+                        top: dropdownPos.top === 'auto' ? 'auto' : `${dropdownPos.top}px`,
+                        bottom: dropdownPos.bottom === 'auto' ? 'auto' : `${dropdownPos.bottom}px`,
+                        right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : 'auto',
+                        left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : 'auto',
+                        maxHeight: `${dropdownPos.maxHeight}px`,
                     }}
                 >
-                    <div className="p-2">
-                        <DemandFilters
-                            clientFilter={filters.client}
-                            onClientChange={(v) => setFilters(prev => ({ ...prev, client: v }))}
-                            priorityFilter={filters.priority}
-                            onPriorityChange={(v) => setFilters(prev => ({ ...prev, priority: v }))}
-                            onReset={resetFilters}
-                            activeCount={activeFilterCount}
-                            inline={true}
-                            onToggleCollapse={() => setFilterCollapsed(true)}
-                            clients={availableClients}
-                        />
-                    </div>
+                    <DemandFilters
+                        clientFilter={filters.client}
+                        onClientChange={(v) => setFilters(prev => ({ ...prev, client: v }))}
+                        priorityFilter={filters.priority}
+                        onPriorityChange={(v) => setFilters(prev => ({ ...prev, priority: v }))}
+                        onReset={resetFilters}
+                        activeCount={activeFilterCount}
+                        inline={true}
+                        onToggleCollapse={() => setFilterCollapsed(true)}
+                        clients={availableClients}
+                        statuses={availableStatuses}
+                        demandNames={availableDemandNames}
+                        statusFilter={filters.status}
+                        onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
+                        demandNameFilter={filters.demandName}
+                        onDemandNameChange={(v) => setFilters(prev => ({ ...prev, demandName: v }))}
+                        demandTypeFilter={filters.demandType}
+                        onDemandTypeChange={(v) => setFilters(prev => ({ ...prev, demandType: v }))}
+                        deliveryModelFilter={filters.deliveryModel}
+                        onDeliveryModelChange={(v) => setFilters(prev => ({ ...prev, deliveryModel: v }))}
+                        demandTypes={availableDemandTypes}
+                        deliveryModels={availableDeliveryModels}
+                        draft={draftFilters}
+                        setDraft={setDraftFilters}
+                    />
                 </div>,
                 document.body
             )}
