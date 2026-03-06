@@ -174,7 +174,7 @@ export const demandService = {
      */
     getProjectKPIs: async (projectId) => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/demand/kpi`, {
+            const response = await axios.get(`${BASE_URL}/api/demand/pm/kpi`, {
                 ...getAuthHeader(),
                 params: { projectId }
             });
