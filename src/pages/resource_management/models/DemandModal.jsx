@@ -8,7 +8,8 @@ import {
 } from "@heroicons/react/20/solid";
 import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
-import demandService from "../demand/services/demandService";
+import demandService from "../services/demandService";
+import { handleDMDecision, handleRMDecision } from "../services/demandService";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -221,6 +222,7 @@ const emptyForm = {
   demandCommitment: "CONFIRMED",
   requiresAdditionalApproval: false,
   demandJustification: "",
+  rejectionReason: "",
 };
 
 /* -------------------- Modal -------------------- */
@@ -269,10 +271,18 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       .map((s) => (typeof s === "string" ? { label: s, value: s } : s))
       .filter((s) => s && s.value);
 
-  const computedEditStatuses = [
-    { label: "Fulfilled", value: "FULFILLED" },
-    { label: "Rejected", value: "REJECTED" }
-  ];
+  const computedEditStatuses = (() => {
+    if (normalizedRole === "DELIVERYMANAGER") {
+      return [
+        { label: "Accepted", value: "APPROVED" },
+        { label: "Rejected", value: "REJECTED" }
+      ];
+    }
+    return [
+      { label: "FULFILLED", value: "FULFILLED" },
+      { label: "REJECTED", value: "REJECTED" }
+    ];
+  })();
 
 
   const startDateRef = useRef(null);
@@ -465,8 +475,12 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       } else if (!allowedEditStatuses.includes(selectedStatus)) {
         e.demandStatus = "Select a valid status";
       }
-      // If we only wanted to validate status in edit mode, we would return here.
-      // But we want to validate all fields for a full update.
+
+      if ((normalizedRole === "DELIVERYMANAGER" || normalizedRole === "RESOURCEMANAGER") && selectedStatus === "REJECTED" && !form.rejectionReason?.trim()) {
+        e.rejectionReason = "Reason for rejection is required";
+      }
+      // In edit mode, we only validate the status and rejection reason as other fields are read-only
+      return e;
     }
 
     if (!form.projectId) e.projectId = "Project selection is required";
@@ -474,7 +488,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     if (!form.deliveryRole) e.deliveryRole = "Role is required";
     if (!form.demandType) e.demandType = "Demand type is required";
 
-    if (form.demandType === "REPLACEMENT" && !form.outgoingResourceId) {
+    if (mode !== "edit" && form.demandType === "REPLACEMENT" && !form.outgoingResourceId) {
       e.outgoingResourceId = "Outgoing resource is required";
     }
 
@@ -525,6 +539,36 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     try {
       if (mode === "edit") {
         const id = form.demandId || form.id || initialData?.demandId || initialData?.id;
+
+        if (normalizedRole === "DELIVERYMANAGER") {
+          // New specialized path for DM
+          const dmPayload = {
+            demandId: id,
+            decision: form.demandStatus,
+            rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
+          };
+          const res = await handleDMDecision(dmPayload);
+          toast.success(res?.message || "Decision submitted successfully");
+          if (onSuccess) onSuccess();
+          onClose();
+          return;
+        }
+
+        if (normalizedRole === "RESOURCEMANAGER") {
+          // New specialized path for RM
+          const rmPayload = {
+            demandId: id,
+            decision: form.demandStatus,
+            rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
+          };
+          const res = await handleRMDecision(rmPayload);
+          toast.success(res?.message || "Decision submitted successfully");
+          if (onSuccess) onSuccess();
+          onClose();
+          return;
+        }
+
+        // Default path for RM and others
         // Append time components to satisfy java.time.LocalDateTime requirement
         const submissionData = {
           ...form,
@@ -697,7 +741,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           options={projectResources.map((r) => ({ label: r.name, value: r.resourceId }))}
                           error={errors.outgoingResourceId}
                           placeholder={fetchingResources ? "Loading resources..." : "Search and select resource to replace"}
-                          required
+                          required={mode !== "edit"}
                           disabled={fetchingResources || mode === "edit"}
                         />
                       </div>
@@ -796,6 +840,19 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       placeholder="Select Status"
                       required
                     />
+
+                    {/* Rejection Reason for DM/RM */}
+                    {mode === "edit" && (normalizedRole === "DELIVERYMANAGER" || normalizedRole === "RESOURCEMANAGER") && form.demandStatus === "REJECTED" && (
+                      <FormField id="field-rejectionReason" label="Rejection Reason" error={errors.rejectionReason} required className="md:col-span-2">
+                        <textarea
+                          rows={2}
+                          placeholder="Explain why this demand is being rejected..."
+                          value={form.rejectionReason}
+                          onChange={(e) => update("rejectionReason", e.target.value)}
+                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.rejectionReason ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        />
+                      </FormField>
+                    )}
 
                     {/* Priority */}
                     <ListboxField

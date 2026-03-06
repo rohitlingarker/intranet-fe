@@ -7,19 +7,12 @@ import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import StatusBadge from "../../../components/status/statusbadge";
 import EmployeeCreateModal from "./components/EmployeeCreateModal";
+import ExcelPreviewModal from "./components/ExcelPreviewModal";
+import * as XLSX from "xlsx";
 
 const PAGE_SIZE = 5;
 
-const DEPARTMENTS = [
-  "Engineering",
-  "HR",
-  "Finance",
-  "Marketing",
-  "Sales",
-  "Operations",
-];
-
-function ActionMenu({ onView }) {
+function ActionMenu({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -48,12 +41,21 @@ function ActionMenu({ onView }) {
         <div className="absolute right-full mr-2 top-0 w-32 bg-white border rounded-md shadow-lg z-50">
           <button
             onClick={() => {
-              onView();
+              onEdit();
               setOpen(false);
             }}
             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
           >
-            View
+            Edit
+          </button>
+          <button
+            onClick={() => {
+              onDelete();
+              setOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            Delete
           </button>
         </div>
       )}
@@ -69,14 +71,26 @@ export default function EmployeeOnboardingPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
+
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+
+  const [editEmployeeUuid, setEditEmployeeUuid] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [excelPreview, setExcelPreview] = useState([]);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const [exportLoading, setExportLoading] = useState(false);
+
+  
 
   /* ============================
      FETCH EMPLOYEES
@@ -109,9 +123,73 @@ export default function EmployeeOnboardingPage() {
     }
   };
 
+  /* ============================
+     FETCH DEPARTMENTS
+  ============================ */
+
+  const fetchDepartments = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/departments/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    setDepartments(Array.isArray(data) ? data : data.data || []);
+
+  } catch (error) {
+    console.error("Failed to fetch departments", error);
+  }
+};
+
+const fetchDesignations = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/designations/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+    setDesignations(data || []);
+
+  } catch (err) {
+    console.error("Failed to fetch designations", err);
+  }
+};
+
   useEffect(() => {
     fetchEmployees();
+    fetchDepartments();
+    fetchDesignations();
   }, []);
+  
+   /* ============================
+     CREATE UUID → NAME MAPS
+  ============================ */
+   const departmentMap = Object.fromEntries(
+    departments.map((d) => [d.department_uuid, d.department_name])
+    );
+  const designationMap = Object.fromEntries(
+      designations.map((d) => [d.designation_uuid, d.designation_name])
+    );
+
 
   /* ============================
      RECEIVE UUID FROM HR PAGE
@@ -126,6 +204,7 @@ export default function EmployeeOnboardingPage() {
   const handleCloseModal = () => {
     setIsCreateOpen(false);
     setSelectedUserUuid(null);
+    setEditEmployeeUuid(null);
     fetchEmployees();
   };
 
@@ -172,13 +251,55 @@ export default function EmployeeOnboardingPage() {
 
       const departmentMatch =
         departmentFilter === "ALL" ||
-        emp.department === departmentFilter;
+        departmentMap[emp.department_uuid] === departmentFilter;
 
       return matchesSearch && statusMatch && departmentMatch;
     });
-  }, [employees, searchTerm, statusFilter, departmentFilter]);
+  }, [employees, searchTerm, statusFilter, departmentFilter,]);
 
+const handleExportPreview = async () => {
 
+  setExportLoading(true);
+
+  try {
+
+    const excelData = filteredEmployees.map(emp => ({
+      "Employee ID": emp.employee_id,
+      "Name": `${emp.first_name} ${emp.last_name}`,
+      "Email": emp.work_email,
+      "Contact": emp.contact_number,
+      "Department": departmentMap[emp.department_uuid],
+      "Designation": designationMap[emp.designation_uuid],
+      "Joining Date": emp.joining_date,
+      "Status": emp.employment_status
+    }));
+
+    setExcelPreview(excelData);
+    setShowPreview(true);
+
+  } catch (error) {
+    console.error("Excel preview error", error);
+  } finally {
+    setExportLoading(false);
+  }
+};
+
+const downloadExcel = () => {
+
+  const worksheet = XLSX.utils.json_to_sheet(excelPreview);
+
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+
+  // Auto column width
+  const cols = Object.keys(excelPreview[0]).map(() => ({ wch: 25 }));
+  worksheet["!cols"] = cols;
+
+  XLSX.writeFile(workbook, "Employee_Report.xlsx");
+
+  setShowPreview(false);
+};
   /* ============================
      TABLE CONFIG
   ============================ */
@@ -227,9 +348,9 @@ export default function EmployeeOnboardingPage() {
 
         contact: emp.contact_number || "—",
 
-        department: emp.department || "—",
+        department: departmentMap[emp.department_uuid] || "—",
 
-        designation: emp.designation || "—",
+        designation: designationMap[emp.designation_uuid] || "—",
 
         doj: emp.joining_date || "—",
 
@@ -241,16 +362,19 @@ export default function EmployeeOnboardingPage() {
 
         action: (
           <ActionMenu
-            onView={() =>
-              navigate(
-                `/employee-onboarding/employee/${emp.employee_uuid}`
-              )
+            onEdit={() =>
+            {
+              setEditEmployeeUuid(emp.employee_uuid);
+              setSelectedUserUuid(emp.user_uuid);
+              setIsCreateOpen(true);
             }
+            }
+            onDelete={() => handleDelete(emp.employee_uuid)}
           />
         ),
       }));
 
-  }, [employees, currentPage, navigate]);
+  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap, navigate]);
 
   return (
     <div className="p-6 space-y-6">
@@ -259,15 +383,34 @@ export default function EmployeeOnboardingPage() {
 
       <div className="flex justify-between items-center">
 
-        <div>
-          <h1 className="text-2xl font-bold">
-            Employee Dashboard
-          </h1>
+      <div>
+        <h1 className="text-2xl font-bold">
+          Employee Dashboard
+        </h1>
 
-          <p className="text-gray-500">
-            Manage employee records
-          </p>
-        </div>
+        <p className="text-gray-500">
+          Manage employee records
+        </p>
+      </div>
+
+      {/* Buttons Section */}
+      <div className="flex gap-3">
+
+        <button
+        onClick={handleExportPreview}
+        disabled={exportLoading}
+        className={`px-4 py-2 rounded-lg shadow-sm text-white flex items-center gap-2
+          ${exportLoading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
+      >
+        {exportLoading ? (
+          <>
+            <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+            Exporting...
+          </>
+        ) : (
+          "Export Excel"
+        )}
+      </button>
 
         <button
           onClick={() => setIsCreateOpen(true)}
@@ -278,7 +421,8 @@ export default function EmployeeOnboardingPage() {
 
       </div>
 
-      {/* SUMMARY CARDS */}
+    </div>
+    {/* SUMMARY CARDS */}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
@@ -330,11 +474,11 @@ export default function EmployeeOnboardingPage() {
         >
           <option value="ALL">All Departments</option>
 
-          {DEPARTMENTS.map((dept) => (
-            <option key={dept} value={dept}>
-              {dept}
-            </option>
-          ))}
+          {departments.map((dept) => (
+          <option key={dept.department_uuid} value={dept.department_name}>
+            {dept.department_name}
+          </option>
+        ))}
         </select>
       </div>
 
@@ -366,12 +510,24 @@ export default function EmployeeOnboardingPage() {
 
       </div>
 
+      {/* ============================
+   EXCEL PREVIEW
+============================ */}
+
+<ExcelPreviewModal
+  showPreview={showPreview}
+  excelPreview={excelPreview}
+  onClose={() => setShowPreview(false)}
+  onSend={downloadExcel}
+/>
+
       {/* MODAL */}
 
       <EmployeeCreateModal
         isOpen={isCreateOpen}
         onClose={handleCloseModal}
         userUuid={selectedUserUuid}
+        employeeUuid={editEmployeeUuid}
       />
 
     </div>
@@ -403,64 +559,3 @@ function StatCard({ title, value, icon: Icon }) {
     </div>
   );
 }
-
-
-
-// import React, { useEffect, useState } from "react";
-// import { useLocation } from "react-router-dom";
-
-// import EmployeeCreateModal from "./components/EmployeeCreateModal";
-
-
-// export default function EmployeeOnboardingPage() {
-//   const location = useLocation();
-
-//   const [isCreateOpen, setIsCreateOpen] = useState(false);
-//   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
-
-//   // useEffect(() => {
-//   //   if (userUuid) {
-//   //     setIsCreateOpen(true);
-//   //   }
-//   // }, [userUuid]);
-
-//   useEffect(() => {
-//   if (location.state?.userUuid) {
-//     setSelectedUserUuid(location.state.userUuid);
-//   }
-// }, [location.state]);
-  
-
-//   return (
-//     <div className="p-6">
-
-//       {/* HEADER ROW */}
-//       <div className="flex justify-between items-center mb-4">
-//         <div>
-//           <h1 className="text-4xl font-semibold text-gray-800">
-//             Employee Onboarding
-//           </h1>
-//           <p className="text-sm text-gray-500">
-//             Manage employee onboarding workflow
-//           </p>
-//         </div>
-
-//         {/* CREATE BUTTON */}
-//         <button
-//           onClick={() => setIsCreateOpen(true)}
-//           // onClose={handleCloseModal}
-//           className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm"
-//         >
-//           + Create Employee
-//         </button>
-//       </div>
-
-//       {/* MODAL */}
-//       <EmployeeCreateModal
-//         isOpen={isCreateOpen}
-//         onClose={() => setIsCreateOpen(false)}
-//         userUuid={selectedUserUuid}
-//       />
-//     </div>
-//   );
-// }

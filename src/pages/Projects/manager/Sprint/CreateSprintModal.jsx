@@ -5,6 +5,12 @@ import { X } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+const getCurrentDateTime = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 16);
+};
 const CreateSprintModal = ({
   isOpen,
   sprint,            // <-- EDIT MODE sprint object
@@ -33,6 +39,13 @@ const CreateSprintModal = ({
   const [customWeeks, setCustomWeeks] = useState("");
   const [projectName, setProjectName] = useState("");
   const [showDecimalWarning, setShowDecimalWarning] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(getCurrentDateTime());
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentDateTime(getCurrentDateTime());
+    }
+  }, [isOpen]);
 
   // ---------------------------
   // Fetch Project Name
@@ -97,6 +110,10 @@ const CreateSprintModal = ({
   // ---------------------------
   const handleStartDateChange = (e) => {
     const newStart = e.target.value;
+    if (!sprint && new Date(newStart) < new Date()) {
+      toast.error("Start date cannot be in the past");
+      return;
+    }
     let newEnd = formData.endDate;
 
     if (duration !== "CUSTOM") {
@@ -247,6 +264,7 @@ const CreateSprintModal = ({
               name="startDate"
               value={formData.startDate}
               onChange={handleStartDateChange}
+              min={!sprint ? currentDateTime : undefined}
               required
               className="border rounded-lg w-full p-2"
             />

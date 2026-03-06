@@ -10,7 +10,6 @@ export default function DepartmentsMappingDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card title="Departments" onClick={() => navigate("departmentsList")} />
         <Card title="Designations" onClick={() => navigate("designationsList")} />
-        <Card title="Department ↔ Designation Mapping" onClick={() => navigate("mapping")} />
       </div>
     </div>
   );

@@ -172,9 +172,9 @@ const DEFAULT_FORM = {
 };
 
 const DEFAULT_STATUSES = [
-  { id:"def-1", name:"To Do",       color:"#9ca3af" },
-  { id:"def-2", name:"In Progress", color:"#3b82f6" },
-  { id:"def-3", name:"Done",        color:"#22c55e" },
+  { id: "def-1", name: "To Do", color: "#9ca3af" },
+  { id: "def-2", name: "In Progress", color: "#3b82f6" },
+  { id: "def-3", name: "Done", color: "#22c55e" },
 ];
 
 const STEP_REQ = {
@@ -194,22 +194,22 @@ const FIELD_LABELS = {
   projectBudget:"Project budget",
 };
 
-const STATUS_OPT   = ["PLANNING","ACTIVE","ARCHIVED","COMPLETED"];
-const STAGE_OPT    = ["INITIATION","PLANNING","DESIGN","DEVELOPMENT","TESTING","DEPLOYMENT","MAINTENANCE","COMPLETED"];
-const DELIVERY_OPT = ["ONSITE","OFFSHORE","HYBRID"];
-const RISK_OPT     = ["LOW","MEDIUM","HIGH"];
-const PRI_OPT      = ["LOW","MEDIUM","HIGH","CRITICAL"];
+const STATUS_OPT = ["PLANNING", "ACTIVE", "ARCHIVED", "COMPLETED"];
+const STAGE_OPT = ["INITIATION", "PLANNING", "DESIGN", "DEVELOPMENT", "TESTING", "DEPLOYMENT", "MAINTENANCE", "COMPLETED"];
+const DELIVERY_OPT = ["ONSITE", "OFFSHORE", "HYBRID"];
+const RISK_OPT = ["LOW", "MEDIUM", "HIGH"];
+const PRI_OPT = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 const RISK_B = {
-  LOW:    { dot:"#16a34a", bg:"#f0fdf4", text:"#15803d", border:"#bbf7d0" },
-  MEDIUM: { dot:"#d97706", bg:"#fffbeb", text:"#b45309", border:"#fde68a" },
-  HIGH:   { dot:"#dc2626", bg:"#fef2f2", text:"#b91c1c", border:"#fecaca" },
+  LOW: { dot: "#16a34a", bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0" },
+  MEDIUM: { dot: "#d97706", bg: "#fffbeb", text: "#b45309", border: "#fde68a" },
+  HIGH: { dot: "#dc2626", bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
 };
 const PRI_B = {
-  LOW:      { bg:"#f8fafc", text:"#475569", border:"#e2e8f0" },
-  MEDIUM:   { bg:"#eff6ff", text:"#1d4ed8", border:"#bfdbfe" },
-  HIGH:     { bg:"#fff7ed", text:"#c2410c", border:"#fed7aa" },
-  CRITICAL: { bg:"#fef2f2", text:"#b91c1c", border:"#fecaca" },
+  LOW: { bg: "#f8fafc", text: "#475569", border: "#e2e8f0" },
+  MEDIUM: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+  HIGH: { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+  CRITICAL: { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -243,17 +243,17 @@ const ErrMsg = ({ msg }) => (
   <AnimatePresence>
     {msg && (
       <motion.span className="pmw-err"
-        initial={{ opacity:0, height:0, marginTop:0 }}
-        animate={{ opacity:1, height:"auto", marginTop:4 }}
-        exit={{ opacity:0, height:0, marginTop:0 }}
-        transition={{ duration:.18 }}
+        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+        animate={{ opacity: 1, height: "auto", marginTop: 4 }}
+        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+        transition={{ duration: .18 }}
       >{msg}</motion.span>
     )}
   </AnimatePresence>
 );
 
 const Field = ({ label, required, optional, error, children }) => (
-  <div style={{ display:"flex", flexDirection:"column" }}>
+  <div style={{ display: "flex", flexDirection: "column" }}>
     {label && (
       <label className="pmw-label">
         {label}
@@ -271,46 +271,46 @@ const Sel  = ({ error, children, ...p }) => <select className={`pmw-select${erro
 const Txta = ({ error, ...p }) => <textarea className={`pmw-textarea${error?" err":""}`} {...p} />;
 
 /* ─── Skeleton ────────────────────────────────────────────────────────────── */
-const Skel = ({ h=40, mb=14 }) => <div className="pmw-skel" style={{ height:h, marginBottom:mb }} />;
+const Skel = ({ h = 40, mb = 14 }) => <div className="pmw-skel" style={{ height: h, marginBottom: mb }} />;
 const SkelStep = () => (
   <div>
-    <div className="pmw-g2" style={{ marginBottom:14 }}><Skel h={58}/><Skel h={58}/></div>
-    <Skel h={82} mb={14}/><Skel h={58} mb={14}/>
-    <div className="pmw-g3"><Skel h={58} mb={0}/><Skel h={58} mb={0}/><Skel h={58} mb={0}/></div>
+    <div className="pmw-g2" style={{ marginBottom: 14 }}><Skel h={58} /><Skel h={58} /></div>
+    <Skel h={82} mb={14} /><Skel h={58} mb={14} />
+    <div className="pmw-g3"><Skel h={58} mb={0} /><Skel h={58} mb={0} /><Skel h={58} mb={0} /></div>
   </div>
 );
 
 /* ─── Stepper ─────────────────────────────────────────────────────────────── */
 const Stepper = ({ cur, goTo }) => (
   <div style={{
-    width:210, flexShrink:0, background:"#f8fafc",
-    borderRight:"1px solid #e9eef5",
-    display:"flex", flexDirection:"column",
-    paddingTop:20, paddingBottom:20, gap:1,
+    width: 210, flexShrink: 0, background: "#f8fafc",
+    borderRight: "1px solid #e9eef5",
+    display: "flex", flexDirection: "column",
+    paddingTop: 20, paddingBottom: 20, gap: 1,
   }}>
     {STEPS.map((s) => {
       const active = cur === s.id, done = cur > s.id;
       return (
         <button key={s.id} type="button"
-          className={`pmw-sbtn${active?" active":""}${done?" done":""}`}
+          className={`pmw-sbtn${active ? " active" : ""}${done ? " done" : ""}`}
           onClick={() => done && goTo(s.id)}
         >
-          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <motion.div
               animate={{
                 background: active||done ? "#2563eb" : "#e9eef5",
                 color:      active||done ? "#fff"    : "#94a3b8",
               }}
-              transition={{ duration:.2 }}
+              transition={{ duration: .2 }}
               style={{
-                width:22, height:22, borderRadius:"50%", flexShrink:0,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:11, fontWeight:700,
+                width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700,
               }}
             >
-              {done ? <Check size={11} strokeWidth={3}/> : s.id}
+              {done ? <Check size={11} strokeWidth={3} /> : s.id}
             </motion.div>
-            <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <span style={{
                 fontSize:12.5, fontWeight:active?700:500, lineHeight:1.3,
                 color: active?"#111827" : done?"#374151":"#94a3b8",
@@ -328,18 +328,18 @@ const Stepper = ({ cur, goTo }) => (
 
 /* ─── Review helpers ──────────────────────────────────────────────────────── */
 const RBadge = ({ value, s }) => value
-  ? <span className="pmw-badge" style={{ background:s.bg, color:s.text, borderColor:s.border }}>
-      {s.dot && <span style={{ width:7,height:7,borderRadius:"50%",background:s.dot,flexShrink:0 }}/>}
-      {value}
-    </span>
+  ? <span className="pmw-badge" style={{ background: s.bg, color: s.text, borderColor: s.border }}>
+    {s.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />}
+    {value}
+  </span>
   : <span className="pmw-rempty">—</span>;
 
 const RCell = ({ label, value, badge, bs }) => (
   <div className="pmw-rcell">
     <span className="pmw-rlabel">{label}</span>
     {badge && bs
-      ? <RBadge value={value} s={bs}/>
-      : <span className={value?"pmw-rval":"pmw-rempty"}>{value||"—"}</span>
+      ? <RBadge value={value} s={bs} />
+      : <span className={value ? "pmw-rval" : "pmw-rempty"}>{value || "—"}</span>
     }
   </div>
 );
@@ -347,39 +347,39 @@ const RCell = ({ label, value, badge, bs }) => (
 /* ─── Unsaved Warning Bar ─────────────────────────────────────────────────── */
 const WarnBar = ({ onKeep, onDiscard }) => (
   <motion.div
-    initial={{ opacity:0, y:-12 }}
-    animate={{ opacity:1, y:0 }}
-    exit={{ opacity:0, y:-10 }}
-    transition={{ duration:.2, ease:"easeOut" }}
+    initial={{ opacity: 0, y: -12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    transition={{ duration: .2, ease: "easeOut" }}
     style={{
-      position:"absolute", top:12, left:16, right:16, zIndex:10,
-      background:"#fff", border:"1.5px solid #fbbf24",
-      borderRadius:10, padding:"12px 16px",
-      boxShadow:"0 4px 20px rgba(0,0,0,0.1)",
-      display:"flex", alignItems:"center", gap:12,
+      position: "absolute", top: 12, left: 16, right: 16, zIndex: 10,
+      background: "#fff", border: "1.5px solid #fbbf24",
+      borderRadius: 10, padding: "12px 16px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+      display: "flex", alignItems: "center", gap: 12,
     }}
   >
     <div style={{
-      width:34, height:34, borderRadius:8, flexShrink:0,
-      background:"#fffbeb", display:"flex", alignItems:"center", justifyContent:"center",
+      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+      background: "#fffbeb", display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <AlertTriangle size={16} color="#d97706"/>
+      <AlertTriangle size={16} color="#d97706" />
     </div>
-    <div style={{ flex:1 }}>
-      <p style={{ margin:0, fontSize:13, fontWeight:600, color:"#111827" }}>
+    <div style={{ flex: 1 }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>
         Discard unsaved changes?
       </p>
-      <p style={{ margin:"2px 0 0", fontSize:12, color:"#6b7280" }}>
+      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6b7280" }}>
         All your progress will be lost. This cannot be undone.
       </p>
     </div>
-    <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
       <button type="button" className="pmw-btn-back" onClick={onKeep}
-        style={{ padding:"6px 13px", fontSize:12.5 }}>
+        style={{ padding: "6px 13px", fontSize: 12.5 }}>
         Keep Editing
       </button>
       <button type="button" className="pmw-btn-discard" onClick={onDiscard}
-        style={{ padding:"6px 13px", fontSize:12.5 }}>
+        style={{ padding: "6px 13px", fontSize: 12.5 }}>
         Discard
       </button>
     </div>
@@ -392,10 +392,10 @@ const Step1 = ({ fd, err, onChange, onNameChange, onKeyChange, keyAuto, onResetK
     <div className="pmw-g2">
       <Field label="Project Name" required error={err.name}>
         <Inp name="name" placeholder="e.g. Apollo Redesign"
-          value={fd.name} onChange={onNameChange} error={err.name}/>
+          value={fd.name} onChange={onNameChange} error={err.name} />
       </Field>
       <Field label="Project Key" required error={err.projectKey}>
-        <div style={{ position:"relative" }}>
+        <div style={{ position: "relative" }}>
           <Inp name="projectKey" placeholder="AUTO"
             value={fd.projectKey}
             onChange={onKeyChange}
@@ -405,16 +405,16 @@ const Step1 = ({ fd, err, onChange, onNameChange, onKeyChange, keyAuto, onResetK
           {!keyAuto && (
             <button type="button" onClick={onResetKey} title="Reset to auto-generate"
               style={{
-                position:"absolute", right:9, top:"50%", transform:"translateY(-50%)",
-                background:"none", border:"none", cursor:"pointer",
-                color:"#9ca3af", padding:0, display:"flex", alignItems:"center",
+                position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer",
+                color: "#9ca3af", padding: 0, display: "flex", alignItems: "center",
               }}>
-              <RotateCcw size={13}/>
+              <RotateCcw size={13} />
             </button>
           )}
         </div>
         {keyAuto && (
-          <span style={{ fontSize:10.5, color:"#9ca3af", marginTop:3 }}>
+          <span style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 3 }}>
             Auto-generated from name
           </span>
         )}
@@ -423,71 +423,71 @@ const Step1 = ({ fd, err, onChange, onNameChange, onKeyChange, keyAuto, onResetK
 
     <Field label="Description" optional>
       <Txta name="description" placeholder="Brief overview of scope and goals…"
-        value={fd.description} onChange={onChange}/>
+        value={fd.description} onChange={onChange} />
     </Field>
 
     <Field label="Primary Location" required error={err.primaryLocation}>
       <Inp name="primaryLocation" placeholder="e.g. New York, USA"
-        value={fd.primaryLocation} onChange={onChange} error={err.primaryLocation}/>
+        value={fd.primaryLocation} onChange={onChange} error={err.primaryLocation} />
     </Field>
   </div>
 );
 
 /* ─── Step 2 ──────────────────────────────────────────────────────────────── */
 const Step2 = ({ fd, err, onChange }) => (
-  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
     <div className="pmw-g3">
       <Field label="Status" required error={err.status}>
         <Sel name="status" value={fd.status} onChange={onChange} error={err.status}>
-          {STATUS_OPT.map(v=><option key={v}>{v}</option>)}
+          {STATUS_OPT.map(v => <option key={v}>{v}</option>)}
         </Sel>
       </Field>
       <Field label="Current Stage" required error={err.currentStage}>
         <Sel name="currentStage" value={fd.currentStage} onChange={onChange} error={err.currentStage}>
-          {STAGE_OPT.map(v=><option key={v}>{v}</option>)}
+          {STAGE_OPT.map(v => <option key={v}>{v}</option>)}
         </Sel>
       </Field>
       <Field label="Delivery Model" required error={err.deliveryModel}>
         <Sel name="deliveryModel" value={fd.deliveryModel} onChange={onChange} error={err.deliveryModel}>
-          {DELIVERY_OPT.map(v=><option key={v}>{v}</option>)}
+          {DELIVERY_OPT.map(v => <option key={v}>{v}</option>)}
         </Sel>
       </Field>
     </div>
 
-    <div className="pmw-divider"/>
+    <div className="pmw-divider" />
 
     <div className="pmw-g2">
       <Field label="Start Date" required error={err.startDate}>
-        <Inp type="date" name="startDate" value={fd.startDate} onChange={onChange} error={err.startDate}/>
+        <Inp type="date" name="startDate" value={fd.startDate} onChange={onChange} error={err.startDate} />
       </Field>
       <Field label="End Date" optional error={err.endDate}>
-        <Inp type="date" name="endDate" value={fd.endDate} onChange={onChange} error={err.endDate}/>
+        <Inp type="date" name="endDate" value={fd.endDate} onChange={onChange} error={err.endDate} />
       </Field>
     </div>
 
-    <div className="pmw-divider"/>
+    <div className="pmw-divider" />
 
     <div className="pmw-g2">
       <Field label="Risk Level" required error={err.riskLevel}>
         <Sel name="riskLevel" value={fd.riskLevel} onChange={onChange} error={err.riskLevel}>
           <option value="">Select risk level</option>
-          {RISK_OPT.map(v=><option key={v}>{v}</option>)}
+          {RISK_OPT.map(v => <option key={v}>{v}</option>)}
         </Sel>
       </Field>
       <Field label="Priority Level" required error={err.priorityLevel}>
         <Sel name="priorityLevel" value={fd.priorityLevel} onChange={onChange} error={err.priorityLevel}>
           <option value="">Select priority level</option>
-          {PRI_OPT.map(v=><option key={v}>{v}</option>)}
+          {PRI_OPT.map(v => <option key={v}>{v}</option>)}
         </Sel>
       </Field>
     </div>
 
     <AnimatePresence>
-      {(fd.riskLevel||fd.priorityLevel) && (
+      {(fd.riskLevel || fd.priorityLevel) && (
         <motion.div
-          initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}}
-          exit={{opacity:0,y:-4}} transition={{duration:.2}}
-          style={{display:"flex",gap:8,flexWrap:"wrap"}}
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }} transition={{ duration: .2 }}
+          style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
         >
           {fd.riskLevel && (()=>{ const s=RISK_B[fd.riskLevel]; return (
             <span className="pmw-badge" style={{background:s.bg,color:s.text,borderColor:s.border}}>
@@ -504,18 +504,18 @@ const Step2 = ({ fd, err, onChange }) => (
       )}
     </AnimatePresence>
 
-    <div className="pmw-divider"/>
+    <div className="pmw-divider" />
 
     <Field label="Project Budget" required error={err.projectBudget}>
       <div style={{position:"relative",maxWidth:220}}>
         <span style={{
-          position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
-          fontSize:11.5,fontWeight:700,color:"#64748b",
-          letterSpacing:".04em",pointerEvents:"none",
+          position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+          fontSize: 11.5, fontWeight: 700, color: "#64748b",
+          letterSpacing: ".04em", pointerEvents: "none",
         }}>USD</span>
         <Inp name="projectBudget" type="text" inputMode="decimal"
           placeholder="0.00" value={fd.projectBudget} onChange={onChange}
-          style={{paddingLeft:44}}/>
+          style={{ paddingLeft: 44 }} />
       </div>
     </Field>
   </div>
@@ -524,40 +524,41 @@ const Step2 = ({ fd, err, onChange }) => (
 /* ─── Step 3 ──────────────────────────────────────────────────────────────── */
 const Step3 = ({ fd, err, users, onChange, onOwner, toggleMember, search, setSearch }) => {
   const filtered = users.filter(u => u?.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = users.filter(u => u?.name?.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="pmw-g2">
         <Field label="Project Owner" required error={err.ownerId}>
           <Sel name="ownerId" value={fd.ownerId} onChange={onOwner} error={err.ownerId}>
             <option value="">Select owner</option>
-            {users.map(u=>u&&<option key={u.id} value={u.id}>
-              {u.name}{u.roles?.length?` · ${u.roles.join(", ")}`:""}</option>)}
+            {users.map(u => u && <option key={u.id} value={u.id}>
+              {u.name}{u.roles?.length ? ` · ${u.roles.join(", ")}` : ""}</option>)}
           </Sel>
         </Field>
         <Field label="Client" optional>
           <Sel name="clientId" value={fd.clientId} onChange={onChange}>
             <option value="">Select client</option>
-            {users.map(u=>u&&<option key={u.id} value={u.id}>
-              {u.name}{u.roles?.length?` · ${u.roles.join(", ")}`:""}</option>)}
+            {users.map(u => u && <option key={u.id} value={u.id}>
+              {u.name}{u.roles?.length ? ` · ${u.roles.join(", ")}` : ""}</option>)}
           </Sel>
         </Field>
         <Field label="Resource Manager" required error={err.rmId}>
           <Sel name="rmId" value={fd.rmId} onChange={onChange} error={err.rmId}>
             <option value="">Select resource manager</option>
-            {users.map(u=>u&&<option key={u.id} value={u.id}>
-              {u.name}{u.roles?.length?` · ${u.roles.join(", ")}`:""}</option>)}
+            {users.map(u => u && <option key={u.id} value={u.id}>
+              {u.name}{u.roles?.length ? ` · ${u.roles.join(", ")}` : ""}</option>)}
           </Sel>
         </Field>
         <Field label="Delivery Owner" required error={err.deliveryOwnerId}>
           <Sel name="deliveryOwnerId" value={fd.deliveryOwnerId} onChange={onChange} error={err.deliveryOwnerId}>
             <option value="">Select delivery owner</option>
-            {users.map(u=>u&&<option key={u.id} value={u.id}>
-              {u.name}{u.roles?.length?` · ${u.roles.join(", ")}`:""}</option>)}
+            {users.map(u => u && <option key={u.id} value={u.id}>
+              {u.name}{u.roles?.length ? ` · ${u.roles.join(", ")}` : ""}</option>)}
           </Sel>
         </Field>
       </div>
 
-      <div className="pmw-divider"/>
+      <div className="pmw-divider" />
 
       <div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -578,11 +579,13 @@ const Step3 = ({ fd, err, users, onChange, onOwner, toggleMember, search, setSea
           </AnimatePresence>
         </div>
 
-        <div style={{position:"relative",marginBottom:10}}>
-          <Search size={14} style={{position:"absolute",left:11,top:"50%",
-            transform:"translateY(-50%)",color:"#9ca3af",pointerEvents:"none"}}/>
+        <div style={{ position: "relative", marginBottom: 10 }}>
+          <Search size={14} style={{
+            position: "absolute", left: 11, top: "50%",
+            transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none"
+          }} />
           <input className="pmw-srch" placeholder="Search members…"
-            value={search} onChange={e=>setSearch(e.target.value)}/>
+            value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
         <div className="pmw-scroll" style={{border:"1.5px solid #e9eef5",borderRadius:9,
@@ -654,8 +657,10 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
 };
 
   const handleRemove = (id) => setStatuses(p => p.filter(s => s.id !== id));
+  const handleRemove = (id) => setStatuses(p => p.filter(s => s.id !== id));
 
   const onDragEnd = ({ source, destination }) => {
+    if (!destination || destination.index === source.index) return;
     if (!destination || destination.index === source.index) return;
     const next = Array.from(statuses);
     const [moved] = next.splice(source.index, 1);
@@ -664,12 +669,12 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
   };
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <p style={{margin:0,fontSize:13,color:"#6b7280",lineHeight:1.55}}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <p style={{ margin: 0, fontSize: 13, color: "#6b7280", lineHeight: 1.55 }}>
         Define the task statuses your team will use. Drag to reorder. You can change these later.
       </p>
 
-      <div style={{display:"flex",gap:8}}>
+      <div style={{ display: "flex", gap: 8 }}>
         <input className="pmw-add-inp"
           placeholder="New status name, e.g. 'In Review'"
           value={newName}
@@ -677,7 +682,7 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
           onKeyDown={e => e.key === "Enter" && handleAdd()}
         />
         <button type="button" className="pmw-add-btn" onClick={handleAdd}>
-          <Plus size={14}/> Add
+          <Plus size={14} /> Add
         </button>
       </div>
 
@@ -692,7 +697,7 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
               ref={droppableProvided.innerRef}
               {...droppableProvided.droppableProps}
               className="pmw-scroll"
-              style={{display:"flex",flexDirection:"column",gap:6,maxHeight:260,overflowY:"auto"}}
+              style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto" }}
             >
               {statuses.map((status, index) => (
                 <Draggable key={status.id} draggableId={String(status.id)} index={index}>
@@ -726,7 +731,7 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
                         onMouseEnter={e => e.currentTarget.style.color="#ef4444"}
                         onMouseLeave={e => e.currentTarget.style.color="#c4cdd9"}
                       >
-                        <Trash2 size={14}/>
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   )}
@@ -744,13 +749,14 @@ const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
 /* ─── Step 5 — Review ─────────────────────────────────────────────────────── */
 const Step5 = ({ fd, statuses, users }) => {
   const getName = id => users.find(u => u?.id?.toString() === id?.toString())?.name;
+  const getName = id => users.find(u => u?.id?.toString() === id?.toString())?.name;
   const memberNames = fd.memberIds.map(getName).filter(Boolean).join(", ");
   const fmtBudget = v => v
     ? `USD ${parseFloat(v).toLocaleString("en-US", { minimumFractionDigits:2 })}`
     : null;
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:18}}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <section>
         <p className="pmw-sec">Core Details</p>
         <div className="pmw-g2" style={{gap:"12px 22px"}}>
@@ -762,7 +768,7 @@ const Step5 = ({ fd, statuses, users }) => {
           )}
         </div>
       </section>
-      <div className="pmw-divider"/>
+      <div className="pmw-divider" />
       <section>
         <p className="pmw-sec">Lifecycle</p>
         <div className="pmw-g3" style={{gap:"10px 10px"}}>
@@ -776,7 +782,7 @@ const Step5 = ({ fd, statuses, users }) => {
           <RCell label="Priority" value={fd.priorityLevel} badge bs={fd.priorityLevel ? PRI_B[fd.priorityLevel]  : null}/>
         </div>
       </section>
-      <div className="pmw-divider"/>
+      <div className="pmw-divider" />
       <section>
         <p className="pmw-sec">Team</p>
         <div className="pmw-g2" style={{gap:"12px 22px"}}>
@@ -791,20 +797,20 @@ const Step5 = ({ fd, statuses, users }) => {
           )}
         </div>
       </section>
-      <div className="pmw-divider"/>
+      <div className="pmw-divider" />
       <section>
         <p className="pmw-sec">Workflow Statuses</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
           {statuses.map((s, i) => (
             <span key={s.id} style={{
-              display:"inline-flex",alignItems:"center",gap:6,
-              fontSize:12,fontWeight:500,
-              border:"1.5px solid #e9eef5",borderRadius:6,
-              padding:"4px 10px",background:"#fff",color:"#374151",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12, fontWeight: 500,
+              border: "1.5px solid #e9eef5", borderRadius: 6,
+              padding: "4px 10px", background: "#fff", color: "#374151",
             }}>
-              <span style={{width:8,height:8,borderRadius:"50%",background:s.color}}/>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />
               {s.name}
-              <span style={{fontSize:10,color:"#c4cdd9",marginLeft:2}}>#{i+1}</span>
+              <span style={{ fontSize: 10, color: "#c4cdd9", marginLeft: 2 }}>#{i + 1}</span>
             </span>
           ))}
         </div>
@@ -890,16 +896,20 @@ const CreateProjectModal = ({
 
   /* ── Fetch users ──────────────────────────────────────────────────────── */
   useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return;
     axios.get(
       `${import.meta.env.VITE_PMS_BASE_URL}/api/users?page=0&size=100`,
-      { headers:{ Authorization:`Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } }
     )
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.content;
       .then(res => {
         const list = Array.isArray(res.data) ? res.data : res.data?.content;
         if (Array.isArray(list)) setUsers(list.filter(Boolean));
       })
       .catch(console.error);
+  }, [isOpen, token]);
   }, [isOpen, token]);
 
   /* ── Handlers ─────────────────────────────────────────────────────────── */
@@ -928,7 +938,9 @@ const CreateProjectModal = ({
   };
 
   const resetKeyAuto = () => {
+  const resetKeyAuto = () => {
     setKeyAuto(true);
+    setFd(p => ({ ...p, projectKey: genKey(p.name) }));
     setFd(p => ({ ...p, projectKey: genKey(p.name) }));
   };
 
@@ -957,9 +969,13 @@ const CreateProjectModal = ({
     }
   };
   const confirmDiscard = () => { setShowWarn(false); onClose(); };
-  const keepEditing    = () => setShowWarn(false);
+  const keepEditing = () => setShowWarn(false);
 
   /* ── Validate ─────────────────────────────────────────────────────────── */
+  const validate = (s) => {
+    const errs = {};
+    STEP_REQ[s].forEach(f => {
+      if (!fd[f]?.toString().trim()) errs[f] = `${FIELD_LABELS[f]} is required`;
   const validate = (s) => {
     const errs = {};
     STEP_REQ[s].forEach(f => {
@@ -967,11 +983,16 @@ const CreateProjectModal = ({
     });
     if (s === 2 && fd.startDate && fd.endDate && new Date(fd.endDate) < new Date(fd.startDate))
       errs.endDate = "End date cannot be before start date";
+    if (s === 2 && fd.startDate && fd.endDate && new Date(fd.endDate) < new Date(fd.startDate))
+      errs.endDate = "End date cannot be before start date";
     setErrors(errs);
+    if (s === 4) {
+      if (statuses.length === 0) { setStatusErr("Add at least one status to continue."); return false; }
     if (s === 4) {
       if (statuses.length === 0) { setStatusErr("Add at least one status to continue."); return false; }
       setStatusErr("");
     }
+    return Object.keys(errs).length === 0;
     return Object.keys(errs).length === 0;
   };
 
@@ -1014,6 +1035,7 @@ const CreateProjectModal = ({
         );
       } else {
         const res = await axios.post(
+        const res = await axios.post(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects`,
           payload, { headers:{ Authorization:`Bearer ${token}` } }
         );
@@ -1039,6 +1061,9 @@ const CreateProjectModal = ({
       }
 
       onClose();
+    } catch (err) {
+      const b = err.response?.data;
+      toast.error(b?.errors?.[0] || b?.message || "Submission failed. Please try again.");
     } catch (err) {
       const b = err.response?.data;
       toast.error(b?.errors?.[0] || b?.message || "Submission failed. Please try again.");
@@ -1078,7 +1103,7 @@ const CreateProjectModal = ({
   return (
     <motion.div
       className="pmw"
-      initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{
         position:"fixed", inset:0,
         background:"rgba(0,0,0,0.48)",
@@ -1101,6 +1126,7 @@ const CreateProjectModal = ({
           display:"flex", flexDirection:"column",
           overflow:"hidden",
         }}
+        onClick={e => e.stopPropagation()}
         onClick={e => e.stopPropagation()}
       >
         <div style={{display:"flex", flex:1, minHeight:0}}>
@@ -1145,9 +1171,9 @@ const CreateProjectModal = ({
               <AnimatePresence mode="wait" custom={dir}>
                 {loading ? (
                   <motion.div key="skel"
-                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-                    transition={{duration:.2}}>
-                    <SkelStep/>
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: .2 }}>
+                    <SkelStep />
                   </motion.div>
                 ) : (
                   <motion.div key={step}
@@ -1178,12 +1204,14 @@ const CreateProjectModal = ({
               Cancel
             </button>
             {step > 1 && (
+            {step > 1 && (
               <button type="button" className="pmw-btn-back" onClick={back}>Back</button>
             )}
             {step < STEPS.length
+            {step < STEPS.length
               ? <button type="button" className="pmw-btn-primary" onClick={next}>
-                  Next <ChevronRight size={14}/>
-                </button>
+                Next <ChevronRight size={14} />
+              </button>
               : <button type="button" className="pmw-btn-primary"
                   onClick={handleSubmit} disabled={submitting}>
                   {submitting
