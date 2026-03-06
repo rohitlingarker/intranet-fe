@@ -4,9 +4,10 @@ import { useAuth } from "../../../../contexts/AuthContext";
 
 export const defaultFilters = {
     search: "",
-    client: "All",
-    priority: "All",
-    status: "All",
+    client: "ALL",
+    priority: "ALL",
+    status: "ALL",
+    demandName: "ALL",
 };
 
 const ROLE_PRIORITY = [
@@ -141,11 +142,17 @@ export function useDemand(projectId = null) {
         }
 
         // Advanced Filters
-        if (filters.client !== 'All') {
+        if (filters.client !== 'ALL') {
             list = list.filter(d => d.clientName === filters.client || d.client === filters.client);
         }
-        if (filters.priority !== 'All') {
+        if (filters.priority !== 'ALL') {
             list = list.filter(d => (d.demandPriority || d.priority)?.toUpperCase() === filters.priority.toUpperCase());
+        }
+        if (filters.status !== 'ALL') {
+            list = list.filter(d => (d.demandStatus || d.lifecycleState)?.toUpperCase() === filters.status.toUpperCase());
+        }
+        if (filters.demandName !== 'ALL') {
+            list = list.filter(d => (d.demandName || d.role) === filters.demandName);
         }
 
         return list.map(d => ({
@@ -190,6 +197,16 @@ export function useDemand(projectId = null) {
         return Array.from(clients).sort();
     }, [demands]);
 
+    const availableStatuses = useMemo(() => {
+        const statuses = new Set(demands.map(d => d.demandStatus || d.lifecycleState).filter(Boolean));
+        return Array.from(statuses).sort();
+    }, [demands]);
+
+    const availableDemandNames = useMemo(() => {
+        const names = new Set(demands.map(d => d.demandName || d.role).filter(Boolean));
+        return Array.from(names).sort();
+    }, [demands]);
+
     const resetFilters = useCallback(() => {
         setFilters(defaultFilters);
         setActiveTab("active");
@@ -210,6 +227,8 @@ export function useDemand(projectId = null) {
         allFilteredDemands: filteredDemands,
         activeKPIs,
         availableClients,
+        availableStatuses,
+        availableDemandNames,
         kpiData,
         demandRoleOptions,
         selectedRole,
