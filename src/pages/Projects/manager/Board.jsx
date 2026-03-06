@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import CreateIssueForm from "./CreateIssue/CreateIssueForm";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
@@ -27,13 +26,11 @@ import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import CreateTaskForm from "./Backlog/CreateTask";
 import CreateStoryForm from "./Backlog/CreateStory";
-import { BASE, WIP_WARNING_THRESHOLD, PALETTE,stableColorClass } from "./Board/constants";
-import { CreateTaskModal } from "./Board/CreateTaskModal";
-import { DeleteStatusModal } from "./Board/DeleteStatusModal";
-import Avatar from "./Board/Avatar"
-
-// ── Swimlane view ─────────────────────────────────────────────
-import SwimlaneBoard from "./SwimlaneBoard";
+import {BASE,WIP_WARNING_THRESHOLD,PALETTE} from "./Board/constants"
+import {CreateTaskModal} from "./Board/CreateTaskModal"
+import {DeleteStatusModal} from "./Board/DeleteStatusModal"
+import TaskCard from "./Board/TaskCard";
+import { Avatar } from "./Board/TaskCard";
 
 const headersWithToken = () => {
   const token = localStorage.getItem("token");
@@ -43,36 +40,17 @@ const headersWithToken = () => {
   };
 };
 
-/* ── View toggle component ───────────────────────────────────
-   Matches the existing button style in the screenshot:
-   same border, same bg-white, same text-sm as Filter / Add Column
-──────────────────────────────────────────────────────────── */
-const ViewToggle = ({ view, onChange }) => (
-  <div className="flex items-center rounded border bg-white overflow-hidden text-sm">
-    <button
-      onClick={() => onChange("board")}
-      className={`flex items-center gap-1.5 px-3 py-2 transition-colors border-r
-        ${view === "board"
-          ? "bg-indigo-50 text-indigo-600 font-semibold"
-          : "text-gray-500 hover:bg-slate-50"
-        }`}
-    >
-      <LayoutGrid className="w-4 h-4" />
-      Board
-    </button>
-    <button
-      onClick={() => onChange("swimlane")}
-      className={`flex items-center gap-1.5 px-3 py-2 transition-colors
-        ${view === "swimlane"
-          ? "bg-indigo-50 text-indigo-600 font-semibold"
-          : "text-gray-500 hover:bg-slate-50"
-        }`}
-    >
-      <Rows className="w-4 h-4" />
-      Swim
-    </button>
-  </div>
-);
+const stableColorClass = (k) => {
+  const s = String(k ?? "");
+  let h = 216;
+
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) % 1000;
+  }
+
+  return PALETTE[Math.abs(h) % PALETTE.length];
+};
+
 
 const Board = ({ projectId, sprintId, projectName }) => {
   // ── view: "board" (default) | "swimlane" ──────────────────
@@ -968,36 +946,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
                                     type="ITEM"
                                   >
                                     {(taskProvided, taskSnapshot) => (
-                                      <div
-                                        ref={taskProvided.innerRef}
-                                        {...taskProvided.draggableProps}
-                                        {...taskProvided.dragHandleProps}
-                                        onClick={() => openTaskPanel(task)}
-                                        className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${taskSnapshot.isDragging ? "opacity-80" : ""}`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <div className="relative group">
-                                            <span className="text-green-600 text-sm cursor-default">☑️</span>
-                                            <span className="absolute hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-md transform -translate-x-1/2 left-1/2 top-6 whitespace-nowrap transition-opacity duration-200 opacity-0 group-hover:opacity-100">
-                                              Task
-                                            </span>
-                                          </div>
-                                          <div className="font-medium text-gray-800 truncate ml-2">
-                                            {task.title ?? task.name ?? `Task ${task.id}`}
-                                          </div>
-                                          <div className="text-xs text-gray-400">
-                                            {task.priority ?? ""}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                          <div className="flex items-center gap-1"></div>
-                                          <div className="ml-auto text-xs text-gray-400">
-                                            {task.dueDate
-                                              ? new Date(task.dueDate).toLocaleDateString()
-                                              : ""}
-                                          </div>
-                                        </div>
-                                      </div>
+                                      <TaskCard
+                                        task={task}
+                                        taskProvided={taskProvided}
+                                        taskSnapshot={taskSnapshot}
+                                        openTaskPanel={openTaskPanel}
+                                      />
                                     )}
                                   </Draggable>
                                 ))}

@@ -70,7 +70,7 @@ import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusRe
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
-
+import MyWorkPage from "./pages/Projects/MyWork/MyWorkPage";
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
@@ -375,6 +375,7 @@ const AppRoutes = () => {
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
+          <Route path="/my-work" element={<MyWorkPage />} />
           {/* Employee Onboarding */}
 
           {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
@@ -417,7 +418,7 @@ const AppRoutes = () => {
             <Route path="create" element={<CreateOffer />} />
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
-
+           
             <Route path="hr-configuration" element={<HrConfiguration />} />
             <Route path="hr-configuration/country" element={<CountryManagement />} />
             <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
@@ -426,9 +427,9 @@ const AppRoutes = () => {
             <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
             <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
             <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
-            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard/>} />
-            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList/>} />
-            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList/>} />
+            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard />} />
+            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList />} />
+            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList />} />
 
             <Route path="hr" element={<HrOnboardingDashboard />} />
             <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
@@ -773,7 +774,7 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/demand"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandWorkspacePage />
               </ProtectedRoute>
             }
@@ -781,7 +782,7 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/demand/:demandId"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandDetailPage />
               </ProtectedRoute>
             }

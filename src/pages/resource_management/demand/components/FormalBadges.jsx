@@ -41,6 +41,8 @@ export const StateBadge = ({ state }) => {
         'SOFT': { dot: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', label: 'Soft' },
         'PENDING': { dot: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50', label: 'Pending' },
         'REQUESTED': { dot: 'bg-violet-400', text: 'text-violet-700', bg: 'bg-violet-50', label: 'Requested' },
+        'DRAFT': { dot: 'bg-slate-300', text: 'text-slate-600', bg: 'bg-slate-100', label: 'Draft' },
+        'PROPOSED': { dot: 'bg-blue-300', text: 'text-blue-600', bg: 'bg-blue-50', label: 'Proposed' },
         'REJECTED': { dot: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', label: 'Rejected' },
     };
     const c = config[s] || { dot: 'bg-slate-300', text: 'text-slate-500', bg: 'bg-slate-50', label: state || 'Unknown' };

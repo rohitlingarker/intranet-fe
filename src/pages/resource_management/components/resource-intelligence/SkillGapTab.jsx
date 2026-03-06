@@ -71,7 +71,7 @@ export default function SkillGapTab({ resource, demand }) {
 
     // Pagination state
     const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 8;
+    const ITEMS_PER_PAGE = 3;
 
     useEffect(() => {
         let c = false;

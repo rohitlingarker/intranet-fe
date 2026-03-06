@@ -65,9 +65,8 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
                         days={demand.slaDays}
                         isSoft={
                             activeTab === 'soft' ||
-                            demand.demandCommitment?.toUpperCase() === 'SOFT' ||
-                            demand.lifecycleState?.toUpperCase() === 'SOFT' ||
-                            demand.lifecycleState?.toUpperCase() === 'REQUESTED'
+                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
+                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
                         }
                     />
                 </div>
@@ -79,15 +78,17 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
 
                 {/* 6. Actions */}
                 <div className="col-span-1 flex items-center justify-center gap-4">
-                    <button
-                        title='Edit'
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onEdit) onEdit(demand);
-                        }}
-                    >
-                        <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
-                    </button>
+                    {(isRM || demand.lifecycleState?.toUpperCase() !== 'APPROVED') && (
+                        <button
+                            title='Edit'
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEdit) onEdit(demand);
+                            }}
+                        >
+                            <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
+                        </button>
+                    )}
                     {!isRM && (
                         <button
                             title='Delete'
