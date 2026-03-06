@@ -38,6 +38,8 @@ const DemandWorkspacePage = () => {
         availableClients,
         availableStatuses,
         availableDemandNames,
+        availableDemandTypes,
+        availableDeliveryModels,
         totalPages,
         totalElements,
         page,
@@ -133,7 +135,9 @@ const DemandWorkspacePage = () => {
         filters.client !== 'ALL',
         filters.priority !== 'ALL',
         filters.status !== 'ALL',
-        filters.demandName !== 'ALL'
+        filters.demandName !== 'ALL',
+        filters.demandType !== 'ALL',
+        filters.deliveryModel !== 'ALL'
     ].filter(Boolean).length;
 
     return (
@@ -342,6 +346,12 @@ const DemandWorkspacePage = () => {
                         onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
                         demandNameFilter={filters.demandName}
                         onDemandNameChange={(v) => setFilters(prev => ({ ...prev, demandName: v }))}
+                        demandTypeFilter={filters.demandType}
+                        onDemandTypeChange={(v) => setFilters(prev => ({ ...prev, demandType: v }))}
+                        deliveryModelFilter={filters.deliveryModel}
+                        onDeliveryModelChange={(v) => setFilters(prev => ({ ...prev, deliveryModel: v }))}
+                        demandTypes={availableDemandTypes}
+                        deliveryModels={availableDeliveryModels}
                         draft={draftFilters}
                         setDraft={setDraftFilters}
                     />
