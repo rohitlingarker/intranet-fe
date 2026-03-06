@@ -120,6 +120,7 @@ const Sidebar = ({ isCollapsed }) => {
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
   const isRM = user?.roles?.includes("RESOURCE-MANAGER");
   const isPM = user?.roles?.includes("PROJECT-MANAGER");
+  const isDM = user?.roles?.includes("DELIVERY-MANAGER");
   const isGeneral = user?.roles?.includes("General");
 
   // State for User Management Hover
@@ -273,8 +274,8 @@ const Sidebar = ({ isCollapsed }) => {
             <Link
               to="/dashboard"
               className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname === "/dashboard"
-                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                 }`}
               title={isCollapsed ? "Dashboard" : ""}
             >
@@ -284,32 +285,32 @@ const Sidebar = ({ isCollapsed }) => {
           </li>
 
           {/* 2. Resource Management (With Pop Label/Submenu) */}
-          {(isAdmin || isRM || isPM) && (
+          {(isAdmin || isRM || isPM || isDM) && (
             <li
               ref={rmRef}
               className="relative"
-              onMouseEnter={isRM ? handleRmMouseEnter : undefined}
-              onMouseLeave={isRM ? handleRmMouseLeave : undefined}
+              onMouseEnter={(isRM || isDM) ? handleRmMouseEnter : undefined}
+              onMouseLeave={(isRM || isDM) ? handleRmMouseLeave : undefined}
             >
               {/* If Admin → Direct Link */}
-              {isAdmin && !isRM ? (
+              {isAdmin && !isRM && !isDM ? (
                 <Link
                   to="/resource-management"
                   className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management")
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                     }`}
                   title={isCollapsed ? "Resource Management" : ""}
                 >
                   <UserCog2 className="h-5 w-5 shrink-0" />
                   {!isCollapsed && <span>Resource Management</span>}
                 </Link>
-              ) : (isPM && !isRM) ? (
+              ) : (isPM && !isRM && !isDM) ? (
                 <Link
                   to="/resource-management/projects"
                   className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management/projects")
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                     }`}
                   title={isCollapsed ? "Resource Project Management" : ""}
                 >
@@ -318,11 +319,11 @@ const Sidebar = ({ isCollapsed }) => {
                 </Link>
               ) : (
                 <>
-                  {/* Resource Manager → Show Hover Menu */}
+                  {/* Resource Manager / Delivery Manager → Show Hover Menu */}
                   <div
                     className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/resource-management")
-                        ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                        : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                       }`}
                   >
                     <UserCog2 className="h-5 w-5 shrink-0" />
@@ -338,8 +339,8 @@ const Sidebar = ({ isCollapsed }) => {
                     )}
                   </div>
 
-                  {/* Show submenu only for Resource Manager */}
-                  {rmHovered && isRM && (
+                  {/* Show submenu only for Resource Manager or Delivery Manager */}
+                  {rmHovered && (isRM || isDM) && (
                     <ul
                       className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
                         }`}
@@ -347,22 +348,24 @@ const Sidebar = ({ isCollapsed }) => {
                       onMouseEnter={handleRmMouseEnter}
                       onMouseLeave={handleRmMouseLeave}
                     >
-                      {resourceManagementSubmenu.map((item) => (
-                        <li key={item.label}>
-                          <NavLink
-                            to={item.to}
-                            end
-                            className={({ isActive }) =>
-                              `block px-4 py-2 text-xs transition-colors ${isActive
-                                ? "bg-blue-100 text-[#0a174e] font-semibold"
-                                : "hover:bg-[#263383] hover:text-white"
-                              }`
-                            }
-                          >
-                            {item.label}
-                          </NavLink>
-                        </li>
-                      ))}
+                      {resourceManagementSubmenu
+                        .filter(item => isRM || (isDM && !["Workforce Availability", "Client Management"].includes(item.label)))
+                        .map((item) => (
+                          <li key={item.label}>
+                            <NavLink
+                              to={item.to}
+                              end
+                              className={({ isActive }) =>
+                                `block px-4 py-2 text-xs transition-colors ${isActive
+                                  ? "bg-blue-100 text-[#0a174e] font-semibold"
+                                  : "hover:bg-[#263383] hover:text-white"
+                                }`
+                              }
+                            >
+                              {item.label}
+                            </NavLink>
+                          </li>
+                        ))}
                     </ul>
                   )}
                 </>
@@ -380,8 +383,8 @@ const Sidebar = ({ isCollapsed }) => {
             >
               <div
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/user-management")
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                   }`}
                 title={isCollapsed ? "User Management" : ""}
               >
@@ -436,9 +439,9 @@ const Sidebar = ({ isCollapsed }) => {
             >
               <div
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname == "/employee-onboarding" ||
-                    location.pathname == "/employee-onboarding/"
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  location.pathname == "/employee-onboarding/"
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                   }`}
                 title={isCollapsed ? "Employee Onboarding" : ""}
               >
@@ -540,8 +543,8 @@ const Sidebar = ({ isCollapsed }) => {
                 <Link
                   to={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${isActive
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
                     }`}
                   title={isCollapsed ? item.name : ""}
                 >

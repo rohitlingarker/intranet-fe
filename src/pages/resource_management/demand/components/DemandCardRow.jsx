@@ -65,9 +65,8 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
                         days={demand.slaDays}
                         isSoft={
                             activeTab === 'soft' ||
-                            demand.demandCommitment?.toUpperCase() === 'SOFT' ||
-                            demand.lifecycleState?.toUpperCase() === 'SOFT' ||
-                            demand.lifecycleState?.toUpperCase() === 'REQUESTED'
+                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
+                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
                         }
                     />
                 </div>
