@@ -22,11 +22,17 @@ const DemandFilters = ({
     clients = [],
     statuses = [],
     demandNames = [],
+    demandTypes = [],
+    deliveryModels = [],
     priorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
     statusFilter = 'ALL',
     onStatusChange,
     demandNameFilter = 'ALL',
     onDemandNameChange,
+    demandTypeFilter = 'ALL',
+    onDemandTypeChange,
+    deliveryModelFilter = 'ALL',
+    onDeliveryModelChange,
     draft: externalDraft,
     setDraft: setExternalDraft
 }) => {
@@ -35,13 +41,17 @@ const DemandFilters = ({
     const safePriority = priorityFilter || 'ALL';
     const safeStatus = statusFilter || 'ALL';
     const safeName = demandNameFilter || 'ALL';
+    const safeType = demandTypeFilter || 'ALL';
+    const safeModel = deliveryModelFilter || 'ALL';
 
     // Local state as fallback for Sidebar mode, or use external for Persistence
     const [localDraft, setLocalDraft] = useState({
         client: safeClient,
         priority: safePriority,
         status: safeStatus,
-        demandName: safeName
+        demandName: safeName,
+        demandType: safeType,
+        deliveryModel: safeModel
     });
 
     const draft = externalDraft || localDraft;
@@ -54,16 +64,20 @@ const DemandFilters = ({
                 client: clientFilter,
                 priority: priorityFilter,
                 status: statusFilter,
-                demandName: demandNameFilter
+                demandName: demandNameFilter,
+                demandType: demandTypeFilter,
+                deliveryModel: deliveryModelFilter
             });
         }
-    }, [clientFilter, priorityFilter, statusFilter, demandNameFilter, externalDraft]);
+    }, [clientFilter, priorityFilter, statusFilter, demandNameFilter, demandTypeFilter, deliveryModelFilter, externalDraft]);
 
     const handleApply = () => {
         onClientChange(draft.client);
         onPriorityChange(draft.priority);
         onStatusChange(draft.status);
         onDemandNameChange(draft.demandName);
+        onDemandTypeChange(draft.demandType);
+        onDeliveryModelChange(draft.deliveryModel);
         onToggleCollapse(); // Close on apply
     };
 
@@ -74,8 +88,17 @@ const DemandFilters = ({
             client: 'ALL',
             priority: 'ALL',
             status: 'ALL',
-            demandName: 'ALL'
+            demandName: 'ALL',
+            demandType: 'ALL',
+            deliveryModel: 'ALL'
         });
+    };
+
+    const formatEnum = (str) => {
+        if (!str) return '';
+        return str.split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     // If used as an inline/popover component (matching FilterBar.jsx dropdown)
@@ -132,7 +155,7 @@ const DemandFilters = ({
                                     <SelectItem value="ALL">All Priorities</SelectItem>
                                     {priorities.map(p => (
                                         <SelectItem key={p} value={p}>
-                                            {p.charAt(0) + p.slice(1).toLowerCase()}
+                                            {formatEnum(p)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -155,7 +178,7 @@ const DemandFilters = ({
                                 <SelectContent className="z-[110]">
                                     <SelectItem value="ALL">All Statuses</SelectItem>
                                     {statuses.map(s => (
-                                        <SelectItem key={s} value={s?.toUpperCase()}>{s}</SelectItem>
+                                        <SelectItem key={s} value={s?.toUpperCase()}>{formatEnum(s)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -175,6 +198,47 @@ const DemandFilters = ({
                                     <SelectItem value="ALL">All Names</SelectItem>
                                     {demandNames.map(name => (
                                         <SelectItem key={name} value={name}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Demand Type
+                            </label>
+                            <Select
+                                value={draft?.demandType || 'ALL'}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, demandType: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Types" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Types</SelectItem>
+                                    {demandTypes.map(type => (
+                                        <SelectItem key={type} value={type}>{formatEnum(type)}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Delivery Model
+                            </label>
+                            <Select
+                                value={draft?.deliveryModel || 'ALL'}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, deliveryModel: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Models" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Models</SelectItem>
+                                    {deliveryModels.map(model => (
+                                        <SelectItem key={model} value={model}>{formatEnum(model)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -238,7 +302,7 @@ const DemandFilters = ({
                             <SelectValue placeholder="All Clients" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Clients</SelectItem>
+                            <SelectItem value="ALL">All Clients</SelectItem>
                             {clients.map(client => (
                                 <SelectItem key={client} value={client}>{client}</SelectItem>
                             ))}
@@ -252,7 +316,7 @@ const DemandFilters = ({
                         Priority level
                     </label>
                     <div className="grid grid-cols-1 gap-2">
-                        {['All', ...priorities].map((p) => (
+                        {['ALL', ...priorities].map((p) => (
                             <button
                                 key={p}
                                 onClick={() => onPriorityChange(p)}
@@ -263,7 +327,7 @@ const DemandFilters = ({
                                         : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                                 )}
                             >
-                                {p === 'All' ? 'All' : p.charAt(0) + p.slice(1).toLowerCase()}
+                                {p === 'ALL' ? 'All' : formatEnum(p)}
                             </button>
                         ))}
                     </div>
@@ -279,9 +343,9 @@ const DemandFilters = ({
                             <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Statuses</SelectItem>
+                            <SelectItem value="ALL">All Statuses</SelectItem>
                             {statuses.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                                <SelectItem key={s} value={s}>{formatEnum(s)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -297,9 +361,45 @@ const DemandFilters = ({
                             <SelectValue placeholder="All Names" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Names</SelectItem>
+                            <SelectItem value="ALL">All Names</SelectItem>
                             {demandNames.map(name => (
                                 <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Demand Type Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Demand Type
+                    </label>
+                    <Select value={demandTypeFilter} onValueChange={onDemandTypeChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Types</SelectItem>
+                            {demandTypes.map(type => (
+                                <SelectItem key={type} value={type}>{formatEnum(type)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Delivery Model Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Delivery Model
+                    </label>
+                    <Select value={deliveryModelFilter} onValueChange={onDeliveryModelChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Models" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Models</SelectItem>
+                            {deliveryModels.map(model => (
+                                <SelectItem key={model} value={model}>{formatEnum(model)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

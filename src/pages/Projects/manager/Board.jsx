@@ -1947,3 +1947,5 @@ const Board = ({ projectId, sprintId, projectName }) => {
   );
 
 };
+
+export default Board;
