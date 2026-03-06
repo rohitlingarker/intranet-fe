@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
-import demandService from "../demand/services/demandService";
+import demandService from "../services/demandService";
 import { handleDMDecision, handleRMDecision } from "../services/demandService";
 import { toast } from "react-toastify";
 
