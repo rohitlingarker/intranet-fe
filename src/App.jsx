@@ -426,9 +426,9 @@ const AppRoutes = () => {
             <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
             <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
             <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
-            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard/>} />
-            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList/>} />
-            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList/>} />
+            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard />} />
+            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList />} />
+            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList />} />
 
             <Route path="hr" element={<HrOnboardingDashboard />} />
             <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
@@ -447,7 +447,6 @@ const AppRoutes = () => {
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
             <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
-            <Route path="employee-onboarding/core-employee/edit/:userUuid" element={<CoreEmployeeDetails />}/>
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
@@ -774,7 +773,7 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/demand"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandWorkspacePage />
               </ProtectedRoute>
             }
@@ -782,7 +781,7 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/demand/:demandId"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandDetailPage />
               </ProtectedRoute>
             }

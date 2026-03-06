@@ -8,6 +8,8 @@ export const defaultFilters = {
     priority: "ALL",
     status: "ALL",
     demandName: "ALL",
+    demandType: "ALL",
+    deliveryModel: "ALL",
 };
 
 const ROLE_PRIORITY = [
@@ -25,6 +27,28 @@ const DEMAND_ROLE_LABELS = {
     "RESOURCE-MANAGER": "Resource Manager",
     "DELIVERY-MANAGER": "Delivery Manager"
 };
+
+export const DEMAND_STATUSES = [
+    "DRAFT",
+    "REQUESTED",
+    "APPROVED",
+    "REJECTED",
+    "CANCELLED",
+    "FULFILLED"
+];
+
+export const DEMAND_TYPES = [
+    "NET_NEW",
+    "REPLACEMENT",
+    "BACKFILL",
+    "EMERGENCY"
+];
+
+export const DELIVERY_MODELS = [
+    "ONSITE",
+    "OFFSHORE",
+    "HYBRID"
+];
 
 const normalizeRoleKey = (role = "") => {
     if (!role) return "";
@@ -116,10 +140,11 @@ export function useDemand(projectId = null) {
         } else if (activeTab === 'at_risk') {
             list = list.filter(d => d.remainingDays >= 0 && d.remainingDays <= 5);
         } else if (activeTab === 'active') {
-            list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+            list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE', 'REQUESTED', 'IN_PROGRESS', 'IN PROGRESS'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         } else if (activeTab === 'soft') {
-            list = list.filter(d => ['SOFT', 'REQUESTED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
-        } else if (activeTab === 'fulfilled') {
+            list = list.filter(d => ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        }
+        else if (activeTab === 'fulfilled') {
             list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED' || d.demandStatus?.toUpperCase() === 'FULFILLED');
         }
         // 'all' fallthrough shows everything minus cancelled/closed if we want to be strict, 
@@ -153,6 +178,12 @@ export function useDemand(projectId = null) {
         }
         if (filters.demandName !== 'ALL') {
             list = list.filter(d => (d.demandName || d.role) === filters.demandName);
+        }
+        if (filters.demandType !== 'ALL') {
+            list = list.filter(d => d.demandType === filters.demandType);
+        }
+        if (filters.deliveryModel !== 'ALL') {
+            list = list.filter(d => d.deliveryModel === filters.deliveryModel);
         }
 
         return list.map(d => ({
@@ -197,15 +228,16 @@ export function useDemand(projectId = null) {
         return Array.from(clients).sort();
     }, [demands]);
 
-    const availableStatuses = useMemo(() => {
-        const statuses = new Set(demands.map(d => d.demandStatus || d.lifecycleState).filter(Boolean));
-        return Array.from(statuses).sort();
-    }, [demands]);
+    const availableStatuses = useMemo(() => DEMAND_STATUSES, []);
 
     const availableDemandNames = useMemo(() => {
         const names = new Set(demands.map(d => d.demandName || d.role).filter(Boolean));
         return Array.from(names).sort();
     }, [demands]);
+
+    const availableDemandTypes = useMemo(() => DEMAND_TYPES, []);
+
+    const availableDeliveryModels = useMemo(() => DELIVERY_MODELS, []);
 
     const resetFilters = useCallback(() => {
         setFilters(defaultFilters);
@@ -229,6 +261,8 @@ export function useDemand(projectId = null) {
         availableClients,
         availableStatuses,
         availableDemandNames,
+        availableDemandTypes,
+        availableDeliveryModels,
         kpiData,
         demandRoleOptions,
         selectedRole,
