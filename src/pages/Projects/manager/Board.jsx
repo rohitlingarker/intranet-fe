@@ -7,7 +7,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import CreateIssueForm from "./CreateIssue/CreateIssueForm";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
@@ -30,6 +29,8 @@ import CreateStoryForm from "./Backlog/CreateStory";
 import {BASE,WIP_WARNING_THRESHOLD,PALETTE} from "./Board/constants"
 import {CreateTaskModal} from "./Board/CreateTaskModal"
 import {DeleteStatusModal} from "./Board/DeleteStatusModal"
+import TaskCard from "./Board/TaskCard";
+import { Avatar } from "./Board/TaskCard";
 
 const headersWithToken = () => {
   const token = localStorage.getItem("token");
@@ -42,29 +43,14 @@ const headersWithToken = () => {
 const stableColorClass = (k) => {
   const s = String(k ?? "");
   let h = 216;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000;
+
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) % 1000;
+  }
+
   return PALETTE[Math.abs(h) % PALETTE.length];
 };
 
-/* -------------------
-  Small UI helpers
---------------------*/
-const Avatar = ({ name }) => {
-  const initials = (name || "U")
-    .split(" ")
-    .map((x) => x[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  const color = stableColorClass(name || initials);
-  return (
-    <div
-      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${color}`}
-    >
-      {initials}
-    </div>
-  );
-};
 
 const Board = ({ projectId, sprintId, projectName }) => {
   // data
@@ -935,38 +921,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
                                     type="ITEM"
                                   >
                                     {(taskProvided, taskSnapshot) => (
-                                      <div
-                                        ref={taskProvided.innerRef}
-                                        {...taskProvided.draggableProps}
-                                        {...taskProvided.dragHandleProps}
-                                        onClick={() => openTaskPanel(task)}
-                                        className={`bg-white p-3 rounded shadow mb-2 cursor-pointer ${
-                                          taskSnapshot.isDragging ? "opacity-80" : ""
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <div className="relative group">
-                                            <span className="text-green-600 text-sm cursor-default">☑️</span>
-                                            <span className="absolute hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-md transform -translate-x-1/2 left-1/2 top-6 whitespace-nowrap transition-opacity duration-200 opacity-0 group-hover:opacity-100">
-                                              Task
-                                            </span>
-                                          </div>
-                                          <div className="font-medium text-gray-800 truncate ml-2">
-                                            {task.title ?? task.name ?? `Task ${task.id}`}
-                                          </div>
-                                          <div className="text-xs text-gray-400">
-                                            {task.priority ?? ""}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                          <div className="flex items-center gap-1"></div>
-                                          <div className="ml-auto text-xs text-gray-400">
-                                            {task.dueDate
-                                              ? new Date(task.dueDate).toLocaleDateString()
-                                              : ""}
-                                          </div>
-                                        </div>
-                                      </div>
+                                      <TaskCard
+                                        task={task}
+                                        taskProvided={taskProvided}
+                                        taskSnapshot={taskSnapshot}
+                                        openTaskPanel={openTaskPanel}
+                                      />
                                     )}
                                   </Draggable>
                                 ))}
