@@ -8,7 +8,8 @@ import { getProjectEscalations } from "../services/clientservice";
 import Pagination from "../../../components/Pagination/pagination";
 import { getAssetsByClient } from "../services/clientservice";
 import { getAssetsByProjectId } from "../services/clientservice";
-
+import CompanyEscalationModal from "./client_configuration/CompanyEscalationModal";
+import { createCompanyContact } from "../services/clientservice";
 import {
   ArrowLeft,
   Building2,
@@ -25,7 +26,6 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-
 
 import { useAuth } from "../../../contexts/AuthContext";
 
@@ -93,12 +93,12 @@ const ProjectSLA = ({ data, loading }) => {
         subtitle="Contractual obligations and metrics."
       />
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto">
+        <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b min-w-max">
           <p className="text-sm font-semibold text-gray-700">SLA Definitions</p>
         </div>
 
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[600px]">
           {/* TABLE HEADER */}
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -178,8 +178,8 @@ const ProjectCompliance = ({ data, loading }) => {
         subtitle="Required certifications and audit status."
       />
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-sm text-left">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
+        <table className="w-full text-sm text-left min-w-[800px]">
           {/* HEADER */}
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -285,8 +285,8 @@ const ProjectAssets = ({ assets, loading }) => {
         subtitle="Hardware and licenses allocated to this project."
       />
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm text-left">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
+        <table className="w-full text-sm text-left min-w-[600px]">
           {/* HEADER */}
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -478,6 +478,24 @@ const ClientPage = () => {
   const [escalationRefetchKey, setEscalationRefetchKey] = useState(0);
   const [openUpdateClient, setOpenUpdateClient] = useState(false);
   const [openDeleteClient, setOpenDeleteClient] = useState(false);
+  const [openCompanyEscalation, setOpenCompanyEscalation] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  const handleCompanyContactCreate = async (payload) => {
+    setLoading(true);
+    try {
+      const res = await createCompanyContact({
+        ...payload,
+        clientId, // VERY IMPORTANT
+      });
+      toast.success(res.message || "Escalation contact created");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create contact");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Projects state
   const [projects, setProjects] = useState([]);
@@ -800,9 +818,9 @@ const ClientPage = () => {
   const projectAssets = clientAssets;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
@@ -810,31 +828,31 @@ const ClientPage = () => {
           >
             <ArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              {clientDetails.client_name}
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center flex-wrap gap-2">
+              <span className="truncate max-w-[200px] sm:max-w-none">{clientDetails.client_name}</span>
               {canEditProfile && (
-                <>
+                <div className="flex gap-2">
                   <Pencil
                     size={16}
-                    className="text-blue-500 hover:text-blue-700 cursor-pointer mt-2"
+                    className="text-blue-500 hover:text-blue-700 cursor-pointer"
                     title="Edit Client"
                     onClick={() => setOpenUpdateClient(true)}
                   />
                   <Trash2
                     size={16}
-                    className="text-red-500 hover:text-red-700 cursor-pointer mt-2"
+                    className="text-red-500 hover:text-red-700 cursor-pointer"
                     title="Delete Client"
                     onClick={() => setOpenDeleteClient(true)}
                   />
-                </>
+                </div>
               )}
             </h1>
-            <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
               <span className="flex items-center gap-1">
                 <Globe size={14} /> {clientDetails.country_name}
               </span>
-              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span className="hidden sm:inline w-1 h-1 bg-gray-300 rounded-full"></span>
               <span className="flex items-center gap-1">
                 <Briefcase size={14} /> {clientDetails.client_type}
               </span>
@@ -843,8 +861,8 @@ const ClientPage = () => {
         </div>
 
         {/* Client Level Stats */}
-        <div className="flex gap-4">
-          <div className="text-right px-4 border-r border-gray-200">
+        <div className="flex gap-4 w-full md:w-auto">
+          <div className="flex-1 md:flex-none text-left md:text-right px-4 border-r border-gray-200">
             <p className="text-xs text-gray-500 font-semibold uppercase">
               Total Projects
             </p>
@@ -852,7 +870,7 @@ const ClientPage = () => {
               {clientStats.totalProjects}
             </p>
           </div>
-          <div className="text-right pl-2">
+          <div className="flex-1 md:flex-none text-left md:text-right pl-2">
             <p className="text-xs text-gray-500 font-semibold uppercase">
               Overall Health
             </p>
@@ -862,7 +880,7 @@ const ClientPage = () => {
       </div>
 
       {/* Client KPI's */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10 mb-15">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-10">
         {kpiData.map((kpi, idx) => (
           <div
             key={idx}
@@ -884,7 +902,17 @@ const ClientPage = () => {
       </div>
 
       {(canConfigAgreements || canManageAssets) && (
-        <div className="flex justify-end gap-3 mt-5">
+        <div className="flex flex-wrap items-center justify-end gap-3 mt-5">
+          {/* ✅ COMPANY ESCALATION BUTTON */}
+          {canConfigAgreements && (
+            <Button
+              variant="secondary"
+              onClick={() => setOpenCompanyEscalation(true)}
+              className="px-4 py-2 text-sm border rounded-lg whitespace-nowrap"
+            >
+              Company Escalation
+            </Button>
+          )}
           {canConfigAgreements &&
             (clientDetails.compliance ||
               clientDetails.SLA ||
@@ -892,7 +920,7 @@ const ClientPage = () => {
               <Button
                 variant="primary"
                 onClick={() => setOpenConfigModal(true)}
-                className="px-4 py-2 text-sm border rounded-lg"
+                className="px-4 py-2 text-sm border rounded-lg whitespace-nowrap"
               >
                 + Add Configuration
               </Button>
@@ -902,7 +930,7 @@ const ClientPage = () => {
             <Button
               variant="secondary"
               onClick={() => navigate(`/manage-assets/${clientId}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 whitespace-nowrap"
             >
               <Package size={16} />
               Manage Assets
@@ -926,13 +954,14 @@ const ClientPage = () => {
 
       <div className="grid grid-cols-12 gap-8 mt-10">
         {/* LEFT SIDE: Project List */}
-        <div className="col-span-12 lg:col-span-4 space-y-4 max-h-[75vh] flex flex-col">
-          <div className="flex flex-col gap-3 overflow-y-auto pr-2">
+        <div className="col-span-12 lg:col-span-4 space-y-4 lg:max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{projects.length} Total</span>
           </div>
 
-          {/* Project Cards */}
-          <div className="flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar min-h-[300px] lg:min-h-0">
+            {/* Project Cards */}
             {loadingProjects ? (
               <div className="text-sm text-gray-400">Loading projects...</div>
             ) : projects.length === 0 ? (
@@ -946,15 +975,15 @@ const ClientPage = () => {
                     setActiveTab("sla");
                   }}
                   className={`group cursor-pointer relative p-5 rounded-xl border transition-all duration-200 ${getProjectId(selectedProject) === getProjectId(project)
-                      ? "bg-white border-indigo-600 ring-1 ring-indigo-600 shadow-md"
-                      : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                    ? "bg-white border-indigo-600 ring-1 ring-indigo-600 shadow-md"
+                    : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
                     }`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3
                       className={`font-semibold ${getProjectId(selectedProject) === getProjectId(project)
-                          ? "text-indigo-900"
-                          : "text-gray-900"
+                        ? "text-indigo-900"
+                        : "text-gray-900"
                         }`}
                     >
                       {project.name}
@@ -970,8 +999,8 @@ const ClientPage = () => {
                       <span className="text-gray-500">Status</span>
                       <span
                         className={`px-2 py-0.5 rounded text-xs font-medium ${project.projectStatus === "ACTIVE"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
                           }`}
                       >
                         {project.projectStatus}
@@ -997,14 +1026,16 @@ const ClientPage = () => {
           </div>
 
           {/* ✅ PAGINATION GOES HERE — INSIDE LEFT COLUMN */}
-          {projects.length > PROJECTS_PER_PAGE && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevious={() => setCurrentPage((p) => p - 1)}
-              onNext={() => setCurrentPage((p) => p + 1)}
-            />
-          )}
+          <div className="pt-2 border-t border-gray-100 mt-auto">
+            {projects.length > PROJECTS_PER_PAGE && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrevious={() => setCurrentPage((p) => p - 1)}
+                onNext={() => setCurrentPage((p) => p + 1)}
+              />
+            )}
+          </div>
         </div>
 
         {/* PROJECT DETAILS */}
@@ -1020,24 +1051,24 @@ const ClientPage = () => {
                   <p className="text-sm text-gray-500 mt-1">
                     Managed by{" "}
                     <span className="font-medium text-gray-900">
-                      {selectedProject.manager}
+                      {selectedProject.projectManagerId}
                     </span>
                   </p>
                 </div>
-                <button className="text-gray-400 hover:text-gray-600">
+                {/* <button className="text-gray-400 hover:text-gray-600">
                   <MoreHorizontal />
-                </button>
+                </button> */}
               </div>
 
               {/* Dynamic Tabs */}
-              <div className="flex border-b border-gray-200 px-6">
+              <div className="flex border-b border-gray-200 px-6 overflow-x-auto no-scrollbar">
                 {getTabs().map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-4 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
-                        ? "border-indigo-600 text-indigo-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    className={`flex items-center gap-2 py-4 px-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
+                      ? "border-indigo-600 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       }`}
                   >
                     <tab.icon size={16} />
@@ -1119,6 +1150,32 @@ const ClientPage = () => {
           onSuccess={() => {
             fetchClientDetails();
             setOpenUpdateClient(false);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={openCompanyEscalation}
+        title={editMode ? "Edit Escalation Contact" : "Company Escalation"}
+        subtitle={
+          editMode ? "Update escalation contact" : "Add escalation contact"
+        }
+        onClose={() => setOpenCompanyEscalation(false)}
+      >
+        <CompanyEscalationModal
+          mode={editMode ? "edit" : "create"}
+          initialData={selectedContact}
+          loading={loading}
+          onClose={() => setOpenCompanyEscalation(false)}
+          onSave={async (payload) => {
+            if (editMode) {
+              await handleUpdateCompanyContact(payload);
+            } else {
+              await handleCompanyContactCreate(payload);
+            }
+
+            setOpenCompanyEscalation(false);
+            window.dispatchEvent(new Event("refresh-company-escalation"));
           }}
         />
       </Modal>

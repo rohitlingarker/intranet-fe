@@ -49,12 +49,15 @@ export default function AdminOfferView() {
     });
     setOffer(res.data);
   };
+  console.log("OFFER:", offer);
 
   /* ---------------- FETCH APPROVAL ---------------- */
   const fetchApproval = async () => {
     const res = await axios.get(`${BASE}/offer-approval/my-actions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    console.log("ADMIN APPROVAL API RAW:", res.data);
     const found = res.data.find((i) => i.user_uuid === user_uuid);
     if (!found) {
       setApproval(null);
@@ -63,8 +66,9 @@ export default function AdminOfferView() {
     const mapped= {
       ...found,
       action: found.action,
-      requested_by_name: found.requested_by_name,
-      comments: found.message || "",
+      approver_name: found.approver_name || null,
+      comments: found.message || found.comments|| "",
+      mail: found.mail || "",
     };
     setApproval(mapped);
     console.log("Mapped Approval:", mapped);
@@ -95,7 +99,12 @@ export default function AdminOfferView() {
     }
 
     const previousAction = approval.action;
-    setApproval({ ...approval, action, comments: comment ?? approval.comments  }); // optimistic UI
+    setApproval({
+      ...approval,
+      action,
+      comments: comment !== null ? comment : approval.comments,
+    });
+
     setActing(true);
     setError("");
 
@@ -129,7 +138,9 @@ export default function AdminOfferView() {
           : "Offer put on hold"
       );
 
-      fetchApproval();
+      await fetchOffer();
+      await fetchApproval();
+
       setIsEditing(false);
       setShowMenu(false);
     } catch (e) {
@@ -249,9 +260,9 @@ const deleteApprovalRequest = async () => {
 
             {approval && (
               <ApprovalBadge
-                status={approval.action}
-                approver={approval.requested_name}
-                comments={approval.comments}
+                 status={approval?.action}
+                  approver={approval?.approver_name}
+                  comments={approval?.comments}
               />
             )}
           </div>
@@ -279,6 +290,19 @@ const deleteApprovalRequest = async () => {
             icon={<UserCheck/>}
             label="Employee Type"
             value={offer.employee_type}
+          />
+          <DetailCard
+            icon={<Mail />}
+            label="CC Emails"
+            value={
+              offer?.cc_emails
+                ? offer.cc_emails
+                    .split(",")
+                    .map(e => e.trim())
+                    .filter(Boolean)
+                    .join(", ")
+                : "—"
+            }
           />
         </div>
 
@@ -415,40 +439,46 @@ function ApprovalBadge({ status, approver,comments }) {
     REJECTED: "bg-red-100 text-red-800 border-red-300",
     ON_HOLD: "bg-gray-100 text-gray-800 border-gray-300",
   };
-
-  // return (
-    
-  //   <div
-  //     className={`inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm border rounded-full ${styles[status]}`}
-  //   >
-  //     <span className="font-medium">{status}</span>
-  //     {approver && <span className="text-xs">• {approver}</span>}
-  //     {comments && (
-  //       <span className="text-xs ml-2">({approver.comments})</span>
-  //     )}
-  //   </div>
-  // );
   return (
-    <div className="mt-4 flex flex-col gap-2">
-      {/* STATUS LINE */}
+    <div className="flex mt-3 flex-col gap-2">
       <div
-        className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}
+        className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${
+          styles[status] || "bg-gray-100"
+        }`}
       >
         <span className="font-medium">{status}</span>
-        {approver && <span className="text-xs">• {approver}</span>}
-        
+        {approver && <span className="text-xs opacity-80">• {approver}</span>}
       </div>
 
-      {/* COMMENT LINE */}
       {comments && comments.trim() !== "" && (
-
         <div className="text-lg">
-          <span className="font-semibold text-red-700">Comments : </span> {comments}
+          <span className="font-semibold text-red-700">Comments : </span>
+          {comments}
         </div>
-        
       )}
     </div>
   );
+
+  // return (
+  //   <div className="mt-4 flex flex-col gap-2">
+  //     {/* STATUS LINE */}
+  //     <div
+  //       className={`inline-flex items-center gap-2 px-3 py-1 text-sm border rounded-full ${styles[status]}`}
+  //     >
+  //       <span className="font-medium">{status}</span>
+  //       {approver && <span className="text-xs">• {approver}</span>}
+        
+  //     </div>
+
+  //     {/* COMMENT LINE */}
+  //     {comments && comments.trim() !== "" && (
+  //     <div className="text-sm mt-1">
+  //       <span className="font-semibold text-gray-700">Comments: </span>
+  //       <span className="text-gray-800">{comments}</span>
+  //     </div>
+  //   )}
+  //   </div>
+  // );
 }
 
 function ActionButton({ label, color, onClick, disabled }) {

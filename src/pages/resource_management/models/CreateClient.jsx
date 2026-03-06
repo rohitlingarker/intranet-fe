@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Fragment, useMemo } from "react";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 import { Listbox, Combobox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 import ct from "countries-and-timezones";
@@ -89,11 +90,11 @@ const SearchableCombobox = ({
     query === ""
       ? options
       : options.filter((o) =>
-          o
-            .toLowerCase()
-            .replace(/\s+/g, "")
-            .includes(query.toLowerCase().replace(/\s+/g, "")),
-        );
+        o
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .includes(query.toLowerCase().replace(/\s+/g, "")),
+      );
 
   return (
     <div className="w-full">
@@ -166,8 +167,18 @@ const SearchableCombobox = ({
   );
 };
 
+
+
+
 const CreateClient = ({ mode, initialData, onSuccess }) => {
+  const { getEnumValues } = useEnums();
+  const CLIENT_TYPES = getEnumValues("ClientType");
+  const PRIORITY_LEVELS = getEnumValues("PriorityLevel");
+  const DELIVERY_MODELS = getEnumValues("DeliveryModel");
+  const STATUS_OPTIONS = getEnumValues("RecordStatus");
+
   const allCountryData = useMemo(() => {
+
     return Object.values(ct.getAllCountries()).sort((a, b) =>
       a.name.localeCompare(b.name),
     );
@@ -279,17 +290,17 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
           : await updateClient(formData);
       toast.success(
         clientCreation.message ||
-          (mode === "create"
-            ? "Client created successfully."
-            : "Client updated successfully."),
+        (mode === "create"
+          ? "Client created successfully."
+          : "Client updated successfully."),
       );
       onSuccess?.();
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          (mode === "create"
-            ? "Failed to create client."
-            : "Failed to update client."),
+        (mode === "create"
+          ? "Failed to create client."
+          : "Failed to update client."),
       );
     } finally {
       setIsSubmitting(false);
@@ -316,7 +327,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Client Type"
           value={formData.client_type}
-          options={["STRATEGIC", "INTERNAL", "SUPPORT", "STANDARD"]}
+          options={CLIENT_TYPES}
           onChange={(val) => handleGenericListboxChange("client_type", val)}
           error={errors.includes("client_type")}
         />
@@ -324,7 +335,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Priority Level"
           value={formData.priority_level}
-          options={["LOW", "MEDIUM", "HIGH"]}
+          options={PRIORITY_LEVELS}
           onChange={(val) => handleGenericListboxChange("priority_level", val)}
           error={errors.includes("priority_level")}
         />
@@ -332,7 +343,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Delivery Model"
           value={formData.delivery_model}
-          options={["ONSITE", "OFFSHORE", "HYBRID"]}
+          options={DELIVERY_MODELS}
           onChange={(val) => handleGenericListboxChange("delivery_model", val)}
           error={errors.includes("delivery_model")}
         />
@@ -340,7 +351,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         <CustomListbox
           label="Status"
           value={formData.status}
-          options={["ACTIVE", "ON_HOLD"]}
+          options={STATUS_OPTIONS}
           onChange={(val) => handleGenericListboxChange("status", val)}
           error={errors.includes("status")}
         />

@@ -10,9 +10,6 @@ export default function LargeModal({
   title,
   subtitle,
   children,
-  primaryText = "Save",
-  onPrimaryClick,
-  loading = false,
 }) {
   if (!isOpen) return null;
 
@@ -45,29 +42,6 @@ export default function LargeModal({
         {/* Body */}
         <div className="space-y-4 overflow-y-auto pr-2 flex-1">
           {children}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 mt-6">
-
-          <Button
-            varient="secondary"
-            size="small"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            varient="primary"
-            size="small"
-            onClick={onPrimaryClick}
-            disabled={loading}
-          >
-            {loading ? "Processing..." : primaryText}
-          </Button>
-
         </div>
       </div>
     </div>

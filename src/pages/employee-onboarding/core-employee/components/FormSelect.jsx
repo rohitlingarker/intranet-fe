@@ -1,25 +1,49 @@
 import React from "react";
 
-export default function FormSelect({ label, options = [], ...props }) {
+export default function FormSelect({
+  label,
+  name,
+  value,
+  onChange,
+  options = [],
+  disabled = false
+}) {
   return (
-    <div className="flex flex-col mb-3">
-      <label className="text-sm text-gray-600 mb-1">{label}</label>
+    <div className="flex flex-col gap-1">
+      
+      {/* Label */}
+      <label className="text-sm font-medium text-gray-700">
+        {label}
+      </label>
 
+      {/* Select */}
       <select
-        {...props}
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-600"
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        disabled={disabled}
+        className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
       >
         <option value="">Select</option>
 
-        {options.map((opt, index) => (
-          <option
-            key={index}
-            value={opt.id || opt}
-          >
-            {opt.name || opt}
-          </option>
-        ))}
+        {options.map((option, index) => {
+          // Support both string options and object options
+          if (typeof option === "string") {
+            return (
+              <option key={index} value={option}>
+                {option}
+              </option>
+            );
+          }
+
+          return (
+            <option key={option.value || index} value={option.value}>
+              {option.label}
+            </option>
+          );
+        })}
       </select>
+
     </div>
   );
 }

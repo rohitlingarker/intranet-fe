@@ -3,7 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import CreateProjectModal from "./CreateProjectModal";
-import ManageStatusesModal from "./ManageStatusesModal";
 import Button from "../../../components/Button/Button";
 import Pagination from "../../../components/Pagination/pagination";
 import { toast, ToastContainer } from "react-toastify";
@@ -364,12 +363,6 @@ const ProjectDashboard = () => {
           setSelectedProjectId(newProject.id);
           setIsStatusModalOpen(true);
         }}
-      />
-
-      <ManageStatusesModal
-        isOpen={isStatusModalOpen}
-        onClose={() => setIsStatusModalOpen(false)}
-        projectId={selectedProjectId}
       />
 
       <ToastContainer position="top-right" />

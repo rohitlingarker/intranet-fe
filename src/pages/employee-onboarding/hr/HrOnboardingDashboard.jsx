@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Users, X, XCircle, ShieldCheck} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -8,6 +8,7 @@ import { showStatusToast } from "../../../components/toastfy/toast";
 import Button from "../../../components/Button/Button";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
+import StatusBadge from "../../../components/status/statusbadge";
 /* ============================
    CONSTANTS
 ============================ */
@@ -23,6 +24,7 @@ const DEPARTMENTS = [
 ];
  
 const MANAGER_ROLES =["HR","ADMIN","MANAGER","CEO","CTO","CFO"];
+
  
 /* ============================
    JOIN MODAL
@@ -151,6 +153,64 @@ function JoinModal({
     </div>
   );
 }
+
+function ActionMenu({ onView, onCreate, showVerify }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="px-2 py-1 text-xl font-bold text-gray-600 hover:text-gray-900"
+      >
+        &#8942;
+      </button>
+
+      {open && (
+        <div className="absolute right-full mr-2 top-0 w-32 bg-white border rounded-md shadow-lg z-50">
+          <button
+            onClick={() => {
+              onView();
+              setOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            View
+          </button>
+
+          {showVerify && (
+            <button
+              onClick={() => {
+                onCreate();
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Create 
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
  
 /* ============================
    MAIN COMPONENT
@@ -439,6 +499,10 @@ export default function HrOnboardingDashboard() {
   const totalPages = Math.ceil(
     filteredData.length / PAGE_SIZE
   );
+
+  //  const isVerified =
+  //       String(offer.status || "").trim().toUpperCase() === "VERIFIED";
+
  
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -447,7 +511,7 @@ export default function HrOnboardingDashboard() {
       .slice(startIndex, startIndex + PAGE_SIZE)
       .map((emp) => {
         const isVerified =
-          emp.status?.toUpperCase() === "VERIFIED";
+          String(emp.status || "").trim().toUpperCase() === "VERIFIED";
  
         return {
           ...(bulkJoinMode && {
@@ -477,19 +541,32 @@ export default function HrOnboardingDashboard() {
  
           designation: emp.designation || "—",
  
-          status: emp.status || "—",
+          status: emp.status ? (
+              <StatusBadge label={emp.status} size="sm" />
+            ) : (
+              "—"
+            ),
  
           action: (
-            <span
-              className="text-indigo-600 cursor-pointer"
-              onClick={() =>
-                navigate(
-                  `/employee-onboarding/hr/profile/${emp.user_uuid}`
-                )
-              }
-            >
-              View
-            </span>
+              <ActionMenu
+            onView={() =>
+              navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
+            }
+            onCreate={() =>
+              navigate(`/employee-onboarding/core-employee`,{state:{userUuid:emp.user_uuid}})
+            }
+            showVerify={isVerified}
+          />
+            // <span
+            //   className="text-indigo-600 cursor-pointer"
+            //   onClick={() =>
+            //     navigate(
+            //       `/employee-onboarding/hr/profile/${emp.user_uuid}`
+            //     )
+            //   }
+            // >
+            //   View
+            // </span>
           ),
         };
       });

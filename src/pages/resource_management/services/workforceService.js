@@ -170,6 +170,23 @@ export const createRoleExpectation = async (payload) => {
   }
 };
 
+export const updateRoleExpectation = async (roleId, payload) => {
+  try {
+    const response = await axios.put(
+      `${BASE_URL}/api/admin/role-expectations/${roleId}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const getRoleExpectations = async () => {
   try {
     const response = await axios.get(
@@ -209,6 +226,23 @@ export const fetchDemands = async () => {
     const response = await axios.get(
       `${BASE_URL}/api/demand/demands`,
       {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data.data; // Return the actual array
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const fetchResources = async () => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/availability/timeline/window`,
+      {
+        params: { page: 0, size: 500 },
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

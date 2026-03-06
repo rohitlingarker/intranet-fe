@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Fragment } from "react";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { getAssetsByClient } from "../services/clientservice";
@@ -91,18 +91,26 @@ const Stat = ({ title, value, icon: Icon, color = "indigo" }) => {
 };
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col scale-100">
-      <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-b rounded-t-2xl">
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 md:p-10">
+    {/* Backdrop */}
+    <div
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    />
+
+    <div className="relative bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+      <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-b rounded-t-2xl shrink-0">
         <h3 className="text-base font-bold text-gray-800">{title}</h3>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-red-500 transition-colors"
+          className="text-slate-400 hover:text-red-500 transition-colors p-1 hover:bg-white rounded-full"
         >
           <X size={20} />
         </button>
       </div>
-      <div className="p-6 overflow-y-auto">{children}</div>
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {children}
+      </div>
     </div>
   </div>
 );
@@ -447,9 +455,9 @@ const AssetDetail = () => {
         <div className="flex gap-3 items-center">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-white rounded-full hover:shadow-sm text-slate-500 hover:text-indigo-600 transition-all"
+            className="p-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-slate-800">
@@ -519,11 +527,10 @@ const AssetDetail = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-2 py-3 text-sm font-semibold border-b-2 transition-all ${
-                activeTab === tab
-                  ? "border-indigo-600 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-indigo-600"
-              }`}
+              className={`px-2 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === tab
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-indigo-600"
+                }`}
             >
               {tab === "ACTIVE" ? "Active Assignments" : "Assignment History"}
             </button>
@@ -693,161 +700,164 @@ const AssetDetail = () => {
           title={editingAssignment ? "Edit Assignment" : "Assign Asset"}
           onClose={closeModal}
         >
-          <form onSubmit={handleAssignSave} className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Resource Name"
-                name="resourceName"
-                value={formData.resourceName}
-                onChange={handleFormChange}
-                required
-              />
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                  Project
-                </label>
-                <select
-                  name="projectId"
-                  // value={formData.projectId || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      // projectId: e.target.value,
-                      projectName:
-                        clientProjects.find(
-                          (p) => p.pmsProjectId == e.target.value,
-                        )?.name || "",
-                    }))
-                  }
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                >
-                  <option value="">Select Project</option>
-                  {clientProjects.map((p) => (
-                    <option key={p.pmsProjectId} value={p.pmsProjectId}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                  Serial Number
-                </label>
-
-                <select
-                  name="serialNumber"
-                  value={formData.serialNumber}
+          <form onSubmit={handleAssignSave} className="flex flex-col h-full max-h-[calc(80vh-60px)]">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Resource Name"
+                  name="resourceName"
+                  value={formData.resourceName}
                   onChange={handleFormChange}
                   required
-                  disabled={serialLoading}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                >
-                  <option value="">
-                    {serialLoading
-                      ? "Loading serials..."
-                      : "Select Serial Number"}
-                  </option>
+                />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Project
+                  </label>
+                  <select
+                    name="projectId"
+                    // value={formData.projectId || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        // projectId: e.target.value,
+                        projectName:
+                          clientProjects.find(
+                            (p) => p.pmsProjectId == e.target.value,
+                          )?.name || "",
+                      }))
+                    }
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="">Select Project</option>
+                    {clientProjects.map((p) => (
+                      <option key={p.pmsProjectId} value={p.pmsProjectId}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                  {/* Keep current serial visible in edit mode */}
-                  {editingAssignment && formData.serialNumber && (
-                    <option value={formData.serialNumber}>
-                      {formData.serialNumber} (Current)
-                    </option>
-                  )}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Serial Number
+                  </label>
 
-                  {availableSerials.map((s) => (
-                    <option key={s.serialNumber} value={s.serialNumber}>
-                      {s.serialNumber}
+                  <select
+                    name="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={handleFormChange}
+                    required
+                    disabled={serialLoading}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="">
+                      {serialLoading
+                        ? "Loading serials..."
+                        : "Select Serial Number"}
                     </option>
-                  ))}
-                </select>
-              </div>
-              <Input
-                label="Assigned By"
-                name="assignedBy"
-                value={formData.assignedBy}
-                disabled
-              />
-              <Input
-                label="Assigned Date"
-                type="date"
-                name="assignedDate"
-                value={formData.assignedDate}
-                onChange={handleFormChange}
-                required
-              />
-              <Input
-                label="Exp. Return"
-                type="date"
-                name="expectedReturnDate"
-                value={formData.expectedReturnDate}
-                onChange={handleFormChange}
-              />
-              <Select
-                label="Status"
-                name="assignmentStatus"
-                value={formData.assignmentStatus}
-                onChange={handleFormChange}
-                options={["ASSIGNED", "REQUESTED", "RETURNED", "REJECTED"]}
-              />
-              <Input
-                label="Location"
-                name="locationDetails"
-                value={formData.locationDetails}
-                onChange={handleFormChange}
-                placeholder="e.g. Hyderabad"
-              />
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                  Work Type
-                </label>
-                <select
-                  id="locationType"
-                  name="locationType"
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      locationType: e.target.value,
-                    }))
-                  }
+
+                    {/* Keep current serial visible in edit mode */}
+                    {editingAssignment && formData.serialNumber && (
+                      <option value={formData.serialNumber}>
+                        {formData.serialNumber} (Current)
+                      </option>
+                    )}
+
+                    {availableSerials.map((s) => (
+                      <option key={s.serialNumber} value={s.serialNumber}>
+                        {s.serialNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Input
+                  label="Assigned By"
+                  name="assignedBy"
+                  value={formData.assignedBy}
+                  disabled
+                />
+                <Input
+                  label="Assigned Date"
+                  type="date"
+                  name="assignedDate"
+                  value={formData.assignedDate}
+                  onChange={handleFormChange}
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                >
-                  <option value="" disabled selected>
-                    Select work mode
-                  </option>
-                  <option value="HYBRID">Hybrid</option>
-                  <option value="ON_SITE">On Site</option>
-                  <option value="CLIENT_LOCATION">Client Location</option>
-                </select>
+                />
+                <Input
+                  label="Exp. Return"
+                  type="date"
+                  name="expectedReturnDate"
+                  value={formData.expectedReturnDate}
+                  onChange={handleFormChange}
+                />
+                <Select
+                  label="Status"
+                  name="assignmentStatus"
+                  value={formData.assignmentStatus}
+                  onChange={handleFormChange}
+                  options={["ASSIGNED", "REQUESTED", "RETURNED", "REJECTED"]}
+                />
+                <Input
+                  label="Location"
+                  name="locationDetails"
+                  value={formData.locationDetails}
+                  onChange={handleFormChange}
+                  placeholder="e.g. Hyderabad"
+                />
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Work Type
+                  </label>
+                  <select
+                    id="locationType"
+                    name="locationType"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        locationType: e.target.value,
+                      }))
+                    }
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="" disabled selected>
+                      Select work mode
+                    </option>
+                    <option value="HYBRID">Hybrid</option>
+                    <option value="ON_SITE">On Site</option>
+                    <option value="CLIENT_LOCATION">Client Location</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  rows={3}
+                />
               </div>
             </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleFormChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
+            {/* FOOTER */}
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 py-4 border-t bg-slate-50/50 shrink-0">
               <button
                 type="button"
                 onClick={closeModal}
-                className={`px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 ${updateLoading ? "cursor-not-allowed" : ""}`}
+                className={`w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 ${updateLoading ? "cursor-not-allowed" : ""}`}
                 disabled={updateLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`px-4 py-2 text-sm font-medium rounded-lg text-white bg-indigo-500 hover:bg-indigo-600 ${updateLoading ? "cursor-not-allowed" : ""}`}
+                className={`w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg text-white bg-indigo-500 hover:bg-indigo-600 ${updateLoading ? "cursor-not-allowed" : ""}`}
                 disabled={updateLoading}
               >
                 {editingAssignment
@@ -862,116 +872,118 @@ const AssetDetail = () => {
       {/* RETURN MODAL */}
       {returnModal && returnItem && (
         <Modal title="Return Asset" onClose={() => setReturnModal(false)}>
-          <form onSubmit={handleReturnSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Resource"
-                value={returnItem.resourceName}
-                disabled
-              />
-              <Input label="Project" value={returnItem.projectName} disabled />
-              <Input
-                label="Serial Number"
-                value={returnItem.serialNumber}
-                disabled
-              />
-              <Input label="Return Date" value={today} disabled />
-            </div>
+          <form onSubmit={handleReturnSubmit} className="flex flex-col h-full max-h-[calc(80vh-60px)]">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Resource"
+                  value={returnItem.resourceName}
+                  disabled
+                />
+                <Input label="Project" value={returnItem.projectName} disabled />
+                <Input
+                  label="Serial Number"
+                  value={returnItem.serialNumber}
+                  disabled
+                />
+                <Input label="Return Date" value={today} disabled />
+              </div>
 
-            {/* --- INLINE LISTBOX START --- */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                Condition on Return
-              </label>
-              <Listbox
-                value={returnData.conditionOnReturn}
-                onChange={(val) =>
-                  handleReturnChange({
-                    target: { name: "conditionOnReturn", value: val },
-                  })
-                }
-              >
-                <div className="relative">
-                  <Listbox.Button className="relative w-full cursor-pointer bg-slate-50 border border-slate-200 rounded-xl py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
-                    <span className="block truncate text-slate-700">
-                      {returnData.conditionOnReturn}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                      <ChevronDown
-                        size={16}
-                        className="text-gray-400"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </Listbox.Button>
-                  <Transition
-                    as={Fragment}
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-[60]">
-                      {["Good", "Damaged", "Needs Repair", "Lost"].map(
-                        (opt) => (
-                          <Listbox.Option
-                            key={opt}
-                            value={opt}
-                            className={({ active }) =>
-                              `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                active
+              {/* --- INLINE LISTBOX START --- */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Condition on Return
+                </label>
+                <Listbox
+                  value={returnData.conditionOnReturn}
+                  onChange={(val) =>
+                    handleReturnChange({
+                      target: { name: "conditionOnReturn", value: val },
+                    })
+                  }
+                >
+                  <div className="relative">
+                    <Listbox.Button className="relative w-full cursor-pointer bg-slate-50 border border-slate-200 rounded-xl py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                      <span className="block truncate text-slate-700">
+                        {returnData.conditionOnReturn}
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <ChevronDown
+                          size={16}
+                          className="text-gray-400"
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </Listbox.Button>
+                    <Transition
+                      as={Fragment}
+                      leave="transition ease-in duration-100"
+                      leaveFrom="opacity-100"
+                      leaveTo="opacity-0"
+                    >
+                      <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none z-[60]">
+                        {["Good", "Damaged", "Needs Repair", "Lost"].map(
+                          (opt) => (
+                            <Listbox.Option
+                              key={opt}
+                              value={opt}
+                              className={({ active }) =>
+                                `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active
                                   ? "bg-indigo-50 text-indigo-700"
                                   : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {opt}
-                                </span>
-                                {selected ? (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
-                                    <Check size={16} aria-hidden="true" />
+                                }`
+                              }
+                            >
+                              {({ selected }) => (
+                                <>
+                                  <span
+                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                  >
+                                    {opt}
                                   </span>
-                                ) : null}
-                              </>
-                            )}
-                          </Listbox.Option>
-                        ),
-                      )}
-                    </Listbox.Options>
-                  </Transition>
-                </div>
-              </Listbox>
-            </div>
-            {/* --- INLINE LISTBOX END --- */}
+                                  {selected ? (
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-600">
+                                      <Check size={16} aria-hidden="true" />
+                                    </span>
+                                  ) : null}
+                                </>
+                              )}
+                            </Listbox.Option>
+                          ),
+                        )}
+                      </Listbox.Options>
+                    </Transition>
+                  </div>
+                </Listbox>
+              </div>
+              {/* --- INLINE LISTBOX END --- */}
 
-            <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
-                Return Notes
-              </label>
-              <textarea
-                name="returnNotes"
-                value={returnData.returnNotes}
-                onChange={handleReturnChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                rows={3}
-              />
+              <div>
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  Return Notes
+                </label>
+                <textarea
+                  name="returnNotes"
+                  value={returnData.returnNotes}
+                  onChange={handleReturnChange}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  rows={3}
+                />
+              </div>
             </div>
-            <div className="flex justify-end gap-3 pt-2">
+            {/* FOOTER */}
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 py-4 border-t bg-slate-50/50 shrink-0">
               <button
                 type="button"
                 onClick={() => setReturnModal(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={returnLoading}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {returnLoading ? "Returning..." : "Return"}
               </button>

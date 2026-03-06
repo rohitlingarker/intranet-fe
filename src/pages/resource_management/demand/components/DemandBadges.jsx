@@ -1,46 +1,49 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
-
-const toTitleCase = (str) => {
-    if (!str) return str;
-    const s = str.replace(/_/g, ' ');
-    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-};
+import {
+    Clock, AlertTriangle, CheckCircle2, ShieldAlert,
+    TrendingUp, Shield, Zap, Target
+} from "lucide-react";
 
 export const PriorityBadge = ({ priority }) => {
-    const map = {
-        CRITICAL: "bg-rose-50 text-rose-700 border-rose-100",
-        HIGH: "bg-amber-50 text-amber-700 border-amber-100",
-        MEDIUM: "bg-blue-50 text-blue-700 border-blue-100",
-        LOW: "bg-slate-50 text-slate-700 border-slate-100"
+    const p = String(priority).toUpperCase();
+    const config = {
+        'CRITICAL': { color: 'bg-rose-50 text-rose-700 border-rose-100', icon: ShieldAlert },
+        'HIGH': { color: 'bg-amber-50 text-amber-700 border-amber-100', icon: AlertTriangle },
+        'MEDIUM': { color: 'bg-indigo-50 text-indigo-700 border-indigo-100', icon: Clock },
+        'LOW': { color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: Clock },
     };
-
-    const styles = map[priority.toUpperCase()] || "bg-slate-50 text-slate-700 border-slate-100";
+    const c = config[p] || { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: Clock };
 
     return (
-        <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold border", styles)}>
-            {toTitleCase(priority)}
+        <span className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest border shadow-sm",
+            c.color
+        )}>
+            <c.icon className="h-3 w-3" />
+            {p}
         </span>
     );
 };
 
 export const StateBadge = ({ state }) => {
-    const map = {
-        OPEN: { class: "bg-emerald-50 text-emerald-700 border-emerald-100", label: "Approved" },
-        SOFT: { class: "bg-amber-50 text-amber-700 border-amber-100", label: "Pending" },
-        CANCELLED: { class: "bg-rose-50 text-rose-700 border-rose-100", label: "Cancelled" },
-        CLOSED: { class: "bg-slate-50 text-slate-700 border-slate-100", label: "Rejected" },
-        // Actual mapped statuses based on instructions
-        REQUESTED: { class: "bg-amber-50 text-amber-700 border-amber-100", label: "Pending" },
-        APPROVED: { class: "bg-emerald-50 text-emerald-700 border-emerald-100", label: "Approved" },
-        REJECTED: { class: "bg-slate-50 text-slate-700 border-slate-100", label: "Rejected" },
+    const s = String(state).toUpperCase();
+    const config = {
+        'APPROVED': { color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+        'OPEN': { color: 'bg-indigo-50 text-indigo-700 border-indigo-100', icon: Zap },
+        'SOFT': { color: 'bg-slate-100 text-slate-600 border-slate-200', icon: Shield },
+        'PENDING': { color: 'bg-amber-50 text-amber-600 border-amber-100', icon: Clock },
+        'REJECTED': { color: 'bg-rose-50 text-rose-600 border-rose-100', icon: Target },
     };
-
-    const config = map[state?.toUpperCase()] || { class: "bg-slate-50 text-slate-700 border-slate-100", label: toTitleCase(state) };
+    const c = config[s] || { color: 'bg-slate-50 text-slate-500 border-slate-100', icon: Clock };
 
     return (
-        <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold border", config.class)}>
-            {config.label}
+        <span className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tight border",
+            c.color
+        )}>
+            <c.icon className="h-3 w-3" />
+            {s}
         </span>
     );
 };
@@ -49,44 +52,40 @@ export const SLABadge = ({ days }) => {
     const isBreached = days < 0;
     const isAtRisk = days >= 0 && days <= 5;
 
-    if (isBreached) {
-        return (
-            <div className="flex flex-col gap-1 w-24">
-                <span className="text-[10px] font-bold text-rose-600">
-                    {Math.abs(days)}d overdue
-                </span>
-                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-rose-500" style={{ width: '100%' }} />
-                </div>
-            </div>
-        );
-    }
-
-    if (isAtRisk) {
-        return (
-            <div className="inline-flex flex-col">
-                <span className="text-[10px] font-bold text-amber-600">
-                    {days}d remaining
-                </span>
-                <div className="h-0.5 w-full bg-amber-400 mt-0.5" />
-            </div>
-        );
-    }
-
     return (
-        <div className="inline-flex flex-col">
-            <span className="text-[10px] font-bold text-slate-500">
-                {days}d remaining
-            </span>
-            <div className="h-0.5 w-full bg-slate-200 mt-0.5" />
-        </div>
+        <span className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border tabular-nums",
+            isBreached ? "bg-rose-950 text-white border-rose-900" :
+                isAtRisk ? "bg-amber-50 text-amber-700 border-amber-200" :
+                    "bg-emerald-50 text-emerald-700 border-emerald-100"
+        )}>
+            {isBreached ? <ShieldAlert className="h-3 w-3 text-rose-400" /> : <Clock className="h-3 w-3" />}
+            {isBreached ? `BREACHED (${Math.abs(days)}d)` : `${days} DAYS LEFT`}
+        </span>
     );
 };
 
 export const DemandTypeBadge = ({ type }) => {
+    const t = String(type).toUpperCase();
     return (
-        <span className="text-[10px] font-bold text-slate-600 tracking-tight">
-            {toTitleCase(type)}
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-widest">
+            {t}
         </span>
+    );
+};
+
+export const ScoreBadge = ({ score }) => {
+    const val = Number(score);
+    let color = "bg-indigo-500";
+    if (val >= 90) color = "bg-emerald-500";
+    else if (val <= 60) color = "bg-rose-500";
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className="text-[11px] font-black text-slate-900 tabular-nums">{val}%</span>
+            <div className="h-1.5 w-8 bg-slate-100 rounded-full overflow-hidden">
+                <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${val}%` }} />
+            </div>
+        </div>
     );
 };

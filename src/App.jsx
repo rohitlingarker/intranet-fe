@@ -31,8 +31,8 @@ import RMSProjectList from "./pages/resource_management/pages/project/RMSProject
 import RMSProjectDetails from "./pages/resource_management/pages/project/RMSProjectDetails.jsx";
 import WorkforceAvailability from "./pages/resource_management/pages/workforce/WorkforceAvailability.jsx";
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
-import DemandWorkspace from "./pages/resource_management/demand/pages/DemandWorkspace.jsx";
-import DemandDetailsPage from "./pages/resource_management/demand/pages/DemandDetailsPage.jsx";
+import DemandWorkspacePage from "./pages/resource_management/demand/pages/DemandWorkspacePage.jsx";
+import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDetailPage.jsx";
 
 // Timesheets
 
@@ -90,19 +90,25 @@ import AdminApprovalDashboard from "./pages/employee-onboarding/admin/AdminAppro
 import AdminOfferView from "./pages/employee-onboarding/admin/AdminOfferView.jsx";
 import HrOnboardingDashboard from "./pages/employee-onboarding/hr/HrOnboardingDashboard.jsx";
 import HrProfileView from "./pages/employee-onboarding/hr/HrProfileView.jsx";
+import BackgroundCheckPage from "./pages/employee-onboarding/hr/BackgroundCheckPage.jsx";
 import OnboardingTask from "./pages/employee-onboarding/onboarding-task/OnboardingTask.jsx";
 import EmployeeDirectory from "./pages/employee-onboarding/employee-directory/EmployeeDirectory.jsx";
 import EmployeeVerification from "./pages/employee-onboarding/employee-verification/EmployeeVerification.jsx";
 import EmployeeDocumentsTemplate from "./pages/employee-onboarding/employee-documents-template/EmployeeDocumentsTemplate.jsx";
 import OrganizationTree from "./pages/employee-onboarding/organization-tree/OrganizationTree.jsx";
-import SummaryPage from  "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
-import EmployeeDocumentsPage from "./pages/employee-onboarding/employeeDocuments/EmployeeDocuments.jsx";
+import SummaryPage from "./pages/employee-onboarding/summary-page/SummaryPage.jsx";
+import EmployeeDocumentsPage from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 import HeadcountDemographicsPage from "./pages/employee-onboarding/analytics/HeadcountDemographics.jsx";
 import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeList.jsx";
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
-import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
+import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetailsDashboard.jsx";
 import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx";
 import OnboardingSummary from "./pages/employee-onboarding/summary-page/OnboardingSummary.jsx";
+import DepartmentsMappingDashboard from "./pages/employee-onboarding/hr-configuration/departments/DepartmentsMappingDashboard.jsx";
+import DepartmentsList from "./pages/employee-onboarding/hr-configuration/departments/departmentsList/DepartmentsList.jsx";
+import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
+
+
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -202,7 +208,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const SaveLastPath = () => {
   const location = useLocation();
   useEffect(() => {
-    localStorage.setItem("lastPath", location.pathname + location.search);
+    if (location.pathname !== "/" && location.pathname !== "/login") {
+      localStorage.setItem("lastPath", location.pathname + location.search);
+    }
   }, [location]);
   return null;
 };
@@ -247,7 +255,6 @@ const AppRoutes = () => {
         navigate("/change-password", { replace: true });
       }
       else if (lastPath && lastPath !== "/" && lastPath !== "/login" && lastPath !== currentPath) {
-        // Only restore if we have a valid last path and aren't already there
         navigate(lastPath, { replace: true });
       }
       else if (currentPath === "/") {
@@ -403,7 +410,7 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/core-employee" element={<CoreEmployeeDetails/>}/> */}
 
           {/* Employee Onboarding */}
-          <Route path="/employee-onboarding" element={<EmployeeOnboardingLayout />}>
+          <Route path="/employee-onboarding/*" element={<EmployeeOnboardingLayout />}>
 
             <Route index element={<EmpDashboard />} />
 
@@ -419,6 +426,9 @@ const AppRoutes = () => {
             <Route path="hr-configuration/education/levels" element={<EducationLevelManagement />} />
             <Route path="hr-configuration/education/documents" element={<EducationDocumentManagement />} />
             <Route path="hr-configuration/education/mapping" element={<CountryEducationMapping />} />
+            <Route path="hr-configuration/departments" element={< DepartmentsMappingDashboard />} />
+            <Route path="hr-configuration/departments/departmentsList" element={< DepartmentsList />} />
+            <Route path="hr-configuration/departments/designationsList" element={< DesignationsList />} />
 
             <Route path="hr" element={<HrOnboardingDashboard />} />
             <Route path="hr/profile/:user_uuid" element={<HrProfileView />} />
@@ -436,12 +446,15 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
+            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+
 
 
           </Route>
@@ -760,16 +773,16 @@ const AppRoutes = () => {
           <Route
             path="/resource-management/demand"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
-                <DemandWorkspace />
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <DemandWorkspacePage />
               </ProtectedRoute>
             }
           />
           <Route
             path="/resource-management/demand/:demandId"
             element={
-              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
-                <DemandDetailsPage />
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <DemandDetailPage />
               </ProtectedRoute>
             }
           />

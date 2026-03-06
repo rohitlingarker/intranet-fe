@@ -12,44 +12,99 @@ import {
 
 const DemandFilters = ({
     onToggleCollapse,
-    clientFilter,
+    clientFilter = 'ALL',
     onClientChange,
-    priorityFilter,
+    priorityFilter = 'ALL',
     onPriorityChange,
     onReset,
     activeCount,
-    inline = false
+    inline = false,
+    clients = [],
+    statuses = [],
+    demandNames = [],
+    demandTypes = [],
+    deliveryModels = [],
+    priorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+    statusFilter = 'ALL',
+    onStatusChange,
+    demandNameFilter = 'ALL',
+    onDemandNameChange,
+    demandTypeFilter = 'ALL',
+    onDemandTypeChange,
+    deliveryModelFilter = 'ALL',
+    onDeliveryModelChange,
+    draft: externalDraft,
+    setDraft: setExternalDraft
 }) => {
-    // Local draft state to match Admin Panel functionality
-    const [draft, setDraft] = useState({
-        client: clientFilter,
-        priority: priorityFilter
+    // Standardize 'All' to 'ALL' from props initially
+    const safeClient = clientFilter || 'ALL';
+    const safePriority = priorityFilter || 'ALL';
+    const safeStatus = statusFilter || 'ALL';
+    const safeName = demandNameFilter || 'ALL';
+    const safeType = demandTypeFilter || 'ALL';
+    const safeModel = deliveryModelFilter || 'ALL';
+
+    // Local state as fallback for Sidebar mode, or use external for Persistence
+    const [localDraft, setLocalDraft] = useState({
+        client: safeClient,
+        priority: safePriority,
+        status: safeStatus,
+        demandName: safeName,
+        demandType: safeType,
+        deliveryModel: safeModel
     });
 
-    // Sync draft with external changes (e.g. from Reset)
+    const draft = externalDraft || localDraft;
+    const setDraft = setExternalDraft || setLocalDraft;
+
+    // Sync with external changes ONLY if using local state (Sidebar)
     useEffect(() => {
-        setDraft({
-            client: clientFilter,
-            priority: priorityFilter
-        });
-    }, [clientFilter, priorityFilter]);
+        if (!externalDraft) {
+            setLocalDraft({
+                client: clientFilter,
+                priority: priorityFilter,
+                status: statusFilter,
+                demandName: demandNameFilter,
+                demandType: demandTypeFilter,
+                deliveryModel: deliveryModelFilter
+            });
+        }
+    }, [clientFilter, priorityFilter, statusFilter, demandNameFilter, demandTypeFilter, deliveryModelFilter, externalDraft]);
 
     const handleApply = () => {
         onClientChange(draft.client);
         onPriorityChange(draft.priority);
+        onStatusChange(draft.status);
+        onDemandNameChange(draft.demandName);
+        onDemandTypeChange(draft.demandType);
+        onDeliveryModelChange(draft.deliveryModel);
         onToggleCollapse(); // Close on apply
     };
 
     const handleReset = () => {
         onReset();
         // Reset local draft immediately for better UX
-        setDraft({ client: 'All', priority: 'All' });
+        setDraft({
+            client: 'ALL',
+            priority: 'ALL',
+            status: 'ALL',
+            demandName: 'ALL',
+            demandType: 'ALL',
+            deliveryModel: 'ALL'
+        });
+    };
+
+    const formatEnum = (str) => {
+        if (!str) return '';
+        return str.split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     // If used as an inline/popover component (matching FilterBar.jsx dropdown)
     if (inline) {
         return (
-            <div className="flex flex-col h-full min-w-[300px] bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
+            <div className="flex flex-col min-w-[300px] bg-white rounded-xl overflow-hidden">
                 {/* Header - Identical to Admin Panel FilterBar */}
                 <div className="flex justify-between items-center px-4 py-3 bg-slate-50 border-b">
                     <span className="text-xs font-bold text-slate-700">
@@ -64,24 +119,24 @@ const DemandFilters = ({
                 </div>
 
                 {/* Body - 2 Column Grid like Admin Panel */}
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 overflow-y-auto flex-1 max-h-full custom-scrollbar">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
                                 Client account
                             </label>
                             <Select
-                                value={draft.client}
+                                value={draft?.client || 'ALL'}
                                 onValueChange={(v) => setDraft(prev => ({ ...prev, client: v }))}
                             >
                                 <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
                                     <SelectValue placeholder="All Clients" />
                                 </SelectTrigger>
                                 <SelectContent className="z-[110]">
-                                    <SelectItem value="All">All Clients</SelectItem>
-                                    <SelectItem value="Alpha Corp">Alpha Corp</SelectItem>
-                                    <SelectItem value="Global Tech">Global Tech</SelectItem>
-                                    <SelectItem value="OldGuard Inc">OldGuard Inc</SelectItem>
+                                    <SelectItem value="ALL">All Clients</SelectItem>
+                                    {clients.map(client => (
+                                        <SelectItem key={client} value={client}>{client}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -90,18 +145,101 @@ const DemandFilters = ({
                                 Priority
                             </label>
                             <Select
-                                value={draft.priority}
+                                value={draft.priority?.toUpperCase()}
                                 onValueChange={(v) => setDraft(prev => ({ ...prev, priority: v }))}
                             >
                                 <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
                                     <SelectValue placeholder="All" />
                                 </SelectTrigger>
                                 <SelectContent className="z-[110]">
-                                    <SelectItem value="All">All Priorities</SelectItem>
-                                    <SelectItem value="Critical">Critical</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="ALL">All Priorities</SelectItem>
+                                    {priorities.map(p => (
+                                        <SelectItem key={p} value={p}>
+                                            {formatEnum(p)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Demand Status
+                            </label>
+                            <Select
+                                value={draft.status?.toUpperCase()}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, status: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Statuses" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Statuses</SelectItem>
+                                    {statuses.map(s => (
+                                        <SelectItem key={s} value={s?.toUpperCase()}>{formatEnum(s)}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Demand Name
+                            </label>
+                            <Select
+                                value={draft?.demandName || 'ALL'}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, demandName: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Names" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Names</SelectItem>
+                                    {demandNames.map(name => (
+                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Demand Type
+                            </label>
+                            <Select
+                                value={draft?.demandType || 'ALL'}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, demandType: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Types" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Types</SelectItem>
+                                    {demandTypes.map(type => (
+                                        <SelectItem key={type} value={type}>{formatEnum(type)}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                Delivery Model
+                            </label>
+                            <Select
+                                value={draft?.deliveryModel || 'ALL'}
+                                onValueChange={(v) => setDraft(prev => ({ ...prev, deliveryModel: v }))}
+                            >
+                                <SelectTrigger className="h-9 text-[11px] font-semibold bg-white border-gray-200 focus:ring-1 focus:ring-indigo-500">
+                                    <SelectValue placeholder="All Models" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[110]">
+                                    <SelectItem value="ALL">All Models</SelectItem>
+                                    {deliveryModels.map(model => (
+                                        <SelectItem key={model} value={model}>{formatEnum(model)}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -164,10 +302,10 @@ const DemandFilters = ({
                             <SelectValue placeholder="All Clients" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="All">All Clients</SelectItem>
-                            <SelectItem value="Alpha Corp">Alpha Corp</SelectItem>
-                            <SelectItem value="Global Tech">Global Tech</SelectItem>
-                            <SelectItem value="OldGuard Inc">OldGuard Inc</SelectItem>
+                            <SelectItem value="ALL">All Clients</SelectItem>
+                            {clients.map(client => (
+                                <SelectItem key={client} value={client}>{client}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -178,21 +316,93 @@ const DemandFilters = ({
                         Priority level
                     </label>
                     <div className="grid grid-cols-1 gap-2">
-                        {['All', 'Critical', 'High', 'Medium', 'Low'].map((p) => (
+                        {['ALL', ...priorities].map((p) => (
                             <button
                                 key={p}
                                 onClick={() => onPriorityChange(p)}
                                 className={cn(
                                     "px-3 py-2 rounded-md text-[11px] font-semibold border transition-all text-left",
-                                    priorityFilter === p
+                                    priorityFilter?.toUpperCase() === p?.toUpperCase()
                                         ? "bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm"
                                         : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                                 )}
                             >
-                                {p}
+                                {p === 'ALL' ? 'All' : formatEnum(p)}
                             </button>
                         ))}
                     </div>
+                </div>
+
+                {/* Status Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Demand Status
+                    </label>
+                    <Select value={statusFilter} onValueChange={onStatusChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Statuses</SelectItem>
+                            {statuses.map(s => (
+                                <SelectItem key={s} value={s}>{formatEnum(s)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Demand Name Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Demand Name
+                    </label>
+                    <Select value={demandNameFilter} onValueChange={onDemandNameChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Names" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Names</SelectItem>
+                            {demandNames.map(name => (
+                                <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Demand Type Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Demand Type
+                    </label>
+                    <Select value={demandTypeFilter} onValueChange={onDemandTypeChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Types</SelectItem>
+                            {demandTypes.map(type => (
+                                <SelectItem key={type} value={type}>{formatEnum(type)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Delivery Model Selection */}
+                <div className="space-y-2">
+                    <label className="text-[11px] font-semibold text-slate-500 block">
+                        Delivery Model
+                    </label>
+                    <Select value={deliveryModelFilter} onValueChange={onDeliveryModelChange}>
+                        <SelectTrigger className="h-10 text-xs font-semibold bg-slate-50/50 border-slate-200">
+                            <SelectValue placeholder="All Models" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Models</SelectItem>
+                            {deliveryModels.map(model => (
+                                <SelectItem key={model} value={model}>{formatEnum(model)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, Fragment } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { Search, Filter, X, Check } from "lucide-react";
 import { Combobox, Listbox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import ct from "countries-and-timezones";
+import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 // --- Reusable Components ---
+
 
 const CountryCombobox = ({ value, onChange, options }) => {
   const [query, setQuery] = useState("");
@@ -12,11 +16,11 @@ const CountryCombobox = ({ value, onChange, options }) => {
     query === ""
       ? options
       : options.filter((o) =>
-          o
-            .toLowerCase()
-            .replace(/\s+/g, "")
-            .includes(query.toLowerCase().replace(/\s+/g, "")),
-        );
+        o
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .includes(query.toLowerCase().replace(/\s+/g, "")),
+      );
 
   return (
     <Combobox value={value} onChange={onChange}>
@@ -154,8 +158,13 @@ const SelectListbox = ({
 // --- Main Component ---
 
 const FilterBar = ({ filters, onUpdate }) => {
+  const { getEnumValues } = useEnums();
+  const CLIENT_TYPES = getEnumValues("ClientType");
+  const PRIORITY_LEVELS = getEnumValues("PriorityLevel");
+  const RECORD_STATUSES = getEnumValues("RecordStatus");
+
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: false, right: false });
+  const [dropdownPos, setDropdownPos] = useState(null);
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
   const [draft, setDraft] = useState({ ...filters });
@@ -180,16 +189,54 @@ const FilterBar = ({ filters, onUpdate }) => {
   }, [filters]);
 
   useEffect(() => {
-    if (open && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setCoords({
-        top: window.innerHeight - rect.bottom < 350,
-        right: window.innerWidth - rect.left < 320,
-      });
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const popupHeight = 350;
+        const popupWidth = 320;
+
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        let align = 'down';
+        if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
+          align = 'up';
+        }
+
+        let horizontalPos = { left: rect.left };
+        if (rect.left + popupWidth > viewportWidth) {
+          horizontalPos = { right: viewportWidth - rect.right };
+          delete horizontalPos.left;
+        }
+
+        setDropdownPos({
+          top: align === 'up' ? 'auto' : (rect.bottom + 8),
+          bottom: align === 'up' ? (viewportHeight - rect.top + 8) : 'auto',
+          ...horizontalPos,
+          align,
+          maxHeight: Math.min(viewportHeight * 0.85, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
+        });
+      }
+    };
+
+    if (open) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
     }
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [open]);
 
-  useEffect(() => setDraft({ ...filters }), [filters]);
+  // Sync draft with global filters ONLY when global filters change (like Reset)
+  useEffect(() => {
+    setDraft({ ...filters });
+  }, [filters]);
 
   const handleDateChange = (field, value) => {
     setDraft((prev) => {
@@ -220,12 +267,17 @@ const FilterBar = ({ filters, onUpdate }) => {
 
   useEffect(() => {
     const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target))
+      if (buttonRef.current && buttonRef.current.contains(e.target)) return;
+      const portal = document.getElementById('client-filter-portal');
+      if (portal && !portal.contains(e.target)) {
         setOpen(false);
+      }
     };
-    document.addEventListener("mousedown", handler);
+    if (open) {
+      document.addEventListener("mousedown", handler);
+    }
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
 
   return (
     <div className="flex items-center gap-2 p-2 bg-white border-b font-sans">
@@ -246,19 +298,23 @@ const FilterBar = ({ filters, onUpdate }) => {
           ref={buttonRef}
           onClick={() => setOpen(!open)}
           className={`
-    relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 active:scale-[0.98] shadow-sm
-    ${
-      open
-        ? "bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/20"
-        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-    }
-  `}
+            relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 active:scale-[0.98] shadow-sm
+            ${open
+              ? "bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/20"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+            }
+          `}
         >
           <Filter
             className={`w-4 h-4 ${open ? "text-white" : "text-gray-500"}`}
           />
-          Filters
-          {/* Notification Badge */}
+          {(filters.region && filters.region !== 'ALL') ||
+            (filters.type && filters.type !== 'ALL') ||
+            (filters.priority && filters.priority !== 'ALL') ||
+            (filters.status && filters.status !== 'ALL')
+            ? (filters.region || filters.type || filters.priority || filters.status)
+            : 'Filters'
+          }
           {!open && activeCount > 0 && (
             <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-200">
               {activeCount}
@@ -279,11 +335,18 @@ const FilterBar = ({ filters, onUpdate }) => {
         )} */}
 
         {/* Dropdown Menu */}
-        {open && (
+        {open && dropdownPos && createPortal(
           <div
-            className={`absolute z-20 w-72 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-150
-            ${coords.top ? "bottom-full mb-2" : "top-full mt-4"}
-            ${coords.right ? "right-0" : "left-0"}`}
+            id="client-filter-portal"
+            className={`fixed z-[100] w-72 bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200
+            ${dropdownPos.align === 'up' ? "origin-bottom" : "origin-top"}`}
+            style={{
+              top: dropdownPos.top === 'auto' ? 'auto' : `${dropdownPos.top}px`,
+              bottom: dropdownPos.bottom === 'auto' ? 'auto' : `${dropdownPos.bottom}px`,
+              right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : 'auto',
+              left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : 'auto',
+              maxHeight: `${dropdownPos.maxHeight}px`
+            }}
           >
             <div className="flex justify-between items-center px-3 py-2 bg-slate-50 border-b">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -316,7 +379,7 @@ const FilterBar = ({ filters, onUpdate }) => {
                   <SelectListbox
                     value={draft.type}
                     onChange={(v) => setDraft({ ...draft, type: v })}
-                    options={["STRATEGIC", "STANDARD", "SUPPORT", "INTERNAL"]}
+                    options={CLIENT_TYPES}
                     placeholder="All Types"
                   />
                 </div>
@@ -330,7 +393,7 @@ const FilterBar = ({ filters, onUpdate }) => {
                   <SelectListbox
                     value={draft.priority}
                     onChange={(v) => setDraft({ ...draft, priority: v })}
-                    options={["HIGH", "MEDIUM", "LOW"]}
+                    options={PRIORITY_LEVELS}
                     placeholder="All"
                   />
                 </div>
@@ -341,7 +404,7 @@ const FilterBar = ({ filters, onUpdate }) => {
                   <SelectListbox
                     value={draft.status}
                     onChange={(v) => setDraft({ ...draft, status: v })}
-                    options={["ACTIVE", "INACTIVE", "ON_HOLD"]}
+                    options={RECORD_STATUSES}
                     placeholder="All Status"
                   />
                 </div>
@@ -396,7 +459,8 @@ const FilterBar = ({ filters, onUpdate }) => {
                 Apply Filters
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

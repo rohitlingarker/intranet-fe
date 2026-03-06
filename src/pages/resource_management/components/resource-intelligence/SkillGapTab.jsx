@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Combobox, Transition } from "@headlessui/react";
 import { fetchDemands, getSkillGapAnalysis } from "../../services/workforceService";
+import { fetchResources } from "../../services/resource";
 import { toast } from "react-toastify";
 import Pagination from "../../../../components/Pagination/pagination";
 
@@ -30,7 +31,7 @@ function MatchGauge({ percentage, size = 48 }) {
                 <circle cx={size / 2} cy={size / 2} r={radius} className="stroke-slate-100" strokeWidth={strokeWidth} fill="none" />
                 <circle cx={size / 2} cy={size / 2} r={radius} className={cn(color, "transition-all duration-1000 ease-out")} strokeWidth={strokeWidth} fill="none" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
             </svg>
-            <span className="absolute text-[8px] font-black text-slate-900 leading-none font-sans">{p}%</span>
+            <span className="absolute text-[8px] font-black text-slate-900 leading-none font-sans">{p.toFixed(0)}%</span>
         </div>
     );
 }
@@ -45,24 +46,24 @@ function KPICard({ label, value, subValue, icon: Icon, colorClass, children }) {
                     <Icon className="h-5 w-5" />
                 </div>
             )}
-            <div className="flex-[2] min-w-0">
+            <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-bold text-slate-600 font-sans mb-0.5 whitespace-nowrap">{label}</div>
-                <div className="flex items-baseline gap-1.5">
-                    <div className="text-xl font-black text-slate-900 font-sans tracking-tight truncate">{value}</div>
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <div className="text-xl font-black text-slate-900 font-sans tracking-tight shrink-0">{value}</div>
                     {subValue && <div className="text-[9px] font-bold text-slate-400 font-sans truncate">{subValue}</div>}
                 </div>
             </div>
-            <div className="flex-[1.2] flex items-center justify-center pt-2">
+            <div className="flex-shrink-0 flex items-center justify-center pt-2">
                 {children}
             </div>
         </div>
     );
 }
 
-export default function SkillGapTab({ resource }) {
-    const [demands, setDemands] = useState([]);
-    const [demandsLoading, setDemandsLoading] = useState(true);
-    const [selectedDemand, setSelectedDemand] = useState(null);
+export default function SkillGapTab({ resource, demand }) {
+    const [selectionList, setSelectionList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedItem, setSelectedItem] = useState(null);
     const [query, setQuery] = useState("");
     const [analysis, setAnalysis] = useState(null);
     const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -75,35 +76,43 @@ export default function SkillGapTab({ resource }) {
     useEffect(() => {
         let c = false;
         (async () => {
+            setLoading(true);
             try {
-                const d = await fetchDemands();
-                if (!c) setDemands(Array.isArray(d) ? d : []);
+                // If resource is provided, we fetch demands to compare against.
+                // If demand is provided, we fetch resources to compare against.
+                const response = resource ? await fetchDemands() : await fetchResources();
+                const data = resource ? response : response.data; // resource.js returns the full response object
+                if (!c) setSelectionList(Array.isArray(data) ? data : []);
             }
-            catch (err) { console.error("Failed to fetch demands:", err); }
-            finally { if (!c) setDemandsLoading(false); }
+            catch (err) { console.error("Failed to fetch selection list:", err); }
+            finally { if (!c) setLoading(false); }
         })();
         return () => { c = true; };
-    }, []);
+    }, [resource, demand]);
 
-    const filteredDemands = useMemo(() => {
+    const filteredItems = useMemo(() => {
+        if (!selectionList) return [];
         return query === ""
-            ? demands
-            : demands.filter((d) => {
-                const name = (d.demandName || d.name || "").toLowerCase();
-                const project = (d.projectName || "").toLowerCase();
+            ? selectionList
+            : selectionList.filter((item) => {
+                const name = (item.demandName || item.name || item.resourceName || "").toLowerCase();
+                const subText = (item.projectName || item.role || item.location || item.resourceRole || "").toLowerCase();
                 const q = query.toLowerCase();
-                return name.includes(q) || project.includes(q);
+                return name.includes(q) || subText.includes(q);
             });
-    }, [demands, query]);
+    }, [selectionList, query]);
 
     const runAnalysis = async () => {
-        if (!selectedDemand) return;
+        if (!selectedItem && !demand && !resource) return;
         setAnalysisLoading(true); setAnalysisError(null); setAnalysis(null);
         setPage(1); // Reset page on new analysis
         try {
-            const id = resource.resourceId || resource.id;
-            const dId = selectedDemand.demandId || selectedDemand.id;
-            const data = await getSkillGapAnalysis(dId, id);
+            const rId = resource ? (resource.resourceId || resource.id) : (selectedItem?.resourceId || selectedItem?.id);
+            const dId = demand ? (demand.demandId || demand.id) : (selectedItem?.demandId || selectedItem?.id);
+
+            if (!rId || !dId) throw new Error("Missing ID for analysis");
+
+            const data = await getSkillGapAnalysis(dId, rId);
             setAnalysis(data);
             toast.success("Intelligence analysis completed successfully.");
         } catch (err) {
@@ -128,19 +137,21 @@ export default function SkillGapTab({ resource }) {
 
             {/* ── ROW 1: SELECTION & CONTROLS ────────────────────────────── */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row items-end gap-4">
-                    <div className="flex-1 w-full max-w-[280px] space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Target Demand Pipeline</label>
+                <div className="flex flex-col md:flex-row items-stretch md:items-end gap-5">
+                    <div className="flex-1 w-full md:max-w-[320px] space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">
+                            {resource ? "Target Demand Pipeline" : "Target Resource Selection"}
+                        </label>
                         <div className="relative group">
-                            <Combobox value={selectedDemand} onChange={setSelectedDemand}>
+                            <Combobox value={selectedItem} onChange={setSelectedItem}>
                                 <div className="relative">
                                     <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-slate-50 border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all">
                                         <Combobox.Button as="div" className="w-full">
                                             <Combobox.Input
-                                                className="w-full border-none py-2.5 pl-4 pr-10 text-xs font-bold text-slate-900 bg-transparent focus:ring-0 outline-none placeholder:text-slate-400 font-sans"
-                                                displayValue={(d) => d ? (d.demandName || d.name) : ""}
+                                                className="w-full border-none py-3 pl-4 pr-10 text-xs font-bold text-slate-900 bg-transparent focus:ring-0 outline-none placeholder:text-slate-400 font-sans"
+                                                displayValue={(item) => item ? (item.demandName || item.name || item.resourceName) : ""}
                                                 onChange={(e) => setQuery(e.target.value)}
-                                                placeholder="Search demand..."
+                                                placeholder={resource ? "Search demand..." : "Search resource..."}
                                             />
                                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                                 <ChevronsUpDown className="h-4 w-4 text-slate-400" />
@@ -149,15 +160,15 @@ export default function SkillGapTab({ resource }) {
                                     </div>
                                     <Transition as={Fragment} afterLeave={() => setQuery("")}>
                                         <Combobox.Options className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white py-1.5 text-xs shadow-2xl ring-1 ring-black/5 z-[60] border border-slate-100 font-sans">
-                                            {demandsLoading ? (
+                                            {loading ? (
                                                 <div className="p-5 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-indigo-500" /></div>
-                                            ) : filteredDemands.length === 0 ? (
+                                            ) : filteredItems.length === 0 ? (
                                                 <div className="p-5 text-center text-slate-400 font-medium font-sans">No matches found</div>
                                             ) : (
-                                                filteredDemands.map((d) => (
-                                                    <Combobox.Option key={d.demandId || d.id} className={({ active }) => cn("px-4 py-2.5 cursor-pointer transition-colors", active ? "bg-indigo-50" : "bg-white")} value={d}>
-                                                        <div className="font-bold text-slate-900 font-sans">{d.demandName || d.name}</div>
-                                                        <div className="text-[10px] text-slate-500 font-medium mt-0.5 font-sans">{d.projectName}</div>
+                                                filteredItems.map((item) => (
+                                                    <Combobox.Option key={item.demandId || item.id || item.resourceId} className={({ active }) => cn("px-4 py-2.5 cursor-pointer transition-colors", active ? "bg-indigo-50" : "bg-white")} value={item}>
+                                                        <div className="font-bold text-slate-900 font-sans">{item.demandName || item.name || item.resourceName}</div>
+                                                        <div className="text-[10px] text-slate-500 font-medium mt-0.5 font-sans">{item.projectName || item.role || item.location || item.resourceRole}</div>
                                                     </Combobox.Option>
                                                 ))
                                             )}
@@ -169,8 +180,8 @@ export default function SkillGapTab({ resource }) {
                     </div>
                     <Button
                         onClick={runAnalysis}
-                        disabled={!selectedDemand || analysisLoading}
-                        className="h-10 px-8 text-xs font-bold gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:-translate-y-0.5"
+                        disabled={!selectedItem || analysisLoading}
+                        className="h-11 md:h-12 px-8 text-xs font-bold gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 border-none transition-all hover:-translate-y-0.5 w-full md:w-auto"
                     >
                         {analysisLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-white/20" />}
                         RUN ANALYSIS
@@ -180,8 +191,8 @@ export default function SkillGapTab({ resource }) {
 
             {/* ── ROW 2: KPI INSIGHTS ────────────────────────────────────── */}
             {analysis ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <KPICard label="Total Match Score" value={`${analysis.matchPercentage}%`} icon={Target} colorClass="bg-indigo-50 text-indigo-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <KPICard label="Total Match Score" value={`${Number(analysis.matchPercentage || 0).toFixed(2)}%`} icon={Target} colorClass="bg-indigo-50 text-indigo-500">
                         <MatchGauge percentage={analysis.matchPercentage} size={40} />
                     </KPICard>
 
@@ -220,7 +231,11 @@ export default function SkillGapTab({ resource }) {
                             <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
                                 <Activity className="h-4 w-4 text-indigo-500" /> Skill Comparison Workbench
                             </h4>
-                            {analysis && <Badge variant="secondary" className="bg-white text-slate-500 text-[10px] font-bold border-slate-200">Ref: ID-{selectedDemand?.demandId || "000"}</Badge>}
+                            {analysis && (
+                                <Badge variant="secondary" className="bg-white text-slate-500 text-[10px] font-bold border-slate-200">
+                                    Ref: {resource ? `ID-${selectedItem?.demandId || "000"}` : `Res-${selectedItem?.resourceId || "000"}`}
+                                </Badge>
+                            )}
                         </div>
 
                         {analysis ? (
@@ -229,10 +244,10 @@ export default function SkillGapTab({ resource }) {
                                     <table className="w-full font-sans">
                                         <thead>
                                             <tr className="bg-slate-50/30 border-b border-slate-100">
-                                                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Skill Layer</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Asset</th>
-                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                                                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[180px]">Skill Layer</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[80px]">Target</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[80px]">Asset</th>
+                                                <th className="px-5 py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest min-w-[100px]">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
@@ -310,7 +325,7 @@ export default function SkillGapTab({ resource }) {
 
                         <div className="space-y-6">
                             {/* Exit Notice Warning */}
-                            {resource.noticeInfo?.isNoticePeriod && (
+                            {((resource && resource.noticeInfo?.isNoticePeriod) || (selectedItem && selectedItem.noticeInfo?.isNoticePeriod)) && (
                                 <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex gap-3 shadow-sm shadow-rose-50">
                                     <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
                                     <div>
