@@ -26,25 +26,25 @@ const KPICard = ({ label, value, icon: Icon, colorClass, active, onClick, suffix
 
     return (
         <div className={cn(
-            "flex items-center gap-2.5 rounded-xl border bg-white p-3 text-left transition-all shadow-sm",
-            active ? "ring-2 ring-indigo-600 bg-indigo-50/10 border-indigo-200" : "border-slate-100 hover:border-slate-200",
+            "flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition-all shadow-sm",
+            active ? "ring-2 ring-indigo-600 bg-indigo-50 border-indigo-200" : "border-slate-100 hover:border-slate-200 hover:shadow-md",
             className
         )}>
             <div className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform",
                 colorClass || "bg-slate-100 text-slate-600"
             )}>
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 mb-0.5 whitespace-nowrap tracking-tight uppercase">
+                <p className="text-xs font-medium text-slate-500 mb-0.5 whitespace-nowrap tracking-tight">
                     {label}
                 </p>
                 <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-bold text-slate-900 tabular-nums tracking-tight">
+                    <p className="text-2xl font-bold text-slate-900 tabular-nums tracking-tight">
                         {value}
                     </p>
-                    {suffix && <span className="text-xs font-bold text-slate-400">{suffix}</span>}
+                    {suffix && <span className="text-sm font-bold text-slate-400">{suffix}</span>}
                 </div>
             </div>
         </div>
@@ -81,7 +81,7 @@ const DemandKPIStrip = ({ data, isLoading }) => {
                 colCount === 3 && "grid-cols-1 sm:grid-cols-3",
                 colCount === 4 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
                 colCount === 5 && "grid-cols-1 sm:grid-cols-3 lg:grid-cols-5",
-                colCount === 6 && "grid-cols-1 sm:grid-cols-3 lg:grid-cols-6",
+                colCount === 6 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-6",
                 !([3, 4, 5, 6].includes(colCount)) && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
             )}
         >

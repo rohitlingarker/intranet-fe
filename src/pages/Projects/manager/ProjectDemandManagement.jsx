@@ -13,8 +13,11 @@ import { getProjectById, checkDemandCreation } from '../../resource_management/s
 import { getSkillCategoriesTree, getProficiencyLevels } from "../../resource_management/services/workforceService";
 import DemandModal from "../../resource_management/models/DemandModal";
 import AddDeliverableRoleModal from "../../resource_management/models/AddDeliverableRoleModal";
+import Pagination from '../../../components/Pagination/pagination';
+import { useAuth } from "../../../contexts/AuthContext";
 
 const ProjectDemandManagement = ({ projectId, projectName }) => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const demandId = searchParams.get('demandId');
@@ -24,10 +27,18 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const filterButtonRef = useRef(null);
     const [dropdownPos, setDropdownPos] = useState(null);
 
-    // Advanced Filter States
-    const [clientFilter, setClientFilter] = useState('All');
-    const [priorityFilter, setPriorityFilter] = useState('All');
+    const [filters, setFilters] = useState({
+        client: 'ALL',
+        priority: 'ALL',
+        status: 'ALL',
+        demandName: 'ALL'
+    });
     const [activeTab, setActiveTab] = useState('all');
+    const [draftFilters, setDraftFilters] = useState(filters);
+
+    useEffect(() => {
+        setDraftFilters(filters);
+    }, [filters]);
 
     // Project & Modal states
     const [project, setProject] = useState(null);
@@ -38,6 +49,19 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const [demandResponse, setDemandResponse] = useState(null);
     const [demandModalOpen, setDemandModalOpen] = useState(false);
     const [deliverableModalOpen, setDeliverableModalOpen] = useState(false);
+
+    // Edit Modal State
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingDemand, setEditingDemand] = useState(null);
+
+    const handleEdit = (demand) => {
+        setEditingDemand(demand);
+        setEditModalOpen(true);
+    };
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(20);
 
     // Deliverable Role Data
     const [categories, setCategories] = useState([]);
@@ -88,31 +112,51 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, []);
 
 
-    // Handle dropdown positioning
     useEffect(() => {
-        if (!filterCollapsed && filterButtonRef.current) {
-            const rect = filterButtonRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const popupHeight = 420;
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
+        const updatePosition = () => {
+            if (filterButtonRef.current) {
+                const rect = filterButtonRef.current.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                const popupHeight = 450;
+                const popupWidth = 340;
 
-            const align = (spaceBelow < popupHeight && spaceAbove > spaceBelow) ? 'up' : 'down';
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
 
-            setDropdownPos({
-                top: align === 'up' ? (rect.top + window.scrollY - 8) : (rect.bottom + window.scrollY + 8),
-                right: window.innerWidth - (rect.right + window.scrollX),
-                align,
-                maxHeight: Math.min(viewportHeight * 0.7, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
-            });
-        }
+                // Priority 1: Vertical positioning (Below is preferred)
+                let align = 'down';
+                if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
+                    align = 'up';
+                }
 
-        const handleResize = () => {
-            if (!filterCollapsed) setFilterCollapsed(true);
+                // Priority 2: Horizontal positioning
+                let horizontalPos = { right: viewportWidth - rect.right };
+                if (rect.right < popupWidth) {
+                    horizontalPos = { left: rect.left };
+                    delete horizontalPos.right;
+                }
+
+                setDropdownPos({
+                    top: align === 'up' ? 'auto' : (rect.bottom + 8),
+                    bottom: align === 'up' ? (viewportHeight - rect.top + 8) : 'auto',
+                    ...horizontalPos,
+                    align,
+                    maxHeight: Math.min(viewportHeight * 0.85, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
+                });
+            }
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        if (!filterCollapsed) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
     }, [filterCollapsed]);
 
     // Keyboard and click outside handling
@@ -200,8 +244,15 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         return Array.from(new Set(projectDemands.map(d => d.client).filter(Boolean))).sort();
     }, [projectDemands]);
 
-    const availablePriorities = useMemo(() => ['Critical', 'High', 'Medium', 'Low'], []);
+    const availableStatuses = useMemo(() => {
+        return Array.from(new Set(projectDemands.map(d => d.lifecycleState).filter(Boolean))).sort();
+    }, [projectDemands]);
 
+    const availableDemandNames = useMemo(() => {
+        return Array.from(new Set(projectDemands.map(d => d.role).filter(Boolean))).sort();
+    }, [projectDemands]);
+
+    const availablePriorities = useMemo(() => ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], []);
     const filteredDemands = useMemo(() => {
         let list = [...projectDemands];
 
@@ -222,27 +273,51 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         } else if (activeTab === 'soft') {
             list = list.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase()));
         }
-        // 'all' tab doesn't need additional filtering beyond the CANCELLED/CLOSED filter
 
-        if (clientFilter !== 'All') {
-            list = list.filter(d => d.client === clientFilter);
+        if (filters.client !== 'ALL') {
+            list = list.filter(d => d.client === filters.client);
         }
-        if (priorityFilter !== 'All') {
-            list = list.filter(d => d.priority?.toUpperCase() === priorityFilter.toUpperCase());
+        if (filters.priority !== 'ALL') {
+            list = list.filter(d => d.priority?.toUpperCase() === filters.priority.toUpperCase());
+        }
+        if (filters.status && filters.status !== 'ALL') {
+            list = list.filter(d => d.lifecycleState?.toUpperCase() === filters.status.toUpperCase());
+        }
+        if (filters.demandName && filters.demandName !== 'ALL') {
+            list = list.filter(d => d.role === filters.demandName);
         }
 
         return list;
-    }, [projectDemands, searchQuery, clientFilter, priorityFilter, activeTab]);
+    }, [projectDemands, searchQuery, filters, activeTab]);
+
+
+    const totalElements = filteredDemands.length;
+    const totalPages = Math.ceil(totalElements / pageSize);
+
+    const paginatedDemands = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredDemands.slice(start, start + pageSize);
+    }, [filteredDemands, page, pageSize]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, filters, activeTab]);
 
     const activeFilterCount = [
-        clientFilter !== 'All',
-        priorityFilter !== 'All'
+        filters.client !== 'ALL',
+        filters.priority !== 'ALL',
+        filters.status !== 'ALL',
+        filters.demandName !== 'ALL'
     ].filter(Boolean).length;
 
     const resetFilters = () => {
         setSearchQuery('');
-        setClientFilter('All');
-        setPriorityFilter('All');
+        setFilters({
+            client: 'ALL',
+            priority: 'ALL',
+            status: 'ALL',
+            demandName: 'ALL'
+        });
     };
 
     if (demandId) {
@@ -314,7 +389,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                 Project Demand Pipeline
                             </h3>
                             <span className="text-[11px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                                {filteredDemands.length} records
+                                {totalElements} records
                             </span>
                         </div>
 
@@ -341,9 +416,12 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                 )}
                             >
                                 <Filter className={cn("h-3.5 w-3.5", !filterCollapsed ? "text-white" : "text-slate-500")} />
-                                Filters
-                                {filterCollapsed && activeFilterCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-200">
+                                {filters.client !== 'ALL' ? filters.client : 'Filters'}
+                                {activeFilterCount > 0 && (
+                                    <span className={cn(
+                                        "absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-bold shadow-sm ring-2 ring-white animate-in zoom-in duration-200",
+                                        !filterCollapsed ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
+                                    )}>
                                         {activeFilterCount}
                                     </span>
                                 )}
@@ -390,12 +468,25 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                 </div>
 
                 <div className="flex flex-col">
-                    {filteredDemands.length > 0 ? (
-                        <DemandList
-                            demands={filteredDemands}
-                            onViewDetail={handleViewDetail}
-                            activeTab={activeTab}
-                        />
+                    {paginatedDemands.length > 0 ? (
+                        <div className="flex flex-col">
+                            <DemandList
+                                demands={paginatedDemands}
+                                onViewDetail={handleViewDetail}
+                                onEdit={handleEdit}
+                                activeTab={activeTab}
+                            />
+                            {totalPages > 1 && (
+                                <div className="py-6 border-t border-slate-100">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                                        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="py-24 text-center">
                             <p className="text-sm font-medium text-slate-400">No demands found for this project matching criteria.</p>
@@ -409,27 +500,35 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                 <div
                     id="filter-portal-root"
                     className={cn(
-                        "absolute bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[280px] flex flex-col overflow-hidden animate-in fade-in duration-200",
-                        dropdownPos.align === 'up' ? "slide-in-from-bottom-2 origin-bottom" : "slide-in-from-top-2 origin-top"
+                        "fixed bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[340px] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200",
+                        dropdownPos.align === 'up' ? "origin-bottom-right" : "origin-top-right"
                     )}
                     style={{
-                        top: dropdownPos.align === 'up' ? 'auto' : `${dropdownPos.top}px`,
-                        bottom: dropdownPos.align === 'up' ? `${document.documentElement.scrollHeight - dropdownPos.top}px` : 'auto',
-                        right: `${dropdownPos.right}px`,
+                        top: dropdownPos.top === 'auto' ? 'auto' : `${dropdownPos.top}px`,
+                        bottom: dropdownPos.bottom === 'auto' ? 'auto' : `${dropdownPos.bottom}px`,
+                        right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : 'auto',
+                        left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : 'auto',
                         maxHeight: `${dropdownPos.maxHeight}px`
                     }}
                 >
                     <DemandFilters
-                        clientFilter={clientFilter}
-                        onClientChange={setClientFilter}
-                        priorityFilter={priorityFilter}
-                        onPriorityChange={setPriorityFilter}
+                        clientFilter={filters.client}
+                        onClientChange={(v) => setFilters(prev => ({ ...prev, client: v }))}
+                        priorityFilter={filters.priority}
+                        onPriorityChange={(v) => setFilters(prev => ({ ...prev, priority: v }))}
                         onReset={resetFilters}
                         activeCount={activeFilterCount}
                         inline={true}
                         onToggleCollapse={() => setFilterCollapsed(true)}
                         clients={availableClients}
-                        priorities={availablePriorities}
+                        statuses={availableStatuses}
+                        demandNames={availableDemandNames}
+                        statusFilter={filters.status}
+                        onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
+                        demandNameFilter={filters.demandName}
+                        onDemandNameChange={(v) => setFilters(prev => ({ ...prev, demandName: v }))}
+                        draft={draftFilters}
+                        setDraft={setDraftFilters}
                     />
                 </div>,
                 document.body
@@ -441,9 +540,27 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                     open={demandModalOpen}
                     onClose={() => setDemandModalOpen(false)}
                     projectDetails={project}
+                    userRole={user?.roles?.map(r => r.toUpperCase().replace(/^ROLE[-_]/, "").replace(/_/g, "-")).find(r => ["RESOURCE-MANAGER", "DELIVERY-MANAGER"].includes(r)) || ""}
                     onSuccess={() => {
                         setDemandModalOpen(false);
                         fetchContext(); // Reload data after creation
+                    }}
+                />
+            )}
+
+            {editModalOpen && (
+                <DemandModal
+                    open={editModalOpen}
+                    onClose={() => {
+                        setEditModalOpen(false);
+                        setEditingDemand(null);
+                    }}
+                    initialData={editingDemand}
+                    mode="edit"
+                    userRole={user?.roles?.map(r => r.toUpperCase().replace(/^ROLE[-_]/, "").replace(/_/g, "-")).find(r => ["RESOURCE-MANAGER", "DELIVERY-MANAGER"].includes(r)) || ""}
+                    onSuccess={() => {
+                        setEditModalOpen(false);
+                        fetchContext(); // Reload data after update
                     }}
                 />
             )}
