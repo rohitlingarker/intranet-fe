@@ -63,7 +63,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
     // Pagination
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(20);
+    const [pageSize] = useState(8);
 
     // Deliverable Role Data
     const [categories, setCategories] = useState([]);
@@ -453,7 +453,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         {[
                             { id: 'all', label: 'All Demands' },
                             { id: 'active', label: 'Active & Approved' },
-                            { id: 'fulfilled', label: 'Fullfilled' },
+                            { id: 'fulfilled', label: 'Fulfilled' },
                             { id: 'soft', label: 'Soft Demands' }
                         ].map((tab) => {
                             const isActive = activeTab === tab.id;

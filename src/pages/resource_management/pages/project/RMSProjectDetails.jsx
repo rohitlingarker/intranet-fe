@@ -12,6 +12,8 @@ import ProjectFinancialsInline from "../../components/FinancialModal";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import { CheckSquare, Square } from "lucide-react";
 import AddDeliverableRoleModal from "../../models/AddDeliverableRoleModal";
+import { cn } from "@/lib/utils";
+import Pagination from "../../../../components/Pagination/pagination";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
@@ -61,6 +63,12 @@ const RMSProjectDetails = () => {
   const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [overlaps, setOverlaps] = useState([]);
+  const [overlapsPage, setOverlapsPage] = useState(1);
+  const OVERLAPS_PER_PAGE = 3;
+  const ITEMS_PER_PAGE = 5;
+  const [slaPage, setSlaPage] = useState(1);
+  const [compliancePage, setCompliancePage] = useState(1);
+  const [escalationPage, setEscalationPage] = useState(1);
   const [loadingOverlaps, setLoadingOverlaps] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingDemand, setLoadingDemand] = useState(false);
@@ -733,8 +741,34 @@ const RMSProjectDetails = () => {
       setOverlaps([]);
     } finally {
       setLoadingOverlaps(false);
+      setOverlapsPage(1); // Reset to first page on new fetch
     }
   };
+
+  const totalOverlapsPages = Math.ceil(overlaps.length / OVERLAPS_PER_PAGE);
+  const paginatedOverlaps = overlaps.slice(
+    (overlapsPage - 1) * OVERLAPS_PER_PAGE,
+    overlapsPage * OVERLAPS_PER_PAGE
+  );
+
+  const totalSlaPages = Math.ceil(projectSlas.length / ITEMS_PER_PAGE);
+  const paginatedSlas = projectSlas.slice(
+    (slaPage - 1) * ITEMS_PER_PAGE,
+    slaPage * ITEMS_PER_PAGE
+  );
+
+  const validCompliance = projectCompliance.filter((comp) => comp.requirementType);
+  const totalCompliancePages = Math.ceil(validCompliance.length / ITEMS_PER_PAGE);
+  const paginatedCompliance = validCompliance.slice(
+    (compliancePage - 1) * ITEMS_PER_PAGE,
+    compliancePage * ITEMS_PER_PAGE
+  );
+
+  const totalEscalationPages = Math.ceil(projectEscalations.length / ITEMS_PER_PAGE);
+  const paginatedEscalations = projectEscalations.slice(
+    (escalationPage - 1) * ITEMS_PER_PAGE,
+    escalationPage * ITEMS_PER_PAGE
+  );
 
   const formatLevel = (level) => {
     if (!level) return "";
@@ -958,41 +992,52 @@ const RMSProjectDetails = () => {
                 <p className="text-sm text-gray-500 max-w-[240px] mt-1 leading-relaxed"> This project's timeline is completely clear of resource overlaps.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {overlaps.map((p) => (
-                  <div
-                    key={p.projectId}
-                    className="group bg-white p-5 rounded-2xl border border-gray-100 hover:border-red-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 origin-bottom transition-transform group-hover:scale-y-110" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedOverlaps.map((p) => (
+                    <div
+                      key={p.projectId}
+                      className="group bg-white p-5 rounded-2xl border border-gray-100 hover:border-red-200 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 left-0 w-1 h-full bg-red-500 origin-bottom transition-transform group-hover:scale-y-110" />
 
-                    <div className="flex flex-col h-full space-y-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <AlertTriangle size={14} className="text-red-500 shrink-0" />
-                          <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter">Timeline Conflict</span>
+                      <div className="flex flex-col h-full space-y-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle size={14} className="text-red-500 shrink-0" />
+                            <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter">Timeline Conflict</span>
+                          </div>
+                          <h4 className="font-bold text-[#081534] truncate text-sm md:text-base group-hover:text-red-700 transition-colors" title={p.projectName}>
+                            {p.projectName}
+                          </h4>
+                          <p className="text-xs text-gray-500 font-medium truncate" title={p.clientName}>{p.clientName}</p>
                         </div>
-                        <h4 className="font-bold text-[#081534] truncate text-sm md:text-base group-hover:text-red-700 transition-colors" title={p.projectName}>
-                          {p.projectName}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-medium truncate" title={p.clientName}>{p.clientName}</p>
-                      </div>
 
-                      <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Overlap Period</span>
-                          <span className="text-xs text-gray-700 font-bold mt-0.5">
-                            {new Date(p.startDate).toLocaleDateString()} — {new Date(p.endDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all cursor-pointer shadow-sm">
-                          <ArrowLeft className="h-4 w-4 rotate-180" />
+                        <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Overlap Period</span>
+                            <span className="text-xs text-gray-700 font-bold mt-0.5">
+                              {new Date(p.startDate).toLocaleDateString()} — {new Date(p.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all cursor-pointer shadow-sm">
+                            <ArrowLeft className="h-4 w-4 rotate-180" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination
+                  currentPage={overlapsPage}
+                  totalPages={totalOverlapsPages}
+                  onPrevious={() => setOverlapsPage(prev => Math.max(prev - 1, 1))}
+                  onNext={() => setOverlapsPage(prev => Math.min(prev + 1, totalOverlapsPages))}
+                  className="mt-8 pt-6 border-t border-gray-100"
+                />
+              </>
             )}
           </div>
         )
@@ -1024,71 +1069,83 @@ const RMSProjectDetails = () => {
             </div>
 
             {projectSlas.length > 0 ? (
-              <div className="overflow-x-auto border rounded-xl no-scrollbar">
-                <table className="w-full text-sm text-left min-w-[650px]">
-                  <thead className="bg-gray-50 text-gray-600 font-medium">
-                    <tr>
-                      <th className="p-4">Type</th>
-                      <th className="p-4 text-center">Duration (Days)</th>
-                      <th className="p-4 text-center">Warning (Days)</th>
-                      <th className="p-4 text-center">Status</th>
-                      <th className="p-4 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {projectSlas.map((sla) => (
-                      <tr key={sla.projectSlaId} className="hover:bg-gray-50">
-                        <td className="p-4 font-semibold text-gray-700">
-                          {sla.slaType}
-                        </td>
-                        <td className="p-4 text-center">{sla.slaDurationDays}</td>
-                        <td className="p-4 text-center">
-                          {sla.warningThresholdDays}
-                        </td>
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-2 py-1 rounded text-[10px] font-bold ${sla.isInherited ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}
-                          >
-                            {sla.isInherited ? "INHERITED" : "CUSTOM"}
-                          </span>
-                        </td>
-                        {/* Action Buttons with Conditional Disabling */}
-                        <td className="p-4 text-center">
-                          <div className="flex justify-center gap-3">
-                            {/* EDIT BUTTON */}
-                            <button
-                              onClick={() => {
-                                if (sla.isInherited) return; // 🔒 Prevent inherited edit
-                                handleEditSla(sla);
-                              }}
-                              className={`transition-colors ${sla.isInherited
-                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
-                                : "text-blue-600 hover:text-blue-800"
-                                }`}
-                              title={
-                                sla.isInherited
-                                  ? "Cannot edit inherited SLAs"
-                                  : "Edit SLA"
-                              }
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-
-                            {/* DELETE BUTTON (Always allowed) */}
-                            <button
-                              onClick={() => handleDeleteSla(sla)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Delete / Uninherit"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                  <table className="w-full text-sm text-left min-w-[650px]">
+                    <thead className="bg-gray-50 text-gray-600 font-medium">
+                      <tr>
+                        <th className="p-4">Type</th>
+                        <th className="p-4 text-center">Duration (Days)</th>
+                        <th className="p-4 text-center">Warning (Days)</th>
+                        <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-center">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paginatedSlas.map((sla) => (
+                        <tr key={sla.projectSlaId} className="hover:bg-gray-50">
+                          <td className="p-4 font-semibold text-gray-700">
+                            {sla.slaType}
+                          </td>
+                          <td className="p-4 text-center">{sla.slaDurationDays}</td>
+                          <td className="p-4 text-center">
+                            {sla.warningThresholdDays}
+                          </td>
+                          <td className="p-4 text-center">
+                            <span
+                              className={`px-2 py-1 rounded text-[10px] font-bold ${sla.isInherited ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}
+                            >
+                              {sla.isInherited ? "INHERITED" : "CUSTOM"}
+                            </span>
+                          </td>
+                          {/* Action Buttons with Conditional Disabling */}
+                          <td className="p-4 text-center">
+                            <div className="flex justify-center gap-3">
+                              {/* EDIT BUTTON */}
+                              <button
+                                onClick={() => {
+                                  if (sla.isInherited) return; // 🔒 Prevent inherited edit
+                                  handleEditSla(sla);
+                                }}
+                                className={`transition-colors ${sla.isInherited
+                                  ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                                  : "text-blue-600 hover:text-blue-800"
+                                  }`}
+                                title={
+                                  sla.isInherited
+                                    ? "Cannot edit inherited SLAs"
+                                    : "Edit SLA"
+                                }
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+
+                              {/* DELETE BUTTON (Always allowed) */}
+                              <button
+                                onClick={() => handleDeleteSla(sla)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete / Uninherit"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalSlaPages > 1 && (
+                  <Pagination
+                    currentPage={slaPage}
+                    totalPages={totalSlaPages}
+                    onPrevious={() => setSlaPage((prev) => Math.max(prev - 1, 1))}
+                    onNext={() => setSlaPage((prev) => Math.min(prev + 1, totalSlaPages))}
+                    className="mt-6 border-t border-gray-100 pt-4"
+                  />
+                )}
+              </>
             ) : (
               <p className="text-sm text-gray-500">
                 No SLA configuration added yet.
@@ -1120,21 +1177,20 @@ const RMSProjectDetails = () => {
             </div>
 
             {projectCompliance.length > 0 ? (
-              <div className="overflow-x-auto border rounded-xl no-scrollbar">
-                <table className="w-full text-sm text-left min-w-[750px]">
-                  <thead className="bg-gray-50 text-gray-600 font-medium">
-                    <tr>
-                      <th className="p-4">Requirement Type</th>
-                      <th className="p-4">Requirement Name</th>
-                      <th className="p-4 text-center">Mandatory</th>
-                      <th className="p-4 text-center">Status</th>
-                      <th className="p-4 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {projectCompliance
-                      .filter((comp) => comp.requirementType)
-                      .map((comp) => (
+              <>
+                <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                  <table className="w-full text-sm text-left min-w-[750px]">
+                    <thead className="bg-gray-50 text-gray-600 font-medium">
+                      <tr>
+                        <th className="p-4">Requirement Type</th>
+                        <th className="p-4">Requirement Name</th>
+                        <th className="p-4 text-center">Mandatory</th>
+                        <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paginatedCompliance.map((comp) => (
                         <tr
                           key={comp.projectComplianceId}
                           className="hover:bg-gray-50"
@@ -1205,9 +1261,20 @@ const RMSProjectDetails = () => {
                           </td>
                         </tr>
                       ))}
-                  </tbody>
-                </table>
-              </div>
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalCompliancePages > 1 && (
+                  <Pagination
+                    currentPage={compliancePage}
+                    totalPages={totalCompliancePages}
+                    onPrevious={() => setCompliancePage((prev) => Math.max(prev - 1, 1))}
+                    onNext={() => setCompliancePage((prev) => Math.min(prev + 1, totalCompliancePages))}
+                    className="mt-6 border-t border-gray-100 pt-4"
+                  />
+                )}
+              </>
             ) : (
               <p className="text-sm text-gray-500">
                 No compliance configuration added yet.
@@ -1235,87 +1302,99 @@ const RMSProjectDetails = () => {
             </div>
 
             {projectEscalations.length > 0 ? (
-              <div className="overflow-x-auto border rounded-xl no-scrollbar">
-                <table className="w-full text-sm text-left min-w-[950px]">
-                  <thead className="bg-gray-50 text-gray-600 font-medium">
-                    <tr>
-                      <th className="p-4">Level</th>
-                      <th className="p-4">Name</th>
-                      <th className="p-4">Role</th>
-                      <th className="p-4">Email</th>
-                      <th className="p-4">Phone</th>
-                      <th className="p-4 text-center">Status</th>
-                      <th className="p-4 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {projectEscalations.map((esc) => (
-                      <tr
-                        key={esc.projectEscalationId}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="p-4 font-semibold text-gray-700">
-                          {formatLevel(esc.escalationLevel)}
-                        </td>
-
-                        <td className="p-4 text-gray-700">{esc.contactName}</td>
-                        <td className="p-4 text-gray-600">{esc.contactRole}</td>
-                        <td className="p-4 text-gray-600">{esc.email}</td>
-                        <td className="p-4 text-gray-600">{esc.phone}</td>
-
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-2 py-1 rounded text-[10px] font-bold ${esc.activeFlag
-                              ? "bg-green-50 text-green-700"
-                              : "bg-red-50 text-red-700"
-                              }`}
-                          >
-                            {esc.activeFlag ? "ACTIVE" : "INACTIVE"}
-                          </span>
-
-                          {esc.source === "INHERITED" && (
-                            <span className="ml-2 px-2 py-1 rounded text-[10px] font-bold bg-blue-50 text-blue-700">
-                              INHERITED
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="p-4 text-center">
-                          <div className="flex justify-center gap-4">
-                            {/* EDIT */}
-                            <button
-                              onClick={() => {
-                                if (esc.source === "INHERITED") return;
-                                handleEditEscalation(esc);
-                              }}
-                              className={`${esc.source === "INHERITED"
-                                ? "text-gray-300 cursor-not-allowed pointer-events-none"
-                                : "text-blue-600 hover:text-blue-800"
-                                }`}
-                              title={
-                                esc.source === "INHERITED"
-                                  ? "Cannot edit inherited escalation"
-                                  : "Edit"
-                              }
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-
-                            {/* DELETE */}
-                            <button
-                              onClick={() => handleDeleteEscalation(esc)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Delete / Uninherit"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                <div className="overflow-x-auto border rounded-xl no-scrollbar">
+                  <table className="w-full text-sm text-left min-w-[950px]">
+                    <thead className="bg-gray-50 text-gray-600 font-medium">
+                      <tr>
+                        <th className="p-4">Level</th>
+                        <th className="p-4">Name</th>
+                        <th className="p-4">Role</th>
+                        <th className="p-4">Email</th>
+                        <th className="p-4">Phone</th>
+                        <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-center">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paginatedEscalations.map((esc) => (
+                        <tr
+                          key={esc.projectEscalationId}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="p-4 font-semibold text-gray-700">
+                            {formatLevel(esc.escalationLevel)}
+                          </td>
+
+                          <td className="p-4 text-gray-700">{esc.contactName}</td>
+                          <td className="p-4 text-gray-600">{esc.contactRole}</td>
+                          <td className="p-4 text-gray-600">{esc.email}</td>
+                          <td className="p-4 text-gray-600">{esc.phone}</td>
+
+                          <td className="p-4 text-center">
+                            <span
+                              className={`px-2 py-1 rounded text-[10px] font-bold ${esc.activeFlag
+                                ? "bg-green-50 text-green-700"
+                                : "bg-red-50 text-red-700"
+                                }`}
+                            >
+                              {esc.activeFlag ? "ACTIVE" : "INACTIVE"}
+                            </span>
+
+                            {esc.source === "INHERITED" && (
+                              <span className="ml-2 px-2 py-1 rounded text-[10px] font-bold bg-blue-50 text-blue-700">
+                                INHERITED
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-4 text-center">
+                            <div className="flex justify-center gap-4">
+                              {/* EDIT */}
+                              <button
+                                onClick={() => {
+                                  if (esc.source === "INHERITED") return;
+                                  handleEditEscalation(esc);
+                                }}
+                                className={`${esc.source === "INHERITED"
+                                  ? "text-gray-300 cursor-not-allowed pointer-events-none"
+                                  : "text-blue-600 hover:text-blue-800"
+                                  }`}
+                                title={
+                                  esc.source === "INHERITED"
+                                    ? "Cannot edit inherited escalation"
+                                    : "Edit"
+                                }
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+
+                              {/* DELETE */}
+                              <button
+                                onClick={() => handleDeleteEscalation(esc)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete / Uninherit"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalEscalationPages > 1 && (
+                  <Pagination
+                    currentPage={escalationPage}
+                    totalPages={totalEscalationPages}
+                    onPrevious={() => setEscalationPage((prev) => Math.max(prev - 1, 1))}
+                    onNext={() => setEscalationPage((prev) => Math.min(prev + 1, totalEscalationPages))}
+                    className="mt-6 border-t border-gray-100 pt-4"
+                  />
+                )}
+              </>
             ) : (
               <p className="text-sm text-gray-500">
                 No escalation configuration added yet.

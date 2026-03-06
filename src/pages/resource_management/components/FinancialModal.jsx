@@ -4,9 +4,8 @@ import {
   Wallet,
   PieChart,
   TrendingDown,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+import Pagination from "../../../components/Pagination/pagination";
 
 export default function ProjectFinancialsInline() {
   const financialData = {
@@ -66,9 +65,8 @@ export default function ProjectFinancialsInline() {
           <div>
             <p className="text-xs text-gray-500 uppercase">Remaining</p>
             <p
-              className={`text-2xl font-bold ${
-                financialData.remainingBudget < 500000 ? "text-red-600" : ""
-              }`}
+              className={`text-2xl font-bold ${financialData.remainingBudget < 500000 ? "text-red-600" : ""
+                }`}
             >
               {usd(financialData.remainingBudget)}
             </p>
@@ -128,34 +126,14 @@ export default function ProjectFinancialsInline() {
               </table>
             </div>
 
-            {/* ================= Pagination (INLINE) ================= */}
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded border disabled:opacity-40"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded border disabled:opacity-40"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+            {/* ================= Pagination ================= */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              className="py-2"
+            />
 
             {/* ================= Total ================= */}
             <div className="flex justify-end font-semibold">

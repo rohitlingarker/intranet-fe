@@ -7,7 +7,7 @@ import Button from "../../../../components/Button/Button";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
 
-export default function EmployeeCreateModal({ isOpen, onClose , userUuid}) {
+export default function EmployeeCreateModal({ isOpen, onClose , userUuid, employeeUuid}) {
   const [activeTab, setActiveTab] = useState("Profile");
   const [form, setForm] = useState({});
   const [isGenerated, setIsGenerated] = useState(false);
@@ -17,7 +17,11 @@ export default function EmployeeCreateModal({ isOpen, onClose , userUuid}) {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
 
+
+
   const token = localStorage.getItem("token");
+  const isEditMode = !!employeeUuid;
+
 
  const fetchDepartments = async () => {
   try {
@@ -36,7 +40,6 @@ export default function EmployeeCreateModal({ isOpen, onClose , userUuid}) {
 
     console.log("Departments API response:", data);
 
-    // Ensure array
     setDepartments(Array.isArray(data) ? data : data.data || []);
     
   } catch (err) {
@@ -66,8 +69,68 @@ const fetchDesignations = async (departmentUuid) => {
 useEffect(() => {
   fetchDepartments();
 }, []);
+/* =============================
+     LOAD EMPLOYEE FOR EDIT
+  ============================= */
 
   useEffect(() => {
+    if (!employeeUuid) return;
+
+    const fetchEmployee = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/permanent-employee/core-employee-details/${employeeUuid}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        const data = await res.json();
+
+        setForm({
+          userUuid: data.user_uuid,
+
+          empFirstName: data.first_name,
+          empMiddleName: data.middle_name,
+          empLastName: data.last_name,
+          empDob: data.date_of_birth,
+
+          contact: data.contact_number,
+
+          departmentUuid: data.department_uuid,
+          designationUuid: data.designation_uuid,
+          reportingManagerUuid: data.reporting_manager_uuid,
+
+          employeeType: data.employment_type,
+          joiningDate: data.joining_date,
+
+          location: data.location,
+          workMode: data.work_mode,
+
+          employmentStatus: data.employment_status,
+
+          bloodGroup: data.blood_group,
+          gender: data.gender,
+          maritalStatus: data.marital_status,
+
+          totalExperience: data.total_experience
+        });
+
+        fetchDesignations(data.department_uuid);
+
+      } catch (error) {
+        console.error("Failed to fetch employee", error);
+      }
+    };
+
+    fetchEmployee();
+
+  }, [employeeUuid]);
+
+
+useEffect(() => {
   if (userUuid) {
     setForm((prev) => ({
       ...prev,
@@ -75,6 +138,12 @@ useEffect(() => {
     }));
   }
 }, [userUuid]);
+
+useEffect(() => {
+  if (employeeUuid) {
+    setIsGenerated(true);
+  }
+}, [employeeUuid]);
 
   if (!isOpen) return null;
 
@@ -97,8 +166,6 @@ const handleChange = (e) => {
     try {
       setLoading(true);
       setError("");
-
-      // Basic frontend validation
             if (
         !form.empFirstName ||
         !form.empLastName ||
@@ -150,15 +217,11 @@ const handleChange = (e) => {
         gender: form.gender || "",
         marital_status: form.maritalStatus || "",
 
-        total_experience: Number(form.totalExperience) || 0,
+        total_experience: Number(form.totalExperience) || 0
 
-      }
-    ),
-      
-
+      }),
     }
   );
-        // Handle validation error from backend
         if (response.status === 422) {
           setError("Validation error. Please check required fields.");
           return;
@@ -170,7 +233,6 @@ const handleChange = (e) => {
 
         const data = await response.json();
 
-        // ✅ Prefill backend generated values
         setForm((prev) => ({
           ...prev,
           employeeUuid: data.employee_uuid,
@@ -190,11 +252,135 @@ const handleChange = (e) => {
     }
   };
 
-  return (
+  console.log("USER UUID BEFORE UPDATE:", form.userUuid);
+//   const handleUpdate = async () => {
+
+//   try {
+
+//     const response = await fetch(
+//       `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/permanent-employee/core-employee-details/${employeeUuid}`,
+//       {
+//         method: "PUT",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`
+//         },
+//         body: JSON.stringify({
+
+//           first_name: form.empFirstName,
+//           middle_name: form.empMiddleName || "",
+//           last_name: form.empLastName,
+
+//           date_of_birth: form.empDob,
+
+//           contact_number: form.contact,
+
+//           department_uuid: form.departmentUuid,
+//           designation_uuid: form.designationUuid,
+
+//           reporting_manager_uuid: form.reportingManagerUuid || null,
+
+//           employment_type: form.employeeType,
+//           joining_date: form.joiningDate,
+
+//           location: form.location || "",
+//           work_mode: form.workMode || "",
+
+//           employment_status: form.employmentStatus,
+
+//           blood_group: form.bloodGroup || "",
+//           gender: form.gender || "",
+//           marital_status: form.maritalStatus || "",
+
+//           total_experience: Number(form.totalExperience) || 0
+
+//         })
+//       }
+//     );
+
+//     if (!response.ok) {}
+//     const errData = await response.json();
+//     console.log("Backend error:", JSON.stringify(errData, null, 2));
+//     throw new Error("Update failed");
+//   } catch (err) {
+//     console.error(err);
+//     showStatusToast("Failed to update employee", "error");
+//     return;
+//   }
+
+//     showStatusToast("Employee updated successfully", "success");
+
+//     onClose();  
+// };
+ const handleUpdate = async () => {
+  try {
+
+    const payload = {
+      first_name: form.empFirstName,
+      middle_name: form.empMiddleName || "",
+      last_name: form.empLastName,
+
+      date_of_birth: form.empDob,
+      contact_number: form.contact,
+
+      department_uuid: form.departmentUuid,
+      designation_uuid: form.designationUuid,
+
+      reporting_manager_uuid: form.reportingManagerUuid || null,
+
+      employment_type: form.employeeType,
+      joining_date: form.joiningDate,
+
+      location: form.location || "",
+      work_mode: form.workMode || "",
+
+      employment_status: form.employmentStatus,
+
+      blood_group: form.bloodGroup || "",
+      gender: form.gender || "",
+      marital_status: form.maritalStatus || "",
+
+      total_experience: Number(form.totalExperience) || 0
+    };
+
+    console.log("UPDATE PAYLOAD:", payload);
+
+    const response = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/permanent-employee/core-employee-details/${employeeUuid}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    if (!response.ok) {
+      const errData = await response.json();
+      console.log("Backend error:", errData);
+      throw new Error("Update failed");
+    }
+
+    const data = await response.json();
+
+    console.log("Update success:", data);
+
+    showStatusToast("Employee updated successfully", "success");
+
+    onClose();
+
+  } catch (err) {
+    console.error(err);
+    showStatusToast("Failed to update employee", "error");
+  }
+}; 
+return (
     <LargeModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create Employee"
+      title={isEditMode ? "Update Employee" : "Create Employee"}
       subtitle="Fill out the form to create a new employee profile."
     >
       <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -206,6 +392,7 @@ const handleChange = (e) => {
           form={form}
           handleChange={handleChange}
           isGenerated={isGenerated}
+          isEditMode={isEditMode}
         />
         <div className="flex justify-end mt-6">
       <Button
@@ -225,11 +412,12 @@ const handleChange = (e) => {
       handleChange={handleChange}
       departments={departments}
       designations={designations}
+      isEditMode={isEditMode} 
     />
 
     <div className="flex justify-end gap-3 mt-6">
 
-      {!isGenerated && (
+      {/* {!isGenerated && (
         <Button
           varient="primary"
           size="small"
@@ -238,9 +426,9 @@ const handleChange = (e) => {
         >
           {loading ? "Generating..." : "Generate Credentials"}
         </Button>
-      )}
+      )} */}
 
-      {isGenerated && (
+      {/* {isGenerated && (
         <>
           <Button
             varient="secondary"
@@ -258,7 +446,61 @@ const handleChange = (e) => {
             Save
           </Button>
         </>
-      )}
+      )} */}
+
+      {/* CREATE MODE */}
+{!isEditMode && !isGenerated && (
+  <Button
+    varient="primary"
+    size="small"
+    onClick={handleGenerate}
+    disabled={loading}
+  >
+    {loading ? "Generating..." : "Generate Credentials"}
+  </Button>
+)}
+
+{/* AFTER GENERATE */}
+{!isEditMode && isGenerated && (
+  <>
+    <Button
+      varient="secondary"
+      size="small"
+      onClick={onClose}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      varient="primary"
+      size="small"
+      onClick={onClose}
+    >
+      Save
+    </Button>
+  </>
+)}
+
+{/* EDIT MODE */}
+{isEditMode && (
+  <>
+    <Button
+      varient="secondary"
+      size="small"
+      onClick={onClose}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      varient="primary"
+      size="small"
+      onClick={handleUpdate}
+    >
+      Update
+    </Button>
+  </>
+)}
 
     </div>
   </>
