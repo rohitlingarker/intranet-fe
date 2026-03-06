@@ -12,12 +12,16 @@ import {
 } from "lucide-react";
 import { fetchResourcesByProjectId } from "../../services/resource";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
+import Pagination from "../../../../components/Pagination/pagination";
+import { cn } from "@/lib/utils";
 
 const ProjectResourcesTable = ({ projectId }) => {
     const [allocations, setAllocations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         const loadResources = async () => {
@@ -39,13 +43,24 @@ const ProjectResourcesTable = ({ projectId }) => {
 
         if (projectId) {
             loadResources();
+            setPage(1); // Reset page on project change
         }
     }, [projectId]);
+
+    useEffect(() => {
+        setPage(1); // Reset page on search
+    }, [searchTerm]);
 
     const filteredAllocations = allocations.filter(item =>
         item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.demandName && item.demandName.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const totalPages = Math.ceil(filteredAllocations.length / itemsPerPage);
+    const paginatedAllocations = filteredAllocations.slice(
+        (page - 1) * itemsPerPage,
+        page * itemsPerPage
     );
 
     if (loading) {
@@ -111,7 +126,7 @@ const ProjectResourcesTable = ({ projectId }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredAllocations.map((item) => (
+                                {paginatedAllocations.map((item) => (
                                     <tr key={item.allocationId} className="hover:bg-gray-50/80 transition-colors group">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
@@ -186,6 +201,17 @@ const ProjectResourcesTable = ({ projectId }) => {
                             </tbody>
                         </table>
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="py-4 border-t border-gray-100">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                                onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                            />
+                        </div>
+                    )}
 
                     {filteredAllocations.length === 0 && searchTerm && (
                         <div className="p-8 text-center text-gray-500 italic border-t border-gray-100">
