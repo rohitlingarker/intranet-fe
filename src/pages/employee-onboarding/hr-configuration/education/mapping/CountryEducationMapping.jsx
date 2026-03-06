@@ -78,56 +78,48 @@ export default function CountryEducationMapping() {
   };
  /* ================= ADD NEW MAPPING ================= */
   const addMapping = async () => {
-  if (!selectedLevel || !selectedDocument) return;
+  if (!selectedLevel || !selectedDocument || !selectedCountry) return;
 
   setSubmitting(true);
   setError("");
 
   try {
     const res = await axios.post(
-      `${BASE}/masters/{educ-level-uuid}/{educ-doc-uuid}/{country-uuid}`,
+      `${BASE}/masters/${selectedLevel}/${selectedDocument}/${selectedCountry}`,
       null,
       {
         headers: { Authorization: `Bearer ${token}` },
-        params: {
-          educ_level_uuid: selectedLevel,
-          educ_doc_uuid: selectedDocument,
-          country_uuid: selectedCountry,
-        },
       }
     );
 
-    // 🔥 BUILD NEW ROW LOCALLY
     const levelObj = levels.find(
       (l) => l.education_uuid === selectedLevel
     );
+
     const docObj = documents.find(
       (d) => d.education_document_uuid === selectedDocument
     );
 
     const newMapping = {
-      mapping_uuid: res.data.mapping_uuid, // from backend
+      mapping_uuid: res.data.mapping_uuid,
       education_name: levelObj?.education_name,
       document_name: docObj?.document_name,
       is_mandatory: mandatory,
     };
 
-    // 🔥 APPEND ONLY NEW ROW (NO RE-FETCH)
     setMappings((prev) => [...prev, newMapping]);
 
-    // reset form
     setSelectedLevel("");
     setSelectedDocument("");
     setMandatory(true);
     setShowAddForm(false);
+
   } catch (err) {
     setError(err?.response?.data?.detail || "Failed to create mapping");
   } finally {
     setSubmitting(false);
   }
 };
-
-
   /* ================= UI ================= */
   return (
     <div className="max-w-6xl mx-auto mt-8">

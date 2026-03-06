@@ -27,10 +27,18 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const filterButtonRef = useRef(null);
     const [dropdownPos, setDropdownPos] = useState(null);
 
-    // Advanced Filter States
-    const [clientFilter, setClientFilter] = useState('All');
-    const [priorityFilter, setPriorityFilter] = useState('All');
+    const [filters, setFilters] = useState({
+        client: 'ALL',
+        priority: 'ALL',
+        status: 'ALL',
+        demandName: 'ALL'
+    });
     const [activeTab, setActiveTab] = useState('all');
+    const [draftFilters, setDraftFilters] = useState(filters);
+
+    useEffect(() => {
+        setDraftFilters(filters);
+    }, [filters]);
 
     // Project & Modal states
     const [project, setProject] = useState(null);
@@ -104,31 +112,51 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, []);
 
 
-    // Handle dropdown positioning
     useEffect(() => {
-        if (!filterCollapsed && filterButtonRef.current) {
-            const rect = filterButtonRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const popupHeight = 420;
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
+        const updatePosition = () => {
+            if (filterButtonRef.current) {
+                const rect = filterButtonRef.current.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                const popupHeight = 450;
+                const popupWidth = 340;
 
-            const align = (spaceBelow < popupHeight && spaceAbove > spaceBelow) ? 'up' : 'down';
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
 
-            setDropdownPos({
-                top: align === 'up' ? (rect.top + window.scrollY - 8) : (rect.bottom + window.scrollY + 8),
-                right: window.innerWidth - (rect.right + window.scrollX),
-                align,
-                maxHeight: Math.min(viewportHeight * 0.7, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
-            });
-        }
+                // Priority 1: Vertical positioning (Below is preferred)
+                let align = 'down';
+                if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
+                    align = 'up';
+                }
 
-        const handleResize = () => {
-            if (!filterCollapsed) setFilterCollapsed(true);
+                // Priority 2: Horizontal positioning
+                let horizontalPos = { right: viewportWidth - rect.right };
+                if (rect.right < popupWidth) {
+                    horizontalPos = { left: rect.left };
+                    delete horizontalPos.right;
+                }
+
+                setDropdownPos({
+                    top: align === 'up' ? 'auto' : (rect.bottom + 8),
+                    bottom: align === 'up' ? (viewportHeight - rect.top + 8) : 'auto',
+                    ...horizontalPos,
+                    align,
+                    maxHeight: Math.min(viewportHeight * 0.85, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
+                });
+            }
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        if (!filterCollapsed) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
     }, [filterCollapsed]);
 
     // Keyboard and click outside handling
@@ -216,7 +244,15 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         return Array.from(new Set(projectDemands.map(d => d.client).filter(Boolean))).sort();
     }, [projectDemands]);
 
-    const availablePriorities = useMemo(() => ['Critical', 'High', 'Medium', 'Low'], []);
+    const availableStatuses = useMemo(() => {
+        return Array.from(new Set(projectDemands.map(d => d.lifecycleState).filter(Boolean))).sort();
+    }, [projectDemands]);
+
+    const availableDemandNames = useMemo(() => {
+        return Array.from(new Set(projectDemands.map(d => d.role).filter(Boolean))).sort();
+    }, [projectDemands]);
+
+    const availablePriorities = useMemo(() => ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], []);
     const filteredDemands = useMemo(() => {
         let list = [...projectDemands];
 
@@ -238,15 +274,21 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
             list = list.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase()));
         }
 
-        if (clientFilter !== 'All') {
-            list = list.filter(d => d.client === clientFilter);
+        if (filters.client !== 'ALL') {
+            list = list.filter(d => d.client === filters.client);
         }
-        if (priorityFilter !== 'All') {
-            list = list.filter(d => d.priority?.toUpperCase() === priorityFilter.toUpperCase());
+        if (filters.priority !== 'ALL') {
+            list = list.filter(d => d.priority?.toUpperCase() === filters.priority.toUpperCase());
+        }
+        if (filters.status && filters.status !== 'ALL') {
+            list = list.filter(d => d.lifecycleState?.toUpperCase() === filters.status.toUpperCase());
+        }
+        if (filters.demandName && filters.demandName !== 'ALL') {
+            list = list.filter(d => d.role === filters.demandName);
         }
 
         return list;
-    }, [projectDemands, searchQuery, clientFilter, priorityFilter, activeTab]);
+    }, [projectDemands, searchQuery, filters, activeTab]);
 
 
     const totalElements = filteredDemands.length;
@@ -259,17 +301,23 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, clientFilter, priorityFilter, activeTab]);
+    }, [searchQuery, filters, activeTab]);
 
     const activeFilterCount = [
-        clientFilter !== 'All',
-        priorityFilter !== 'All'
+        filters.client !== 'ALL',
+        filters.priority !== 'ALL',
+        filters.status !== 'ALL',
+        filters.demandName !== 'ALL'
     ].filter(Boolean).length;
 
     const resetFilters = () => {
         setSearchQuery('');
-        setClientFilter('All');
-        setPriorityFilter('All');
+        setFilters({
+            client: 'ALL',
+            priority: 'ALL',
+            status: 'ALL',
+            demandName: 'ALL'
+        });
     };
 
     if (demandId) {
@@ -368,9 +416,12 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                 )}
                             >
                                 <Filter className={cn("h-3.5 w-3.5", !filterCollapsed ? "text-white" : "text-slate-500")} />
-                                Filters
-                                {filterCollapsed && activeFilterCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-in zoom-in duration-200">
+                                {filters.client !== 'ALL' ? filters.client : 'Filters'}
+                                {activeFilterCount > 0 && (
+                                    <span className={cn(
+                                        "absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-bold shadow-sm ring-2 ring-white animate-in zoom-in duration-200",
+                                        !filterCollapsed ? "bg-white text-indigo-600" : "bg-indigo-600 text-white"
+                                    )}>
                                         {activeFilterCount}
                                     </span>
                                 )}
@@ -449,27 +500,35 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                 <div
                     id="filter-portal-root"
                     className={cn(
-                        "absolute bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[280px] flex flex-col overflow-hidden animate-in fade-in duration-200",
-                        dropdownPos.align === 'up' ? "slide-in-from-bottom-2 origin-bottom" : "slide-in-from-top-2 origin-top"
+                        "fixed bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] z-[100] w-[340px] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200",
+                        dropdownPos.align === 'up' ? "origin-bottom-right" : "origin-top-right"
                     )}
                     style={{
-                        top: dropdownPos.align === 'up' ? 'auto' : `${dropdownPos.top}px`,
-                        bottom: dropdownPos.align === 'up' ? `${document.documentElement.scrollHeight - dropdownPos.top}px` : 'auto',
-                        right: `${dropdownPos.right}px`,
+                        top: dropdownPos.top === 'auto' ? 'auto' : `${dropdownPos.top}px`,
+                        bottom: dropdownPos.bottom === 'auto' ? 'auto' : `${dropdownPos.bottom}px`,
+                        right: dropdownPos.right !== undefined ? `${dropdownPos.right}px` : 'auto',
+                        left: dropdownPos.left !== undefined ? `${dropdownPos.left}px` : 'auto',
                         maxHeight: `${dropdownPos.maxHeight}px`
                     }}
                 >
                     <DemandFilters
-                        clientFilter={clientFilter}
-                        onClientChange={setClientFilter}
-                        priorityFilter={priorityFilter}
-                        onPriorityChange={setPriorityFilter}
+                        clientFilter={filters.client}
+                        onClientChange={(v) => setFilters(prev => ({ ...prev, client: v }))}
+                        priorityFilter={filters.priority}
+                        onPriorityChange={(v) => setFilters(prev => ({ ...prev, priority: v }))}
                         onReset={resetFilters}
                         activeCount={activeFilterCount}
                         inline={true}
                         onToggleCollapse={() => setFilterCollapsed(true)}
                         clients={availableClients}
-                        priorities={availablePriorities}
+                        statuses={availableStatuses}
+                        demandNames={availableDemandNames}
+                        statusFilter={filters.status}
+                        onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
+                        demandNameFilter={filters.demandName}
+                        onDemandNameChange={(v) => setFilters(prev => ({ ...prev, demandName: v }))}
+                        draft={draftFilters}
+                        setDraft={setDraftFilters}
                     />
                 </div>,
                 document.body
