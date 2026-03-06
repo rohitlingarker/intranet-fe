@@ -140,10 +140,11 @@ export function useDemand(projectId = null) {
         } else if (activeTab === 'at_risk') {
             list = list.filter(d => d.remainingDays >= 0 && d.remainingDays <= 5);
         } else if (activeTab === 'active') {
-            list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+            list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE', 'REQUESTED', 'IN_PROGRESS', 'IN PROGRESS'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         } else if (activeTab === 'soft') {
-            list = list.filter(d => ['SOFT', 'REQUESTED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
-        } else if (activeTab === 'fulfilled') {
+            list = list.filter(d => ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        }
+        else if (activeTab === 'fulfilled') {
             list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED' || d.demandStatus?.toUpperCase() === 'FULFILLED');
         }
         // 'all' fallthrough shows everything minus cancelled/closed if we want to be strict, 
