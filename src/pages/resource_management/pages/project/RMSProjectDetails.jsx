@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ResourceList from "./RMSProjectList";
+import ProjectResourcesTable from "./ProjectResourcesTable";
 import axios from "axios";
 import SLAForm from "../../models/client_configuration/forms/SLAForm";
 import ComplianceForm from "../../models/client_configuration/forms/ComplianceForm";
@@ -997,9 +998,9 @@ const RMSProjectDetails = () => {
         )
       }
 
-      {/* {activeTab === "resources" && (
-        <ResourceList allocations={project.allocations} />
-      )} */}
+      {activeTab === "resources" && (
+        <ProjectResourcesTable projectId={projectId} />
+      )}
 
       {
         activeTab === "sla" && (

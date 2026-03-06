@@ -410,7 +410,7 @@ const AppRoutes = () => {
           <Route path="/employee-onboarding/core-employee" element={<CoreEmployeeDetails/>}/> */}
 
           {/* Employee Onboarding */}
-          <Route path="/employee-onboarding" element={<EmployeeOnboardingLayout />}>
+          <Route path="/employee-onboarding/*" element={<EmployeeOnboardingLayout />}>
 
             <Route index element={<EmpDashboard />} />
 
