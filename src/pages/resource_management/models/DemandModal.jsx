@@ -265,32 +265,11 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       .map((s) => (typeof s === "string" ? { label: s, value: s } : s))
       .filter((s) => s && s.value);
 
-  const computedEditStatuses = (() => {
-    let normalized = normalizeStatusOptions(activeStatuses);
+  const computedEditStatuses = [
+    { label: "Fulfilled", value: "FULFILLED" },
+    { label: "Rejected", value: "REJECTED" }
+  ];
 
-    // Always ensure the current status is an option, even if it's not a standard transition
-    const currentStatusValue = String(form.demandStatus || "").toUpperCase();
-    if (currentStatusValue && !normalized.some(s => String(s.value).toUpperCase() === currentStatusValue)) {
-      normalized.push({ label: form.demandStatus, value: form.demandStatus });
-    }
-
-    const isRM = normalizedRole === "RESOURCEMANAGER";
-    const isDM = normalizedRole === "DELIVERYMANAGER";
-
-    if (isDM) {
-      const allowed = ["APPROVED", "REJECTED"];
-      let filtered = normalized.filter((s) => allowed.includes(String(s.value).toUpperCase()) || String(s.value).toUpperCase() === currentStatusValue);
-      return filtered.length > 0 ? filtered : normalized;
-    }
-
-    if (isRM) {
-      const allowed = ["FULFILLED", "REJECTED"];
-      let filtered = normalized.filter((s) => allowed.includes(String(s.value).toUpperCase()) || String(s.value).toUpperCase() === currentStatusValue);
-      return filtered.length > 0 ? filtered : normalized;
-    }
-
-    return normalized;
-  })();
 
   const startDateRef = useRef(null);
   const scrollRef = useRef(null);
@@ -388,7 +367,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
           demandEndDate: eDate || getFormattedDate(getVal(['demandEndDate', 'endDate', 'end_date', 'demand_end_date', 'slaDueAt'])),
           allocationPercentage: isNaN(allocation) ? "" : Math.round(allocation),
           deliveryRole: roleIdFromData,
-          demandStatus: String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
+          demandStatus: isEdit ? "" : String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
           demandType: String(getVal(['demandType', 'type', 'type_of_demand', 'DemandType', 'demand_type'], "NET_NEW")).toUpperCase().replace(/ /g, "_"),
           demandPriority: String(getVal(['demandPriority', 'priority', 'Priority', 'demand_priority'], "MEDIUM")).toUpperCase().trim(),
           demandCommitment: String(getVal(['demandCommitment', 'commitment', 'Commitment', 'demand_commitment'], "CONFIRMED")).toUpperCase().trim(),
@@ -672,7 +651,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. Senior Frontend Dev"
                         value={form.demandName}
                         onChange={(e) => update("demandName", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -686,6 +666,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.deliveryRole}
                       placeholder="Search and Select Role"
                       required
+                      disabled={mode === "edit"}
                     />
 
                     {/* Demand Type */}
@@ -698,6 +679,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.demandType}
                       placeholder="Select Type"
                       required
+                      disabled={mode === "edit"}
                     />
 
                     {/* Conditional: Outgoing Resource (for REPLACEMENT) */}
@@ -712,7 +694,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           error={errors.outgoingResourceId}
                           placeholder={fetchingResources ? "Loading resources..." : "Search and select resource to replace"}
                           required
-                          disabled={fetchingResources}
+                          disabled={fetchingResources || mode === "edit"}
                         />
                       </div>
                     )}
@@ -725,7 +707,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : ""}
                         max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
                         onChange={(e) => update("demandStartDate", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -737,7 +720,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={form.demandStartDate || (projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : "")}
                         max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
                         onChange={(e) => update("demandEndDate", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -751,7 +735,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           placeholder="1 - 100"
                           value={form.allocationPercentage}
                           onChange={(e) => update("allocationPercentage", e.target.value)}
-                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                          disabled={mode === "edit"}
+                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">%</span>
                       </div>
@@ -765,7 +750,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="min 1"
                         value={form.resourcesRequired}
                         onChange={(e) => update("resourcesRequired", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -777,7 +763,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. 5"
                         value={form.minExp}
                         onChange={(e) => update("minExp", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -791,6 +778,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.deliveryModel}
                       placeholder="Select Model"
                       required
+                      disabled={mode === "edit"}
                     />
 
                     {/* Demand Status */}
@@ -815,6 +803,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.demandPriority}
                       placeholder="Select Priority"
                       required
+                      disabled={mode === "edit"}
                     />
 
                     {/* Commitment */}
@@ -827,6 +816,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.demandCommitment}
                       placeholder="Select Commitment"
                       required
+                      disabled={mode === "edit"}
                     />
 
                     {/* Additional Approval Checkbox */}
@@ -834,8 +824,9 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       <Switch
                         checked={form.requiresAdditionalApproval}
                         onChange={(v) => update("requiresAdditionalApproval", v)}
+                        disabled={mode === "edit"}
                         className={`${form.requiresAdditionalApproval ? 'bg-blue-600' : 'bg-slate-200'
-                          } relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75 cursor-pointer`}
+                          } relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75 ${mode === "edit" ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                       >
                         <span className="sr-only">Additional Approval</span>
                         <span
@@ -844,7 +835,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                             } pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
                         />
                       </Switch>
-                      <label className="text-sm font-medium text-slate-700 select-none cursor-pointer" onClick={() => update("requiresAdditionalApproval", !form.requiresAdditionalApproval)}>
+                      <label className={`text-sm font-medium text-slate-700 select-none ${mode === "edit" ? "cursor-not-allowed" : "cursor-pointer"}`} onClick={() => mode !== "edit" && update("requiresAdditionalApproval", !form.requiresAdditionalApproval)}>
                         Requires Additional Leadership Approval
                       </label>
                     </div>
@@ -856,7 +847,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="Explain why this resource is needed..."
                         value={form.demandJustification}
                         onChange={(e) => update("demandJustification", e.target.value)}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"}`}
+                        disabled={mode === "edit"}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
                   </div>
