@@ -417,7 +417,7 @@ const AppRoutes = () => {
             <Route path="create" element={<CreateOffer />} />
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
-
+           
             <Route path="hr-configuration" element={<HrConfiguration />} />
             <Route path="hr-configuration/country" element={<CountryManagement />} />
             <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
@@ -446,7 +446,7 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
-            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />

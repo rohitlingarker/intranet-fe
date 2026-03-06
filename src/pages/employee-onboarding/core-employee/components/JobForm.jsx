@@ -8,6 +8,7 @@ export default function JobForm({
   handleChange,
   designations = [],
   departments = [],
+  isEditMode
 }) {
 
   const employeeTypes = ["Full-Time", "Intern", "Contract"];
@@ -33,19 +34,20 @@ export default function JobForm({
     value: d.department_uuid,
     label: d.department_name
   }))}
+  disabled={isEditMode}
 />
 
       {/* Designation Dropdown */}
      <FormSelect
-  label="Designation"
-  name="designationUuid"
-  value={form.designationUuid || ""}
-  onChange={handleChange}
-  disabled={!form.departmentUuid}
-  options={filteredDesignations.map((d) => ({
-    value: d.designation_uuid,
-    label: d.designation_name
-  }))}
+      label="Designation"
+      name="designationUuid"
+      value={form.designationUuid || ""}
+      onChange={handleChange}
+      disabled={!form.departmentUuid}
+      options={filteredDesignations.map((d) => ({
+        value: d.designation_uuid,
+        label: d.designation_name
+      }))}
 />
 
       {/* Employee Type */}
@@ -55,6 +57,7 @@ export default function JobForm({
         value={form.employeeType || ""}
         onChange={handleChange}
         options={employeeTypes}
+        disabled={isEditMode}
       />
 
       {/* Work Mode */}
@@ -64,6 +67,7 @@ export default function JobForm({
         value={form.workMode || ""}
         onChange={handleChange}
         options={workModes}
+        disabled={isEditMode}
       />
 
       {/* Location */}
@@ -72,6 +76,7 @@ export default function JobForm({
         name="location"
         value={form.location || ""}
         onChange={handleChange}
+        disabled={isEditMode}
       />
 
       {/* Date of Join */}
@@ -81,6 +86,7 @@ export default function JobForm({
         name="joiningDate"
         value={form.joiningDate || ""}
         onChange={handleChange}
+        disabled={isEditMode}
       />
 
       {/* Reporting Manager */}
@@ -90,7 +96,7 @@ export default function JobForm({
         value={form.reportingManagerUuid || ""}
         onChange={handleChange}
       />
-      <FormInput
+      <FormSelect
         label="Employment Status"
         name="employmentStatus"
         value={form.employmentStatus || ""}

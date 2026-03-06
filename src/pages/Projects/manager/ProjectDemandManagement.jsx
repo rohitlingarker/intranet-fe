@@ -31,7 +31,9 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         client: 'ALL',
         priority: 'ALL',
         status: 'ALL',
-        demandName: 'ALL'
+        demandName: 'ALL',
+        demandType: 'ALL',
+        deliveryModel: 'ALL'
     });
     const [activeTab, setActiveTab] = useState('all');
     const [draftFilters, setDraftFilters] = useState(filters);
@@ -61,7 +63,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
     // Pagination
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(20);
+    const [pageSize] = useState(8);
 
     // Deliverable Role Data
     const [categories, setCategories] = useState([]);
@@ -244,13 +246,21 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         return Array.from(new Set(projectDemands.map(d => d.client).filter(Boolean))).sort();
     }, [projectDemands]);
 
-    const availableStatuses = useMemo(() => {
-        return Array.from(new Set(projectDemands.map(d => d.lifecycleState).filter(Boolean))).sort();
-    }, [projectDemands]);
+    const availableStatuses = useMemo(() => [
+        "DRAFT", "REQUESTED", "APPROVED", "REJECTED", "CANCELLED", "FULFILLED"
+    ], []);
 
     const availableDemandNames = useMemo(() => {
         return Array.from(new Set(projectDemands.map(d => d.role).filter(Boolean))).sort();
     }, [projectDemands]);
+
+    const availableDemandTypes = useMemo(() => [
+        "NET_NEW", "REPLACEMENT", "BACKFILL", "EMERGENCY"
+    ], []);
+
+    const availableDeliveryModels = useMemo(() => [
+        "ONSITE", "OFFSHORE", "HYBRID"
+    ], []);
 
     const availablePriorities = useMemo(() => ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], []);
     const filteredDemands = useMemo(() => {
@@ -286,6 +296,12 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         if (filters.demandName && filters.demandName !== 'ALL') {
             list = list.filter(d => d.role === filters.demandName);
         }
+        if (filters.demandType && filters.demandType !== 'ALL') {
+            list = list.filter(d => d.demandType === filters.demandType);
+        }
+        if (filters.deliveryModel && filters.deliveryModel !== 'ALL') {
+            list = list.filter(d => d.deliveryModel === filters.deliveryModel);
+        }
 
         return list;
     }, [projectDemands, searchQuery, filters, activeTab]);
@@ -307,7 +323,9 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
         filters.client !== 'ALL',
         filters.priority !== 'ALL',
         filters.status !== 'ALL',
-        filters.demandName !== 'ALL'
+        filters.demandName !== 'ALL',
+        filters.demandType !== 'ALL',
+        filters.deliveryModel !== 'ALL'
     ].filter(Boolean).length;
 
     const resetFilters = () => {
@@ -316,7 +334,9 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
             client: 'ALL',
             priority: 'ALL',
             status: 'ALL',
-            demandName: 'ALL'
+            demandName: 'ALL',
+            demandType: 'ALL',
+            deliveryModel: 'ALL'
         });
     };
 
@@ -433,7 +453,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         {[
                             { id: 'all', label: 'All Demands' },
                             { id: 'active', label: 'Active & Approved' },
-                            { id: 'fulfilled', label: 'Fullfilled' },
+                            { id: 'fulfilled', label: 'Fulfilled' },
                             { id: 'soft', label: 'Soft Demands' }
                         ].map((tab) => {
                             const isActive = activeTab === tab.id;
@@ -527,6 +547,12 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                         onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
                         demandNameFilter={filters.demandName}
                         onDemandNameChange={(v) => setFilters(prev => ({ ...prev, demandName: v }))}
+                        demandTypeFilter={filters.demandType}
+                        onDemandTypeChange={(v) => setFilters(prev => ({ ...prev, demandType: v }))}
+                        deliveryModelFilter={filters.deliveryModel}
+                        onDeliveryModelChange={(v) => setFilters(prev => ({ ...prev, deliveryModel: v }))}
+                        demandTypes={availableDemandTypes}
+                        deliveryModels={availableDeliveryModels}
                         draft={draftFilters}
                         setDraft={setDraftFilters}
                     />

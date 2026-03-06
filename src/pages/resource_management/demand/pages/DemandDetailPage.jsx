@@ -17,6 +17,7 @@ import demandService from '../services/demandService';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PriorityBadge, StateBadge } from '../components/FormalBadges';
 import { Button } from "@/components/ui/button";
+import Pagination from '../../../../components/Pagination/pagination';
 
 /**
  * --- INTERNAL SUB-COMPONENTS ---
@@ -133,6 +134,9 @@ const OverviewTab = ({ demand, project, sla }) => {
  * --- TAB 2: DELIVERY ROLE INFO ---
  */
 const RoleInfoTab = ({ demand, role }) => {
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(5);
+
     // Group skills for the table
     const skills = useMemo(() => {
         if (!role.skill) return [];
@@ -144,6 +148,14 @@ const RoleInfoTab = ({ demand, role }) => {
             status: "Active"
         }];
     }, [role]);
+
+    const totalElements = skills.length;
+    const totalPages = Math.ceil(totalElements / pageSize);
+
+    const paginatedSkills = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return skills.slice(start, start + pageSize);
+    }, [skills, page, pageSize]);
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -185,7 +197,7 @@ const RoleInfoTab = ({ demand, role }) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-center">
-                            {skills.map((skill, i) => (
+                            {paginatedSkills.map((skill, i) => (
                                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="py-4 px-4">
                                         <span className="text-xs font-black text-slate-900 tracking-tight">{skill.primary}</span>
@@ -216,6 +228,16 @@ const RoleInfoTab = ({ demand, role }) => {
                         </tbody>
                     </table>
                 </div>
+                {totalPages > 1 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                            onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                        />
+                    </div>
+                )}
             </DetailCard>
         </div>
     );

@@ -5,7 +5,7 @@ import { lazy, Suspense } from "react";
 
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
-import Board from "./Board";
+import Board from "../../Projects/manager/Board.jsx";
 import Timeline from "./Timeline";
 
 import Navbar from "../../../components/Navbar/Navbar";
