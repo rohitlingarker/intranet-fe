@@ -70,7 +70,7 @@ import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusRe
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
-
+import MyWorkPage from "./pages/Projects/MyWork/MyWorkPage";
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
@@ -375,6 +375,7 @@ const AppRoutes = () => {
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
+          <Route path="/my-work" element={<MyWorkPage />} />
           {/* Employee Onboarding */}
 
           {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
