@@ -8,7 +8,8 @@ import {
     FileText, Zap, Shield, AlertTriangle,
     Mail, ExternalLink, PenTool, XCircle, Info,
     UserCheck, FileSearch, History, Star, Settings2, Download,
-    TrendingUp, Award, Layers, Hash, Building2, GitCompare, Code2, Percent, Plus
+    TrendingUp, Award, Layers, Hash, Building2, GitCompare, Code2, Percent, Plus,
+    Users, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SkillGapTab from '../../components/resource-intelligence/SkillGapTab';
@@ -18,6 +19,9 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { PriorityBadge, StateBadge } from '../components/FormalBadges';
 import { Button } from "@/components/ui/button";
 import Pagination from '../../../../components/Pagination/pagination';
+import ProjectResourcesTable from '../../pages/project/ProjectResourcesTable';
+import { fetchResourcesByDemandId } from '../../services/resource';
+
 
 /**
  * --- INTERNAL SUB-COMPONENTS ---
@@ -560,14 +564,199 @@ const SLAInsightsTab = ({ sla }) => {
 };
 
 /**
- * --- MAIN PAGE COMPONENT ---
+ * --- TAB 6: DEMAND RESOURCES ---
  */
+const DemandResourcesTable = ({ demandId }) => {
+    const [allocations, setAllocations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 5;
+
+    useEffect(() => {
+        const loadResources = async () => {
+            try {
+                setLoading(true);
+                const response = await fetchResourcesByDemandId(demandId);
+                if (response.success) {
+                    setAllocations(response.data || []);
+                } else {
+                    setError(response.message || "Failed to fetch resources");
+                }
+            } catch (err) {
+                console.error("Error fetching demand resources:", err);
+                setError("An error occurred while fetching resources");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (demandId) {
+            loadResources();
+            setPage(1);
+        }
+    }, [demandId]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm]);
+
+    const filteredAllocations = allocations.filter(item =>
+        item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredAllocations.length / itemsPerPage);
+    const paginatedAllocations = filteredAllocations.slice(
+        (page - 1) * itemsPerPage,
+        page * itemsPerPage
+    );
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <div className="h-8 w-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+                <p className="text-sm text-slate-400 font-bold tracking-widest animate-pulse uppercase">Synchronizing resources...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="text-xs font-bold">{error}</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h3 className="text-sm font-black flex items-center gap-2 text-slate-900 tracking-tight">
+                    <UserPlus className="h-4 w-4 text-indigo-500" />
+                    Allocated Resources ({allocations.length})
+                </h3>
+
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search resources..."
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {allocations.length === 0 ? (
+                <div className="bg-white p-16 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center shadow-sm">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                        <Users className="text-slate-200 h-10 w-10" />
+                    </div>
+                    <h4 className="text-lg font-black text-slate-900 tracking-tight">No Resources Allocated</h4>
+                    <p className="text-sm text-slate-400 max-w-[320px] mt-2 font-medium leading-relaxed">
+                        There are currently no resources assigned to this specific demand requirement.
+                    </p>
+                </div>
+            ) : (
+                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xl shadow-slate-200/50">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-xs text-left">
+                            <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                                <tr>
+                                    <th className="p-5">Resource</th>
+                                    <th className="p-5 text-center">Allocation</th>
+                                    <th className="p-5 text-center">Period</th>
+                                    <th className="p-5 text-center">Status</th>
+                                    <th className="p-5 text-center">Created By</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {paginatedAllocations.map((item) => (
+                                    <tr key={item.allocationId} className="hover:bg-slate-50/30 transition-colors group">
+                                        <td className="p-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs shrink-0 border border-indigo-100 uppercase shadow-sm group-hover:scale-105 transition-transform">
+                                                    {item.fullName.split(" ").map(n => n[0]).join("")}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-slate-900 truncate tracking-tight">{item.fullName}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold truncate mt-0.5">{item.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <span className={`text-[11px] font-black ${item.allocationPercentage >= 80 ? "text-rose-600" :
+                                                    item.allocationPercentage >= 50 ? "text-indigo-600" : "text-emerald-600"
+                                                    }`}>
+                                                    {item.allocationPercentage}%
+                                                </span>
+                                                <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-1000 ${item.allocationPercentage >= 80 ? "bg-rose-500" :
+                                                            item.allocationPercentage >= 50 ? "bg-indigo-500" : "bg-emerald-500"
+                                                            }`}
+                                                        style={{ width: `${item.allocationPercentage}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                                                    <Calendar className="h-3 w-3 text-indigo-400" />
+                                                    <span className="text-[10px] text-slate-700 font-black">{item.allocationStartDate}</span>
+                                                    <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
+                                                    <span className="text-[10px] text-slate-700 font-black">{item.allocationEndDate}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${item.allocationStatus === "ACTIVE"
+                                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                : "bg-amber-50 text-amber-600 border-amber-100"
+                                                }`}>
+                                                {item.allocationStatus}
+                                            </span>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="inline-flex items-center gap-2 text-[10px] text-slate-500 font-black bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                                                <UserCheck className="h-3.5 w-3.5 text-indigo-500" />
+                                                <span>{item.createdBy || "System"}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="py-6 px-6 border-t border-slate-100 bg-slate-50/30">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                                onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const DemandDetailPage = () => {
     const { demandId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const isRM = user?.roles?.includes("RESOURCE-MANAGER");
+    const isDM = user?.roles?.includes("DELIVERY-MANAGER");
 
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -626,8 +815,9 @@ const DemandDetailPage = () => {
 
     const TABS = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'resource', label: 'Resources', icon: Users },
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
-        { id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare },
+        ...(isRM ? [{ id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare }] : []),
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
         ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
         ...(isRM && allocationResults ? [{ id: 'allocationResults', label: 'Allocation Results', icon: Activity }] : [])
@@ -701,13 +891,15 @@ const DemandDetailPage = () => {
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => setIsAllocationModalOpen(true)}
-                                    className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    <span className="whitespace-nowrap">Allocate Resource</span>
-                                </button>
+                                {isRM && (
+                                    <button
+                                        onClick={() => setIsAllocationModalOpen(true)}
+                                        className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span className="whitespace-nowrap">Allocate Resource</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -743,11 +935,12 @@ const DemandDetailPage = () => {
             < main className="flex-1 overflow-y-auto bg-slate-50/80" >
                 <div className="max-w-[1500px] mx-auto px-6 py-10 font-sans">
                     {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} />}
+                    {activeTab === 'resource' && <DemandResourcesTable demandId={demandId} />}
                     {activeTab === 'roleInfo' && <RoleInfoTab demand={demand} role={role} />}
-                    {activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
+                    {isRM && activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
                     {activeTab === 'approvalFlow' && <ApprovalFlowTab demand={demand} />}
                     {activeTab === 'slaInsights' && <SLAInsightsTab sla={sla} />}
-                    {activeTab === 'allocationResults' && isRM && <AllocationResultsTab results={allocationResults} />}
+                    {!isDM && activeTab === 'allocationResults' && <AllocationResultsTab results={allocationResults} />}
                 </div>
             </main >
 
