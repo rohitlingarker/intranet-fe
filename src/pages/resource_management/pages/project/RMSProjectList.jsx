@@ -8,9 +8,11 @@ import {
   XCircle,
   Pencil,
   Filter,
+  Calendar,
+  Target,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { getProjects } from "../../services/projectService";
+import { getProjects, getProjectKPIs } from "../../services/projectService";
 import ProjectKPIs from "../../components/ProjectKPIs";
 import Pagination from "../../../../components/Pagination/pagination";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
@@ -43,6 +45,47 @@ const RMSProjectList = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const menuRef = useRef(null);
+
+  const [kpiStats, setKpiStats] = useState({
+    totalProjects: 0,
+    activeProjects: 0,
+    highRisk: 0,
+    avgUtilization: "0%",
+  });
+
+  const fetchKPIs = async () => {
+    try {
+      const res = await getProjectKPIs();
+      if (res?.data) {
+        const data = res.data;
+        let util = data.avgResourceUtil ?? data.avgUtilization ?? 0;
+
+        if (typeof util === 'number') {
+          util = `${Math.round(util)}%`;
+        } else if (typeof util === 'string') {
+          const parsed = parseFloat(util);
+          if (!isNaN(parsed)) {
+            util = `${Math.round(parsed)}%`;
+          } else {
+            util = util.includes('%') ? util : `${util}%`;
+          }
+        }
+
+        setKpiStats({
+          totalProjects: data.totalProjects || 0,
+          activeProjects: data.activeProjects || 0,
+          highRisk: data.highRiskProjects ?? data.highRisk ?? 0,
+          avgUtilization: util,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch KPIs", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchKPIs();
+  }, []);
 
   // debounce search
   useEffect(() => {
@@ -108,12 +151,27 @@ const RMSProjectList = () => {
     setPage(0);
   };
 
-  const kpiStats = {
-    totalProjects: projects.length,
-    activeProjects: projects.filter((p) => p.projectStatus === "ACTIVE").length,
-    highRisk: projects.filter((p) => p.riskLevel === "HIGH").length,
-    overlapping: projects.filter((p) => p.hasOverlap).length,
-    avgUtilization: "82%",
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "TBD";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "APPROVED":
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
+      case "ARCHIVED":
+        return "bg-slate-50 text-slate-700 border-slate-200";
+      case "PLANNING":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "COMPLETED":
+        return "bg-gray-50 text-gray-700 border-gray-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
   };
 
   // if (loading)
@@ -146,21 +204,21 @@ const RMSProjectList = () => {
 
       <ProjectKPIs stats={kpiStats} />
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[280px] max-w-sm">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row flex-wrap gap-4 items-center justify-between">
+        <div className="relative w-full md:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search project / client..."
-            className="w-full pl-10 pr-4 py-2 border rounded-md text-sm focus:outline-none"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-3 w-full md:w-auto">
           <select
-            className="border rounded-md px-4 py-2 text-sm bg-white"
+            className="border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[160px] cursor-pointer text-gray-700 hover:border-gray-300 transition-colors"
             value={filters.readinessStatus}
             onChange={(e) =>
               handleFilterChange("readinessStatus", e.target.value)
@@ -175,7 +233,7 @@ const RMSProjectList = () => {
           </select>
 
           <select
-            className="border rounded-md px-4 py-2 text-sm bg-white"
+            className="border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[140px] cursor-pointer text-gray-700 hover:border-gray-300 transition-colors"
             value={filters.projectStatus}
             onChange={(e) => handleFilterChange("projectStatus", e.target.value)}
           >
@@ -188,7 +246,7 @@ const RMSProjectList = () => {
           </select>
 
           <select
-            className="border rounded-md px-4 py-2 text-sm bg-white"
+            className="border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[140px] cursor-pointer text-gray-700 hover:border-gray-300 transition-colors"
             value={filters.riskLevel}
             onChange={(e) => handleFilterChange("riskLevel", e.target.value)}
           >
@@ -216,15 +274,20 @@ const RMSProjectList = () => {
                 onClick={() =>
                   navigate(`/resource-management/projects/${project.projectId}`)
                 }
-                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-pointer group flex flex-col h-full overflow-hidden"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col h-full overflow-hidden"
               >
-                <div className="p-5 flex-1 min-w-0">
+                <div className="p-4 flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between items-start mb-3 gap-2">
                     <div className="flex flex-wrap gap-2">
+                      <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full border ${getStatusStyles(project.projectStatus)}`}>
+                        {project.projectStatus?.replace(/_/g, ' ') || 'UNKNOWN'}
+                      </span>
                       <span
-                        className={`px-2 py-1 text-[10px] font-bold uppercase rounded border shrink-0 ${project.riskLevel === "HIGH"
-                          ? "bg-red-50 text-red-600 border-red-100"
-                          : "bg-green-50 text-green-600 border-green-100"
+                        className={`px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full border ${project.riskLevel === "HIGH"
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : project.riskLevel === "MEDIUM"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-teal-50 text-teal-700 border-teal-200"
                           }`}
                       >
                         {project.riskLevel} Risk
@@ -232,7 +295,7 @@ const RMSProjectList = () => {
 
                       {/* 🔴 OVERLAP WARNING ICON */}
                       {project.hasOverlap && (
-                        <div className="flex items-center gap-1 bg-amber-100 text-amber-600 px-2 py-1 rounded text-[10px] font-bold shrink-0">
+                        <div className="flex items-center gap-1 bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
                           <AlertTriangle className="h-3 w-3" />
                           Overlap
                         </div>
@@ -243,21 +306,17 @@ const RMSProjectList = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenMenuId(
-                            openMenuId === project.projectId
-                              ? null
-                              : project.projectId,
-                          );
+                          setOpenMenuId(openMenuId === project.projectId ? null : project.projectId);
                         }}
-                        className="text-gray-400 hover:text-gray-600 p-1"
+                        className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors"
                       >
-                        <MoreVertical className="h-5 w-5" />
+                        <MoreVertical className="h-4 w-4" />
                       </button>
 
                       {openMenuId === project.projectId && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50"
+                          className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden"
                         >
                           <button
                             onClick={(e) => {
@@ -266,7 +325,7 @@ const RMSProjectList = () => {
                               setSelectedProject(project.projectId);
                               setStatusUpdateModal(true);
                             }}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-xs text-blue-700 hover:bg-gray-100"
+                            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
                           >
                             <Pencil size={12} />
                             Update Status
@@ -276,38 +335,36 @@ const RMSProjectList = () => {
                     </div>
                   </div>
 
-                  <h3 className="font-bold text-[#081534] text-lg group-hover:text-[#263383] line-clamp-2 leading-snug mb-1 min-h-[3.5rem] break-words">
+                  <h3 className="font-bold text-gray-900 text-base group-hover:text-blue-700 line-clamp-2 leading-tight mb-1 break-words">
                     {project.projectName}
                   </h3>
-                  <p className="text-sm text-gray-500 truncate">{project.clientName}</p>
+                  <p className="text-xs text-gray-500 truncate mb-4">{project.clientName}</p>
+
+                  <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 text-xs text-gray-600">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Target className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                      <span className="capitalize truncate">{project.lifecycleStage?.toLowerCase() || 'Initiation'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <span className="truncate">{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 mt-auto flex flex-wrap justify-between items-center gap-2 text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-medium">
                     {project.readinessStatus === "READY" && (
-                      <>
-                        <span className="text-green-700 font-medium">Staffing</span>
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
-                      </>
+                      <><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="text-emerald-700">Staffing</span></>
                     )}
-
                     {project.readinessStatus === "NOT_READY" && (
-                      <>
-                        <span className="text-red-700 font-medium">Staffing</span>
-                        <XCircle className="h-4 w-4 text-red-600 mt-1" />
-                      </>
+                      <><XCircle className="h-4 w-4 text-red-600" /><span className="text-red-700">Staffing</span></>
                     )}
-
                     {project.readinessStatus === "UPCOMING" && (
-                      <>
-                        <span className="text-amber-600 font-medium">
-                          Staffing UPCOMING
-                        </span>
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      </>
+                      <><AlertTriangle className="h-4 w-4 text-amber-500" /><span className="text-amber-600">Staffing Upcoming</span></>
                     )}
                   </div>
-                  <div className="font-bold text-gray-700">
+                  <div className="font-bold text-gray-800">
                     USD {formatCurrency(project.projectBudget)}
                   </div>
                 </div>
