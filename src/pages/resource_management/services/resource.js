@@ -41,3 +41,16 @@ export const fetchResourcesByProjectId = async (projectId) => {
         throw error;
     }
 };
+
+export const fetchResourcesByDemandId = async (demandId) => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/allocation/demand/${demandId}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        },);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

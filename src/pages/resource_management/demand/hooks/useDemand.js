@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import demandService from "../services/demandService";
 import { useAuth } from "../../../../contexts/AuthContext";
 
+
 export const defaultFilters = {
     search: "",
     client: [],

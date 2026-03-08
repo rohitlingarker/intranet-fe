@@ -14,6 +14,7 @@ import { CheckSquare, Square } from "lucide-react";
 import AddDeliverableRoleModal from "../../models/AddDeliverableRoleModal";
 import { cn } from "@/lib/utils";
 import Pagination from "../../../../components/Pagination/pagination";
+import { useAuth } from "@/contexts/AuthContext";
 
 const RMS_BASE_URL = import.meta.env.VITE_RMS_BASE_URL;
 import {
@@ -43,6 +44,9 @@ import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 
 const RMSProjectDetails = () => {
   const { getEnumValues } = useEnums();
+  const { user } = useAuth();
+  const roles = user?.roles;
+  const isRM = roles?.includes("RESOURCE-MANAGER");
   const PROJECT_STATUSES = getEnumValues("ProjectStatus");
   const PRIORITY_LEVELS = getEnumValues("PriorityLevel");
   const RISK_LEVELS = getEnumValues("RiskLevel");
@@ -1052,20 +1056,22 @@ const RMSProjectDetails = () => {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-lg font-semibold">Project SLA Configuration</h3>
-              <button
-                disabled={projectSlas.length >= 3}
-                onClick={() => {
-                  setFormData(DEFAULT_FORM_STATE);
-                  setConfigType("sla");
-                  setOpenConfigModal(true);
-                }}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-bold transition-all ${projectSlas.length >= 3
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#263383] text-white hover:opacity-90 shadow-md active:scale-95"
-                  }`}
-              >
-                {projectSlas.length >= 3 ? "Limit Reached (3/3)" : "+ Create SLA"}
-              </button>
+              {!isRM && (
+                <button
+                  disabled={projectSlas.length >= 3}
+                  onClick={() => {
+                    setFormData(DEFAULT_FORM_STATE);
+                    setConfigType("sla");
+                    setOpenConfigModal(true);
+                  }}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-bold transition-all ${projectSlas.length >= 3
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-[#263383] text-white hover:opacity-90 shadow-md active:scale-95"
+                    }`}
+                >
+                  {projectSlas.length >= 3 ? "Limit Reached (3/3)" : "+ Create SLA"}
+                </button>
+              )}
             </div>
 
             {projectSlas.length > 0 ? (
@@ -1164,16 +1170,18 @@ const RMSProjectDetails = () => {
               <h3 className="text-lg font-semibold">
                 Project Pre-requisites Configuration
               </h3>
-              <button
-                onClick={() => {
-                  setFormData(DEFAULT_FORM_STATE);
-                  setConfigType("pre-requisites");
-                  setOpenConfigModal(true);
-                }}
-                className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
-              >
-                + Create Pre-requisites
-              </button>
+              {!isRM && (
+                <button
+                  onClick={() => {
+                    setFormData(DEFAULT_FORM_STATE);
+                    setConfigType("pre-requisites");
+                    setOpenConfigModal(true);
+                  }}
+                  className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
+                >
+                  + Create Pre-requisites
+                </button>
+              )}
             </div>
 
             {projectCompliance.length > 0 ? (
@@ -1290,15 +1298,17 @@ const RMSProjectDetails = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-lg font-semibold">Project Escalation Matrix</h3>
 
-              <button
-                onClick={() => {
-                  setConfigType("escalation");
-                  setOpenConfigModal(true);
-                }}
-                className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
-              >
-                + Create Escalation
-              </button>
+              {!isRM && (
+                <button
+                  onClick={() => {
+                    setConfigType("escalation");
+                    setOpenConfigModal(true);
+                  }}
+                  className="w-full sm:w-auto bg-[#263383] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 shadow-md active:scale-95"
+                >
+                  + Create Escalation
+                </button>
+              )}
             </div>
 
             {projectEscalations.length > 0 ? (

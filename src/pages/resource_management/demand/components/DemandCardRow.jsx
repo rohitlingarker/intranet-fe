@@ -89,14 +89,6 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
                             <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
                         </button>
                     )}
-                    {!isRM && (
-                        <button
-                            title='Delete'
-                            onClick={(e) => { e.stopPropagation(); /* Handle Delete */ }}
-                        >
-                            <Trash2 className="h-3.5 w-3.5 text-red-700 hover:text-red-800" />
-                        </button>
-                    )}
                 </div>
             </div>
         </div>
