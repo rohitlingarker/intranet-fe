@@ -28,12 +28,12 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const [dropdownPos, setDropdownPos] = useState(null);
 
     const [filters, setFilters] = useState({
-        client: 'ALL',
-        priority: 'ALL',
-        status: 'ALL',
-        demandName: 'ALL',
-        demandType: 'ALL',
-        deliveryModel: 'ALL'
+        client: [],
+        priority: [],
+        status: [],
+        demandName: [],
+        demandType: [],
+        deliveryModel: []
     });
     const [activeTab, setActiveTab] = useState('all');
     const [draftFilters, setDraftFilters] = useState(filters);
@@ -284,23 +284,25 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
             list = list.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase()));
         }
 
-        if (filters.client !== 'ALL') {
-            list = list.filter(d => d.client === filters.client);
+        if (filters.client?.length > 0) {
+            list = list.filter(d => filters.client.includes(d.client));
         }
-        if (filters.priority !== 'ALL') {
-            list = list.filter(d => d.priority?.toUpperCase() === filters.priority.toUpperCase());
+        if (filters.priority?.length > 0) {
+            const upperPriorities = filters.priority.map(p => p.toUpperCase());
+            list = list.filter(d => upperPriorities.includes(d.priority?.toUpperCase()));
         }
-        if (filters.status && filters.status !== 'ALL') {
-            list = list.filter(d => d.lifecycleState?.toUpperCase() === filters.status.toUpperCase());
+        if (filters.status?.length > 0) {
+            const upperStatuses = filters.status.map(s => s.toUpperCase());
+            list = list.filter(d => upperStatuses.includes(d.lifecycleState?.toUpperCase()));
         }
-        if (filters.demandName && filters.demandName !== 'ALL') {
-            list = list.filter(d => d.role === filters.demandName);
+        if (filters.demandName?.length > 0) {
+            list = list.filter(d => filters.demandName.includes(d.role));
         }
-        if (filters.demandType && filters.demandType !== 'ALL') {
-            list = list.filter(d => d.demandType === filters.demandType);
+        if (filters.demandType?.length > 0) {
+            list = list.filter(d => filters.demandType.includes(d.demandType));
         }
-        if (filters.deliveryModel && filters.deliveryModel !== 'ALL') {
-            list = list.filter(d => d.deliveryModel === filters.deliveryModel);
+        if (filters.deliveryModel?.length > 0) {
+            list = list.filter(d => filters.deliveryModel.includes(d.deliveryModel));
         }
 
         return list;
@@ -320,23 +322,23 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     }, [searchQuery, filters, activeTab]);
 
     const activeFilterCount = [
-        filters.client !== 'ALL',
-        filters.priority !== 'ALL',
-        filters.status !== 'ALL',
-        filters.demandName !== 'ALL',
-        filters.demandType !== 'ALL',
-        filters.deliveryModel !== 'ALL'
+        filters.client?.length > 0,
+        filters.priority?.length > 0,
+        filters.status?.length > 0,
+        filters.demandName?.length > 0,
+        filters.demandType?.length > 0,
+        filters.deliveryModel?.length > 0
     ].filter(Boolean).length;
 
     const resetFilters = () => {
         setSearchQuery('');
         setFilters({
-            client: 'ALL',
-            priority: 'ALL',
-            status: 'ALL',
-            demandName: 'ALL',
-            demandType: 'ALL',
-            deliveryModel: 'ALL'
+            client: [],
+            priority: [],
+            status: [],
+            demandName: [],
+            demandType: [],
+            deliveryModel: []
         });
     };
 
@@ -436,7 +438,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
                                 )}
                             >
                                 <Filter className={cn("h-3.5 w-3.5", !filterCollapsed ? "text-white" : "text-slate-500")} />
-                                {filters.client !== 'ALL' ? filters.client : 'Filters'}
+                                Filters
                                 {activeFilterCount > 0 && (
                                     <span className={cn(
                                         "absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-bold shadow-sm ring-2 ring-white animate-in zoom-in duration-200",
