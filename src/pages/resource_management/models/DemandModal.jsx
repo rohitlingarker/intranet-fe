@@ -8,8 +8,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
-import demandService from "../services/demandService";
-import { handleDMDecision, handleRMDecision } from "../services/demandService";
+import demandService from "../demand/services/demandService";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -547,7 +546,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
             decision: form.demandStatus,
             rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
           };
-          const res = await handleDMDecision(dmPayload);
+          const res = await demandService.handleDMDecision(dmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
@@ -561,7 +560,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
             decision: form.demandStatus,
             rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
           };
-          const res = await handleRMDecision(rmPayload);
+          const res = await demandService.handleRMDecision(rmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
