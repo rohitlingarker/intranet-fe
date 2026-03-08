@@ -203,6 +203,34 @@ export const demandService = {
             console.error(`Error in getProjectDemands for ID ${projectId}:`, error);
             throw error;
         }
+    },
+
+    /**
+     * Handles Delivery Manager decision on a demand
+     * @param {Object} payload 
+     */
+    handleDMDecision: async (payload) => {
+        try {
+            const response = await axios.put(`${BASE_URL}/api/demand/dm/decision`, payload, getAuthHeader());
+            return response.data;
+        } catch (error) {
+            console.error('Error in handleDMDecision:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Handles Resource Manager decision on a demand
+     * @param {Object} payload 
+     */
+    handleRMDecision: async (payload) => {
+        try {
+            const response = await axios.put(`${BASE_URL}/api/demand/rm/decision`, payload, getAuthHeader());
+            return response.data;
+        } catch (error) {
+            console.error('Error in handleRMDecision:', error);
+            throw error;
+        }
     }
 };
 
