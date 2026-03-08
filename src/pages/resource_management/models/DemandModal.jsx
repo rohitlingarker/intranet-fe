@@ -8,7 +8,8 @@ import {
 } from "@heroicons/react/20/solid";
 import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
-import demandService from "../demand/services/demandService";
+// import demandService from "../services/demandService";
+import { handleDMDecision, handleRMDecision } from "../services/demandService";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -394,33 +395,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
 
         setForm(mappedData);
 
-        // Fetch full detail in background for edit mode if we have an ID
-        const dId = mappedData.demandId || mappedData.id;
-        if (dId && isEdit) {
-          demandService.getDemandById(dId).then(detail => {
-            if (detail) {
-              console.log("[DemandModal] Fetched full detail for edit:", detail);
-              // Merge detail into form
-              setForm(prev => {
-                const detailAllocRaw = detail.allocationPercentage || detail.Allocation || detail.allocation?.percentage || "";
-                let detailAlloc = parseFloat(detailAllocRaw);
-                if (!isNaN(detailAlloc) && detailAlloc > 0 && detailAlloc <= 1) detailAlloc *= 100;
 
-                return {
-                  ...prev,
-                  demandStartDate: getFormattedDate(detail.demandStartDate || detail.startDate) || prev.demandStartDate,
-                  demandEndDate: getFormattedDate(detail.demandEndDate || detail.endDate) || prev.demandEndDate,
-                  allocationPercentage: isNaN(detailAlloc) ? prev.allocationPercentage : Math.round(detailAlloc),
-                  resourcesRequired: detail.resourcesRequired || detail.resourceCount || prev.resourcesRequired,
-                  minExp: detail.minExp || detail.experience || prev.minExp,
-                  demandJustification: detail.demandJustification || detail.justification || prev.demandJustification,
-                  deliveryRole: detail.deliveryRole || detail.roleId || prev.deliveryRole,
-                  projectId: detail.projectId || prev.projectId,
-                };
-              });
-            }
-          }).catch(err => console.error("Detail fetch failed", err));
-        }
       } else {
         setForm({
           ...emptyForm,
