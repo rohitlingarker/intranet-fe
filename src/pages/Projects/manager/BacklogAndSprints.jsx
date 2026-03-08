@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { DndProvider, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Plus, List } from "lucide-react";
+import { Plus, List, ChevronRight, ChevronDown } from "lucide-react";
 import { ToastContainer } from "react-toastify";   // ✅ Added
 import { showStatusToast } from "../../../components/toastfy/toast";
 import {jwtDecode} from "jwt-decode";
@@ -46,6 +46,13 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [panelMode, setPanelMode] = useState("story");
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingData, setPendingData] = useState(null);
+  const [showCompletedSprints, setShowCompletedSprints] = useState(false);
+  const [expandedBacklogStories, setExpandedBacklogStories] = useState([]);
+  const toggleStoryExpand = (storyId) => {
+    setExpandedBacklogStories((prev) =>
+      prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
+    );
+  };
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -154,6 +161,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     } catch (err) {
       const data = err.response?.data || {};
 
+      // 1. Handle Sprint Completion Error (Pending Tasks)
       if (action === "complete" && data.code === "SPRINT_COMPLETION_VALIDATION_ERROR") {
         setPendingData({
           sprintId,
@@ -164,10 +172,18 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         return;
       }
 
-     toast.error(data.message || "Failed to update sprint", {
-  autoClose: 2000,
-});
+      // 2. Handle "Another sprint is already active" error specifically
+      if (data.message && data.message.includes("Another active sprint already exists")) {
+        toast.warn("Cannot start sprint: Another active sprint already exists in this project.", { 
+          autoClose: 4000 
+        });
+        return;
+      }
 
+      // 3. Generic fallback error
+      toast.error(data.message || "Failed to update sprint status", {
+        autoClose: 3000,
+      });
     }
   };
 
@@ -198,6 +214,34 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
+
+  // =======================================
+  // Assign Task to Story
+  // =======================================
+  const handleAssignTaskToStory = async (taskId, storyId) => {
+    const toastId = toast.loading("Assigning story...");
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-story/${storyId}`,
+        {},
+        { headers }
+      );
+      toast.update(toastId, {
+        render: "Task successfully assigned to story!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+      fetchTasks(); // Refresh to update the UI hierarchy
+    } catch (err) {
+      toast.update(toastId, {
+        render: err.response?.data?.message || "Failed to assign story",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
+  };
   // =======================================
   // Fetch Data
   // =======================================
@@ -275,16 +319,27 @@ const handleDeleteSprint = async (sprintId) => {
   try {
     await axios.delete(
       `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
-      { headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      } }
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
     );
 
     toast.success("Sprint deleted successfully");
     fetchSprints();
     fetchStories();
   } catch (err) {
-    toast.error("Failed to delete sprint", { autoClose: 2000 });
+    const message = err.response?.data?.message || "";
+
+    if (message.includes("foreign key constraint")) {
+      toast.error(
+        "Cannot delete sprint because tasks are still assigned to it. Move them to backlog first.",
+        { autoClose: 4000 }
+      );
+    } else {
+      toast.error("Failed to delete sprint", { autoClose: 2000 });
+    }
   }
 };
 
@@ -332,6 +387,9 @@ const BacklogDropWrapper = ({ children }) => {
   const activeAndPlanningSprints = sprints.filter(
     (s) => s.status === "ACTIVE" || s.status === "PLANNING"
   );
+  const completedSprints = sprints.filter(
+  (s) => s.status === "COMPLETED"
+);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -378,7 +436,7 @@ const BacklogDropWrapper = ({ children }) => {
         </div>
 
         {/* Sprints */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {activeAndPlanningSprints.map((sprint) => {
             const sprintStories = stories.filter(
               (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
@@ -387,77 +445,221 @@ const BacklogDropWrapper = ({ children }) => {
               (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
             );
 
+            // 👇 1. Check if it's active
+            const isActive = sprint.status === "ACTIVE";
+
             return (
-              <SprintColumn
-                key={sprint.id}
-                sprint={sprint}
-                stories={sprintStories}
-                tasks={sprintTasks}
-                epics={epics}
-                allStories={stories}
-                sprints={activeAndPlanningSprints}
-                onDropStory={handleDropStory}
-                onDropTask={handleDropTask}
-                onChangeStatus={handleSprintStatus}
-                onDeleteSprint={handleDeleteSprint}
-                onEditSprint={(s) => {
-                  setSelectedSprintId(s.id);
-                  setPanelMode("sprint");
-                  setRightPanelOpen(true);
-                }}
-                onSelectEpic={() => {}}
-                onStoryClick={(id) => {
-                  setPanelMode("story");
-                  setSelectedStoryId(id);
-                  setRightPanelOpen(true);
-                }}
-                onTaskClick={(id) => {
-                  setPanelMode("task");
-                  setSelectedTaskId(id);
-                  setRightPanelOpen(true);
-                }}
-              />
+              // 👇 2. Add the highlight wrapper and badge
+              <div 
+                key={sprint.id} 
+                className={`relative transition-all rounded-xl ${
+                  isActive 
+                    ? "ring-2 ring-emerald-500 shadow-md bg-emerald-50/20 pt-1 pb-1 px-1 mt-4" 
+                    : ""
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -top-3 left-6 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm z-10 flex items-center gap-1.5 uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    Active Sprint
+                  </div>
+                )}
+                
+                <SprintColumn
+                  sprint={sprint}
+                  stories={sprintStories}
+                  tasks={sprintTasks}
+                  epics={epics}
+                  allStories={stories}
+                  sprints={activeAndPlanningSprints}
+                  onSelectParentStory={handleAssignTaskToStory}
+                  onDropStory={handleDropStory}
+                  onDropTask={handleDropTask}
+                  onChangeStatus={handleSprintStatus}
+                  onDeleteSprint={handleDeleteSprint}
+                  onEditSprint={(s) => {
+                    setSelectedSprintId(s.id);
+                    setPanelMode("sprint");
+                    setRightPanelOpen(true);
+                  }}
+                  onSelectEpic={() => {}}
+                  onStoryClick={(id) => {
+                    setPanelMode("story");
+                    setSelectedStoryId(id);
+                    setRightPanelOpen(true);
+                  }}
+                  onTaskClick={(id) => {
+                    setPanelMode("task");
+                    setSelectedTaskId(id);
+                    setRightPanelOpen(true);
+                  }}
+                />
+              </div>
             );
           })}
+         {/* Completed Sprints Section */}
+          {completedSprints.length > 0 && (
+            <div className="mt-10">
+              <button
+                onClick={() => setShowCompletedSprints(!showCompletedSprints)}
+                className="flex items-center gap-2 w-full text-left pb-2 border-b border-gray-200 group focus:outline-none"
+              >
+                <div className="p-1 rounded-md bg-gray-100 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 transition-colors">
+                  {showCompletedSprints ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </div>
+                <h2 className="text-lg font-bold text-gray-600 group-hover:text-gray-900 transition-colors">
+                  Completed Sprints ({completedSprints.length})
+                </h2>
+              </button>
+
+              {showCompletedSprints && (
+                <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {completedSprints.map((sprint) => {
+                    const sprintStories = stories.filter(
+                      (s) => s.sprintId === sprint.id || s.sprint?.id === sprint.id
+                    );
+
+                    const sprintTasks = tasks.filter(
+                      (t) => t.sprintId === sprint.id || t.sprint?.id === sprint.id
+                    );
+
+                    return (
+                      <div key={sprint.id} className="opacity-80">
+                        <SprintColumn
+                          sprint={sprint}
+                          stories={sprintStories}
+                          tasks={sprintTasks}
+                          epics={epics}
+                          allStories={stories}
+                          sprints={sprints}
+                          onDropStory={handleDropStory}
+                          onSelectParentStory={handleAssignTaskToStory}
+                          onDropTask={handleDropTask}
+                          onChangeStatus={handleSprintStatus}
+                          onStoryClick={(id) => {
+                            setPanelMode("story");
+                            setSelectedStoryId(id);
+                            setRightPanelOpen(true);
+                          }}
+                          onTaskClick={(id) => {
+                            setPanelMode("task");
+                            setSelectedTaskId(id);
+                            setRightPanelOpen(true);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Backlog */}
+        {/* Backlog */}
+        {/* Backlog */}
         <BacklogDropWrapper>
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">Product Backlog</h2>
+          <h2 className="text-lg font-semibold text-indigo-900 mb-4 pb-2 border-b">
+            Product Backlog
+          </h2>
 
-          <h3 className="text-md font-semibold text-blue-700 mb-1">Stories</h3>
+          <div className="space-y-4">
+            {/* 1. STORIES AND THEIR NESTED TASKS */}
+            {backlogStories.map((story) => {
+              // Find tasks that belong to this story
+              const childTasks = backlogTasks.filter((t) => t.storyId === story.id);
+              // Check if this specific story is expanded
+              const isExpanded = expandedBacklogStories.includes(story.id);
 
-          {backlogStories.map((story) => (
-            <StoryCard
-              key={story.id}
-              story={story}
-              sprints={activeAndPlanningSprints}
-              epics={epics}
-              onAddToSprint={handleDropStory}
-              onClick={() => {
-                setPanelMode("story");
-                setSelectedStoryId(story.id);
-                setRightPanelOpen(true);
-              }}
-            />
-          ))}
+              return (
+                <div key={story.id} className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    
+                    {/* Expand/Collapse Button (Only shows if story has tasks) */}
+                    {childTasks.length > 0 ? (
+                      <button
+                        onClick={() => toggleStoryExpand(story.id)}
+                        className="p-1 rounded-md bg-gray-100 hover:bg-indigo-100 text-gray-600 hover:text-indigo-700 transition-colors shadow-sm"
+                        title={isExpanded ? "Collapse tasks" : "Expand tasks"}
+                      >
+                        {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                      </button>
+                    ) : (
+                      <span className="w-[26px]"></span> // Invisible spacer for alignment
+                    )}
 
-          <h3 className="text-md font-semibold text-green-700 mb-1">Tasks</h3>
+                    {/* The Parent Story */}
+                    <div className="flex-1">
+                      <StoryCard
+                        story={story}
+                        sprints={activeAndPlanningSprints}
+                        epics={epics}
+                        onAddToSprint={handleDropStory}
+                        onClick={() => {
+                          setPanelMode("story");
+                          setSelectedStoryId(story.id);
+                          setRightPanelOpen(true);
+                        }}
+                      />
+                    </div>
+                  </div>
 
-          {backlogTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              stories={stories}
-              sprints={activeAndPlanningSprints}
-              onAddToSprint={handleDropTask}
-              onClick={() => {
-                setPanelMode("task");
-                setSelectedTaskId(task.id);
-                setRightPanelOpen(true);
-              }}
-            />
-          ))}
+                  {/* Nested Tasks (ONLY visible if isExpanded is true) */}
+                  {isExpanded && childTasks.length > 0 && (
+                    <div className="pl-10 border-l-2 border-indigo-100 ml-3 flex flex-col gap-2 py-1 mt-1">
+                      {childTasks.map((task) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          stories={stories}
+                          sprints={activeAndPlanningSprints}
+                          onSelectParentStory={handleAssignTaskToStory}
+                          onAddToSprint={handleDropTask}
+                          onClick={() => {
+                            setPanelMode("task");
+                            setSelectedTaskId(task.id);
+                            setRightPanelOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* 2. INDEPENDENT / ORPHAN TASKS */}
+            {(() => {
+              const orphanTasks = backlogTasks.filter((t) => !t.storyId);
+              if (orphanTasks.length === 0) return null;
+
+              return (
+                <div className="mt-8 pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    Independent Tasks
+                  </h3>
+                  <div className="flex flex-col gap-2">
+                    {orphanTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        stories={stories}
+                        sprints={activeAndPlanningSprints}
+                        onSelectParentStory={handleAssignTaskToStory}
+                        onAddToSprint={handleDropTask}
+                        onClick={() => {
+                          setPanelMode("task");
+                          setSelectedTaskId(task.id);
+                          setRightPanelOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </BacklogDropWrapper>
       </div>
 
