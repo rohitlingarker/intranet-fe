@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   getCompanyContactsByCompanyId,
   updateCompanyContact,
@@ -77,9 +78,9 @@ const CompanyEscalation = () => {
   };
 
   useEffect(() => {
-    fetchContacts();
+    fetchContact();
 
-    const refresh = () => fetchContacts();
+    const refresh = () => fetchContact();
     window.addEventListener("refresh-company-escalation", refresh);
 
     return () => {
@@ -116,7 +117,7 @@ const CompanyEscalation = () => {
     try {
       await deleteCompanyContact(selectedContactId);
       toast.success("Escalation contact deleted successfully");
-      fetchContacts();
+      fetchContact();
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to delete escalation contact",
