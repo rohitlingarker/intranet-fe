@@ -258,6 +258,7 @@ const RoleInfoTab = ({ demand, role }) => {
  */
 const ApprovalFlowTab = ({ demand }) => {
     const rawStatus = demand?.demandStatus?.toUpperCase() || '';
+    const rejectionReason = demand?.rejectionReason || null;
 
     // ── Derive step statuses from real demand status ──────────────────────────
     const dmDone = ['APPROVED', 'FULFILLED', 'ACTIVE', 'REJECTED'].includes(rawStatus);
@@ -273,7 +274,7 @@ const ApprovalFlowTab = ({ demand }) => {
         {
             label: "Created",
             subLabel: rawStatus === 'DRAFT' ? 'DRAFT' : rawStatus === 'REQUESTED' ? 'REQUESTED' : null,
-            status: "complete",        // Always complete — demand exists
+            status: "complete",
         },
         {
             label: "Delivery Manager Approved",
@@ -282,6 +283,8 @@ const ApprovalFlowTab = ({ demand }) => {
         {
             label: "Resource Manager Approved",
             status: rmDone ? "complete" : rmRejected ? "rejected" : rmPending ? "pending" : "future",
+            // Pass rejection reason only to the RM step
+            rejectionReason: rmRejected ? rejectionReason : null,
         },
         {
             label: "Final Confirmation",
@@ -357,11 +360,21 @@ const ApprovalFlowTab = ({ demand }) => {
                                             </span>
                                         )}
 
-                                        {/* Rejected badge on Stage 3 */}
+                                        {/* Rejected badge + reason on Stage 3 */}
                                         {step.status === 'rejected' && (
-                                            <span className="inline-block mt-1 px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[8px] font-black tracking-widest border border-rose-200">
-                                                REJECTED
-                                            </span>
+                                            <div className="flex flex-col items-start md:items-center gap-1 mt-1">
+                                                <span className="inline-block px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[8px] font-black tracking-widest border border-rose-200">
+                                                    REJECTED
+                                                </span>
+                                                {step.rejectionReason && (
+                                                    <span
+                                                        title={step.rejectionReason}
+                                                        className="text-[9px] font-bold text-rose-500 italic max-w-[120px] truncate"
+                                                    >
+                                                        &ldquo;{step.rejectionReason}&rdquo;
+                                                    </span>
+                                                )}
+                                            </div>
                                         )}
 
                                         {/* Pending badge */}
@@ -382,16 +395,32 @@ const ApprovalFlowTab = ({ demand }) => {
 
             {/* REJECTED — RM rejected the demand */}
             {rmRejected && (
-                <div className="p-4 sm:p-6 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-                    <div className="flex items-center gap-4 text-rose-700">
-                        <XCircle className="h-5 w-5 shrink-0" />
-                        <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
-                            This demand was <strong>rejected by the Resource Manager</strong>. Please review the requirements and resubmit for approval.
-                        </span>
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl shadow-sm overflow-hidden">
+                    {/* Top row */}
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 text-rose-700">
+                            <XCircle className="h-5 w-5 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                                This demand was <strong>rejected by the Resource Manager</strong>. Please review the requirements and resubmit.
+                            </span>
+                        </div>
+                        <div className="w-full sm:w-auto text-center px-4 py-2 bg-rose-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-rose-600/20 whitespace-nowrap">
+                            RM REJECTED
+                        </div>
                     </div>
-                    <div className="w-full sm:w-auto text-center px-4 py-2 bg-rose-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-rose-600/20 whitespace-nowrap">
-                        RM REJECTED
-                    </div>
+
+                    {/* Rejection Reason callout */}
+                    {rejectionReason && (
+                        <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-4 bg-white border border-rose-200 rounded-xl">
+                            <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5">
+                                <AlertTriangle className="h-3 w-3" />
+                                Rejection Reason
+                            </p>
+                            <p className="text-sm font-bold text-rose-700 leading-relaxed">
+                                &ldquo;{rejectionReason}&rdquo;
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
 
