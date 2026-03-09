@@ -200,19 +200,21 @@ const Board = ({ projectId, sprintId, projectName }) => {
   useEffect(() => {
     loadBoard();
   }, [loadBoard]);
-  // Periodically highlight/pulse the sprint reminder pill every 30 minutes
+  // Auto-check popup-status on sprint load; re-check every 30 min
   useEffect(() => {
     if (!activeSprintId) return;
-    // ── NEW: auto-call popup-status on load so endpoint fires without clicking ──
     fetchSprintPopup(activeSprintId);
-    const pulse = () => {
-      setHighlightPulse(true);
-      setTimeout(() => setHighlightPulse(false), 3500);
-    };
-    pulse();
-    const intervalId = setInterval(pulse, 1 * 30 * 1000);
+    const intervalId = setInterval(() => fetchSprintPopup(activeSprintId), 30 * 60 * 1000);
     return () => clearInterval(intervalId);
   }, [activeSprintId]);
+
+  // Pulse the pill only when sprintPopup is set (i.e. shouldShowPopup/endingSoon is true)
+  useEffect(() => {
+    if (!sprintPopup) return;
+    setHighlightPulse(true);
+    const t = setTimeout(() => setHighlightPulse(false), 3500);
+    return () => clearTimeout(t);
+  }, [sprintPopup]);
   // safe arrays & grouping
   const safeTasks = Array.isArray(tasks) ? tasks : [];
   const tasksByStatusId = useMemo(() => {
@@ -353,13 +355,16 @@ const Board = ({ projectId, sprintId, projectName }) => {
         { headers: headersWithToken() }
       );
       console.log("Sprint popup data:", res.data);
-      if (res.data?.endingSoon === true) {
+      // Only show the popup/pill when the backend says shouldShowPopup OR endingSoon
+      if (res.data?.shouldShowPopup === true || res.data?.endingSoon === true) {
         setSprintPopup(res.data);
-        setActiveSprintId(sprintId);
+      } else {
+        // Sprint exists but not ending soon — clear any stale popup
+        setSprintPopup(null);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to fetch sprint info");
+      // Silent fail — don't toast on background auto-check
     }
   };
   const finishSprint = async (option) => {
@@ -557,48 +562,66 @@ const Board = ({ projectId, sprintId, projectName }) => {
         {projectName ?? "Project Board"}
       </h2>
       <div className="flex items-center gap-3">
-        {activeSprintId && (
+        {/* Sprint ending pill — only shown when shouldShowPopup or endingSoon is true */}
+        {sprintPopup && (
           <div className="relative">
             <div
               role="button"
               tabIndex={0}
-              onClick={() => fetchSprintPopup(activeSprintId)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") fetchSprintPopup(activeSprintId);
-              }}
+              onClick={() => setHighlightPulse((v) => !v)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setHighlightPulse((v) => !v); }}
               className={`cursor-pointer px-3 py-2 rounded border bg-yellow-50 text-yellow-800 hover:bg-yellow-100 flex items-center gap-2 transform transition-all duration-300 ${
                 highlightPulse ? "scale-105 shadow-2xl ring-4 ring-yellow-300 z-50" : ""
               }`}
             >
-              <span className="font-medium">Sprint ending — check tasks?</span>
-              {sprintPopup && sprintPopup.unfinishedCount != null && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">
-                  {sprintPopup.unfinishedCount}
+              <span className="text-base">⚠️</span>
+              <span className="font-medium text-sm">
+                {sprintPopup.endingSoon ? "Sprint ending soon" : "Sprint has unfinished tasks"}
+              </span>
+              {sprintPopup.hasUnfinishedTasks && (
+                <span className="bg-yellow-200 text-yellow-900 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                  !
                 </span>
               )}
             </div>
             {highlightPulse && (
-              <div className="absolute right-0 mt-3 w-[300px] z-50">
-                <div className="bg-white border rounded-lg shadow-2xl p-3 animate-fade-in">
+              <div className="absolute right-0 mt-3 w-[320px] z-50">
+                <div className="bg-white border border-yellow-200 rounded-xl shadow-2xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="text-yellow-600 text-2xl">⚠️</div>
+                    <div className="text-2xl mt-0.5">⚠️</div>
                     <div className="flex-1">
-                      <div className="font-semibold">Sprint ending soon</div>
-                      <div className="text-sm text-gray-600">
-                        There are unfinished tasks — review or move them now.
+                      <div className="font-semibold text-gray-800 mb-1">
+                        {sprintPopup.sprintName}
                       </div>
-                      <div className="mt-3 flex gap-2 justify-end">
+                      {sprintPopup.endingSoon && (
+                        <p className="text-sm text-yellow-700 mb-1">This sprint is ending soon.</p>
+                      )}
+                      {sprintPopup.hasUnfinishedTasks && (
+                        <p className="text-sm text-red-600 mb-2">There are unfinished tasks remaining.</p>
+                      )}
+                      <p className="text-sm text-gray-500 mb-3">
+                        Would you like to move unfinished tasks to the next sprint or backlog?
+                      </p>
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => fetchSprintPopup(activeSprintId)}
-                          className="px-3 py-1 rounded bg-yellow-500 text-white text-sm"
+                          onClick={() => { setHighlightPulse(false); finishSprint("NEXT_SPRINT"); }}
+                          disabled={isFinishingSprint}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
                         >
-                          Review
+                          Next Sprint
+                        </button>
+                        <button
+                          onClick={() => { setHighlightPulse(false); finishSprint("BACKLOG"); }}
+                          disabled={isFinishingSprint}
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                        >
+                          Backlog
                         </button>
                         <button
                           onClick={() => setHighlightPulse(false)}
-                          className="px-3 py-1 rounded border text-sm"
+                          className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-500 hover:bg-slate-50 transition-colors"
                         >
-                          Dismiss
+                          Later
                         </button>
                       </div>
                     </div>
@@ -840,43 +863,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
         otherStatuses={deleteModalOtherStatuses}
         onConfirm={confirmDeleteWithMigration}
       />
-      {sprintPopup && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-[500px] max-w-full relative">
-            <button
-              onClick={() => setSprintPopup(null)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-900"
-            >
-              ✕
-            </button>
-            <h3 className="text-lg font-semibold mb-2">{sprintPopup.sprintName}</h3>
-            {sprintPopup.hasUnfinishedTasks && (
-              <p className="text-sm text-red-600 mb-4">
-                There are unfinished tasks in this sprint.
-              </p>
-            )}
-            {sprintPopup.endingSoon && (
-              <p className="text-sm text-yellow-600 mb-4">Sprint is ending soon.</p>
-            )}
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => finishSprint("NEXT_SPRINT")}
-                disabled={isFinishingSprint}
-                className="px-3 py-2 rounded bg-blue-600 text-white"
-              >
-                Move to Next Sprint
-              </button>
-              <button
-                onClick={() => finishSprint("BACKLOG")}
-                disabled={isFinishingSprint}
-                className="px-3 py-2 rounded border"
-              >
-                Move to Backlog
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Sprint finish modal removed — handled inline by the pill dropdown */}
       {openCreateTaskModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <CreateTaskForm
