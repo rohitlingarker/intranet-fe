@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Folder, ChevronDown, ChevronRight } from "lucide-react";
+import { 
+  Plus, 
+  Folder, 
+  ChevronRight, 
+  Layers, 
+  BookOpen, 
+  Loader2, 
+  AlertCircle 
+} from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import { useParams } from "react-router-dom";
 
@@ -13,7 +21,7 @@ export default function TestDesign() {
   const { projectId } = useParams();
 
   const [testStories, setTestStories] = useState([]);
-  const [expandedStories, setExpandedStories] = useState({}); // ✅ NEW — tracks which story is expanded
+  const [expandedStories, setExpandedStories] = useState({}); 
 
   const [selectedStory, setSelectedStory] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
@@ -35,7 +43,6 @@ export default function TestDesign() {
       const res = await axiosInstance.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-stories/projects/${projectId}`
       );
-
       return (res.data || []).map((s) => ({
         ...s,
         scenarios: [],
@@ -54,7 +61,6 @@ export default function TestDesign() {
       const res = await axiosInstance.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/scenarios/test-stories/${storyId}`
       );
-
       return (res.data || []).map((sc) => ({
         ...sc,
         cases: [],
@@ -96,36 +102,12 @@ export default function TestDesign() {
   };
 
   // ---------------------------------------------------------
-  // INITIAL LOAD
+  // CORE LOGIC: SILENT BACKGROUND UPDATE
   // ---------------------------------------------------------
-  const loadAll = async () => {
-    setLoading(true);
+  // Fetches scenarios, cases, and steps for a specific story silently
+  const loadStoryContents = async (storyId) => {
+    const scenarios = await fetchScenarios(storyId);
 
-    const stories = await fetchTestStories();
-    setTestStories(stories);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadAll();
-  }, [projectId]);
-
-  // ---------------------------------------------------------
-  // EXPAND / COLLAPSE STORY (loads scenarios when opened)
-  // ---------------------------------------------------------
-  const toggleStoryExpand = async (story) => {
-    const isExpanded = expandedStories[story.id];
-
-    // If collapsing → just toggle
-    if (isExpanded) {
-      setExpandedStories((p) => ({ ...p, [story.id]: false }));
-      return;
-    }
-
-    // Expanding → fetch scenarios
-    const scenarios = await fetchScenarios(story.id);
-
-    // Fetch cases + steps for each scenario
     for (const scenario of scenarios) {
       const cases = await fetchCases(scenario.id);
       scenario.cases = [];
@@ -136,37 +118,107 @@ export default function TestDesign() {
       }
     }
 
-    // Update state
     setTestStories((prev) =>
-      prev.map((s) =>
-        s.id === story.id ? { ...s, scenarios } : s
-      )
+      prev.map((s) => (s.id === storyId ? { ...s, scenarios } : s))
     );
+    
+    return scenarios;
+  };
 
+  // ---------------------------------------------------------
+  // INITIAL LOAD
+  // ---------------------------------------------------------
+  const loadAll = async () => {
+    setLoading(true); // Only trigger the big loader on initial mount!
+    const stories = await fetchTestStories();
+    setTestStories(stories);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, [projectId]);
+
+  // ---------------------------------------------------------
+  // EXPAND / COLLAPSE STORY
+  // ---------------------------------------------------------
+  const toggleStoryExpand = async (story) => {
+    const isExpanded = expandedStories[story.id];
+
+    if (isExpanded) {
+      setExpandedStories((p) => ({ ...p, [story.id]: false }));
+      return;
+    }
+
+    await loadStoryContents(story.id);
     setExpandedStories((p) => ({ ...p, [story.id]: true }));
   };
 
   // ---------------------------------------------------------
-  // CALLBACKS
+  // CALLBACKS (SILENT REFRESHES)
   // ---------------------------------------------------------
+  
   const handleStoryCreated = async () => {
-    await loadAll();
+    const stories = await fetchTestStories();
+    // Merge new stories while keeping the expanded scenarios of existing ones
+    setTestStories((prev) => 
+      stories.map((s) => {
+        const existing = prev.find((p) => p.id === s.id);
+        return existing ? { ...s, scenarios: existing.scenarios } : s;
+      })
+    );
     setOpenStoryModal(false);
   };
 
   const handleScenarioCreated = async () => {
-    await loadAll();
+    if (scenarioStory) {
+      await loadStoryContents(scenarioStory.id);
+      setExpandedStories((p) => ({ ...p, [scenarioStory.id]: true })); // Auto-expand
+    }
     setOpenScenarioModal(false);
     setScenarioStory(null);
   };
 
   const handleCaseCreated = async () => {
-    await loadAll();
+    // Find which story this scenario belongs to
+    const story = testStories.find((s) => 
+      s.scenarios?.some((sc) => sc.id === selectedScenario?.id)
+    );
+    
+    if (story) {
+      const updatedScenarios = await loadStoryContents(story.id);
+      
+      // Keep the current scenario and case seamlessly selected
+      const updatedScenario = updatedScenarios.find(sc => sc.id === selectedScenario.id);
+      if (updatedScenario) {
+        setSelectedScenario(updatedScenario);
+        if (!selectedCase) {
+          setSelectedCase(updatedScenario.cases[0] || null);
+        } else {
+          const updatedCase = updatedScenario.cases.find(c => c.id === selectedCase.id);
+          setSelectedCase(updatedCase || updatedScenario.cases[0] || null);
+        }
+      }
+    }
     setOpenCaseModal(false);
   };
 
   const handleStepsCreated = async () => {
-    await loadAll();
+    const story = testStories.find((s) => 
+      s.scenarios?.some((sc) => sc.id === selectedScenario?.id)
+    );
+    
+    if (story) {
+      const updatedScenarios = await loadStoryContents(story.id);
+      const updatedScenario = updatedScenarios.find(sc => sc.id === selectedScenario.id);
+      if (updatedScenario) {
+        setSelectedScenario(updatedScenario);
+        if (selectedCase) {
+          const updatedCase = updatedScenario.cases.find(c => c.id === selectedCase.id);
+          setSelectedCase(updatedCase || null);
+        }
+      }
+    }
     setOpenStepsModal(false);
   };
 
@@ -174,104 +226,139 @@ export default function TestDesign() {
   // UI
   // ---------------------------------------------------------
   if (loading) {
-    return <div className="p-10 text-gray-500">Loading Test Design…</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] text-gray-400">
+        <Loader2 className="animate-spin h-8 w-8 mb-4 text-blue-600" />
+        <p>Loading Test Design Environment...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-80px)] p-6">
+    <div className="flex h-[calc(100vh-80px)] bg-gray-50 overflow-hidden">
+      
       {/* -------------------------------- */}
-      {/* LEFT SIDEBAR — EXPANDABLE STORIES */}
+      {/* LEFT SIDEBAR — EXPLORER */}
       {/* -------------------------------- */}
-      <aside className="w-80 bg-white border rounded-xl shadow p-4 overflow-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-lg">Test Stories</h3>
-
+      <aside className="w-80 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+          <div className="flex items-center gap-2">
+            <BookOpen size={18} className="text-blue-600" />
+            <h3 className="font-semibold text-gray-800 tracking-tight">Test Stories</h3>
+          </div>
           <button
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
             onClick={() => setOpenStoryModal(true)}
+            title="Add Test Story"
           >
             <Plus size={18} />
           </button>
         </div>
 
-        <div className="space-y-2">
-          {testStories.map((story) => (
-            <div key={story.id}>
-              {/* Story Row */}
-              <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer">
-                <div
-                  className="flex items-center gap-2 flex-1"
-                  onClick={() => {
-                    setSelectedStory(story);
-                    toggleStoryExpand(story);
-                  }}
-                >
-                  {expandedStories[story.id] ? (
-                    <ChevronDown size={16} />
-                  ) : (
-                    <ChevronRight size={16} />
-                  )}
-
-                  <Folder size={16} className="text-blue-600" />
-                  <span className="text-sm">{story.name}</span>
-                </div>
-
-                {/* Add Scenario */}
-                <button
-                  className="p-1 hover:bg-gray-100 rounded"
-                  onClick={() => {
-                    setScenarioStory(story);
-                    setOpenScenarioModal(true);
-                  }}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-
-              {/* Expandable Scenario List */}
-              {expandedStories[story.id] && (
-                <div className="ml-6 mt-1 space-y-1 border-l pl-3">
-                  {story.scenarios.length === 0 ? (
-                    <div className="text-xs text-gray-400">
-                      No scenarios found
-                    </div>
-                  ) : (
-                    story.scenarios.map((scenario) => (
-                      <div
-                        key={scenario.id}
-                        className="p-2 rounded hover:bg-gray-50 cursor-pointer flex justify-between"
-                        onClick={() => {
-                          setSelectedScenario(scenario);
-                          setSelectedCase(scenario.cases[0] || null);
-                        }}
-                      >
-                        <span className="text-sm">{scenario.title}</span>
-
-                        {/* Add Case */}
-                        <button
-                          className="p-1 hover:bg-gray-200 rounded"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedScenario(scenario);
-                            setOpenCaseModal(true);
-                          }}
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+        {/* STORY LIST */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {testStories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 text-gray-400 text-sm">
+              <AlertCircle className="h-6 w-6 mb-2 opacity-50" />
+              <span>No test stories found.</span>
             </div>
-          ))}
+          ) : (
+            testStories.map((story) => {
+              const isExpanded = expandedStories[story.id];
+
+              return (
+                <div key={story.id} className="select-none">
+                  
+                  {/* Story Row */}
+                  <div className="group flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors text-gray-700">
+                    <div
+                      className="flex items-center gap-2 flex-1 overflow-hidden"
+                      onClick={() => {
+                        setSelectedStory(story);
+                        toggleStoryExpand(story);
+                      }}
+                    >
+                      <ChevronRight 
+                        size={16} 
+                        className={`text-gray-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} 
+                      />
+                      <Folder size={16} className={isExpanded ? "text-blue-500" : "text-gray-400"} />
+                      <span className="text-sm font-medium truncate">{story.name}</span>
+                    </div>
+
+                    {/* Add Scenario Button (Visible on hover) */}
+                    <button
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-500 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setScenarioStory(story);
+                        setOpenScenarioModal(true);
+                      }}
+                      title="Add Scenario"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
+                  {/* Expandable Scenario List */}
+                  {isExpanded && (
+                    <div className="ml-5 mt-1 border-l border-gray-200 pl-2 space-y-0.5 pb-2">
+                      {story.scenarios.length === 0 ? (
+                        <div className="px-4 py-2 text-xs text-gray-400 italic">
+                          No scenarios inside
+                        </div>
+                      ) : (
+                        story.scenarios.map((scenario) => {
+                          const isSelected = selectedScenario?.id === scenario.id;
+
+                          return (
+                            <div
+                              key={scenario.id}
+                              className={`group flex items-center justify-between px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
+                                isSelected 
+                                  ? "bg-blue-50 text-blue-700 font-medium" 
+                                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                              }`}
+                              onClick={() => {
+                                setSelectedScenario(scenario);
+                                setSelectedCase(scenario.cases[0] || null);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <Layers size={14} className={isSelected ? "text-blue-500" : "text-gray-400"} />
+                                <span className="text-sm truncate">{scenario.title}</span>
+                              </div>
+
+                              {/* Add Case Button (Visible on hover) */}
+                              <button
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-200 hover:text-blue-800 rounded text-gray-500 transition-opacity ml-2 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedScenario(scenario);
+                                  setOpenCaseModal(true);
+                                }}
+                                title="Add Test Case"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </aside>
 
       {/* -------------------------------- */}
-      {/* MAIN PANEL */}
+      {/* MAIN CONTENT PANEL */}
       {/* -------------------------------- */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-white border-l border-gray-100">
         <ScenarioPanel
           selectedTestStory={selectedStory}
           selectedScenario={selectedScenario}
