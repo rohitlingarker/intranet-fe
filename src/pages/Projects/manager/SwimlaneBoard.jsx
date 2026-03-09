@@ -29,8 +29,7 @@ import { CreateTaskModal } from "./Board/CreateTaskModal";
 import { DeleteStatusModal } from "./Board/DeleteStatusModal";
 import Avatar from "./Board/Avatar";
 import StoryRowHeader from "./SwimlaneBoard/StoryRowHeader";
-// FIX 1: was `import TaskCard from "./SwimlaneBoard/StoryRowHeader"` — wrong file
-import TaskCard from "./SwimlaneBoard/TaskCard";
+import TaskCard, { Avatar as TaskAvatar } from "./Board/TaskCard";
 import UnassignedRowHeader from "./SwimlaneBoard/UnassignedRowHeader";
 
 const STORY_HEX = [
@@ -607,7 +606,7 @@ const SwimlaneBoard = ({ projectId, projectName, hideHeader = false }) => {
                                     {cellTasks.map((task, tIdx) => (
                                       <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={tIdx} type="ITEM">
                                         {(taskProv, taskSnap) => (
-                                          <TaskCard task={task} provided={taskProv} snapshot={taskSnap} onOpen={openTaskPanel} />
+                                          <TaskCard task={task} taskProvided={taskProv} taskSnapshot={taskSnap} openTaskPanel={openTaskPanel} />
                                         )}
                                       </Draggable>
                                     ))}
@@ -688,7 +687,7 @@ const SwimlaneBoard = ({ projectId, projectName, hideHeader = false }) => {
                                   {cellTasks.map((task, tIdx) => (
                                     <Draggable key={`task-${task.id}`} draggableId={`task-${task.id}`} index={tIdx} type="ITEM">
                                       {(taskProv, taskSnap) => (
-                                        <TaskCard task={task} provided={taskProv} snapshot={taskSnap} onOpen={openTaskPanel} />
+                                        <TaskCard task={task} taskProvided={taskProv} taskSnapshot={taskSnap} openTaskPanel={openTaskPanel} />
                                       )}
                                     </Draggable>
                                   ))}

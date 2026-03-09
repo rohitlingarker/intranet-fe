@@ -15,6 +15,7 @@ import {
   Loader2,
   Filter,
   Search,
+  User,
   LayoutGrid,
   Rows,
 } from "lucide-react";
@@ -26,11 +27,14 @@ import EditStoryForm from "./Backlog/EditStoryForm";
 import RightSidePanel from "./Sprint/RightSidePanel";
 import CreateTaskForm from "./Backlog/CreateTask";
 import CreateStoryForm from "./Backlog/CreateStory";
-import {BASE,WIP_WARNING_THRESHOLD,PALETTE} from "./Board/constants"
-import {CreateTaskModal} from "./Board/CreateTaskModal"
-import {DeleteStatusModal} from "./Board/DeleteStatusModal"
+import { BASE, WIP_WARNING_THRESHOLD, PALETTE } from "./Board/constants";
+import { CreateTaskModal } from "./Board/CreateTaskModal";
+import { DeleteStatusModal } from "./Board/DeleteStatusModal";
 import TaskCard from "./Board/TaskCard";
 import { Avatar } from "./Board/TaskCard";
+
+// ── NEW: Swimlane view ────────────────────────────────────────
+import SwimlaneBoard from "./SwimlaneBoard";
 
 const headersWithToken = () => {
   const token = localStorage.getItem("token");
@@ -39,21 +43,45 @@ const headersWithToken = () => {
     "Content-Type": "application/json",
   };
 };
-
 const stableColorClass = (k) => {
   const s = String(k ?? "");
   let h = 216;
-
   for (let i = 0; i < s.length; i++) {
     h = (h * 31 + s.charCodeAt(i)) % 1000;
   }
-
   return PALETTE[Math.abs(h) % PALETTE.length];
 };
 
+// ── NEW: View toggle component ────────────────────────────────
+const ViewToggle = ({ view, onChange }) => (
+  <div className="flex items-center rounded border bg-white overflow-hidden text-sm">
+    <button
+      onClick={() => onChange("board")}
+      className={`flex items-center gap-1.5 px-3 py-2 transition-colors border-r
+        ${view === "board"
+          ? "bg-indigo-50 text-indigo-600 font-semibold"
+          : "text-gray-500 hover:bg-slate-50"
+        }`}
+    >
+      <LayoutGrid className="w-4 h-4" />
+      Board
+    </button>
+    <button
+      onClick={() => onChange("swimlane")}
+      className={`flex items-center gap-1.5 px-3 py-2 transition-colors
+        ${view === "swimlane"
+          ? "bg-indigo-50 text-indigo-600 font-semibold"
+          : "text-gray-500 hover:bg-slate-50"
+        }`}
+    >
+      <Rows className="w-4 h-4" />
+      Swim
+    </button>
+  </div>
+);
 
 const Board = ({ projectId, sprintId, projectName }) => {
-  // ── view: "board" (default) | "swimlane" ──────────────────
+  // ── NEW: view mode state ──────────────────────────────────
   const [viewMode, setViewMode] = useState("board");
 
   // data
@@ -95,22 +123,24 @@ const Board = ({ projectId, sprintId, projectName }) => {
   const [sprintPopup, setSprintPopup] = useState(null);
   const [isFinishingSprint, setIsFinishingSprint] = useState(false);
   const [highlightPulse, setHighlightPulse] = useState(false);
-
   // load data
   const loadBoard = useCallback(async () => {
     setLoading(true);
     try {
       let activeSprintId = null;
+      // --- GET ACTIVE SPRINT ---------------------------------------------------
       try {
         const res = await axios.get(
           `${BASE}/api/sprints/active/project/${projectId}`,
           { headers: headersWithToken() }
         );
         activeSprintId = res.data[0]?.id;
+        console.log("Sprint ID:", activeSprintId);
         setActiveSprintId(activeSprintId);
       } catch (err) {
         console.error("API error:", err?.response?.data || err?.message || err);
       }
+      // --- FETCH STATUSES + TASKS + MEMBERS IN PARALLEL -----------------------
       const statusReq = axios.get(
         `${BASE}/api/projects/${projectId}/statuses`,
         { headers: headersWithToken() }
@@ -124,9 +154,8 @@ const Board = ({ projectId, sprintId, projectName }) => {
           headers: headersWithToken(),
         })
         .catch(() => ({ data: [] }));
-
       const [sRes, tRes, mRes] = await Promise.all([statusReq, tasksReq, membersReq]);
-
+      // --- PROCESS STATUSES -----------------------------------------------------
       const statusData = Array.isArray(sRes.data)
         ? sRes.data
         : sRes.data?.content ?? [];
@@ -134,13 +163,13 @@ const Board = ({ projectId, sprintId, projectName }) => {
         .slice()
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       setStatuses(ordered);
-
+      // --- PROCESS TASKS --------------------------------------------------------
       let tasksData = [];
       if (Array.isArray(tRes.data)) tasksData = tRes.data;
       else if (Array.isArray(tRes.data?.content)) tasksData = tRes.data.content;
       else if (Array.isArray(tRes.data?.tasks)) tasksData = tRes.data.tasks;
       setTasks(tasksData);
-
+      // --- PROCESS MEMBERS ------------------------------------------------------
       if (Array.isArray(mRes.data) && mRes.data.length > 0) {
         setMembers(
           mRes.data.map((m) => ({ id: m.id, name: m.fullName ?? m.name }))
@@ -167,28 +196,25 @@ const Board = ({ projectId, sprintId, projectName }) => {
       setLoading(false);
     }
   }, [projectId]);
-
+  console.log("sprintId in board:", activeSprintId);
   useEffect(() => {
     loadBoard();
   }, [loadBoard]);
-
+  // Periodically highlight/pulse the sprint reminder pill every 30 minutes
   useEffect(() => {
-  if (!activeSprintId) return;
-
-  // Auto-trigger popup check on load — this is what fires the endpoint
-  fetchSprintPopup(activeSprintId);
-
-  const pulse = () => {
-    setHighlightPulse(true);
-    setTimeout(() => setHighlightPulse(false), 3500);
-  };
-  pulse();
-  const intervalId = setInterval(pulse, 1 * 30 * 1000);
-  return () => clearInterval(intervalId);
-}, [activeSprintId, fetchSprintPopup]);
-
+    if (!activeSprintId) return;
+    // ── NEW: auto-call popup-status on load so endpoint fires without clicking ──
+    fetchSprintPopup(activeSprintId);
+    const pulse = () => {
+      setHighlightPulse(true);
+      setTimeout(() => setHighlightPulse(false), 3500);
+    };
+    pulse();
+    const intervalId = setInterval(pulse, 1 * 30 * 1000);
+    return () => clearInterval(intervalId);
+  }, [activeSprintId]);
+  // safe arrays & grouping
   const safeTasks = Array.isArray(tasks) ? tasks : [];
-
   const tasksByStatusId = useMemo(() => {
     const acc = {};
     statuses.forEach((s) => (acc[String(s.id)] = []));
@@ -200,7 +226,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
     });
     return acc;
   }, [safeTasks, statuses]);
-
+  // ---------- Filtering logic ----------
   const filterCount = useMemo(() => {
     return (
       (selectedAssignees.size ? selectedAssignees.size : 0) +
@@ -209,7 +235,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
       (selectedSprints.size ? selectedSprints.size : 0)
     );
   }, [selectedAssignees, selectedPriorities, selectedStatusesFilter, selectedSprints]);
-
   const filteredTasksByStatusId = useMemo(() => {
     const active = filterCount > 0;
     if (!active) return tasksByStatusId;
@@ -237,12 +262,14 @@ const Board = ({ projectId, sprintId, projectName }) => {
     });
     return res;
   }, [tasksByStatusId, selectedAssignees, selectedPriorities, selectedStatusesFilter, selectedSprints, filterCount]);
-
+  // add status flow
   const handleAddColumnClick = () => setShowAddInput(true);
-
   const handleCreateStatus = async () => {
     const name = (newStatusName || "").trim();
-    if (!name) { toast.error("Column name required"); return; }
+    if (!name) {
+      toast.error("Column name required");
+      return;
+    }
     setCreatingStatus(true);
     try {
       const res = await axios.post(
@@ -265,7 +292,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
       setCreatingStatus(false);
     }
   };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -276,7 +302,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
       setIsRefreshing(false);
     }
   };
-
   const handleDeleteClick = (status) => {
     const assignedTasks = safeTasks.filter(
       (t) => (t?.status?.id ?? t?.statusId) === Number(status.id)
@@ -289,7 +314,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
     setStatusToDelete(status);
     setIsDeleteModalOpen(true);
   };
-
   const doDirectDelete = async (statusId) => {
     try {
       await axios.delete(`${BASE}/api/statuses/${statusId}`, {
@@ -304,7 +328,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
       await loadBoard();
     }
   };
-
   const confirmDeleteWithMigration = async (newStatusId) => {
     if (!statusToDelete) return;
     try {
@@ -323,24 +346,22 @@ const Board = ({ projectId, sprintId, projectName }) => {
       await loadBoard();
     }
   };
-
-  const fetchSprintPopup = useCallback(async (sprintId) => {
-  if (!sprintId) return;
-  try {
-    const res = await axios.get(
-      `${BASE}/api/sprints/${sprintId}/popup-status`,
-      { headers: headersWithToken() }
-    );
-    console.log("[Board] popup-status response:", res.data);
-    if (res.data?.endingSoon === true) {
-      setSprintPopup(res.data);
+  const fetchSprintPopup = async (sprintId) => {
+    try {
+      const res = await axios.get(
+        `${BASE}/api/sprints/${sprintId}/popup-status`,
+        { headers: headersWithToken() }
+      );
+      console.log("Sprint popup data:", res.data);
+      if (res.data?.endingSoon === true) {
+        setSprintPopup(res.data);
+        setActiveSprintId(sprintId);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch sprint info");
     }
-  } catch (err) {
-    console.error("[Board] popup-status failed:", err?.response?.data || err?.message);
-    // Don't toast — this is a background check, silent failure is fine
-  }
-}, []);
-
+  };
   const finishSprint = async (option) => {
     if (!activeSprintId) return;
     setIsFinishingSprint(true);
@@ -359,7 +380,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
       setIsFinishingSprint(false);
     }
   };
-
+  // rename flow
   const startRename = (status) => {
     setEditingStatusId(status.id);
     setEditingStatusName(status.name ?? status.statusName ?? "");
@@ -370,7 +391,10 @@ const Board = ({ projectId, sprintId, projectName }) => {
   };
   const saveRename = async (statusId) => {
     const name = (editingStatusName || "").trim();
-    if (!name) { toast.error("Name required"); return; }
+    if (!name) {
+      toast.error("Name required");
+      return;
+    }
     try {
       const payload = statuses.map((s) =>
         s.id === statusId ? { ...s, name } : s
@@ -390,13 +414,12 @@ const Board = ({ projectId, sprintId, projectName }) => {
       cancelRename();
     }
   };
-
+  // DnD handlers
   const makeReorderPayload = (ordered) => {
     const mapping = {};
     ordered.forEach((s, i) => (mapping[String(s.id)] = i + 1));
     return mapping;
   };
-
   const handleDragEnd = async (result) => {
     const { destination, source, draggableId, type } = result;
     if (!destination) return;
@@ -430,7 +453,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
         setTasks((prev) =>
           prev.map((t) =>
             String(t.id) === String(taskId)
-              ? { ...t, status: { id: Number(destStatusId) }, statusId: Number(destStatusId) }
+              ? { ...t, status: { id: Number(destStatusId) } }
               : t
           )
         );
@@ -448,7 +471,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
       await loadBoard();
     }
   };
-
+  // filter toggle helpers
   const toggleAssignee = (id) => {
     setSelectedAssignees((prev) => {
       const next = new Set(prev);
@@ -459,46 +482,59 @@ const Board = ({ projectId, sprintId, projectName }) => {
     });
   };
   const togglePriority = (p) => {
+    const key = String(p);
     setSelectedPriorities((prev) => {
       const next = new Set(prev);
-      const key = String(p);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
   };
   const toggleStatusFilter = (sId) => {
+    const key = String(sId);
     setSelectedStatusesFilter((prev) => {
       const next = new Set(prev);
-      const key = String(sId);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
   };
   const toggleSprint = (id) => {
+    const key = String(id);
     setSelectedSprints((prev) => {
       const next = new Set(prev);
-      const key = String(id);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
   };
-
+  const openCreateForStatus = (statusId) => {
+    setSelectedStatusId(statusId);
+    setOpenCreateModal(true);
+  };
+  const closeCreateModal = () => {
+    setSelectedStatusId(null);
+    setOpenCreateModal(false);
+  };
+  const handleTaskCreated = async (created) => {
+    setTasks((prev) => [...prev, created]);
+    try {
+      await loadBoard();
+    } catch (e) {
+      console.error(e);
+    }
+  };
   const openTaskPanel = (task) => {
     setSelectedTask(task);
     setIsTaskPanelOpen(true);
   };
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
-
   const handleTaskSaved = (updated) =>
     setTasks((prev) =>
       prev.map((t) =>
         String(t.id) === String(updated.id) ? { ...t, ...updated } : t
       )
     );
-
   useEffect(() => {
     const onDocClick = (e) => {
       if (!filterRef.current) return;
@@ -507,7 +543,6 @@ const Board = ({ projectId, sprintId, projectName }) => {
     if (filterOpen) document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
   }, [filterOpen]);
-
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -515,19 +550,13 @@ const Board = ({ projectId, sprintId, projectName }) => {
       </div>
     );
 
-  /* ─────────────────────────────────────────────────────────
-     Shared header JSX — rendered in BOTH board and swimlane
-     This keeps the toggle, filter, add-column and refresh
-     always visible regardless of view.
-  ───────────────────────────────────────────────────────── */
+  /* ── NEW: shared header — rendered for both board and swimlane views ── */
   const sharedHeader = (
     <div className="flex items-center justify-between mb-4">
       <h2 className="text-xl font-semibold">
         {projectName ?? "Project Board"}
       </h2>
-
       <div className="flex items-center gap-3">
-        {/* Sprint ending pill */}
         {activeSprintId && (
           <div className="relative">
             <div
@@ -535,15 +564,14 @@ const Board = ({ projectId, sprintId, projectName }) => {
               tabIndex={0}
               onClick={() => fetchSprintPopup(activeSprintId)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ")
-                  fetchSprintPopup(activeSprintId);
+                if (e.key === "Enter" || e.key === " ") fetchSprintPopup(activeSprintId);
               }}
-              className={`cursor-pointer px-3 py-2 rounded border bg-yellow-50 text-yellow-800
-                hover:bg-yellow-100 flex items-center gap-2 transform transition-all duration-300
-                ${highlightPulse ? "scale-105 shadow-2xl ring-4 ring-yellow-300 z-50" : ""}`}
+              className={`cursor-pointer px-3 py-2 rounded border bg-yellow-50 text-yellow-800 hover:bg-yellow-100 flex items-center gap-2 transform transition-all duration-300 ${
+                highlightPulse ? "scale-105 shadow-2xl ring-4 ring-yellow-300 z-50" : ""
+              }`}
             >
               <span className="font-medium">Sprint ending — check tasks?</span>
-              {sprintPopup?.unfinishedCount != null && (
+              {sprintPopup && sprintPopup.unfinishedCount != null && (
                 <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">
                   {sprintPopup.unfinishedCount}
                 </span>
@@ -563,11 +591,15 @@ const Board = ({ projectId, sprintId, projectName }) => {
                         <button
                           onClick={() => fetchSprintPopup(activeSprintId)}
                           className="px-3 py-1 rounded bg-yellow-500 text-white text-sm"
-                        >Review</button>
+                        >
+                          Review
+                        </button>
                         <button
                           onClick={() => setHighlightPulse(false)}
                           className="px-3 py-1 rounded border text-sm"
-                        >Dismiss</button>
+                        >
+                          Dismiss
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -577,7 +609,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
           </div>
         )}
 
-        {/* ── VIEW TOGGLE ── sits naturally between sprint pill and Filter */}
+        {/* ── NEW: View toggle — sits between sprint pill and Filter ── */}
         <ViewToggle view={viewMode} onChange={setViewMode} />
 
         {/* Filter button */}
@@ -625,7 +657,10 @@ const Board = ({ projectId, sprintId, projectName }) => {
                       <input
                         type="checkbox"
                         checked={selectedAssignees.size === 0}
-                        onChange={() => { setSelectedAssignees(new Set()); setAssigneeQuery(""); }}
+                        onChange={() => {
+                          setSelectedAssignees(new Set());
+                          setAssigneeQuery("");
+                        }}
                       />
                       <span className="text-sm">Unassigned (clear selection to show all)</span>
                     </label>
@@ -650,9 +685,14 @@ const Board = ({ projectId, sprintId, projectName }) => {
                   <div className="mb-3">
                     <div className="text-xs text-gray-500 mb-1">Priority</div>
                     <div className="flex gap-2">
-                      {["LOW","MEDIUM","HIGH","CRITICAL"].map((p) => (
-                        <button key={p} onClick={() => togglePriority(p)}
-                          className={`px-3 py-1 rounded border text-sm ${selectedPriorities.has(String(p)) ? "bg-blue-600 text-white" : ""}`}>
+                      {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => togglePriority(p)}
+                          className={`px-3 py-1 rounded border text-sm ${
+                            selectedPriorities.has(String(p)) ? "bg-blue-600 text-white" : ""
+                          }`}
+                        >
                           {p}
                         </button>
                       ))}
@@ -662,8 +702,13 @@ const Board = ({ projectId, sprintId, projectName }) => {
                     <div className="text-xs text-gray-500 mb-1">Status</div>
                     <div className="flex flex-wrap gap-2">
                       {statuses.map((s) => (
-                        <button key={s.id} onClick={() => toggleStatusFilter(s.id)}
-                          className={`px-3 py-1 rounded border text-sm ${selectedStatusesFilter.has(String(s.id)) ? "bg-blue-600 text-white" : ""}`}>
+                        <button
+                          key={s.id}
+                          onClick={() => toggleStatusFilter(s.id)}
+                          className={`px-3 py-1 rounded border text-sm ${
+                            selectedStatusesFilter.has(String(s.id)) ? "bg-blue-600 text-white" : ""
+                          }`}
+                        >
                           {s.name ?? s.statusName}
                         </button>
                       ))}
@@ -679,8 +724,13 @@ const Board = ({ projectId, sprintId, projectName }) => {
                             .filter((id) => id != null)
                         )
                       ).map((id) => (
-                        <button key={id} onClick={() => toggleSprint(id)}
-                          className={`px-3 py-1 rounded border text-sm ${selectedSprints.has(String(id)) ? "bg-blue-600 text-white" : ""}`}>
+                        <button
+                          key={id}
+                          onClick={() => toggleSprint(id)}
+                          className={`px-3 py-1 rounded border text-sm ${
+                            selectedSprints.has(String(id)) ? "bg-blue-600 text-white" : ""
+                          }`}
+                        >
                           Sprint {id}
                         </button>
                       ))}
@@ -700,17 +750,22 @@ const Board = ({ projectId, sprintId, projectName }) => {
                         toast.info("Filters cleared");
                       }}
                       className="px-3 py-2 border rounded"
-                    >Clear</button>
-                    <button onClick={() => setFilterOpen(false)}
-                      className="px-3 py-2 rounded bg-indigo-600 text-white">Apply</button>
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={() => setFilterOpen(false)}
+                      className="px-3 py-2 rounded bg-indigo-600 text-white"
+                    >
+                      Apply
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Add column */}
+        {/* add column */}
         <div>
           {showAddInput ? (
             <div className="flex items-center gap-2">
@@ -718,39 +773,43 @@ const Board = ({ projectId, sprintId, projectName }) => {
                 value={newStatusName}
                 onChange={(e) => setNewStatusName(e.target.value)}
                 placeholder="Column name"
-                className="px-3 py-2 border rounded text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateStatus();
-                  if (e.key === "Escape") { setShowAddInput(false); setNewStatusName(""); }
-                }}
+                className="px-3 py-2 border rounded"
               />
-              <button onClick={handleCreateStatus} disabled={creatingStatus}
-                className="px-3 py-2 rounded bg-indigo-600 text-white text-sm">
+              <button
+                onClick={handleCreateStatus}
+                disabled={creatingStatus}
+                className="px-3 py-2 rounded bg-indigo-600 text-white"
+              >
                 {creatingStatus ? "Adding..." : "Save"}
               </button>
-              <button onClick={() => { setShowAddInput(false); setNewStatusName(""); }}
-                className="px-3 py-2 border rounded text-sm">Cancel</button>
+              <button
+                onClick={() => { setShowAddInput(false); setNewStatusName(""); }}
+                className="px-3 py-2 border rounded"
+              >
+                Cancel
+              </button>
             </div>
           ) : (
-            <button onClick={handleAddColumnClick}
-              className="flex items-center gap-2 px-3 py-2 rounded border bg-white hover:bg-slate-50 text-sm">
+            <button
+              onClick={handleAddColumnClick}
+              className="flex items-center gap-2 px-3 py-2 rounded border bg-white hover:bg-slate-50 text-sm"
+            >
               <Plus className="w-4 h-4 text-indigo-600" /> Add Column
             </button>
           )}
         </div>
-
-        {/* Refresh */}
-        <button onClick={handleRefresh}
-          className="px-3 py-2 rounded border bg-white hover:bg-slate-50">
+        {/* refresh */}
+        <button
+          onClick={handleRefresh}
+          className="px-3 py-2 rounded border bg-white hover:bg-slate-50"
+        >
           <Loader2 className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`} />
         </button>
       </div>
     </div>
   );
 
-  /* ─────────────────────────────────────────────────────────
-     Shared modals — rendered for both views
-  ───────────────────────────────────────────────────────── */
+  /* ── NEW: shared modals — same for both views ── */
   const sharedModals = (
     <>
       <CreateTaskModal
@@ -758,10 +817,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
         onClose={() => setIsCreateOpen(false)}
         defaultStatusId={createDefaultStatusId}
         projectId={projectId}
-        onCreated={async (created) => {
-          setTasks((prev) => [...prev, created]);
-          try { await loadBoard(); } catch (e) { console.error(e); }
-        }}
+        onCreated={handleTaskCreated}
       />
       <RightSidePanel
         isOpen={isTaskPanelOpen}
@@ -787,22 +843,34 @@ const Board = ({ projectId, sprintId, projectName }) => {
       {sprintPopup && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-[500px] max-w-full relative">
-            <button onClick={() => setSprintPopup(null)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-900">✕</button>
+            <button
+              onClick={() => setSprintPopup(null)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-900"
+            >
+              ✕
+            </button>
             <h3 className="text-lg font-semibold mb-2">{sprintPopup.sprintName}</h3>
             {sprintPopup.hasUnfinishedTasks && (
-              <p className="text-sm text-red-600 mb-4">There are unfinished tasks in this sprint.</p>
+              <p className="text-sm text-red-600 mb-4">
+                There are unfinished tasks in this sprint.
+              </p>
             )}
             {sprintPopup.endingSoon && (
               <p className="text-sm text-yellow-600 mb-4">Sprint is ending soon.</p>
             )}
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => finishSprint("NEXT_SPRINT")} disabled={isFinishingSprint}
-                className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60">
+              <button
+                onClick={() => finishSprint("NEXT_SPRINT")}
+                disabled={isFinishingSprint}
+                className="px-3 py-2 rounded bg-blue-600 text-white"
+              >
                 Move to Next Sprint
               </button>
-              <button onClick={() => finishSprint("BACKLOG")} disabled={isFinishingSprint}
-                className="px-3 py-2 rounded border disabled:opacity-60">
+              <button
+                onClick={() => finishSprint("BACKLOG")}
+                disabled={isFinishingSprint}
+                className="px-3 py-2 rounded border"
+              >
                 Move to Backlog
               </button>
             </div>
@@ -827,12 +895,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
     </>
   );
 
-  /* ─────────────────────────────────────────────────────────
-     SWIMLANE VIEW
-     Header is rendered here (sharedHeader).
-     SwimlaneBoard receives hideHeader=true so it skips
-     its own internal header and only renders the grid.
-  ───────────────────────────────────────────────────────── */
+  /* ── NEW: Swimlane view render path ── */
   if (viewMode === "swimlane") {
     return (
       <div className="p-6">
@@ -847,13 +910,11 @@ const Board = ({ projectId, sprintId, projectName }) => {
     );
   }
 
-  /* ─────────────────────────────────────────────────────────
-     BOARD VIEW  (default)
-  ───────────────────────────────────────────────────────── */
+  /* ── Default: Board view (unchanged) ── */
   return (
     <div className="p-6">
       {sharedHeader}
-
+      {/* Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="board-statuses" direction="horizontal" type="STATUS">
           {(provided) => (
@@ -864,10 +925,10 @@ const Board = ({ projectId, sprintId, projectName }) => {
                 className="flex gap-4 items-start min-w-max"
               >
                 {statuses.map((status, idx) => {
-                  const taskItems   = filteredTasksByStatusId[String(status.id)] || [];
-                  const itemsCount  = taskItems.length;
+                  const taskItems = filteredTasksByStatusId[String(status.id)] || [];
+                  const itemsCount = taskItems.length;
                   const showWipWarn = itemsCount > WIP_WARNING_THRESHOLD;
-                  const colorCls    = stableColorClass(status.id ?? status.name);
+                  const colorCls = stableColorClass(status.id ?? status.name);
                   return (
                     <Draggable
                       key={String(status.id)}
@@ -905,38 +966,52 @@ const Board = ({ projectId, sprintId, projectName }) => {
                             <div className="flex items-center gap-2">
                               {editingStatusId === status.id ? (
                                 <>
-                                  <button onClick={() => saveRename(status.id)}
-                                    className="px-2 py-1 text-sm bg-indigo-600 text-white rounded">Save</button>
-                                  <button onClick={cancelRename}
-                                    className="px-2 py-1 text-sm border rounded">Cancel</button>
+                                  <button
+                                    onClick={() => saveRename(status.id)}
+                                    className="px-2 py-1 text-sm bg-indigo-600 text-white rounded"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={cancelRename}
+                                    className="px-2 py-1 text-sm border rounded"
+                                  >
+                                    Cancel
+                                  </button>
                                 </>
                               ) : (
                                 <>
-                                  <button title="Rename" onClick={() => startRename(status)}
-                                    className="p-1 rounded hover:bg-slate-100">
+                                  <button
+                                    title="Rename"
+                                    onClick={() => startRename(status)}
+                                    className="p-1 rounded hover:bg-slate-100"
+                                  >
                                     <Edit3 className="w-4 h-4" />
                                   </button>
-                                  <button title="Delete" onClick={() => handleDeleteClick(status)}
-                                    className="p-1 rounded hover:bg-slate-100 text-red-600">
+                                  <button
+                                    title="Delete"
+                                    onClick={() => handleDeleteClick(status)}
+                                    className="p-1 rounded hover:bg-slate-100 text-red-600"
+                                  >
                                     <Trash className="w-4 h-4" />
                                   </button>
                                 </>
                               )}
                             </div>
                           </div>
-
                           {showWipWarn && (
                             <div className="text-sm text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2">
                               ⚠️ Column has {itemsCount} items (over {WIP_WARNING_THRESHOLD})
                             </div>
                           )}
-
                           <Droppable droppableId={String(status.id)} type="ITEM">
                             {(dropProvided, snapshot) => (
                               <div
                                 ref={dropProvided.innerRef}
                                 {...dropProvided.droppableProps}
-                                className={`min-h-[120px] p-1 rounded ${snapshot.isDraggingOver ? "bg-indigo-50" : ""}`}
+                                className={`min-h-[120px] p-1 rounded ${
+                                  snapshot.isDraggingOver ? "bg-indigo-50" : ""
+                                }`}
                               >
                                 {taskItems.map((task, tIdx) => (
                                   <Draggable
@@ -959,7 +1034,7 @@ const Board = ({ projectId, sprintId, projectName }) => {
                               </div>
                             )}
                           </Droppable>
-
+                          {/* Create Task button */}
                           <div className="mt-3">
                             <button
                               onClick={() =>
@@ -985,10 +1060,8 @@ const Board = ({ projectId, sprintId, projectName }) => {
           )}
         </Droppable>
       </DragDropContext>
-
       {sharedModals}
     </div>
   );
 };
-
 export default Board;
