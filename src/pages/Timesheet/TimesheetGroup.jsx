@@ -388,6 +388,8 @@ const TimesheetGroup = ({
       switch (status?.toLowerCase()) {
         case "leave day":
           return "bg-red-100 text-violet-800 border-red-300";
+        case "holiday":
+          return "bg-red-100 text-violet-800 border-red-300";
         case "draft":
         case "submitted":
           return "bg-yellow-100 text-yellow-800 border-yellow-300";
@@ -832,7 +834,7 @@ const TimesheetGroup = ({
                 className="bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 shadow-sm overflow-visible"
               >
                 {/* Individual Day Header */}
-                <div className={`${formatDate(timesheet.workDate).isWeekend ? "bg-yellow-100 cursor-not-allowed" : (timesheet.defaultHolidayTimesheet ? "bg-red-200 cursor-not-allowed" :  "")} border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible`}>
+                <div className={`${formatDate(timesheet.workDate).isWeekend ? "bg-yellow-100 cursor-not-allowed" : ((timesheet.defaultHolidayTimesheet || timesheet.isLeaveTimesheet) ? "bg-red-200 cursor-not-allowed" : "")} border-b-2 border-gray-300 px-4 py-3 flex justify-between items-center rounded-t-lg overflow-visible`}>
                   <div className={`flex items-center gap-3`}>
                     <div className="text-sm font-semibold text-gray-700">
                       {formatDate(timesheet.workDate).text}
@@ -841,7 +843,7 @@ const TimesheetGroup = ({
                       {timesheet.hoursWorked} hrs
                     </div>
                   </div>
-                  {!timesheet.defaultHolidayTimesheet ? (
+                  {!(timesheet.defaultHolidayTimesheet || timesheet.isLeaveTimesheet) ? (
                     <div className="flex items-center gap-2 relative overflow-visible">
                     
                     <CustomStatusBadge label={timesheet.status} size="sm" />
@@ -946,13 +948,15 @@ const TimesheetGroup = ({
                   </div>
                   ) : formatDate(timesheet.workDate).isWeekend ? (
                     <CustomStatusBadge label="WeekEnd" size="sm" />
+                  ) : timesheet.defaultHolidayTimesheet ? (
+                    <CustomStatusBadge label="Holiday" size="sm" />
                   ) : (
                     <CustomStatusBadge label="Leave Day" size="sm" />
                   )}
                 </div>
 
                 {/* Entries Table */}
-                {!timesheet.defaultHolidayTimesheet && (
+                {!(timesheet.defaultHolidayTimesheet || timesheet.isLeaveTimesheet) && (
                 <div className="p-2">
                   <EntriesTable
                     entries={timesheet.entries}
