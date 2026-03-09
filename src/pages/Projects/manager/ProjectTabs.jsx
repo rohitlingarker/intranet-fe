@@ -14,6 +14,7 @@ import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
 
 const ProjectDemandManagement = lazy(() => import("./ProjectDemandManagement"));
+const ProjectConfigurations = lazy(() => import("./project/ProjectConfigurations"));
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -114,6 +115,14 @@ const ProjectTabs = () => {
       );
     }
 
+    if (selectedTab === "configurations") {
+      return (
+        <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Configurations...</div>}>
+          <ProjectConfigurations projectId={pid} />
+        </Suspense>
+      );
+    }
+
     return null;
   };
 
@@ -132,6 +141,7 @@ const ProjectTabs = () => {
     { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
     { name: "Demand Management", tab: "demand-management" },
+    { name: "Configurations", tab: "configurations" },
     //  { name: "Timelines", tab:"timelines" },
     // { name: "Calendar", tab: "calendar" },
   ];

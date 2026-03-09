@@ -174,7 +174,7 @@ export const getLocations = async () => {
 export const updateDemandStatus = async (payload) => {
   try {
     const response = await axios.put(
-      `${BASE_URL}/api/demand/update`,
+      `${BASE_URL}/api/demand/update/pm`,
       payload,
       {
         headers: {
