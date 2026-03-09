@@ -78,7 +78,7 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
 
                 {/* 6. Actions */}
                 <div className="col-span-1 flex items-center justify-center gap-4">
-                    {(isRM || demand.lifecycleState?.toUpperCase() !== 'APPROVED') && (
+                    {/* {(isRM || demand.lifecycleState?.toUpperCase() !== 'APPROVED') && (
                         <button
                             title='Edit'
                             onClick={(e) => {
@@ -88,7 +88,17 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
                         >
                             <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
                         </button>
-                    )}
+                    )} */}
+                    <button
+                        title={demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED' ? 'Cannot Edit Approved/Rejected Demand' : 'Edit'}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onEdit) onEdit(demand);
+                        }}
+                        disabled={demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED'}
+                    >
+                        <Pencil className={`h-3.5 w-3.5 ${demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED' ? 'text-gray-400 cursor-not-allowed' : 'text-blue-700 hover:text-blue-800'}`} />
+                    </button>
                 </div>
             </div>
         </div>
