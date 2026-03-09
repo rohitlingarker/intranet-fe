@@ -404,7 +404,7 @@ const AllocationResultsTab = ({ results }) => {
                                         "h-1.5 w-1.5 rounded-full",
                                         activeSubTab === 'Successful' ? "bg-emerald-500" : "bg-rose-500"
                                     )} />
-                                    <span>{activeSubTab === 'Successful' ? item.resourceName : `Resource ${item.resourceId}`}</span>
+                                    <span>{item.resourceName || `Resource ${item.resourceId}`}</span>
                                 </div>
                                 {selectedItem === item && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
                             </button>
@@ -425,7 +425,7 @@ const AllocationResultsTab = ({ results }) => {
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-3">
                                     <UserPlus className={cn("h-5 w-5", activeSubTab === 'Successful' ? "text-indigo-600" : "text-rose-600")} />
-                                    {activeSubTab === 'Successful' ? selectedItem.resourceName : `Resource Details (ID: ${selectedItem.resourceId})`}
+                                    {selectedItem.resourceName || `Resource ${selectedItem.resourceId}`}
                                 </h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                                     {activeSubTab === 'Successful' ? "Allocation successfully confirmed" : "Allocation failure analysis"}
@@ -464,8 +464,8 @@ const AllocationResultsTab = ({ results }) => {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-[140px,1fr] items-center py-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource ID</span>
-                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceId}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceName || selectedItem.resourceId}</span>
                                         </div>
                                         <div className="space-y-3 p-6 bg-rose-50/50 border border-rose-100 rounded-2xl relative overflow-hidden group">
                                             <div className="absolute right-0 top-0 p-4 opacity-[0.03] scale-150 rotate-12">

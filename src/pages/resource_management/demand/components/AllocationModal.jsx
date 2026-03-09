@@ -30,15 +30,44 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
     const [errors, setErrors] = useState({});
 
+    const getResourceNameById = (resourceId) => {
+        const matchedResource = resources.find(
+            (resource) => String(resource.resourceId) === String(resourceId)
+        );
+        return matchedResource?.resourceName || null;
+    };
+
+    const enrichAllocationResult = (result) => {
+        if (!result?.data) return result;
+
+        return {
+            ...result,
+            data: {
+                ...result.data,
+                savedAllocations: (result.data.savedAllocations || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+                failedResources: (result.data.failedResources || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+            },
+        };
+    };
+
     useEffect(() => {
         if (isOpen) {
             const loadResources = async () => {
                 setIsLoadingResources(true);
                 try {
                     const response = await fetchResources();
-                    if (response.success) {
-                        setResources(response.data);
-                    }
+                    const resourceList = Array.isArray(response?.data)
+                        ? response.data
+                        : Array.isArray(response)
+                            ? response
+                            : [];
+                    setResources(resourceList);
                 } catch (error) {
                     console.error("Failed to fetch resources", error);
                     toast.error("Failed to load resources");
@@ -90,19 +119,20 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e?.preventDefault?.();
         if (!validate()) return;
 
         setIsSubmitting(true);
         try {
             const result = await resourceAllocation(formData);
+            const enrichedResult = enrichAllocationResult(result);
             if (result.success) {
                 toast.success(result.message || "Resources allocated successfully");
-                if (onSuccess) onSuccess(result);
+                if (onSuccess) onSuccess(enrichedResult);
                 onClose();
             } else {
                 toast.error(result.message || "Allocation failed");
-                if (onSuccess) onSuccess(result);
+                if (onSuccess) onSuccess(enrichedResult);
                 onClose();
             }
         } catch (error) {
@@ -115,10 +145,13 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
     if (!isOpen) return null;
 
-    const filteredResources = resources.filter(res =>
-        res.resourceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.resourceRole.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredResources = resources.filter((res) => {
+        const resourceName = String(res?.resourceName || "").toLowerCase();
+        const resourceRole = String(res?.resourceRole || "").toLowerCase();
+        const normalizedQuery = searchQuery.toLowerCase();
+
+        return resourceName.includes(normalizedQuery) || resourceRole.includes(normalizedQuery);
+    });
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -213,10 +246,10 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                                         >
                                             <div className="flex flex-col">
                                                 <span className={cn("text-xs font-bold", isSelected ? "text-indigo-900" : "text-slate-700 group-hover:text-slate-900")}>
-                                                    {res.resourceName}
+                                                    {res.resourceName || `Resource ${res.resourceId}`}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-slate-400">
-                                                    {res.resourceRole}
+                                                    {res.resourceRole || "No role assigned"}
                                                 </span>
                                             </div>
                                             <div className={cn(
@@ -241,7 +274,7 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                                 if (!res) return null;
                                 return (
                                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg animate-in zoom-in-50">
-                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName}</span>
+                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName || `Resource ${id}`}</span>
                                         <button
                                             type="button"
                                             onClick={() => toggleResource(id)}
@@ -328,13 +361,15 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                 <div className="px-6 py-5 border-t border-slate-100 bg-slate-50/50 flex gap-3">
                     <Button
                         variant="outline"
+                        type="button"
                         onClick={onClose}
                         className="flex-1 h-10 rounded-xl border-slate-200 font-bold tracking-widest text-[10px] hover:bg-white text-slate-500"
                     >
                         CANCEL
                     </Button>
                     <Button
-                        form="allocation-form"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={isSubmitting}
                         className="flex-[2] h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-widest text-[10px] shadow-xl shadow-indigo-600/20"
                     >
