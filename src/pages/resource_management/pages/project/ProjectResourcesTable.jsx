@@ -106,7 +106,7 @@ const ProjectResourcesTable = ({ projectId }) => {
                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                         <Users className="text-gray-300 h-8 w-8" />
                     </div>
-                    <h4 className="text-base font-bold text-gray-900">No Resources Allocated</h4>
+                    <h4 className="text-base font-bold text-gray-900">No Resources Allocated to the Project.</h4>
                     <p className="text-sm text-gray-500 max-w-[280px] mt-1 leading-relaxed">
                         There are currently no resources assigned to this project.
                     </p>
