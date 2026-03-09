@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { X } from "lucide-react";
+import toast from "react-hot-toast"; // ⭐ 1. Imported toast
 
-export default function AddCaseModal({ scenarioId, onClose }) {
+export default function AddCaseModal({ scenarioId, onClose, onCreated }) {
   const [title, setTitle] = useState("");
   const [preConditions, setPreConditions] = useState("");
   const [priority, setPriority] = useState("LOW");
@@ -26,8 +27,9 @@ export default function AddCaseModal({ scenarioId, onClose }) {
   };
 
   const handleSave = async () => {
-    if (!title.trim()) return alert("Case title is required");
-    if (!scenarioId) return alert("No scenario selected");
+    // ⭐ 2. Replaced alerts with toast.error
+    if (!title.trim()) return toast.error("Case title is required");
+    if (!scenarioId) return toast.error("No scenario selected");
 
     setSaving(true);
 
@@ -48,12 +50,16 @@ export default function AddCaseModal({ scenarioId, onClose }) {
 
       await axiosInstance.post(`${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/test-cases`, payload);
 
-      alert("Test Case Created");
+      // ⭐ 3. Replaced alert with toast.success
+      toast.success("Test Case created successfully!");
+      
+      if (onCreated) onCreated();
       onClose();
-      window.location.reload();
+      
     } catch (err) {
       console.error("Create Case FAILED →", err);
-      alert("Failed to create test case");
+      // ⭐ 4. Replaced alert with toast.error
+      toast.error("Failed to create test case");
     } finally {
       setSaving(false);
     }
@@ -123,7 +129,7 @@ export default function AddCaseModal({ scenarioId, onClose }) {
           <div>
             <div className="flex justify-between">
               <label className="text-sm">Steps</label>
-              <button onClick={addStep} className="text-blue-600 text-sm">+ Add Step</button>
+              <button onClick={addStep} className="text-blue-600 text-sm hover:text-blue-800">+ Add Step</button>
             </div>
 
             <div className="space-y-2 mt-2">
@@ -142,8 +148,9 @@ export default function AddCaseModal({ scenarioId, onClose }) {
                     onChange={(e) => updateStep(i, "expectedResult", e.target.value)}
                   />
                   <button
-                    className="col-span-1 text-red-500"
+                    className="col-span-1 text-red-500 hover:bg-red-50 rounded p-1 flex items-center justify-center"
                     onClick={() => removeStep(i)}
+                    title="Remove Step"
                   >
                     ✕
                   </button>
@@ -152,12 +159,12 @@ export default function AddCaseModal({ scenarioId, onClose }) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={onClose}>
+          <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+            <button className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors" onClick={onClose}>
               Cancel
             </button>
             <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+              className={`px-4 py-2 bg-blue-600 text-white rounded-lg transition-colors ${saving ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"}`}
               onClick={handleSave}
               disabled={saving}
             >

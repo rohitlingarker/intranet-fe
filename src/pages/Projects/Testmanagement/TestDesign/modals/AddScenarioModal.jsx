@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { X } from "lucide-react"; // Added X icon import for consistency
 
 export default function AddScenarioModal({ storyId, onClose, onCreated }) {
   const { projectId } = useParams();
-  console.log("AddScenarioModal storyId:", storyId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("LOW");
@@ -26,7 +26,6 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
       const res = await axiosInstance.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/test-design/plans/projects/${projectId}`
       );
-
       setTestPlans(res.data || []);
     } catch (err) {
       console.error("❌ Failed to load test plans", err);
@@ -42,7 +41,6 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
       const res = await axiosInstance.get(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/stories`
       );
-
       setPmsStories(res.data || []);
     } catch (err) {
       console.error("❌ Failed to load PMS stories", err);
@@ -68,7 +66,7 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
     const payload = {
       testPlanId: Number(testPlanId),
-      testStoryId: Number(storyId), // ✅ FIXED — now from props only
+      testStoryId: Number(storyId),
       linkedStoryId: linkedStoryId ? Number(linkedStoryId) : null,
       title: title.trim(),
       description: description.trim(),
@@ -95,15 +93,25 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-[520px] p-5 rounded-xl shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Add Scenario</h2>
+      <div className="bg-white w-[520px] p-6 rounded-xl shadow-lg">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-semibold text-gray-800">Add Scenario</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Test Plan */}
           <div>
-            <label className="text-sm font-medium">Select Test Plan *</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Select Test Plan *</label>
             <select
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               value={testPlanId}
               onChange={(e) => setTestPlanId(e.target.value)}
             >
@@ -118,9 +126,9 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
           {/* Linked Story */}
           <div>
-            <label className="text-sm font-medium">Link PMS Story (optional)</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Link PMS Story (optional)</label>
             <select
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               value={linkedStoryId}
               onChange={(e) => setLinkedStoryId(e.target.value)}
             >
@@ -135,9 +143,9 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
           {/* Title */}
           <div>
-            <label className="text-sm font-medium">Scenario Title *</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Scenario Title *</label>
             <input
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Enter scenario title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -146,9 +154,9 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
           {/* Priority */}
           <div>
-            <label className="text-sm font-medium">Priority</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Priority</label>
             <select
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
@@ -161,9 +169,9 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
 
           {/* Description */}
           <div>
-            <label className="text-sm font-medium">Description</label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
             <textarea
-              className="w-full border rounded px-3 py-2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               rows={3}
               placeholder="Enter description"
               value={description}
@@ -172,9 +180,9 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
             <button
-              className="px-4 py-2 bg-gray-200 rounded"
+              className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
               onClick={onClose}
               disabled={loading}
             >
@@ -182,7 +190,7 @@ export default function AddScenarioModal({ storyId, onClose, onCreated }) {
             </button>
 
             <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+              className={`px-4 py-2 bg-blue-600 text-white rounded-lg transition-colors ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"}`}
               onClick={handleSave}
               disabled={loading}
             >
