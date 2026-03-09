@@ -104,12 +104,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   // Move Story (Sprint <-> Backlog)
   // =======================================
   const handleDropStory = async (storyId, sprintId) => {
-    showStatusToast(
-      sprintId ? "Moving story to sprint..." : "Moving story to backlog...",
-      "loading",
-      2000
-    );
-
     // Optimistic UI update
     setStories((prev) =>
       prev.map((s) => (s.id === storyId ? { ...s, sprintId } : s))
@@ -125,15 +119,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
         { headers }
       );
 
-      showStatusToast(
-        sprintId ? "Story moved successfully!" : "Moved to backlog",
-        "success",
-        3000
-      );
-
+      toast.success(sprintId ? "Story moved successfully!" : "Moved to backlog", { autoClose: 1500 });
       fetchStories();
     } catch (err) {
-      showStatusToast("Failed to move story", "error", 3000);
+      const errorMessage =
+    err?.response?.data?.message ||   // backend message
+    err?.message ||                   // axios/network message
+    "Failed to move story";           // fallback
+
+      toast.error(errorMessage, { autoClose: 2000 });
+    
       fetchStories(); // rollback to server truth
     }
   };
@@ -153,7 +148,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
 
       toast.success(
   action === "start" ? "Sprint started" : "Sprint completed",
-  { autoClose: 2000 }
+  { autoClose: 1500 }
 );
 
       fetchSprints();
@@ -175,14 +170,14 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
       // 2. Handle "Another sprint is already active" error specifically
       if (data.message && data.message.includes("Another active sprint already exists")) {
         toast.warn("Cannot start sprint: Another active sprint already exists in this project.", { 
-          autoClose: 4000 
+          autoClose: 3000 
         });
         return;
       }
 
       // 3. Generic fallback error
       toast.error(data.message || "Failed to update sprint status", {
-        autoClose: 3000,
+        autoClose: 2000,
       });
     }
   };
@@ -192,7 +187,6 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   // =======================================
   const handleDropTask = async (taskId, sprintId) => {
     console.log("handleDropTask called with:", sprintId);
-    toast.info("Moving task...", { autoClose: 2000 });
     try {
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, sprintId } : t))
@@ -207,10 +201,10 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
           }
         },
       );
-      toast.success("Task moved!", { autoClose: 2000 });
+      toast.success("Task moved!", { autoClose: 1500 });
       fetchTasks();
     } catch (err) {
-    toast.error("Failed to move task", { autoClose: 2000 });
+      toast.error("Failed to move task", { autoClose: 2000 });
     }
   };
 
@@ -219,27 +213,16 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   // Assign Task to Story
   // =======================================
   const handleAssignTaskToStory = async (taskId, storyId) => {
-    const toastId = toast.loading("Assigning story...");
     try {
       await axios.put(
         `${import.meta.env.VITE_PMS_BASE_URL}/api/tasks/${taskId}/assign-story/${storyId}`,
         {},
         { headers }
       );
-      toast.update(toastId, {
-        render: "Task successfully assigned to story!",
-        type: "success",
-        isLoading: false,
-        autoClose: 2000,
-      });
+      toast.success("Task successfully assigned to story!", { autoClose: 1500 });
       fetchTasks(); // Refresh to update the UI hierarchy
     } catch (err) {
-      toast.update(toastId, {
-        render: err.response?.data?.message || "Failed to assign story",
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      toast.error(err.response?.data?.message || "Failed to assign story", { autoClose: 2000 });
     }
   };
   // =======================================
@@ -312,36 +295,72 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   // =======================================
 // Delete Sprint
 // =======================================
-const handleDeleteSprint = async (sprintId) => {
-  const ok = window.confirm("Are you sure you want to delete this sprint?");
-  if (!ok) return;
+// =======================================
+  // Delete Sprint
+  // =======================================
+  const handleDeleteSprint = (sprintId) => {
+    toast(
+      ({ closeToast }) => (
+        <div className="p-1">
+          <h3 className="font-semibold text-gray-900 mb-1">Delete Sprint?</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Are you sure you want to delete this sprint?
+          </p>
+          <div className="flex justify-between gap-2">
+            <button
+              onClick={closeToast}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                closeToast(); // Close the confirmation toast immediately
+                
+                // Execute the deletion logic
+                try {
+                  await axios.delete(
+                    `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                      },
+                    }
+                  );
 
-  try {
-    await axios.delete(
-      `${import.meta.env.VITE_PMS_BASE_URL}/api/sprints/${sprintId}`,
+                  toast.success("Sprint deleted successfully", { autoClose: 1500 });
+                  fetchSprints();
+                  fetchStories();
+                } catch (err) {
+                  const message = err.response?.data?.message || "";
+
+                  if (message.includes("foreign key constraint")) {
+                    toast.error(
+                      "Cannot delete sprint because tasks are still assigned to it. Move them to backlog first.",
+                      { autoClose: 4000 }
+                    );
+                  } else {
+                    toast.error("Failed to delete sprint", { autoClose: 2000 });
+                  }
+                }
+              }}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
       {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        autoClose: false,       // Keep open until user interacts
+        closeButton: false,     // Hide default close 'x'
+        closeOnClick: false,    // Don't close if they click the background of the toast
+        draggable: false,       // Disable dragging to dismiss
+        toastId: `delete-sprint-${sprintId}`, // Prevent opening multiple duplicate toasts
+        className: "border border-gray-100 shadow-xl rounded-xl", 
       }
     );
-
-    toast.success("Sprint deleted successfully");
-    fetchSprints();
-    fetchStories();
-  } catch (err) {
-    const message = err.response?.data?.message || "";
-
-    if (message.includes("foreign key constraint")) {
-      toast.error(
-        "Cannot delete sprint because tasks are still assigned to it. Move them to backlog first.",
-        { autoClose: 4000 }
-      );
-    } else {
-      toast.error("Failed to delete sprint", { autoClose: 2000 });
-    }
-  }
-};
+  };
 
 
   useEffect(() => {
@@ -395,12 +414,12 @@ const BacklogDropWrapper = ({ children }) => {
     <DndProvider backend={HTML5Backend}>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Toast Container — MUST EXIST for instant toasts */}
-        <ToastContainer position="top-right" autoClose={2000} /> {/* ✅ Added */}
+        <ToastContainer position="top-right" autoClose={1500} /> {/* ✅ Sped up global autoClose */}
 
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-indigo-900">
-            Backlog & Sprint Planning – {projectName}
+            Backlog & Sprint Planning  {projectName}
           </h1>
 
           <div className="flex gap-3">

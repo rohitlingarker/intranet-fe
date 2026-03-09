@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 
 export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
   const [cycles, setCycles] = useState([]);
+  const [members, setMembers] = useState([]); // ⭐ Added members state
   const [loadingCycles, setLoadingCycles] = useState(true);
 
   const [form, setForm] = useState({
@@ -17,25 +18,31 @@ export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
 
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
-  // Load cycles from API
+  // Load cycles and members from API
   useEffect(() => {
-    const fetchCycles = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axiosInstance.get(
-          `${
-            import.meta.env.VITE_PMS_BASE_URL
-          }/api/test-execution/test-cycles/projects/${projectId}`
-        );
-        setCycles(res.data || []);
+        // ⭐ Fetch both cycles and members simultaneously
+        const [cyclesRes, membersRes] = await Promise.all([
+          axiosInstance.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/test-execution/test-cycles/projects/${projectId}`
+          ),
+          axiosInstance.get(
+            `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`
+          )
+        ]);
+        
+        setCycles(cyclesRes.data || []);
+        setMembers(membersRes.data || []);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load test cycles");
+        toast.error("Failed to load initial data");
       } finally {
         setLoadingCycles(false);
       }
     };
 
-    fetchCycles();
+    fetchData();
   }, [projectId]);
 
   const handleChange = (e) => {
@@ -60,7 +67,8 @@ export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
       description: form.description || null,
       createdBy: 1, // replace with logged-in user id
       createdAt: new Date().toISOString(),
-      executedBy: form.executedBy || null,
+      // ⭐ Safely convert dropdown value to Number
+      executedBy: form.executedBy ? Number(form.executedBy) : null,
       executedAt: form.executedAt || null,
     };
 
@@ -97,7 +105,7 @@ export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
 
       {/* If cycles are loading */}
       {loadingCycles ? (
-        <p className="text-gray-500">Loading cycles...</p>
+        <p className="text-gray-500">Loading data...</p>
       ) : cycles.length === 0 ? (
         <p className="text-red-500">
           No Test Cycles found for this project. Please create one first.
@@ -176,19 +184,25 @@ export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
             />
           </div>
 
-          {/* Executed By */}
+          {/* ⭐ Executed By (Changed to Dropdown) */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Executed By (User ID)
+              Executed By
             </label>
-            <input
-              type="number"
+            <select
               name="executedBy"
               value={form.executedBy}
               onChange={handleChange}
-              className="w-full p-2 border rounded-lg"
-              placeholder="Enter executor user ID (optional)"
-            />
+              className="w-full p-2 border rounded-lg bg-white"
+            >
+              <option value="">-- Select Member (Optional) --</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {/* Fallbacks included just in case your API uses a different field for names */}
+                  {member.name || member.username || member.email || `Member ${member.id}`}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Executed At */}
@@ -210,7 +224,7 @@ export default function CreateTestRunForm({ projectId, onSuccess, onClose }) {
             <button
               type="submit"
               disabled={loadingSubmit}
-              className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+              className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loadingSubmit ? "Creating..." : "Create Test Run"}
             </button>
