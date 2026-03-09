@@ -8,15 +8,20 @@ import {
     FileText, Zap, Shield, AlertTriangle,
     Mail, ExternalLink, PenTool, XCircle, Info,
     UserCheck, FileSearch, History, Star, Settings2, Download,
-    TrendingUp, Award, Layers, Hash, Building2, GitCompare, Code2, Percent, Plus
+    TrendingUp, Award, Layers, Hash, Building2, GitCompare, Code2, Percent, Plus,
+    Users, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SkillGapTab from '../../components/resource-intelligence/SkillGapTab';
 import AllocationModal from '../components/AllocationModal';
 import demandService from '../services/demandService';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { PriorityBadge, StateBadge } from '../components/FormalBadges';
 import { Button } from "@/components/ui/button";
 import Pagination from '../../../../components/Pagination/pagination';
+import ProjectResourcesTable from '../../pages/project/ProjectResourcesTable';
+import { fetchResourcesByDemandId } from '../../services/resource';
+
 
 /**
  * --- INTERNAL SUB-COMPONENTS ---
@@ -305,6 +310,191 @@ const ApprovalFlowTab = ({ demand }) => {
 /**
  * --- TAB 4: SLA INSIGHTS ---
  */
+/**
+ * --- TAB 5: ALLOCATION RESULTS ---
+ */
+const AllocationResultsTab = ({ results }) => {
+    const [activeSubTab, setActiveSubTab] = useState('Successful');
+    const [selectedItem, setSelectedItem] = useState(null);
+
+    const successfulList = results?.data?.savedAllocations || [];
+    const failedList = results?.data?.failedResources || [];
+    const successCount = results?.data?.successCount || 0;
+    const failureCount = results?.data?.failureCount || 0;
+
+    useEffect(() => {
+        if (activeSubTab === 'Successful' && successfulList.length > 0) {
+            setSelectedItem(successfulList[0]);
+        } else if (activeSubTab === 'Failed' && failedList.length > 0) {
+            setSelectedItem(failedList[0]);
+        } else {
+            setSelectedItem(null);
+        }
+    }, [activeSubTab, successfulList, failedList]);
+
+    const items = activeSubTab === 'Successful' ? successfulList : failedList;
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Title Section */}
+            <div>
+                <h2 className="text-xl font-bold text-slate-900 mb-6">Allocation Results</h2>
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                    <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                            <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Success</p>
+                            <p className="text-2xl font-black text-slate-900">{successCount}</p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="h-10 w-10 bg-rose-50 rounded-lg flex items-center justify-center text-rose-600">
+                            <XCircle className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Failed</p>
+                            <p className="text-2xl font-black text-slate-900">{failureCount}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Result Tabs */}
+            <div className="flex gap-8 border-b border-slate-200">
+                {['Successful', 'Failed'].map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveSubTab(tab)}
+                        className={cn(
+                            "pb-4 text-xs font-bold tracking-widest uppercase relative transition-all",
+                            activeSubTab === tab ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        {tab}
+                        {activeSubTab === tab && (
+                            <div className="absolute bottom-0 left-0 w-full h-1 bg-indigo-600 rounded-t-full" />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Layout (Two-column) */}
+            <div className="flex bg-white border border-slate-200 rounded-2xl overflow-hidden min-h-[450px] shadow-sm">
+
+                {/* Left Panel: Resource List (30%) */}
+                <div className="w-[30%] border-r border-slate-100 bg-slate-50/20 overflow-y-auto">
+                    <div className="p-2 space-y-1">
+                        {items.map((item, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setSelectedItem(item)}
+                                className={cn(
+                                    "w-full text-left px-5 py-4 rounded-xl text-xs font-bold transition-all relative group",
+                                    selectedItem === item
+                                        ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-100"
+                                        : "text-slate-500 hover:bg-slate-50"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "h-1.5 w-1.5 rounded-full",
+                                        activeSubTab === 'Successful' ? "bg-emerald-500" : "bg-rose-500"
+                                    )} />
+                                    <span>{activeSubTab === 'Successful' ? item.resourceName : `Resource ${item.resourceId}`}</span>
+                                </div>
+                                {selectedItem === item && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
+                            </button>
+                        ))}
+                        {items.length === 0 && (
+                            <div className="p-12 text-center opacity-40">
+                                <Database className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">No records found</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Right Panel: Details (70%) */}
+                <div className="flex-1 p-10 overflow-y-auto">
+                    {selectedItem ? (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                    <UserPlus className={cn("h-5 w-5", activeSubTab === 'Successful' ? "text-indigo-600" : "text-rose-600")} />
+                                    {activeSubTab === 'Successful' ? selectedItem.resourceName : `Resource Details (ID: ${selectedItem.resourceId})`}
+                                </h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                    {activeSubTab === 'Successful' ? "Allocation successfully confirmed" : "Allocation failure analysis"}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-6 pt-6 border-t border-slate-50">
+                                {activeSubTab === 'Successful' ? (
+                                    <>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceName}</span>
+                                        </div>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Project</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.projectName || "Stable Coin"}</span>
+                                        </div>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Allocation</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-indigo-600">{selectedItem.allocationPercentage}%</span>
+                                                <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-indigo-500" style={{ width: `${selectedItem.allocationPercentage}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Start Date</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.allocationStartDate}</span>
+                                        </div>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">End Date</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.allocationEndDate}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-[140px,1fr] items-center py-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource ID</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceId}</span>
+                                        </div>
+                                        <div className="space-y-3 p-6 bg-rose-50/50 border border-rose-100 rounded-2xl relative overflow-hidden group">
+                                            <div className="absolute right-0 top-0 p-4 opacity-[0.03] scale-150 rotate-12">
+                                                <AlertTriangle className="h-24 w-24 text-rose-900" />
+                                            </div>
+                                            <label className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Zap className="h-3 w-3" /> Failure Reason
+                                            </label>
+                                            <p className="text-sm font-bold text-rose-700 leading-relaxed">
+                                                {selectedItem.reason}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4 opacity-50">
+                            <FileSearch className="h-10 w-10 text-slate-200" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Select a record to view details</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const SLAInsightsTab = ({ sla }) => {
     const totalDays = sla?.slaDurationDays || 30;
     const remaining = sla?.remainingDays || 0;
@@ -374,17 +564,206 @@ const SLAInsightsTab = ({ sla }) => {
 };
 
 /**
- * --- MAIN PAGE COMPONENT ---
+ * --- TAB 6: DEMAND RESOURCES ---
  */
+const DemandResourcesTable = ({ demandId }) => {
+    const [allocations, setAllocations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 5;
+
+    useEffect(() => {
+        const loadResources = async () => {
+            try {
+                setLoading(true);
+                const response = await fetchResourcesByDemandId(demandId);
+                if (response.success) {
+                    setAllocations(response.data || []);
+                } else {
+                    setError(response.message || "Failed to fetch resources");
+                }
+            } catch (err) {
+                console.error("Error fetching demand resources:", err);
+                setError("An error occurred while fetching resources");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (demandId) {
+            loadResources();
+            setPage(1);
+        }
+    }, [demandId]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm]);
+
+    const filteredAllocations = allocations.filter(item =>
+        item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredAllocations.length / itemsPerPage);
+    const paginatedAllocations = filteredAllocations.slice(
+        (page - 1) * itemsPerPage,
+        page * itemsPerPage
+    );
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <div className="h-8 w-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+                <p className="text-sm text-slate-400 font-bold tracking-widest animate-pulse uppercase">Synchronizing resources...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="text-xs font-bold">{error}</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h3 className="text-sm font-black flex items-center gap-2 text-slate-900 tracking-tight">
+                    <UserPlus className="h-4 w-4 text-indigo-500" />
+                    Allocated Resources ({allocations.length})
+                </h3>
+
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search resources..."
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {allocations.length === 0 ? (
+                <div className="bg-white p-16 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center shadow-sm">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                        <Users className="text-slate-200 h-10 w-10" />
+                    </div>
+                    <h4 className="text-lg font-black text-slate-900 tracking-tight">No Resources Allocated</h4>
+                    <p className="text-sm text-slate-400 max-w-[320px] mt-2 font-medium leading-relaxed">
+                        There are currently no resources assigned to this specific demand requirement.
+                    </p>
+                </div>
+            ) : (
+                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xl shadow-slate-200/50">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-xs text-left">
+                            <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                                <tr>
+                                    <th className="p-5">Resource</th>
+                                    <th className="p-5 text-center">Allocation</th>
+                                    <th className="p-5 text-center">Period</th>
+                                    <th className="p-5 text-center">Status</th>
+                                    <th className="p-5 text-center">Created By</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {paginatedAllocations.map((item) => (
+                                    <tr key={item.allocationId} className="hover:bg-slate-50/30 transition-colors group">
+                                        <td className="p-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs shrink-0 border border-indigo-100 uppercase shadow-sm group-hover:scale-105 transition-transform">
+                                                    {item.fullName.split(" ").map(n => n[0]).join("")}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-slate-900 truncate tracking-tight">{item.fullName}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold truncate mt-0.5">{item.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <span className={`text-[11px] font-black ${item.allocationPercentage >= 80 ? "text-rose-600" :
+                                                    item.allocationPercentage >= 50 ? "text-indigo-600" : "text-emerald-600"
+                                                    }`}>
+                                                    {item.allocationPercentage}%
+                                                </span>
+                                                <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-1000 ${item.allocationPercentage >= 80 ? "bg-rose-500" :
+                                                            item.allocationPercentage >= 50 ? "bg-indigo-500" : "bg-emerald-500"
+                                                            }`}
+                                                        style={{ width: `${item.allocationPercentage}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                                                    <Calendar className="h-3 w-3 text-indigo-400" />
+                                                    <span className="text-[10px] text-slate-700 font-black">{item.allocationStartDate}</span>
+                                                    <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
+                                                    <span className="text-[10px] text-slate-700 font-black">{item.allocationEndDate}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${item.allocationStatus === "ACTIVE"
+                                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                : "bg-amber-50 text-amber-600 border-amber-100"
+                                                }`}>
+                                                {item.allocationStatus}
+                                            </span>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <div className="inline-flex items-center gap-2 text-[10px] text-slate-500 font-black bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                                                <UserCheck className="h-3.5 w-3.5 text-indigo-500" />
+                                                <span>{item.createdBy || "System"}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="py-6 px-6 border-t border-slate-100 bg-slate-50/30">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPrevious={() => setPage(p => Math.max(1, p - 1))}
+                                onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const DemandDetailPage = () => {
     const { demandId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isRM = user?.roles?.includes("RESOURCE-MANAGER");
+    const isDM = user?.roles?.includes("DELIVERY-MANAGER");
+
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
+    const [allocationResults, setAllocationResults] = useState(null);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -436,10 +815,12 @@ const DemandDetailPage = () => {
 
     const TABS = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'resource', label: 'Resources', icon: Users },
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
-        { id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare },
+        ...(isRM ? [{ id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare }] : []),
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
-        ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : [])
+        ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
+        ...(isRM && allocationResults ? [{ id: 'allocationResults', label: 'Allocation Results', icon: Activity }] : [])
     ];
 
     return (
@@ -510,13 +891,15 @@ const DemandDetailPage = () => {
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => setIsAllocationModalOpen(true)}
-                                    className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    <span className="whitespace-nowrap">Allocate Resource</span>
-                                </button>
+                                {isRM && (
+                                    <button
+                                        onClick={() => setIsAllocationModalOpen(true)}
+                                        className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span className="whitespace-nowrap">Allocate Resource</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -552,10 +935,12 @@ const DemandDetailPage = () => {
             < main className="flex-1 overflow-y-auto bg-slate-50/80" >
                 <div className="max-w-[1500px] mx-auto px-6 py-10 font-sans">
                     {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} />}
+                    {activeTab === 'resource' && <DemandResourcesTable demandId={demandId} />}
                     {activeTab === 'roleInfo' && <RoleInfoTab demand={demand} role={role} />}
-                    {activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
+                    {isRM && activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
                     {activeTab === 'approvalFlow' && <ApprovalFlowTab demand={demand} />}
                     {activeTab === 'slaInsights' && <SLAInsightsTab sla={sla} />}
+                    {!isDM && activeTab === 'allocationResults' && <AllocationResultsTab results={allocationResults} />}
                 </div>
             </main >
 
@@ -563,6 +948,10 @@ const DemandDetailPage = () => {
                 isOpen={isAllocationModalOpen}
                 onClose={() => setIsAllocationModalOpen(false)}
                 demand={demand}
+                onSuccess={(results) => {
+                    setAllocationResults(results);
+                    setActiveTab('allocationResults');
+                }}
             />
         </div >
     );

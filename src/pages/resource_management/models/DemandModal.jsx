@@ -6,17 +6,12 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/20/solid";
-import { createDemand, getProjects, updateDemandStatus } from "../services/projectService";
-import { getRoleExpectations, getAvailabilityTimeline } from "../services/workforceService";
-import demandService from "../services/demandService";
-import { handleDMDecision, handleRMDecision } from "../services/demandService";
+import { createDemand, updateDemandStatus } from "../services/projectService";
+import { getRoleExpectations } from "../services/workforceService";
+import { fetchResources } from "../services/resource";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
-
-/* -------------------- Constants -------------------- */
-// These are now handled dynamically via useEnums hook
-
 
 /* -------------------- Shared Components -------------------- */
 
@@ -228,12 +223,12 @@ const emptyForm = {
 /* -------------------- Modal -------------------- */
 
 const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails, mode = "create", userRole = "" }) => {
+  console.log("Project Details: ", projectDetails);
   const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetchingResources, setFetchingResources] = useState(false);
-  const [projects, setProjects] = useState([]);
   const [projectResources, setProjectResources] = useState([]);
 
   // Master Data
@@ -290,26 +285,18 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
 
   const fetchRoles = async () => {
     try {
-      const [rolesRes, projectsRes] = await Promise.all([
-        getRoleExpectations(),
-        getProjects({ page: 0, size: 1000 })
-      ]);
-      setRoles(rolesRes.data || rolesRes || []);
-      setProjects(projectsRes.data?.content || projectsRes.data || []);
+      const rolesRes = await getRoleExpectations();
+      setRoles(rolesRes.data);
     } catch (err) {
       console.error("Failed to fetch master data", err);
     }
   };
 
-  const fetchProjectResources = async (pId) => {
-    if (!pId) {
-      setProjectResources([]);
-      return;
-    }
+  const getAllResources = async () => {
     setFetchingResources(true);
     try {
-      const res = await getAvailabilityTimeline({ project: pId }, { page: 0, size: 500 });
-      setProjectResources(res.data?.content || res.data || []);
+      const res = await fetchResources();
+      setProjectResources(res.data);
     } catch (err) {
       console.error("Failed to fetch resources for project", err);
       setProjectResources([]);
@@ -318,20 +305,27 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return "";
+    return date.split("T")[0];
+  };
+
   /* -------- Effects -------- */
+
+  useEffect(() => {
+    if (!open) return;
+    fetchRoles();
+    getAllResources();
+  }, [open]);
 
   useEffect(() => {
     if (open) {
       const isEdit = mode === "edit";
-      fetchRoles();
 
       const getFormattedDate = (date) => {
         if (!date) return "";
         try {
-          // Handle both ISO strings and yyyy-MM-dd
-          const d = new Date(date);
-          if (isNaN(d.getTime())) return "";
-          return d.toISOString().split('T')[0];
+          return String(date).split("T")[0];
         } catch (e) {
           console.error("Date parsing error:", e, date);
           return "";
@@ -390,38 +384,12 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
           deliveryModel: String(getVal(['deliveryModel', 'model', 'DeliveryModel', 'delivery_model'], "OFFSHORE")).toUpperCase().trim(),
           demandJustification: getVal(['demandJustification', 'justification', 'Justification', 'demand_justification', 'reason', 'demandJustification']),
           requiresAdditionalApproval: !!getVal(['requiresAdditionalApproval', 'additionalApproval', 'RequiresAdditionalApproval', 'additional_approval'], false),
-          outgoingResourceId: getVal(['outgoingResourceId', 'outgoing_resource_id', 'replaced_resource_id', 'replacedResourceId']),
+          outgoingResourceId: getVal(['outgoingResourceId', 'outgoing_resource_id', 'replaced_resource_id', 'replacedResourceId']) || initialData?.outgoingResource?.resourceId || "",
         };
 
         setForm(mappedData);
 
-        // Fetch full detail in background for edit mode if we have an ID
-        const dId = mappedData.demandId || mappedData.id;
-        if (dId && isEdit) {
-          demandService.getDemandById(dId).then(detail => {
-            if (detail) {
-              console.log("[DemandModal] Fetched full detail for edit:", detail);
-              // Merge detail into form
-              setForm(prev => {
-                const detailAllocRaw = detail.allocationPercentage || detail.Allocation || detail.allocation?.percentage || "";
-                let detailAlloc = parseFloat(detailAllocRaw);
-                if (!isNaN(detailAlloc) && detailAlloc > 0 && detailAlloc <= 1) detailAlloc *= 100;
 
-                return {
-                  ...prev,
-                  demandStartDate: getFormattedDate(detail.demandStartDate || detail.startDate) || prev.demandStartDate,
-                  demandEndDate: getFormattedDate(detail.demandEndDate || detail.endDate) || prev.demandEndDate,
-                  allocationPercentage: isNaN(detailAlloc) ? prev.allocationPercentage : Math.round(detailAlloc),
-                  resourcesRequired: detail.resourcesRequired || detail.resourceCount || prev.resourcesRequired,
-                  minExp: detail.minExp || detail.experience || prev.minExp,
-                  demandJustification: detail.demandJustification || detail.justification || prev.demandJustification,
-                  deliveryRole: detail.deliveryRole || detail.roleId || prev.deliveryRole,
-                  projectId: detail.projectId || prev.projectId,
-                };
-              });
-            }
-          }).catch(err => console.error("Detail fetch failed", err));
-        }
       } else {
         setForm({
           ...emptyForm,
@@ -432,17 +400,10 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
         });
       }
 
-      if (pId) fetchProjectResources(pId);
+      // if (pId) fetchProjectResources(pId);
       setErrors({});
     }
-  }, [open, initialData, projectDetails, mode, roles.length]);
-
-  // Handle Project Change
-  useEffect(() => {
-    if (form.projectId && open) {
-      fetchProjectResources(form.projectId);
-    }
-  }, [form.projectId, open]);
+  }, [open, initialData, projectDetails, mode]);
 
   // Conditional Logic Reset
   useEffect(() => {
@@ -547,7 +508,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
             decision: form.demandStatus,
             rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
           };
-          const res = await handleDMDecision(dmPayload);
+          const res = await demandService.handleDMDecision(dmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
@@ -561,7 +522,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
             decision: form.demandStatus,
             rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
           };
-          const res = await handleRMDecision(rmPayload);
+          const res = await demandService.handleRMDecision(rmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
@@ -669,7 +630,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
 
                     {/* Project */}
-                    {(!!projectDetails || !!initialData) ? (
+                    {/* {(!!projectDetails || !!initialData) ? (
                       <FormField id="field-ProjectName" label="Project" required>
                         <input
                           type="text"
@@ -690,7 +651,15 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         required
                         disabled={mode === "edit"}
                       />
-                    )}
+                    )} */}
+                    <FormField id="field-ProjectName" label="Project" required>
+                      <input
+                        type="text"
+                        value={projectDetails?.name || projectDetails?.projectName || initialData?.projectName || initialData?.ProjectName || "Loading..."}
+                        disabled
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm text-slate-500 cursor-not-allowed font-medium"
+                      />
+                    </FormField>
 
                     {/* Demand Name */}
                     <FormField id="field-demandName" label="Demand Name" error={errors.demandName} required>
@@ -738,7 +707,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           label="Outgoing Resource"
                           value={form.outgoingResourceId}
                           onChange={(v) => update("outgoingResourceId", v)}
-                          options={projectResources.map((r) => ({ label: r.name, value: r.resourceId }))}
+                          options={projectResources.map((r) => ({ label: `${r.resourceName} (${r.resourceRole})`, value: r.resourceId }))}
                           error={errors.outgoingResourceId}
                           placeholder={fetchingResources ? "Loading resources..." : "Search and select resource to replace"}
                           required={mode !== "edit"}
@@ -752,8 +721,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       <input
                         type="date"
                         value={form.demandStartDate}
-                        min={projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : ""}
-                        max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
+                        min={formatDate(projectDetails?.startDate)}
+                        max={formatDate(projectDetails?.endDate)}
                         onChange={(e) => update("demandStartDate", e.target.value)}
                         disabled={mode === "edit"}
                         className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
@@ -765,8 +734,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       <input
                         type="date"
                         value={form.demandEndDate}
-                        min={form.demandStartDate || (projectDetails?.startDate ? new Date(projectDetails.startDate).toISOString().split('T')[0] : "")}
-                        max={projectDetails?.endDate ? new Date(projectDetails.endDate).toISOString().split('T')[0] : ""}
+                        min={form.demandStartDate || formatDate(projectDetails?.startDate)}
+                        max={formatDate(projectDetails?.endDate)}
                         onChange={(e) => update("demandEndDate", e.target.value)}
                         disabled={mode === "edit"}
                         className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}

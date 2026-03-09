@@ -2,14 +2,15 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import demandService from "../services/demandService";
 import { useAuth } from "../../../../contexts/AuthContext";
 
+
 export const defaultFilters = {
     search: "",
-    client: "ALL",
-    priority: "ALL",
-    status: "ALL",
-    demandName: "ALL",
-    demandType: "ALL",
-    deliveryModel: "ALL",
+    client: [],
+    priority: [],
+    status: [],
+    demandName: [],
+    demandType: [],
+    deliveryModel: [],
 };
 
 const ROLE_PRIORITY = [
@@ -167,23 +168,25 @@ export function useDemand(projectId = null) {
         }
 
         // Advanced Filters
-        if (filters.client !== 'ALL') {
-            list = list.filter(d => d.clientName === filters.client || d.client === filters.client);
+        if (filters.client?.length > 0) {
+            list = list.filter(d => filters.client.includes(d.clientName) || filters.client.includes(d.client));
         }
-        if (filters.priority !== 'ALL') {
-            list = list.filter(d => (d.demandPriority || d.priority)?.toUpperCase() === filters.priority.toUpperCase());
+        if (filters.priority?.length > 0) {
+            const up = filters.priority.map(p => p.toUpperCase());
+            list = list.filter(d => up.includes((d.demandPriority || d.priority)?.toUpperCase()));
         }
-        if (filters.status !== 'ALL') {
-            list = list.filter(d => (d.demandStatus || d.lifecycleState)?.toUpperCase() === filters.status.toUpperCase());
+        if (filters.status?.length > 0) {
+            const us = filters.status.map(s => s.toUpperCase());
+            list = list.filter(d => us.includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         }
-        if (filters.demandName !== 'ALL') {
-            list = list.filter(d => (d.demandName || d.role) === filters.demandName);
+        if (filters.demandName?.length > 0) {
+            list = list.filter(d => filters.demandName.includes(d.demandName) || filters.demandName.includes(d.role));
         }
-        if (filters.demandType !== 'ALL') {
-            list = list.filter(d => d.demandType === filters.demandType);
+        if (filters.demandType?.length > 0) {
+            list = list.filter(d => filters.demandType.includes(d.demandType));
         }
-        if (filters.deliveryModel !== 'ALL') {
-            list = list.filter(d => d.deliveryModel === filters.deliveryModel);
+        if (filters.deliveryModel?.length > 0) {
+            list = list.filter(d => filters.deliveryModel.includes(d.deliveryModel));
         }
 
         return list.map(d => ({
