@@ -9,7 +9,7 @@ import {
 import { createDemand, updateDemandStatus } from "../services/projectService";
 import { handleDMDecision, handleRMDecision } from "../services/demandService";
 import { getRoleExpectations } from "../services/workforceService";
-import { fetchResources } from "../services/resource";
+import { fetchResourcesByProjectId } from "../services/resource";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -42,7 +42,7 @@ const FormField = ({ id, label, error, note, required, children, className = "" 
   </div>
 );
 
-const SearchableListboxField = ({ id, label, value, onChange, options, error, required = true, placeholder = "Search and select...", disabled = false }) => {
+const SearchableListboxField = ({ id, label, value, onChange, options, error, required = true, placeholder = "Search and select...", disabled = false, emptyMessage = "Nothing found." }) => {
   const [query, setQuery] = useState("");
 
   const filteredOptions = query === ""
@@ -87,9 +87,9 @@ const SearchableListboxField = ({ id, label, value, onChange, options, error, re
             afterLeave={() => setQuery("")}
           >
             <Combobox.Options className="absolute z-[100] mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm border border-slate-100">
-              {filteredOptions.length === 0 && query !== "" ? (
+              {filteredOptions.length === 0 ? (
                 <div className="relative cursor-default select-none py-2 px-4 text-gray-700 italic">
-                  Nothing found.
+                  {query !== "" ? "Nothing found." : emptyMessage}
                 </div>
               ) : (
                 filteredOptions.map((opt, idx) => {
@@ -247,7 +247,6 @@ const toDateInputValue = (date) => {
 /* -------------------- Modal -------------------- */
 
 const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails, mode = "create", userRole = "" }) => {
-  console.log("Project Details: ", projectDetails);
   const { getEnumValues } = useEnums();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
@@ -285,6 +284,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
 
+  const isManagerOrPM = ["PROJECTMANAGER", "MANAGER"].includes(normalizedRole);
+
   const normalizeStatusOptions = (statuses = []) =>
     statuses
       .map((s) => (typeof s === "string" ? { label: s, value: s } : s))
@@ -295,6 +296,13 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       return [
         { label: "Accepted", value: "APPROVED" },
         { label: "Rejected", value: "REJECTED" }
+      ];
+    }
+    if (isManagerOrPM) {
+      return [
+        { label: "Draft", value: "DRAFT" },
+        { label: "Requested", value: "REQUESTED" },
+        { label: "Cancelled", value: "CANCELLED" }
       ];
     }
     return [
@@ -316,11 +324,12 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     }
   };
 
-  const getAllResources = async () => {
+  const getAllResources = async (pId) => {
+    if (!pId) return;
     setFetchingResources(true);
     try {
-      const res = await fetchResources();
-      setProjectResources(res.data);
+      const res = await fetchResourcesByProjectId(pId);
+      setProjectResources(res.data || []);
     } catch (err) {
       console.error("Failed to fetch resources for project", err);
       setProjectResources([]);
@@ -338,8 +347,11 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
   useEffect(() => {
     if (!open) return;
     fetchRoles();
-    getAllResources();
-  }, [open]);
+    const pId = projectDetails?.pmsProjectId || projectDetails?.projectId || projectDetails?._id || initialData?.projectId || initialData?.ProjectId || initialData?.pmsProjectId || "";
+    if (pId) {
+      getAllResources(pId);
+    }
+  }, [open, projectDetails, initialData]);
 
   useEffect(() => {
     if (open) {
@@ -388,11 +400,11 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
           demandEndDate: eDate || toDateInputValue(getVal(['demandEndDate', 'endDate', 'end_date', 'demand_end_date', 'slaDueAt'])),
           allocationPercentage: isNaN(allocation) ? "" : Math.round(allocation),
           deliveryRole: roleIdFromData,
-          demandStatus: isEdit ? "" : String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
+          demandStatus: String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
           demandType: String(getVal(['demandType', 'type', 'type_of_demand', 'DemandType', 'demand_type'], "NET_NEW")).toUpperCase().replace(/ /g, "_"),
           demandPriority: String(getVal(['demandPriority', 'priority', 'Priority', 'demand_priority'], "MEDIUM")).toUpperCase().trim(),
           demandCommitment: String(getVal(['demandCommitment', 'commitment', 'Commitment', 'demand_commitment'], "CONFIRMED")).toUpperCase().trim(),
-          resourcesRequired: parseInt(getVal(['resourcesRequired', 'count', 'requiredCount', 'ResourcesRequired', 'resource_required', 'quantity'], 1)),
+          resourcesRequired: parseInt(getVal(['resourcesRequired', 'resourceRequired'], 1)),
           minExp: getVal(['minExp', 'experience', 'min_experience', 'MinExperience', 'experience_required', 'min_experience']),
           deliveryModel: String(getVal(['deliveryModel', 'model', 'DeliveryModel', 'delivery_model'], "OFFSHORE")).toUpperCase().trim(),
           demandJustification: getVal(['demandJustification', 'justification', 'Justification', 'demand_justification', 'reason', 'demandJustification']),
@@ -441,7 +453,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
   const validateForm = () => {
     const e = {};
 
-    if (mode === "edit") {
+    if (mode === "edit" && !isManagerOrPM) {
       const allowedEditStatuses = computedEditStatuses.map((s) => String(s.value).toUpperCase());
       const selectedStatus = String(form.demandStatus || "").toUpperCase();
       if (!selectedStatus) {
@@ -453,7 +465,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
       if ((normalizedRole === "DELIVERYMANAGER" || normalizedRole === "RESOURCEMANAGER") && selectedStatus === "REJECTED" && !form.rejectionReason?.trim()) {
         e.rejectionReason = "Reason for rejection is required";
       }
-      // In edit mode, we only validate the status and rejection reason as other fields are read-only
+      // In edit mode for non-managers, we only validate the status and rejection reason as other fields are read-only
       return e;
     }
 
@@ -683,8 +695,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. Senior Frontend Dev"
                         value={form.demandName}
                         onChange={(e) => update("demandName", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandName ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -698,7 +710,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.deliveryRole}
                       placeholder="Search and Select Role"
                       required
-                      disabled={mode === "edit"}
+                      disabled={mode === "edit" && !isManagerOrPM}
                     />
 
                     {/* Demand Type */}
@@ -711,7 +723,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.demandType}
                       placeholder="Select Type"
                       required
-                      disabled={mode === "edit"}
+                      disabled={mode === "edit" && !isManagerOrPM}
                     />
 
                     {/* Conditional: Outgoing Resource (for REPLACEMENT) */}
@@ -726,7 +738,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           error={errors.outgoingResourceId}
                           placeholder={fetchingResources ? "Loading resources..." : "Search and select resource to replace"}
                           required={mode !== "edit"}
-                          disabled={fetchingResources || mode === "edit"}
+                          disabled={fetchingResources || (mode === "edit" && !isManagerOrPM)}
+                          emptyMessage="No Resources Allocated to the Project."
                         />
                       </div>
                     )}
@@ -739,8 +752,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={formatDate(projectDetails?.startDate)}
                         max={formatDate(projectDetails?.endDate)}
                         onChange={(e) => update("demandStartDate", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandStartDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -752,8 +765,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         min={form.demandStartDate || formatDate(projectDetails?.startDate)}
                         max={formatDate(projectDetails?.endDate)}
                         onChange={(e) => update("demandEndDate", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandEndDate ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -767,8 +780,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                           placeholder="1 - 100"
                           value={form.allocationPercentage}
                           onChange={(e) => update("allocationPercentage", e.target.value)}
-                          disabled={mode === "edit"}
-                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                          disabled={mode === "edit" && !isManagerOrPM}
+                          className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.allocationPercentage ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">%</span>
                       </div>
@@ -782,8 +795,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="min 1"
                         value={form.resourcesRequired}
                         onChange={(e) => update("resourcesRequired", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.resourcesRequired ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -795,8 +808,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="e.g. 5"
                         value={form.minExp}
                         onChange={(e) => update("minExp", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.minExp ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
 
@@ -810,7 +823,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.deliveryModel}
                       placeholder="Select Model"
                       required
-                      disabled={mode === "edit"}
+                      disabled={mode === "edit" && !isManagerOrPM}
                     />
 
                     {/* Demand Status */}
@@ -848,7 +861,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       error={errors.demandPriority}
                       placeholder="Select Priority"
                       required
-                      disabled={mode === "edit"}
+                      disabled={mode === "edit" && !isManagerOrPM}
                     />
 
                     <ListboxField
@@ -861,7 +874,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       note={form.demandCommitment === "SOFT" ? "Note: This Demand will expire in 30 days" : ""}
                       placeholder="Select Commitment"
                       required
-                      disabled={mode === "edit"}
+                      disabled={mode === "edit" && !isManagerOrPM}
                     />
 
                     {/* Additional Approval Checkbox */}
@@ -869,9 +882,9 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                       <Switch
                         checked={form.requiresAdditionalApproval}
                         onChange={(v) => update("requiresAdditionalApproval", v)}
-                        disabled={mode === "edit"}
+                        disabled={mode === "edit" && !isManagerOrPM}
                         className={`${form.requiresAdditionalApproval ? 'bg-blue-600' : 'bg-slate-200'
-                          } relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75 ${mode === "edit" ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+                          } relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75 ${mode === "edit" && !isManagerOrPM ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                       >
                         <span className="sr-only">Additional Approval</span>
                         <span
@@ -880,7 +893,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                             } pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
                         />
                       </Switch>
-                      <label className={`text-sm font-medium text-slate-700 select-none ${mode === "edit" ? "cursor-not-allowed" : "cursor-pointer"}`} onClick={() => mode !== "edit" && update("requiresAdditionalApproval", !form.requiresAdditionalApproval)}>
+                      <label className={`text-sm font-medium text-slate-700 select-none ${mode === "edit" && !isManagerOrPM ? "cursor-not-allowed" : "cursor-pointer"}`} onClick={() => (mode !== "edit" || isManagerOrPM) && update("requiresAdditionalApproval", !form.requiresAdditionalApproval)}>
                         Requires Additional Leadership Approval
                       </label>
                     </div>
@@ -892,8 +905,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
                         placeholder="Explain why this resource is needed..."
                         value={form.demandJustification}
                         onChange={(e) => update("demandJustification", e.target.value)}
-                        disabled={mode === "edit"}
-                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
+                        disabled={mode === "edit" && !isManagerOrPM}
+                        className={`w-full rounded-lg border py-2 px-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${errors.demandJustification ? "border-red-500 bg-red-50/30" : "border-slate-200 hover:border-slate-300"} ${mode === "edit" && !isManagerOrPM ? "bg-slate-50 cursor-not-allowed text-slate-500" : ""}`}
                       />
                     </FormField>
                   </div>

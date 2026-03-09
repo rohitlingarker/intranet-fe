@@ -57,7 +57,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-import AdminDashboard from "./pages/Projects/Admin/AdminDashboard";
+
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";

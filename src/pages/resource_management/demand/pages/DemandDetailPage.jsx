@@ -751,8 +751,9 @@ const DemandResourcesTable = ({ demandId }) => {
     );
 };
 
-const DemandDetailPage = () => {
-    const { demandId } = useParams();
+const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
+    const { demandId: urlDemandId } = useParams();
+    const demandId = propDemandId || urlDemandId;
     const navigate = useNavigate();
     const { user } = useAuth();
     const isRM = user?.roles?.includes("RESOURCE-MANAGER");
@@ -798,7 +799,7 @@ const DemandDetailPage = () => {
                 </div>
                 <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">Record Not Found</h2>
                 <p className="text-sm text-slate-500 mb-10 font-medium leading-relaxed">The requested demand record is currently offline or could not be reached. Please try again.</p>
-                <Button onClick={() => navigate('/resource-management/demand')} className="w-full h-12 bg-slate-900 hover:bg-slate-800 rounded-xl font-bold tracking-wide shadow-xl">Back to Demand Pipeline</Button>
+                <Button onClick={propOnBack || (() => navigate('/resource-management/demand'))} className="w-full h-12 bg-slate-900 hover:bg-slate-800 rounded-xl font-bold tracking-wide shadow-xl">Back to Demand Pipeline</Button>
             </div>
         </div>
     );
@@ -836,7 +837,7 @@ const DemandDetailPage = () => {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => navigate('/resource-management/demand')}
+                                onClick={propOnBack || (() => navigate('/resource-management/demand'))}
                                 className="h-10 w-10 min-w-[40px] text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-transparent hover:border-slate-200 transition-all"
                             >
                                 <ArrowLeft className="h-5 w-5" />
