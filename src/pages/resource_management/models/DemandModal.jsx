@@ -9,6 +9,7 @@ import {
 import { createDemand, updateDemandStatus } from "../services/projectService";
 import { getRoleExpectations } from "../services/workforceService";
 import { fetchResourcesByProjectId } from "../services/resource";
+import * as demandService from "../services/demandService";
 import { toast } from "react-toastify";
 
 import { useEnums } from "@/pages/resource_management/hooks/useEnums";
@@ -279,6 +280,12 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
         { label: "Draft", value: "DRAFT" },
         { label: "Requested", value: "REQUESTED" },
         { label: "Cancelled", value: "CANCELLED" }
+      ];
+    }
+    if (normalizedRole === "RESOURCEMANAGER") {
+      return [
+        { label: "Fulfilled", value: "FULFILLED" },
+        { label: "Rejected", value: "REJECTED" }
       ];
     }
     return [

@@ -12,6 +12,10 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
     const { user } = useAuth();
     const roles = user?.roles || [];
     const isRM = roles.includes("RESOURCE-MANAGER");
+    const isDM = roles.includes("DELIVERY-MANAGER");
+    const status = demand.lifecycleState?.toUpperCase();
+    const isEditDisabled = status === 'REJECTED' || (isDM && status === 'APPROVED');
+
     return (
         <div
             className="group flex items-center bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -78,28 +82,18 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
 
                 {/* 6. Actions */}
                 <div className="col-span-1 flex items-center justify-center gap-4">
-                    {/* {(isRM || demand.lifecycleState?.toUpperCase() !== 'APPROVED') && (
-                        <button
-                            title='Edit'
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onEdit) onEdit(demand);
-                            }}
-                        >
-                            <Pencil className="h-3.5 w-3.5 text-blue-700 hover:text-blue-800" />
-                        </button>
-                    )} */}
                     <button
-                        title={demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED' ? 'Cannot Edit Approved/Rejected Demand' : 'Edit'}
+                        title={status === 'REJECTED' ? 'Cannot Edit Rejected Demand' : (isDM && status === 'APPROVED') ? 'Cannot Edit Approved Demand' : 'Edit'}
                         onClick={(e) => {
                             e.stopPropagation();
                             if (onEdit) onEdit(demand);
                         }}
-                        disabled={demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED'}
+                        disabled={isEditDisabled}
                     >
-                        <Pencil className={`h-3.5 w-3.5 ${demand.lifecycleState?.toUpperCase() === 'APPROVED' || demand.lifecycleState?.toUpperCase() === 'REJECTED' ? 'text-gray-400 cursor-not-allowed' : 'text-blue-700 hover:text-blue-800'}`} />
+                        <Pencil className={`h-3.5 w-3.5 ${isEditDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-blue-700 hover:text-blue-800'}`} />
                     </button>
                 </div>
+
             </div>
         </div>
     );
