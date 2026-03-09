@@ -13,6 +13,12 @@ import { fetchResources, resourceAllocation } from "../../services/resource";
 import { toast } from 'react-toastify';
 import { cn } from "@/lib/utils";
 
+const toDateInputValue = (date) => {
+    if (!date) return "";
+    const matchedDate = String(date).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return matchedDate ? matchedDate[1] : "";
+};
+
 const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
     const [resources, setResources] = useState([]);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
@@ -21,9 +27,9 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
     const [formData, setFormData] = useState({
         resourceId: [],
-        demandId: demand?.demandId || '',
-        allocationStartDate: '',
-        allocationEndDate: '',
+        demandId: demand?.demandId || demand?.id || '',
+        allocationStartDate: toDateInputValue(demand?.demandStartDate),
+        allocationEndDate: toDateInputValue(demand?.demandEndDate),
         allocationPercentage: 100,
         allocationStatus: 'ACTIVE'
     });
@@ -79,8 +85,10 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
             setFormData(prev => ({
                 ...prev,
-                demandId: demand?.demandId || '',
-                resourceId: [] // Reset on open
+                demandId: demand?.demandId || demand?.id || '',
+                allocationStartDate: toDateInputValue(demand?.demandStartDate),
+                allocationEndDate: toDateInputValue(demand?.demandEndDate),
+                resourceId: []
             }));
             setErrors({});
             setSearchQuery("");
@@ -115,26 +123,48 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
         }
 
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return {
+            isValid: Object.keys(newErrors).length === 0,
+            errors: newErrors,
+        };
     };
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
-        if (!validate()) return;
+        const { isValid, errors: validationErrors } = validate();
+        if (!isValid) {
+            const validationMessages = Object.values(validationErrors).filter(Boolean);
+            toast.warning(validationMessages[0] || "Please correct the validation errors");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
             const result = await resourceAllocation(formData);
             const enrichedResult = enrichAllocationResult(result);
-            if (result.success) {
+            const hasAllocationResults = !!enrichedResult?.data;
+            const successCount = enrichedResult?.data?.successCount || 0;
+            const failureCount = enrichedResult?.data?.failureCount || 0;
+            const normalizedMessage = String(result?.message || "").toLowerCase();
+            const isFailedAllocationMessage = normalizedMessage.includes("allocation failed");
+
+            if (!result.success && !hasAllocationResults) {
+                toast.error(result.message || "Allocation failed");
+                return;
+            }
+
+            if (hasAllocationResults && failureCount > 0 && successCount === 0) {
+                toast.error(result.message || "Allocation failed");
+            } else if (hasAllocationResults && failureCount > 0) {
+                toast.warning(result.message || "Allocation completed with some failures");
+            } else if (result.success && !isFailedAllocationMessage) {
                 toast.success(result.message || "Resources allocated successfully");
-                if (onSuccess) onSuccess(enrichedResult);
-                onClose();
             } else {
                 toast.error(result.message || "Allocation failed");
-                if (onSuccess) onSuccess(enrichedResult);
-                onClose();
             }
+
+            if (onSuccess) onSuccess(enrichedResult);
+            onClose();
         } catch (error) {
             console.error("Allocation error:", error);
             toast.error(error.response?.data?.message || "Failed to allocate resources");
