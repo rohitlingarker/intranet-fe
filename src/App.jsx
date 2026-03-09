@@ -240,7 +240,7 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -258,10 +258,14 @@ const AppRoutes = () => {
         navigate(lastPath, { replace: true });
       }
       else if (currentPath === "/") {
-        navigate("/dashboard", { replace: true });
+        if (user?.roles?.includes("DELIVERY-MANAGER")) {
+          navigate("/resource-management/demand", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       }
     }
-  }, [isAuthenticated, navigate]); // Removed location dependency to avoid navigation loops on every click
+  }, [isAuthenticated, user, navigate]); // Added user dependency
 
   return (
     <>
@@ -418,7 +422,7 @@ const AppRoutes = () => {
             <Route path="create" element={<CreateOffer />} />
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
-           
+
             <Route path="hr-configuration" element={<HrConfiguration />} />
             <Route path="hr-configuration/country" element={<CountryManagement />} />
             <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
@@ -447,7 +451,7 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
-            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
