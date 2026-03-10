@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Calendar, UserPlus, ShieldAlert, ShieldCheck,
     Globe, Database, Briefcase, MapPin,
@@ -54,9 +54,9 @@ const InfoRow = ({ label, value, icon: Icon, colorClass = "text-slate-900" }) =>
 /**
  * --- TAB 1: OVERVIEW ---
  */
-const OverviewTab = ({ demand, project, sla }) => {
+const OverviewTab = ({ demand, project, sla, passedClientName }) => {
     console.log("Demand: ", demand);
-    const warningThreshold = 5;
+    const warningThreshold = sla?.warningThresholdDays || 5;
     const remainingDays = sla?.remainingDays ?? 0;
     const progress = Math.min(100, Math.max(0, ((sla?.slaDurationDays - remainingDays) / sla?.slaDurationDays) * 100)) || 0;
 
@@ -72,9 +72,9 @@ const OverviewTab = ({ demand, project, sla }) => {
                     <InfoRow label="Demand Name" value={demand.demandName} />
                     <InfoRow label="Demand Type" value={demand.demandType} />
                     <InfoRow label="Priority" value={<PriorityBadge priority={demand.demandPriority} />} />
-                    <InfoRow label="Resources Required" value="1" />
+                    <InfoRow label="Resources Required" value={demand.resourcesRequired || demand.resourceRequired || "1"} />
                     <InfoRow label="Min Experience" value={`${demand.minExp || 0} Years`} />
-                    <InfoRow label="Commitment Status" value="CONFIRMED" colorClass="text-indigo-600" />
+                    <InfoRow label="Commitment Status" value={demand.demandCommitment || "CONFIRMED"} colorClass="text-indigo-600" />
                 </div>
             </DetailCard>
 
@@ -82,12 +82,21 @@ const OverviewTab = ({ demand, project, sla }) => {
             <DetailCard title="Project & Client Info" icon={Building2}>
                 <div className="space-y-1">
                     <InfoRow label="Project Name" value={project.name || "N/A"} icon={Briefcase} />
-                    <InfoRow label="Client" value={demand.clientName} icon={UserCheck} />
-                    <InfoRow label="Delivery Model" value={project.deliveryModel || "Onsite"} icon={Globe} />
-                    <InfoRow label="Location" value={project.primaryLocation || "Chennai"} icon={MapPin} />
-                    <InfoRow label="Lifecycle" value="Initiation" colorClass="text-emerald-600" />
-                    <InfoRow label="Risk Level" value={<div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100">Low</div>} />
-                    <InfoRow label="Staffing Readiness" value="Ready" colorClass="text-indigo-600" />
+                    <InfoRow label="Client" value={passedClientName || demand.clientName || demand.client || "N/A"} icon={UserCheck} />
+                    <InfoRow label="Delivery Model" value={project.deliveryModel || demand.deliveryModel || "Onsite"} icon={Globe} />
+                    <InfoRow label="Location" value={project.primaryLocation || "N/A"} icon={MapPin} />
+                    <InfoRow label="Lifecycle" value={project.lifecycleStage || "N/A"} colorClass="text-emerald-600" />
+                    <InfoRow label="Risk Level" value={
+                        <div className={cn(
+                            "px-2 py-0.5 rounded text-[9px] font-bold border",
+                            project.riskLevel?.toUpperCase() === 'HIGH' ? "bg-rose-50 text-rose-600 border-rose-100" :
+                                project.riskLevel?.toUpperCase() === 'MEDIUM' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                    "bg-emerald-50 text-emerald-600 border-emerald-100"
+                        )}>
+                            {project.riskLevel || "Low"}
+                        </div>
+                    } />
+                    <InfoRow label="Staffing Readiness" value={project.staffingReadinessStatus || "Ready"} colorClass="text-indigo-600" />
                 </div>
             </DetailCard>
 
@@ -121,11 +130,11 @@ const OverviewTab = ({ demand, project, sla }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
                                     <span className="text-[9px] font-black text-slate-400 block mb-1">Created</span>
-                                    <span className="text-xs font-bold text-slate-900 block">Feb 28</span>
+                                    <span className="text-xs font-bold text-slate-900 block">{sla?.slaCreatedAt ? new Date(sla.slaCreatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "N/A"}</span>
                                 </div>
                                 <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
                                     <span className="text-[9px] font-black text-slate-400 block mb-1">Due Date</span>
-                                    <span className="text-xs font-bold text-slate-900 block">Mar 10</span>
+                                    <span className="text-xs font-bold text-slate-900 block">{sla?.slaDueAt ? new Date(sla.slaDueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "N/A"}</span>
                                 </div>
                             </div>
 
@@ -161,11 +170,11 @@ const RoleInfoTab = ({ demand, role }) => {
     const skills = useMemo(() => {
         if (!role.skill) return [];
         return [{
-            primary: role.skill.name || "Java",
-            sub: role.subSkill?.name || "JDBC",
-            proficiency: role.proficiencyLevel?.proficiencyName || "Intermediate (L-2)",
-            mandatory: true,
-            status: "Active"
+            primary: role.skill.name || "N/A",
+            sub: role.subSkill?.name || "N/A",
+            proficiency: role.proficiencyLevel?.proficiencyName || "N/A",
+            mandatory: role.mandatoryFlag || false,
+            status: role.status || "Active"
         }];
     }, [role]);
 
@@ -188,16 +197,16 @@ const RoleInfoTab = ({ demand, role }) => {
                             <Code2 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-black tracking-tight">{role.roleName || "Java Tester"}</h2>
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight">{role.role?.roleName || "N/A"}</h2>
                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-1">
-                                <span className="text-[9px] sm:text-[10px] font-black text-indigo-400 tracking-widest">Allocation: 40%</span>
+                                <span className="text-[9px] sm:text-[10px] font-black text-indigo-400 tracking-widest">Allocation: {demand.allocationPercentage || 0}%</span>
                                 <div className="hidden sm:block h-1 w-1 rounded-full bg-white/20" />
                                 <span className="text-[9px] sm:text-[10px] font-black text-white/40 tracking-widest">Min Exp: {demand.minExp || 0} Years</span>
                             </div>
                         </div>
                     </div>
                     <div className="flex gap-3 mt-4 sm:mt-0">
-                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] sm:text-[10px] font-black tracking-widest text-indigo-400">Mandatory: Yes</div>
+                        <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] sm:text-[10px] font-black tracking-widest text-indigo-400">Mandatory: {role.mandatoryFlag ? "Yes" : "No"}</div>
                         <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] sm:text-[10px] font-black tracking-widest text-indigo-400">Structural Valid</div>
                     </div>
                 </div>
@@ -680,7 +689,7 @@ const AllocationResultsTab = ({ results }) => {
 const SLAInsightsTab = ({ sla }) => {
     const totalDays = sla?.slaDurationDays || 30;
     const remaining = sla?.remainingDays || 0;
-    const warningDays = 5;
+    const warningDays = sla?.warningThresholdDays || 5;
 
     // Position marker for "Today"
     const todayPos = ((totalDays - remaining) / totalDays) * 100;
@@ -936,8 +945,11 @@ const DemandResourcesTable = ({ demandId }) => {
 const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
     const { demandId: urlDemandId } = useParams();
     const demandId = propDemandId || urlDemandId;
+    const { state } = useLocation();
+    const passedClientName = state?.clientName;
     const navigate = useNavigate();
     const { user } = useAuth();
+
     const isRM = user?.roles?.includes("RESOURCE-MANAGER");
     const isDM = user?.roles?.includes("DELIVERY-MANAGER");
 
@@ -991,10 +1003,14 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
     const role = demand.role || {};
     const isApproved = ['APPROVED', 'OPEN', 'ACTIVE'].includes(demand.demandStatus?.toUpperCase());
 
+    const slaId = sla?.demandSlaId || demand.demandSlaId;
+
     const isSoft =
-        demand.demandCommitment?.toUpperCase() === 'SOFT' ||
-        demand.demandStatus?.toUpperCase() === 'SOFT' ||
-        demand.demandStatus?.toUpperCase() === 'REQUESTED';
+        !slaId && (
+            demand.demandCommitment?.toUpperCase() === 'SOFT' ||
+            demand.demandStatus?.toUpperCase() === 'SOFT' ||
+            demand.demandStatus?.toUpperCase() === 'REQUESTED'
+        );
 
     const TABS = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -1002,19 +1018,19 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
         ...(isRM ? [{ id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare }] : []),
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
-        ...(!isSoft && demand.demandSlaId ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
+        ...(!isSoft && slaId ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
         ...(isRM && allocationResults ? [{ id: 'allocationResults', label: 'Allocation Results', icon: Activity }] : [])
     ];
 
     return (
         <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-indigo-100">
 
-            {/* --- TOP HEADER (Resource Profile Style) --- */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+            {/* --- TOP HEADER (Responsive & Matched Layout) --- */}
+            <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
                 <div className="max-w-[1500px] mx-auto px-6 py-5">
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
 
-                        {/* Header Left */}
+                        {/* Header Left: Back + Info */}
                         <div className="flex items-center gap-4 sm:gap-6">
                             <Button
                                 variant="ghost"
@@ -1027,55 +1043,50 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
 
                             <div className="flex items-center gap-3 sm:gap-5">
                                 <div className="space-y-1">
-                                    <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none break-words">{demand.demandName || "Java Tester Requirement"}</h1>
+                                    <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none break-words uppercase">
+                                        {demand.demandName || "N/A"}
+                                    </h1>
                                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                        <span className="text-[10px] sm:text-[11px] font-black text-indigo-600 tracking-widest">{role.roleName || "Java Tester"}</span>
+                                        <span className="text-[10px] sm:text-[11px] font-black text-indigo-600 tracking-widest">{role.role?.roleName || "N/A"}</span>
                                         <div className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block" />
-                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-500 tracking-widest">{project.name || "Stable Coin"}</span>
+                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-500 tracking-widest">{passedClientName || demand.clientName || demand.client || "N/A"}</span>
                                         <div className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block" />
-                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-400 tracking-widest">{project.primaryLocation || "Chennai"}</span>
+                                        <span className="text-[10px] sm:text-[11px] font-black text-slate-400 tracking-widest">{project.primaryLocation || "N/A"}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Header Right */}
+                        {/* Header Right: Stats & Actions */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10">
+                            {/* Allocation section from reference */}
                             <div className="hidden md:flex flex-col items-end gap-1.5">
                                 <div className="flex items-center justify-between w-full min-w-[120px]">
                                     <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Allocation</span>
-                                    <span className="text-[10px] font-black text-slate-900 tracking-widest">{demand.allocation?.percentage || 40}%</span>
+                                    <span className="text-[10px] font-black text-slate-900 tracking-widest">{demand.allocationPercentage || 0}%</span>
                                 </div>
                                 <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                    <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${demand.allocation?.percentage || 40}%` }} />
+                                    <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${demand.allocationPercentage || 0}%` }} />
                                 </div>
                             </div>
+
+                            {/* Status, SLA and CTA from reference with matched order */}
                             <div className="flex flex-wrap items-center gap-4 sm:border-l sm:border-slate-100 sm:pl-6 xl:pl-10 w-full sm:w-auto">
                                 <StateBadge state={demand.demandStatus} className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-[10px] sm:text-[11px]" />
 
-                                <div className="flex items-center gap-3 sm:gap-4 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <div className="flex items-center gap-3 sm:gap-4 p-2.5 bg-slate-50/50 border border-slate-100 rounded-2xl">
                                     <div className="flex flex-col items-end pr-2 border-r border-slate-200 text-right">
                                         <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Status</span>
                                         <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap",
-                                            !demand.demandSlaId ? "text-slate-400"
-                                                : isSoft ? "text-slate-400"
-                                                    : (sla?.remainingDays || 0) < 0 ? "text-rose-600"
-                                                        : (sla?.remainingDays || 0) <= 5 ? "text-orange-600"
-                                                            : "text-emerald-600")}>
-                                            {!demand.demandSlaId ? "No SLA" : isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
+                                            !slaId ? "text-slate-400"
+                                                : (sla?.remainingDays || 0) < 0 ? "text-rose-600"
+                                                    : (sla?.remainingDays || 0) <= 5 ? "text-orange-600"
+                                                        : "text-emerald-600")}>
+                                            {!slaId ? "No SLA" : `${sla?.remainingDays || 0} Days`}
                                         </span>
                                     </div>
-                                    <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
-                                        <svg className="h-8 w-8 sm:h-10 sm:w-10 transform -rotate-90">
-                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke="#e2e8f0" />
-                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={!demand.demandSlaId || isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
-                                                strokeDasharray="100 100"
-                                                strokeDashoffset={!demand.demandSlaId || isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
-                                            />
-                                        </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                                            {!demand.demandSlaId || isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
-                                        </div>
+                                    <div className="relative h-8 w-8 sm:h-10 sm:w-10 border-[3px] border-slate-100 rounded-full flex items-center justify-center bg-white shadow-sm">
+                                        {!slaId ? <XCircle className="h-4 w-4 text-slate-300" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />}
                                     </div>
                                 </div>
 
@@ -1085,7 +1096,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                                         className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-black tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 border border-indigo-500"
                                     >
                                         <Plus className="h-4 w-4" />
-                                        <span className="whitespace-nowrap">Allocate Resource</span>
+                                        <span className="whitespace-nowrap uppercase">Allocate Resource</span>
                                     </button>
                                 )}
                             </div>
@@ -1093,8 +1104,8 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div className="overflow-x-auto no-scrollbar -mx-6 px-6">
-                        <nav className="flex gap-6 sm:gap-10 mt-6 -mb-[21px] min-w-max">
+                    <div className="overflow-x-auto overflow-y-hidden no-scrollbar -mx-6 px-6">
+                        <nav className="flex gap-6 sm:gap-10 mt-6 -mb-[1px] min-w-max border-b border-slate-100">
                             {TABS.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
@@ -1103,7 +1114,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={cn(
-                                            "group flex items-center gap-2 sm:gap-3 pb-4 text-[10px] sm:text-[11px] font-black transition-all border-b-4 relative tracking-[0.1em] whitespace-nowrap",
+                                            "group flex items-center gap-2 sm:gap-3 pb-4 text-[10px] sm:text-[11px] font-black transition-all border-b-2 relative tracking-[0.1em] whitespace-nowrap",
                                             isActive
                                                 ? "text-indigo-600 border-indigo-600"
                                                 : "text-slate-400 border-transparent hover:text-slate-600 hover:border-slate-300"
@@ -1117,12 +1128,13 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                         </nav>
                     </div>
                 </div>
-            </header >
+            </header>
+
 
             {/* --- MAIN CONTENT AREA --- */}
-            < main className="flex-1 overflow-y-auto bg-slate-50/80" >
+            <main className="flex-1 overflow-y-auto bg-slate-50/80">
                 <div className="max-w-[1500px] mx-auto px-6 py-10 font-sans">
-                    {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} />}
+                    {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} passedClientName={passedClientName} />}
                     {activeTab === 'resource' && <DemandResourcesTable demandId={demandId} />}
                     {activeTab === 'roleInfo' && <RoleInfoTab demand={demand} role={role} />}
                     {isRM && activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
@@ -1130,7 +1142,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                     {activeTab === 'slaInsights' && <SLAInsightsTab sla={sla} />}
                     {!isDM && activeTab === 'allocationResults' && <AllocationResultsTab results={allocationResults} />}
                 </div>
-            </main >
+            </main>
 
             <AllocationModal
                 isOpen={isAllocationModalOpen}
@@ -1141,7 +1153,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                     setActiveTab('allocationResults');
                 }}
             />
-        </div >
+        </div>
     );
 };
 

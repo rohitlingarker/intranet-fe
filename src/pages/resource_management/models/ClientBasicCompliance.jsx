@@ -7,7 +7,7 @@ import {
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import Modal from "../../../components/Modal/modal";
 import ComplianceForm from "./client_configuration/forms/ComplianceForm";
 import ConfirmationModal from "../../../components/confirmation_modal/ConfirmationModal";
@@ -34,7 +34,7 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
   const handleSetFormData = (data) => {
     if (!data) return;
 
-    setFormData({
+    const formattedData = {
       client: {
         clientId: clientId,
       },
@@ -43,17 +43,17 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
       requirementName: data.requirementName,
       mandatoryFlag: data.mandatoryFlag ?? true,
       activeFlag: data.activeFlag ?? true,
+    };
 
-      skill:
-        data.requirementType === "SKILL"
-          ? { id: data.skill?.id || null }
-          : undefined,
+    if (data.requirementType === "SKILL") {
+      formattedData.skill = { id: data.skill?.id || null };
+    } else if (data.requirementType === "CERTIFICATION") {
+      formattedData.certificate = {
+        certificateId: data.certificate?.certificateId || null,
+      };
+    }
 
-      certificate:
-        data.requirementType === "CERTIFICATION"
-          ? { certificateId: data.certificate?.certificateId || null }
-          : undefined,
-    });
+    setFormData(formattedData);
   };
 
   const handleUpdateCompliance = async () => {
@@ -205,11 +205,10 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${
-                        item.mandatoryFlag
+                      ${item.mandatoryFlag
                           ? "bg-red-100 text-red-700"
                           : "bg-gray-100 text-gray-600"
-                      }
+                        }
                     `}
                     >
                       {item.mandatoryFlag ? "Mandatory" : "Optional"}
@@ -235,11 +234,10 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-semibold rounded-full
-                      ${
-                        item.activeFlag
+                      ${item.activeFlag
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-600"
-                      }
+                        }
                     `}
                     >
                       {item.activeFlag ? "Active" : "Inactive"}
