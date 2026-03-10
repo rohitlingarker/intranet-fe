@@ -100,6 +100,7 @@ import EmployeeListPage from "./pages/employee-onboarding/employeelist/EmployeeL
 import EmployeeCredentials from "./pages/employee-onboarding/employee-credentials/EmployeeCredentials.jsx";
 import CoreEmployeeDetails from "./pages/employee-onboarding/core-employee/CoreEmployeeDetails.jsx";
 import EmployeeOnboardingLayout from "./pages/employee-onboarding/EmployeeOnboardingLayout.jsx"; 
+import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -127,6 +128,7 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
+// ✅ Leave Management
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
@@ -140,6 +142,8 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
+import LeaveUploadWizard from "./pages/leave_management/models/LeaveUploadWizard.jsx";
+
 
 
 import { showStatusToast } from "./components/toastfy/toast";
@@ -683,6 +687,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["Manager"]}>
                 <ManageBlockLeave />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`/leave-upload`}
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <LeaveUploadWizard />
               </ProtectedRoute>
             }
           />

@@ -117,7 +117,7 @@ const PendingLeaveRequestsTable = ({
             {/* The component now just maps over the leaves it was given. */}
             {pendingLeaves.map((leave) => (
               <tr key={leave.leaveId} className="border-t text-xs">
-                <td className="p-3 text-center">{getLabelFromName(leave.leaveType?.leaveName)}</td>
+                <td className="p-3 text-center">{getLabelFromName(leave.leaveName)}</td>
                 <td className="p-3 text-center">
                   {new Date(leave.startDate).toLocaleDateString("en-US", {
                     month: "short",
