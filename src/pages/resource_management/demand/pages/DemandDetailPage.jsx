@@ -92,44 +92,60 @@ const OverviewTab = ({ demand, project, sla }) => {
             </DetailCard>
 
             {/* Card 3: SLA Health Indicator */}
-            <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
-                <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100">Healthy Stable</div>
-            }>
-                <div className="flex flex-col h-full">
-                    <div className="text-center py-4 mb-4">
-                        <span className={cn("text-3xl font-black tracking-tighter", remainingDays < 0 ? "text-rose-600" : remainingDays <= 5 ? "text-orange-600" : "text-emerald-600")}>
-                            {remainingDays < 0 ? `${Math.abs(remainingDays)} Days Over` : `${remainingDays} Days Remaining`}
-                        </span>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span className="text-[9px] font-black text-slate-400 block mb-1">Created</span>
-                                <span className="text-xs font-bold text-slate-900 block">Feb 28</span>
-                            </div>
-                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span className="text-[9px] font-black text-slate-400 block mb-1">Due Date</span>
-                                <span className="text-xs font-bold text-slate-900 block">Mar 10</span>
-                            </div>
+            {!sla?.slaDurationDays ? (
+                <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
+                    <div className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[9px] font-bold border border-slate-200">No SLA</div>
+                }>
+                    <div className="flex flex-col items-center justify-center h-full py-10 gap-4 text-slate-300">
+                        <div className="h-14 w-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
+                            <Clock className="h-6 w-6 text-slate-300" />
                         </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
-                                <span>Progress</span>
-                                <span>{Math.round(progress)}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                <div className={cn("h-full transition-all duration-1000", slaColor)} style={{ width: `${progress}%` }} />
-                            </div>
-                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
-                                <span>Threshold: {warningThreshold} Days</span>
-                                <span>SLA Target: {sla?.slaDurationDays || 30} Days</span>
-                            </div>
+                        <div className="text-center">
+                            <p className="text-[11px] font-black text-slate-400 tracking-widest">NO SLA ASSIGNED</p>
+                            <p className="text-[9px] font-bold text-slate-300 mt-1">This demand has no SLA configuration</p>
                         </div>
                     </div>
-                </div>
-            </DetailCard>
+                </DetailCard>
+            ) : (
+                <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
+                    <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100">Healthy Stable</div>
+                }>
+                    <div className="flex flex-col h-full">
+                        <div className="text-center py-4 mb-4">
+                            <span className={cn("text-3xl font-black tracking-tighter", remainingDays < 0 ? "text-rose-600" : remainingDays <= 5 ? "text-orange-600" : "text-emerald-600")}>
+                                {remainingDays < 0 ? `${Math.abs(remainingDays)} Days Over` : `${remainingDays} Days Remaining`}
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                    <span className="text-[9px] font-black text-slate-400 block mb-1">Created</span>
+                                    <span className="text-xs font-bold text-slate-900 block">Feb 28</span>
+                                </div>
+                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                    <span className="text-[9px] font-black text-slate-400 block mb-1">Due Date</span>
+                                    <span className="text-xs font-bold text-slate-900 block">Mar 10</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
+                                    <span>Progress</span>
+                                    <span>{Math.round(progress)}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                    <div className={cn("h-full transition-all duration-1000", slaColor)} style={{ width: `${progress}%` }} />
+                                </div>
+                                <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
+                                    <span>Threshold: {warningThreshold} Days</span>
+                                    <span>SLA Target: {sla?.slaDurationDays || 30} Days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </DetailCard>
+            )}
         </div>
     );
 };
@@ -249,60 +265,226 @@ const RoleInfoTab = ({ demand, role }) => {
 
 /**
  * --- TAB 3: APPROVAL FLOW ---
+ *
+ * Stages:
+ *  1. Created                  → Always complete (demand exists)
+ *  2. Delivery Manager Approved → complete when status = APPROVED | FULFILLED | ACTIVE | REJECTED
+ *  3. Resource Manager Approved → complete if FULFILLED/ACTIVE, rejected if REJECTED, pending if APPROVED
+ *  4. Final Confirmation        → complete if FULFILLED | ACTIVE
  */
 const ApprovalFlowTab = ({ demand }) => {
+    const rawStatus = demand?.demandStatus?.toUpperCase() || '';
+    const rejectionReason = demand?.rejectionReason || null;
+
+    // ── Derive step statuses from real demand status ──────────────────────────
+    const dmDone = ['APPROVED', 'FULFILLED', 'ACTIVE', 'REJECTED'].includes(rawStatus);
+    const dmPending = rawStatus === 'REQUESTED' || rawStatus === 'DRAFT';
+
+    const rmDone = ['FULFILLED', 'ACTIVE'].includes(rawStatus);
+    const rmRejected = rawStatus === 'REJECTED';
+    const rmPending = rawStatus === 'APPROVED';
+
+    const finalDone = ['FULFILLED', 'ACTIVE'].includes(rawStatus);
+
     const steps = [
-        { label: "Created", status: "complete", date: "Feb 28" },
-        { label: "Resource Manager Approved", status: "complete", date: "Mar 01" },
-        { label: "Additional Approval Required", status: "pending" },
-        { label: "Final Confirmation", status: "future" }
+        {
+            label: "Created",
+            subLabel: rawStatus === 'DRAFT' ? 'DRAFT' : rawStatus === 'REQUESTED' ? 'REQUESTED' : null,
+            status: "complete",
+        },
+        {
+            label: "Delivery Manager Approved",
+            status: dmDone ? "complete" : dmPending ? "pending" : "future",
+        },
+        {
+            label: "Resource Manager Approved",
+            status: rmDone ? "complete" : rmRejected ? "rejected" : rmPending ? "pending" : "future",
+            // Pass rejection reason only to the RM step
+            rejectionReason: rmRejected ? rejectionReason : null,
+        },
+        {
+            label: "Final Confirmation",
+            status: finalDone ? "complete" : "future",
+        },
     ];
+
+    // ── Step visual config ────────────────────────────────────────────────────
+    const stepStyle = {
+        complete: {
+            circle: "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-emerald-500/10",
+            text: "text-slate-900",
+            icon: <CheckCircle2 className="h-5 w-5" />,
+        },
+        pending: {
+            circle: "bg-amber-50 border-amber-500 text-amber-600 animate-pulse shadow-amber-500/10",
+            text: "text-amber-600",
+            icon: <History className="h-5 w-5" />,
+        },
+        rejected: {
+            circle: "bg-rose-50 border-rose-500 text-rose-600 shadow-rose-500/10",
+            text: "text-rose-600",
+            icon: <XCircle className="h-5 w-5" />,
+        },
+        future: {
+            circle: "bg-white border-slate-200 text-slate-300",
+            text: "text-slate-400",
+            icon: <div className="h-2 w-2 rounded-full bg-slate-200" />,
+        },
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+            {/* ── STEPPER CARD ─────────────────────────────────────────────── */}
             <DetailCard title="Sequential Governance Pipeline" icon={ShieldCheck}>
                 <div className="py-6 sm:py-12 px-2 sm:px-6">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative gap-8 md:gap-0">
-                        {/* Connecting Lines (Desktop) */}
-                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
-                        {/* Connecting Lines (Mobile) */}
+
+                        {/* Connecting line — desktop */}
+                        <div className="hidden md:block absolute top-5 left-0 w-full h-0.5 bg-slate-100 z-0" />
+                        {/* Connecting line — mobile */}
                         <div className="md:hidden absolute left-5 top-0 w-0.5 h-full bg-slate-100 z-0" />
 
-                        {steps.map((step, i) => (
-                            <div key={i} className="flex flex-row md:flex-col items-center md:items-center gap-4 relative z-10 w-full md:w-1/4">
-                                <div className={cn(
-                                    "h-10 w-10 min-w-[40px] rounded-full flex items-center justify-center border-2 transition-all shadow-sm",
-                                    step.status === 'complete' ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-emerald-500/10" :
-                                        step.status === 'pending' ? "bg-amber-50 border-amber-500 text-amber-600 animate-pulse shadow-amber-500/10" :
-                                            "bg-white border-slate-200 text-slate-300"
-                                )}>
-                                    {step.status === 'complete' ? <CheckCircle2 className="h-5 w-5" /> :
-                                        step.status === 'pending' ? <History className="h-5 w-5" /> :
-                                            <div className="h-2 w-2 rounded-full bg-slate-200" />}
-                                </div>
-                                <div className="text-left md:text-center px-0 md:px-4">
-                                    <p className={cn(
-                                        "text-[10px] font-black tracking-tight mb-1",
-                                        step.status === 'complete' ? "text-slate-900" :
-                                            step.status === 'pending' ? "text-amber-600" : "text-slate-400"
+                        {steps.map((step, i) => {
+                            const style = stepStyle[step.status] || stepStyle.future;
+                            return (
+                                <div
+                                    key={i}
+                                    className="flex flex-row md:flex-col items-center md:items-center gap-4 relative z-10 w-full md:w-1/4"
+                                >
+                                    {/* Circle icon */}
+                                    <div className={cn(
+                                        "h-10 w-10 min-w-[40px] rounded-full flex items-center justify-center border-2 transition-all shadow-sm",
+                                        style.circle
                                     )}>
-                                        {step.label}
-                                    </p>
-                                    {step.date && <p className="text-[9px] font-bold text-slate-400 tracking-widest font-mono">{step.date}</p>}
+                                        {style.icon}
+                                    </div>
+
+                                    {/* Label block */}
+                                    <div className="text-left md:text-center px-0 md:px-2">
+                                        <p className={cn(
+                                            "text-[10px] font-black tracking-tight mb-0.5",
+                                            style.text
+                                        )}>
+                                            {step.label}
+                                        </p>
+
+                                        {/* Sub-label for Created step (shows current raw status) */}
+                                        {step.subLabel && (
+                                            <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-black tracking-widest">
+                                                {step.subLabel}
+                                            </span>
+                                        )}
+
+                                        {/* Rejected badge + reason on Stage 3 */}
+                                        {step.status === 'rejected' && (
+                                            <div className="flex flex-col items-start md:items-center gap-1 mt-1">
+                                                <span className="inline-block px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[8px] font-black tracking-widest border border-rose-200">
+                                                    REJECTED
+                                                </span>
+                                                {step.rejectionReason && (
+                                                    <span
+                                                        title={step.rejectionReason}
+                                                        className="text-[9px] font-bold text-rose-500 italic max-w-[120px] truncate"
+                                                    >
+                                                        &ldquo;{step.rejectionReason}&rdquo;
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Pending badge */}
+                                        {step.status === 'pending' && (
+                                            <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded text-[8px] font-black tracking-widest border border-amber-200">
+                                                AWAITING
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </DetailCard>
 
-            <div className="p-4 sm:p-6 bg-amber-50 border border-amber-100 rounded-2xl gap-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm">
-                <div className="flex items-center gap-4 text-amber-700">
-                    <Info className="h-5 w-5 shrink-0" />
-                    <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">Action Required: This demand currently awaits parallel verification from structural leads.</span>
+            {/* ── CONDITIONAL STATUS BANNER ───────────────────────────────── */}
+
+            {/* REJECTED — RM rejected the demand */}
+            {rmRejected && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl shadow-sm overflow-hidden">
+                    {/* Top row */}
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 text-rose-700">
+                            <XCircle className="h-5 w-5 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                                This demand was <strong>rejected by the Resource Manager</strong>. Please review the requirements and resubmit.
+                            </span>
+                        </div>
+                        <div className="w-full sm:w-auto text-center px-4 py-2 bg-rose-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-rose-600/20 whitespace-nowrap">
+                            RM REJECTED
+                        </div>
+                    </div>
+
+                    {/* Rejection Reason callout */}
+                    {rejectionReason && (
+                        <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-4 bg-white border border-rose-200 rounded-xl">
+                            <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5">
+                                <AlertTriangle className="h-3 w-3" />
+                                Rejection Reason
+                            </p>
+                            <p className="text-sm font-bold text-rose-700 leading-relaxed">
+                                &ldquo;{rejectionReason}&rdquo;
+                            </p>
+                        </div>
+                    )}
                 </div>
-                <div className="w-full sm:w-auto text-center px-4 py-2 bg-amber-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-amber-600/20">Requires Additional Approval: Yes</div>
-            </div>
+            )}
+
+            {/* APPROVED — DM approved, waiting on RM */}
+            {rmPending && (
+                <div className="p-4 sm:p-6 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                    <div className="flex items-center gap-4 text-amber-700">
+                        <Info className="h-5 w-5 shrink-0" />
+                        <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                            Delivery Manager has approved this demand. Awaiting <strong>Resource Manager approval</strong> to proceed to final confirmation.
+                        </span>
+                    </div>
+                    <div className="w-full sm:w-auto text-center px-4 py-2 bg-amber-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-amber-600/20 whitespace-nowrap">
+                        AWAITING RM
+                    </div>
+                </div>
+            )}
+
+            {/* REQUESTED/DRAFT — waiting on DM */}
+            {dmPending && (
+                <div className="p-4 sm:p-6 bg-blue-50 border border-blue-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                    <div className="flex items-center gap-4 text-blue-700">
+                        <Info className="h-5 w-5 shrink-0" />
+                        <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                            This demand has been created and is awaiting <strong>Delivery Manager approval</strong>.
+                        </span>
+                    </div>
+                    <div className="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-blue-600/20 whitespace-nowrap">
+                        AWAITING DM
+                    </div>
+                </div>
+            )}
+
+            {/* FULFILLED/ACTIVE — all stages complete */}
+            {finalDone && (
+                <div className="p-4 sm:p-6 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                    <div className="flex items-center gap-4 text-emerald-700">
+                        <CheckCircle2 className="h-5 w-5 shrink-0" />
+                        <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                            All approvals complete. This demand has been <strong>fulfilled</strong> and a resource has been successfully allocated.
+                        </span>
+                    </div>
+                    <div className="w-full sm:w-auto text-center px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-emerald-600/20 whitespace-nowrap">
+                        FULFILLED
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
@@ -404,7 +586,7 @@ const AllocationResultsTab = ({ results }) => {
                                         "h-1.5 w-1.5 rounded-full",
                                         activeSubTab === 'Successful' ? "bg-emerald-500" : "bg-rose-500"
                                     )} />
-                                    <span>{activeSubTab === 'Successful' ? item.resourceName : `Resource ${item.resourceId}`}</span>
+                                    <span>{item.resourceName || `Resource ${item.resourceId}`}</span>
                                 </div>
                                 {selectedItem === item && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
                             </button>
@@ -425,7 +607,7 @@ const AllocationResultsTab = ({ results }) => {
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-3">
                                     <UserPlus className={cn("h-5 w-5", activeSubTab === 'Successful' ? "text-indigo-600" : "text-rose-600")} />
-                                    {activeSubTab === 'Successful' ? selectedItem.resourceName : `Resource Details (ID: ${selectedItem.resourceId})`}
+                                    {selectedItem.resourceName || `Resource ${selectedItem.resourceId}`}
                                 </h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                                     {activeSubTab === 'Successful' ? "Allocation successfully confirmed" : "Allocation failure analysis"}
@@ -464,8 +646,8 @@ const AllocationResultsTab = ({ results }) => {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-[140px,1fr] items-center py-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource ID</span>
-                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceId}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceName || selectedItem.resourceId}</span>
                                         </div>
                                         <div className="space-y-3 p-6 bg-rose-50/50 border border-rose-100 rounded-2xl relative overflow-hidden group">
                                             <div className="absolute right-0 top-0 p-4 opacity-[0.03] scale-150 rotate-12">
@@ -820,7 +1002,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
         ...(isRM ? [{ id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare }] : []),
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
-        ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
+        ...(!isSoft && demand.demandSlaId ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
         ...(isRM && allocationResults ? [{ id: 'allocationResults', label: 'Allocation Results', icon: Activity }] : [])
     ];
 
@@ -874,20 +1056,25 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                                 <div className="flex items-center gap-3 sm:gap-4 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <div className="flex flex-col items-end pr-2 border-r border-slate-200 text-right">
                                         <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Status</span>
-                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap", isSoft ? "text-slate-400" : (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
-                                            {isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
+                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap",
+                                            !demand.demandSlaId ? "text-slate-400"
+                                                : isSoft ? "text-slate-400"
+                                                    : (sla?.remainingDays || 0) < 0 ? "text-rose-600"
+                                                        : (sla?.remainingDays || 0) <= 5 ? "text-orange-600"
+                                                            : "text-emerald-600")}>
+                                            {!demand.demandSlaId ? "No SLA" : isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
                                         </span>
                                     </div>
                                     <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
                                         <svg className="h-8 w-8 sm:h-10 sm:w-10 transform -rotate-90">
                                             <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke="#e2e8f0" />
-                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
+                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={!demand.demandSlaId || isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
                                                 strokeDasharray="100 100"
-                                                strokeDashoffset={isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
+                                                strokeDashoffset={!demand.demandSlaId || isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
                                             />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                                            {isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                            {!demand.demandSlaId || isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
                                         </div>
                                     </div>
                                 </div>
