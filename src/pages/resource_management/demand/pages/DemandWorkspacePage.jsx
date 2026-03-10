@@ -293,7 +293,7 @@ const DemandWorkspacePage = () => {
                                     <>
                                         <DemandList
                                             demands={filteredDemands}
-                                            onViewDetail={(demand) => navigate(`/resource-management/demand/${demand.id}`)}
+                                            onViewDetail={(demand) => navigate(`/resource-management/demand/${demand.id}`, { state: { clientName: demand.clientName || demand.client } })}
                                             onEdit={(demand) => {
                                                 setEditingDemand(demand);
                                                 setEditModalOpen(true);

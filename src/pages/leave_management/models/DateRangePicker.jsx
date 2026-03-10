@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { toast } from "react-toastify";
 import axios from "axios";
  
@@ -44,6 +44,9 @@ const DateRangePicker = ({
   };
  
   const handleSelect = (date) => {
+    if(holidaysDays.some((holiday)=>isSameDay(date, holiday))){
+      return;
+    }
     setSelected(date);
     if (onChange) onChange(date);
     setOpen(false);

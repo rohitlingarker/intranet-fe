@@ -6,6 +6,7 @@ import { YearDropdown } from "./EmployeeLeaveBalances";
 
 export default function LeaveSection({ employeeId, leaveId }) {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "projectMembers"
+  console.log("leave section", employeeId, leaveId);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   return (
