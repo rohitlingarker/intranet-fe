@@ -170,7 +170,7 @@ const SearchableCombobox = ({
 
 
 
-const CreateClient = ({ mode, initialData, onSuccess }) => {
+const CreateClient = ({ mode, initialData, onSuccess, isEditable }) => {
   const { getEnumValues } = useEnums();
   const CLIENT_TYPES = getEnumValues("ClientType");
   const PRIORITY_LEVELS = getEnumValues("PriorityLevel");
@@ -411,7 +411,7 @@ const CreateClient = ({ mode, initialData, onSuccess }) => {
         </div> */}
         <div className="grid gap-3 sm:grid-cols-2 col-span-1 md:col-span-2">
           {["SLA", "compliance", "escalationContact", "assets"].map((key) => {
-            const isDisabled = mode === "edit";
+            const isDisabled = isEditable;
 
             return (
               <div

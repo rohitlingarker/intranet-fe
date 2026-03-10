@@ -65,14 +65,26 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
 
                 {/* 4. SLA Compliance */}
                 <div className="col-span-2 flex justify-center">
-                    <SLABadge
-                        days={demand.slaDays}
-                        isSoft={
-                            activeTab === 'soft' ||
-                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
-                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
-                        }
-                    />
+                    {(demand.demandSlaId || demand.slaId) ? (
+                        <SLABadge
+                            days={demand.slaDays}
+                            isSoft={
+                                !demand.demandSlaId && (
+                                    activeTab === 'soft' ||
+                                    ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
+                                    ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
+                                )
+                            }
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-lg border min-w-[80px] bg-slate-50 border-slate-100 text-slate-400">
+                            <div className="flex items-center gap-1">
+                                <Clock className="h-2 w-2 opacity-40" />
+                                <span className="text-[8px] font-black tracking-widest uppercase">SLA</span>
+                            </div>
+                            <span className="text-[11px] font-black">No SLA</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 5. Status */}
