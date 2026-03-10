@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
-    Search, Filter, Activity, AlertTriangle, Zap, ShieldAlert,
+    Search, Filter, Activity, AlertTriangle, Zap, ShieldAlert, XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DemandKPIStrip from '../components/DemandKPIStrip';
@@ -200,7 +200,8 @@ const DemandWorkspacePage = () => {
                                         { id: 'breached', label: 'Breached', icon: ShieldAlert, color: 'text-rose-600' },
                                         { id: 'at_risk', label: 'At Risk', icon: AlertTriangle, color: 'text-orange-600' },
                                         { id: 'active', label: 'Active', icon: Activity, color: 'text-indigo-600' },
-                                        { id: 'soft', label: 'Soft', icon: Zap, color: 'text-slate-600' }
+                                        { id: 'soft', label: 'Soft', icon: Zap, color: 'text-slate-600' },
+                                        { id: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-rose-600' }
                                     ].map(tab => (
                                         <button
                                             key={tab.id}
@@ -256,7 +257,9 @@ const DemandWorkspacePage = () => {
                                 <div className="col-span-3 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Demand Specifications & Context</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider uppercase">Score</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Priority</div>
-                                <div className="col-span-2 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">SLA Compliance</div>
+                                <div className="col-span-2 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">
+                                    {activeTab === 'rejected' ? 'Rejection Reason' : 'SLA Compliance'}
+                                </div>
                                 <div className="col-span-2 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Status</div>
                                 <div className="col-span-1 text-[10px] font-bold text-slate-400 tracking-wider text-center uppercase">Actions</div>
                             </div>
