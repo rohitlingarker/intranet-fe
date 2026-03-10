@@ -72,6 +72,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
         (leave) => String(leave.status).toUpperCase() === "PENDING"
       );
 
+      console.log(onlyPending)
       setPendingLeaves(onlyPending);
       setLeaveTypes(leaveTypeRes.data || []);
       setLeaveBalances(balanceRes.data || {});

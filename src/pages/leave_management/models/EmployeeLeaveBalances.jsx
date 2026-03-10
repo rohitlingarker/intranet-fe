@@ -8,6 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Listbox } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
+import { Plus } from "lucide-react";
+import LeaveUploadWizard from "./LeaveUploadWizard";
 
 export const YearDropdown = ({ value, onChange }) => {
   const currentYear = new Date().getFullYear();
@@ -76,6 +78,7 @@ const EmployeeLeaveBalances = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [showUploadWizard, setShowUploadWizard] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -131,13 +134,13 @@ const EmployeeLeaveBalances = () => {
       try {
         const res = await axios.get(
           `${BASE_URL}/api/leave-balance/autocomplete?query=${encodeURIComponent(
-            searchQuery
+            searchQuery,
           )}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
         setSuggestions(res.data);
         setShowSuggestions(true);
@@ -193,7 +196,7 @@ const EmployeeLeaveBalances = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       toast.success(res.data?.message || "Leave balances updated successfully");
@@ -219,7 +222,7 @@ const EmployeeLeaveBalances = () => {
         query === ""
           ? `${BASE_URL}/api/leave-balance/all-leave-balances/${currentYear}`
           : `${BASE_URL}/api/leave-balance/search?query=${encodeURIComponent(
-              query
+              query,
             )}`;
 
       const response = await axios.get(url, {
@@ -293,7 +296,7 @@ const EmployeeLeaveBalances = () => {
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
 
   const handlePrevious = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -366,7 +369,17 @@ const EmployeeLeaveBalances = () => {
         </div>
 
         {/* Year Dropdown beside search bar */}
-        <YearDropdown value={currentYear} onChange={setCurrentYear} />
+        <div className="relative z-50">
+          <YearDropdown value={currentYear} onChange={setCurrentYear} />
+        </div>
+
+        <button
+          onClick={() => setShowUploadWizard(true)}
+          className="flex items-center text-blue-700 font-medium hover:text-blue-900 transition-colors whitespace-nowrap"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Leave Balance
+        </button>
       </div>
 
       {/* Table */}
@@ -428,6 +441,21 @@ const EmployeeLeaveBalances = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {showUploadWizard && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            {/* Black Semi-transparent Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowUploadWizard(false)}
+            />
+
+            {/* The Wizard Content Card */}
+            <div className="relative z-10  rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+              <LeaveUploadWizard onClose={() => setShowUploadWizard(false)} />
+            </div>
           </div>
         )}
       </div>
