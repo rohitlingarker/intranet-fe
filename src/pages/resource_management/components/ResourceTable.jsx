@@ -88,8 +88,8 @@ export function ResourceTable({ resources, onResourceClick }) {
         <span className="text-xs text-muted-foreground">{resources.length} resources</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="border-b bg-muted/30">
               <th className="text-left px-4 py-2">
@@ -98,8 +98,8 @@ export function ResourceTable({ resources, onResourceClick }) {
               <th className="text-left px-4 py-2">
                 <SortHeader label="Role" sortKeyName="role" />
               </th>
-              <th className="text-left px-4 py-2 hidden sm:table-cell">
-                <span className="text-xs font-sans font-semibold text-muted-foreground uppercase tracking-wider">Skills</span>
+              <th className="text-left px-4 py-2">
+                <span className="text-xs font-sans font-semibold text-muted-foreground tracking-wider whitespace-nowrap">Skills</span>
               </th>
               <th className="text-left px-4 py-2">
                 <SortHeader label="Allocation" sortKeyName="currentAllocation" />
@@ -142,18 +142,20 @@ export function ResourceTable({ resources, onResourceClick }) {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3">
-                  <span className="text-xs text-card-foreground">{resource.role}</span>
+                <td className="px-4 py-3 max-w-[180px]">
+                  <span className="text-xs text-card-foreground truncate block font-medium" title={resource.role}>
+                    {resource.role}
+                  </span>
                 </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
-                  <div className="flex flex-wrap gap-1">
-                    {resource.skills.slice(0, 2).map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-[10px] px-1 h-4 bg-slate-100 text-slate-600 border-none">
+                <td className="px-4 py-3 max-w-[200px]">
+                  <div className="flex flex-wrap items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                    {resource.skills.slice(0, 3).map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 h-4.5 bg-slate-100 text-slate-600 border-none truncate max-w-[80px]">
                         {skill}
                       </Badge>
                     ))}
-                    {resource.skills.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground font-medium">+{resource.skills.length - 2}</span>
+                    {resource.skills.length > 3 && (
+                      <span className="text-[10px] text-muted-foreground font-bold shrink-0">+{resource.skills.length - 3}</span>
                     )}
                   </div>
                 </td>
@@ -185,4 +187,4 @@ export function ResourceTable({ resources, onResourceClick }) {
       </div>
     </div>
   )
-}
+};

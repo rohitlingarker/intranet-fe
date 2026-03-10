@@ -31,22 +31,22 @@ const userManagementSubmenu = [
 
 // DATA FOR THE POP LABEL / SUBMENU
 const resourceManagementSubmenu = [
-  { label: "Resource Management", to: "/resource-management" },
+  { label: "Client Management", to: "/resource-management" },
   { label: "Resource Project Management", to: "/resource-management/projects" },
-  // { label: "Resource Allocation", to: "/resource-management/allocation" },
-  // { label: "Skill Matrix", to: "/resource-management/skills" },
-  {
-    label: "Workforce Availability",
-    to: "/resource-management/workforce-availability",
-  },
+  { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
+  { label: "Demand Management", to: "/resource-management/demand" },
 ];
+
+const deliveryManagerResourceManagementSubmenu = resourceManagementSubmenu.filter(
+  (item) => item.label === "Demand Management"
+);
 
 const employeeOnboardingSubmenu = [
   {
     label: "Onboarding Dashboard",
-    to: "/employee-onboarding/summary-page",
+    to: "/employee-onboarding/onboarding-summary",
     children: [
-      { label: "Summary", to: "/employee-onboarding/summary-page" },
+      { label: "Summary", to: "/employee-onboarding/onboarding-summary" },
       { label: "Analytics", to: "/employee-onboarding/analytics" },
     ],
   },
@@ -124,6 +124,7 @@ const Sidebar = ({ isCollapsed }) => {
     user?.roles?.includes("Admin") || user?.roles?.includes("Super Admin");
   const isRM = user?.roles?.includes("RESOURCE-MANAGER");
   const isPM = user?.roles?.includes("PROJECT-MANAGER");
+  const isDM = user?.roles?.includes("DELIVERY-MANAGER");
   const isGeneral = user?.roles?.includes("General");
 
   // State for User Management Hover
@@ -243,9 +244,8 @@ const Sidebar = ({ isCollapsed }) => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-64"
-      } border-r border-[#0f1a3a]`}
+      className={`fixed top-0 left-0 h-screen bg-[#081534] text-white flex flex-col z-50 transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"
+        } border-r border-[#0f1a3a]`}
     >
       {/* Branding */}
       <div className="p-6 border-b border-[#0f1a3a] flex items-center justify-between gap-3">
@@ -273,66 +273,51 @@ const Sidebar = ({ isCollapsed }) => {
         `}</style>
 
         <ul className="space-y-1">
-          {/* 1. Dashboard */}
-          <li>
-            <Link
-              to="/dashboard"
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                location.pathname === "/dashboard"
+          {
+            <li>
+              <Link
+                to="/dashboard"
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname === "/dashboard"
                   ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
                   : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-              }`}
-              title={isCollapsed ? "Dashboard" : ""}
-            >
-              <LayoutDashboard className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span>Dashboard</span>}
-            </Link>
-          </li>
+                  }`}
+                title={isCollapsed ? "Dashboard" : ""}
+              >
+                <LayoutDashboard className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Dashboard</span>}
+              </Link>
+            </li>
+          }
 
           {/* 2. Resource Management (With Pop Label/Submenu) */}
-          {(isAdmin || isRM || isPM) && (
+          {(isAdmin || isRM || isDM) && (
             <li
               ref={rmRef}
               className="relative"
-              onMouseEnter={isRM ? handleRmMouseEnter : undefined}
-              onMouseLeave={isRM ? handleRmMouseLeave : undefined}
+              onMouseEnter={(isRM || isDM) ? handleRmMouseEnter : undefined}
+              onMouseLeave={(isRM || isDM) ? handleRmMouseLeave : undefined}
             >
               {/* If Admin → Direct Link */}
-              {isAdmin && !isRM ? (
+              {isAdmin && !isRM && !isDM ? (
                 <Link
                   to="/resource-management"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    location.pathname.startsWith("/resource-management")
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management")
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                    }`}
                   title={isCollapsed ? "Resource Management" : ""}
                 >
                   <UserCog2 className="h-5 w-5 shrink-0" />
                   {!isCollapsed && <span>Resource Management</span>}
                 </Link>
-              ) : (isPM && !isRM) ? (
-                <Link
-                  to="/resource-management/projects"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    location.pathname.startsWith("/resource-management/projects")
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
-                  title={isCollapsed ? "Resource Project Management" : ""}
-                >
-                  <UserCog2 className="h-5 w-5 shrink-0" />
-                  {!isCollapsed && <span>Resource Project Management</span>}
-                </Link>
               ) : (
                 <>
-                  {/* Resource Manager → Show Hover Menu */}
+                  {/* Resource Manager / Delivery Manager → Show Hover Menu */}
                   <div
-                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                      location.pathname.startsWith("/resource-management")
-                        ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                        : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/resource-management")
+                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                      }`}
                   >
                     <UserCog2 className="h-5 w-5 shrink-0" />
 
@@ -340,40 +325,41 @@ const Sidebar = ({ isCollapsed }) => {
                       <>
                         <span className="flex-1">Resource Management</span>
                         <ChevronRight
-                          className={`h-4 w-4 transition-all duration-300 ${
-                            rmHovered ? "translate-x-1" : ""
-                          }`}
+                          className={`h-4 w-4 transition-all duration-300 ${rmHovered ? "translate-x-1" : ""
+                            }`}
                         />
                       </>
                     )}
                   </div>
 
-                  {/* Show submenu only for Resource Manager */}
-                  {rmHovered && isRM && (
+                  {/* Show submenu only for Resource Manager or Delivery Manager */}
+                  {rmHovered && (isRM || isDM) && (
                     <ul
-                      className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                        isCollapsed ? "left-20" : "left-64"
-                      }`}
+                      className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                        }`}
                       style={{ top: `${submenuTop}px` }}
                       onMouseEnter={handleRmMouseEnter}
                       onMouseLeave={handleRmMouseLeave}
                     >
-                      {resourceManagementSubmenu.map((item) => (
-                        <li key={item.label}>
-                          <NavLink
-                            to={item.to}
-                            className={({ isActive }) =>
-                              `block px-4 py-2 text-xs transition-colors ${
-                                isActive
+                      {(isDM
+                        ? deliveryManagerResourceManagementSubmenu
+                        : resourceManagementSubmenu
+                      ).map((item) => (
+                          <li key={item.label}>
+                            <NavLink
+                              to={item.to}
+                              end
+                              className={({ isActive }) =>
+                                `block px-4 py-2 text-xs transition-colors ${isActive
                                   ? "bg-blue-100 text-[#0a174e] font-semibold"
                                   : "hover:bg-[#263383] hover:text-white"
-                              }`
-                            }
-                          >
-                            {item.label}
-                          </NavLink>
-                        </li>
-                      ))}
+                                }`
+                              }
+                            >
+                              {item.label}
+                            </NavLink>
+                          </li>
+                        ))}
                     </ul>
                   )}
                 </>
@@ -390,11 +376,10 @@ const Sidebar = ({ isCollapsed }) => {
               onMouseLeave={handleUserMouseLeave}
             >
               <div
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                  location.pathname.startsWith("/user-management")
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname.startsWith("/user-management")
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  }`}
                 title={isCollapsed ? "User Management" : ""}
               >
                 <Users className="h-5 w-5 shrink-0" />
@@ -402,9 +387,8 @@ const Sidebar = ({ isCollapsed }) => {
                   <>
                     <span className="flex-1">User Management</span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        userHovered ? "rotate-180" : ""
-                      }`}
+                      className={`h-4 w-4 transition-transform duration-200 ${userHovered ? "rotate-180" : ""
+                        }`}
                     />
                   </>
                 )}
@@ -413,9 +397,8 @@ const Sidebar = ({ isCollapsed }) => {
               {/* User Management Submenu */}
               {userHovered && (
                 <ul
-                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-20" : "left-64"
-                  }`}
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                    }`}
                   style={{ top: `${submenuTop}px` }}
                   onMouseEnter={handleUserMouseEnter}
                   onMouseLeave={handleUserMouseLeave}
@@ -425,10 +408,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -441,7 +423,7 @@ const Sidebar = ({ isCollapsed }) => {
             </li>
           )}
 
-          {/* 4. Employee Onboarding (Non-General) */}
+          {/* 4. Employee Onboarding (Non-General, Non-DM) */}
           {!isGeneral && (
             <li
               ref={eoRef}
@@ -450,12 +432,11 @@ const Sidebar = ({ isCollapsed }) => {
               onMouseLeave={handleEoMouseLeave}
             >
               <div
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
-                  location.pathname == "/employee-onboarding" ||
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${location.pathname == "/employee-onboarding" ||
                   location.pathname == "/employee-onboarding/"
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                }`}
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  }`}
                 title={isCollapsed ? "Employee Onboarding" : ""}
               >
                 <Handshake className="h-5 w-5 shrink-0" />
@@ -464,9 +445,8 @@ const Sidebar = ({ isCollapsed }) => {
                   <>
                     <span className="flex-1">Employee Onboarding</span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        eoHovered ? "rotate-180" : ""
-                      }`}
+                      className={`h-4 w-4 transition-transform duration-200 ${eoHovered ? "rotate-180" : ""
+                        }`}
                     />
                   </>
                 )}
@@ -475,9 +455,8 @@ const Sidebar = ({ isCollapsed }) => {
               {/* SAME POPUP STYLE AS RESOURCE MANAGEMENT */}
               {eoHovered && (
                 <ul
-                  className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-20" : "left-64"
-                  }`}
+                  className={`fixed w-64 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-20" : "left-64"
+                    }`}
                   style={{ top: `${submenuTop}px` }}
                   onMouseEnter={() => {
                     parentHoverRef.current = true;
@@ -500,10 +479,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={item.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -515,9 +493,8 @@ const Sidebar = ({ isCollapsed }) => {
               )}
               {childMenu && (
                 <ul
-                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${
-                    isCollapsed ? "left-[300px]" : "left-[520px]"
-                  }`}
+                  className={`fixed w-56 bg-white text-[#0a174e] rounded-lg shadow-2xl z-[9999] py-2 border ${isCollapsed ? "left-[300px]" : "left-[520px]"
+                    }`}
                   style={{ top: `${childTop - 4}px` }}
                   onMouseEnter={() => {
                     childHoverRef.current = true;
@@ -537,10 +514,9 @@ const Sidebar = ({ isCollapsed }) => {
                       <NavLink
                         to={child.to}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-xs transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-[#0a174e] font-semibold"
-                              : "hover:bg-[#263383] hover:text-white"
+                          `block px-4 py-2 text-xs transition-colors ${isActive
+                            ? "bg-blue-100 text-[#0a174e] font-semibold"
+                            : "hover:bg-[#263383] hover:text-white"
                           }`
                         }
                       >
@@ -560,11 +536,10 @@ const Sidebar = ({ isCollapsed }) => {
               <li key={item.name}>
                 <Link
                   to={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                    isActive
-                      ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                      : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${isActive
+                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                    }`}
                   title={isCollapsed ? item.name : ""}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
@@ -580,3 +555,17 @@ const Sidebar = ({ isCollapsed }) => {
 };
 
 export default Sidebar;
+
+// : (isPM && !isRM && !isDM) ? (
+//                 <Link
+//                   to="/resource-management/projects"
+//                   className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management/projects")
+//                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+//                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+//                     }`}
+//                   title={isCollapsed ? "Resource Project Management" : ""}
+//                 >
+//                   <UserCog2 className="h-5 w-5 shrink-0" />
+//                   {!isCollapsed && <span>Resource Project Management</span>}
+//                 </Link>
+//               )

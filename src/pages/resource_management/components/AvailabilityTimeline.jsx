@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -138,10 +138,16 @@ function groupByRole(resources) {
 
 // ----- Sub-components -----
 
-function TimelineHeader({ zoom, ticks, todayOffset, totalDays, dayWidth }) {
+const TimelineHeader = memo(function TimelineHeader({
+  zoom,
+  ticks,
+  todayOffset,
+  totalDays,
+  dayWidth,
+}) {
   return (
     <div
-      className="relative h-10 border-b bg-muted/30 z-10"
+      className="sticky top-0 h-10 border-b bg-white/95 backdrop-blur-sm"
       style={{ width: `${totalDays * dayWidth}px` }}
     >
       {ticks.map((tick, i) => (
@@ -157,7 +163,7 @@ function TimelineHeader({ zoom, ticks, todayOffset, totalDays, dayWidth }) {
       ))}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary z-20"
+          className="absolute top-0 h-full w-px bg-primary"
           style={{ left: `${todayOffset}px` }}
         >
           <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 rounded-b leading-tight py-0.5 shadow-sm">
@@ -167,9 +173,9 @@ function TimelineHeader({ zoom, ticks, todayOffset, totalDays, dayWidth }) {
       )}
     </div>
   );
-}
+});
 
-function AllocationBar({
+const AllocationBar = memo(function AllocationBar({
   block,
   startDate,
   dayWidth,
@@ -177,86 +183,76 @@ function AllocationBar({
   onResourceClick,
   style,
 }) {
-  const blockStart = parseDate(block.startDate);
-  const blockEnd = parseDate(block.endDate);
-  const offsetDays = daysBetween(startDate, blockStart);
-  const durationDays = daysBetween(blockStart, blockEnd);
-
-  const left = offsetDays * dayWidth;
+  const startOffset = daysBetween(startDate, parseDate(block.startDate)) * dayWidth;
+  const durationDays = daysBetween(parseDate(block.startDate), parseDate(block.endDate));
   const width = Math.max(durationDays * dayWidth, 4);
-  const barHeight = TRACK_HEIGHT - 6;
 
   const isAvailability = block.isAvailability || block.allocation === 0;
+  const barColor = isAvailability
+    ? "bg-slate-50 border-slate-200 border-dashed"
+    : getBarColor(block.allocation, block.tentative);
+  const hoverColor = isAvailability
+    ? "hover:bg-slate-100"
+    : getBarHoverColor(block.allocation, block.tentative);
+
+  const projectName = block.project || block.projectName || block.demandName || (isAvailability ? "Available" : "Project");
 
   return (
     <div
+      className={cn(
+        "absolute rounded-md border flex flex-col justify-center px-1.5 sm:px-2 transition-all group/bar shadow-sm overflow-hidden",
+        barColor,
+        hoverColor,
+        isAvailability ? "cursor-default text-slate-400" : "cursor-pointer text-white",
+      )}
       style={{
-        position: "absolute",
-        left: `${left}px`,
+        left: `${startOffset}px`,
         width: `${width}px`,
-        height: `${barHeight}px`,
         ...style,
       }}
-      className="z-20 group hover:z-[100]"
+      onClick={() => !isAvailability && onResourceClick && onResourceClick(resource)}
     >
-      <button
-        type="button"
-        className={cn(
-          "w-full h-full rounded shadow-sm border transition-colors flex items-center px-3 overflow-hidden",
-          getBarColor(block.allocation, block.tentative),
-          getBarHoverColor(block.allocation, block.tentative),
-          isAvailability && "cursor-default",
-        )}
-        onClick={() => !isAvailability && onResourceClick(resource)}
-      >
-        {width > 60 && (
-          <span
-            className={cn(
-              "text-[11px] font-medium truncate block leading-none",
-              block.tentative ? "text-slate-600" : "text-white",
-            )}
-          >
-            {isAvailability
-              ? "Available (100%)"
-              : `${block.project} (${block.allocation}%)`}
-          </span>
-        )}
-      </button>
+      <div className="flex items-center gap-1 sm:gap-2 truncate max-w-full">
+        {block.tentative && <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+        <span className={cn(
+          "text-[7px] sm:text-[9px] font-sans font-bold truncate whitespace-nowrap",
+          !isAvailability && "drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]"
+        )}>
+          {isAvailability ? "Available" : `${block.allocation}%`} {block.tentative ? "(Proposed)" : ""}
+        </span>
+      </div>
+      {width > 40 && (
+        <p className={cn(
+          "text-[6px] sm:text-[7px] font-sans font-medium truncate leading-none mt-0.5 whitespace-nowrap",
+          !isAvailability ? "text-white/90" : "text-slate-400"
+        )}>
+          {projectName}
+        </p>
+      )}
 
-      <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
-        <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[220px]">
-          <div className="space-y-2">
-            <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">
-              {isAvailability ? "Availability Info" : block.project}
-            </p>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <span className="text-slate-500 text-[10px]">
-                {isAvailability ? "Availability" : "Allocation"}
-              </span>
-              <span className="font-semibold text-slate-900 text-[10px] text-right">
-                {isAvailability ? "100%" : `${block.allocation}%`}
-              </span>
-              <span className="text-slate-500 text-[10px]">Period</span>
-              <span className="font-semibold text-slate-900 text-[10px] text-right">
-                {block.startDate} to {block.endDate}
-              </span>
-            </div>
-            {block.tentative && (
-              <div className="mt-1 flex items-center gap-1.5 pt-1 border-t">
-                <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                <span className="text-[10px] font-bold text-amber-600 uppercase">
-                  Tentative
-                </span>
+      {/* Tooltip Overlay (Desktop) */}
+      {!isAvailability && (
+        <div className="absolute hidden group-hover/bar:block bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
+          <div className="bg-white p-2 shadow-xl border border-border rounded-md min-w-[140px] text-slate-900">
+            <p className="text-[10px] font-bold border-b pb-1 mb-1">{projectName}</p>
+            <div className="space-y-0.5">
+              <div className="flex justify-between gap-4 text-[9px]">
+                <span className="text-slate-500">Allocation:</span>
+                <span className="font-bold">{block.allocation}%</span>
               </div>
-            )}
+              <div className="flex justify-between gap-4 text-[9px]">
+                <span className="text-slate-500">Period:</span>
+                <span className="font-medium">{block.startDate} - {block.endDate}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
-}
+});
 
-function ResourceRow({
+const ResourceRow = memo(function ResourceRow({
   resource,
   startDate,
   endDate,
@@ -268,125 +264,107 @@ function ResourceRow({
   weeklyTicks,
   realToday,
 }) {
-  const totalDays = daysBetween(startDate, endDate);
+  const totalDays = dayWidth > 0 ? daysBetween(startDate, endDate) : 0;
+  const timelineBlocks = resource.allocationTimeline || resource.allocations || [];
 
+  // Logic to handle overlapping projects (tracks)
   const blocksWithTracks = useMemo(() => {
-    const visibleProjects = (resource.allocationTimeline || []).filter((b) => {
+    const visibleBlocks = timelineBlocks.filter((b) => {
       const bStart = parseDate(b.startDate);
       const bEnd = parseDate(b.endDate);
       return bEnd >= startDate && bStart <= endDate;
     });
 
-    const projectBlocks = visibleProjects.map((block, index) => ({
-      ...block,
-      trackIndex: index,
-    }));
+    // Simple track assignment
+    const tracks = [];
+    return visibleBlocks.map((block) => {
+      const bStart = parseDate(block.startDate);
+      const bEnd = parseDate(block.endDate);
 
-    // Find the track index of the project that ends the latest among visible ones
-    let latestTrackIndex = 0;
-    if (projectBlocks.length > 0) {
-      let maxEndDate = parseDate(projectBlocks[0].endDate);
-      projectBlocks.forEach((pb) => {
-        const d = parseDate(pb.endDate);
-        if (d > maxEndDate) {
-          maxEndDate = d;
-          latestTrackIndex = pb.trackIndex;
-        }
-      });
-    }
-
-    // Handle availability bar
-    const timelineEndDate = endDate;
-    const today = realToday || parseDate(new Date());
-    let availStart = null;
-
-    if (
-      !resource.allocationTimeline ||
-      resource.allocationTimeline.length === 0
-    ) {
-      availStart = today;
-    } else {
-      // Find the latest end date among ALL projects to determine when availability actually starts
-      const globalLatestEnd = resource.allocationTimeline.reduce(
-        (latest, b) => {
-          const d = parseDate(b.endDate);
-          return d > latest ? d : latest;
-        },
-        parseDate(resource.allocationTimeline[0].endDate),
-      );
-
-      const availableFrom = resource.availableFrom
-        ? parseDate(resource.availableFrom)
-        : today;
-      availStart =
-        globalLatestEnd > availableFrom ? globalLatestEnd : availableFrom;
-    }
-
-    const result = [...projectBlocks];
-
-    if (availStart && availStart < timelineEndDate) {
-      // Clip start date to visible window
-      const actualStart = availStart < startDate ? startDate : availStart;
-
-      if (actualStart < timelineEndDate) {
-        result.push({
-          project: "Available (100%)",
-          startDate: actualStart.toISOString().split("T")[0],
-          endDate: timelineEndDate.toISOString().split("T")[0],
-          allocation: 0,
-          isAvailability: true,
-          trackIndex: latestTrackIndex, // Place on the same track as the latest ending project
-        });
+      let trackIndex = 0;
+      while (tracks[trackIndex] && tracks[trackIndex] > bStart) {
+        trackIndex++;
       }
-    }
+      tracks[trackIndex] = bEnd;
 
-    return result;
-  }, [
-    resource.allocationTimeline,
-    resource.availableFrom,
-    startDate,
-    endDate,
-    realToday,
-  ]);
+      return { ...block, trackIndex };
+    });
+  }, [timelineBlocks, startDate, endDate]);
+
+  const barHeight = 28;
+  const barPadding = 4;
 
   return (
     <div
-      className="relative border-b border-border/30 hover:bg-slate-50/30 transition-colors hover:z-50"
-      style={{ height: `${rowHeight}px`, width: `${totalDays * dayWidth}px` }}
+      className="relative flex items-center group/row border-b border-slate-50 hover:bg-slate-50/10 transition-colors shrink-0"
+      style={{
+        height: `${rowHeight}px`,
+        width: `${totalDays * dayWidth}px`,
+      }}
     >
-      {/* Background Grid - Combine major and minor ticks */}
-      {(weeklyTicks || ticks).map((tick, i) => (
+      {/* Background Month Stripes */}
+      <div className="absolute inset-0 flex pointer-events-none opacity-[0.02]">
+        {ticks.map((tick, i) => (
+          <div
+            key={i}
+            className={cn("h-full border-r border-slate-900 last:border-0")}
+            style={{ width: `${tick.width}px` }}
+          />
+        ))}
+      </div>
+
+      {/* Weekly Grid Lines (Light) */}
+      {weeklyTicks?.map((tick, i) => (
         <div
           key={i}
-          className={cn(
-            "absolute top-0 h-full border-l",
-            tick.isMonth ? "border-border/20" : "border-border/10",
-          )}
+          className="absolute top-0 bottom-0 border-l border-slate-100/50 pointer-events-none"
           style={{ left: `${tick.offset}px` }}
         />
       ))}
+
+      {/* Today Highlight Column */}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary/20 z-10"
-          style={{ left: `${todayOffset}px` }}
+          className="absolute top-0 bottom-0 bg-blue-500/5 border-x border-blue-500/10 pointer-events-none"
+          style={{ left: `${todayOffset}px`, width: `${dayWidth}px` }}
         />
       )}
-      {blocksWithTracks.map((block, i) => (
-        <AllocationBar
-          key={`${block.project}-${i}`}
-          block={block}
-          startDate={startDate}
-          dayWidth={dayWidth}
-          resource={resource}
-          onResourceClick={onResourceClick}
-          style={{
-            top: `${block.trackIndex * TRACK_HEIGHT + ROW_PADDING / 2}px`,
-          }}
-        />
-      ))}
+
+      {/* Allocation Blocks */}
+      <div className="absolute inset-0 px-[0.5px]">
+        {blocksWithTracks.map((block, idx) => (
+          <AllocationBar
+            key={`${resource.id}-${idx}`}
+            block={block}
+            startDate={startDate}
+            dayWidth={dayWidth}
+            resource={resource}
+            onResourceClick={onResourceClick}
+            style={{
+              top: `${block.trackIndex * (barHeight + barPadding) + 6}px`,
+              height: `${barHeight}px`,
+            }}
+          />
+        ))}
+
+        {/* Bench Periods (Visual only) */}
+        {(resource.benchPeriods || []).map((period, idx) => {
+          const start = Math.max(0, daysBetween(startDate, parseDate(period.startDate)) * dayWidth);
+          const duration = daysBetween(parseDate(period.startDate), parseDate(period.endDate)) + 1;
+          const width = duration * dayWidth;
+
+          return (
+            <div
+              key={`bench-${idx}`}
+              className="absolute top-3 bottom-3 border border-slate-200 border-dashed rounded opacity-40 bg-slate-50"
+              style={{ left: `${start}px`, width: `${width}px` }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
-}
+});
 
 function RoleAggregateRow({
   role,
@@ -456,7 +434,7 @@ function RoleAggregateRow({
       ))}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary/20 z-10"
+          className="absolute top-0 h-full w-px bg-primary/20"
           style={{ left: `${todayOffset}px` }}
         />
       )}
@@ -478,7 +456,7 @@ function RoleAggregateRow({
               top: `${i * TRACK_HEIGHT + ROW_PADDING / 2.5}px`,
               height: `${TRACK_HEIGHT - 6}px`,
             }}
-            className="z-20 group hover:z-[100]"
+            className="group hover:z-[100]"
           >
             <button
               type="button"
@@ -500,7 +478,7 @@ function RoleAggregateRow({
               )}
             </button>
 
-            <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
+            <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
               <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[240px]">
                 <div className="space-y-2">
                   <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">
@@ -571,6 +549,35 @@ export function TimelineSkeleton() {
     </div>
   );
 }
+export function TimelineSkeletonContent() {
+  return (
+    <div className="flex flex-1 min-h-0 animate-pulse">
+      <div className="w-[120px] sm:w-[180px] lg:w-[240px] border-r bg-white p-4 space-y-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-slate-100 shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-3 w-3/4 bg-slate-100 rounded" />
+              <div className="h-2 w-1/2 bg-slate-100 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 bg-white relative">
+        <div className="h-10 border-b bg-slate-50 flex items-center px-4">
+          <div className="h-3 w-3/4 bg-slate-100 rounded" />
+        </div>
+        <div className="p-4 space-y-8">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-8 w-full bg-slate-50 rounded relative">
+              <div className="absolute top-1 left-4 h-6 w-1/3 bg-slate-100 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AvailabilityTimeline({
   filteredResources,
@@ -580,13 +587,11 @@ export function AvailabilityTimeline({
   filters,
   setFilters,
 }) {
-  if (loading) return <TimelineSkeleton />;
-  const [zoom, setZoom] = useState("month");
-  const [viewMode, setViewMode] = useState("resource");
   const scrollRef = useRef(null);
   const scrolledRef = useRef(false);
 
-  // Use actual current date
+  const [viewMode, setViewMode] = useState("resource"); // 'resource' or 'role'
+  const [zoom, setZoom] = useState("month"); // 'week', 'month', 'quarter'
   const realToday = parseDate(new Date());
 
   const baseDate = useMemo(() => parseDate(currentDate), [currentDate]);
@@ -730,36 +735,36 @@ export function AvailabilityTimeline({
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden shadow-sm flex flex-col h-full bg-slate-50">
-      {/* Header Controls */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative z-50">
-        <div className="flex items-center justify-between sm:justify-start gap-4">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)}>
-            <TabsList className="h-8 bg-muted/50 p-1">
+      {/* ─── STATIC HEADER (PERSISTENT) ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative">
+        <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar pr-2">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
+            <TabsList className="h-8 bg-muted/50 p-1 shrink-0 min-w-max">
               <TabsTrigger
                 value="resource"
-                className="text-[10px] h-6 gap-1.5 px-2 sm:px-3 rounded-sm"
+                className="text-[10px] h-6 gap-1.5 px-3 rounded-sm whitespace-nowrap"
               >
                 <User className="h-3 w-3" />
-                <span className="hidden xs:inline">Resource</span>
-                <span className="xs:hidden">Resources</span>
+                <span className="hidden xs:inline">Resource View</span>
+                <span className="xs:hidden font-bold">Resources</span>
               </TabsTrigger>
               <TabsTrigger
                 value="role"
-                className="text-[10px] h-6 gap-1.5 px-2 sm:px-3 rounded-sm"
+                className="text-[10px] h-6 gap-1.5 px-3 rounded-sm whitespace-nowrap"
               >
                 <Layers className="h-3 w-3" />
-                Role
+                Role View
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
         {viewMode === "resource" && (
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
               placeholder="Search by name..."
-              className="h-7 px-2 sm:px-3 text-[10px] font-medium border rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all w-40 sm:w-52"
+              className="h-7 px-2 sm:px-3 text-[10px] font-medium border rounded-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all w-full sm:w-52"
               value={filters.search}
               onChange={(e) =>
                 setFilters((prev) => ({
@@ -786,7 +791,6 @@ export function AvailabilityTimeline({
         )}
 
         <div className="flex flex-col gap-2 sm:gap-3">
-          {/* Top Row → Zoom + Today */}
           <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-3">
             <div className="flex items-center rounded-md border bg-muted/50 p-0.5">
               {["week", "month", "quarter"].map((z) => (
@@ -818,7 +822,6 @@ export function AvailabilityTimeline({
             </button>
           </div>
 
-          {/* Bottom Row → Status Legend */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] font-medium text-muted-foreground">
             <div className="flex items-center gap-1 whitespace-nowrap">
               <div className="h-2 w-3 sm:w-4 rounded-sm bg-emerald-500 shrink-0" />
@@ -836,18 +839,22 @@ export function AvailabilityTimeline({
         </div>
       </div>
 
-      <TooltipProvider delayDuration={100}>
-        <div className="flex flex-1 overflow-hidden min-h-0">
-          {/* Sidebar */}
-          <div className="shrink-0 border-r bg-white z-40 w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
-            <div className="h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0">
-              <span className="text-[8px] sm:text-[10px] font-heading font-bold text-muted-foreground uppercase tracking-wider truncate">
-                {viewMode === "resource" ? "Resource" : "Role Category"}
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-              {viewMode === "resource"
-                ? filteredResources.map((resource) => {
+      {/* ─── DYNAMIC CONTENT (LOADS BELOW HEADER) ────────────────────── */}
+      {loading ? (
+        <TimelineSkeletonContent />
+      ) : (
+        <TooltipProvider delayDuration={100}>
+          <div className="flex flex-1 overflow-hidden min-h-0">
+            {/* Sidebar */}
+            <div className="shrink-0 border-r bg-white w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
+              <div className="sticky top-0 h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0">
+                <span className="text-[8px] sm:text-[10px] font-heading font-bold text-muted-foreground uppercase tracking-wider truncate">
+                  {viewMode === "resource" ? "Resource" : "Role Category"}
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto no-scrollbar">
+                {viewMode === "resource"
+                  ? filteredResources.map((resource) => {
                     const dynamicRowHeight =
                       resourceRowHeights.get(resource.id) || 48;
                     return (
@@ -884,7 +891,7 @@ export function AvailabilityTimeline({
                       </button>
                     );
                   })
-                : [...roleGroups.entries()].map(([role, resources]) => {
+                  : [...roleGroups.entries()].map(([role, resources]) => {
                     const dynamicRowHeight = roleRowHeights.get(role) || 48;
                     return (
                       <div
@@ -902,24 +909,24 @@ export function AvailabilityTimeline({
                       </div>
                     );
                   })}
+              </div>
             </div>
-          </div>
 
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-x-auto bg-white relative z-20"
-          >
-            <div style={{ width: `${totalDays * config.dayWidth}px` }}>
-              <TimelineHeader
-                zoom={zoom}
-                ticks={ticks}
-                todayOffset={todayOffset}
-                totalDays={totalDays}
-                dayWidth={config.dayWidth}
-              />
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-x-auto bg-white relative"
+            >
+              <div style={{ width: `${totalDays * config.dayWidth}px` }}>
+                <TimelineHeader
+                  zoom={zoom}
+                  ticks={ticks}
+                  todayOffset={todayOffset}
+                  totalDays={totalDays}
+                  dayWidth={config.dayWidth}
+                />
 
-              {viewMode === "resource"
-                ? filteredResources.map((resource) => (
+                {viewMode === "resource"
+                  ? filteredResources.map((resource) => (
                     <ResourceRow
                       key={resource.id}
                       resource={resource}
@@ -934,7 +941,7 @@ export function AvailabilityTimeline({
                       realToday={realToday}
                     />
                   ))
-                : [...roleGroups.entries()].map(([role, resources]) => (
+                  : [...roleGroups.entries()].map(([role, resources]) => (
                     <RoleAggregateRow
                       key={role}
                       role={role}
@@ -949,10 +956,13 @@ export function AvailabilityTimeline({
                       weeklyTicks={weeklyTicks}
                     />
                   ))}
+              </div>
             </div>
           </div>
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      )}
     </div>
   );
 }
+
+export default AvailabilityTimeline;

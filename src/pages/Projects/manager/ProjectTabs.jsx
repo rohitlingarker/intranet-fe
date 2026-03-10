@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { lazy, Suspense } from "react";
 
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
-import Board from "./Board";
+import Board from "../../Projects/manager/Board.jsx";
 import Timeline from "./Timeline";
 
 import Navbar from "../../../components/Navbar/Navbar";
 import TestManagement from "../Testmanagement/TestManagementHome";
 import RiskRegisterPage from "./riskManagement/RiskRegisterPage";
 import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
+
+const ProjectDemandManagement = lazy(() => import("./ProjectDemandManagement"));
+const ProjectConfigurations = lazy(() => import("./project/ProjectConfigurations"));
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -100,6 +104,24 @@ const ProjectTabs = () => {
     if (selectedTab.startsWith("test-management")) {
       return <TestManagement projectId={pid} />;
     }
+    if (selectedTab === "demand-management") {
+      return (
+        <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Demand Management...</div>}>
+          <ProjectDemandManagement
+            projectId={pid}
+            projectName={projectName}
+          />
+        </Suspense>
+      );
+    }
+
+    if (selectedTab === "configurations") {
+      return (
+        <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Configurations...</div>}>
+          <ProjectConfigurations projectId={pid} />
+        </Suspense>
+      );
+    }
 
     return null;
   };
@@ -118,6 +140,8 @@ const ProjectTabs = () => {
     { name: "Board", tab: "board" },
     { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
+    { name: "Demand Management", tab: "demand-management" },
+    { name: "Configurations", tab: "configurations" },
     //  { name: "Timelines", tab:"timelines" },
     // { name: "Calendar", tab: "calendar" },
   ];

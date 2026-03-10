@@ -50,7 +50,7 @@ const [deletingOffer, setDeletingOffer] = useState(false);
     employee_type: "",
     package: "",
     currency: "",
-    // cc_emails: "",
+    cc_emails: "",
   });
 
   function toTitleCase(str) {
@@ -72,14 +72,18 @@ const [deletingOffer, setDeletingOffer] = useState(false);
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setEmployee(res.data);
-      setEditData(res.data);
-      // setEditData({
-      //   ...res.data,
-      //   cc_emails: Array.isArray(res.data.cc_emails)
-      //     ? res.data.cc_emails.join(", ")
-      //     : res.data.cc_emails || "",
-      // });
-    } catch {
+  
+      setEditData({
+        ...res.data,
+        cc_emails:  res.data?.cc_emails
+        ? res.data.cc_emails
+            .split(",")
+            .map(e => e.trim())
+            .filter(Boolean)
+            .join(", ")
+        : "",
+    });
+    } catch (error) {
       showStatusToast("Failed to fetch employee details");
     } finally {
       setLoading(false);
@@ -236,8 +240,12 @@ const actionTaken =
     employee_type: editData.employee_type,
     package: editData.package,
     currency: editData.currency,
-    // cc_emails: Array.isArray(editData.cc_emails)      ? editData.cc_emails
-    //   : editData.cc_emails.split(",").map(email => email.trim()),
+   cc_emails: editData.cc_emails
+  ? editData.cc_emails
+      .split(",")
+      .map(e => e.trim())
+      .filter(Boolean)
+  : [],
   };
     try {
       setUpdating(true);
@@ -272,7 +280,7 @@ const handleDeleteOffer = async () => {
     setDeleteOfferModal(false);
 
     // redirect to dashboard
-    setTimeout(() => navigate("/employee-dashboard"), 800);
+    setTimeout(() => navigate("/employee-onboarding"), 800);
   } catch (e) {
   console.log("DELETE ERROR:", e);
   console.log("RESPONSE:", e?.response);
@@ -357,20 +365,59 @@ finally {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.keys(editData).filter(key => ['first_name','last_name','mail','country_code','contact_number','designation','package','currency'].includes(key)).map((key) => (
-              <label key={key} className="flex flex-col gap-1">
-                {toTitleCase(key.replace("_", " "))}
-              <input
-                key={key}
-                value={editData[key] || ""}
-                onChange={(e) =>
-                  setEditData({ ...editData, [key]: e.target.value })
-                }
-                className="border p-2 rounded"
-                placeholder={key.replace("_", " ").toUpperCase()}
-              />
-              </label>
-            ))}
+           {Object.keys(editData)
+.filter(key => [
+'first_name','last_name','mail','country_code',
+'contact_number','designation','employee_type',
+'package','currency','cc_emails'
+].includes(key))
+.map((key) => (
+
+<label key={key} className="flex flex-col gap-1">
+{toTitleCase(key.replace("_", " "))}
+
+{key === "employee_type" ? (
+
+<select
+value={editData[key] || ""}
+onChange={(e)=>
+setEditData({...editData,[key]:e.target.value})
+}
+className="border p-2 rounded"
+>
+<option value="">Select Employee Type</option>
+<option value="Full-Time">Full-Time</option>
+<option value="Part-Time">Part-Time</option>
+<option value="Intern">Intern</option>
+<option value="Contract">Contract</option>
+</select>
+
+) : key === "cc_emails" ? (
+
+<input
+value={editData[key] || ""}
+onChange={(e)=>
+setEditData({...editData,[key]:e.target.value})
+}
+className="border p-2 rounded"
+placeholder="Enter emails separated by comma"
+/>
+
+) : (
+
+<input
+value={editData[key] || ""}
+onChange={(e)=>
+setEditData({...editData,[key]:e.target.value})
+}
+className="border p-2 rounded"
+/>
+
+)}
+
+</label>
+
+))}
           </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -446,15 +493,19 @@ finally {
             label="Employee Type"
             value={employee.employee_type}
           />
-          {/* <DetailCard
-            icon={<Mail />}
-            label="CC Emails"
-            value={
-              Array.isArray(employee?.cc_emails)
-                ? employee.cc_emails.join(", ")
-                : employee?.cc_emails || "—"
-            }
-          /> */}
+         <DetailCard
+          icon={<Mail />}
+          label="CC Emails"
+          value={
+            employee?.cc_emails
+              ? employee.cc_emails
+                  .split(",")
+                  .map(e => e.trim())
+                  .filter(Boolean)
+                  .join(", ")
+              : "—"
+          }
+          />
         </div>
 
         <div className="flex gap-4 mt-10">

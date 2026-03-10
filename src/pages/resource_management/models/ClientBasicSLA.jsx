@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import { getClientSLA, updateClientSLA, deleteClientSLA } from "../services/clientservice";
+import {
+  getClientSLA,
+  updateClientSLA,
+  deleteClientSLA,
+} from "../services/clientservice";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import Pagination from "../../../components/Pagination/pagination";
@@ -25,7 +29,21 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [selectedSLAId, setSelectedSLAId] = useState(null);
 
-  const ITEMS_PER_PAGE = 1;
+  const ITEMS_PER_PAGE = 3;
+
+  const getSlaTypeColor = (type) => {
+    if (type === "NEW_DEMAND") return "bg-blue-100 text-blue-700";
+
+    if (type === "REPLACEMENT") return "bg-purple-100 text-purple-700";
+
+    return "bg-gray-100 text-gray-700";
+  };
+
+  const getWarningColor = (days) => {
+    if (days <= 2) return "bg-red-100 text-red-700";
+    if (days <= 4) return "bg-amber-100 text-amber-700";
+    return "bg-green-100 text-green-700";
+  };
 
   const handleSetFormData = (data) => {
     if (!data) return;
@@ -50,9 +68,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
       setOpenUpdateSLA(false);
       setSLAList((prev) =>
         prev.map((item) =>
-          item.slaId === updated.slaId
-            ? { ...item, ...updated }
-            : item,
+          item.slaId === updated.slaId ? { ...item, ...updated } : item,
         ),
       );
       // fetchSLA();
@@ -68,7 +84,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
     try {
       const res = await deleteClientSLA(selectedSLAId);
       toast.success(res.message || "SLA deleted successfully.");
-      fetchSLA();
+      fetchSLA(); 
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete SLA.");
     } finally {
@@ -76,7 +92,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
       setOpenConfirmModal(false);
       setSelectedSLAId(null);
     }
-  };  
+  };
 
   const fetchSLA = async () => {
     setLoading(true);
@@ -133,86 +149,108 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
   }
 
   const totalPages = Math.ceil(slaList.length / ITEMS_PER_PAGE);
-  const currentSLA = slaList[currentPage - 1];
+  const paginatedData = slaList.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   return (
     <div className="p-4">
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-3">
-        <div className="flex justify-between items-start relative">
-          <div>
-            <h2 className="text-xl font-semibold mb-3">
-              Basic SLA Information
-            </h2>
-          </div>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {/* <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b">
+          <p className="text-sm font-semibold text-gray-700">SLA Definitions</p>
+        </div> */}
 
-          {canEditConfig && (
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setOpenMenu((prev) => !prev)}
-                className="text-gray-400 hover:text-gray-600"
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+                SLA Type
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+                Duration
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+                Warning Threshold
+              </th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          {/* TABLE BODY */}
+          <tbody className="divide-y divide-gray-100">
+            {paginatedData.map((sla) => (
+              <tr
+                key={sla.slaId}
+                className="hover:bg-gray-50 transition text-center"
               >
-                <MoreHorizontal />
-              </button>
-
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-36 bg-white border rounded-lg shadow-lg z-50">
-                  <button
-                    onClick={() => {
-                      handleSetFormData(currentSLA);
-                      setOpenMenu(false);
-                      setOpenUpdateSLA(true);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-700 hover:bg-gray-100"
+                {/* SLA TYPE */}
+                <td className="px-6 py-3">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full ${getSlaTypeColor(
+                      sla.slaType,
+                    )}`}
                   >
-                    <Pencil size={14} />
-                    Update
-                  </button>
+                    {sla.slaType.replaceAll("_", " ")}
+                  </span>
+                </td>
 
-                  <button
-                    onClick={() => {
-                      setSelectedSLAId(currentSLA.slaId);
-                      setOpenMenu(false);
-                      setOpenConfirmModal(true);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                {/* DURATION */}
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-700">
+                    {sla.slaDurationDays} days
+                  </span>
+                </td>
+
+                {/* WARNING */}
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full ${getWarningColor(
+                      sla.warningThresholdDays,
+                    )}`}
                   >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">SLA Type</span>
-          <span className="font-medium">{currentSLA.slaType}</span>
-        </div>
+                    {sla.warningThresholdDays} days
+                  </span>
+                </td>
 
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">Duration (Days)</span>
-          <span className="font-medium">{currentSLA.slaDurationDays}</span>
-        </div>
+                {/* ACTIONS */}
+                <td className="px-6 py-4">
+                  {canEditConfig ? (
+                    <div className="flex justify-center items-center gap-4">
+                      <button
+                      title="Edit SLA"
+                        onClick={() => {
+                          handleSetFormData(sla);
+                          setOpenUpdateSLA(true);
+                        }}
+                        className="p-1 text-blue-600 hover:text-blue-800 transition"
+                      >
+                        <Pencil size={16} />
+                      </button>
 
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">
-            Warning Threshold (Days)
-          </span>
-          <span className="font-medium">{currentSLA.warningThresholdDays}</span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Status</span>
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              currentSLA.activeFlag
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-600"
-            }`}
-          >
-            {currentSLA.activeFlag ? "Active" : "Inactive"}
-          </span>
-        </div>
+                      <button
+                      title="Delete SLA"
+                        onClick={() => {
+                          setSelectedSLAId(sla.slaId);
+                          setOpenConfirmModal(true);
+                        }}
+                        className="p-1 text-red-600 hover:text-red-800 transition"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 italic text-xs">
+                      Don't have permission to take actions
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {totalPages > 1 && (
@@ -233,14 +271,18 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
       >
         <SLAForm formData={formData} setFormData={setFormData} />
         <div className="flex justify-end mt-4">
-          <button onClick={handleUpdateSLA} disabled={updateLoading} className={`px-4 py-2 rounded-xl bg-blue-700 text-white hover:bg-blue-800 ${updateLoading && "opacity-50 cursor-not-allowed"}`}>
+          <button
+            onClick={handleUpdateSLA}
+            disabled={updateLoading}
+            className={`px-4 py-2 rounded-xl bg-blue-700 text-white hover:bg-blue-800 ${updateLoading && "opacity-50 cursor-not-allowed"}`}
+          >
             {updateLoading ? "Updating..." : "Update"}
           </button>
         </div>
       </Modal>
 
       {/* Delete Confirm Modal */}
-      <ConfirmationModal 
+      <ConfirmationModal
         title="Delete SLA"
         message="Are you sure you want to delete this SLA? Action cannot be undone."
         confirmText="Delete"
@@ -248,7 +290,7 @@ const ClientBasicSLA = ({ clientId, slaRefetchKey }) => {
         onCancel={() => setOpenConfirmModal(false)}
         onConfirm={handleDeleteSLA}
         isLoading={deleteLoading}
-      /> 
+      />
     </div>
   );
 };

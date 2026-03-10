@@ -206,18 +206,37 @@ const CreateIssueForm = ({
     let err = null;
 
     if (issueType === "Epic") {
+      if (formData.startDate && formData.dueDate) {
+         if (new Date(formData.dueDate) < new Date(formData.startDate)) {
+    toast.error("Due date cannot be earlier than start date");
+    return;
+  }
+}
       err = validateEpic(fd);
       if (!err) payload = buildEpicPayload(fd);
       endpoint = "/api/epics";
     }
 
     if (issueType === "Story") {
+      if (formData.startDate && formData.dueDate) {
+         if (new Date(formData.dueDate) < new Date(formData.startDate)) {
+                 toast.error("Due date cannot be earlier than start date");
+                        return;
+                     }
+                  }
+      
       err = validateStory(fd);
       if (!err) payload = buildStoryPayload(fd);
       endpoint = "/api/stories";
     }
 
     if (issueType === "Task") {
+      if (formData.startDate && formData.dueDate) {
+         if (new Date(formData.dueDate) < new Date(formData.startDate)) {
+    toast.error("Due date cannot be earlier than start date");
+    return;
+  }
+}
       err = validateTask(fd);
       if (!err) payload = buildTaskPayload(fd, selectedStorySprint);
       endpoint = "/api/tasks";
@@ -243,8 +262,29 @@ const CreateIssueForm = ({
         onClose?.();
       }, 500);
     } catch (e) {
-      toast.error(e.response?.data?.message || "Error creating issue");
-    }
+  console.error(e);
+
+  const data = e.response?.data;
+
+  // Case 1: structured validation errors
+  if (data?.errors) {
+  Object.entries(data.errors).forEach(([field, message]) => {
+    toast.error(`${field}: ${message}`);
+  });
+  return;
+}
+
+  // Case 2: old hibernate interpolatedMessage error
+  const msg = data?.message;
+  if (msg && msg.includes("interpolatedMessage")) {
+    const extracted = msg.match(/interpolatedMessage='([^']+)'/);
+    toast.error(extracted ? extracted[1] : "Validation error");
+    return;
+  }
+
+  // Case 3: normal backend error message
+  toast.error(msg || "Error creating issue");
+}
   };
 
   const selectedProject = projects.find(

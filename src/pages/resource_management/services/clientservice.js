@@ -305,16 +305,17 @@ export const getClientEscalation = async (clientId) => {
   }
 };
 
-export const createClientAsset = async (assetData) => {
+export const createClientAsset = async (assetData, clientId) => {
   try {
     const response = await axios.post(
-      `${RMS_BASE_URL}/api/client-assets`,
+      `${RMS_BASE_URL}/api/client-assets/clients/${clientId}/assets`,
       assetData,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -333,8 +334,9 @@ export const updateClientAsset = async (assetId, assetData) => {
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
     return response.data;
   } catch (error) {
@@ -569,7 +571,7 @@ export const getAssetDashboardByClient = async (clientId) => {
         },
       }
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error("Client KPI Fetch Error:", error);
     throw error;
@@ -680,6 +682,110 @@ export const getCertificates = async () => {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       }
     });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+/* ===============================
+   GET AVAILABLE SERIAL NUMBERS BY ASSET ID
+   =============================== */
+export const getAvailableSerialsByAssetId = async (assetId) => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/client-assets/${assetId}/available-serials`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data; // [{ serialNumber, status }]
+  } catch (error) {
+    console.error("Fetch Available Serials Error:", error);
+    throw error;
+  }
+};
+
+export function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
+/**
+ * ===============================
+ * CREATE Company Escalation Contact
+ * POST /api/company-contact/create
+ * ===============================
+ */
+export const createCompanyContact = async (companyContactData) => {
+  try {
+    const response = await axios.post(
+      `${RMS_BASE_URL}/api/company-contact/create`,
+      companyContactData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * GET Company Escalation Contacts by Company ID
+ * GET /api/company-contact/companyContact/{companyId}
+ * ===============================
+ */
+export const getCompanyContactsByCompanyId = async () => {
+  try {
+    const response = await axios.get(
+      `${RMS_BASE_URL}/api/company-contact/all`,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * UPDATE Company Escalation Contact
+ * PUT /api/company-contact/update
+ * ===============================
+ */
+export const updateCompanyContact = async (companyContactData) => {
+  try {
+    const response = await axios.put(
+      `${RMS_BASE_URL}/api/company-contact/update/${companyContactData.contactId}`,
+      companyContactData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * ===============================
+ * DELETE Company Escalation Contact
+ * DELETE /api/company-contact/delete/{id}
+ * ===============================
+ */
+export const deleteCompanyContact = async (contactId) => {
+  try {
+    const response = await axios.delete(
+      `${RMS_BASE_URL}/api/company-contact/delete/${contactId}`,
+      getAuthHeader()
+    );
     return response.data;
   } catch (error) {
     throw error;

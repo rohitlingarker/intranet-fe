@@ -1,51 +1,54 @@
 import React from "react";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
+import { Form } from "react-router-dom";
 
-export default function JobForm({ form, handleChange }) {
-
-  // 🔹 Mock Dropdown Data
-  const departments = [
-    { id: 1, name: "Engineering" },
-    { id: 2, name: "Human Resources" },
-    { id: 3, name: "Finance" },
-    { id: 4, name: "Sales" },
-    { id: 5, name: "Marketing" }
-  ];
-
-  const roles = [
-    { id: 1, name: "Admin" },
-    { id: 2, name: "HR" },
-    { id: 3, name: "Manager" },
-    { id: 4, name: "Employee" }
-  ];
+export default function JobForm({
+  form,
+  handleChange,
+  designations = [],
+  departments = [],
+  isEditMode
+}) {
 
   const employeeTypes = ["Full-Time", "Intern", "Contract"];
-
   const workModes = ["Remote", "Hybrid", "Office"];
-
   const experienceOptions = ["0", "0.5", "1"];
+  const employeeStatus = ["Probation", "Active","Resigned", "Terminated","Absconded"];
+
+  /* 🔹 Filter designations by selected department */
+  const filteredDesignations = designations.filter(
+    (d) => d.department_uuid === form.departmentUuid
+  );
 
   return (
     <div className="grid grid-cols-2 gap-4">
 
-      {/* Role Dropdown */}
-      <FormSelect
-        label="Role"
-        name="role"
-        value={form.role || ""}
-        onChange={handleChange}
-        options={roles}
-      />
-
       {/* Department Dropdown */}
       <FormSelect
-        label="Department"
-        name="department"
-        value={form.department || ""}
-        onChange={handleChange}
-        options={departments}
-      />
+  label="Department"
+  name="departmentUuid"
+  value={form.departmentUuid || ""}
+  onChange={handleChange}
+  options={departments.map((d) => ({
+    value: d.department_uuid,
+    label: d.department_name
+  }))}
+  disabled={isEditMode}
+/>
+
+      {/* Designation Dropdown */}
+     <FormSelect
+      label="Designation"
+      name="designationUuid"
+      value={form.designationUuid || ""}
+      onChange={handleChange}
+      disabled={!form.departmentUuid}
+      options={filteredDesignations.map((d) => ({
+        value: d.designation_uuid,
+        label: d.designation_name
+      }))}
+/>
 
       {/* Employee Type */}
       <FormSelect
@@ -54,6 +57,7 @@ export default function JobForm({ form, handleChange }) {
         value={form.employeeType || ""}
         onChange={handleChange}
         options={employeeTypes}
+        disabled={isEditMode}
       />
 
       {/* Work Mode */}
@@ -63,6 +67,7 @@ export default function JobForm({ form, handleChange }) {
         value={form.workMode || ""}
         onChange={handleChange}
         options={workModes}
+        disabled={isEditMode}
       />
 
       {/* Location */}
@@ -71,33 +76,43 @@ export default function JobForm({ form, handleChange }) {
         name="location"
         value={form.location || ""}
         onChange={handleChange}
+        disabled={isEditMode}
       />
 
       {/* Date of Join */}
       <FormInput
         label="Date of Join"
         type="date"
-        name="dateOfJoin"
-        value={form.dateOfJoin || ""}
+        name="joiningDate"
+        value={form.joiningDate || ""}
         onChange={handleChange}
+        disabled={isEditMode}
       />
 
       {/* Reporting Manager */}
       <FormInput
         label="Reporting Manager"
-        name="manager"
-        value={form.manager || ""}
+        name="reportingManagerUuid"
+        value={form.reportingManagerUuid || ""}
         onChange={handleChange}
+      />
+      <FormSelect
+        label="Employment Status"
+        name="employmentStatus"
+        value={form.employmentStatus || ""}
+        onChange={handleChange}
+        options={employeeStatus}
       />
 
       {/* Experience */}
       <FormSelect
         label="Experience Years"
-        name="experience"
-        value={form.experience || ""}
+        name="totalExperience"
+        value={form.totalExperience || ""}
         onChange={handleChange}
         options={experienceOptions}
       />
+
     </div>
   );
 }
