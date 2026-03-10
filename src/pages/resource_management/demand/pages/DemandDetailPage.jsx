@@ -92,44 +92,60 @@ const OverviewTab = ({ demand, project, sla }) => {
             </DetailCard>
 
             {/* Card 3: SLA Health Indicator */}
-            <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
-                <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100">Healthy Stable</div>
-            }>
-                <div className="flex flex-col h-full">
-                    <div className="text-center py-4 mb-4">
-                        <span className={cn("text-3xl font-black tracking-tighter", remainingDays < 0 ? "text-rose-600" : remainingDays <= 5 ? "text-orange-600" : "text-emerald-600")}>
-                            {remainingDays < 0 ? `${Math.abs(remainingDays)} Days Over` : `${remainingDays} Days Remaining`}
-                        </span>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span className="text-[9px] font-black text-slate-400 block mb-1">Created</span>
-                                <span className="text-xs font-bold text-slate-900 block">Feb 28</span>
-                            </div>
-                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span className="text-[9px] font-black text-slate-400 block mb-1">Due Date</span>
-                                <span className="text-xs font-bold text-slate-900 block">Mar 10</span>
-                            </div>
+            {!sla?.slaDurationDays ? (
+                <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
+                    <div className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[9px] font-bold border border-slate-200">No SLA</div>
+                }>
+                    <div className="flex flex-col items-center justify-center h-full py-10 gap-4 text-slate-300">
+                        <div className="h-14 w-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
+                            <Clock className="h-6 w-6 text-slate-300" />
                         </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
-                                <span>Progress</span>
-                                <span>{Math.round(progress)}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                <div className={cn("h-full transition-all duration-1000", slaColor)} style={{ width: `${progress}%` }} />
-                            </div>
-                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
-                                <span>Threshold: {warningThreshold} Days</span>
-                                <span>SLA Target: {sla?.slaDurationDays || 30} Days</span>
-                            </div>
+                        <div className="text-center">
+                            <p className="text-[11px] font-black text-slate-400 tracking-widest">NO SLA ASSIGNED</p>
+                            <p className="text-[9px] font-bold text-slate-300 mt-1">This demand has no SLA configuration</p>
                         </div>
                     </div>
-                </div>
-            </DetailCard>
+                </DetailCard>
+            ) : (
+                <DetailCard title="SLA Health Indicator" icon={Activity} rightElement={
+                    <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-100">Healthy Stable</div>
+                }>
+                    <div className="flex flex-col h-full">
+                        <div className="text-center py-4 mb-4">
+                            <span className={cn("text-3xl font-black tracking-tighter", remainingDays < 0 ? "text-rose-600" : remainingDays <= 5 ? "text-orange-600" : "text-emerald-600")}>
+                                {remainingDays < 0 ? `${Math.abs(remainingDays)} Days Over` : `${remainingDays} Days Remaining`}
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                    <span className="text-[9px] font-black text-slate-400 block mb-1">Created</span>
+                                    <span className="text-xs font-bold text-slate-900 block">Feb 28</span>
+                                </div>
+                                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                    <span className="text-[9px] font-black text-slate-400 block mb-1">Due Date</span>
+                                    <span className="text-xs font-bold text-slate-900 block">Mar 10</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
+                                    <span>Progress</span>
+                                    <span>{Math.round(progress)}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                    <div className={cn("h-full transition-all duration-1000", slaColor)} style={{ width: `${progress}%` }} />
+                                </div>
+                                <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
+                                    <span>Threshold: {warningThreshold} Days</span>
+                                    <span>SLA Target: {sla?.slaDurationDays || 30} Days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </DetailCard>
+            )}
         </div>
     );
 };
@@ -570,7 +586,7 @@ const AllocationResultsTab = ({ results }) => {
                                         "h-1.5 w-1.5 rounded-full",
                                         activeSubTab === 'Successful' ? "bg-emerald-500" : "bg-rose-500"
                                     )} />
-                                    <span>{activeSubTab === 'Successful' ? item.resourceName : `Resource ${item.resourceId}`}</span>
+                                    <span>{item.resourceName || `Resource ${item.resourceId}`}</span>
                                 </div>
                                 {selectedItem === item && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-600 rounded-full" />}
                             </button>
@@ -591,7 +607,7 @@ const AllocationResultsTab = ({ results }) => {
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-3">
                                     <UserPlus className={cn("h-5 w-5", activeSubTab === 'Successful' ? "text-indigo-600" : "text-rose-600")} />
-                                    {activeSubTab === 'Successful' ? selectedItem.resourceName : `Resource Details (ID: ${selectedItem.resourceId})`}
+                                    {selectedItem.resourceName || `Resource ${selectedItem.resourceId}`}
                                 </h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                                     {activeSubTab === 'Successful' ? "Allocation successfully confirmed" : "Allocation failure analysis"}
@@ -630,8 +646,8 @@ const AllocationResultsTab = ({ results }) => {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-[140px,1fr] items-center py-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource ID</span>
-                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceId}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resource</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedItem.resourceName || selectedItem.resourceId}</span>
                                         </div>
                                         <div className="space-y-3 p-6 bg-rose-50/50 border border-rose-100 rounded-2xl relative overflow-hidden group">
                                             <div className="absolute right-0 top-0 p-4 opacity-[0.03] scale-150 rotate-12">
@@ -986,7 +1002,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
         { id: 'roleInfo', label: 'Delivery Role Info', icon: Code2 },
         ...(isRM ? [{ id: 'skillGap', label: 'Skill Gap Analysis', icon: GitCompare }] : []),
         { id: 'approvalFlow', label: 'Approval Flow', icon: ShieldCheck },
-        ...(!isSoft ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
+        ...(!isSoft && demand.demandSlaId ? [{ id: 'slaInsights', label: 'SLA Insights', icon: Clock }] : []),
         ...(isRM && allocationResults ? [{ id: 'allocationResults', label: 'Allocation Results', icon: Activity }] : [])
     ];
 
@@ -1040,20 +1056,25 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
                                 <div className="flex items-center gap-3 sm:gap-4 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
                                     <div className="flex flex-col items-end pr-2 border-r border-slate-200 text-right">
                                         <span className="text-[8px] sm:text-[9px] font-black text-slate-400 tracking-tight">SLA Status</span>
-                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap", isSoft ? "text-slate-400" : (sla?.remainingDays || 0) < 0 ? "text-rose-600" : (sla?.remainingDays || 0) <= 5 ? "text-orange-600" : "text-emerald-600")}>
-                                            {isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
+                                        <span className={cn("text-[10px] sm:text-xs font-black whitespace-nowrap",
+                                            !demand.demandSlaId ? "text-slate-400"
+                                                : isSoft ? "text-slate-400"
+                                                    : (sla?.remainingDays || 0) < 0 ? "text-rose-600"
+                                                        : (sla?.remainingDays || 0) <= 5 ? "text-orange-600"
+                                                            : "text-emerald-600")}>
+                                            {!demand.demandSlaId ? "No SLA" : isSoft ? "NO" : `${sla?.remainingDays || 0} Days Remaining`}
                                         </span>
                                     </div>
                                     <div className="relative h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center">
                                         <svg className="h-8 w-8 sm:h-10 sm:w-10 transform -rotate-90">
                                             <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke="#e2e8f0" />
-                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
+                                            <circle cx="50%" cy="50%" r="40%" fill="none" strokeWidth="4" stroke={!demand.demandSlaId || isSoft ? "#e2e8f0" : (sla?.remainingDays || 0) < 0 ? "#f43f5e" : (sla?.remainingDays || 0) <= 5 ? "#f59e0b" : "#10b981"}
                                                 strokeDasharray="100 100"
-                                                strokeDashoffset={isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
+                                                strokeDashoffset={!demand.demandSlaId || isSoft ? 100 : 100 - (Math.min(100, Math.max(0, ((sla?.slaDurationDays - sla?.remainingDays) / sla?.slaDurationDays) * 100)) || 0)}
                                             />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                                            {isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                            {!demand.demandSlaId || isSoft ? <XCircle className="h-4 w-4" /> : <Clock className="h-3 w-3 sm:h-4 sm:w-4" />}
                                         </div>
                                     </div>
                                 </div>
