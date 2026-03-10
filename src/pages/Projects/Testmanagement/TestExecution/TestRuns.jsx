@@ -50,7 +50,7 @@ export default function TestRunAccordion({ run, projectId }) {
   const loadEmployees = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/admin/users/id/roles`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
