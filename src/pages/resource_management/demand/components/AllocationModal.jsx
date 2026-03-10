@@ -13,6 +13,12 @@ import { fetchResources, resourceAllocation } from "../../services/resource";
 import { toast } from 'react-toastify';
 import { cn } from "@/lib/utils";
 
+const toDateInputValue = (date) => {
+    if (!date) return "";
+    const matchedDate = String(date).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return matchedDate ? matchedDate[1] : "";
+};
+
 const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
     const [resources, setResources] = useState([]);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
@@ -21,14 +27,40 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
     const [formData, setFormData] = useState({
         resourceId: [],
-        demandId: demand?.demandId || '',
-        allocationStartDate: '',
-        allocationEndDate: '',
+        demandId: demand?.demandId || demand?.id || '',
+        allocationStartDate: toDateInputValue(demand?.demandStartDate),
+        allocationEndDate: toDateInputValue(demand?.demandEndDate),
         allocationPercentage: 100,
         allocationStatus: 'ACTIVE'
     });
 
     const [errors, setErrors] = useState({});
+
+    const getResourceNameById = (resourceId) => {
+        const matchedResource = resources.find(
+            (resource) => String(resource.resourceId) === String(resourceId)
+        );
+        return matchedResource?.resourceName || null;
+    };
+
+    const enrichAllocationResult = (result) => {
+        if (!result?.data) return result;
+
+        return {
+            ...result,
+            data: {
+                ...result.data,
+                savedAllocations: (result.data.savedAllocations || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+                failedResources: (result.data.failedResources || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+            },
+        };
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -36,9 +68,12 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                 setIsLoadingResources(true);
                 try {
                     const response = await fetchResources();
-                    if (response.success) {
-                        setResources(response.data);
-                    }
+                    const resourceList = Array.isArray(response?.data)
+                        ? response.data
+                        : Array.isArray(response)
+                            ? response
+                            : [];
+                    setResources(resourceList);
                 } catch (error) {
                     console.error("Failed to fetch resources", error);
                     toast.error("Failed to load resources");
@@ -50,8 +85,10 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
             setFormData(prev => ({
                 ...prev,
-                demandId: demand?.demandId || '',
-                resourceId: [] // Reset on open
+                demandId: demand?.demandId || demand?.id || '',
+                allocationStartDate: toDateInputValue(demand?.demandStartDate),
+                allocationEndDate: toDateInputValue(demand?.demandEndDate),
+                resourceId: []
             }));
             setErrors({});
             setSearchQuery("");
@@ -86,25 +123,48 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
         }
 
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return {
+            isValid: Object.keys(newErrors).length === 0,
+            errors: newErrors,
+        };
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!validate()) return;
+        e?.preventDefault?.();
+        const { isValid, errors: validationErrors } = validate();
+        if (!isValid) {
+            const validationMessages = Object.values(validationErrors).filter(Boolean);
+            toast.warning(validationMessages[0] || "Please correct the validation errors");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
             const result = await resourceAllocation(formData);
-            if (result.success) {
+            const enrichedResult = enrichAllocationResult(result);
+            const hasAllocationResults = !!enrichedResult?.data;
+            const successCount = enrichedResult?.data?.successCount || 0;
+            const failureCount = enrichedResult?.data?.failureCount || 0;
+            const normalizedMessage = String(result?.message || "").toLowerCase();
+            const isFailedAllocationMessage = normalizedMessage.includes("allocation failed");
+
+            if (!result.success && !hasAllocationResults) {
+                toast.error(result.message || "Allocation failed");
+                return;
+            }
+
+            if (hasAllocationResults && failureCount > 0 && successCount === 0) {
+                toast.error(result.message || "Allocation failed");
+            } else if (hasAllocationResults && failureCount > 0) {
+                toast.warning(result.message || "Allocation completed with some failures");
+            } else if (result.success && !isFailedAllocationMessage) {
                 toast.success(result.message || "Resources allocated successfully");
-                if (onSuccess) onSuccess(result);
-                onClose();
             } else {
                 toast.error(result.message || "Allocation failed");
-                if (onSuccess) onSuccess(result);
-                onClose();
             }
+
+            if (onSuccess) onSuccess(enrichedResult);
+            onClose();
         } catch (error) {
             console.error("Allocation error:", error);
             toast.error(error.response?.data?.message || "Failed to allocate resources");
@@ -115,10 +175,13 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
 
     if (!isOpen) return null;
 
-    const filteredResources = resources.filter(res =>
-        res.resourceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.resourceRole.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredResources = resources.filter((res) => {
+        const resourceName = String(res?.resourceName || "").toLowerCase();
+        const resourceRole = String(res?.resourceRole || "").toLowerCase();
+        const normalizedQuery = searchQuery.toLowerCase();
+
+        return resourceName.includes(normalizedQuery) || resourceRole.includes(normalizedQuery);
+    });
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -213,10 +276,10 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                                         >
                                             <div className="flex flex-col">
                                                 <span className={cn("text-xs font-bold", isSelected ? "text-indigo-900" : "text-slate-700 group-hover:text-slate-900")}>
-                                                    {res.resourceName}
+                                                    {res.resourceName || `Resource ${res.resourceId}`}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-slate-400">
-                                                    {res.resourceRole}
+                                                    {res.resourceRole || "No role assigned"}
                                                 </span>
                                             </div>
                                             <div className={cn(
@@ -241,7 +304,7 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                                 if (!res) return null;
                                 return (
                                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg animate-in zoom-in-50">
-                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName}</span>
+                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName || `Resource ${id}`}</span>
                                         <button
                                             type="button"
                                             onClick={() => toggleResource(id)}
@@ -328,13 +391,15 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                 <div className="px-6 py-5 border-t border-slate-100 bg-slate-50/50 flex gap-3">
                     <Button
                         variant="outline"
+                        type="button"
                         onClick={onClose}
                         className="flex-1 h-10 rounded-xl border-slate-200 font-bold tracking-widest text-[10px] hover:bg-white text-slate-500"
                     >
                         CANCEL
                     </Button>
                     <Button
-                        form="allocation-form"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={isSubmitting}
                         className="flex-[2] h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-widest text-[10px] shadow-xl shadow-indigo-600/20"
                     >

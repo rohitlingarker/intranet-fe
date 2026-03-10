@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/20/solid";
 import { createDemand, updateDemandStatus } from "../services/projectService";
+import { handleDMDecision, handleRMDecision } from "../services/demandService";
 import { getRoleExpectations } from "../services/workforceService";
 import { fetchResourcesByProjectId } from "../services/resource";
 import * as demandService from "../services/demandService";
@@ -221,6 +222,29 @@ const emptyForm = {
   rejectionReason: "",
 };
 
+const toDateInputValue = (date) => {
+  if (!date) return "";
+
+  if (typeof date === "string") {
+    const trimmedDate = date.trim();
+    const matchedDate = trimmedDate.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (matchedDate) {
+      return matchedDate[1];
+    }
+  }
+
+  try {
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "";
+    }
+    return parsedDate.toISOString().split("T")[0];
+  } catch (error) {
+    console.error("Date parsing error:", error, date);
+    return "";
+  }
+};
+
 /* -------------------- Modal -------------------- */
 
 const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDetails, mode = "create", userRole = "" }) => {
@@ -322,8 +346,7 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
   };
 
   const formatDate = (date) => {
-    if (!date) return "";
-    return date.split("T")[0];
+    return toDateInputValue(date);
   };
 
   /* -------- Effects -------- */
@@ -341,23 +364,13 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
     if (open) {
       const isEdit = mode === "edit";
 
-      const getFormattedDate = (date) => {
-        if (!date) return "";
-        try {
-          return String(date).split("T")[0];
-        } catch (e) {
-          console.error("Date parsing error:", e, date);
-          return "";
-        }
-      };
-
       const pId = projectDetails?.pmsProjectId || projectDetails?.projectId || projectDetails?._id || initialData?.projectId || initialData?.ProjectId || initialData?.pmsProjectId || "";
       const sDate = (isEdit && initialData?.demandStartDate)
-        ? getFormattedDate(initialData.demandStartDate)
-        : (projectDetails?.startDate ? getFormattedDate(projectDetails.startDate) : (initialData?.demandStartDate ? getFormattedDate(initialData.demandStartDate) : (initialData?.slaCreatedAt ? getFormattedDate(initialData.slaCreatedAt) : "")));
+        ? toDateInputValue(initialData.demandStartDate)
+        : (projectDetails?.startDate ? toDateInputValue(projectDetails.startDate) : (initialData?.demandStartDate ? toDateInputValue(initialData.demandStartDate) : (initialData?.slaCreatedAt ? toDateInputValue(initialData.slaCreatedAt) : "")));
       const eDate = (isEdit && initialData?.demandEndDate)
-        ? getFormattedDate(initialData.demandEndDate)
-        : (projectDetails?.endDate ? getFormattedDate(projectDetails.endDate) : (initialData?.demandEndDate ? getFormattedDate(initialData.demandEndDate) : (initialData?.slaDueAt ? getFormattedDate(initialData.slaDueAt) : "")));
+        ? toDateInputValue(initialData.demandEndDate)
+        : (projectDetails?.endDate ? toDateInputValue(projectDetails.endDate) : (initialData?.demandEndDate ? toDateInputValue(initialData.demandEndDate) : (initialData?.slaDueAt ? toDateInputValue(initialData.slaDueAt) : "")));
 
       if (isEdit && initialData) {
         console.log("[DemandModal] Edit Mode Prefilling with:", initialData);
@@ -390,8 +403,8 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
           demandId: getVal(['demandId', 'id', 'demand_id']),
           projectId: pId,
           demandName: getVal(['demandName', 'role', 'demand_name', 'Name', 'demandRole', 'roleName']),
-          demandStartDate: sDate || getFormattedDate(getVal(['demandStartDate', 'startDate', 'start_date', 'demand_start_date', 'slaCreatedAt'])),
-          demandEndDate: eDate || getFormattedDate(getVal(['demandEndDate', 'endDate', 'end_date', 'demand_end_date', 'slaDueAt'])),
+          demandStartDate: sDate || toDateInputValue(getVal(['demandStartDate', 'startDate', 'start_date', 'demand_start_date', 'slaCreatedAt'])),
+          demandEndDate: eDate || toDateInputValue(getVal(['demandEndDate', 'endDate', 'end_date', 'demand_end_date', 'slaDueAt'])),
           allocationPercentage: isNaN(allocation) ? "" : Math.round(allocation),
           deliveryRole: roleIdFromData,
           demandStatus: String(getVal(['demandStatus', 'lifecycleState', 'status', 'LifecycleState', 'demand_status'], "DRAFT")).toUpperCase().trim(),
@@ -521,13 +534,14 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
         const id = form.demandId || form.id || initialData?.demandId || initialData?.id;
 
         if (normalizedRole === "DELIVERYMANAGER") {
-          // New specialized path for DM
           const dmPayload = {
             demandId: id,
             decision: form.demandStatus,
-            rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
+            rejectionReason: form.demandStatus === "REJECTED"
+              ? form.rejectionReason.trim()
+              : null
           };
-          const res = await demandService.handleDMDecision(dmPayload);
+          const res = await handleDMDecision(dmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
@@ -535,13 +549,14 @@ const DemandModal = ({ open, onClose, onSuccess, initialData = null, projectDeta
         }
 
         if (normalizedRole === "RESOURCEMANAGER") {
-          // New specialized path for RM
           const rmPayload = {
             demandId: id,
             decision: form.demandStatus,
-            rejectionReason: form.demandStatus === "REJECTED" ? form.rejectionReason : ""
+            rejectionReason: form.demandStatus === "REJECTED"
+              ? form.rejectionReason.trim()
+              : null
           };
-          const res = await demandService.handleRMDecision(rmPayload);
+          const res = await handleRMDecision(rmPayload);
           toast.success(res?.message || "Decision submitted successfully");
           if (onSuccess) onSuccess();
           onClose();
