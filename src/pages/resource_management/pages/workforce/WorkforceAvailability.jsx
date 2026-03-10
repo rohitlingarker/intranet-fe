@@ -28,6 +28,7 @@ export default function WorkforceAvailability() {
     activeView,
     setActiveView,
     // kpiData,
+    totalElements,
     filteredResources,
     handleDayClick,
     // handleKPIFilterClick,
@@ -126,7 +127,7 @@ export default function WorkforceAvailability() {
                       Timeline
                     </h3>
                     <span className="text-xs text-muted-foreground">
-                      {filteredResources.length} resources
+                      {totalElements} resources
                     </span>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar -mb-px">
@@ -179,6 +180,17 @@ export default function WorkforceAvailability() {
               </div>
 
               <div className="p-4 min-h-[600px] relative">
+                {loading && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[1px] transition-all duration-300">
+                    {/* <div className="flex flex-col items-center gap-2 p-6 rounded-xl bg-card shadow-xl border animate-in fade-in zoom-in duration-300"> */}
+                      <LoadingSpinner text="Fetching Resources" />
+                      {/* <div className="flex flex-col items-center -mt-2">
+                        <p className="text-sm font-bold text-slate-900">Fetching Resources</p>
+                        <p className="text-[11px] text-slate-500 font-medium text-center">Updating your view...</p>
+                      </div> */}
+                    {/* </div> */}
+                  </div>
+                )}
                 <TabsContent value="calendar" className="mt-0 outline-none">
                   <div className="flex flex-col gap-5">
                     <AvailabilityCalendar

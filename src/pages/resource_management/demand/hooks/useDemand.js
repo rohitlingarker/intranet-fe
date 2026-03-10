@@ -197,6 +197,7 @@ export function useDemand(projectId = null) {
             priority: d.demandPriority || d.priority,
             slaDueAt: d.slaDueAt,
             slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
+            demandSlaId: d.demandSlaId || d.slaId,
             lifecycleState: d.demandStatus || d.lifecycleState,
             priorityScore: d.priorityScore || d.score || 85
         }));

@@ -22,7 +22,7 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
   const [loading, setLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [openMenu, setOpenMenu] = useState(false);
+  // const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);
   const [formData, setFormData] = useState({});
   const [openUpdateCompliance, setOpenUpdateCompliance] = useState(false);
@@ -70,10 +70,10 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
             : item,
         ),
       );
-      toast.success("Compliance updated successfully");
+      toast.success(res.message || "Pre-requisite updated successfully");
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update Compliance.",
+        error.response?.data?.message || "Failed to update Pre-requisite.",
       );
     } finally {
       setUpdateLoading(false);
@@ -84,13 +84,13 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
     setDeleteLoading(true);
     try {
       const res = await deleteClientCompliance(selectedComplianceId);
-      toast.success(res.message || "Compliance deleted successfully.");
+      toast.success(res.message || "Pre-requisite deleted successfully.");
       setOpenConfirmModal(false);
       setSelectedComplianceId(null);
       fetchCompliance();
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to delete Compliance.",
+        error.response?.data?.message || "Failed to delete Pre-requisite.",
       );
     } finally {
       setDeleteLoading(false);
@@ -121,16 +121,16 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
     fetchCompliance();
   }, [clientId, complianceRefetchKey]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpenMenu(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (menuRef.current && !menuRef.current.contains(event.target)) {
+  //       setOpenMenu(false);
+  //     }
+  //   };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  //   document.addEventListener("mousedown", handleClickOutside);
+  //   return () => document.removeEventListener("mousedown", handleClickOutside);
+  // }, []);
 
   if (loading) {
     return (
@@ -254,7 +254,7 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
                           title="Edit Compliance"
                           onClick={() => {
                             handleSetFormData(item);
-                            setOpenMenu(false);
+                            // setOpenMenu(false);
                             setOpenUpdateCompliance(true);
                           }}
                           className="px-2 text-blue-600 hover:text-blue-800 transition"
@@ -266,7 +266,7 @@ const ClientBasicCompliance = ({ clientId, complianceRefetchKey }) => {
                           title="Delete Compliance"
                           onClick={() => {
                             setSelectedComplianceId(item.complianceId);
-                            setOpenMenu(false);
+                            // setOpenMenu(false);
                             setOpenConfirmModal(true);
                           }}
                           className="p-1 text-red-600 hover:text-red-800 transition"
