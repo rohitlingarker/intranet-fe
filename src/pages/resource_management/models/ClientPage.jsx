@@ -1157,6 +1157,7 @@ const ClientPage = () => {
         <CreateClient
           mode="edit"
           initialData={clientDetails}
+          isEditable={clientStats.activeProjects > 0}
           onSuccess={() => {
             fetchClientDetails();
             setOpenUpdateClient(false);

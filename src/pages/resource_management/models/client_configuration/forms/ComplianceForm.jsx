@@ -176,7 +176,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
       {/* ===== FLAGS (MODERN TOGGLES) ===== */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-2">
         {/* Mandatory */}
-        <div className="relative inline-flex items-center cursor-pointer">
+        <label htmlFor="mandatoryFlag" className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id="mandatoryFlag"
@@ -190,13 +190,13 @@ const ComplianceForm = ({ formData, setFormData }) => {
             className="sr-only peer"
           />
           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-          <label htmlFor="mandatoryFlag" className="ml-3 text-sm font-medium text-gray-700">
+          <span className="ml-3 text-sm font-medium text-gray-700">
             Mandatory Requirement
-          </label>
-        </div>
+          </span>
+        </label>
 
         {/* Active */}
-        <div className="relative inline-flex items-center cursor-pointer">
+        <label htmlFor="activeFlag" className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             id="activeFlag"
@@ -210,10 +210,10 @@ const ComplianceForm = ({ formData, setFormData }) => {
             className="sr-only peer"
           />
           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-          <label htmlFor="activeFlag" className="ml-3 text-sm font-medium text-gray-700">
+          <span className="ml-3 text-sm font-medium text-gray-700">
             Active Status
-          </label>
-        </div>
+          </span>
+        </label>
       </div>
     </div>
   );
