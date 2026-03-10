@@ -189,7 +189,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const handleViewDetail = (demand) => {
         const id = demand.id || demand.demandId;
         searchParams.set('demandId', id);
-        setSearchParams(searchParams);
+        setSearchParams(searchParams, { state: { clientName: demand.clientName || demand.client } });
     };
 
     const handleBackToList = () => {
