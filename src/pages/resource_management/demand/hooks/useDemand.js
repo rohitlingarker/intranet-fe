@@ -144,6 +144,8 @@ export function useDemand(projectId = null) {
             list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE', 'REQUESTED', 'IN_PROGRESS', 'IN PROGRESS'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         } else if (activeTab === 'soft') {
             list = list.filter(d => ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab === 'rejected') {
+            list = list.filter(d => (d.demandStatus || d.lifecycleState)?.toUpperCase() === 'REJECTED');
         }
         else if (activeTab === 'fulfilled') {
             list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED' || d.demandStatus?.toUpperCase() === 'FULFILLED');
@@ -152,7 +154,9 @@ export function useDemand(projectId = null) {
         // but usually 'all' means all relevant demands.
 
         // Standard Filter: Remove Cancelled/Closed unless explicitly requested
-        if (activeTab !== 'all') {
+        if (activeTab !== 'all' && activeTab !== 'rejected') {
+            list = list.filter(d => !['CANCELLED', 'CLOSED', 'REJECTED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab !== 'all') {
             list = list.filter(d => !['CANCELLED', 'CLOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         }
 
@@ -197,6 +201,7 @@ export function useDemand(projectId = null) {
             priority: d.demandPriority || d.priority,
             slaDueAt: d.slaDueAt,
             slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
+            demandSlaId: d.demandSlaId || d.slaId,
             lifecycleState: d.demandStatus || d.lifecycleState,
             priorityScore: d.priorityScore || d.score || 85
         }));

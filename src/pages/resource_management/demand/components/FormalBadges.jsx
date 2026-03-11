@@ -35,6 +35,7 @@ export const PriorityBadge = ({ priority }) => {
 export const StateBadge = ({ state }) => {
     const s = String(state || 'Pending').toUpperCase();
     const config = {
+        'FULFILLED': { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Fulfilled' },
         'APPROVED': { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Approved' },
         'OPEN': { dot: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', label: 'Open' },
         'ACTIVE': { dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', label: 'Active' },

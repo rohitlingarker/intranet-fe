@@ -189,7 +189,7 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
     const handleViewDetail = (demand) => {
         const id = demand.id || demand.demandId;
         searchParams.set('demandId', id);
-        setSearchParams(searchParams);
+        setSearchParams(searchParams, { state: { clientName: demand.clientName || demand.client } });
     };
 
     const handleBackToList = () => {
@@ -217,11 +217,13 @@ const ProjectDemandManagement = ({ projectId, projectName }) => {
 
     // Calculate dynamic KPIs for this project using API data
     const projectKPIs = useMemo(() => {
-        const total = projectDemands.length;
-        const active = projectDemands.filter(d => ['ACTIVE', 'OPEN', 'APPROVED'].includes(d.lifecycleState?.toUpperCase())).length;
-        const fulfilled = projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED').length;
-        const soft = projectDemands.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase())).length;
-        const pending = projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'PENDING').length;
+        if (!kpiData) return [];
+
+        const total = kpiData.total || projectDemands.length;
+        const active = kpiData.active || projectDemands.filter(d => ['ACTIVE', 'OPEN', 'APPROVED'].includes(d.lifecycleState?.toUpperCase())).length;
+        const fulfilled = kpiData.fulfilled || projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED').length;
+        const soft = kpiData.soft || projectDemands.filter(d => ['SOFT', 'REQUESTED'].includes(d.lifecycleState?.toUpperCase())).length;
+        const pending = kpiData.pending || projectDemands.filter(d => d.lifecycleState?.toUpperCase() === 'PENDING').length;
 
         if (total === 0 && kpiData) {
             return [

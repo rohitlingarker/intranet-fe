@@ -6,7 +6,7 @@ import { ChevronRight, ChevronDown, MoreVertical } from "lucide-react";
 import StoryCard from "./StoryCard";
 import TaskCard from "./TaskCard";
 import { jwtDecode } from "jwt-decode";
-import { is } from "date-fns/locale";
+import { toast } from "react-toastify"; // if needed for the modal
 
 const SprintColumn = ({
   sprint,
@@ -18,9 +18,8 @@ const SprintColumn = ({
   sprints = [],
   permissions,
 
-  // ⭐ ADD THIS
   onDropStory,
-  onDropTask,          // ⭐ REQUIRED FOR TASK DND
+  onDropTask,
 
   onChangeStatus,
   onEditSprint,
@@ -32,9 +31,11 @@ const SprintColumn = ({
   onStoryClick,
   onTaskClick,
 }) => {
-
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Track which stories are expanded inside this specific sprint
+  const [expandedStories, setExpandedStories] = useState([]);
 
   const isCompleted = sprint.status === "COMPLETED";
 
@@ -65,24 +66,21 @@ const SprintColumn = ({
   // })();
 
   /** -----------------------------------------
-   * ⭐ FIX DND TO SUPPORT BOTH STORY + TASK
+   * DND TO SUPPORT BOTH STORY + TASK
    * -----------------------------------------
    */
   const [{ isOver }, dropRef] = useDrop(
     () => ({
-      accept: ["STORY", "TASK"],   // ⭐ WAS "STORY" ONLY
+      accept: ["STORY", "TASK"],
       canDrop: () => !isCompleted,
-
       drop: (item) => {
         if (isCompleted) return;
-
         if (item.type === "TASK") {
-          onDropTask?.(item.id, sprint.id);   // ⭐ ADD THIS
+          onDropTask?.(item.id, sprint.id);
         } else {
-          onDropStory?.(item.id, sprint.id);  // ⭐ KEEP EXISTING
+          onDropStory?.(item.id, sprint.id);
         }
       },
-
       collect: (monitor) => ({
         isOver: monitor.isOver() && !isCompleted,
       }),
@@ -90,18 +88,19 @@ const SprintColumn = ({
     [isCompleted]
   );
 
-  const sortedStories = [...stories].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
-  const sortedTasks = [...tasks].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  // Sort base items
+  const sortedStories = [...stories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const sortedTasks = [...tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // Find Independent Tasks (Tasks where task.storyId is null, OR the parent story is not in this sprint)
+  const sprintStoryIds = new Set(sortedStories.map((s) => s.id));
+  const independentTasks = sortedTasks.filter((t) => !t.storyId || !sprintStoryIds.has(t.storyId));
 
   return (
     <div
       ref={dropRef}
       className={`border bg-white rounded-xl shadow-sm transition ${
-        isOver ? "bg-blue-50 border-blue-400" : ""
+        isOver ? "bg-blue-50 border-blue-400 ring-2 ring-blue-300" : ""
       }`}
     >
       {/* ===========================
@@ -119,7 +118,7 @@ const SprintColumn = ({
             {sprint.name || "Unnamed Sprint"}
           </h3>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 hidden sm:inline-block">
             {start} – {end}
           </span>
 
@@ -168,7 +167,6 @@ const SprintColumn = ({
               {menuOpen && (
                 <div className="absolute right-0 mt-1 bg-white border border-gray-200 shadow-lg rounded-md w-40 z-20 overflow-hidden">
                   
-                  {/* Conditionally Render Edit */}
                   {onEditSprint && (
                     <button
                       className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
@@ -182,7 +180,6 @@ const SprintColumn = ({
                     </button>
                   )}
 
-                  {/* Conditionally Render Delete */}
                   {onDeleteSprint && (
                     <button
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -207,36 +204,89 @@ const SprintColumn = ({
           BODY CONTENT
       ============================ */}
       {expanded && (
-        <div className="p-4 space-y-3 min-h-[80px]">
+        <div className="p-4 space-y-3 min-h-[80px] bg-white rounded-b-xl">
           {totalItems === 0 && (
-            <p className="text-gray-400 italic">No work items</p>
+            <p className="text-gray-400 italic text-center py-4 border border-dashed rounded-lg bg-gray-50">Drop issues here</p>
           )}
 
-          {/* ---- STORIES ---- */}
-          {sortedStories.map((story) => (
-            <StoryCard
-              key={`story-${story.id}`}
-              story={story}
-              epics={epics}
-              statuses={statuses}
-              sprints={sprints}
-              onAddToSprint={onDropStory}
-              onClick={() => onStoryClick(story.id)}
-            />
-          ))}
+          {/* 1. STORIES WITH NESTED TASKS */}
+          {sortedStories.map((story) => {
+            const childTasks = sortedTasks.filter((t) => t.storyId === story.id);
+            const isStoryExpanded = expandedStories.includes(story.id);
 
-          {/* ---- TASKS ---- */}
-          {sortedTasks.map((task) => (
-            <TaskCard
-              key={`task-${task.id}`}
-              task={task}
-              stories={allStories}
-              sprints={sprints}
-              onSelectParentStory={onSelectParentStory}
-              onAddToSprint={onDropTask}   // ⭐ REQUIRED
-              onClick={() => onTaskClick(task.id)}
-            />
-          ))}
+            return (
+              <div key={`story-${story.id}`} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  
+                  {/* Expand/Collapse Button (Only shows if story has tasks) */}
+                  {childTasks.length > 0 ? (
+                    <button
+                      onClick={() => toggleStoryExpand(story.id)}
+                      className="p-1 rounded-md bg-gray-100 hover:bg-indigo-100 text-gray-600 hover:text-indigo-700 transition-colors shadow-sm shrink-0"
+                      title={isStoryExpanded ? "Collapse tasks" : "Expand tasks"}
+                    >
+                      {isStoryExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
+                  ) : (
+                    <span className="w-[26px] shrink-0"></span> // Invisible spacer for alignment
+                  )}
+
+                  {/* The Parent Story */}
+                  <div className="flex-1 min-w-0">
+                    <StoryCard
+                      story={story}
+                      epics={epics}
+                      statuses={statuses}
+                      sprints={sprints}
+                      onAddToSprint={onDropStory}
+                      onClick={() => onStoryClick(story.id)}
+                    />
+                  </div>
+                </div>
+
+                {/* Nested Tasks */}
+                {isStoryExpanded && childTasks.length > 0 && (
+                  <div className="pl-10 border-l-2 border-indigo-100 ml-3 flex flex-col gap-2 py-1 mt-1 mb-2">
+                    {childTasks.map((task) => (
+                      <TaskCard
+                        key={`task-${task.id}`}
+                        task={task}
+                        stories={allStories}
+                        sprints={sprints}
+                        onSelectParentStory={onSelectParentStory}
+                        onAddToSprint={onDropTask}
+                        onClick={() => onTaskClick(task.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* 2. INDEPENDENT TASKS */}
+          {independentTasks.length > 0 && (
+            <div className={`${sortedStories.length > 0 ? "mt-6 pt-4 border-t border-gray-100" : ""}`}>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Independent Tasks
+              </h4>
+              <div className="space-y-2">
+                {independentTasks.map((task) => (
+                  <div className="pl-8" key={`task-${task.id}`}>
+                    <TaskCard
+                      task={task}
+                      stories={allStories}
+                      sprints={sprints}
+                      onSelectParentStory={onSelectParentStory}
+                      onAddToSprint={onDropTask}
+                      onClick={() => onTaskClick(task.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

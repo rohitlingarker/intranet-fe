@@ -48,7 +48,7 @@ export function useAvailability() {
     try {
       const payload = {
         page: page - 1,
-        size: 20,
+        size: 10,
       };
 
       // If no explicit date filters are set, pass the current view month as window
@@ -93,6 +93,7 @@ export function useAvailability() {
 
   // Effect to fetch data
   useEffect(() => {
+    setLoading(true); // Set loading immediately for instant feedback
     const delay = setTimeout(() => {
       fetchData();
     }, 400);
@@ -100,12 +101,10 @@ export function useAvailability() {
     return () => clearTimeout(delay);
   }, [filters, page, currentDate]);
 
-  // We need to use useEffect directly, but I can't easily change the imports at the top with this tool if I only replace the body.
-  // I will use a separate tool call to fix imports first or do a full file replacement.
-  // Let's assume I can't change top imports easily in this chunk.
-  // Wait, I can just use `useEffect` from the existing import on line 1?
-  // Line 1: import { useState, useMemo, useCallback } from "react"
-  // I need to add `useEffect` to the imports.
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   const handleResourceClick = useCallback((resource) => {
     setSelectedResource(resource);

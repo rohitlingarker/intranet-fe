@@ -184,6 +184,23 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   };
 
   // =======================================
+  // Assign Epic to Story
+  // =======================================
+  const handleAssignEpicToStory = async (storyId, epicId) => {
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/stories/${storyId}/assign-epic/${epicId}`,
+        {},
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      toast.success("Epic assigned successfully!", { autoClose: 1500 });
+      fetchStories(); // Refresh the list
+    } catch (err) {
+      toast.error("Failed to assign epic", { autoClose: 2000 });
+    }
+  };
+
+  // =======================================
   // Move Task
   // =======================================
   const handleDropTask = async (taskId, sprintId) => {
@@ -513,6 +530,7 @@ const BacklogDropWrapper = ({ children }) => {
                   sprints={activeAndPlanningSprints}
                   permissions={permissions}
                   onSelectParentStory={handleAssignTaskToStory}
+                  onSelectEpic={handleAssignEpicToStory}
                   onDropStory={handleDropStory}
                   onDropTask={handleDropTask}
                   onChangeStatus={handleSprintStatus}
@@ -522,7 +540,9 @@ const BacklogDropWrapper = ({ children }) => {
                     setPanelMode("sprint");
                     setRightPanelOpen(true);
                   }}
-                  onSelectEpic={() => {}}
+                  // onSelectEpic={() => {
+
+                  // }}
                   onStoryClick={(id) => {
                     setPanelMode("story");
                     setSelectedStoryId(id);
@@ -574,6 +594,7 @@ const BacklogDropWrapper = ({ children }) => {
                           sprints={sprints}
                           onDropStory={handleDropStory}
                           onSelectParentStory={handleAssignTaskToStory}
+                          onSelectEpic={handleAssignEpicToStory}
                           onDropTask={handleDropTask}
                           onChangeStatus={handleSprintStatus}
                           onStoryClick={(id) => {
@@ -636,6 +657,7 @@ const BacklogDropWrapper = ({ children }) => {
                         sprints={activeAndPlanningSprints}
                         epics={epics}
                         onAddToSprint={handleDropStory}
+                         onSelectEpic={handleAssignEpicToStory}
                         onClick={() => {
                           setPanelMode("story");
                           setSelectedStoryId(story.id);

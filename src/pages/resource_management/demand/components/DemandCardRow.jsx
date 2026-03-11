@@ -63,16 +63,46 @@ const DemandCardRow = ({ demand, onView, onEdit, activeTab }) => {
                     <PriorityBadge priority={demand.priority} />
                 </div>
 
-                {/* 4. SLA Compliance */}
+                {/* 4. SLA Compliance or Rejection Reason */}
                 <div className="col-span-2 flex justify-center">
-                    <SLABadge
-                        days={demand.slaDays}
-                        isSoft={
-                            activeTab === 'soft' ||
-                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
-                            ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
-                        }
-                    />
+                    {activeTab === 'rejected' ? (
+                        <div className="flex flex-col items-center gap-1 w-full px-2 overflow-hidden">
+                            {(demand.rmRejectionReason || demand.dmRejectionReason || demand.rejectionReason) ? (
+                                <>
+                                    <span
+                                        className="text-[10px] font-bold text-rose-600 truncate max-w-full italic"
+                                        title={demand.rmRejectionReason || demand.dmRejectionReason || demand.rejectionReason}
+                                    >
+                                        "{demand.rmRejectionReason || demand.dmRejectionReason || demand.rejectionReason}"
+                                    </span>
+                                    <span className="text-[8px] font-black text-slate-400 tracking-widest uppercase">
+                                        {demand.rmRejectionReason ? 'RM Reason' : demand.dmRejectionReason ? 'DM Reason' : 'Reason'}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-[10px] text-slate-400 italic font-bold">No reason specified</span>
+                            )}
+                        </div>
+                    ) : (demand.demandSlaId || demand.slaId) ? (
+                        <SLABadge
+                            days={demand.slaDays}
+                            isSoft={
+                                !demand.demandSlaId && (
+                                    activeTab === 'soft' ||
+                                    ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.demandCommitment?.toUpperCase()) ||
+                                    ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes(demand.lifecycleState?.toUpperCase())
+                                )
+                            }
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-lg border min-w-[80px] bg-slate-50 border-slate-100 text-slate-400">
+                            <div className="flex items-center gap-1">
+                                <Clock className="h-2 w-2 opacity-40" />
+                                <span className="text-[8px] font-black tracking-widest uppercase">SLA</span>
+                            </div>
+                            <span className="text-[11px] font-black">No SLA</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 5. Status */}

@@ -71,7 +71,7 @@ const BugPage = () => {
   const loadEmployees = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_USER_MANAGEMENT_URL}/api/projects/{id}/members-with-owner`,
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/members-with-owner`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
