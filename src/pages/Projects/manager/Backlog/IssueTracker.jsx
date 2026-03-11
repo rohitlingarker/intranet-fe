@@ -12,6 +12,7 @@ import LoadingSpinner from "../../../../components/LoadingSpinner";
 
 const IssueTracker = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { projectId: paramProjectId } = useParams(); // 2. Keep this for fallback
   
 
