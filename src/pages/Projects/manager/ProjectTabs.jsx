@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { lazy, Suspense } from "react";
+import {ArrowLeft} from "lucide-react"
 
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
@@ -156,12 +157,33 @@ const ProjectTabs = () => {
     <div>
       {/* Header */}
       <header className="bg-white mb-4 px-4 py-3 flex items-center justify-between border-b">
-        <h1 className="text-xl font-semibold text-slate-700">
-          {projectName || "Project"}
-        </h1>
-        <Navbar logo={null} navItems={navItemsWithActive} />
-      </header>
 
+        {/* LEFT SIDE */}
+        <div className="flex items-center gap-6">
+
+          {/* Project Name */}
+          <button
+            onClick={() => navigate("/projects")}
+            className="text-xl font-semibold text-slate-700 hover:text-indigo-600 transition"
+          >
+            {projectName || "Project"}
+          </button>
+
+          {/* Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-200 text-white font-medium rounded-lg shadow hover:bg-gray-400 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            
+          </button>
+
+        </div>
+
+        {/* Tabs */}
+        <Navbar logo={null} navItems={navItemsWithActive} />
+
+      </header>
       {/* Tab Content */}
       <div>{renderTabContent()}</div>
 
