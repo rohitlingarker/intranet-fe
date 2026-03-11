@@ -1055,7 +1055,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
         <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-indigo-100">
 
             {/* --- TOP HEADER (Responsive & Matched Layout) --- */}
-            <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
+            <header className="bg-white border-b border-slate-100 sticky top-0">
                 <div className="max-w-[1500px] mx-auto px-6 py-5">
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
 
