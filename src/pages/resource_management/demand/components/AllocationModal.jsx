@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, Percent, Activity, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
 import { fetchResources, resourceAllocation } from "../../services/resource";
 import { toast } from 'react-toastify';
 import { cn } from "@/lib/utils";
@@ -30,7 +24,7 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
         demandId: demand?.demandId || demand?.id || '',
         allocationStartDate: toDateInputValue(demand?.demandStartDate),
         allocationEndDate: toDateInputValue(demand?.demandEndDate),
-        allocationPercentage: 100,
+        allocationPercentage: demand?.allocationPercentage || 100,
         allocationStatus: 'ACTIVE'
     });
 
@@ -121,6 +115,8 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
         if (formData.allocationPercentage <= 0 || formData.allocationPercentage > 100) {
             newErrors.allocationPercentage = 'Percentage must be between 1 and 100';
         }
+
+        if (!formData.allocationStatus) newErrors.allocationStatus = 'Allocation status is required';
 
         setErrors(newErrors);
         return {
@@ -354,12 +350,14 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                             </label>
                             <div className="relative">
                                 <Input
+                                    readOnly
+                                    disabled
                                     type="number"
                                     min="1"
                                     max="100"
                                     value={formData.allocationPercentage}
                                     onChange={(e) => setFormData({ ...formData, allocationPercentage: parseInt(e.target.value) || 0 })}
-                                    className={cn("h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs", errors.allocationPercentage && "border-rose-500")}
+                                    className={cn("h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs bg-slate-100 opacity-70 cursor-not-allowed select-none", errors.allocationPercentage && "border-rose-500")}
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400">%</span>
                             </div>
@@ -369,20 +367,27 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                 <Activity className="h-3 w-3 text-indigo-500" /> Status
                             </label>
-                            <Select
-                                value={formData.allocationStatus}
-                                onValueChange={(val) => setFormData({ ...formData, allocationStatus: val })}
-                            >
-                                <SelectTrigger className="h-10 rounded-xl border-slate-200 font-bold text-slate-900 text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="PLANNED">PLANNED</SelectItem>
-                                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                                    <SelectItem value="ENDED">ENDED</SelectItem>
-                                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <div className="relative">
+                                <select
+                                    value={formData.allocationStatus}
+                                    onChange={(e) => setFormData({ ...formData, allocationStatus: e.target.value })}
+                                    className={cn(
+                                        "h-10 w-full rounded-xl border font-bold text-slate-900 text-xs px-3 bg-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-0 transition-colors",
+                                        errors.allocationStatus ? "border-rose-500" : "border-slate-200"
+                                    )}
+                                >
+                                    <option value="PLANNED">PLANNED</option>
+                                    <option value="ACTIVE">ACTIVE</option>
+                                    <option value="ENDED">ENDED</option>
+                                    <option value="CANCELLED">CANCELLED</option>
+                                </select>
+                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
+                            </div>
+                            {errors.allocationStatus && <p className="text-[9px] font-bold text-rose-500 mt-1">{errors.allocationStatus}</p>}
                         </div>
                     </div>
                 </form>
