@@ -155,9 +155,13 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
         },
       );
 
+      console.log("res", res);
       const arr = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setAdminLeaveRequests(arr);
-      setAllLeaveTypes(types.data || []);
+      const regular = types.data?.regualar || [];
+      const genderBased = types.data?.genderBasedLeaves|| []; 
+      const mergedLeaves = [...regular, ...genderBased];
+      setAllLeaveTypes(mergedLeaves || []);
     } catch (err) {
       toast.error("Error fetching leave data");
     } finally {
@@ -436,7 +440,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
 
       const payload = {
         leaveId: originalRequest.leaveId,
-        employeeId: originalRequest.employee.employeeId,
+        employeeId: originalRequest.employeeId,
         managerId,
         reason: originalRequest.reason, // Keep original employee reason
         driveLink: originalRequest.driveLink || null,
@@ -765,9 +769,10 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
             ) : (
               // State 3: Render the data rows if data exists
               paginatedRequests.map((request) => {
+                console.log("request", request);
                 const typeObj =
                   allLeaveTypes.find(
-                    (t) => t.leaveName === request.leaveType.leaveName,
+                    (t) => t.leaveName === request.leaveName,
                   ) || request.leaveType;
                 return (
                   <tr
@@ -783,7 +788,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                           handleSelectRequest(
                             request.leaveId,
                             e.target.checked,
-                            request.employee.employeeId,
+                            request.employeeId,
                           )
                         }
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -798,15 +803,15 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                       <button
                         onClick={() =>
                           setLeaveBalaceModel({
-                            employeeId: request.employee.employeeId,
-                            employeeName: request.employee.fullName,
+                            employeeId: request.employeeId,
+                            employeeName: request.employeeFullName,
                             leaveId: request.leaveId,
                           })
                         }
                       >
-                        {request.employee.fullName}
+                        {request.employeeFullName}
                         <div className="text-gray-500 text-ellipsis whitespace-nowrap overflow-hidden max-w-[100px]">
-                          {request.employee.jobTitle}
+                          {request.jobTitle}
                         </div>
                       </button>
                     </td>
@@ -875,7 +880,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                     <td className="px-6 py-4">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {request.leaveType.leaveName}
+                          {request.leaveName}
                         </div>
                       </div>
                     </td>
@@ -942,7 +947,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 setConfirmation({
                                   action: "approve",
                                   leaveId: request.leaveId,
-                                  resourceId: request.employee.employeeId,
+                                  resourceId: request.employeeId,
                                 })
                               }
                               aria-label="Approve Request"

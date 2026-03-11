@@ -187,4 +187,4 @@ export function ResourceTable({ resources, onResourceClick }) {
       </div>
     </div>
   )
-}
+};

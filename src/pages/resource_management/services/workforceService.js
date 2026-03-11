@@ -224,7 +224,7 @@ export const getProficiencyLevels = async () => {
 export const fetchDemands = async () => {
   try {
     const response = await axios.get(
-      `${BASE_URL}/api/demand/demands`,
+      `${BASE_URL}/api/demand/rm/demands`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

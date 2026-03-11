@@ -147,7 +147,7 @@ const TimelineHeader = memo(function TimelineHeader({
 }) {
   return (
     <div
-      className="sticky top-0 h-10 border-b bg-white/95 backdrop-blur-sm z-30"
+      className="sticky top-0 h-10 border-b bg-white/95 backdrop-blur-sm"
       style={{ width: `${totalDays * dayWidth}px` }}
     >
       {ticks.map((tick, i) => (
@@ -163,7 +163,7 @@ const TimelineHeader = memo(function TimelineHeader({
       ))}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary z-20"
+          className="absolute top-0 h-full w-px bg-primary"
           style={{ left: `${todayOffset}px` }}
         >
           <div className="absolute -top-0 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 rounded-b leading-tight py-0.5 shadow-sm">
@@ -232,7 +232,7 @@ const AllocationBar = memo(function AllocationBar({
 
       {/* Tooltip Overlay (Desktop) */}
       {!isAvailability && (
-        <div className="absolute hidden group-hover/bar:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[100] pointer-events-none">
+        <div className="absolute hidden group-hover/bar:block bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
           <div className="bg-white p-2 shadow-xl border border-border rounded-md min-w-[140px] text-slate-900">
             <p className="text-[10px] font-bold border-b pb-1 mb-1">{projectName}</p>
             <div className="space-y-0.5">
@@ -325,7 +325,7 @@ const ResourceRow = memo(function ResourceRow({
       {/* Today Highlight Column */}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 bottom-0 bg-blue-500/5 border-x border-blue-500/10 z-0 pointer-events-none"
+          className="absolute top-0 bottom-0 bg-blue-500/5 border-x border-blue-500/10 pointer-events-none"
           style={{ left: `${todayOffset}px`, width: `${dayWidth}px` }}
         />
       )}
@@ -434,7 +434,7 @@ function RoleAggregateRow({
       ))}
       {todayOffset >= 0 && todayOffset <= totalDays * dayWidth && (
         <div
-          className="absolute top-0 h-full w-px bg-primary/20 z-10"
+          className="absolute top-0 h-full w-px bg-primary/20"
           style={{ left: `${todayOffset}px` }}
         />
       )}
@@ -456,7 +456,7 @@ function RoleAggregateRow({
               top: `${i * TRACK_HEIGHT + ROW_PADDING / 2.5}px`,
               height: `${TRACK_HEIGHT - 6}px`,
             }}
-            className="z-20 group hover:z-[100]"
+            className="group hover:z-[100]"
           >
             <button
               type="button"
@@ -478,7 +478,7 @@ function RoleAggregateRow({
               )}
             </button>
 
-            <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none">
+            <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
               <div className="bg-white p-3 shadow-2xl border border-slate-200 rounded-lg min-w-[240px]">
                 <div className="space-y-2">
                   <p className="text-xs font-heading font-bold text-slate-900 border-b pb-1.5">
@@ -736,7 +736,7 @@ export function AvailabilityTimeline({
   return (
     <div className="rounded-lg border bg-card overflow-hidden shadow-sm flex flex-col h-full bg-slate-50">
       {/* ─── STATIC HEADER (PERSISTENT) ─────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative z-50">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b p-3 bg-white relative">
         <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto overflow-x-auto no-scrollbar pr-2">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v)} className="shrink-0">
             <TabsList className="h-8 bg-muted/50 p-1 shrink-0 min-w-max">
@@ -846,8 +846,8 @@ export function AvailabilityTimeline({
         <TooltipProvider delayDuration={100}>
           <div className="flex flex-1 overflow-hidden min-h-0">
             {/* Sidebar */}
-            <div className="shrink-0 border-r bg-white z-40 w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
-              <div className="sticky top-0 h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0 z-50">
+            <div className="shrink-0 border-r bg-white w-[120px] sm:w-[180px] lg:w-[240px] flex flex-col shadow-sm">
+              <div className="sticky top-0 h-10 border-b bg-muted/40 flex items-center px-2 sm:px-4 shrink-0">
                 <span className="text-[8px] sm:text-[10px] font-heading font-bold text-muted-foreground uppercase tracking-wider truncate">
                   {viewMode === "resource" ? "Resource" : "Role Category"}
                 </span>
@@ -914,7 +914,7 @@ export function AvailabilityTimeline({
 
             <div
               ref={scrollRef}
-              className="flex-1 overflow-x-auto bg-white relative z-20"
+              className="flex-1 overflow-x-auto bg-white relative"
             >
               <div style={{ width: `${totalDays * config.dayWidth}px` }}>
                 <TimelineHeader
