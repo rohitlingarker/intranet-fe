@@ -13,6 +13,8 @@ import LoadingSpinner from "../../../../components/LoadingSpinner";
 const IssueTracker = () => {
   const location = useLocation();
   const { projectId: paramProjectId } = useParams(); // 2. Keep this for fallback
+  
+
 
   // 3. Extract your variables from the router state
   const projectId = location.state?.projectId || paramProjectId;
