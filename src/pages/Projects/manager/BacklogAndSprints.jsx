@@ -445,7 +445,7 @@ const BacklogDropWrapper = ({ children }) => {
               variant="outline"
               className="flex items-center gap-2"
               onClick={() =>
-                navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } })
+                navigate(`/projects/${projectId}/issuetracker`, { state: { projectId,projectName } })
               }
             >
               <List size={18} /> Issue Tracker
