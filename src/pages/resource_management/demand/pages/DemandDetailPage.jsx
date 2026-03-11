@@ -283,14 +283,16 @@ const RoleInfoTab = ({ demand, role }) => {
  */
 const ApprovalFlowTab = ({ demand }) => {
     const rawStatus = demand?.demandStatus?.toUpperCase() || '';
-    const rejectionReason = demand?.rejectionReason || null;
+    const dmRejection = demand?.dmRejectionReason || (rawStatus === 'REJECTED' && !demand?.rmRejectionReason ? demand?.rejectionReason : null);
+    const rmRejection = demand?.rmRejectionReason || (rawStatus === 'REJECTED' && !!demand?.rmRejectionReason ? demand?.rejectionReason : null);
 
     // ── Derive step statuses from real demand status ──────────────────────────
-    const dmDone = ['APPROVED', 'FULFILLED', 'ACTIVE', 'REJECTED'].includes(rawStatus);
+    const dmDone = ['APPROVED', 'FULFILLED', 'ACTIVE'].includes(rawStatus) || (rawStatus === 'REJECTED' && !!rmRejection);
+    const dmRejected = rawStatus === 'REJECTED' && !!dmRejection;
     const dmPending = rawStatus === 'REQUESTED' || rawStatus === 'DRAFT';
 
     const rmDone = ['FULFILLED', 'ACTIVE'].includes(rawStatus);
-    const rmRejected = rawStatus === 'REJECTED';
+    const rmRejected = rawStatus === 'REJECTED' && !!rmRejection;
     const rmPending = rawStatus === 'APPROVED';
 
     const finalDone = ['FULFILLED', 'ACTIVE'].includes(rawStatus);
@@ -303,13 +305,13 @@ const ApprovalFlowTab = ({ demand }) => {
         },
         {
             label: "Delivery Manager Approved",
-            status: dmDone ? "complete" : dmPending ? "pending" : "future",
+            status: dmDone ? "complete" : dmRejected ? "rejected" : dmPending ? "pending" : "future",
+            rejectionReason: dmRejected ? dmRejection : null,
         },
         {
             label: "Resource Manager Approved",
             status: rmDone ? "complete" : rmRejected ? "rejected" : rmPending ? "pending" : "future",
-            // Pass rejection reason only to the RM step
-            rejectionReason: rmRejected ? rejectionReason : null,
+            rejectionReason: rmRejected ? rmRejection : null,
         },
         {
             label: "Final Confirmation",
@@ -418,10 +420,38 @@ const ApprovalFlowTab = ({ demand }) => {
 
             {/* ── CONDITIONAL STATUS BANNER ───────────────────────────────── */}
 
+            {/* REJECTED — DM rejected the demand */}
+            {dmRejected && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 text-rose-700">
+                            <XCircle className="h-5 w-5 shrink-0" />
+                            <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">
+                                This demand was <strong>rejected by the Delivery Manager</strong>. Please review the requirements and resubmit.
+                            </span>
+                        </div>
+                        <div className="w-full sm:w-auto text-center px-4 py-2 bg-rose-600 text-white rounded-xl text-[9px] sm:text-[10px] font-black tracking-[0.15em] shadow-lg shadow-rose-600/20 whitespace-nowrap">
+                            DM REJECTED
+                        </div>
+                    </div>
+
+                    {dmRejection && (
+                        <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-4 bg-white border border-rose-200 rounded-xl">
+                            <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5">
+                                <AlertTriangle className="h-3 w-3" />
+                                DM Rejection Reason
+                            </p>
+                            <p className="text-sm font-bold text-rose-700 leading-relaxed">
+                                &ldquo;{dmRejection}&rdquo;
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* REJECTED — RM rejected the demand */}
             {rmRejected && (
                 <div className="bg-rose-50 border border-rose-200 rounded-2xl shadow-sm overflow-hidden">
-                    {/* Top row */}
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3 text-rose-700">
                             <XCircle className="h-5 w-5 shrink-0" />
@@ -434,15 +464,14 @@ const ApprovalFlowTab = ({ demand }) => {
                         </div>
                     </div>
 
-                    {/* Rejection Reason callout */}
-                    {rejectionReason && (
+                    {rmRejection && (
                         <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-4 bg-white border border-rose-200 rounded-xl">
                             <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5">
                                 <AlertTriangle className="h-3 w-3" />
-                                Rejection Reason
+                                RM Rejection Reason
                             </p>
                             <p className="text-sm font-bold text-rose-700 leading-relaxed">
-                                &ldquo;{rejectionReason}&rdquo;
+                                &ldquo;{rmRejection}&rdquo;
                             </p>
                         </div>
                     )}
@@ -1026,7 +1055,7 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
         <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans selection:bg-indigo-100">
 
             {/* --- TOP HEADER (Responsive & Matched Layout) --- */}
-            <header className="bg-white border-b border-slate-100 sticky top-0 z-50">
+            <header className="bg-white border-b border-slate-100 sticky top-0">
                 <div className="max-w-[1500px] mx-auto px-6 py-5">
                     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
 

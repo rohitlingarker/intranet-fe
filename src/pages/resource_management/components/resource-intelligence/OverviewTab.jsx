@@ -52,6 +52,60 @@ function UtilizationChart({ data }) {
     );
 }
 
+// ── Timeline Bar ───────────────────────────────────────────────────────────
+function TimelineBar({ resource }) {
+    const blocks = resource.allocationTimeline || []
+    if (blocks.length === 0) {
+        return <div className="h-2 w-full bg-slate-100 rounded-full" />
+    }
+
+    const earliest = new Date(blocks[0].startDate).getTime()
+    const latest = Math.max(...blocks.map((b) => new Date(b.endDate).getTime()))
+    const totalSpan = latest - earliest || 1
+    const today = Date.now()
+
+    return (
+        <div className="relative pt-4 pb-2 font-sans">
+            <div className="relative h-6 sm:h-8 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shadow-inner">
+                {blocks.map((block, i) => {
+                    const start = new Date(block.startDate).getTime()
+                    const end = new Date(block.endDate).getTime()
+                    const leftPct = ((start - earliest) / totalSpan) * 100
+                    const widthPct = ((end - start) / totalSpan) * 100
+
+                    let color = "bg-emerald-400/80"
+                    if (block.allocation > 100) color = "bg-rose-400/80"
+                    else if (block.allocation > 70) color = "bg-amber-400/80"
+                    else if (block.allocation > 20) color = "bg-indigo-400/80"
+
+                    return (
+                        <div
+                            key={`${block.project}-${i}`}
+                            className={cn(
+                                "absolute top-0 h-full border-r border-white/20 transition-all hover:brightness-110",
+                                block.tentative ? "bg-slate-300/40 border-r border-dashed border-slate-400" : color
+                            )}
+                            style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 1)}%` }}
+                            title={`${block.project}: ${block.allocation}% (${block.startDate} - ${block.endDate})`}
+                        />
+                    )
+                })}
+                {today >= earliest && today <= latest && (
+                    <div
+                        className="absolute top-0 h-full w-0.5 bg-indigo-600 z-10 shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                        style={{ left: `${((today - earliest) / totalSpan) * 100}%` }}
+                    />
+                )}
+            </div>
+            <div className="flex justify-between mt-2 px-0.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{new Date(blocks[0].startDate).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">Current</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{new Date(blocks[blocks.length - 1].endDate).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}</span>
+            </div>
+        </div>
+    )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -123,11 +177,17 @@ export default function OverviewTab({ resource }) {
                     <h3 className="text-sm font-heading font-bold text-slate-900 mb-4 flex items-center gap-2">
                         <Users className="h-4 w-4 text-indigo-500" /> Profile Summary
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                         <MiniInfoRow icon={MapPin} label="Location" value={resource.location} />
                         <MiniInfoRow icon={Briefcase} label="Experience" value={`${resource.experience || 0} Yrs`} />
                         <MiniInfoRow icon={Calendar} label="Available From" value={resource.availableFrom} />
                         <MiniInfoRow icon={Percent} label="Employment" value={resource.employmentType} />
+                        {resource.currentProject && (
+                            <MiniInfoRow icon={FolderKanban} label="Current Assignment" value={Array.isArray(resource.currentProject) ? resource.currentProject[0] : resource.currentProject} />
+                        )}
+                        {resource.nextAssignment && (
+                            <MiniInfoRow icon={ArrowRight} label="Next Assignment" value={resource.nextAssignment} />
+                        )}
                     </div>
                 </div>
 
@@ -146,18 +206,29 @@ export default function OverviewTab({ resource }) {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-end">
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-baseline">
-                                <span className="text-xs font-bold text-slate-500 font-sans">Active Workload</span>
-                                <span className="text-2xl font-bold text-indigo-600 font-sans">{resource.currentAllocation || 0}%</span>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-baseline pt-2">
+                                <span className="text-xs font-black text-slate-400 font-sans uppercase tracking-widest">Active Workload</span>
+                                <span className="text-3xl font-black text-indigo-600 font-sans tabular-nums tracking-tighter">{resource.currentAllocation || 0}%</span>
                             </div>
-                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500 transition-all duration-700" style={{ width: `${Math.min(resource.currentAllocation || 0, 100)}%` }} />
+                            
+                            <TimelineBar resource={resource} />
+                            
+                            <div className="bg-indigo-50/30 rounded-lg p-3 border border-indigo-100/50">
+                                <p className="text-[10px] font-bold text-indigo-700/70 font-sans uppercase tracking-[0.2em]">Strategy Insight</p>
+                                <p className="text-[11px] font-medium text-indigo-900 mt-1 leading-relaxed">
+                                    Current monthly capacity balance is <span className="font-black">{100 - (resource.currentAllocation || 0)}%</span>. 
+                                    {resource.currentAllocation > 100 ? " Resource is currently over-allocated." : 
+                                     resource.currentAllocation === 100 ? " Resource is at full capacity." : 
+                                     " Optimal room for strategic upskilling or shadow roles."}
+                                </p>
                             </div>
-                            <p className="text-[10px] font-medium text-slate-400 font-sans">Current monthly capacity balance</p>
                         </div>
 
-                        <div className="h-24">
+                        <div className="h-32">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[10px] font-black text-slate-400 font-sans uppercase tracking-widest">Utilization Trend</span>
+                            </div>
                             {utilLoading ? (
                                 <div className="h-full w-full bg-slate-50 animate-pulse rounded-lg" />
                             ) : (
@@ -167,54 +238,78 @@ export default function OverviewTab({ resource }) {
                     </div>
                 </div>
 
-                {/* COLUMN 3: Risk & Actions (30%) */}
+                {/* COLUMN 3: Allocation Timeline & Risk (30%) */}
                 <div className="md:col-span-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
                     <h3 className="text-sm font-heading font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-indigo-500" /> Risk Assessment
+                        <Percent className="h-4 w-4 text-indigo-500" /> Allocation Breakdown
                     </h3>
 
                     <div className="flex-1 space-y-4">
+                        {/* Breakdown List */}
+                        <div className="space-y-3">
+                            {(resource.allocationTimeline || []).length > 0 ? (
+                                resource.allocationTimeline.map((block, i) => (
+                                    <div key={i} className="flex items-center justify-between group/item">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <div className={cn(
+                                                    "h-1.5 w-1.5 rounded-full shrink-0",
+                                                    new Date() > new Date(block.endDate) ? "bg-slate-300" :
+                                                        block.allocation > 70 ? "bg-amber-400" : "bg-emerald-400"
+                                                )} />
+                                                <p className="text-[11px] font-bold text-slate-900 truncate font-sans group-hover/item:text-indigo-600 transition-colors">{block.project}</p>
+                                            </div>
+                                            <p className="text-[9px] font-medium text-slate-400 pl-3 font-sans uppercase tracking-tight">
+                                                {new Date(block.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {new Date(block.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[11px] font-black text-slate-900 font-sans tabular-nums">{block.allocation}%</span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-[10px] text-slate-400 italic">No detailed timeline available</p>
+                            )}
+                        </div>
+
+                        <div className="h-px bg-slate-50 my-2" />
+
+                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                            <Shield className="h-3 w-3" /> Risk Status
+                        </h3>
+
                         {isNotice ? (
                             <div className="bg-rose-50 border border-rose-100 p-3 rounded-lg">
                                 <div className="flex items-center gap-2 text-rose-600 mb-1">
                                     <AlertTriangle className="h-4 w-4" />
-                                    <span className="text-xs font-bold font-sans">Critical Exit</span>
+                                    <span className="text-xs font-bold font-sans tracking-tight">Critical Outcome</span>
                                 </div>
-                                <p className="text-[11px] font-medium text-rose-500 leading-tight font-sans">Serving notice period. Immediate bench risk upon completion.</p>
+                                <p className="text-[10px] font-medium text-rose-500 leading-tight font-sans">Serving notice period. Immediate bench risk upon completion.</p>
                             </div>
                         ) : resource.currentAllocation === 0 ? (
                             <div className="bg-amber-50 border border-amber-100 p-3 rounded-lg">
                                 <div className="flex items-center gap-2 text-amber-600 mb-1">
                                     <AlertTriangle className="h-4 w-4" />
-                                    <span className="text-xs font-bold font-sans">Bench Risk</span>
+                                    <span className="text-xs font-bold font-sans tracking-tight">Bench Risk</span>
                                 </div>
-                                <p className="text-[11px] font-medium text-amber-500 leading-tight font-sans">Resource unallocated. Prioritize project matching.</p>
+                                <p className="text-[10px] font-medium text-amber-500 leading-tight font-sans">Resource unallocated. Prioritize project matching.</p>
                             </div>
                         ) : (
                             <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
                                 <div className="flex items-center gap-2 text-emerald-600 mb-1">
                                     <CheckCircle2 className="h-4 w-4" />
-                                    <span className="text-xs font-bold font-sans">Healthy Stable</span>
+                                    <span className="text-xs font-bold font-sans tracking-tight">Stable Capacity</span>
                                 </div>
-                                <p className="text-[11px] font-medium text-emerald-500 leading-tight font-sans">Active allocation within optimal performance range.</p>
+                                <p className="text-[10px] font-medium text-emerald-500 leading-tight font-sans">Active allocation within optimal performance range.</p>
                             </div>
                         )}
 
-                        {hasExpiredCerts && (
-                            <div className="bg-amber-50 border border-amber-100 p-3 rounded-lg">
-                                <div className="flex items-center gap-2 text-amber-600 mb-1">
-                                    <Award className="h-4 w-4" />
-                                    <span className="text-xs font-bold font-sans">Cert Renewal</span>
-                                </div>
-                                <p className="text-[11px] font-medium text-amber-500 leading-tight font-sans">One or more critical certifications have expired.</p>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-4">
-                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full">
+                        <div className="grid grid-cols-2 gap-3 mt-auto pt-6">
+                            <Button variant="outline" className="h-9 text-[10px] font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full uppercase tracking-tighter">
                                 Create Demand
                             </Button>
-                            <Button variant="outline" className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full">
+                            <Button variant="outline" className="h-9 text-[10px] font-bold border-slate-200 hover:bg-slate-50 font-sans shadow-sm w-full uppercase tracking-tighter">
                                 Reserve
                             </Button>
                         </div>
