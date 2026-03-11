@@ -2,14 +2,15 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import demandService from "../services/demandService";
 import { useAuth } from "../../../../contexts/AuthContext";
 
+
 export const defaultFilters = {
     search: "",
-    client: "ALL",
-    priority: "ALL",
-    status: "ALL",
-    demandName: "ALL",
-    demandType: "ALL",
-    deliveryModel: "ALL",
+    client: [],
+    priority: [],
+    status: [],
+    demandName: [],
+    demandType: [],
+    deliveryModel: [],
 };
 
 const ROLE_PRIORITY = [
@@ -143,6 +144,8 @@ export function useDemand(projectId = null) {
             list = list.filter(d => ['APPROVED', 'OPEN', 'ACTIVE', 'REQUESTED', 'IN_PROGRESS', 'IN PROGRESS'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         } else if (activeTab === 'soft') {
             list = list.filter(d => ['SOFT', 'REQUESTED', 'DRAFT', 'PROPOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab === 'rejected') {
+            list = list.filter(d => (d.demandStatus || d.lifecycleState)?.toUpperCase() === 'REJECTED');
         }
         else if (activeTab === 'fulfilled') {
             list = list.filter(d => d.lifecycleState?.toUpperCase() === 'FULFILLED' || d.demandStatus?.toUpperCase() === 'FULFILLED');
@@ -151,7 +154,9 @@ export function useDemand(projectId = null) {
         // but usually 'all' means all relevant demands.
 
         // Standard Filter: Remove Cancelled/Closed unless explicitly requested
-        if (activeTab !== 'all') {
+        if (activeTab !== 'all' && activeTab !== 'rejected') {
+            list = list.filter(d => !['CANCELLED', 'CLOSED', 'REJECTED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
+        } else if (activeTab !== 'all') {
             list = list.filter(d => !['CANCELLED', 'CLOSED'].includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         }
 
@@ -167,23 +172,25 @@ export function useDemand(projectId = null) {
         }
 
         // Advanced Filters
-        if (filters.client !== 'ALL') {
-            list = list.filter(d => d.clientName === filters.client || d.client === filters.client);
+        if (filters.client?.length > 0) {
+            list = list.filter(d => filters.client.includes(d.clientName) || filters.client.includes(d.client));
         }
-        if (filters.priority !== 'ALL') {
-            list = list.filter(d => (d.demandPriority || d.priority)?.toUpperCase() === filters.priority.toUpperCase());
+        if (filters.priority?.length > 0) {
+            const up = filters.priority.map(p => p.toUpperCase());
+            list = list.filter(d => up.includes((d.demandPriority || d.priority)?.toUpperCase()));
         }
-        if (filters.status !== 'ALL') {
-            list = list.filter(d => (d.demandStatus || d.lifecycleState)?.toUpperCase() === filters.status.toUpperCase());
+        if (filters.status?.length > 0) {
+            const us = filters.status.map(s => s.toUpperCase());
+            list = list.filter(d => us.includes((d.demandStatus || d.lifecycleState)?.toUpperCase()));
         }
-        if (filters.demandName !== 'ALL') {
-            list = list.filter(d => (d.demandName || d.role) === filters.demandName);
+        if (filters.demandName?.length > 0) {
+            list = list.filter(d => filters.demandName.includes(d.demandName) || filters.demandName.includes(d.role));
         }
-        if (filters.demandType !== 'ALL') {
-            list = list.filter(d => d.demandType === filters.demandType);
+        if (filters.demandType?.length > 0) {
+            list = list.filter(d => filters.demandType.includes(d.demandType));
         }
-        if (filters.deliveryModel !== 'ALL') {
-            list = list.filter(d => d.deliveryModel === filters.deliveryModel);
+        if (filters.deliveryModel?.length > 0) {
+            list = list.filter(d => filters.deliveryModel.includes(d.deliveryModel));
         }
 
         return list.map(d => ({
@@ -194,6 +201,7 @@ export function useDemand(projectId = null) {
             priority: d.demandPriority || d.priority,
             slaDueAt: d.slaDueAt,
             slaDays: d.remainingDays !== undefined ? d.remainingDays : d.slaDays,
+            demandSlaId: d.demandSlaId || d.slaId,
             lifecycleState: d.demandStatus || d.lifecycleState,
             priorityScore: d.priorityScore || d.score || 85
         }));

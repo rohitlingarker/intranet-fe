@@ -224,7 +224,7 @@ export const getProficiencyLevels = async () => {
 export const fetchDemands = async () => {
   try {
     const response = await axios.get(
-      `${BASE_URL}/api/demand/demands`,
+      `${BASE_URL}/api/demand/rm/demands`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -237,22 +237,22 @@ export const fetchDemands = async () => {
   }
 };
 
-export const fetchResources = async () => {
-  try {
-    const response = await axios.get(
-      `${BASE_URL}/api/availability/timeline/window`,
-      {
-        params: { page: 0, size: 500 },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data.data; // Return the actual array
-  } catch (err) {
-    throw err;
-  }
-};
+// export const fetchResources = async () => {
+//   try {
+//     const response = await axios.get(
+//       `${BASE_URL}/api/availability/timeline/window`,
+//       {
+//         params: { page: 0, size: 500 },
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//       }
+//     );
+//     return response.data.data; // Return the actual array
+//   } catch (err) {
+//     throw err;
+//   }
+// };
 
 export const getSkillGapAnalysis = async (demandId, resourceId) => {
   try {

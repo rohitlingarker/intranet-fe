@@ -57,7 +57,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-import AdminDashboard from "./pages/Projects/Admin/AdminDashboard";
+
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -70,7 +70,7 @@ import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusRe
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
-
+import MyWorkPage from "./pages/Projects/MyWork/MyWorkPage";
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
@@ -109,6 +109,7 @@ import DepartmentsList from "./pages/employee-onboarding/hr-configuration/depart
 import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
 
 
+import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
@@ -136,6 +137,7 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
+// ✅ Leave Management
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
@@ -149,6 +151,7 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
+import LeaveUploadWizard from "./pages/leave_management/models/LeaveUploadWizard.jsx";
 
 
 
@@ -240,7 +243,7 @@ const ProjectManager = () => {
 
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -258,10 +261,14 @@ const AppRoutes = () => {
         navigate(lastPath, { replace: true });
       }
       else if (currentPath === "/") {
-        navigate("/dashboard", { replace: true });
+        if (user?.roles?.includes("DELIVERY-MANAGER")) {
+          navigate("/resource-management/demand", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       }
     }
-  }, [isAuthenticated, navigate]); // Removed location dependency to avoid navigation loops on every click
+  }, [isAuthenticated, user, navigate]); // Added user dependency
 
   return (
     <>
@@ -375,6 +382,7 @@ const AppRoutes = () => {
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
+          <Route path="/my-work" element={<MyWorkPage />} />
           {/* Employee Onboarding */}
 
           {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
@@ -417,7 +425,7 @@ const AppRoutes = () => {
             <Route path="create" element={<CreateOffer />} />
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
-           
+
             <Route path="hr-configuration" element={<HrConfiguration />} />
             <Route path="hr-configuration/country" element={<CountryManagement />} />
             <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
@@ -446,7 +454,7 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
-            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
@@ -678,6 +686,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["Manager"]}>
                 <ManageBlockLeave />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={`/leave-upload`}
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <LeaveUploadWizard />
               </ProtectedRoute>
             }
           />
