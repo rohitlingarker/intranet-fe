@@ -8,6 +8,7 @@ import TaskCard from "./TaskCard";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify"; // if needed for the modal
 
+
 const SprintColumn = ({
   sprint,
   stories = [],
@@ -31,8 +32,14 @@ const SprintColumn = ({
   onStoryClick,
   onTaskClick,
 }) => {
+  
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const toggleStoryExpand = (storyId) => {
+    setExpandedStories((prev) =>
+      prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
+    );
+  };
   
   // Track which stories are expanded inside this specific sprint
   const [expandedStories, setExpandedStories] = useState([]);

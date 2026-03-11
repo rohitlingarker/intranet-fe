@@ -25,11 +25,15 @@ import RightSidePanel from "./Sprint/RightSidePanel";
 import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
 import SprintPendingModal from "./Sprint/SprintPendingModal";
 import { ca } from "date-fns/locale";
+import { useLocation } from "react-router-dom";
 
 
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
+  
+
   const navigate = useNavigate();
+
 
   const [stories, setStories] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -592,6 +596,7 @@ const BacklogDropWrapper = ({ children }) => {
                           epics={epics}
                           allStories={stories}
                           sprints={sprints}
+                          permissions={permissions}
                           onDropStory={handleDropStory}
                           onSelectParentStory={handleAssignTaskToStory}
                           onSelectEpic={handleAssignEpicToStory}
