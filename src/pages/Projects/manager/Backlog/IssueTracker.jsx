@@ -11,10 +11,12 @@ import EditEpicForm from "./EditEpicForm";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 
 const IssueTracker = () => {
-  const { projectId: paramProjectId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { projectId: paramProjectId } = useParams(); // 2. Keep this for fallback
+
+  // 3. Extract your variables from the router state
   const projectId = location.state?.projectId || paramProjectId;
+  const projectName = location.state?.projectName || "Unknown Project";
 
   const [issues, setIssues] = useState({
     epicsData: [],
@@ -78,7 +80,7 @@ const IssueTracker = () => {
         ...s,
         type: "Story",
         title: s.title || s.name,
-        epicId: s.epic?.id ?? null,
+        epicId: s.epicId ?? null,
         reporterName: s.reporterName || s.reporter?.name || "Unassigned",
         assigneeName: s.assigneeName || s.assignee?.name || "Unassigned",
         priority: (s.priority || "MEDIUM").toUpperCase(),
@@ -202,8 +204,8 @@ const IssueTracker = () => {
     });
   };
 
-  const currentProject = projects.find((p) => p.id === Number(projectId));
-  const projectName = currentProject?.name || projectId;
+  // const currentProject = projects.find((p) => p.id === Number(projectId));
+  // const projectName = currentProject?.name || projectId;
 
   // --- POLISHED UI DICTIONARIES ---
   const typeColors = {
