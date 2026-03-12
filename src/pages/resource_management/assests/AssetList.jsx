@@ -385,10 +385,11 @@ const AssetList = () => {
                       </td>
 
                       <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2 text-right">
                           <button
-                            className="p-2 text-indigo-600 hover:text-indigo-800 rounded-lg transition-colors "
-                            title="Edit"
+                            className={`p-2 rounded-lg transition-colors ${asset.status === "INACTIVE" ? "text-gray-300 cursor-not-allowed" : "text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"}`}
+                            title={asset.status === "INACTIVE" ? "Asset is inactive" : "Edit"}
+                            disabled={asset.status === "INACTIVE"}
                             onClick={(e) => {
                               e.stopPropagation();
                               openModal(asset);
@@ -397,8 +398,9 @@ const AssetList = () => {
                             <Pencil size={16} />
                           </button>
                           <button
-                            className="p-2 text-red-600  hover:text-red-800 rounded-lg transition-colors"
-                            title="Delete"
+                            className={`p-2 rounded-lg transition-colors ${asset.status === "INACTIVE" ? "text-gray-300 cursor-not-allowed" : "text-red-600 hover:text-red-800 hover:bg-red-50"}`}
+                            title={asset.status === "INACTIVE" ? "Asset is inactive" : "Delete"}
+                            disabled={asset.status === "INACTIVE"}
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteTarget(asset);
