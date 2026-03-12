@@ -13,6 +13,7 @@ import {
   Search,
   Activity,
   Check,
+  Lock,
 } from "lucide-react";
 import Button from "../../../components/Button/Button";
 import Pagination from "../../../components/Pagination/pagination";
@@ -24,7 +25,8 @@ import {
   deleteClientAsset,
   getAssetDashboardByClient,
 } from "../services/clientservice";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 /* ---------------- MAIN COMPONENT ---------------- */
 
@@ -44,8 +46,9 @@ const AssetList = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const [validationErrors, setValidationErrors] = useState({});
-
   const [serialFile, setSerialFile] = useState(null);
+
+  const [isSaving, setIsSaving] = useState(false);
   /* ---------------- FETCH ASSETS ---------------- */
 
   const fetchAssets = async () => {
@@ -115,13 +118,24 @@ const AssetList = () => {
     setShowModal(false);
     setEditingAsset(null);
     setValidationErrors({});
+    setSerialFile(null);
+    setIsSaving(false);
   };
 
   const openModal = (asset = null) => {
     setEditingAsset(asset);
     setValidationErrors({});
+    setSerialFile(null);
+    setIsSaving(false);
     setShowModal(true);
   };
+
+  // Quantity is locked when a serial file is selected in this session,
+  // OR when the asset being edited already has registered serial numbers.
+  const isQuantityLocked =
+    !!serialFile ||
+    (!!editingAsset &&
+      ((editingAsset.serialCount ?? editingAsset.totalSerials ?? 0) > 0));
 
   /* ---------------- ADD / EDIT ---------------- */
 
@@ -136,7 +150,7 @@ const AssetList = () => {
     if (!assetName) {
       errors.asset_name = "Asset name is required";
     }
-    if (!form.quantity.value || quantity < 1) {
+    if (!isQuantityLocked && (!form.quantity.value || quantity < 1)) {
       errors.quantity = "Quantity must be at least 1";
     }
 
@@ -146,25 +160,38 @@ const AssetList = () => {
     }
 
     setValidationErrors({});
+    setIsSaving(true);
 
-    const payload = new FormData();
+    let savePromise;
 
-    payload.append("clientId", clientId);
-    payload.append("assetName", assetName);
-    payload.append("assetCategory", form.asset_category.value);
-    payload.append("assetType", form.asset_type.value);
-    payload.append("description", form.description.value);
-    payload.append("quantity", quantity);
-
-    // ✅ THIS WAS MISSING
-    if (serialFile) {
-      payload.append("serialFile", serialFile);
+    if (editingAsset) {
+      // PUT /api/client-assets/{assetId} expects JSON
+      const jsonPayload = {
+        client: { clientId: clientId },
+        assetName: assetName,
+        assetCategory: form.asset_category.value,
+        assetType: form.asset_type.value,
+        description: form.description.value,
+        quantity: quantity,
+        status: editingAsset.status || "ACTIVE",
+      };
+      console.log("Update payload (JSON):", jsonPayload);
+      savePromise = updateClientAsset(editingAsset.assetId, jsonPayload);
+    } else {
+      // POST uses multipart/form-data (supports file upload)
+      const formPayload = new FormData();
+      formPayload.append("clientId", clientId);
+      formPayload.append("assetName", assetName);
+      formPayload.append("assetCategory", form.asset_category.value);
+      formPayload.append("assetType", form.asset_type.value);
+      formPayload.append("description", form.description.value);
+      formPayload.append("quantity", quantity);
+      if (serialFile) {
+        formPayload.append("serialFile", serialFile);
+      }
+      console.log("Create payload (FormData):", formPayload);
+      savePromise = createClientAsset(formPayload, clientId, true);
     }
-    console.log("Payload data: ", payload);
-
-    const savePromise = editingAsset
-      ? updateClientAsset(editingAsset.assetId, payload, true)
-      : createClientAsset(payload, clientId, true);
 
     try {
       const res = await savePromise;
@@ -176,10 +203,14 @@ const AssetList = () => {
         toast.success(res.message || "Operation successful!");
       } else {
         toast.error(res.message || "Something went wrong");
+        setIsSaving(false);
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Server connection failed");
+      toast.error(
+        err.response?.data?.message || "Server connection failed. Please try again.",
+      );
+      setIsSaving(false);
     }
   };
 
@@ -187,15 +218,18 @@ const AssetList = () => {
 
   const confirmDelete = async () => {
     try {
-      await deleteClientAsset(deleteTarget.assetId);
-      toast.success("Asset deleted successfully");
-      setDeleteTarget(null);
-
-      await fetchAssets();
-      await fetchKpi();
+      const res = await deleteClientAsset(deleteTarget.assetId);
+      if (res.success) {
+        toast.success(res.message || "Asset deleted successfully");
+        setDeleteTarget(null);
+        await fetchAssets();
+        await fetchKpi();
+      } else {
+        toast.error(res.message || "Failed to delete asset");
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete asset");
+      toast.error(err.response?.data?.message || "Failed to delete asset");
     }
   };
 
@@ -425,15 +459,38 @@ const AssetList = () => {
                     error={validationErrors.asset_name}
                   />
 
-                  <Input
-                    label="Quantity"
-                    name="quantity"
-                    type="number"
-                    min="1"
-                    defaultValue={editingAsset?.quantity}
-                    placeholder="e.g. 10"
-                    error={validationErrors.quantity}
-                  />
+                  {/* Quantity – locked when serial numbers are present */}
+                  <div className="relative group/qty">
+                    <Input
+                      label="Quantity"
+                      name="quantity"
+                      type="number"
+                      min="1"
+                      defaultValue={editingAsset?.quantity}
+                      placeholder="e.g. 10"
+                      error={validationErrors.quantity}
+                      disabled={isQuantityLocked}
+                      locked={isQuantityLocked}
+                    />
+                    {/* Tooltip shown only when locked */}
+                    {isQuantityLocked && (
+                      <div
+                        className="
+                          pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+                          w-64 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-xl
+                          opacity-0 group-hover/qty:opacity-100 transition-opacity duration-200 z-50
+                          before:content-[''] before:absolute before:top-full before:left-1/2
+                          before:-translate-x-1/2 before:border-4 before:border-transparent
+                          before:border-t-gray-900
+                        "
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Lock size={11} className="shrink-0" />
+                          Quantity is locked because serial numbers are linked to this asset. Remove the file or edit serials separately to change quantity.
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* ROW 2: Category & Type */}
@@ -477,7 +534,7 @@ const AssetList = () => {
                     <input
                       type="file"
                       accept=".xlsx,.xls"
-                      onChange={(e) => setSerialFile(e.target.files[0])}
+                      onChange={(e) => setSerialFile(e.target.files[0] || null)}
                       className="block w-full text-sm text-gray-600
                         file:mr-4 file:py-2.5 file:px-4
                         file:rounded-xl file:border-0
@@ -491,6 +548,9 @@ const AssetList = () => {
                     {serialFile && (
                       <p className="mt-2 text-xs text-indigo-600 font-medium flex items-center gap-1">
                         <Check size={14} /> Selected: {serialFile.name}
+                        <span className="ml-1 text-amber-600 flex items-center gap-0.5">
+                          <Lock size={11} /> Quantity locked
+                        </span>
                       </p>
                     )}
                   </div>
@@ -504,11 +564,32 @@ const AssetList = () => {
 
               {/* FOOTER ACTIONS */}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
-                <Button variant="secondary" type="button" onClick={closeModal} className="w-full sm:w-auto">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={closeModal}
+                  className="w-full sm:w-auto"
+                  disabled={isSaving}
+                >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit" className="w-full sm:w-auto">
-                  {editingAsset ? "Update Asset" : "Create Asset"}
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      {editingAsset ? "Updating…" : "Creating…"}
+                    </>
+                  ) : (
+                    editingAsset ? "Update Asset" : "Create Asset"
+                  )}
                 </Button>
               </div>
             </form>
@@ -549,6 +630,19 @@ const AssetList = () => {
           </Modal>
         )}
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{ zIndex: 10001 }}
+      />
     </div>
   );
 };
@@ -644,28 +738,36 @@ const Modal = ({ title, children, onClose }) => (
   </div>
 );
 
-const Input = ({ label, error, ...props }) => (
+const Input = ({ label, error, locked, disabled, ...props }) => (
   <div className="flex flex-col gap-1.5">
-    <div className="flex justify-between">
+    <div className="flex justify-between items-center">
       <label
-        className={`text-xs font-bold uppercase tracking-wide ${error ? "text-red-500" : "text-gray-500"}`}
+        className={`text-xs font-bold uppercase tracking-wide ${error ? "text-red-500" : locked ? "text-amber-600" : "text-gray-500"
+          }`}
       >
         {label}
       </label>
+      {locked && (
+        <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+          <Lock size={10} /> Locked
+        </span>
+      )}
     </div>
 
     <input
       {...props}
+      disabled={disabled}
       className={`
-        w-full bg-gray-50 border rounded-lg px-4 py-2.5 text-sm transition-all placeholder:text-gray-400
-        focus:bg-white focus:outline-none focus:ring-2 
-        ${error
-          ? "border-red-500 focus:ring-red-200 focus:border-red-500 bg-red-50/10"
-          : "border-gray-200 focus:ring-indigo-500/20 focus:border-indigo-500"
+        w-full border rounded-lg px-4 py-2.5 text-sm transition-all placeholder:text-gray-400
+        ${disabled
+          ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed select-none"
+          : error
+            ? "bg-red-50/10 border-red-500 focus:ring-red-200 focus:border-red-500 focus:bg-white focus:outline-none focus:ring-2"
+            : "bg-gray-50 border-gray-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
         }
       `}
     />
-    {error && (
+    {error && !disabled && (
       <span className="text-xs text-red-500 font-medium animate-in fade-in slide-in-from-top-1">
         {error}
       </span>

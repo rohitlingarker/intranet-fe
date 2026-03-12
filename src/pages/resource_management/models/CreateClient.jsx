@@ -3,7 +3,7 @@ import { useEnums } from "@/pages/resource_management/hooks/useEnums";
 import { Listbox, Combobox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
 import ct from "countries-and-timezones";
-import { createClient, updateClient } from "../services/clientservice";
+import { createClient, updateClient, getProjectsByClient } from "../services/clientservice";
 import { toast } from "react-toastify";
 import Button from "../../../components/Button/Button";
 
@@ -283,6 +283,30 @@ const CreateClient = ({ mode, initialData, onSuccess, isEditable }) => {
     }
 
     setIsSubmitting(true);
+
+    // If changing status from ACTIVE to INACTIVE, check for active projects
+    if (mode === "edit" && formData.status === "INACTIVE" && initialData.status === "ACTIVE") {
+      try {
+        const projectsResponse = await getProjectsByClient(formData.clientId);
+        if (projectsResponse.success && Array.isArray(projectsResponse.data)) {
+          const hasActiveProjects = projectsResponse.data.some(
+            (project) => project.projectStatus === "ACTIVE"
+          );
+          if (hasActiveProjects) {
+            toast.error(
+              "Cannot deactivate: This client still has active projects. Please complete or reassign them first."
+            );
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking client projects:", error);
+        // If we fail to check projects, it might be safer to stop, 
+        // but here we'll let it proceed unless the backend also blocks it.
+      }
+    }
+
     try {
       const clientCreation =
         mode === "create"
