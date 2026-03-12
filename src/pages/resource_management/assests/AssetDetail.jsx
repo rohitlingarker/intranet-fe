@@ -202,7 +202,7 @@ const AssetDetail = () => {
     resourceName: "",
     // projectId: "",
     projectName: "",
-    assignedDate: "",
+    assignedDate: today,
     expectedReturnDate: "",
     assignmentStatus: "ASSIGNED",
     assignedBy: "",
@@ -411,7 +411,7 @@ const AssetDetail = () => {
     setFormData({
       resourceName: a.resourceName || "",
       projectName: a.projectName || "",
-      assignedDate: a.assignedDate || "",
+      assignedDate: a.assignedDate ? new Date(a.assignedDate).toISOString().split("T")[0] : today,
       expectedReturnDate: a.expectedReturnDate || "",
       assignmentStatus: a.assignmentStatus || "ASSIGNED",
       assignedBy: a.assignedBy || getLoggedInUserName(), // 🔥 fallback
@@ -430,7 +430,7 @@ const AssetDetail = () => {
     setFormData({
       resourceName: "",
       projectName: "",
-      assignedDate: "",
+      assignedDate: today,
       expectedReturnDate: "",
       assignmentStatus: "ASSIGNED",
       assignedBy: "",
@@ -477,6 +477,7 @@ const AssetDetail = () => {
             setFormData((prev) => ({
               ...prev,
               assignedBy: getLoggedInUserName(),
+              assignedDate: today,
             }));
             setShowModal(true);
             fetchAvailableSerials();
@@ -785,6 +786,7 @@ const AssetDetail = () => {
                   value={formData.assignedDate}
                   onChange={handleFormChange}
                   required
+                  disabled
                 />
                 <Input
                   label="Exp. Return"
@@ -792,6 +794,7 @@ const AssetDetail = () => {
                   name="expectedReturnDate"
                   value={formData.expectedReturnDate}
                   onChange={handleFormChange}
+                  min={today}
                 />
                 <Select
                   label="Status"

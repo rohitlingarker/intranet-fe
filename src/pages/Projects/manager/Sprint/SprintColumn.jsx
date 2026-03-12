@@ -8,6 +8,7 @@ import TaskCard from "./TaskCard";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify"; // if needed for the modal
 
+
 const SprintColumn = ({
   sprint,
   stories = [],
@@ -16,6 +17,7 @@ const SprintColumn = ({
   allStories = [],
   statuses = [],
   sprints = [],
+  permissions,
 
   onDropStory,
   onDropTask,
@@ -30,8 +32,14 @@ const SprintColumn = ({
   onStoryClick,
   onTaskClick,
 }) => {
+  
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const toggleStoryExpand = (storyId) => {
+    setExpandedStories((prev) =>
+      prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
+    );
+  };
   
   // Track which stories are expanded inside this specific sprint
   const [expandedStories, setExpandedStories] = useState([]);
@@ -52,23 +60,17 @@ const SprintColumn = ({
   const end = formatPrettyDate(sprint.endDateReadable || sprint.endDate);
 
   const totalItems = stories.length + tasks.length;
-  
-  const isManager = (() => {
-    const token = localStorage.getItem("token");
-    if (!token) return false;
-    try {
-      const decoded = jwtDecode(token);
-      return decoded?.roles?.includes("Manager");
-    } catch {
-      return false;
-    }
-  })();
+  // const isManager = (() => {
+  //   const token = localStorage.getItem("token");
+  //   if (!token) return false;
 
-  const toggleStoryExpand = (storyId) => {
-    setExpandedStories((prev) =>
-      prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
-    );
-  };
+  //   try {
+  //     const decoded = jwtDecode(token);
+  //     return decoded?.roles?.includes("Manager");
+  //   } catch {
+  //     return false;
+  //   }
+  // })();
 
   /** -----------------------------------------
    * DND TO SUPPORT BOTH STORY + TASK
@@ -136,21 +138,28 @@ const SprintColumn = ({
         <div className="flex items-center gap-3">
           {!isCompleted && (
             <button
+              disabled={!permissions?.canEdit}
               onClick={(e) => {
+                if (!permissions?.canEdit) return;
+
                 e.stopPropagation();
                 onChangeStatus(
                   sprint.id,
                   sprint.status === "ACTIVE" ? "complete" : "start"
                 );
               }}
-              className="px-4 py-1 border rounded-full text-sm font-medium text-indigo-700 border-indigo-600 hover:bg-indigo-50 transition-colors"
+              className={`px-4 py-1 border rounded-full text-sm font-medium 
+              ${permissions?.canEdit
+                ? "text-indigo-700 border-indigo-600 hover:bg-indigo-50"
+                : "text-gray-400 border-gray-300 cursor-not-allowed"
+              }`}
             >
               {sprint.status === "ACTIVE" ? "Complete sprint" : "Start sprint"}
             </button>
           )}
 
           {/* Menu - ONLY SHOW IF MANAGER AND (HAS EDIT OR HAS DELETE) */}
-          {isManager && (onEditSprint || onDeleteSprint) && (
+          {permissions.canEdit && (onEditSprint || onDeleteSprint) && (
             <div className="relative">
               <button
                 onClick={(e) => {
