@@ -14,12 +14,12 @@ import {
 import { cn } from "@/lib/utils";
 import SkillGapTab from '../../components/resource-intelligence/SkillGapTab';
 import AllocationModal from '../components/AllocationModal';
+import AllocationModificationTab from '../components/AllocationModificationTab';
 import demandService from '../services/demandService';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PriorityBadge, StateBadge } from '../components/FormalBadges';
 import { Button } from "@/components/ui/button";
 import Pagination from '../../../../components/Pagination/pagination';
-import ProjectResourcesTable from '../../pages/project/ProjectResourcesTable';
 import { fetchResourcesByDemandId } from '../../services/resource';
 
 
@@ -971,6 +971,50 @@ const DemandResourcesTable = ({ demandId }) => {
     );
 };
 
+const DemandResourcesTab = ({ demandId, demand, user }) => {
+    const [activeSubTab, setActiveSubTab] = useState('resources');
+
+    const subTabs = [
+        { id: 'resources', label: 'Resources' },
+        { id: 'allocation-modifications', label: 'Allocation Modifications' }
+    ];
+
+    return (
+        <div className="space-y-6">
+            <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                {subTabs.map((tab) => {
+                    const isActive = activeSubTab === tab.id;
+
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveSubTab(tab.id)}
+                            className={cn(
+                                "rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] transition-all sm:px-5",
+                                isActive
+                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                            )}
+                        >
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {activeSubTab === 'resources' && <DemandResourcesTable demandId={demandId} />}
+            {activeSubTab === 'allocation-modifications' && (
+                <AllocationModificationTab
+                    demandId={demandId}
+                    demand={demand}
+                    user={user}
+                />
+            )}
+        </div>
+    );
+};
+
 const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
     const { demandId: urlDemandId } = useParams();
     const demandId = propDemandId || urlDemandId;
@@ -1164,7 +1208,13 @@ const DemandDetailPage = ({ demandId: propDemandId, onBack: propOnBack }) => {
             <main className="flex-1 overflow-y-auto bg-slate-50/80">
                 <div className="max-w-[1500px] mx-auto px-6 py-10 font-sans">
                     {activeTab === 'overview' && <OverviewTab demand={demand} project={project} sla={sla} passedClientName={passedClientName} />}
-                    {activeTab === 'resource' && <DemandResourcesTable demandId={demandId} />}
+                    {activeTab === 'resource' && (
+                        <DemandResourcesTab
+                            demandId={demandId}
+                            demand={demand}
+                            user={user}
+                        />
+                    )}
                     {activeTab === 'roleInfo' && <RoleInfoTab demand={demand} role={role} />}
                     {isRM && activeTab === 'skillGap' && <SkillGapTab demand={demand} />}
                     {activeTab === 'approvalFlow' && <ApprovalFlowTab demand={demand} />}
