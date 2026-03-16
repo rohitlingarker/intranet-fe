@@ -26,25 +26,10 @@ const getResponseData = (response) => {
 };
 
 const allocationModificationApi = {
-  getPMModifications: async (params = {}) => {
+  getDemandModifications: async (demandId) => {
     const response = await axios.get(
-      `${BASE_URL}/api/allocation-modifications/pm`,
-      {
-        ...getAuthHeader(),
-        params,
-      }
-    );
-
-    return getResponseData(response);
-  },
-
-  getRMModifications: async (params = {}) => {
-    const response = await axios.get(
-      `${BASE_URL}/api/allocation-modifications/rm`,
-      {
-        ...getAuthHeader(),
-        params,
-      }
+      `${BASE_URL}/api/allocation-modifications/demand/${demandId}`,
+      getAuthHeader()
     );
 
     return getResponseData(response);
@@ -69,10 +54,10 @@ const allocationModificationApi = {
     return response.data;
   },
 
-  approveModification: async (id, payload = {}) => {
+  approveModification: async (id) => {
     const response = await axios.put(
       `${BASE_URL}/api/allocation-modifications/${id}/rm/approve`,
-      payload,
+      null,
       getAuthHeader()
     );
 

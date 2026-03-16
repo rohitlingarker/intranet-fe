@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Briefcase, Calendar, Check, Search, Slash, UserCheck, Users, X } from "lucide-react";
+import { Briefcase, Calendar, Check, Search, Trash2, UserCheck, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Pagination from "../../../../components/Pagination/pagination";
@@ -46,6 +46,28 @@ const ModificationStatusBadge = ({ status }) => {
     </span>
   );
 };
+
+const ActionIconButton = ({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  className,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    title={label}
+    aria-label={label}
+    className={cn(
+      "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+      className
+    )}
+  >
+    <Icon className="h-4 w-4" />
+  </button>
+);
 
 const ModificationTable = ({
   items,
@@ -151,10 +173,10 @@ const ModificationTable = ({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto no-scrollbar">
             <table className="w-full min-w-[1180px] text-left text-xs">
-              <thead className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500">
                 <tr>
                   <th className="p-5">Resource Name</th>
                   <th className="p-5">Project</th>
@@ -171,12 +193,15 @@ const ModificationTable = ({
                 {paginatedItems.map((item) => {
                   const canApproveRequest = canApprove && item.status === "REQUESTED";
                   const canCancelRequest = canCancel && item.status === "REQUESTED";
+                  const isApproving = processingAction === `approve-${item.id}`;
+                  const isRejecting = processingAction === `reject-${item.id}`;
+                  const isCancelling = processingAction === `cancel-${item.id}`;
 
                   return (
-                    <tr key={item.id} className="group transition-colors hover:bg-slate-50/30">
+                    <tr key={item.id} className="group transition-colors hover:bg-slate-50/40">
                       <td className="p-5">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-xs font-black uppercase text-indigo-600 shadow-sm transition-transform group-hover:scale-105">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-xs font-black uppercase text-slate-700">
                             {String(item.resourceName || "R")
                               .split(" ")
                               .filter(Boolean)
@@ -188,15 +213,12 @@ const ModificationTable = ({
                             <p className="truncate font-black tracking-tight text-slate-900">
                               {item.resourceName || "N/A"}
                             </p>
-                            <p className="mt-0.5 text-[10px] font-bold text-slate-400">
-                              Request #{item.id}
-                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="p-5">
-                        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-[10px] font-black text-slate-500">
-                          <Briefcase className="h-3.5 w-3.5 text-indigo-500" />
+                        <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-slate-700">
+                          <Briefcase className="h-3.5 w-3.5 text-slate-400" />
                           <span>{item.projectName || "N/A"}</span>
                         </div>
                       </td>
@@ -211,8 +233,8 @@ const ModificationTable = ({
                         </span>
                       </td>
                       <td className="p-5 text-center">
-                        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-[10px] font-black text-slate-700">
-                          <Calendar className="h-3 w-3 text-indigo-400" />
+                        <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-slate-700">
+                          <Calendar className="h-3 w-3 text-slate-400" />
                           <span>{formatDate(item.effectiveDate)}</span>
                         </div>
                       </td>
@@ -220,8 +242,8 @@ const ModificationTable = ({
                         <ModificationStatusBadge status={item.status} />
                       </td>
                       <td className="p-5 text-center">
-                        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-[10px] font-black text-slate-500">
-                          <UserCheck className="h-3.5 w-3.5 text-indigo-500" />
+                        <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-slate-700">
+                          <UserCheck className="h-3.5 w-3.5 text-slate-400" />
                           <span>{item.requestedBy || "N/A"}</span>
                         </div>
                       </td>
@@ -234,43 +256,36 @@ const ModificationTable = ({
                         <div className="flex items-center justify-center gap-2">
                           {canApproveRequest && (
                             <>
-                              <Button
-                                type="button"
+                              <ActionIconButton
+                                label="Approve modification"
+                                icon={Check}
                                 onClick={() => onApprove(item)}
-                                disabled={processingAction === `approve-${item.id}` || processingAction === `reject-${item.id}`}
-                                className="h-8 rounded-lg bg-emerald-600 px-3 text-[10px] font-black tracking-wider text-white hover:bg-emerald-700"
-                              >
-                                <Check className="mr-1 h-3.5 w-3.5" />
-                                Approve
-                              </Button>
-                              <Button
-                                type="button"
+                                disabled={isApproving || isRejecting}
+                                className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              />
+                              <ActionIconButton
+                                label="Reject modification"
+                                icon={X}
                                 onClick={() => onReject(item)}
-                                disabled={processingAction === `approve-${item.id}` || processingAction === `reject-${item.id}`}
-                                className="h-8 rounded-lg bg-rose-600 px-3 text-[10px] font-black tracking-wider text-white hover:bg-rose-700"
-                              >
-                                <X className="mr-1 h-3.5 w-3.5" />
-                                Reject
-                              </Button>
+                                disabled={isApproving || isRejecting}
+                                className="border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                              />
                             </>
                           )}
 
                           {canCancelRequest && (
-                            <Button
-                              type="button"
+                            <ActionIconButton
+                              label="Cancel modification"
+                              icon={Trash2}
                               onClick={() => onCancel(item)}
-                              disabled={processingAction === `cancel-${item.id}`}
-                              variant="outline"
-                              className="h-8 rounded-lg border-slate-200 px-3 text-[10px] font-black tracking-wider text-slate-600 hover:bg-slate-50"
-                            >
-                              <Slash className="mr-1 h-3.5 w-3.5" />
-                              Cancel
-                            </Button>
+                              disabled={isCancelling}
+                              className="border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                            />
                           )}
 
                           {!canApproveRequest && !canCancelRequest && (
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">
-                              No Actions
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                              No Action
                             </span>
                           )}
                         </div>

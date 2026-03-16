@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const RejectModificationModal = ({
   isOpen,
@@ -11,23 +10,15 @@ const RejectModificationModal = ({
   modification,
 }) => {
   const [reason, setReason] = useState("");
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
 
     setReason("");
-    setError("");
   }, [isOpen]);
 
   const handleSubmit = async (event) => {
     event?.preventDefault?.();
-
-    if (!reason.trim()) {
-      setError("Rejection reason is required");
-      return;
-    }
-
     await onSubmit(reason.trim());
   };
 
@@ -75,17 +66,10 @@ const RejectModificationModal = ({
             <textarea
               rows={4}
               value={reason}
-              onChange={(event) => {
-                setReason(event.target.value);
-                if (error) setError("");
-              }}
-              placeholder="Explain why this request is being rejected..."
-              className={cn(
-                "w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20",
-                error && "border-rose-500"
-              )}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Explain why this request is being rejected (optional)..."
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
             />
-            {error && <p className="text-[9px] font-bold text-rose-500">{error}</p>}
           </div>
         </form>
 

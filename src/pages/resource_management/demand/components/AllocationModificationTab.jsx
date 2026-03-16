@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { fetchResourcesByDemandId } from "../../services/resource";
@@ -123,10 +123,15 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
 
       setResourceOptions(
         rows.map((resource) => ({
+          allocationId: resource.allocationId,
           resourceId: resource.resourceId || resource.id,
-          resourceName: resource.fullName || resource.resourceName || `Resource ${resource.resourceId}`,
+          resourceName:
+            resource.fullName || resource.resourceName || `Resource ${resource.resourceId}`,
           currentAllocationPercentage: Number(resource.allocationPercentage || 0),
           allocationPercentage: Number(resource.allocationPercentage || 0),
+          allocationStartDate: resource.allocationStartDate || "",
+          allocationEndDate: resource.allocationEndDate || "",
+          allocationStatus: resource.allocationStatus || "",
           projectName,
         }))
       );
@@ -146,10 +151,7 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
     setError(null);
 
     try {
-      const params = { demandId };
-      const response = isRM
-        ? await allocationModificationApi.getRMModifications(params)
-        : await allocationModificationApi.getPMModifications(params);
+      const response = await allocationModificationApi.getDemandModifications(demandId);
 
       const rows = Array.isArray(response)
         ? response
@@ -204,7 +206,7 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
     setProcessingAction(`approve-${item.id}`);
 
     try {
-      const response = await allocationModificationApi.approveModification(item.id, { demandId });
+      const response = await allocationModificationApi.approveModification(item.id);
       toast.success(response?.message || "Allocation modification approved");
       await loadModifications();
     } catch (requestError) {
@@ -222,9 +224,8 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
 
     try {
       const response = await allocationModificationApi.rejectModification(rejectTarget.id, {
-        reason,
+        decision: "REJECT",
         rejectionReason: reason,
-        demandId,
       });
       toast.success(response?.message || "Allocation modification rejected");
       setRejectTarget(null);
@@ -267,7 +268,7 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -288,20 +289,6 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending Requests</p>
               <p className="text-xl font-black tracking-tight text-slate-900">{pendingCount}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-              <XCircle className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Role View</p>
-              <p className="text-sm font-black tracking-tight text-slate-900">
-                {isRM ? "Resource Manager" : "Project Manager"}
-              </p>
             </div>
           </div>
         </div>

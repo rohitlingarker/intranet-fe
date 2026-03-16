@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
-    Search, Filter, Activity, AlertTriangle, Zap, ShieldAlert, XCircle
+    Search, Filter, Activity, AlertTriangle, Zap, ShieldAlert, XCircle, CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DemandKPIStrip from '../components/DemandKPIStrip';
@@ -52,6 +52,7 @@ const DemandWorkspacePage = () => {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingDemand, setEditingDemand] = useState(null);
     const [draftFilters, setDraftFilters] = useState(filters);
+    const isRMView = effectiveRole === "RESOURCE-MANAGER";
 
     // Sync draft with global filters when they change externally (like Reset)
     useEffect(() => {
@@ -201,6 +202,9 @@ const DemandWorkspacePage = () => {
                                         { id: 'at_risk', label: 'At Risk', icon: AlertTriangle, color: 'text-orange-600' },
                                         { id: 'active', label: 'Active', icon: Activity, color: 'text-indigo-600' },
                                         { id: 'soft', label: 'Soft', icon: Zap, color: 'text-slate-600' },
+                                        ...(isRMView
+                                            ? [{ id: 'fulfilled', label: 'Fulfilled', icon: CheckCircle2, color: 'text-emerald-600' }]
+                                            : []),
                                         { id: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-rose-600' }
                                     ].map(tab => (
                                         <button

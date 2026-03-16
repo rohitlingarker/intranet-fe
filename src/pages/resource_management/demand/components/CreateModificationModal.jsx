@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const emptyForm = {
-  resourceId: "",
+  allocationId: "",
+  currentAllocationPercentage: "",
   requestedAllocationPercentage: "",
   effectiveDate: "",
   reason: "",
@@ -32,20 +33,38 @@ const CreateModificationModal = ({
   const selectedResource = useMemo(
     () =>
       resourceOptions.find(
-        (resource) => String(resource.resourceId) === String(form.resourceId)
+        (resource) => String(resource.allocationId) === String(form.allocationId)
       ) || null,
-    [form.resourceId, resourceOptions]
+    [form.allocationId, resourceOptions]
   );
+
+  useEffect(() => {
+    if (!selectedResource) {
+      setForm((currentForm) => ({
+        ...currentForm,
+        currentAllocationPercentage: "",
+      }));
+      return;
+    }
+
+    const currentAllocation =
+      selectedResource.currentAllocationPercentage ?? selectedResource.allocationPercentage ?? 0;
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      currentAllocationPercentage: String(currentAllocation),
+    }));
+  }, [selectedResource]);
 
   const validate = () => {
     const nextErrors = {};
 
-    if (!form.resourceId) nextErrors.resourceId = "Resource is required";
+    if (!form.allocationId) nextErrors.allocationId = "Resource is required";
 
     const requestedAllocation = Number(form.requestedAllocationPercentage);
-    if (!Number.isFinite(requestedAllocation) || requestedAllocation <= 0 || requestedAllocation > 100) {
+    if (!Number.isFinite(requestedAllocation) || requestedAllocation < 0 || requestedAllocation > 100) {
       nextErrors.requestedAllocationPercentage =
-        "Requested allocation must be between 1 and 100";
+        "Requested allocation must be between 0 and 100";
     }
 
     if (!form.effectiveDate) nextErrors.effectiveDate = "Effective date is required";
@@ -61,12 +80,7 @@ const CreateModificationModal = ({
     if (!validate() || !selectedResource) return;
 
     await onSubmit({
-      demandId: demand?.demandId || demand?.id,
-      projectId: demand?.project?.projectId || demand?.projectId,
-      resourceId: selectedResource.resourceId,
-      resourceName: selectedResource.resourceName,
-      currentAllocationPercentage:
-        selectedResource.currentAllocationPercentage ?? selectedResource.allocationPercentage,
+      allocationId: selectedResource.allocationId,
       requestedAllocationPercentage: Number(form.requestedAllocationPercentage),
       effectiveDate: form.effectiveDate,
       reason: form.reason.trim(),
@@ -101,61 +115,79 @@ const CreateModificationModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto p-6">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-              Demand
-            </label>
-            <Input
-              readOnly
-              value={demand?.demandName || "N/A"}
-              className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 focus-visible:ring-0"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-              <User className="h-3 w-3 text-indigo-500" />
-              Resource
-            </label>
-            <select
-              value={form.resourceId}
-              onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  resourceId: event.target.value,
-                }))
-              }
-              className={cn(
-                "h-10 w-full rounded-xl border bg-white px-3 text-xs font-bold text-slate-900 outline-none transition-colors focus:ring-2 focus:ring-indigo-400",
-                errors.resourceId ? "border-rose-500" : "border-slate-200"
-              )}
-            >
-              <option value="">Select allocated resource</option>
-              {resourceOptions.map((resource) => (
-                <option key={resource.resourceId} value={resource.resourceId}>
-                  {resource.resourceName} ({resource.currentAllocationPercentage ?? resource.allocationPercentage}%)
-                </option>
-              ))}
-            </select>
-            {errors.resourceId && (
-              <p className="text-[9px] font-bold text-rose-500">{errors.resourceId}</p>
-            )}
-          </div>
-
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                Demand
+              </label>
+              <Input
+                readOnly
+                value={demand?.demandName || "N/A"}
+                className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 focus-visible:ring-0"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                <User className="h-3 w-3 text-indigo-500" />
+                Resource
+              </label>
+              <select
+                value={form.allocationId}
+                onChange={(event) => {
+                  const nextAllocationId = event.target.value;
+                  const nextSelectedResource = resourceOptions.find(
+                    (resource) => String(resource.allocationId) === String(nextAllocationId)
+                  );
+                  const nextCurrentAllocation =
+                    nextSelectedResource?.currentAllocationPercentage ??
+                    nextSelectedResource?.allocationPercentage ??
+                    "";
+
+                  setForm((currentForm) => ({
+                    ...currentForm,
+                    allocationId: nextAllocationId,
+                    currentAllocationPercentage:
+                      nextCurrentAllocation === "" ? "" : String(nextCurrentAllocation),
+                    requestedAllocationPercentage:
+                      nextCurrentAllocation === ""
+                        ? ""
+                        : String(nextCurrentAllocation),
+                  }));
+                }}
+                className={cn(
+                  "h-10 w-full rounded-xl border bg-white px-3 text-xs font-bold text-slate-900 outline-none transition-colors focus:ring-2 focus:ring-indigo-400",
+                  errors.allocationId ? "border-rose-500" : "border-slate-200"
+                )}
+              >
+                <option value="">Select allocated resource</option>
+                {resourceOptions.map((resource) => (
+                  <option
+                    key={resource.allocationId || resource.resourceId}
+                    value={resource.allocationId || ""}
+                  >
+                    {String(form.allocationId) === String(resource.allocationId)
+                      ? resource.resourceName
+                      : `${resource.resourceName} | ${resource.allocationPercentage}% | ${
+                          resource.allocationStartDate || "N/A"
+                        } to ${resource.allocationEndDate || "N/A"}`}
+                  </option>
+                ))}
+              </select>
+              {errors.allocationId && (
+                <p className="text-[9px] font-bold text-rose-500">{errors.allocationId}</p>
+              )}
+            </div>
+
             <div className="space-y-1">
               <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                 Current Allocation %
               </label>
               <Input
                 readOnly
-                value={
-                  selectedResource
-                    ? `${selectedResource.currentAllocationPercentage ?? selectedResource.allocationPercentage ?? 0}%`
-                    : ""
-                }
-                className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 focus-visible:ring-0"
+                value={form.currentAllocationPercentage ? `${form.currentAllocationPercentage}%` : ""}
+                className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 focus-visible:ring-0"
               />
             </div>
 
@@ -166,7 +198,7 @@ const CreateModificationModal = ({
               </label>
               <Input
                 type="number"
-                min="1"
+                min="0"
                 max="100"
                 value={form.requestedAllocationPercentage}
                 onChange={(event) =>
@@ -186,54 +218,54 @@ const CreateModificationModal = ({
                 </p>
               )}
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-              <Calendar className="h-3 w-3 text-indigo-500" />
-              Effective Date
-            </label>
-            <Input
-              type="date"
-              value={form.effectiveDate}
-              onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  effectiveDate: event.target.value,
-                }))
-              }
-              className={cn(
-                "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
-                errors.effectiveDate && "border-rose-500"
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                <Calendar className="h-3 w-3 text-indigo-500" />
+                Effective Date
+              </label>
+              <Input
+                type="date"
+                value={form.effectiveDate}
+                onChange={(event) =>
+                  setForm((currentForm) => ({
+                    ...currentForm,
+                    effectiveDate: event.target.value,
+                  }))
+                }
+                className={cn(
+                  "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
+                  errors.effectiveDate && "border-rose-500"
+                )}
+              />
+              {errors.effectiveDate && (
+                <p className="text-[9px] font-bold text-rose-500">{errors.effectiveDate}</p>
               )}
-            />
-            {errors.effectiveDate && (
-              <p className="text-[9px] font-bold text-rose-500">{errors.effectiveDate}</p>
-            )}
-          </div>
+            </div>
 
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-              Reason
-            </label>
-            <textarea
-              rows={4}
-              value={form.reason}
-              onChange={(event) =>
-                setForm((currentForm) => ({
-                  ...currentForm,
-                  reason: event.target.value,
-                }))
-              }
-              placeholder="Explain why this allocation needs to change..."
-              className={cn(
-                "w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20",
-                errors.reason && "border-rose-500"
+            <div className="space-y-1 md:col-span-2">
+              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                Reason
+              </label>
+              <textarea
+                rows={3}
+                value={form.reason}
+                onChange={(event) =>
+                  setForm((currentForm) => ({
+                    ...currentForm,
+                    reason: event.target.value,
+                  }))
+                }
+                placeholder="Explain why this allocation needs to change..."
+                className={cn(
+                  "w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20",
+                  errors.reason && "border-rose-500"
+                )}
+              />
+              {errors.reason && (
+                <p className="text-[9px] font-bold text-rose-500">{errors.reason}</p>
               )}
-            />
-            {errors.reason && (
-              <p className="text-[9px] font-bold text-rose-500">{errors.reason}</p>
-            )}
+            </div>
           </div>
         </form>
 
