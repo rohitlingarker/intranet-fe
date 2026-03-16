@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast.jsx";
-import { ArrowLeft, User, MapPin, Check, X } from "lucide-react";
+import { ArrowLeft, User, MapPin, Check, X, Building, Wallet } from "lucide-react";
 import { set } from "date-fns";
 
 export default function HrProfileView() {
@@ -296,7 +296,9 @@ export default function HrProfileView() {
     addresses,
     education_documents,
     experience,
-    identity_documents
+    identity_documents,
+    bank_details,
+    pf_details
   } = profile;
 
   const groupedEducation = groupEducation(education_documents);
@@ -395,6 +397,17 @@ export default function HrProfileView() {
                     <Info label="Relationship" value={personal_details?.emergency_contact_relation} />
                   </div>
                 </ColorCard>
+
+                <ColorCard title="Bank Details" icon={<Building size={18} />}>
+                  <div className="flex flex-col">
+                    <Info label="Account Holder" value={bank_details?.account_holder_name} />
+                    <Info label="Bank Name" value={bank_details?.bank_name} />
+                    <Info label="Branch Name" value={bank_details?.branch_name} />
+                    <Info label="Account Number" value={bank_details?.account_number} />
+                    <Info label="IFSC Code" value={bank_details?.ifsc_code} />
+                    <Info label="Account Type" value={bank_details?.account_type} />
+                  </div>
+                </ColorCard>
               </div>
 
               <div className="space-y-8">
@@ -418,6 +431,13 @@ export default function HrProfileView() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </ColorCard>
+
+                <ColorCard title="PF Details" icon={<Wallet size={18} />}>
+                  <div className="flex flex-col">
+                    <Info label="PF Member" value={pf_details?.pf_member !== undefined ? (pf_details?.pf_member ? "Yes" : "No") : ""} />
+                    <Info label="UAN Number" value={pf_details?.uan_number} />
                   </div>
                 </ColorCard>
               </div>
