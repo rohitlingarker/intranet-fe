@@ -29,6 +29,7 @@ const normalizeModification = (item, demand, fallbackProjectName) => {
 
   return {
     id: getValue([item], ["allocationModificationId", "modificationId", "id"]),
+    allocationId: getValue([item], ["allocationId"]),
     demandId: getValue([item, demandNode], ["demandId", "id"]),
     resourceId: getValue([item, resourceNode], ["resourceId", "id"]),
     resourceName: getValue(
@@ -59,6 +60,15 @@ const normalizeModification = (item, demand, fallbackProjectName) => {
     status: String(getValue([item], ["status", "modificationStatus", "requestStatus"], "REQUESTED")).toUpperCase(),
     requestedBy: getValue([item], ["requestedBy", "requesterName", "createdBy", "requestedByName"], "N/A"),
     approvedBy: getValue([item], ["approvedBy", "approverName", "approvedByName", "actionedBy"], ""),
+    requestedAt: getValue([item], ["requestedAt", "createdAt"], ""),
+    approvedAt: getValue([item], ["approvedAt"], ""),
+    reason: getValue([item], ["reason"], ""),
+    rejectReason: getValue([item], ["rejectReason", "rejectionReason"], ""),
+    rejectedBy: getValue([item], ["rejectedBy"], ""),
+    overrideFlag: Boolean(getValue([item], ["overrideFlag"], false)),
+    overrideJustification: getValue([item], ["overrideJustification"], ""),
+    overrideBy: getValue([item], ["overrideBy"], ""),
+    overrideAt: getValue([item], ["overrideAt"], ""),
   };
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, CheckCircle2, Percent, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, CheckCircle2, Percent, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ const emptyForm = {
   requestedAllocationPercentage: "",
   effectiveDate: "",
   reason: "",
+  overrideFlag: false,
+  overrideJustification: "",
 };
 
 const CreateModificationModal = ({
@@ -37,6 +39,19 @@ const CreateModificationModal = ({
       ) || null,
     [form.allocationId, resourceOptions]
   );
+  const requestedAllocationValue = Number(form.requestedAllocationPercentage);
+  const overrideNeeded =
+    Number.isFinite(requestedAllocationValue) && requestedAllocationValue > 100;
+  const validationState = selectedResource &&
+    form.effectiveDate &&
+    form.reason.trim() &&
+    Number.isFinite(requestedAllocationValue) &&
+    requestedAllocationValue >= 0 &&
+    requestedAllocationValue <= 130
+      ? overrideNeeded
+        ? "override"
+        : "valid"
+      : "pending";
 
   useEffect(() => {
     if (!selectedResource) {
@@ -62,13 +77,16 @@ const CreateModificationModal = ({
     if (!form.allocationId) nextErrors.allocationId = "Resource is required";
 
     const requestedAllocation = Number(form.requestedAllocationPercentage);
-    if (!Number.isFinite(requestedAllocation) || requestedAllocation < 0 || requestedAllocation > 100) {
+    if (!Number.isFinite(requestedAllocation) || requestedAllocation < 0 || requestedAllocation > 130) {
       nextErrors.requestedAllocationPercentage =
-        "Requested allocation must be between 0 and 100";
+        "Requested allocation must be between 0 and 130";
     }
 
     if (!form.effectiveDate) nextErrors.effectiveDate = "Effective date is required";
     if (!form.reason.trim()) nextErrors.reason = "Reason is required";
+    if (overrideNeeded && !form.overrideJustification.trim()) {
+      nextErrors.overrideJustification = "Override justification is required";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -84,6 +102,8 @@ const CreateModificationModal = ({
       requestedAllocationPercentage: Number(form.requestedAllocationPercentage),
       effectiveDate: form.effectiveDate,
       reason: form.reason.trim(),
+      overrideFlag: overrideNeeded,
+      overrideJustification: overrideNeeded ? form.overrideJustification.trim() : null,
     });
   };
 
@@ -116,155 +136,283 @@ const CreateModificationModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                Demand
-              </label>
-              <Input
-                readOnly
-                value={demand?.demandName || "N/A"}
-                className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 focus-visible:ring-0"
-              />
-            </div>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                Current Allocation Summary
+              </p>
 
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                <User className="h-3 w-3 text-indigo-500" />
-                Resource
-              </label>
-              <select
-                value={form.allocationId}
-                onChange={(event) => {
-                  const nextAllocationId = event.target.value;
-                  const nextSelectedResource = resourceOptions.find(
-                    (resource) => String(resource.allocationId) === String(nextAllocationId)
-                  );
-                  const nextCurrentAllocation =
-                    nextSelectedResource?.currentAllocationPercentage ??
-                    nextSelectedResource?.allocationPercentage ??
-                    "";
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Demand
+                  </label>
+                  <Input
+                    readOnly
+                    value={demand?.demandName || "N/A"}
+                    className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-white text-xs font-bold text-slate-900 focus-visible:ring-0"
+                  />
+                </div>
 
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    allocationId: nextAllocationId,
-                    currentAllocationPercentage:
-                      nextCurrentAllocation === "" ? "" : String(nextCurrentAllocation),
-                    requestedAllocationPercentage:
-                      nextCurrentAllocation === ""
-                        ? ""
-                        : String(nextCurrentAllocation),
-                  }));
-                }}
-                className={cn(
-                  "h-10 w-full rounded-xl border bg-white px-3 text-xs font-bold text-slate-900 outline-none transition-colors focus:ring-2 focus:ring-indigo-400",
-                  errors.allocationId ? "border-rose-500" : "border-slate-200"
-                )}
-              >
-                <option value="">Select allocated resource</option>
-                {resourceOptions.map((resource) => (
-                  <option
-                    key={resource.allocationId || resource.resourceId}
-                    value={resource.allocationId || ""}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <User className="h-3 w-3 text-indigo-500" />
+                    Resource
+                  </label>
+                  <select
+                    value={form.allocationId}
+                    onChange={(event) => {
+                      const nextAllocationId = event.target.value;
+                      const nextSelectedResource = resourceOptions.find(
+                        (resource) => String(resource.allocationId) === String(nextAllocationId)
+                      );
+                      const nextCurrentAllocation =
+                        nextSelectedResource?.currentAllocationPercentage ??
+                        nextSelectedResource?.allocationPercentage ??
+                        "";
+
+                      setForm((currentForm) => ({
+                        ...currentForm,
+                        allocationId: nextAllocationId,
+                        currentAllocationPercentage:
+                          nextCurrentAllocation === "" ? "" : String(nextCurrentAllocation),
+                        requestedAllocationPercentage:
+                          nextCurrentAllocation === ""
+                            ? ""
+                            : String(nextCurrentAllocation),
+                        overrideJustification:
+                          nextCurrentAllocation === "" || Number(nextCurrentAllocation) <= 100
+                            ? ""
+                            : currentForm.overrideJustification,
+                      }));
+                    }}
+                    className={cn(
+                      "h-10 w-full rounded-xl border bg-white px-3 text-xs font-bold text-slate-900 outline-none transition-colors focus:ring-2 focus:ring-indigo-400",
+                      errors.allocationId ? "border-rose-500" : "border-slate-200"
+                    )}
                   >
-                    {String(form.allocationId) === String(resource.allocationId)
-                      ? resource.resourceName
-                      : `${resource.resourceName} | ${resource.allocationPercentage}% | ${
-                          resource.allocationStartDate || "N/A"
-                        } to ${resource.allocationEndDate || "N/A"}`}
-                  </option>
-                ))}
-              </select>
-              {errors.allocationId && (
-                <p className="text-[9px] font-bold text-rose-500">{errors.allocationId}</p>
-              )}
+                    <option value="">Select allocated resource</option>
+                    {resourceOptions.map((resource) => (
+                      <option
+                        key={resource.allocationId || resource.resourceId}
+                        value={resource.allocationId || ""}
+                      >
+                        {String(form.allocationId) === String(resource.allocationId)
+                          ? resource.resourceName
+                          : `${resource.resourceName} | ${resource.allocationPercentage}% | ${
+                              resource.allocationStartDate || "N/A"
+                            } to ${resource.allocationEndDate || "N/A"}`}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.allocationId && (
+                    <p className="text-[9px] font-bold text-rose-500">{errors.allocationId}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Current
+                  </label>
+                  <Input
+                    readOnly
+                    value={form.currentAllocationPercentage ? `${form.currentAllocationPercentage}%` : ""}
+                    className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-white text-sm font-bold text-slate-900 focus-visible:ring-0"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Period
+                  </label>
+                  <Input
+                    readOnly
+                    value={
+                      selectedResource
+                        ? `${selectedResource.allocationStartDate || "N/A"} to ${
+                            selectedResource.allocationEndDate || "N/A"
+                          }`
+                        : ""
+                    }
+                    className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-white text-xs font-bold text-slate-900 focus-visible:ring-0"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                Current Allocation %
-              </label>
-              <Input
-                readOnly
-                value={form.currentAllocationPercentage ? `${form.currentAllocationPercentage}%` : ""}
-                className="h-10 cursor-not-allowed rounded-xl border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 focus-visible:ring-0"
-              />
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                Modification Details
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <Percent className="h-3 w-3 text-indigo-500" />
+                    New Allocation %
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="130"
+                    value={form.requestedAllocationPercentage}
+                    onChange={(event) =>
+                      setForm((currentForm) => ({
+                        ...currentForm,
+                        requestedAllocationPercentage: event.target.value,
+                        overrideJustification:
+                          Number(event.target.value) > 100
+                            ? currentForm.overrideJustification
+                            : "",
+                      }))
+                    }
+                    className={cn(
+                      "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
+                      errors.requestedAllocationPercentage && "border-rose-500"
+                    )}
+                  />
+                  {errors.requestedAllocationPercentage && (
+                    <p className="text-[9px] font-bold text-rose-500">
+                      {errors.requestedAllocationPercentage}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <Calendar className="h-3 w-3 text-indigo-500" />
+                    Effective Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={form.effectiveDate}
+                    onChange={(event) =>
+                      setForm((currentForm) => ({
+                        ...currentForm,
+                        effectiveDate: event.target.value,
+                      }))
+                    }
+                    className={cn(
+                      "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
+                      errors.effectiveDate && "border-rose-500"
+                    )}
+                  />
+                  {errors.effectiveDate && (
+                    <p className="text-[9px] font-bold text-rose-500">{errors.effectiveDate}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Reason
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={form.reason}
+                    onChange={(event) =>
+                      setForm((currentForm) => ({
+                        ...currentForm,
+                        reason: event.target.value,
+                      }))
+                    }
+                    placeholder="Explain why this allocation needs to change..."
+                    className={cn(
+                      "w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20",
+                      errors.reason && "border-rose-500"
+                    )}
+                  />
+                  {errors.reason && (
+                    <p className="text-[9px] font-bold text-rose-500">{errors.reason}</p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                <Percent className="h-3 w-3 text-indigo-500" />
-                Requested Allocation %
-              </label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={form.requestedAllocationPercentage}
-                onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    requestedAllocationPercentage: event.target.value,
-                  }))
-                }
-                className={cn(
-                  "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
-                  errors.requestedAllocationPercentage && "border-rose-500"
+            {overrideNeeded && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-amber-100 p-2 text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">
+                        Override Section
+                      </p>
+                      <p className="mt-1 text-[11px] font-medium text-amber-700/80">
+                        Requested allocation exceeds the standard limit. Override justification is required.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        Override Justification
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={form.overrideJustification}
+                        onChange={(event) =>
+                          setForm((currentForm) => ({
+                            ...currentForm,
+                            overrideJustification: event.target.value,
+                          }))
+                        }
+                        placeholder="Explain why this request requires an override..."
+                        className={cn(
+                          "w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20",
+                          errors.overrideJustification && "border-rose-500"
+                        )}
+                      />
+                      {errors.overrideJustification && (
+                        <p className="text-[9px] font-bold text-rose-500">
+                          {errors.overrideJustification}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                Validation Results
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                {validationState === "valid" && (
+                  <>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-black text-emerald-700">Status: Valid</p>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Modification can be submitted without override.
+                      </p>
+                    </div>
+                  </>
                 )}
-              />
-              {errors.requestedAllocationPercentage && (
-                <p className="text-[9px] font-bold text-rose-500">
-                  {errors.requestedAllocationPercentage}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                <Calendar className="h-3 w-3 text-indigo-500" />
-                Effective Date
-              </label>
-              <Input
-                type="date"
-                value={form.effectiveDate}
-                onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    effectiveDate: event.target.value,
-                  }))
-                }
-                className={cn(
-                  "h-10 rounded-xl border-slate-200 text-xs font-bold text-slate-900",
-                  errors.effectiveDate && "border-rose-500"
+                {validationState === "override" && (
+                  <>
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                      <AlertTriangle className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-black text-amber-700">Status: Override Needed</p>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Provide override justification to continue.
+                      </p>
+                    </div>
+                  </>
                 )}
-              />
-              {errors.effectiveDate && (
-                <p className="text-[9px] font-bold text-rose-500">{errors.effectiveDate}</p>
-              )}
-            </div>
 
-            <div className="space-y-1 md:col-span-2">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                Reason
-              </label>
-              <textarea
-                rows={3}
-                value={form.reason}
-                onChange={(event) =>
-                  setForm((currentForm) => ({
-                    ...currentForm,
-                    reason: event.target.value,
-                  }))
-                }
-                placeholder="Explain why this allocation needs to change..."
-                className={cn(
-                  "w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20",
-                  errors.reason && "border-rose-500"
+                {validationState === "pending" && (
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Complete the required fields to validate this modification request.
+                  </p>
                 )}
-              />
-              {errors.reason && (
-                <p className="text-[9px] font-bold text-rose-500">{errors.reason}</p>
-              )}
+              </div>
             </div>
           </div>
         </form>
@@ -284,7 +432,11 @@ const CreateModificationModal = ({
             disabled={isSubmitting || resourceOptions.length === 0}
             className="h-10 flex-[2] rounded-xl bg-indigo-600 text-[10px] font-black tracking-widest text-white shadow-xl shadow-indigo-600/20 hover:bg-indigo-700"
           >
-            {isSubmitting ? "Processing..." : "Create Modification"}
+            {isSubmitting
+              ? "Processing..."
+              : overrideNeeded
+                ? "Modify with Override"
+                : "Modify Allocation"}
           </Button>
         </div>
       </div>
