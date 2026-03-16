@@ -112,14 +112,12 @@ const AdminPannel = () => {
     return () => clearTimeout(handler);
   }, [fetchClients]);
 
-  // TASK 1, 2 & 3: Finalized Export Logic
   const handleExport = async () => {
     if (pageInfo.totalElements === 0) {
       toast.warning("Nothing to download: Current view is empty.");
       return;
     }
 
-    // 1. Explicitly identify what we are downloading
     const isFiltered = Object.values(filters).some((x) => x !== "");
     const startMsg = isFiltered
       ? `Explicitly downloading ${pageInfo.totalElements} filtered records...`
@@ -235,9 +233,6 @@ const AdminPannel = () => {
 
   return (
     <div className="p-6 space-y-8">
-      {/* Ensures toasts appear if not already in App.jsx */}
-
-
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
@@ -363,7 +358,6 @@ const AdminPannel = () => {
                 ))}
               </div>
 
-              {/* Pagination Section */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <p className="text-sm text-gray-600">
                   Showing{" "}
@@ -373,7 +367,6 @@ const AdminPannel = () => {
                 </p>
 
                 <div className="flex items-center gap-4">
-                  {/* Page Status Indicator */}
                   <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full border">
                     Page{" "}
                     <span className="text-indigo-600">
@@ -417,8 +410,7 @@ const AdminPannel = () => {
               <p className="text-sm text-gray-500">No clients found</p>
             </div>
           )
-        )
-        }
+        )}
       </div>
 
       <Modal

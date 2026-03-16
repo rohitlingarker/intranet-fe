@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { lazy, Suspense } from "react";
+import {ArrowLeft} from "lucide-react"
 
 import Summary from "../Summary/Summary.jsx";
 import BacklogAndSprints from "./BacklogAndSprints";
@@ -77,6 +78,7 @@ const ProjectTabs = () => {
       setShowRiskModal(true);
     }
   }, [projectId]);
+  console.log(projectName)
 
   // Render tab content
   const renderTabContent = () => {
@@ -90,7 +92,7 @@ const ProjectTabs = () => {
       return <Summary projectId={pid} projectName={projectName} />;
     }
     if (selectedTab === "backlog") {
-      return <BacklogAndSprints projectId={pid} />;
+      return <BacklogAndSprints projectId={pid} projectName={projectName} />;
     }
     if (selectedTab === "board") {
       return <Board projectId={pid} projectName={projectName} />;
@@ -156,12 +158,41 @@ const ProjectTabs = () => {
     <div>
       {/* Header */}
       <header className="bg-white mb-4 px-4 py-3 flex items-center justify-between border-b">
-        <h1 className="text-xl font-semibold text-slate-700">
-          {projectName || "Project"}
-        </h1>
-        <Navbar logo={null} navItems={navItemsWithActive} />
-      </header>
 
+        {/* LEFT SIDE */}
+        <div className="flex items-center gap-6">
+
+          {/* Project Name */}
+          <button
+            onClick={() => navigate("/projects")}
+            className="text-xl font-semibold text-slate-700 hover:text-indigo-600 transition"
+          >
+            {projectName || "Project"}
+          </button>
+
+          {/* Back Button */}
+         
+
+        </div>
+
+        {/* Tabs */}
+       <div className="flex items-center gap-4">
+          
+          {/* Round Back Button (Positioned right before the Summary tab) */}
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center justify-center w-5 h-5 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 shrink-0"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+          </button>
+
+          {/* Tab Navigation */}
+          <Navbar logo={null} navItems={navItemsWithActive} />
+          
+        </div>
+
+      </header>
       {/* Tab Content */}
       <div>{renderTabContent()}</div>
 

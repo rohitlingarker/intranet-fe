@@ -92,6 +92,9 @@ useEffect(() => {
         setForm({
           userUuid: data.user_uuid,
 
+          empId: data.employee_id,
+          email: data.work_email,
+
           empFirstName: data.first_name,
           empMiddleName: data.middle_name,
           empLastName: data.last_name,
