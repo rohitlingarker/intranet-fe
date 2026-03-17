@@ -1,7 +1,7 @@
 "use client";
  
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Users, X, XCircle, ShieldCheck} from "lucide-react";
+import { Users, X, XCircle, ShieldCheck, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
@@ -23,6 +23,27 @@ const DEPARTMENTS = [
   "Operations",
   "Admin",
 ];
+
+const ALLOWED_STATUSES = ["SUBMITTED", "VERIFIED", "REJECTED"];
+
+const getDisplayStatus = (employee, employeeUserIds) => {
+  const baseStatus = String(employee.status || "").trim().toUpperCase();
+
+  if (
+    baseStatus === "VERIFIED" &&
+    employeeUserIds.includes(employee.user_uuid)
+  ) {
+    return "COMPLETED";
+  }
+
+  return baseStatus;
+};
+
+const formatStatusLabel = (status) => {
+  if (!status) return "";
+
+  return status.charAt(0) + status.slice(1).toLowerCase();
+};
 
  
 /* ============================
@@ -318,6 +339,7 @@ useEffect(() => {
   const handleCloseCreateModal = () => {
     setIsCreateOpen(false);
     setSelectedEmployee(null);
+    setCurrentPage(1);
     fetchCoreEmployees();
   };
  
@@ -392,10 +414,8 @@ useEffect(() => {
 
   /*Adding page data for KPI filtering*/
   const pageData = useMemo(() => {
-    const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
-
     return data.filter((emp) =>
-      allowedStatuses.includes(
+      ALLOWED_STATUSES.includes(
         (emp.status || "").trim().toUpperCase()
       )
     );
@@ -414,7 +434,7 @@ useEffect(() => {
         searchTerm.toLowerCase()
       );
 
-      const status = (emp.status || "").trim().toUpperCase();
+      const status = getDisplayStatus(emp, employeeUserIds);
       const filter = statusFilter.trim().toUpperCase();
 
       if (filter === "ALL") {
@@ -423,7 +443,7 @@ useEffect(() => {
 
       return matchesSearch && status === filter;
     });
-  }, [pageData, searchTerm, statusFilter]);
+  }, [pageData, searchTerm, statusFilter, employeeUserIds]);
  
  
   /* ============================
@@ -542,6 +562,17 @@ useEffect(() => {
     filteredData.length / PAGE_SIZE
   );
 
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(1);
+      return;
+    }
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   //  const isVerified =
   //       String(offer.status || "").trim().toUpperCase() === "VERIFIED";
 
@@ -552,9 +583,9 @@ useEffect(() => {
     return filteredData
       .slice(startIndex, startIndex + PAGE_SIZE)
       .map((emp) => {
-        const isEmployeeCreated = employeeUserIds.includes(emp.user_uuid);
-        const isVerified =
-          String(emp.status || "").trim().toUpperCase() === "VERIFIED";
+        const displayStatus = getDisplayStatus(emp, employeeUserIds);
+        const isEmployeeCreated = displayStatus === "COMPLETED";
+        const isVerified = displayStatus === "VERIFIED";
  
         return {
           rowClass: isEmployeeCreated ? "bg-green-100" : "",
@@ -585,12 +616,17 @@ useEffect(() => {
  
           designation: emp.designation || "—",
  
-          status: emp.status ? (
-              <StatusBadge label={emp.status} size="sm" />
-            ) : (
-              "—"
-            ),
- 
+          // status: emp.status ? (
+          //     <StatusBadge label={emp.status} size="sm" />
+          //   ) : (
+          //     "—"
+          //   ),
+          status: (
+            <StatusBadge
+              label={formatStatusLabel(displayStatus)}
+              size="sm"
+            />
+          ),
           action: (
             <ActionMenu
               onView={() =>
@@ -642,7 +678,7 @@ useEffect(() => {
       </div>
  
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  
         <StatCard
           title="Total Profiles"
@@ -657,11 +693,24 @@ useEffect(() => {
             loading
             ? "0"
             :pageData.filter(
-              (e) => e.status?.toUpperCase() === "VERIFIED"
+              (e) => getDisplayStatus(e, employeeUserIds) === "VERIFIED"
             ).length
           }
           icon={ShieldCheck}
           onClick={() => handleKpiClick("VERIFIED")}
+        />
+
+        <StatCard
+          title="Completed"
+          value={
+            loading
+            ? "0"
+            :pageData.filter(
+              (e) => getDisplayStatus(e, employeeUserIds) === "COMPLETED"
+            ).length
+          }
+          icon={Clock}
+          onClick={() => handleKpiClick("COMPLETED")}
         />
  
         <StatCard
@@ -670,7 +719,7 @@ useEffect(() => {
             loading
             ? "0"
             :pageData.filter(
-              (e) => e.status?.toUpperCase() === "REJECTED"
+              (e) => getDisplayStatus(e, employeeUserIds) === "REJECTED"
             ).length
           }
           icon={XCircle}
@@ -703,6 +752,7 @@ useEffect(() => {
           <option value="ALL">All Status</option>
           <option value="SUBMITTED">Submitted</option>
           <option value="VERIFIED">Verified</option>
+          <option value="COMPLETED">Completed</option>
           <option value="REJECTED">Rejected</option>
         </select>
  
