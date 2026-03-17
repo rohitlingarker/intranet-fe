@@ -9,6 +9,7 @@ import Button from "../../../components/Button/Button";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import StatusBadge from "../../../components/status/statusbadge";
+import EmployeeCreateModal from "../components/employee-create-modal/EmployeeCreateModal";
 /* ============================
    CONSTANTS
 ============================ */
@@ -22,8 +23,6 @@ const DEPARTMENTS = [
   "Operations",
   "Admin",
 ];
- 
-const MANAGER_ROLES =["HR","ADMIN","MANAGER","CEO","CTO","CFO"];
 
  
 /* ============================
@@ -232,6 +231,8 @@ export default function HrOnboardingDashboard() {
  
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
  
   const [currentPage, setCurrentPage] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
@@ -303,6 +304,22 @@ export default function HrOnboardingDashboard() {
 useEffect(() => {
   fetchCoreEmployees();
 }, []);
+
+  const handleOpenCreateModal = (employee) => {
+    setSelectedEmployee({
+      userUuid: employee.user_uuid,
+      firstName: employee.first_name,
+      middleName: employee.middle_name,
+      lastName: employee.last_name,
+    });
+    setIsCreateOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateOpen(false);
+    setSelectedEmployee(null);
+    fetchCoreEmployees();
+  };
  
 // const fetchManagers = async () => {
 //   setLoadingManagers(true);
@@ -575,27 +592,13 @@ useEffect(() => {
             ),
  
           action: (
-              <ActionMenu
-            onView={() =>
-              navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
-            }
-            onCreate={() =>
-              navigate(`/employee-onboarding/core-employee`,{state:{userUuid:emp.user_uuid,firstName: emp.first_name,
-      middleName: emp.middle_name,
-      lastName: emp.last_name}})
-            }
-            showVerify={isVerified && !isEmployeeCreated}
-          />
-            // <span
-            //   className="text-indigo-600 cursor-pointer"
-            //   onClick={() =>
-            //     navigate(
-            //       `/employee-onboarding/hr/profile/${emp.user_uuid}`
-            //     )
-            //   }
-            // >
-            //   View
-            // </span>
+            <ActionMenu
+              onView={() =>
+                navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
+              }
+              onCreate={() => handleOpenCreateModal(emp)}
+              showVerify={isVerified && !isEmployeeCreated}
+            />
           ),
         };
       });
@@ -605,6 +608,7 @@ useEffect(() => {
     bulkJoinMode,
     selectedIds,
     navigate,
+    employeeUserIds,
   ]);
  
   /* ============================
@@ -799,6 +803,15 @@ useEffect(() => {
         managerOptions={managerOptions}
        
         loadingManagers={loadingManagers}
+      />
+
+      <EmployeeCreateModal
+        isOpen={isCreateOpen}
+        onClose={handleCloseCreateModal}
+        userUuid={selectedEmployee?.userUuid}
+        firstName={selectedEmployee?.firstName}
+        middleName={selectedEmployee?.middleName}
+        lastName={selectedEmployee?.lastName}
       />
  
     </div>

@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Users, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import StatusBadge from "../../../components/status/statusbadge";
-import EmployeeCreateModal from "./components/EmployeeCreateModal";
+import EmployeeCreateModal from "../components/employee-create-modal/EmployeeCreateModal";
 import ExcelPreviewModal from "./components/ExcelPreviewModal";
 import * as XLSX from "xlsx";
 
@@ -64,17 +63,10 @@ function ActionMenu({ onEdit, onDelete }) {
 }
 
 export default function EmployeeOnboardingPage() {
-
-  const navigate = useNavigate();
-  const location = useLocation();
-
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -193,19 +185,6 @@ const fetchDesignations = async () => {
       designations.map((d) => [d.designation_uuid, d.designation_name])
     );
 
-
-  /* ============================
-     RECEIVE UUID FROM HR PAGE
-  ============================ */
-
-  useEffect(() => {
-    if (location.state?.userUuid) {
-      setSelectedUserUuid(location.state.userUuid);
-      setFirstName(location.state.firstName || "");
-      setMiddleName(location.state.middleName || "");
-      setLastName(location.state.lastName || "");
-    }
-  }, [location.state]);
 
   const handleCloseModal = () => {
     setIsCreateOpen(false);
@@ -380,7 +359,7 @@ const downloadExcel = () => {
         ),
       }));
 
-  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap, navigate]);
+  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap]);
 
   return (
     <div className="p-6 space-y-6">
@@ -417,13 +396,6 @@ const downloadExcel = () => {
           "Export Excel"
         )}
       </button>
-
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm"
-        >
-          + Create Employee
-        </button>
 
       </div>
 
@@ -534,9 +506,6 @@ const downloadExcel = () => {
         onClose={handleCloseModal}
         userUuid={selectedUserUuid}
         employeeUuid={editEmployeeUuid}
-        firstName={firstName}
-        middleName={middleName}
-        lastName={lastName}
       />
 
     </div>
