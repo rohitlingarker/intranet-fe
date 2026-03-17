@@ -114,6 +114,9 @@ import DesignationsList from "./pages/employee-onboarding/hr-configuration/depar
 
 import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
+import OfferPreview from "./pages/employee-onboarding/offer-preview/OfferPreview.jsx";
+import FinalOfferPreview from "./pages/employee-onboarding/final-offer-preview/FinalOfferPreview.jsx";
+import OfferGeneratedPreview from "./pages/employee-onboarding/offer-generated-preview/OfferGeneratedPreview.jsx";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -478,12 +481,13 @@ const AppRoutes = () => {
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
-            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+            <Route path ="offer-preview/:offerId" element ={<OfferPreview/>} />
+            <Route path ="final-offer-preview/:offerId" element={<FinalOfferPreview/>} />
+            <Route path ="offer-generated-preview/:offerId" element={<OfferGeneratedPreview/>} />
 
 
 
           </Route>
-
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
