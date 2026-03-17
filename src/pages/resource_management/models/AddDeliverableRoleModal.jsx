@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Fragment } from "react";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import { X, Plus, Trash2, Edit2, ChevronDown, Search, Check } from "lucide-react";
 import { Combobox, Transition } from "@headlessui/react";
 import { createRoleExpectation, updateRoleExpectation } from "../services/workforceService";
@@ -103,6 +103,7 @@ const SearchableSelect = ({ label, value, onChange, options, placeholder, disabl
 /* ===================== MAIN MODAL ===================== */
 
 const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLevels = [], initialData = null }) => {
+  const [loading, setLoading] = useState(false);
   const [draftRole, setDraftRole] = useState({
     roleName: "",
     skills: []
@@ -268,22 +269,24 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
         }))
       }))
     };
-
+    setLoading(true);
     try {
       if (draftRole.roleId) {
         // Update case: PUT /api/admin/role-expectations/{roleId}
-        await updateRoleExpectation(draftRole.roleId, payload);
-        toast.success("Role updated successfully");
+        const res = await updateRoleExpectation(draftRole.roleId, payload);
+        toast.success(res.message || "Role updated successfully");
       } else {
         // Create case: POST /api/admin/role-expectations
-        await createRoleExpectation(payload);
-        toast.success("Role created successfully");
+        const res = await createRoleExpectation(payload);
+        toast.success(res.message || "Role created successfully");
       }
       onClose();
       // Reset state
       setDraftRole({ roleName: "", skills: [] });
     } catch (err) {
-      toast.error(draftRole.roleId ? "Failed to update role" : "Failed to create role");
+      toast.error(err.response?.data?.message || draftRole.roleId ? "Failed to update role" : "Failed to create role");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -509,16 +512,18 @@ const AddDeliverableRoleModal = ({ open, onClose, categories = [], proficiencyLe
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
           <button
+            disabled={loading}
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+            className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             Cancel
           </button>
           <button
+            disabled={loading}
             onClick={handleFinalize}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+            className={`px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {draftRole.roleId ? "Update Role" : "Finalize Role"}
+            {loading ? "Saving..." : draftRole.roleId ? "Update Role" : "Finalize Role"}
           </button>
         </div>
       </div>

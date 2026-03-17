@@ -354,7 +354,7 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation %
+                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation
                                 {formData.skipValidation && (
                                     <span className="ml-auto text-[8px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
                                         Flexible

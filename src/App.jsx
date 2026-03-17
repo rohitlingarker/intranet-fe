@@ -33,6 +33,9 @@ import WorkforceAvailability from "./pages/resource_management/pages/workforce/W
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
 import DemandWorkspacePage from "./pages/resource_management/demand/pages/DemandWorkspacePage.jsx";
 import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDetailPage.jsx";
+import PMRoleOffPage from "./pages/resource_management/pages/roleoff/pm.js";
+import RMRoleOffPage from "./pages/resource_management/pages/roleoff/rm.js";
+import DMRoleOffPage from "./pages/resource_management/pages/roleoff/dm.js";
 
 // Timesheets
 
@@ -239,6 +242,20 @@ const ProjectManager = () => {
       /> */}
     </div>
   );
+};
+
+const RoleOffEntry = () => {
+  const { user } = useAuth();
+
+  if (user?.roles?.includes("DELIVERY-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/dm" replace />;
+  }
+
+  if (user?.roles?.includes("RESOURCE-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/rm" replace />;
+  }
+
+  return <Navigate to="/resource-management/roleoff/pm" replace />;
 };
 
 // ✅ Application Routes
@@ -799,6 +816,38 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffEntry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/pm"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER"]}>
+                <PMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/rm"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <RMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/dm"
+            element={
+              <ProtectedRoute allowedRoles={["DELIVERY-MANAGER"]}>
+                <DMRoleOffPage />
               </ProtectedRoute>
             }
           />
