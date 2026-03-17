@@ -147,48 +147,67 @@ const EditTaskForm = ({
   };
 
   // 🔥 Build Changed Fields Only
-  const buildUpdatedPayload = () => {
+//   const buildUpdatedPayload = () => {
 
-    const dateKeys = ["startDate", "dueDate"];
-    if (!originalData) return formData;
-    const payload = {};
+//     const dateKeys = ["startDate", "dueDate"];
+//     if (!originalData) return formData;
+//     const payload = {};
 
-    const numericKeys = [
-      "statusId",
-      "sprintId",
-      "assigneeId",
-      "reporterId",
-      "storyId",
-    ];
+//     const numericKeys = [
+//       "statusId",
+//       "sprintId",
+//       "assigneeId",
+//       "reporterId",
+//       "storyId",
+//     ];
 
-    Object.keys(formData).forEach((key) => {
-      if (String(formData[key]) !== String(originalData[key])) {
-        if (key === "billable") {
-          payload[key] = formData[key] === "true";
-        } else if (numericKeys.includes(key)) {
-          // Convert to Number, or send null if cleared out
-          payload[key] = formData[key] !== "" ? Number(formData[key]) : null;
-        } else if (dateKeys.includes(key)) {
-  payload[key] = formData[key] ? `${formData[key]}T00:00:00` : null;
-} else {
-  payload[key] = formData[key];
-}
-      }
-    });
+//     Object.keys(formData).forEach((key) => {
+//       if (String(formData[key]) !== String(originalData[key])) {
+//         if (key === "billable") {
+//           payload[key] = formData[key] === "true";
+//         } else if (numericKeys.includes(key)) {
+//           // Convert to Number, or send null if cleared out
+//           payload[key] = formData[key] !== "" ? Number(formData[key]) : null;
+//         } else if (dateKeys.includes(key)) {
+//   payload[key] = formData[key] ? `${formData[key]}T00:00:00` : null;
+// } else {
+//   payload[key] = formData[key];
+// }
+//       }
+//     });
 
-    return payload;
-  };
+//     return payload;
+//   };
 
   // 🔥 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const updatedPayload = buildUpdatedPayload();
-    
-    // Always ensure projectId is present in the payload if required by backend
-    updatedPayload.projectId = Number(projectId);
+    const numericKeys = ["statusId", "sprintId", "assigneeId", "reporterId", "storyId"];
 
-    // Optional: Add basic Date validation
+    const updatedPayload = {
+      ...formData,
+      projectId: Number(projectId),
+    };
+
+    numericKeys.forEach((key) => {
+      if (updatedPayload[key] !== "") {
+        updatedPayload[key] = Number(updatedPayload[key]);
+      }
+    });
+
+    updatedPayload.billable = updatedPayload.billable === "true";
+
+    // 🔥 convert LocalDate to LocalDateTime
+    if (updatedPayload.startDate) {
+      updatedPayload.startDate = `${updatedPayload.startDate}T00:00:00`;
+    }
+
+    if (updatedPayload.dueDate) {
+      updatedPayload.dueDate = `${updatedPayload.dueDate}T00:00:00`;
+    }
+
+    // date validation
     if (formData.startDate && formData.dueDate) {
       if (new Date(formData.dueDate) < new Date(formData.startDate)) {
         toast.error("Due date cannot be earlier than the start date.");
@@ -204,11 +223,12 @@ const EditTaskForm = ({
       );
 
       toast.success("Task updated successfully!");
-      
+
       setTimeout(() => {
         onUpdated?.();
         onClose?.();
-      }, 500); // Reduced delay slightly so it feels more responsive
+      }, 500);
+
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to update task");

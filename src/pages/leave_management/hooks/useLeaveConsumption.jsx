@@ -8,7 +8,7 @@ let stompClient = null;
 
 const useLeaveConsumption = (employeeId, refreshKey, year) => {
   const token = localStorage.getItem("token");
-  const [leaveData, setLeaveData] = useState([]);
+  const [leaveData, setLeaveData] = useState({regular:[], genderBasedLeaveBalances: []});
   const [loading, setLoading] = useState(true);
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -24,7 +24,8 @@ const useLeaveConsumption = (employeeId, refreshKey, year) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        setLeaveData(res.data);
+        // console.log(res.data);
+        setLeaveData(res.data.data);
         setLoading(false);
       })
       .catch(() => {

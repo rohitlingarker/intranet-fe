@@ -174,7 +174,7 @@ export const getLocations = async () => {
 export const updateDemandStatus = async (payload) => {
   try {
     const response = await axios.put(
-      `${BASE_URL}/api/demand/update`,
+      `${BASE_URL}/api/demand/update/pm`,
       payload,
       {
         headers: {
@@ -183,6 +183,22 @@ export const updateDemandStatus = async (payload) => {
       }
     );
     return response.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getProjectKPIs = async () => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/api/projects/kpi`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return res.data;
   } catch (err) {
     throw err;
   }

@@ -17,7 +17,7 @@ import clsx from "clsx";
 
 const StatusBadge = ({ label, size = "md" }) => {
   const raw = label?.toLowerCase() || "";
-  const normalized = label.toLowerCase();
+  const normalized = raw;
 
   let bgColor = "bg-gray-200";
   let textColor = "text-gray-700";
@@ -65,6 +65,11 @@ const StatusBadge = ({ label, size = "md" }) => {
   if (raw === "verified") {
     bgColor = "bg-green-100";
     textColor = "text-green-700";
+  }
+
+  if (raw === "completed") {
+    bgColor = "bg-blue-100";
+    textColor = "text-blue-700";
   }
 
   if (raw === "accepted") {

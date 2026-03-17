@@ -1,56 +1,55 @@
 import React from "react";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
-import { Form } from "react-router-dom";
 
 export default function JobForm({
   form,
   handleChange,
   designations = [],
   departments = [],
-  isEditMode
+  isEditMode,
 }) {
-
   const employeeTypes = ["Full-Time", "Intern", "Contract"];
   const workModes = ["Remote", "Hybrid", "Office"];
   const experienceOptions = ["0", "0.5", "1"];
-  const employeeStatus = ["Probation", "Active","Resigned", "Terminated","Absconded"];
+  const employeeStatus = [
+    "Probation",
+    "Active",
+    "Resigned",
+    "Terminated",
+    "Absconded",
+  ];
 
-  /* 🔹 Filter designations by selected department */
   const filteredDesignations = designations.filter(
     (d) => d.department_uuid === form.departmentUuid
   );
 
   return (
     <div className="grid grid-cols-2 gap-4">
-
-      {/* Department Dropdown */}
       <FormSelect
-  label="Department"
-  name="departmentUuid"
-  value={form.departmentUuid || ""}
-  onChange={handleChange}
-  options={departments.map((d) => ({
-    value: d.department_uuid,
-    label: d.department_name
-  }))}
-  disabled={isEditMode}
-/>
+        label="Department"
+        name="departmentUuid"
+        value={form.departmentUuid || ""}
+        onChange={handleChange}
+        options={departments.map((d) => ({
+          value: d.department_uuid,
+          label: d.department_name,
+        }))}
+        disabled={isEditMode}
+      />
 
-      {/* Designation Dropdown */}
-     <FormSelect
-      label="Designation"
-      name="designationUuid"
-      value={form.designationUuid || ""}
-      onChange={handleChange}
-      disabled={!form.departmentUuid}
-      options={filteredDesignations.map((d) => ({
-        value: d.designation_uuid,
-        label: d.designation_name
-      }))}
-/>
+      <FormSelect
+        label="Designation"
+        name="designationUuid"
+        value={form.designationUuid || ""}
+        onChange={handleChange}
+        disabled={!form.departmentUuid}
+        options={filteredDesignations.map((d) => ({
+          value: d.designation_uuid,
+          label: d.designation_name,
+        }))}
+      />
 
-      {/* Employee Type */}
       <FormSelect
         label="Employee Type"
         name="employeeType"
@@ -60,7 +59,6 @@ export default function JobForm({
         disabled={isEditMode}
       />
 
-      {/* Work Mode */}
       <FormSelect
         label="Work Mode"
         name="workMode"
@@ -70,7 +68,6 @@ export default function JobForm({
         disabled={isEditMode}
       />
 
-      {/* Location */}
       <FormInput
         label="Location"
         name="location"
@@ -79,7 +76,6 @@ export default function JobForm({
         disabled={isEditMode}
       />
 
-      {/* Date of Join */}
       <FormInput
         label="Date of Join"
         type="date"
@@ -89,13 +85,13 @@ export default function JobForm({
         disabled={isEditMode}
       />
 
-      {/* Reporting Manager */}
       <FormInput
         label="Reporting Manager"
         name="reportingManagerUuid"
         value={form.reportingManagerUuid || ""}
         onChange={handleChange}
       />
+
       <FormSelect
         label="Employment Status"
         name="employmentStatus"
@@ -104,7 +100,6 @@ export default function JobForm({
         options={employeeStatus}
       />
 
-      {/* Experience */}
       <FormSelect
         label="Experience Years"
         name="totalExperience"
@@ -112,7 +107,6 @@ export default function JobForm({
         onChange={handleChange}
         options={experienceOptions}
       />
-
     </div>
   );
 }

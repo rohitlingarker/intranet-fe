@@ -10,10 +10,11 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function LeaveDashboard({ employeeId, refreshKey, year }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
+  console.log("employee", employeeId);
   const { leaveData, loading } = useLeaveConsumption(
     employeeId,
     refreshKey,
-    year
+    year,
   );
   const navigate = useNavigate();
 
@@ -39,13 +40,18 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
       const matchingType = leaveTypes.find((type) => type.name === leaveName);
       return matchingType ? matchingType.label : leaveName;
     },
-    [leaveTypes]
+    [leaveTypes],
   );
 
   const { sortedMainLeaves, specialLeaves, allLeaveTypesForNav } =
     useMemo(() => {
-      // Wait until both data sources are available before doing anything.
-      if (leaveData.length === 0 || leaveTypes.length === 0) {
+      const regular = leaveData?.regular ?? [];
+      const genderBased = leaveData?.genderBasedLeaveBalances ?? [];
+
+      if (
+        (regular.length === 0 && genderBased.length === 0) ||
+        leaveTypes.length === 0
+      ) {
         return {
           sortedMainLeaves: [],
           specialLeaves: [],
@@ -53,17 +59,9 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
         };
       }
 
-      const leaves = Array.isArray(leaveData?.data) ? leaveData.data : [];
-
-      const mainLeaves = leaves.filter((leave) => {
-        const name = getDisplayName(leave.leaveType?.leaveName || "").toLowerCase();
-        return !name.includes("paternity") && !name.includes("maternity");
-      });
-
-      const specialLeaves = leaves.filter((leave) => {
-        const name = getDisplayName(leave.leaveType.leaveName || "").toLowerCase();
-        return name.includes("paternity") || name.includes("maternity");
-      });
+      // No need to filter anymore — API already separates them!
+      const mainLeaves = regular;
+      const specialLeaves = genderBased;
 
       const desiredOrder = [
         "Earned Leave",
@@ -87,7 +85,7 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
         (leave) => ({
           name: leave.leaveType.leaveName,
           label: getDisplayName(leave.leaveType.leaveName),
-        })
+        }),
       );
 
       return { sortedMainLeaves, specialLeaves, allLeaveTypesForNav };
@@ -111,12 +109,14 @@ export default function LeaveDashboard({ employeeId, refreshKey, year }) {
 
   return (
     <>
-      {leaveData.data.length === 0 && (
-        console.log("No leave balances available for the selected year.", leaveData.length),
-        <div className="text-center">
-          <p className="text-gray-500 italic font-semibold">No leave balances available in {year}.</p>
-        </div>
-      )}
+      {leaveData?.regular?.length === 0 &&
+        leaveData?.genderBasedLeaveBalances?.length === 0 && (
+          <div className="text-center">
+            <p className="text-gray-500 italic font-semibold">
+              No leave balances available in {year}.
+            </p>
+          </div>
+        )}  
       {/* Top grid for normal leaves */}
       <div className="grid grid-cols-1  md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {sortedMainLeaves.map((leave) => {

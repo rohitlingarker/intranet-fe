@@ -544,6 +544,9 @@ const ClientPage = () => {
     totalProjects: 0,
     activeProjects: 0,
     totalSpend: 0,
+    satisfactionScore: 0,
+    pendingIssues: 0,
+    overallHealth: "UNKNOWN",
   });
 
   const getProjectId = (project) => project?.pmsProjectId;
@@ -794,14 +797,14 @@ const ClientPage = () => {
     },
     {
       label: "Satisfaction",
-      value: "98%",
+      value: clientStats.satisfactionScore != null ? `${clientStats.satisfactionScore}%` : "0%",
       icon: Users,
       color: "text-purple-600",
       bg: "bg-purple-100",
     },
     {
       label: "Pending Issues",
-      value: "2",
+      value: clientStats.pendingIssues || 0,
       icon: AlertTriangle,
       color: "text-orange-600",
       bg: "bg-orange-100",
@@ -874,7 +877,14 @@ const ClientPage = () => {
             <p className="text-xs text-gray-500 font-semibold uppercase">
               Overall Health
             </p>
-            <p className="text-xl font-bold text-green-600">Healthy</p>
+            <p className={`text-xl font-bold ${clientStats.overallHealth === "POOR"
+              ? "text-red-600"
+              : clientStats.overallHealth === "GOOD"
+                ? "text-green-600"
+                : "text-yellow-600"
+              }`}>
+              {clientStats.overallHealth || "Unknown"}
+            </p>
           </div>
         </div>
       </div>
@@ -930,7 +940,13 @@ const ClientPage = () => {
             <Button
               variant="secondary"
               onClick={() => navigate(`/manage-assets/${clientId}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 whitespace-nowrap"
+              disabled={clientDetails.status !== "ACTIVE"}
+              title={clientDetails.status !== "ACTIVE" ? "Manage Assets is available only for ACTIVE clients" : ""}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all
+                ${clientDetails.status === "ACTIVE"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-100 shadow-none opacity-80"
+                }`}
             >
               <Package size={16} />
               Manage Assets
@@ -1147,6 +1163,7 @@ const ClientPage = () => {
         <CreateClient
           mode="edit"
           initialData={clientDetails}
+          isEditable={clientStats.activeProjects > 0}
           onSuccess={() => {
             fetchClientDetails();
             setOpenUpdateClient(false);

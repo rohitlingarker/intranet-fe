@@ -97,7 +97,7 @@ const CustomActiveShapePieChart = ({ employeeId, refreshKey, year }) => {
         const grouped = {};
         leaveRequests.forEach((leave) => {
           if (leave.status !== "APPROVED" && leave.status !== "PENDING") return;
-          const name = leave.leaveType?.leaveName || "Unknown";
+          const name = leave.leaveName || "Unknown";
           grouped[name] =
             (grouped[name] || 0) + parseFloat(leave.daysRequested || 0);
         });

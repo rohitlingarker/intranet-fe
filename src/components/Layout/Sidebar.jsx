@@ -35,7 +35,12 @@ const resourceManagementSubmenu = [
   { label: "Resource Project Management", to: "/resource-management/projects" },
   { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
   { label: "Demand Management", to: "/resource-management/demand" },
+  { label: "Role-Off Management", to: "/resource-management/roleoff" },
 ];
+
+const deliveryManagerResourceManagementSubmenu = resourceManagementSubmenu.filter(
+  (item) => item.label === "Demand Management" || item.label === "Role-Off Management"
+);
 
 const employeeOnboardingSubmenu = [
   {
@@ -269,23 +274,24 @@ const Sidebar = ({ isCollapsed }) => {
         `}</style>
 
         <ul className="space-y-1">
-          {/* 1. Dashboard */}
-          <li>
-            <Link
-              to="/dashboard"
-              className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname === "/dashboard"
-                ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                }`}
-              title={isCollapsed ? "Dashboard" : ""}
-            >
-              <LayoutDashboard className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span>Dashboard</span>}
-            </Link>
-          </li>
+          {
+            <li>
+              <Link
+                to="/dashboard"
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname === "/dashboard"
+                  ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+                  : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+                  }`}
+                title={isCollapsed ? "Dashboard" : ""}
+              >
+                <LayoutDashboard className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Dashboard</span>}
+              </Link>
+            </li>
+          }
 
           {/* 2. Resource Management (With Pop Label/Submenu) */}
-          {(isAdmin || isRM || isPM || isDM) && (
+          {(isAdmin || isRM || isDM) && (
             <li
               ref={rmRef}
               className="relative"
@@ -304,18 +310,6 @@ const Sidebar = ({ isCollapsed }) => {
                 >
                   <UserCog2 className="h-5 w-5 shrink-0" />
                   {!isCollapsed && <span>Resource Management</span>}
-                </Link>
-              ) : (isPM && !isRM && !isDM) ? (
-                <Link
-                  to="/resource-management/projects"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management/projects")
-                    ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
-                    : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
-                    }`}
-                  title={isCollapsed ? "Resource Project Management" : ""}
-                >
-                  <UserCog2 className="h-5 w-5 shrink-0" />
-                  {!isCollapsed && <span>Resource Project Management</span>}
                 </Link>
               ) : (
                 <>
@@ -348,9 +342,10 @@ const Sidebar = ({ isCollapsed }) => {
                       onMouseEnter={handleRmMouseEnter}
                       onMouseLeave={handleRmMouseLeave}
                     >
-                      {resourceManagementSubmenu
-                        .filter(item => isRM || (isDM && !["Workforce Availability", "Client Management"].includes(item.label)))
-                        .map((item) => (
+                      {(isDM
+                        ? deliveryManagerResourceManagementSubmenu
+                        : resourceManagementSubmenu
+                      ).map((item) => (
                           <li key={item.label}>
                             <NavLink
                               to={item.to}
@@ -429,7 +424,7 @@ const Sidebar = ({ isCollapsed }) => {
             </li>
           )}
 
-          {/* 4. Employee Onboarding (Non-General) */}
+          {/* 4. Employee Onboarding (Non-General, Non-DM) */}
           {!isGeneral && (
             <li
               ref={eoRef}
@@ -561,3 +556,17 @@ const Sidebar = ({ isCollapsed }) => {
 };
 
 export default Sidebar;
+
+// : (isPM && !isRM && !isDM) ? (
+//                 <Link
+//                   to="/resource-management/projects"
+//                   className={`flex items-center gap-3 px-4 py-3 rounded-md text-xs font-medium transition-all duration-200 ${location.pathname.startsWith("/resource-management/projects")
+//                     ? "bg-[#263383] text-white border-l-4 border-[#ff3d72]"
+//                     : "text-gray-300 hover:bg-[#0f1536] hover:text-white"
+//                     }`}
+//                   title={isCollapsed ? "Resource Project Management" : ""}
+//                 >
+//                   <UserCog2 className="h-5 w-5 shrink-0" />
+//                   {!isCollapsed && <span>Resource Project Management</span>}
+//                 </Link>
+//               )

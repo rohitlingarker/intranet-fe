@@ -77,7 +77,7 @@ export default function ResourceIntelligenceCenter() {
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-indigo-100">
 
             {/* ─── HEADER AREA ───────────────────────────────────── */}
-            <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm font-sans z-50">
+            <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm font-sans">
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
                     <div className="h-20 sm:h-16 flex items-center justify-between gap-4 py-2">
                         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -118,7 +118,7 @@ export default function ResourceIntelligenceCenter() {
                             {/* Allocation circular/tiny view for mobile */}
                             <div className="flex flex-col gap-0.5 w-16 sm:w-32">
                                 <div className="flex justify-between items-center text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                    <span className="hidden xs:inline">Alloc</span>
+                                    <span className="hidden xs:inline">Allocaion </span>
                                     <span className="text-slate-900">{alloc}%</span>
                                 </div>
                                 <div className="h-1 sm:h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">

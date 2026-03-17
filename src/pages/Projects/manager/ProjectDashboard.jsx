@@ -57,32 +57,31 @@ const ProjectMenu = ({ project, onEdit, onDelete }) => {
 
 // ------------------ MAIN COMPONENT ------------------
 const ProjectDashboard = () => {
-  const [projects, setProjects] = useState([]);
+  const [projects,         setProjects]         = useState([]);
   const [editingProjectId, setEditingProjectId] = useState(null);
-  const [formData, setFormData] = useState({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [projectsPerPage] = useState(6);
-  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [loading,          setLoading]          = useState(true);
+  const [searchTerm,       setSearchTerm]       = useState("");
+  const [filterStatus,     setFilterStatus]     = useState("All");
+  const [currentPage,      setCurrentPage]      = useState(1);
+  const [projectsPerPage]                       = useState(6);
+  const [roleFilter,       setRoleFilter]       = useState("ALL");
 
   const { user } = useAuth();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const userIsManagerAnywhere = projects.some((item) => item.canEdit && item.canDelete);
 
-  // ------------------- FETCH PROJECTS -------------------
-
-  const userRole = user?.roles?.includes("Manager") ? "MANAGER" : user?.roles?.includes("Admin") ? "ADMIN" : "EMPLOYEE";
+  const userRole = user?.roles?.includes("Manager")
+    ? "MANAGER"
+    : user?.roles?.includes("Admin")
+    ? "ADMIN"
+    : "EMPLOYEE";
 
   const canManageProjects = userRole === "MANAGER" || userRole === "ADMIN";
-  console.log("User role:", userRole, "Can manage projects?", canManageProjects);
-  console.log(user);
 
+  // ------------------- FETCH PROJECTS -------------------
   const fetchProjects = async (status) => {
     setLoading(true);
     try {
@@ -93,8 +92,7 @@ const ProjectDashboard = () => {
       if (status && status !== "All") url += `?status=${status}`;
 
       const { data } = await axios.get(url, { headers });
-
-      setProjects(data); // Response contains: { project, canEdit, canDelete, canView }
+      setProjects(data);
     } catch (error) {
       console.error("❌ Failed to load projects", error);
       toast.error("Failed to load projects.");
@@ -117,18 +115,13 @@ const ProjectDashboard = () => {
       ({ closeToast }) => (
         <div className="flex flex-col gap-3">
           <p className="font-semibold text-red-600">Delete this project?</p>
-
           <div className="flex justify-end gap-2">
             <button className="px-3 py-1 rounded bg-gray-200" onClick={closeToast}>
               Cancel
             </button>
-
             <button
               className="px-3 py-1 rounded bg-red-600 text-white"
-              onClick={() => {
-                onConfirm();
-                closeToast();
-              }}
+              onClick={() => { onConfirm(); closeToast(); }}
             >
               Delete
             </button>
@@ -146,7 +139,6 @@ const ProjectDashboard = () => {
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
         setProjects((prev) => prev.filter((p) => p.project.id !== projectId));
         toast.success("Project deleted successfully!");
       } catch (err) {
@@ -156,20 +148,9 @@ const ProjectDashboard = () => {
     });
   };
 
-  // ------------------ OPEN EDIT MODAL ------------------
+  // FIX: startEdit no longer builds formData — modal fetches its own data
   const startEdit = (p) => {
     setEditingProjectId(p.id);
-    setFormData({
-      name: p.name || "",
-      projectKey: p.projectKey || "",
-      description: p.description || "",
-      status: p.status || "ACTIVE",
-      currentStage: p.currentStage || "INITIATION",
-      ownerId: p.ownerId || "",
-      memberIds: p.memberIds || [],
-      startDate: p.startDate ? p.startDate.split("T")[0] : "",
-      endDate: p.endDate ? p.endDate.split("T")[0] : "",
-    });
     setIsCreateModalOpen(true);
   };
 
@@ -184,19 +165,19 @@ const ProjectDashboard = () => {
     const matchesStatus = filterStatus === "All" ? true : p.status === filterStatus;
 
     let matchesRole = true;
-    if(roleFilter === "OWNER"){
+    if (roleFilter === "OWNER") {
       matchesRole = item.canEdit && item.canDelete;
-    }else if(roleFilter === "MEMBER"){
-      matchesRole = item.canView && !item.canEdit
+    } else if (roleFilter === "MEMBER") {
+      matchesRole = item.canView && !item.canEdit;
     }
 
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const indexOfLast = currentPage * projectsPerPage;
-  const indexOfFirst = indexOfLast - projectsPerPage;
+  const indexOfLast    = currentPage * projectsPerPage;
+  const indexOfFirst   = indexOfLast - projectsPerPage;
   const currentProjects = filteredProjects.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+  const totalPages     = Math.ceil(filteredProjects.length / projectsPerPage);
 
   // ------------------ RENDER ------------------
   return (
@@ -208,6 +189,14 @@ const ProjectDashboard = () => {
         <div className="flex gap-3">
           {canManageProjects && (
             <>
+              <Button
+                onClick={() => navigate("/my-work")}
+                variant="secondary"
+                size="medium"
+              >
+                My Work
+              </Button>
+
               <Button
                 onClick={() => navigate(`/block-leave-dates/${user?.user_id}`)}
                 variant="secondary"
@@ -221,16 +210,13 @@ const ProjectDashboard = () => {
                 size="medium"
                 onClick={() => {
                   setEditingProjectId(null);
-                  setFormData({});
                   setIsCreateModalOpen(true);
                 }}
               >
                 + Create Project
               </Button>
             </>
-
           )}
-          
         </div>
       </div>
 
@@ -240,8 +226,6 @@ const ProjectDashboard = () => {
 
         {/* SEARCH + FILTER */}
         <div className="flex justify-between items-center mb-6">
-          
-          {/* LEFT SIDE → SEARCH */}
           <input
             type="text"
             placeholder="Search by name or key"
@@ -250,7 +234,6 @@ const ProjectDashboard = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          {/* RIGHT SIDE → BOTH FILTERS */}
           <div className="flex items-center gap-3">
             <select
               value={filterStatus}
@@ -274,9 +257,7 @@ const ProjectDashboard = () => {
               <option value="MEMBER">I am a member</option>
             </select>
           </div>
-
         </div>
-
 
         {/* PROJECT LIST */}
         {loading ? (
@@ -294,7 +275,6 @@ const ProjectDashboard = () => {
                   onClick={() => navigate(`/projects/${p.id}`)}
                   className="relative bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-5 border border-gray-100 flex flex-col justify-between"
                 >
-                  {/* MANAGER ONLY MENU */}
                   {item.canEdit && item.canDelete ? (
                     <ProjectMenu
                       project={item}
@@ -307,7 +287,6 @@ const ProjectDashboard = () => {
                     </div>
                   )}
 
-                  {/* PROJECT INFO */}
                   <h3 className="text-xl font-semibold text-indigo-700 mb-1">
                     {p.name}
                   </h3>
@@ -318,7 +297,6 @@ const ProjectDashboard = () => {
                     {p.description || "No description available."}
                   </p>
 
-                  {/* STATUS */}
                   <div className="mt-4 flex justify-between items-center">
                     <span
                       className={`px-2 py-1 text-xs rounded-full font-medium ${
@@ -340,7 +318,6 @@ const ProjectDashboard = () => {
           </div>
         )}
 
-        {/* PAGINATION */}
         {totalPages > 1 && (
           <Pagination
             currentPage={currentPage}
@@ -354,14 +331,20 @@ const ProjectDashboard = () => {
       {/* MODALS */}
       <CreateProjectModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setEditingProjectId(null);
+        }}
         editingProjectId={editingProjectId}
-        formData={editingProjectId ? formData : null}
         onProjectCreated={(newProject) => {
           fetchProjects(filterStatus);
+          // FIX: guard newProject?.id — edit mode calls this with no argument
+          if (newProject?.id) {
+            setSelectedProjectId(newProject.id);
+            setIsStatusModalOpen(true);
+          }
           setIsCreateModalOpen(false);
-          setSelectedProjectId(newProject.id);
-          setIsStatusModalOpen(true);
+          setEditingProjectId(null);
         }}
       />
 

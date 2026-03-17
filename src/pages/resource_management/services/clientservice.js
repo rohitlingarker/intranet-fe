@@ -33,10 +33,10 @@ export const getClientPageData = async (clientId) => {
   // Assuming you have an axios instance or fetch wrapper
   // const response = await axios.get(`api/client/${clientId}/page-data`);
   // return response.data; 
-  
+
   // Mocking the call based on your request for now:
   // return fetch(`/api/client/${clientId}/page-data`).then(res => res.json());
-  try{
+  try {
     const response = await axios.get(`${RMS_BASE_URL}/api/client/${clientId}/page-data`, getAuthHeader());
     return response.data;
   } catch (error) {
@@ -277,16 +277,16 @@ export const updateClientContact = async (complianceData) => {
 };
 
 export const deleteClientContact = async (contactId) => {
-    try {
-        const response = await axios.delete(`${RMS_BASE_URL}/api/client-contact/delete/${contactId}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-        });
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await axios.delete(`${RMS_BASE_URL}/api/client-contact/delete/${contactId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const getClientEscalation = async (clientId) => {
@@ -334,7 +334,8 @@ export const updateClientAsset = async (assetId, assetData) => {
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
+          "Accept": "application/json",
         },
       }
     );
@@ -438,34 +439,51 @@ export const getAssetById = async (assetId) => {
    =============================== */
 export const assignClientAsset = async (assignmentData) => {
   console.log("Assignment Data:", assignmentData);
-    try {
-        // FIX: Using the nested ID safely
-        const id = assignmentData.asset?.assetId || assignmentData.asset?.id || assignmentData.assetId;
-        
-        const response = await axios.post(
-            `${RMS_BASE_URL}/api/client-asset-assignments/${id}`,  
-            assignmentData, 
-            getAuthHeader()
-        );
-        return response.data;
-    } catch (error) {
-        console.error("Asset Assignment Error:", error);
-        throw error;
-    }
+  try {
+    // FIX: Using the nested ID safely
+    const id = assignmentData.asset?.assetId || assignmentData.asset?.id || assignmentData.assetId;
+
+    const response = await axios.post(
+      `${RMS_BASE_URL}/api/client-asset-assignments/${id}`,
+      assignmentData,
+      getAuthHeader()
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Asset Assignment Error:", error);
+    throw error;
+  }
 };
 export const updateClient = async (clientData) => {
-    try {
-        const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData, 
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                }
-            }
-        );
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, clientData,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update client with status change
+ */
+export const updateClientStatus = async (clientId, clientData) => {
+  try {
+    const response = await axios.put(`${RMS_BASE_URL}/api/client/update-client`, {
+      clientId: clientId,
+      ...clientData
+    }, getAuthHeader());
+
+    return response.data;
+  } catch (error) {
+    console.error('Error updating client status:', error);
+    throw error;
+  }
 };
 
 
@@ -534,8 +552,6 @@ export const deleteClient = async (clientId) => {
     throw error;
   }
 };
-
-
 
 /* ===============================
    DELETE CLIENT ASSET ASSIGNMENT

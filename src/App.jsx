@@ -33,6 +33,9 @@ import WorkforceAvailability from "./pages/resource_management/pages/workforce/W
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
 import DemandWorkspacePage from "./pages/resource_management/demand/pages/DemandWorkspacePage.jsx";
 import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDetailPage.jsx";
+import PMRoleOffPage from "./pages/resource_management/pages/roleoff/pm.js";
+import RMRoleOffPage from "./pages/resource_management/pages/roleoff/rm.js";
+import DMRoleOffPage from "./pages/resource_management/pages/roleoff/dm.js";
 
 // Timesheets
 
@@ -57,7 +60,7 @@ import Board from "./pages/Projects/manager/Board";
 import CreateProjectModal from "./pages/Projects/manager/CreateProjectModal";
 import ProjectTabs from "./pages/Projects/manager/ProjectTabs";
 import ReadOnlyDashboard from "./pages/Projects/User/ReadOnlyDashboard";
-import AdminDashboard from "./pages/Projects/Admin/AdminDashboard";
+
 import UserBacklog from "./pages/Projects/User/UserBacklog/userbacklog";
 import UserProjectTabs from "./pages/Projects/User/UserProjectTabs";
 import ProjectList from "./pages/Projects/manager/ProjectList";
@@ -70,7 +73,7 @@ import ProjectStatusReportWrapper from "./pages/Projects/manager/ProjectStatusRe
 import UserIssueTracker from "./pages/Projects/User/UserBacklog/IssueTracker";
 import CycleRunsPage from "./pages/Projects/Testmanagement/TestExecution/CycleRunsPage";
 import AddCasesFromProjectModal from "./pages/Projects/Testmanagement/TestDesign/modals/AddCasesFromProjectModal.jsx";
-
+import MyWorkPage from "./pages/Projects/MyWork/MyWorkPage";
 // ✅ Employee Onboarding
 import EmpDashboard from "./pages/employee-onboarding/EmpDashboard.jsx";
 import EmployeeProfileView from "./pages/employee-onboarding/employeeProfile/EmployeeProfileView.jsx";
@@ -109,7 +112,11 @@ import DepartmentsList from "./pages/employee-onboarding/hr-configuration/depart
 import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
 
 
+import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
+import OfferPreview from "./pages/employee-onboarding/offer-preview/OfferPreview.jsx";
+import FinalOfferPreview from "./pages/employee-onboarding/final-offer-preview/FinalOfferPreview.jsx";
+import OfferGeneratedPreview from "./pages/employee-onboarding/offer-generated-preview/OfferGeneratedPreview.jsx";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -136,6 +143,7 @@ import EditProfile from "./pages/UserManagement/user/EditProfile";
 import Register from "./pages/UserManagement/auth/Register";
 import ForgotPassword from "./pages/UserManagement/auth/ForgotPassword";
 
+// ✅ Leave Management
 import EmployeePanel from "./pages/leave_management/EmployeePanel";
 import AdminPanel from "./pages/leave_management/AdminPanel";
 import HRManageTools from "./pages/leave_management/HRManageTools";
@@ -149,6 +157,7 @@ import ManageBlockLeave from "./pages/leave_management/models/ManageBlockLeave";
 // import ProtectedRoute from "./pages/leave_management/ProtectedRoutes";
 import ApprovalRulesPage from "./pages/leave_management/models/ApprovalRulesPage.jsx";
 import RiskRegisterPage from "./pages/Projects/manager/riskManagement/RiskRegisterPage.jsx";
+import LeaveUploadWizard from "./pages/leave_management/models/LeaveUploadWizard.jsx";
 
 
 
@@ -238,9 +247,23 @@ const ProjectManager = () => {
   );
 };
 
+const RoleOffEntry = () => {
+  const { user } = useAuth();
+
+  if (user?.roles?.includes("DELIVERY-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/dm" replace />;
+  }
+
+  if (user?.roles?.includes("RESOURCE-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/rm" replace />;
+  }
+
+  return <Navigate to="/resource-management/roleoff/pm" replace />;
+};
+
 // ✅ Application Routes
 const AppRoutes = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -258,10 +281,14 @@ const AppRoutes = () => {
         navigate(lastPath, { replace: true });
       }
       else if (currentPath === "/") {
-        navigate("/dashboard", { replace: true });
+        if (user?.roles?.includes("DELIVERY-MANAGER")) {
+          navigate("/resource-management/demand", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       }
     }
-  }, [isAuthenticated, navigate]); // Removed location dependency to avoid navigation loops on every click
+  }, [isAuthenticated, user, navigate]); // Added user dependency
 
   return (
     <>
@@ -375,6 +402,7 @@ const AppRoutes = () => {
             path="/projects/:projectId/risk-management"
             element={<RiskRegisterPage />}
           />
+          <Route path="/my-work" element={<MyWorkPage />} />
           {/* Employee Onboarding */}
 
           {/* <Route path="/employee-onboarding" element={<EmpDashboard />}/>
@@ -417,7 +445,7 @@ const AppRoutes = () => {
             <Route path="create" element={<CreateOffer />} />
             <Route path="bulk-upload" element={<BulkUpload />} />
             <Route path="onboarding-task" element={<OnboardingTask />} />
-           
+
             <Route path="hr-configuration" element={<HrConfiguration />} />
             <Route path="hr-configuration/country" element={<CountryManagement />} />
             <Route path="hr-configuration/identity" element={<IdentityTypeManagement />} />
@@ -446,19 +474,20 @@ const AppRoutes = () => {
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
-            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />}/>
+            <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
-            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+            <Route path ="offer-preview/:offerId" element ={<OfferPreview/>} />
+            <Route path ="final-offer-preview/:offerId" element={<FinalOfferPreview/>} />
+            <Route path ="offer-generated-preview/:offerId" element={<OfferGeneratedPreview/>} />
 
 
 
           </Route>
-
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
@@ -682,6 +711,14 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path={`/leave-upload`}
+            element={
+              <ProtectedRoute allowedRoles={["HR"]}>
+                <LeaveUploadWizard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/leave-policy"
             element={
               <ProtectedRoute>
@@ -783,6 +820,38 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffEntry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/pm"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER"]}>
+                <PMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/rm"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <RMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/dm"
+            element={
+              <ProtectedRoute allowedRoles={["DELIVERY-MANAGER"]}>
+                <DMRoleOffPage />
               </ProtectedRoute>
             }
           />

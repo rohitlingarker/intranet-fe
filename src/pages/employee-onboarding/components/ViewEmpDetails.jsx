@@ -14,6 +14,7 @@ import {
   Pencil,
   Wallet,
   UserCheck,
+  Eye,
 } from "lucide-react";
 import { set } from "date-fns";
 
@@ -35,9 +36,16 @@ export default function ViewEmpDetails() {
   const [approvalHistory, setApprovalHistory] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
   const [loadingSendOffer, setLoadingSendOffer] = useState(false);
+
+  const [approvalFile, setApprovalFile] = useState(null);
   // 🔴 Delete Offer states
 const [deleteOfferModal, setDeleteOfferModal] = useState(false);
 const [deletingOffer, setDeletingOffer] = useState(false);
+const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+
+const selectedApproverName =
+  adminUsers.find((a) => String(a.user_id) === String(selectedAdmin))?.name || "";
 
 
   const [editData, setEditData] = useState({
@@ -148,6 +156,73 @@ const actionTaken =
 
     null;
 
+  /* ---------------- PREVIEW OFFER ---------------- */
+
+  // const handlePreviewOffer = () => {
+  //   navigate(`/employee-onboarding/offer-preview/${user_uuid}`);
+  // };
+
+  // /* ---------------- FINAL PREVIEW OFFER ---------------- */
+
+  // const handleFinalPreviewOffer = () => {
+  //   navigate(`/employee-onboarding/final-offer-preview/${user_uuid}`);
+  // };
+
+  // const handleGeneratedPreview = () => {
+
+  //   window.open(
+  // `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/${user_uuid}/generate-preview`,
+  // "_blank"
+  // );
+  //     // navigate(`/employee-onboarding/offer-generated-preview/${user_uuid}`);
+
+  // };
+
+  // const handleGeneratedPreview = async () => {
+
+  //   const token = localStorage.getItem("token");
+
+    // const res = await axios.get(
+    // `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/${user_uuid}/generate-preview`,
+    // {
+    // headers:{ Authorization:`Bearer ${token}` },
+    // responseType:"blob"
+    // }
+    // );
+
+    // const fileURL = window.URL.createObjectURL(res.data);
+
+    // window.open(fileURL, "_blank");
+
+    // };
+  /* ---------------- PREVIEW GENERATED OFFER ---------------- */
+
+  const handlePreviewOffer = async () => {
+
+    const token = localStorage.getItem("token");
+
+    try {
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/${user_uuid}/generate-preview`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const file = new Blob([res.data], { type: "application/pdf" });
+
+      const fileURL = URL.createObjectURL(file);
+
+      window.open(fileURL, "_blank");
+
+    } catch (err) {
+      showStatusToast("Failed to generate preview");
+    }
+};
+
+
   /* ---------------- SEND OFFER ---------------- */
   const handleSendOffer = async () => {
     setLoadingSendOffer(true);
@@ -168,6 +243,10 @@ const actionTaken =
       setLoadingSendOffer(false);
     }
   };
+  
+
+
+
 
   /* ---------------- CREATE / REASSIGN APPROVAL ---------------- */
   useEffect(() => {
@@ -187,6 +266,8 @@ const actionTaken =
 }, [openApprovalModal, isPending, isNoRequest, approvalHistory]);
 
   const handleApprovalSubmit = async () => {
+   
+    
     if (!selectedAdmin) {
       showStatusToast("Please select approver");
       return;
@@ -509,7 +590,10 @@ className="border p-2 rounded"
         </div>
 
         <div className="flex gap-4 mt-10">
-          <button
+
+          
+
+            <button
   onClick={handleSendOffer}
   disabled={
     approvalStatus !== "APPROVED" ||
@@ -531,6 +615,54 @@ className="border p-2 rounded"
     ? "Sending..."
     : "Send Offer"}
 </button>
+        {/* PREVIEW OFFER */}
+
+          {/* <button
+            onClick={handlePreviewOffer}
+            className="px-6 py-2 rounded-lg text-white bg-indigo-700 hover:bg-indigo-800
+            transition-all duration-100 ease-in-out active:translate-y-[1px]
+            flex items-center justify-center gap-2"
+          >
+            <Eye size={16}/>
+            Preview Offer
+          </button> */}
+
+          {/* <button
+              onClick={handleFinalPreviewOffer}
+              className="px-6 py-2 rounded-lg text-white bg-purple-700 hover:bg-purple-800
+              transition-all duration-100 ease-in-out active:translate-y-[1px]
+              flex items-center justify-center gap-2"
+            >
+              <Eye size={16}/>
+              Final Preview
+          </button> */}
+
+          {/* <button
+                        onClick={handleGeneratedPreview}
+                        className="px-6 py-2 rounded-lg text-white bg-blue-800 hover:bg-blue-900
+                        flex items-center gap-2"
+                        >
+
+                        <Eye size={16}/>
+
+                        Generated PDF
+
+          </button> */}
+          <button
+              onClick={handlePreviewOffer}
+              className="px-6 py-2 rounded-lg text-white bg-indigo-700 hover:bg-indigo-800
+              transition-all duration-100 ease-in-out active:translate-y-[1px]
+              flex items-center justify-center gap-2"
+            >
+              <Eye size={16}/>
+              Preview Offer
+          </button>
+
+
+
+          
+
+        
 
           <button
             onClick={() => setOpenApprovalModal(true)}
@@ -555,6 +687,8 @@ className="border p-2 rounded"
               >
                 Delete Offer
               </button>
+
+    
             )}
 
 
@@ -586,7 +720,7 @@ className="border p-2 rounded"
         active:translate-y-[1px]
         disabled:opacity-60 disabled:cursor-not-allowed
         flex items-center justify-center gap-2" onClick={() => setOpenApprovalModal(false)}>Cancel</button>
-              <button
+              {/* <button
                 onClick={handleApprovalSubmit}
                 disabled={sendingApproval}
                 className="bg-indigo-700 text-white px-4 py-2 rounded transition-all duration-100 ease-in-out
@@ -595,11 +729,76 @@ className="border p-2 rounded"
         flex items-center justify-center gap-2"
               >
                 Send
+              </button> */}
+              <button
+                    onClick={() => {
+                      if (!selectedAdmin) {
+                        showStatusToast("Please select approver");
+                        return;
+                      }
+                      setShowConfirmModal(true);
+                    }}
+                    className="bg-indigo-700 text-white px-4 py-2 rounded transition-all duration-100 ease-in-out
+                    active:translate-y-[1px]
+                    disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                Send
               </button>
+              
             </div>
           </div>
         </div>
       )}
+
+
+
+      {/* ---------- CONFIRMATION MODAL ---------- */}
+{showConfirmModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+
+      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+        Send Offer for Approval
+      </h3>
+
+      <p className="text-gray-600 mb-2">
+        You are about to send the <strong>offer preview</strong> to the selected approver.
+      </p>
+
+      <p className="text-gray-700 mb-4">
+        <strong>Approver:</strong> {selectedApproverName || "—"}
+      </p>
+
+      <p className="text-gray-600 mb-6">
+        Are you sure you want to send this offer for approval?
+      </p>
+
+      <div className="flex justify-end gap-3">
+
+        {/* Cancel */}
+        <button
+          onClick={() => setShowConfirmModal(false)}
+          className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+
+        {/* Confirm */}
+        <button
+          onClick={async () => {
+            setShowConfirmModal(false);
+            await handleApprovalSubmit();
+          }}
+          className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
+        >
+          Confirm & Send
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
       {/* ---------- DELETE OFFER MODAL ---------- */}
 {deleteOfferModal && (
   <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">

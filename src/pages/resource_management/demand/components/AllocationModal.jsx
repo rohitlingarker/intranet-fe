@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, Percent, Activity, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
 import { fetchResources, resourceAllocation } from "../../services/resource";
 import { toast } from 'react-toastify';
 import { cn } from "@/lib/utils";
 
-const AllocationModal = ({ isOpen, onClose, demand }) => {
+const toDateInputValue = (date) => {
+    if (!date) return "";
+    const matchedDate = String(date).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return matchedDate ? matchedDate[1] : "";
+};
+
+const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
     const [resources, setResources] = useState([]);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,14 +21,41 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
 
     const [formData, setFormData] = useState({
         resourceId: [],
-        demandId: demand?.demandId || '',
-        allocationStartDate: '',
-        allocationEndDate: '',
-        allocationPercentage: 100,
-        allocationStatus: 'ACTIVE'
+        demandId: demand?.demandId || demand?.id || '',
+        allocationStartDate: toDateInputValue(demand?.demandStartDate),
+        allocationEndDate: toDateInputValue(demand?.demandEndDate),
+        allocationPercentage: demand?.allocationPercentage || 100,
+        allocationStatus: 'ACTIVE',
+        skipValidation: false
     });
 
     const [errors, setErrors] = useState({});
+
+    const getResourceNameById = (resourceId) => {
+        const matchedResource = resources.find(
+            (resource) => String(resource.resourceId) === String(resourceId)
+        );
+        return matchedResource?.resourceName || null;
+    };
+
+    const enrichAllocationResult = (result) => {
+        if (!result?.data) return result;
+
+        return {
+            ...result,
+            data: {
+                ...result.data,
+                savedAllocations: (result.data.savedAllocations || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+                failedResources: (result.data.failedResources || []).map((item) => ({
+                    ...item,
+                    resourceName: item.resourceName || getResourceNameById(item.resourceId),
+                })),
+            },
+        };
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -36,9 +63,12 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                 setIsLoadingResources(true);
                 try {
                     const response = await fetchResources();
-                    if (response.success) {
-                        setResources(response.data);
-                    }
+                    const resourceList = Array.isArray(response?.data)
+                        ? response.data
+                        : Array.isArray(response)
+                            ? response
+                            : [];
+                    setResources(resourceList);
                 } catch (error) {
                     console.error("Failed to fetch resources", error);
                     toast.error("Failed to load resources");
@@ -50,8 +80,11 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
 
             setFormData(prev => ({
                 ...prev,
-                demandId: demand?.demandId || '',
-                resourceId: [] // Reset on open
+                demandId: demand?.demandId || demand?.id || '',
+                allocationStartDate: toDateInputValue(demand?.demandStartDate),
+                allocationEndDate: toDateInputValue(demand?.demandEndDate),
+                resourceId: [],
+                skipValidation: false
             }));
             setErrors({});
             setSearchQuery("");
@@ -81,27 +114,61 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
             }
         }
 
-        if (formData.allocationPercentage <= 0 || formData.allocationPercentage > 100) {
-            newErrors.allocationPercentage = 'Percentage must be between 1 and 100';
+        if (!formData.skipValidation) {
+            if (formData.allocationPercentage <= 0 || formData.allocationPercentage > 100) {
+                newErrors.allocationPercentage = 'Percentage must be between 1 and 100';
+            }
+        } else {
+            if (!formData.allocationPercentage || formData.allocationPercentage <= 0) {
+                newErrors.allocationPercentage = 'Percentage must be greater than 0';
+            }
         }
 
+        if (!formData.allocationStatus) newErrors.allocationStatus = 'Allocation status is required';
+
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return {
+            isValid: Object.keys(newErrors).length === 0,
+            errors: newErrors,
+        };
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!validate()) return;
+        e?.preventDefault?.();
+        const { isValid, errors: validationErrors } = validate();
+        if (!isValid) {
+            const validationMessages = Object.values(validationErrors).filter(Boolean);
+            toast.warning(validationMessages[0] || "Please correct the validation errors");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
             const result = await resourceAllocation(formData);
-            if (result.success) {
+            const enrichedResult = enrichAllocationResult(result);
+            const hasAllocationResults = !!enrichedResult?.data;
+            const successCount = enrichedResult?.data?.successCount || 0;
+            const failureCount = enrichedResult?.data?.failureCount || 0;
+            const normalizedMessage = String(result?.message || "").toLowerCase();
+            const isFailedAllocationMessage = normalizedMessage.includes("allocation failed");
+
+            if (!result.success && !hasAllocationResults) {
+                toast.error(result.message || "Allocation failed");
+                return;
+            }
+
+            if (hasAllocationResults && failureCount > 0 && successCount === 0) {
+                toast.error(result.message || "Allocation failed");
+            } else if (hasAllocationResults && failureCount > 0) {
+                toast.warning(result.message || "Allocation completed with some failures");
+            } else if (result.success && !isFailedAllocationMessage) {
                 toast.success(result.message || "Resources allocated successfully");
-                onClose();
             } else {
                 toast.error(result.message || "Allocation failed");
             }
+
+            if (onSuccess) onSuccess(enrichedResult);
+            onClose();
         } catch (error) {
             console.error("Allocation error:", error);
             toast.error(error.response?.data?.message || "Failed to allocate resources");
@@ -112,10 +179,13 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
 
     if (!isOpen) return null;
 
-    const filteredResources = resources.filter(res =>
-        res.resourceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.resourceRole.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredResources = resources.filter((res) => {
+        const resourceName = String(res?.resourceName || "").toLowerCase();
+        const resourceRole = String(res?.resourceRole || "").toLowerCase();
+        const normalizedQuery = searchQuery.toLowerCase();
+
+        return resourceName.includes(normalizedQuery) || resourceRole.includes(normalizedQuery);
+    });
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -210,10 +280,10 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                                         >
                                             <div className="flex flex-col">
                                                 <span className={cn("text-xs font-bold", isSelected ? "text-indigo-900" : "text-slate-700 group-hover:text-slate-900")}>
-                                                    {res.resourceName}
+                                                    {res.resourceName || `Resource ${res.resourceId}`}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-slate-400">
-                                                    {res.resourceRole}
+                                                    {res.resourceRole || "No role assigned"}
                                                 </span>
                                             </div>
                                             <div className={cn(
@@ -238,7 +308,7 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                                 if (!res) return null;
                                 return (
                                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg animate-in zoom-in-50">
-                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName}</span>
+                                        <span className="text-[10px] font-bold text-indigo-700">{res.resourceName || `Resource ${id}`}</span>
                                         <button
                                             type="button"
                                             onClick={() => toggleResource(id)}
@@ -284,16 +354,29 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation %
+                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation
+                                {formData.skipValidation && (
+                                    <span className="ml-auto text-[8px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                        Flexible
+                                    </span>
+                                )}
                             </label>
                             <div className="relative">
                                 <Input
+                                    readOnly={!formData.skipValidation}
+                                    disabled={!formData.skipValidation}
                                     type="number"
                                     min="1"
-                                    max="100"
+                                    {...(!formData.skipValidation ? { max: '100' } : {})}
                                     value={formData.allocationPercentage}
                                     onChange={(e) => setFormData({ ...formData, allocationPercentage: parseInt(e.target.value) || 0 })}
-                                    className={cn("h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs", errors.allocationPercentage && "border-rose-500")}
+                                    className={cn(
+                                        "h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs transition-all",
+                                        formData.skipValidation
+                                            ? "bg-white cursor-text border-amber-300 focus-visible:ring-amber-400"
+                                            : "bg-slate-100 opacity-70 cursor-not-allowed select-none",
+                                        errors.allocationPercentage && "border-rose-500"
+                                    )}
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400">%</span>
                             </div>
@@ -303,20 +386,64 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                 <Activity className="h-3 w-3 text-indigo-500" /> Status
                             </label>
-                            <Select
-                                value={formData.allocationStatus}
-                                onValueChange={(val) => setFormData({ ...formData, allocationStatus: val })}
-                            >
-                                <SelectTrigger className="h-10 rounded-xl border-slate-200 font-bold text-slate-900 text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="PLANNED">PLANNED</SelectItem>
-                                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                                    <SelectItem value="ENDED">ENDED</SelectItem>
-                                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <div className="relative">
+                                <select
+                                    value={formData.allocationStatus}
+                                    onChange={(e) => setFormData({ ...formData, allocationStatus: e.target.value })}
+                                    className={cn(
+                                        "h-10 w-full rounded-xl border font-bold text-slate-900 text-xs px-3 bg-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-0 transition-colors",
+                                        errors.allocationStatus ? "border-rose-500" : "border-slate-200"
+                                    )}
+                                >
+                                    <option value="PLANNED">PLANNED</option>
+                                    <option value="ACTIVE">ACTIVE</option>
+                                    <option value="ENDED">ENDED</option>
+                                    <option value="CANCELLED">CANCELLED</option>
+                                </select>
+                                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
+                            </div>
+                            {errors.allocationStatus && <p className="text-[9px] font-bold text-rose-500 mt-1">{errors.allocationStatus}</p>}
+                        </div>
+                    </div>
+
+                    {/* Skip Validation Toggle */}
+                    <div className="flex items-center gap-3 pt-1 pb-1">
+                        <button
+                            type="button"
+                            id="skip-validation-toggle"
+                            role="checkbox"
+                            aria-checked={formData.skipValidation}
+                            onClick={() => setFormData(prev => ({
+                                ...prev,
+                                skipValidation: !prev.skipValidation,
+                                // Reset percentage to 100 when unchecking
+                                allocationPercentage: !prev.skipValidation ? prev.allocationPercentage : 100
+                            }))}
+                            className={cn(
+                                "relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1",
+                                formData.skipValidation
+                                    ? "bg-amber-500 border-amber-500 focus:ring-amber-400"
+                                    : "bg-slate-200 border-slate-200 focus:ring-slate-400"
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    "inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                                    formData.skipValidation ? "translate-x-4" : "translate-x-0.5"
+                                )}
+                            />
+                        </button>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Skip Validation</span>
+                            <span className="text-[9px] font-medium text-slate-400">
+                                {formData.skipValidation
+                                    ? "Validation bypassed — enter any allocation percentage"
+                                    : "Enable to override capacity limits and enter a custom percentage"}
+                            </span>
                         </div>
                     </div>
                 </form>
@@ -325,13 +452,15 @@ const AllocationModal = ({ isOpen, onClose, demand }) => {
                 <div className="px-6 py-5 border-t border-slate-100 bg-slate-50/50 flex gap-3">
                     <Button
                         variant="outline"
+                        type="button"
                         onClick={onClose}
                         className="flex-1 h-10 rounded-xl border-slate-200 font-bold tracking-widest text-[10px] hover:bg-white text-slate-500"
                     >
                         CANCEL
                     </Button>
                     <Button
-                        form="allocation-form"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={isSubmitting}
                         className="flex-[2] h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black tracking-widest text-[10px] shadow-xl shadow-indigo-600/20"
                     >

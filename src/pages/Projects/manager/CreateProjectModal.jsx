@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "motion/react";
@@ -54,13 +54,11 @@ const CSS = `
   .pmw-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .pmw-g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
   .pmw-sec { font-size: 10px; font-weight: 700; color: #c4cdd9; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 12px; }
-  /* skeleton */
   @keyframes pmw-sh { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
   .pmw-skel {
     background: linear-gradient(90deg,#f1f5f9 25%,#e9eef5 50%,#f1f5f9 75%);
     background-size: 800px 100%; animation: pmw-sh 1.4s infinite linear; border-radius: 7px;
   }
-  /* stepper btn */
   .pmw-sbtn {
     display:flex;flex-direction:column;gap:2px;
     padding:9px 16px 9px 20px;position:relative;
@@ -72,7 +70,6 @@ const CSS = `
     content:'';position:absolute;left:0;top:0;bottom:0;
     width:3px;background:#2563eb;border-radius:0 2px 2px 0;
   }
-  /* member row */
   .pmw-mrow {
     display:flex;align-items:center;gap:10px;padding:8px 12px;
     cursor:pointer;transition:background .12s;border-bottom:1px solid #f8fafc;
@@ -81,14 +78,12 @@ const CSS = `
   .pmw-mrow:hover{background:#f8fafc;}
   .pmw-mrow.sel{background:#eff6ff;}
   .pmw-mrow.dis{opacity:.38;cursor:not-allowed;pointer-events:none;}
-  /* status row */
   .pmw-srow {
     display:flex;align-items:center;gap:10px;padding:9px 12px;
     background:#fff;border:1.5px solid #e9eef5;border-radius:8px;
     user-select:none;
   }
   .pmw-srow:hover{border-color:#d1d9e4;}
-  /* buttons */
   .pmw-btn-cancel {
     font-size:13px;font-weight:500;border:none;background:transparent;
     color:#6b7280;cursor:pointer;padding:7px 13px;border-radius:8px;
@@ -141,7 +136,6 @@ const CSS = `
   .pmw-scroll::-webkit-scrollbar-track{background:transparent;}
   .pmw-scroll::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:10px;}
   .pmw-scroll::-webkit-scrollbar-thumb:hover{background:#cbd5e1;}
-  /* review */
   .pmw-rcell{display:flex;flex-direction:column;gap:3px;}
   .pmw-rlabel{font-size:10px;font-weight:600;color:#a0aec0;text-transform:uppercase;letter-spacing:.06em;}
   .pmw-rval{font-size:13px;color:#111827;font-weight:400;}
@@ -171,7 +165,8 @@ const STEPS = [
 const DEFAULT_FORM = {
   name: "", projectKey: "", description: "", primaryLocation: "",
   status: "PLANNING", currentStage: "INITIATION", deliveryModel: "ONSITE",
-  startDate: new Date().toISOString().split("T")[0], endDate: "", riskLevel: "", priorityLevel: "",
+  startDate: new Date().toISOString().split("T")[0],
+  endDate: "", riskLevel: "", priorityLevel: "",
   projectBudget: "", ownerId: "", clientId: "", rmId: "",
   deliveryOwnerId: "", memberIds: [],
 };
@@ -224,7 +219,7 @@ const genKey = (name) => {
     .map((w) => w.replace(/[^a-zA-Z0-9]/g, "")[0] || "")
     .join("")
     .toUpperCase();
-  const num = Math.floor(Math.random() * 900) + 100; // 3-digit number
+  const num = Math.floor(Math.random() * 900) + 100;
   return `${letters}-${num}`;
 };
 
@@ -233,13 +228,12 @@ const isDirtyCheck = (form, statuses) => {
   return (
     form.name !== df.name || form.projectKey !== df.projectKey ||
     form.description !== df.description || form.primaryLocation !== df.primaryLocation ||
-    form.startDate !== df.startDate || form.endDate !== df.endDate ||
-    form.riskLevel !== df.riskLevel || form.priorityLevel !== df.priorityLevel ||
-    form.projectBudget !== df.projectBudget || form.ownerId !== df.ownerId ||
-    form.clientId !== df.clientId || form.rmId !== df.rmId ||
-    form.deliveryOwnerId !== df.deliveryOwnerId || form.memberIds.length > 0 ||
-    JSON.stringify(statuses.map(s => s.name)) !==
-    JSON.stringify(DEFAULT_STATUSES.map(s => s.name))
+    form.endDate !== df.endDate || form.riskLevel !== df.riskLevel ||
+    form.priorityLevel !== df.priorityLevel || form.projectBudget !== df.projectBudget ||
+    form.ownerId !== df.ownerId || form.clientId !== df.clientId ||
+    form.rmId !== df.rmId || form.deliveryOwnerId !== df.deliveryOwnerId ||
+    form.memberIds.length > 0 ||
+    JSON.stringify(statuses.map(s => s.name)) !== JSON.stringify(DEFAULT_STATUSES.map(s => s.name))
   );
 };
 
@@ -271,10 +265,8 @@ const Field = ({ label, required, optional, error, children }) => (
   </div>
 );
 
-const Inp = ({ error, ...p }) => <input className={`pmw-input${error ? " err" : ""}`} {...p} />;
-const Sel = ({ error, children, ...p }) => (
-  <select className={`pmw-select${error ? " err" : ""}`} {...p}>{children}</select>
-);
+const Inp = ({ error, ...p }) => <input className={`pmw-input${error ? " err" : ""}`}   {...p} />;
+const Sel = ({ error, children, ...p }) => <select className={`pmw-select${error ? " err" : ""}`} {...p}>{children}</select>;
 const Txta = ({ error, ...p }) => <textarea className={`pmw-textarea${error ? " err" : ""}`} {...p} />;
 
 /* ─── Skeleton ────────────────────────────────────────────────────────────── */
@@ -333,7 +325,7 @@ const Stepper = ({ cur, goTo }) => (
   </div>
 );
 
-/* ─── Review Badge ────────────────────────────────────────────────────────── */
+/* ─── Review helpers ──────────────────────────────────────────────────────── */
 const RBadge = ({ value, s }) => value
   ? <span className="pmw-badge" style={{ background: s.bg, color: s.text, borderColor: s.border }}>
     {s.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />}
@@ -394,7 +386,7 @@ const WarnBar = ({ onKeep, onDiscard }) => (
 );
 
 /* ─── Step 1 ──────────────────────────────────────────────────────────────── */
-const Step1 = ({ fd, err, onChange, onNameChange, keyAuto, onResetKey }) => (
+const Step1 = ({ fd, err, onChange, onNameChange, onKeyChange, keyAuto, onResetKey }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
     <div className="pmw-g2">
       <Field label="Project Name" required error={err.name}>
@@ -404,7 +396,9 @@ const Step1 = ({ fd, err, onChange, onNameChange, keyAuto, onResetKey }) => (
       <Field label="Project Key" required error={err.projectKey}>
         <div style={{ position: "relative" }}>
           <Inp name="projectKey" placeholder="AUTO"
-            value={fd.projectKey} onChange={onChange} error={err.projectKey}
+            value={fd.projectKey}
+            onChange={onKeyChange}
+            error={err.projectKey}
             style={{ paddingRight: keyAuto ? 12 : 34 }}
           />
           {!keyAuto && (
@@ -571,15 +565,14 @@ const Step3 = ({ fd, err, users, onChange, onOwner, toggleMember, search, setSea
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <label className="pmw-label" style={{ margin: 0 }}>
-            Team Members <span style={{
-              color: "#9ca3af", fontWeight: 400, textTransform: "none",
-              letterSpacing: 0, fontSize: 10.5
-            }}>(optional)</span>
+            Team Members{" "}
+            <span style={{ color: "#9ca3af", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: 10.5 }}>
+              (optional)
+            </span>
           </label>
           <AnimatePresence>
             {fd.memberIds.length > 0 && (
-              <motion.span initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: .8 }}
+              <motion.span initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .8 }}
                 style={{
                   fontSize: 11, fontWeight: 700, background: "#eff6ff", color: "#1d4ed8",
                   border: "1px solid #bfdbfe", borderRadius: 20, padding: "2px 9px"
@@ -644,23 +637,31 @@ const Step3 = ({ fd, err, users, onChange, onOwner, toggleMember, search, setSea
   );
 };
 
-/* ─── Step 4 — Workflow (DnD fixed: no motion wrapper on Draggable) ────────── */
+/* ─── Step 4 — Workflow ───────────────────────────────────────────────────── */
 const Step4 = ({ statuses, setStatuses, statusError }) => {
   const [newName, setNewName] = useState("");
+  const [dupError, setDupError] = useState("");  // FIX: was missing
+
+  const normalize = (str) => str.trim().replace(/\s+/g, " ").toLowerCase();
 
   const handleAdd = () => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+
+    // This version treats "to do" and "todo" as duplicates
+    const normalize = (str) => str.trim().replace(/\s+/g, "").toLowerCase();
     const isDuplicate = statuses.some(
-      (s) => s.name.trim().toLowerCase() === trimmed.toLowerCase()
+      (s) => normalize(s.name) === normalize(trimmed)
     );
+
     if (isDuplicate) {
       setDupError("A status with this name already exists.");
       return;
     }
-    const trimmed = newName.trim();
-    if (!trimmed) return;
+
+    setDupError("");
     setStatuses(p => [...p, { id: `new-${Date.now()}`, name: trimmed, color: "#9ca3af" }]);
     setNewName("");
-
   };
 
   const handleRemove = (id) => setStatuses(p => p.filter(s => s.id !== id));
@@ -683,7 +684,7 @@ const Step4 = ({ statuses, setStatuses, statusError }) => {
         <input className="pmw-add-inp"
           placeholder="New status name, e.g. 'In Review'"
           value={newName}
-          onChange={e => setNewName(e.target.value)}
+          onChange={e => { setNewName(e.target.value); setDupError(""); }} // FIX: clear error on type
           onKeyDown={e => e.key === "Enter" && handleAdd()}
         />
         <button type="button" className="pmw-add-btn" onClick={handleAdd}>
@@ -691,6 +692,8 @@ const Step4 = ({ statuses, setStatuses, statusError }) => {
         </button>
       </div>
 
+      {/* FIX: render both error types */}
+      <ErrMsg msg={dupError} />
       <ErrMsg msg={statusError} />
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -703,46 +706,31 @@ const Step4 = ({ statuses, setStatuses, statusError }) => {
               style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto" }}
             >
               {statuses.map((status, index) => (
-                <Draggable
-                  key={status.id}
-                  draggableId={String(status.id)}
-                  index={index}
-                >
+                <Draggable key={status.id} draggableId={String(status.id)} index={index}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
+                      {...provided.dragHandleProps}  // FIX: entire card is drag target
                       className="pmw-srow"
                       style={{
                         ...provided.draggableProps.style,
-                        boxShadow: snapshot.isDragging
-                          ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
+                        cursor: snapshot.isDragging ? "grabbing" : "grab",
+                        boxShadow: snapshot.isDragging ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
                         borderColor: snapshot.isDragging ? "#93c5fd" : undefined,
                         background: snapshot.isDragging ? "#f8fafc" : "#fff",
                       }}
                     >
-                      {/* Color dot */}
-                      <span style={{
-                        width: 10, height: 10, borderRadius: "50%",
-                        background: status.color, flexShrink: 0,
-                      }} />
-                      {/* Drag handle — only this gets dragHandleProps */}
-                      <div
-                        {...provided.dragHandleProps}
-                        style={{
-                          color: "#c4cdd9", cursor: "grab", display: "flex",
-                          alignItems: "center", flexShrink: 0
-                        }}
-                      >
+                      <span style={{ width: 10, height: 10, borderRadius: "50%", background: status.color, flexShrink: 0 }} />
+                      {/* grip icon is now decorative only */}
+                      <div style={{ color: "#c4cdd9", display: "flex", alignItems: "center", flexShrink: 0 }}>
                         <GripVertical size={15} />
                       </div>
-                      {/* Name */}
                       <span style={{ flex: 1, fontSize: 13.5, color: "#111827", fontWeight: 500 }}>
                         {status.name}
                       </span>
-                      {/* Delete */}
                       <button type="button"
-                        onClick={() => handleRemove(status.id)}
+                        onClick={e => { e.stopPropagation(); handleRemove(status.id); }}
                         style={{
                           background: "none", border: "none", cursor: "pointer",
                           color: "#c4cdd9", padding: 4, borderRadius: 5,
@@ -782,7 +770,9 @@ const Step5 = ({ fd, statuses, users }) => {
           <RCell label="Project Name" value={fd.name} />
           <RCell label="Project Key" value={fd.projectKey} />
           <RCell label="Primary Location" value={fd.primaryLocation} />
-          {fd.description && <div style={{ gridColumn: "1/-1" }}><RCell label="Description" value={fd.description} /></div>}
+          {fd.description && (
+            <div style={{ gridColumn: "1/-1" }}><RCell label="Description" value={fd.description} /></div>
+          )}
         </div>
       </section>
       <div className="pmw-divider" />
@@ -807,9 +797,11 @@ const Step5 = ({ fd, statuses, users }) => {
           <RCell label="Client" value={getName(fd.clientId)} />
           <RCell label="Resource Manager" value={getName(fd.rmId)} />
           <RCell label="Delivery Owner" value={getName(fd.deliveryOwnerId)} />
-          {memberNames && <div style={{ gridColumn: "1/-1" }}>
-            <RCell label={`Members (${fd.memberIds.length})`} value={memberNames} />
-          </div>}
+          {memberNames && (
+            <div style={{ gridColumn: "1/-1" }}>
+              <RCell label={`Members (${fd.memberIds.length})`} value={memberNames} />
+            </div>
+          )}
         </div>
       </section>
       <div className="pmw-divider" />
@@ -836,8 +828,8 @@ const Step5 = ({ fd, statuses, users }) => {
 
 /* ─── Main Modal ──────────────────────────────────────────────────────────── */
 const CreateProjectModal = ({
-  isOpen, onClose, onProjectCreated,
-  formData: initialFormData, editingProjectId,
+  isOpen, onClose, onProjectCreated, editingProjectId,
+  // FIX: removed formData/initialFormData — modal fetches its own data via API
 }) => {
   const [fd, setFd] = useState(DEFAULT_FORM);
   const [statuses, setStatuses] = useState(DEFAULT_STATUSES);
@@ -854,29 +846,60 @@ const CreateProjectModal = ({
   const token = localStorage.getItem("token");
 
   /* ── Open / reset ─────────────────────────────────────────────────────── */
+  // FIX: replaced old initialFormData reference with proper API fetch
   useEffect(() => {
     if (!isOpen) return;
     setStep(1); setDir(1); setErrors({}); setStatusErr("");
-    setSearch(""); setKeyAuto(true); setShowWarn(false);
+    setSearch(""); setShowWarn(false);
 
-    if (editingProjectId && initialFormData) {
-      setFd(initialFormData);
+    if (editingProjectId) {
+      setKeyAuto(false);
       setLoading(true);
-      axios.get(
-        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${editingProjectId}/statuses`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-        .then(res => {
-          const sorted = (res.data || []).sort((a, b) => a.sortOrder - b.sortOrder);
+      Promise.all([
+        axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${editingProjectId}/edit`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        axios.get(
+          `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${editingProjectId}/statuses`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+      ])
+        .then(([projectRes, statusRes]) => {
+          const p = projectRes.data;
+          setFd({
+            name: p.name || "",
+            projectKey: p.projectKey || "",
+            description: p.description || "",
+            status: p.status || "PLANNING",
+            currentStage: p.currentStage || "INITIATION",
+            deliveryModel: p.deliveryModel || "ONSITE",
+            primaryLocation: p.primaryLocation || "",
+            riskLevel: p.riskLevel || "",
+            priorityLevel: p.priorityLevel || "",
+            projectBudget: p.projectBudget ? String(p.projectBudget) : "",
+            ownerId: p.ownerId ? String(p.ownerId) : "",
+            clientId: p.clientId ? String(p.clientId) : "",
+            rmId: p.rmId ? String(p.rmId) : "",
+            deliveryOwnerId: p.deliveryOwnerId ? String(p.deliveryOwnerId) : "",
+            memberIds: p.memberIds ? Array.from(p.memberIds) : [],
+            startDate: p.startDate ? p.startDate.split("T")[0] : "",
+            endDate: p.endDate ? p.endDate.split("T")[0] : "",
+          });
+          const sorted = (statusRes.data || []).sort((a, b) => a.sortOrder - b.sortOrder);
           setStatuses(sorted.length ? sorted : DEFAULT_STATUSES);
         })
-        .catch(() => setStatuses(DEFAULT_STATUSES))
+        .catch(() => {
+          toast.error("Failed to load project data.");
+          setStatuses(DEFAULT_STATUSES);
+        })
         .finally(() => setLoading(false));
     } else {
-      setFd(DEFAULT_FORM);
+      setKeyAuto(true);
+      setFd({ ...DEFAULT_FORM, startDate: new Date().toISOString().split("T")[0] });
       setStatuses(DEFAULT_STATUSES);
     }
-  }, [isOpen]);
+  }, [isOpen, editingProjectId]);
 
   /* ── Fetch users ──────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -897,7 +920,8 @@ const CreateProjectModal = ({
     const { name, value } = e.target;
     if (errors[name]) setErrors(p => ({ ...p, [name]: "" }));
     if (name === "projectBudget") {
-      if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) setFd(p => ({ ...p, projectBudget: value }));
+      if (value === "" || /^\d*\.?\d{0,2}$/.test(value))
+        setFd(p => ({ ...p, projectBudget: value }));
       return;
     }
     setFd(p => ({ ...p, [name]: value }));
@@ -909,6 +933,7 @@ const CreateProjectModal = ({
     setFd(p => ({ ...p, name: raw, projectKey: keyAuto ? genKey(raw) : p.projectKey }));
   };
 
+  // FIX: properly wired — disables auto-gen on manual edit
   const handleKeyChange = (e) => {
     setKeyAuto(false);
     if (errors.projectKey) setErrors(p => ({ ...p, projectKey: "" }));
@@ -932,11 +957,11 @@ const CreateProjectModal = ({
       ...p,
       memberIds: p.memberIds.includes(uid)
         ? p.memberIds.filter(id => id !== uid)
-        : [...p.memberIds, uid]
+        : [...p.memberIds, uid],
     }));
   };
 
-  /* ── Dirty check + close guard ────────────────────────────────────────── */
+  /* ── Dirty check ──────────────────────────────────────────────────────── */
   const requestClose = () => {
     if (isDirtyCheck(fd, statuses)) {
       setShowWarn(true);
@@ -944,7 +969,6 @@ const CreateProjectModal = ({
       onClose();
     }
   };
-
   const confirmDiscard = () => { setShowWarn(false); onClose(); };
   const keepEditing = () => setShowWarn(false);
 
@@ -974,9 +998,10 @@ const CreateProjectModal = ({
       name: fd.name.trim(),
       projectKey: fd.projectKey.trim(),
       description: fd.description || null,
-      status: fd.status, currentStage: fd.currentStage,
+      status: fd.status,
+      currentStage: fd.currentStage,
       deliveryModel: fd.deliveryModel,
-      clientId: "d388eea3-5901-4a13-95e2-e786bdaa9794",
+      clientId: "a54bcfd3-0368-48ba-a495-9386dca8ae7f",
       rmId: parseInt(fd.rmId, 10) || 120,
       deliveryOwnerId: parseInt(fd.deliveryOwnerId, 10) || 120,
       primaryLocation: fd.primaryLocation,
@@ -994,6 +1019,7 @@ const CreateProjectModal = ({
     try {
       setSubmitting(true);
       let pid = editingProjectId;
+
       if (editingProjectId) {
         await axios.put(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${editingProjectId}`,
@@ -1005,8 +1031,8 @@ const CreateProjectModal = ({
           payload, { headers: { Authorization: `Bearer ${token}` } }
         );
         pid = res.data?.id;
-        onProjectCreated?.(res.data);
       }
+
       try {
         await axios.put(
           `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${pid}/statuses`,
@@ -1015,8 +1041,16 @@ const CreateProjectModal = ({
       } catch {
         toast.warn("Project saved, but statuses could not be saved — configure them in project settings.");
       }
+
       toast.success(editingProjectId ? "Project updated successfully." : "Project created successfully.");
-      if (editingProjectId) onProjectCreated?.();
+
+      // FIX: call onProjectCreated BEFORE onClose to avoid calling setState on unmounted component
+      if (editingProjectId) {
+        onProjectCreated?.();
+      } else {
+        onProjectCreated?.({ id: pid });
+      }
+
       onClose();
     } catch (err) {
       const b = err.response?.data;
@@ -1028,7 +1062,6 @@ const CreateProjectModal = ({
 
   if (!isOpen) return null;
 
-  /* ── Animation variants ───────────────────────────────────────────────── */
   const variants = {
     enter: d => ({ opacity: 0, x: d > 0 ? 20 : -20 }),
     center: { opacity: 1, x: 0 },
@@ -1045,8 +1078,8 @@ const CreateProjectModal = ({
 
   const stepContent = {
     1: <Step1 fd={fd} err={errors} onChange={handleChange}
-      onNameChange={handleNameChange} keyAuto={keyAuto}
-      onResetKey={resetKeyAuto} />,
+      onNameChange={handleNameChange} onKeyChange={handleKeyChange}
+      keyAuto={keyAuto} onResetKey={resetKeyAuto} />,
     2: <Step2 fd={fd} err={errors} onChange={handleChange} />,
     3: <Step3 fd={fd} err={errors} users={users}
       onChange={handleChange} onOwner={handleOwner}
@@ -1077,30 +1110,26 @@ const CreateProjectModal = ({
         style={{
           background: "#fff", borderRadius: 14,
           boxShadow: "0 24px 64px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.06)",
-          width: "100%", maxWidth: 860,
-          height: 520,
+          width: "100%", maxWidth: 860, height: 580,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top: stepper + content */}
         <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
 
-          {/* Stepper */}
           <Stepper cur={step} goTo={goTo} />
 
-          {/* Right panel */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
 
-            {/* Step header */}
+            {/* Header */}
             <div style={{
               padding: "18px 26px 14px", borderBottom: "1px solid #f1f5f9",
               flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: "#0f172a", letterSpacing: "-.02em" }}>
-                  {stepTitles[step].title}
+                  {editingProjectId ? `Edit: ${stepTitles[step].title}` : stepTitles[step].title}
                 </h2>
                 <p style={{ margin: "2px 0 0", fontSize: 12, color: "#94a3b8" }}>
                   {stepTitles[step].sub}
@@ -1122,11 +1151,8 @@ const CreateProjectModal = ({
             <div className="pmw-scroll"
               style={{ flex: 1, overflowY: "auto", padding: "22px 26px", position: "relative" }}
             >
-              {/* Unsaved warning bar */}
               <AnimatePresence>
-                {showWarn && (
-                  <WarnBar onKeep={keepEditing} onDiscard={confirmDiscard} />
-                )}
+                {showWarn && <WarnBar onKeep={keepEditing} onDiscard={confirmDiscard} />}
               </AnimatePresence>
 
               <AnimatePresence mode="wait" custom={dir}>
@@ -1180,6 +1206,7 @@ const CreateProjectModal = ({
             }
           </div>
         </div>
+
       </motion.div>
     </motion.div>
   );

@@ -12,14 +12,14 @@ const getAuthHeader = () => {
     };
 };
 
-const ROLE_ALIAS_MAP = {
-    "RESOURCE-MANAGER": "RESOURCE_MANAGER",
-    "RESOURCE MANAGER": "RESOURCE_MANAGER",
-    "RESOURCE_MANAGER": "RESOURCE_MANAGER",
-    "DELIVERY-MANAGER": "DELIVERY_MANAGER",
-    "DELIVERY MANAGER": "DELIVERY_MANAGER",
-    "DELIVERY_MANAGER": "DELIVERY_MANAGER"
-};
+// const ROLE_ALIAS_MAP = {
+//     "RESOURCE-MANAGER": "RESOURCE_MANAGER",
+//     "RESOURCE MANAGER": "RESOURCE_MANAGER",
+//     "RESOURCE_MANAGER": "RESOURCE_MANAGER",
+//     "DELIVERY-MANAGER": "DELIVERY_MANAGER",
+//     "DELIVERY MANAGER": "DELIVERY_MANAGER",
+//     "DELIVERY_MANAGER": "DELIVERY_MANAGER"
+// };
 
 const DEMAND_API_BY_ROLE = {
     RESOURCE_MANAGER: {
@@ -34,7 +34,11 @@ const DEMAND_API_BY_ROLE = {
 
 const normalizeRoleKey = (role) => {
     if (!role) return null;
-    return ROLE_ALIAS_MAP[role?.toUpperCase()] || null;
+
+    return role
+        .toUpperCase()
+        .replace(/-/g, "_")   // RESOURCE-MANAGER → RESOURCE_MANAGER
+        .trim();
 };
 
 /**
@@ -96,19 +100,28 @@ export const demandService = {
      * @param {string} role
      */
     getRoleScopedKPISummary: async (role) => {
+
         const roleKey = normalizeRoleKey(role);
-        const endpoints = roleKey ? DEMAND_API_BY_ROLE[roleKey] : null;
+        const endpoints = DEMAND_API_BY_ROLE[roleKey];
+
         if (!endpoints?.kpi) {
             return demandService.getKPISummary();
         }
+
         try {
-            const response = await axios.get(`${BASE_URL}${endpoints.kpi}`, getAuthHeader());
-            if (response.data && response.data.success) {
+            const response = await axios.get(
+                `${BASE_URL}${endpoints.kpi}`,
+                getAuthHeader()
+            );
+
+            if (response.data?.success) {
                 return response.data.data;
             }
+
             return null;
+
         } catch (error) {
-            console.error(`Error in getRoleScopedKPISummary for role ${role}:`, error);
+            console.error(`Error fetching KPI for role ${role}`, error);
             return null;
         }
     },
@@ -119,23 +132,33 @@ export const demandService = {
      * @param {string} role
      */
     getRoleScopedDemands: async (role) => {
+
         const roleKey = normalizeRoleKey(role);
-        const endpoints = roleKey ? DEMAND_API_BY_ROLE[roleKey] : null;
+        const endpoints = DEMAND_API_BY_ROLE[roleKey];
+
         if (!endpoints?.demands) {
             return demandService.getAllDemands();
         }
+
         try {
-            const response = await axios.get(`${BASE_URL}${endpoints.demands}`, getAuthHeader());
-            if (response.data && response.data.success) {
+
+            const response = await axios.get(
+                `${BASE_URL}${endpoints.demands}`,
+                getAuthHeader()
+            );
+
+            if (response.data?.success) {
                 return response.data.data;
             }
-            throw new Error(response.data?.message || `Failed to fetch demands for role ${role}`);
+
+            throw new Error(`Failed to fetch demands for role ${role}`);
+
         } catch (error) {
-            console.error(`Error in getRoleScopedDemands for role ${role}:`, error);
+
+            console.error(`Error fetching demands for role ${role}`, error);
             throw error;
         }
     },
-
     /**
      * Fetches Dashboard KPI summary data
      */
@@ -201,6 +224,34 @@ export const demandService = {
             throw new Error(response.data?.message || 'Failed to fetch project demands');
         } catch (error) {
             console.error(`Error in getProjectDemands for ID ${projectId}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Handles Delivery Manager decision on a demand
+     * @param {Object} payload 
+     */
+    handleDMDecision: async (payload) => {
+        try {
+            const response = await axios.put(`${BASE_URL}/api/demand/dm/decision`, payload, getAuthHeader());
+            return response.data;
+        } catch (error) {
+            console.error('Error in handleDMDecision:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Handles Resource Manager decision on a demand
+     * @param {Object} payload 
+     */
+    handleRMDecision: async (payload) => {
+        try {
+            const response = await axios.put(`${BASE_URL}/api/demand/rm/decision`, payload, getAuthHeader());
+            return response.data;
+        } catch (error) {
+            console.error('Error in handleRMDecision:', error);
             throw error;
         }
     }

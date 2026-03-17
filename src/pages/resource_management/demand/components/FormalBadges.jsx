@@ -11,7 +11,7 @@ import {
  * Re-weighted for better visual hierarchy.
  */
 
-export const PriorityBadge = ({ priority }) => {
+export const PriorityBadge = ({ priority, className }) => {
     const p = String(priority || 'Medium');
     const config = {
         'CRITICAL': { className: 'bg-rose-600 text-white border-rose-700 shadow-rose-200', label: 'Critical', icon: Flame },
@@ -24,7 +24,8 @@ export const PriorityBadge = ({ priority }) => {
     return (
         <span className={cn(
             "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-black tracking-tight border shadow-sm transition-all",
-            c.className
+            c.className,
+            className
         )}>
             <c.icon className="h-2.5 w-2.5" />
             {c.label}
@@ -32,9 +33,10 @@ export const PriorityBadge = ({ priority }) => {
     );
 };
 
-export const StateBadge = ({ state }) => {
+export const StateBadge = ({ state, className }) => {
     const s = String(state || 'Pending').toUpperCase();
     const config = {
+        'FULFILLED': { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Fulfilled' },
         'APPROVED': { dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Approved' },
         'OPEN': { dot: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', label: 'Open' },
         'ACTIVE': { dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', label: 'Active' },
@@ -50,7 +52,7 @@ export const StateBadge = ({ state }) => {
     return (
         <span className={cn(
             "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight border border-transparent shadow-sm",
-            c.bg, c.text
+            c.bg, c.text, className
         )}>
             <div className={cn("h-1 w-1 rounded-full shrink-0 animate-pulse", c.dot)} />
             {c.label}
