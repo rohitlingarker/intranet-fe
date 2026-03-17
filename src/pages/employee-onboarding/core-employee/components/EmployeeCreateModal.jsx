@@ -7,7 +7,7 @@ import Button from "../../../../components/Button/Button";
 import { showStatusToast } from "../../../../components/toastfy/toast";
 
 
-export default function EmployeeCreateModal({ isOpen, onClose , userUuid, employeeUuid}) {
+export default function EmployeeCreateModal({ isOpen, onClose , userUuid, employeeUuid,firstName, middleName,lastName}) {
   const [activeTab, setActiveTab] = useState("Profile");
   const [form, setForm] = useState({});
   const [isGenerated, setIsGenerated] = useState(false);
@@ -63,6 +63,34 @@ const fetchDesignations = async (departmentUuid) => {
     setDesignations(data);
   } catch (err) {
     console.error("Failed to fetch designations", err);
+  }
+};
+
+const fetchUserDetails = async (uuid) => {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/users/${uuid}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("User Data:", data);
+
+    setForm((prev) => ({
+      ...prev,
+      userUuid: uuid,
+      empFirstName: data.first_name || "",
+      empMiddleName: data.middle_name || "",
+      empLastName: data.last_name || "",
+    }));
+
+  } catch (error) {
+    console.error("Failed to fetch user details", error);
   }
 };
 
@@ -138,9 +166,13 @@ useEffect(() => {
     setForm((prev) => ({
       ...prev,
       userUuid: userUuid,
+      empFirstName: firstName,
+      empMiddleName: middleName,
+      empLastName: lastName
     }));
   }
 }, [userUuid]);
+
 
 useEffect(() => {
   if (employeeUuid) {

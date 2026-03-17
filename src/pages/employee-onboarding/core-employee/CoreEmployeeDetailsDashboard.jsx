@@ -72,6 +72,9 @@ export default function EmployeeOnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [selectedUserUuid, setSelectedUserUuid] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -198,6 +201,9 @@ const fetchDesignations = async () => {
   useEffect(() => {
     if (location.state?.userUuid) {
       setSelectedUserUuid(location.state.userUuid);
+      setFirstName(location.state.firstName || "");
+      setMiddleName(location.state.middleName || "");
+      setLastName(location.state.lastName || "");
     }
   }, [location.state]);
 
@@ -528,6 +534,9 @@ const downloadExcel = () => {
         onClose={handleCloseModal}
         userUuid={selectedUserUuid}
         employeeUuid={editEmployeeUuid}
+        firstName={firstName}
+        middleName={middleName}
+        lastName={lastName}
       />
 
     </div>

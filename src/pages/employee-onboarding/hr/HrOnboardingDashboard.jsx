@@ -222,6 +222,7 @@ export default function HrOnboardingDashboard() {
 /* -------------------- State -------------------- */
  
   const [data, setData] = useState([]);
+  const [employeeUserIds, setEmployeeUserIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -278,6 +279,30 @@ export default function HrOnboardingDashboard() {
     fetchEmployees();
   }, []);
  
+
+  const fetchCoreEmployees = async () => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/permanent-employee/core-employee-details/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const ids = (res.data || []).map((e) => e.user_uuid);
+
+    setEmployeeUserIds(ids);
+
+  } catch (err) {
+    console.error("Failed to fetch core employees", err);
+  }
+};
+
+useEffect(() => {
+  fetchCoreEmployees();
+}, []);
  
 // const fetchManagers = async () => {
 //   setLoadingManagers(true);
@@ -510,10 +535,12 @@ export default function HrOnboardingDashboard() {
     return filteredData
       .slice(startIndex, startIndex + PAGE_SIZE)
       .map((emp) => {
+        const isEmployeeCreated = employeeUserIds.includes(emp.user_uuid);
         const isVerified =
           String(emp.status || "").trim().toUpperCase() === "VERIFIED";
  
         return {
+          rowClass: isEmployeeCreated ? "bg-green-100" : "",
           ...(bulkJoinMode && {
             select: (
               <input
@@ -553,9 +580,11 @@ export default function HrOnboardingDashboard() {
               navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
             }
             onCreate={() =>
-              navigate(`/employee-onboarding/core-employee`,{state:{userUuid:emp.user_uuid}})
+              navigate(`/employee-onboarding/core-employee`,{state:{userUuid:emp.user_uuid,firstName: emp.first_name,
+      middleName: emp.middle_name,
+      lastName: emp.last_name}})
             }
-            showVerify={isVerified}
+            showVerify={isVerified && !isEmployeeCreated}
           />
             // <span
             //   className="text-indigo-600 cursor-pointer"
