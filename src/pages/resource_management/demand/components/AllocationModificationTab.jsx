@@ -139,6 +139,9 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
             resource.fullName || resource.resourceName || `Resource ${resource.resourceId}`,
           currentAllocationPercentage: Number(resource.allocationPercentage || 0),
           allocationPercentage: Number(resource.allocationPercentage || 0),
+          remainingAllocationPercentage: Number(
+            resource.remainingAllocationPercentage ?? resource.allocationPercentage ?? 0
+          ),
           allocationStartDate: resource.allocationStartDate || "",
           allocationEndDate: resource.allocationEndDate || "",
           allocationStatus: resource.allocationStatus || "",
@@ -216,7 +219,10 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
     setProcessingAction(`approve-${item.id}`);
 
     try {
-      const response = await allocationModificationApi.approveModification(item.id);
+      const response = await allocationModificationApi.submitRmDecision(item.id, {
+        decision: "APPROVE",
+        comments: "Approved due to project priority",
+      });
       toast.success(response?.message || "Allocation modification approved");
       await loadModifications();
     } catch (requestError) {
@@ -233,9 +239,9 @@ const AllocationModificationTab = ({ demandId, demand, user }) => {
     setProcessingAction(`reject-${rejectTarget.id}`);
 
     try {
-      const response = await allocationModificationApi.rejectModification(rejectTarget.id, {
+      const response = await allocationModificationApi.submitRmDecision(rejectTarget.id, {
         decision: "REJECT",
-        rejectionReason: reason,
+        comments: reason,
       });
       toast.success(response?.message || "Allocation modification rejected");
       setRejectTarget(null);
