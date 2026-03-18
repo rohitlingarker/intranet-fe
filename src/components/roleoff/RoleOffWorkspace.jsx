@@ -533,13 +533,13 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
         prev.map((item) =>
           item.id === existingRequest.id
             ? {
-                ...item,
-                type: formState.type,
-                reason: formState.reason,
-                effectiveDate: formatDisplayDate(formState.effectiveDate),
-                effectiveDateIso: formState.effectiveDate,
-                replacementRequired: formState.replacementRequired,
-              }
+              ...item,
+              type: formState.type,
+              reason: formState.reason,
+              effectiveDate: formatDisplayDate(formState.effectiveDate),
+              effectiveDateIso: formState.effectiveDate,
+              replacementRequired: formState.replacementRequired,
+            }
             : item,
         ),
       );
@@ -648,19 +648,18 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
 
           <div className="flex-1 rounded-lg border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-200 px-4 py-4">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-[#081534]">Role-Off Queue</h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {mode === "pm"
-                      ? "Create and update role-off requests from active allocations."
-                      : mode === "rm"
-                        ? "Review requests, manage replacement planning, and cancel pending requests."
-                        : "Approve or reject pending requests based on delivery impact."}
-                  </p>
+              <div className="flex items-center w-full gap-4">
+
+                {/* LEFT - TITLE */}
+                <div className="shrink-0">
+                  <h3 className="text-lg font-bold text-[#081534] whitespace-nowrap">
+                    Role-Off Queue
+                  </h3>
                 </div>
-                <div className="flex w-full flex-col gap-3 xl:max-w-4xl xl:flex-row xl:items-center">
-                  <div className="relative w-full xl:max-w-md">
+
+                {/* CENTER - SEARCH */}
+                <div className="flex-1 flex justify-center">
+                  <div className="relative w-full max-w-md">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
@@ -672,38 +671,42 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
                       className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-3 text-sm outline-none transition-colors focus:border-blue-500"
                     />
                   </div>
-                  {mode === "pm" ? (
-                    <div className="flex flex-wrap gap-3">
-                      <select
-                        value={filters.impact}
-                        onChange={(event) =>
-                          setFilters((prev) => ({ ...prev, impact: event.target.value }))
-                        }
-                        className="h-10 min-w-[150px] rounded-md border border-gray-300 bg-white px-3 text-sm outline-none transition-colors focus:border-blue-500"
-                      >
-                        <option value="">All Impact</option>
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                      </select>
-                      <select
-                        value={filters.reason}
-                        onChange={(event) =>
-                          setFilters((prev) => ({ ...prev, reason: event.target.value }))
-                        }
-                        className="h-10 min-w-[170px] rounded-md border border-gray-300 bg-white px-3 text-sm outline-none transition-colors focus:border-blue-500"
-                      >
-                        <option value="">All Reasons</option>
-                        <option value="Project Completion">Project Completion</option>
-                        <option value="Client Ramp Down">Client Ramp Down</option>
-                        <option value="Performance Issue">Performance Issue</option>
-                        <option value="Budget Realignment">Budget Realignment</option>
-                        <option value="Critical Dependency">Critical Dependency</option>
-                        <option value="Emergency Transition">Emergency Transition</option>
-                      </select>
-                    </div>
-                  ) : null}
                 </div>
+
+                {/* RIGHT - FILTERS */}
+                {mode === "pm" ? (
+                  <div className="flex items-center gap-3 shrink-0">
+                    <select
+                      value={filters.impact}
+                      onChange={(event) =>
+                        setFilters((prev) => ({ ...prev, impact: event.target.value }))
+                      }
+                      className="h-10 min-w-[140px] rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">Impact</option>
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+
+                    <select
+                      value={filters.reason}
+                      onChange={(event) =>
+                        setFilters((prev) => ({ ...prev, reason: event.target.value }))
+                      }
+                      className="h-10 min-w-[160px] rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">Reason</option>
+                      <option value="Project Completion">Project Completion</option>
+                      <option value="Client Ramp Down">Client Ramp Down</option>
+                      <option value="Performance Issue">Performance Issue</option>
+                      <option value="Budget Realignment">Budget Realignment</option>
+                      <option value="Critical Dependency">Critical Dependency</option>
+                      <option value="Emergency Transition">Emergency Transition</option>
+                    </select>
+                  </div>
+                ) : null}
+
               </div>
             </div>
 
