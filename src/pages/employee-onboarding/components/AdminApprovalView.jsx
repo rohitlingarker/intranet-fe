@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Pagination from "../../../components/Pagination/pagination";
 
 export default function AdminApprovalView() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const PAGE_SIZE = 5;
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(requests.length / PAGE_SIZE);
+
+const paginatedRequests = requests.slice(
+  (currentPage - 1) * PAGE_SIZE,
+  currentPage * PAGE_SIZE
+);
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -17,6 +28,7 @@ export default function AdminApprovalView() {
           }
         );
         setRequests(res.data || []);
+        setCurrentPage(1);
       } catch (err) {
         console.error("Failed to fetch approvals", err);
       } finally {
@@ -34,7 +46,7 @@ export default function AdminApprovalView() {
 
   return (
     <div className="space-y-4">
-      {requests.map((req) => (
+      {paginatedRequests.map((req) => (
         <div
           key={req.request_uuid}
           className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
@@ -59,8 +71,19 @@ export default function AdminApprovalView() {
               Reject
             </button>
           </div>
+          <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() =>
+            setCurrentPage((p) => Math.max(p - 1, 1))
+          }
+          onNext={() =>
+            setCurrentPage((p) => Math.min(p + 1, totalPages))
+          }
+        />
         </div>
       ))}
     </div>
+    
   );
 }

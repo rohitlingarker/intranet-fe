@@ -1,7 +1,7 @@
 "use client";
  
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Users, X, XCircle, ShieldCheck} from "lucide-react";
+import { Users, X, XCircle, ShieldCheck, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast";
@@ -9,6 +9,7 @@ import Button from "../../../components/Button/Button";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import StatusBadge from "../../../components/status/statusbadge";
+import EmployeeCreateModal from "../components/employee-create-modal/EmployeeCreateModal";
 /* ============================
    CONSTANTS
 ============================ */
@@ -22,8 +23,27 @@ const DEPARTMENTS = [
   "Operations",
   "Admin",
 ];
- 
-const MANAGER_ROLES =["HR","ADMIN","MANAGER","CEO","CTO","CFO"];
+
+const ALLOWED_STATUSES = ["SUBMITTED", "VERIFIED", "REJECTED"];
+
+const getDisplayStatus = (employee, employeeUserIds) => {
+  const baseStatus = String(employee.status || "").trim().toUpperCase();
+
+  if (
+    baseStatus === "VERIFIED" &&
+    employeeUserIds.includes(employee.user_uuid)
+  ) {
+    return "COMPLETED";
+  }
+
+  return baseStatus;
+};
+
+const formatStatusLabel = (status) => {
+  if (!status) return "";
+
+  return status.charAt(0) + status.slice(1).toLowerCase();
+};
 
  
 /* ============================
@@ -222,6 +242,7 @@ export default function HrOnboardingDashboard() {
 /* -------------------- State -------------------- */
  
   const [data, setData] = useState([]);
+  const [employeeUserIds, setEmployeeUserIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -231,6 +252,8 @@ export default function HrOnboardingDashboard() {
  
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
  
   const [currentPage, setCurrentPage] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
@@ -278,6 +301,47 @@ export default function HrOnboardingDashboard() {
     fetchEmployees();
   }, []);
  
+
+  const fetchCoreEmployees = async () => {
+  try {
+    const res = await axios.get(
+      `${BASE_URL}/permanent-employee/core-employee-details/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const ids = (res.data || []).map((e) => e.user_uuid);
+
+    setEmployeeUserIds(ids);
+
+  } catch (err) {
+    console.error("Failed to fetch core employees", err);
+  }
+};
+
+useEffect(() => {
+  fetchCoreEmployees();
+}, []);
+
+  const handleOpenCreateModal = (employee) => {
+    setSelectedEmployee({
+      userUuid: employee.user_uuid,
+      firstName: employee.first_name,
+      middleName: employee.middle_name,
+      lastName: employee.last_name,
+    });
+    setIsCreateOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateOpen(false);
+    setSelectedEmployee(null);
+    setCurrentPage(1);
+    fetchCoreEmployees();
+  };
  
 // const fetchManagers = async () => {
 //   setLoadingManagers(true);
@@ -350,10 +414,8 @@ export default function HrOnboardingDashboard() {
 
   /*Adding page data for KPI filtering*/
   const pageData = useMemo(() => {
-    const allowedStatuses = ["SUBMITTED", "VERIFIED", "REJECTED"];
-
     return data.filter((emp) =>
-      allowedStatuses.includes(
+      ALLOWED_STATUSES.includes(
         (emp.status || "").trim().toUpperCase()
       )
     );
@@ -372,7 +434,7 @@ export default function HrOnboardingDashboard() {
         searchTerm.toLowerCase()
       );
 
-      const status = (emp.status || "").trim().toUpperCase();
+      const status = getDisplayStatus(emp, employeeUserIds);
       const filter = statusFilter.trim().toUpperCase();
 
       if (filter === "ALL") {
@@ -381,7 +443,7 @@ export default function HrOnboardingDashboard() {
 
       return matchesSearch && status === filter;
     });
-  }, [pageData, searchTerm, statusFilter]);
+  }, [pageData, searchTerm, statusFilter, employeeUserIds]);
  
  
   /* ============================
@@ -500,6 +562,17 @@ export default function HrOnboardingDashboard() {
     filteredData.length / PAGE_SIZE
   );
 
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(1);
+      return;
+    }
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   //  const isVerified =
   //       String(offer.status || "").trim().toUpperCase() === "VERIFIED";
 
@@ -510,10 +583,12 @@ export default function HrOnboardingDashboard() {
     return filteredData
       .slice(startIndex, startIndex + PAGE_SIZE)
       .map((emp) => {
-        const isVerified =
-          String(emp.status || "").trim().toUpperCase() === "VERIFIED";
+        const displayStatus = getDisplayStatus(emp, employeeUserIds);
+        const isEmployeeCreated = displayStatus === "COMPLETED";
+        const isVerified = displayStatus === "VERIFIED";
  
         return {
+          rowClass: isEmployeeCreated ? "bg-green-100" : "",
           ...(bulkJoinMode && {
             select: (
               <input
@@ -541,32 +616,25 @@ export default function HrOnboardingDashboard() {
  
           designation: emp.designation || "—",
  
-          status: emp.status ? (
-              <StatusBadge label={emp.status} size="sm" />
-            ) : (
-              "—"
-            ),
- 
+          // status: emp.status ? (
+          //     <StatusBadge label={emp.status} size="sm" />
+          //   ) : (
+          //     "—"
+          //   ),
+          status: (
+            <StatusBadge
+              label={formatStatusLabel(displayStatus)}
+              size="sm"
+            />
+          ),
           action: (
-              <ActionMenu
-            onView={() =>
-              navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
-            }
-            onCreate={() =>
-              navigate(`/employee-onboarding/core-employee`,{state:{userUuid:emp.user_uuid}})
-            }
-            showVerify={isVerified}
-          />
-            // <span
-            //   className="text-indigo-600 cursor-pointer"
-            //   onClick={() =>
-            //     navigate(
-            //       `/employee-onboarding/hr/profile/${emp.user_uuid}`
-            //     )
-            //   }
-            // >
-            //   View
-            // </span>
+            <ActionMenu
+              onView={() =>
+                navigate(`/employee-onboarding/hr/profile/${emp.user_uuid}`)
+              }
+              onCreate={() => handleOpenCreateModal(emp)}
+              showVerify={isVerified && !isEmployeeCreated}
+            />
           ),
         };
       });
@@ -576,6 +644,7 @@ export default function HrOnboardingDashboard() {
     bulkJoinMode,
     selectedIds,
     navigate,
+    employeeUserIds,
   ]);
  
   /* ============================
@@ -609,7 +678,7 @@ export default function HrOnboardingDashboard() {
       </div>
  
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  
         <StatCard
           title="Total Profiles"
@@ -624,11 +693,24 @@ export default function HrOnboardingDashboard() {
             loading
             ? "0"
             :pageData.filter(
-              (e) => e.status?.toUpperCase() === "VERIFIED"
+              (e) => getDisplayStatus(e, employeeUserIds) === "VERIFIED"
             ).length
           }
           icon={ShieldCheck}
           onClick={() => handleKpiClick("VERIFIED")}
+        />
+
+        <StatCard
+          title="Completed"
+          value={
+            loading
+            ? "0"
+            :pageData.filter(
+              (e) => getDisplayStatus(e, employeeUserIds) === "COMPLETED"
+            ).length
+          }
+          icon={Clock}
+          onClick={() => handleKpiClick("COMPLETED")}
         />
  
         <StatCard
@@ -637,7 +719,7 @@ export default function HrOnboardingDashboard() {
             loading
             ? "0"
             :pageData.filter(
-              (e) => e.status?.toUpperCase() === "REJECTED"
+              (e) => getDisplayStatus(e, employeeUserIds) === "REJECTED"
             ).length
           }
           icon={XCircle}
@@ -670,6 +752,7 @@ export default function HrOnboardingDashboard() {
           <option value="ALL">All Status</option>
           <option value="SUBMITTED">Submitted</option>
           <option value="VERIFIED">Verified</option>
+          <option value="COMPLETED">Completed</option>
           <option value="REJECTED">Rejected</option>
         </select>
  
@@ -770,6 +853,15 @@ export default function HrOnboardingDashboard() {
         managerOptions={managerOptions}
        
         loadingManagers={loadingManagers}
+      />
+
+      <EmployeeCreateModal
+        isOpen={isCreateOpen}
+        onClose={handleCloseCreateModal}
+        userUuid={selectedEmployee?.userUuid}
+        firstName={selectedEmployee?.firstName}
+        middleName={selectedEmployee?.middleName}
+        lastName={selectedEmployee?.lastName}
       />
  
     </div>

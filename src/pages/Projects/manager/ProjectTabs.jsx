@@ -16,6 +16,7 @@ import RiskHealthModal from "./riskManagement/RiskHealthModal.jsx";
 
 const ProjectDemandManagement = lazy(() => import("./ProjectDemandManagement"));
 const ProjectConfigurations = lazy(() => import("./project/ProjectConfigurations"));
+const ProjectRoleOffManagement = lazy(() => import("./ProjectRoleOffManagement"));
 
 const ProjectTabs = () => {
   const { projectId } = useParams();
@@ -117,6 +118,17 @@ const ProjectTabs = () => {
       );
     }
 
+    if (selectedTab === "roleoff-management") {
+      return (
+        <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Role-Off Management...</div>}>
+          <ProjectRoleOffManagement
+            projectId={pid}
+            projectName={projectName}
+          />
+        </Suspense>
+      );
+    }
+
     if (selectedTab === "configurations") {
       return (
         <Suspense fallback={<div className="p-12 text-center text-slate-400">Loading Configurations...</div>}>
@@ -143,6 +155,7 @@ const ProjectTabs = () => {
     { name: "Risk Management", tab: "risk-management" },
     { name: "Test Management", tab: "test-management" },
     { name: "Demand Management", tab: "demand-management" },
+    { name: "RoleOff Management", tab: "roleoff-management" },
     { name: "Configurations", tab: "configurations" },
     //  { name: "Timelines", tab:"timelines" },
     // { name: "Calendar", tab: "calendar" },
