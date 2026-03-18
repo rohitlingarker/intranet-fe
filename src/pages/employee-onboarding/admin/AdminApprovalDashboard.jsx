@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Users, CheckCircle, XCircle, PauseCircle, Clock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Pagination from "../../../components/Pagination/pagination";
 
 /* ============================
    ADMIN APPROVAL DASHBOARD
@@ -16,6 +17,9 @@ export default function AdminApprovalDashboard() {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const PAGE_SIZE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -42,6 +46,7 @@ export default function AdminApprovalDashboard() {
         );
 
         setData(res.data || []);
+        setCurrentPage(1); 
       } catch (error) {
         console.error("Failed to load admin approvals", error);
       } finally {
@@ -79,6 +84,13 @@ export default function AdminApprovalDashboard() {
       return matchesSearch && matchesStatus;
     });
   }, [data, searchTerm, statusFilter]);
+
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+
+const paginatedData = filteredData.slice(
+  (currentPage - 1) * PAGE_SIZE,
+  currentPage * PAGE_SIZE
+);
 
   // if (loading) {
   //   return <div className="p-10 text-center">Loading admin approvals...</div>;
@@ -130,13 +142,19 @@ export default function AdminApprovalDashboard() {
           type="text"
           placeholder="Search by candidate name... or Role"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); 
+          }}
           className="w-full md:w-1/3 px-3 py-2 border rounded-lg"
         />
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1); 
+          }}
           className="w-full md:w-1/4 px-3 py-2 border rounded-lg"
         >
           <option value="ALL">All Status</option>
@@ -176,7 +194,7 @@ export default function AdminApprovalDashboard() {
                 </td>
               </tr>
             ) : (
-              filteredData.map((row) => (
+              paginatedData.map((row) => (
                 <tr key={row.id} className="border-b">
                     <td className="px-4 py-3">
                   {row.first_name} {row.last_name}
@@ -210,7 +228,18 @@ export default function AdminApprovalDashboard() {
           </tbody>
         </table>
       </div>
-
+      {filteredData.length > PAGE_SIZE && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevious={() =>
+            setCurrentPage((p) => Math.max(p - 1, 1))
+          }
+          onNext={() =>
+            setCurrentPage((p) => Math.min(p + 1, totalPages))
+          }
+        />
+      )}
     </div>
   );
 }

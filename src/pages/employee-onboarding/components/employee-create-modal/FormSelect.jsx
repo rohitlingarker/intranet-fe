@@ -6,17 +6,12 @@ export default function FormSelect({
   value,
   onChange,
   options = [],
-  disabled = false
+  disabled = false,
 }) {
   return (
     <div className="flex flex-col gap-1">
-      
-      {/* Label */}
-      <label className="text-sm font-medium text-gray-700">
-        {label}
-      </label>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
 
-      {/* Select */}
       <select
         name={name}
         value={value || ""}
@@ -27,7 +22,6 @@ export default function FormSelect({
         <option value="">Select</option>
 
         {options.map((option, index) => {
-          // Support both string options and object options
           if (typeof option === "string") {
             return (
               <option key={index} value={option}>
@@ -43,7 +37,6 @@ export default function FormSelect({
           );
         })}
       </select>
-
     </div>
   );
 }
