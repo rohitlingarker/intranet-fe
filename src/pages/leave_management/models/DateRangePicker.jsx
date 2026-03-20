@@ -31,6 +31,8 @@ const DateRangePicker = ({
         params: { state: "All", country: "India" },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
+
+      
  
       const holidayDates = res.data.data.map((holiday) => {
         const [y, m, d] = holiday.holidayDate.split("-").map(Number);

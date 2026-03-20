@@ -446,14 +446,11 @@ const EmployeeLeaveBalances = () => {
 
         {showUploadWizard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            {/* Black Semi-transparent Backdrop */}
             <div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setShowUploadWizard(false)}
             />
-
-            {/* The Wizard Content Card */}
-            <div className="relative z-10  rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="relative z-10 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
               <LeaveUploadWizard onClose={() => setShowUploadWizard(false)} />
             </div>
           </div>

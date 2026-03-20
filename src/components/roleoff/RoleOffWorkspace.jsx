@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CheckCheck,
+  Check,
   ClipboardCheck,
   Search,
   Users,
@@ -16,8 +16,19 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
+import { createRoleOff, rmAction, dlAction, getAllocations }
+  from "../../pages/resource_management/services/roleOffService";
 
-const TODAY = "2026-03-17";
+const mapStatus = (item) => {
+  if (item.roleOffStatus === "PENDING") return "Pending Approval";
+  if (item.roleOffStatus === "APPROVED") return "Approved";
+  if (item.roleOffStatus === "REJECTED") return "Rejected";
+  if (item.roleOffStatus === "FULFILLED") return "Fulfilled";
+  return "Pending Approval";
+};
+
+// const TODAY = "2026-03-17";
+
 
 const deriveImpact = (allocation) => {
   if (
@@ -97,29 +108,53 @@ const normalizeImpact = (impact) => {
 
 const mapResourceToAllocation = (item, index) => {
   const allocation = {
-    id: item.allocationId || `${item.resourceId}-${item.demandName || item.projectName || index}`,
-    resourceId: item.resourceId,
-    resource: item.name || "-",
-    project: item.projectName || "-",
-    client: item.clientName || "-",
+    // 🔥 CRITICAL FIXES
+    id: item.id || item.allocationId,          // ✅ UUID (MANDATORY)
+    allocationId: item.id || item.allocationId, // ✅ backup
+    projectId: item.projectId,                // ✅ REQUIRED
+    resourceId: item.resourceId,              // ✅ REQUIRED
+
+    // ✅ UI FIELDS (keep flexible)
+    resource:
+      item.name ||
+      item.resourceName ||
+      item.resource?.name ||
+      "-",
+
+    project:
+      item.projectName ||
+      item.project?.name ||
+      "-",
+
+    client:
+      item.clientName ||
+      item.project?.client?.name ||
+      "-",
+
     department: item.department || "-",
-    role: item.demandName || "-",
-    skill: [...(item.skills || []), ...(item.subSkills || [])].filter(Boolean).join(", ") || "-",
+
+    role:
+      item.demandName ||
+      item.roleName ||
+      item.role?.name ||
+      "-",
+
+    skill:
+      [...(item.skills || []), ...(item.subSkills || [])]
+        .filter(Boolean)
+        .join(", ") || "-",
+
     allocationPercent: Number(item.allocationPercentage || 0),
-    startDate: "",
-    startDateIso: "",
+
     endDate: formatDisplayDate(item.endDate),
     endDateIso: item.endDate || "",
+
     status: normalizeStatus(item.status),
+
     businessCritical: Number(item.allocationPercentage || 0) >= 90,
     keyPosition: false,
     backupReady: Number(item.allocationPercentage || 0) < 70,
-    backfillWindowDays: item.endDate
-      ? Math.max(
-        0,
-        Math.ceil((new Date(item.endDate).getTime() - new Date(TODAY).getTime()) / (1000 * 60 * 60 * 24)),
-      )
-      : 30,
+    backfillWindowDays: 30,
   };
 
   return {
@@ -171,7 +206,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Selected Count",
         value: selectedRows.length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-slate-100 bg-slate-100 text-slate-700",
       },
     ];
@@ -242,6 +277,13 @@ const buildPmDemandStyleKpis = (allocations, roleOffRequests, selectedRows) => {
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
+const extractArrayPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+};
+
 const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
   const params = useParams();
   const projectId = projectIdProp || params.projectId;
@@ -294,6 +336,10 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     };
   }, [projectId]);
 
+  // useEffect(() => {
+  //   fetchRoleOffs();
+  // }, []);
+
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
     if (!projectName) return allocations;
@@ -345,35 +391,6 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     });
   }, [scopedAllocations, scopedRoleOffRequests, mode, filters]);
 
-  const createRoleOffRequest = (allocation, formState) => {
-    const nextId = `RO-${Date.now().toString().slice(-6)}-${allocation.id.slice(-2)}`;
-
-    return {
-      id: nextId,
-      roleOffId: nextId,
-      role_off_id: nextId,
-      allocationId: allocation.id,
-      allocation_id: allocation.id,
-      resource: allocation.resource,
-      project: allocation.project,
-      client: allocation.client,
-      department: allocation.department,
-      role: allocation.role,
-      skill: allocation.skill,
-      impact: allocation.impact,
-      impactSummary: allocation.impactSummary,
-      allocationPercent: allocation.allocationPercent,
-      type: formState.type,
-      reason: formState.reason,
-      status: "Pending Approval",
-      effectiveDate: formatDisplayDate(formState.effectiveDate),
-      effectiveDateIso: formState.effectiveDate,
-      replacementRequired: formState.replacementRequired,
-      submittedBy: "Project Manager",
-      requestedOn: formatDisplayDate(TODAY),
-      approvedDateIso: "",
-    };
-  };
 
   const handleToggleRow = (id, checked) => {
     setSelectedRows((prev) => (checked ? [...prev, id] : prev.filter((item) => item !== id)));
@@ -401,38 +418,73 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     toast.info(`${request.resource} request cancelled`);
   };
 
-  const handleTableAction = (action, row) => {
+  const handleTableAction = async (action, row) => {
+
+    // PM (NO CHANGE)
     if (mode === "pm" && action === "roleoff") {
       openSidePanel(row, "create");
       return;
     }
 
+    // RM VIEW
     if (mode === "rm" && action === "view") {
       openSidePanel(row, "view");
       return;
     }
 
-    if (mode === "rm" && action === "cancel") {
-      handleCancelRequest(row);
+    // 🔥 RM APPROVE
+    if (mode === "rm" && action === "approve") {
+      try {
+        await rmAction(row.id, true, "Approved by RM");
+        toast.success("Approved by RM");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("RM approval failed");
+      }
       return;
     }
 
+    // 🔥 RM REJECT
+    if (mode === "rm" && action === "reject") {
+      try {
+        await rmAction(row.id, false, "Rejected by RM");
+        toast.error("Rejected by RM");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("RM rejection failed");
+      }
+      return;
+    }
+
+    // 🔥 DM APPROVE (FULFILL)
     if (mode === "dm" && action === "approve") {
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === row.id
-            ? { ...item, status: "Approved", approvedDateIso: TODAY }
-            : item,
-        ),
-      );
-      toast.success(`${row.resource} role-off approved`);
+      try {
+        await dlAction(row.id, "FULFILLED", "Approved by DL");
+        toast.success("DL Approved");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("DL approval failed");
+      }
       return;
     }
 
-    if (mode === "dm" && (action === "review" || action === "reject")) {
-      openSidePanel(row, action === "reject" ? "reject" : "approve");
+    // 🔥 DM REJECT
+    if (mode === "dm" && action === "reject") {
+      try {
+        await dlAction(row.id, "REJECTED", "Rejected by DL");
+        toast.error("DL Rejected");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("DL rejection failed");
+      }
+      return;
     }
   };
+
 
   const handleRowClick = (row) => {
     if (mode === "pm") {
@@ -448,55 +500,85 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     openSidePanel(row, row.impact === "High" ? "approve" : "approve");
   };
 
-  const handlePanelSubmit = (formState) => {
-    const existingRequest = roleOffRequests.find(
-      (item) => item.allocationId === panelState.record?.id && item.status === "Pending Approval",
-    );
+  const handlePanelSubmit = async (formState) => {
+    try {
+      const allocation = panelState.record;
 
-    if (existingRequest) {
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === existingRequest.id
-            ? {
-              ...item,
-              type: formState.type,
-              reason: formState.reason,
-              effectiveDate: formatDisplayDate(formState.effectiveDate),
-              effectiveDateIso: formState.effectiveDate,
-              replacementRequired: formState.replacementRequired,
-            }
-            : item,
-        ),
-      );
-      toast.success(`${panelState.record.resource} role-off request updated`);
-    } else {
-      const request = createRoleOffRequest(panelState.record, formState);
-      setRoleOffRequests((prev) => [request, ...prev]);
-      toast.success(`${request.resource} role-off request created`);
+      const payload = {
+        projectId: projectId,
+        resourceId: allocation.resourceId,
+        allocationId: allocation.id,
+        roleOffType: formState.type.toUpperCase(),
+        effectiveRoleOffDate: formState.effectiveDate,
+        roleOffReason: formState.reason,
+        autoReplacementRequired: formState.replacementRequired,
+        skipReason: formState.replacementRequired ? null : formState.skipReason,
+      };
+
+      await createRoleOff(payload);
+
+      toast.success("Role-off request created");
+
+      // await fetchRoleOffs(); // refresh
+
+      setPanelState({ open: false, actionType: "create", record: null });
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create role-off");
     }
-
-    setPanelState({ open: false, actionType: "create", record: null });
-    setSelectedRows((prev) => prev.filter((id) => id !== panelState.record?.id));
   };
 
-  const handleBulkCreate = () => {
-    if (selectedRows.length === 0) return;
+  // const fetchRoleOffs = async () => {
+  //   try {
+  //     const response = await getAllRoleOffs();
+  //     const data = extractArrayPayload(response);
 
-    const requests = scopedAllocations
-      .filter((item) => selectedRows.includes(item.id))
-      .map((allocation) =>
-        createRoleOffRequest(allocation, {
-          type: allocation.impact === "High" ? "Emergency" : "Planned",
-          reason: allocation.impact === "High" ? "Critical Dependency" : "Project Completion",
-          replacementRequired: allocation.impact !== "Low",
-          effectiveDate: TODAY,
-        }),
-      );
+  //     const mapped = data.map((item) => ({
+  //       id: item.id,
+  //       allocationId: item.allocation?.id,
+  //       resource: item.resource?.name,
+  //       project: item.project?.name,
+  //       role: item.role?.name || "N/A",
+  //       impact: "Medium",
+  //       status: mapStatus(item),
+  //       effectiveDate: item.effectiveRoleOffDate,
+  //       effectiveDateIso: item.effectiveRoleOffDate,
+  //       reason: item.roleOffReason,
+  //     }));
 
-    setRoleOffRequests((prev) => [...requests, ...prev]);
-    setSelectedRows([]);
-    toast.success(`${requests.length} role-off requests created`);
-  };
+  //     setRoleOffRequests(mapped);
+
+  //   } catch (err) {
+  //     setRoleOffRequests([]);
+  //     if (err.response?.status === 403) {
+  //       toast.error("You do not have access to view role-off requests");
+  //     } else {
+  //       toast.error("Failed to load role-off requests");
+  //     }
+  //     console.error(err);
+  //   }
+  // };
+
+
+  // const handleBulkCreate = () => {
+  //   if (selectedRows.length === 0) return;
+
+  //   const requests = scopedAllocations
+  //     .filter((item) => selectedRows.includes(item.id))
+  //     .map((allocation) =>
+  //       createRoleOffRequest(allocation, {
+  //         type: allocation.impact === "High" ? "Emergency" : "Planned",
+  //         reason: allocation.impact === "High" ? "Critical Dependency" : "Project Completion",
+  //         replacementRequired: allocation.impact !== "Low",
+  //         effectiveDate: TODAY,
+  //       }),
+  //     );
+
+  //   setRoleOffRequests((prev) => [...requests, ...prev]);
+  //   setSelectedRows([]);
+  //   toast.success(`${requests.length} role-off requests created`);
+  // };
 
   const handleApproveRequest = (request) => {
     setRoleOffRequests((prev) =>
@@ -636,15 +718,6 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
             </div>
 
             <div className="p-4">
-              {mode === "pm" ? (
-                <div className="mb-4">
-                  <BulkActionBar
-                    count={selectedRows.length}
-                    onClear={() => setSelectedRows([])}
-                    onCreate={handleBulkCreate}
-                  />
-                </div>
-              ) : null}
 
               <RoleOffTable
                 mode={mode}
@@ -677,3 +750,5 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 };
 
 export default RoleOffWorkspace;
+
+

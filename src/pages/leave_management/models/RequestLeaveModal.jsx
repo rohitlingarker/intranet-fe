@@ -298,6 +298,8 @@ export default function RequestLeaveModal({
     leaveTypeId,
   );
 
+ 
+
   const shouldShowDriveLink = () => {
     if (!selectedLeaveType) return false;
     const requiredDocs = selectedLeaveType.requiresDocumentation === true;
@@ -328,6 +330,8 @@ export default function RequestLeaveModal({
       }, 200); // 200ms delay
     }
   }, [isOpen]);
+
+  
 
   useEffect(() => {
     if (!shouldShowDriveLink()) {
