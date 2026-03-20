@@ -187,7 +187,7 @@ const RoleOffTable = ({
                           <Button
                             className="h-8 bg-[#081534] px-3 text-xs hover:bg-[#10214f]"
                             onClick={() =>
-                              onAction(row.impact === "High" ? "review" : "approve", row)
+                              onAction("approve", row)
                             }
                           >
                             {row.impact === "High" ? "Review" : "Approve"}
