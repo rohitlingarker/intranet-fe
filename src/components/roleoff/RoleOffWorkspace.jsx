@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CheckCheck,
+  Check,
   ClipboardCheck,
   Search,
   Users,
@@ -16,18 +16,18 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, getAllRoleOffs, rmAction, dlAction, getAllocations }
+import { createRoleOff, rmAction, dlAction, getAllocations }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
   if (item.roleOffStatus === "PENDING") return "Pending Approval";
   if (item.roleOffStatus === "APPROVED") return "Approved";
   if (item.roleOffStatus === "REJECTED") return "Rejected";
-  if (item.roleOffStatus === "FULFILLED") return "Approved";
+  if (item.roleOffStatus === "FULFILLED") return "Fulfilled";
   return "Pending Approval";
 };
 
-const TODAY = "2026-03-17";
+// const TODAY = "2026-03-17";
 
 
 const deriveImpact = (allocation) => {
@@ -95,31 +95,55 @@ const normalizeStatus = (status) => {
   return status;
 };
 
-const mapResourceToAllocation = (item, index) => {
+const mapResourceToAllocation = (item) => {
   const allocation = {
-    id: `${item.resourceId}-${item.demandName || item.projectName || index}`,
-    resourceId: item.resourceId,
-    resource: item.name || "-",
-    project: item.projectName || "-",
-    client: item.clientName || "-",
+    // 🔥 CRITICAL FIXES
+    id: item.id || item.allocationId,          // ✅ UUID (MANDATORY)
+    allocationId: item.id || item.allocationId, // ✅ backup
+    projectId: item.projectId,                // ✅ REQUIRED
+    resourceId: item.resourceId,              // ✅ REQUIRED
+
+    // ✅ UI FIELDS (keep flexible)
+    resource:
+      item.name ||
+      item.resourceName ||
+      item.resource?.name ||
+      "-",
+
+    project:
+      item.projectName ||
+      item.project?.name ||
+      "-",
+
+    client:
+      item.clientName ||
+      item.project?.client?.name ||
+      "-",
+
     department: item.department || "-",
-    role: item.demandName || "-",
-    skill: [...(item.skills || []), ...(item.subSkills || [])].filter(Boolean).join(", ") || "-",
+
+    role:
+      item.demandName ||
+      item.roleName ||
+      item.role?.name ||
+      "-",
+
+    skill:
+      [...(item.skills || []), ...(item.subSkills || [])]
+        .filter(Boolean)
+        .join(", ") || "-",
+
     allocationPercent: Number(item.allocationPercentage || 0),
-    startDate: "",
-    startDateIso: "",
+
     endDate: formatDisplayDate(item.endDate),
     endDateIso: item.endDate || "",
+
     status: normalizeStatus(item.status),
+
     businessCritical: Number(item.allocationPercentage || 0) >= 90,
     keyPosition: false,
     backupReady: Number(item.allocationPercentage || 0) < 70,
-    backfillWindowDays: item.endDate
-      ? Math.max(
-        0,
-        Math.ceil((new Date(item.endDate).getTime() - new Date(TODAY).getTime()) / (1000 * 60 * 60 * 24)),
-      )
-      : 30,
+    backfillWindowDays: 30,
   };
 
   return enrichAllocation(allocation);
@@ -168,7 +192,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Selected Count",
         value: selectedRows.length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-slate-100 bg-slate-100 text-slate-700",
       },
     ];
@@ -298,10 +322,9 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     };
   }, [projectId]);
 
-  useEffect(() => {
-    fetchRoleOffs();
-    fetchAllocations();
-  }, []);
+  // useEffect(() => {
+  //   fetchRoleOffs();
+  // }, []);
 
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
@@ -400,8 +423,9 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       try {
         await rmAction(row.id, true, "Approved by RM");
         toast.success("Approved by RM");
-        await fetchRoleOffs();
+        // await fetchRoleOffs();
       } catch (err) {
+        console.error(err);
         toast.error("RM approval failed");
       }
       return;
@@ -412,8 +436,9 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       try {
         await rmAction(row.id, false, "Rejected by RM");
         toast.error("Rejected by RM");
-        await fetchRoleOffs();
+        // await fetchRoleOffs();
       } catch (err) {
+        console.error(err);
         toast.error("RM rejection failed");
       }
       return;
@@ -424,8 +449,9 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       try {
         await dlAction(row.id, "FULFILLED", "Approved by DL");
         toast.success("DL Approved");
-        await fetchRoleOffs();
+        // await fetchRoleOffs();
       } catch (err) {
+        console.error(err);
         toast.error("DL approval failed");
       }
       return;
@@ -436,39 +462,15 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       try {
         await dlAction(row.id, "REJECTED", "Rejected by DL");
         toast.error("DL Rejected");
-        await fetchRoleOffs();
+        // await fetchRoleOffs();
       } catch (err) {
+        console.error(err);
         toast.error("DL rejection failed");
       }
       return;
     }
   };
 
-  const fetchAllocations = async () => {
-    try {
-      const projectId = 1;
-      const response = await getAllocations(projectId);
-      const data = extractArrayPayload(response);
-
-      const mapped = data.map((item) => ({
-        id: item.allocationId,
-        resource: item.resourceName,
-        project: item.projectName,
-        role: item.roleName,
-        allocationPercent: item.allocationPercentage,
-        startDateIso: item.startDate,
-        endDateIso: item.endDate,
-        status: "Active",
-        impact: "Medium",
-      }));
-
-      setAllocations(mapped);
-    } catch (err) {
-      setAllocations([]);
-      console.error(err);
-      toast.error("Failed to load allocations");
-    }
-  };
 
   const handleRowClick = (row) => {
     if (mode === "pm") {
@@ -489,58 +491,60 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       const allocation = panelState.record;
 
       const payload = {
-        projectId: 1,
-        resourceId: 1,
+        projectId: projectId,
+        resourceId: allocation.resourceId,
         allocationId: allocation.id,
         roleOffType: formState.type.toUpperCase(),
         effectiveRoleOffDate: formState.effectiveDate,
         roleOffReason: formState.reason,
         autoReplacementRequired: formState.replacementRequired,
+        skipReason: formState.replacementRequired ? null : formState.skipReason,
       };
 
       await createRoleOff(payload);
 
       toast.success("Role-off request created");
 
-      await fetchRoleOffs(); // refresh
+      // await fetchRoleOffs(); // refresh
 
       setPanelState({ open: false, actionType: "create", record: null });
 
     } catch (err) {
+      console.error(err);
       toast.error("Failed to create role-off");
     }
   };
 
-  const fetchRoleOffs = async () => {
-    try {
-      const response = await getAllRoleOffs();
-      const data = extractArrayPayload(response);
+  // const fetchRoleOffs = async () => {
+  //   try {
+  //     const response = await getAllRoleOffs();
+  //     const data = extractArrayPayload(response);
 
-      const mapped = data.map((item) => ({
-        id: item.id,
-        allocationId: item.allocation?.id,
-        resource: item.resource?.name,
-        project: item.project?.name,
-        role: item.role?.name || "N/A",
-        impact: "Medium",
-        status: mapStatus(item),
-        effectiveDate: item.effectiveRoleOffDate,
-        effectiveDateIso: item.effectiveRoleOffDate,
-        reason: item.roleOffReason,
-      }));
+  //     const mapped = data.map((item) => ({
+  //       id: item.id,
+  //       allocationId: item.allocation?.id,
+  //       resource: item.resource?.name,
+  //       project: item.project?.name,
+  //       role: item.role?.name || "N/A",
+  //       impact: "Medium",
+  //       status: mapStatus(item),
+  //       effectiveDate: item.effectiveRoleOffDate,
+  //       effectiveDateIso: item.effectiveRoleOffDate,
+  //       reason: item.roleOffReason,
+  //     }));
 
-      setRoleOffRequests(mapped);
+  //     setRoleOffRequests(mapped);
 
-    } catch (err) {
-      setRoleOffRequests([]);
-      if (err.response?.status === 403) {
-        toast.error("You do not have access to view role-off requests");
-      } else {
-        toast.error("Failed to load role-off requests");
-      }
-      console.error(err);
-    }
-  };
+  //   } catch (err) {
+  //     setRoleOffRequests([]);
+  //     if (err.response?.status === 403) {
+  //       toast.error("You do not have access to view role-off requests");
+  //     } else {
+  //       toast.error("Failed to load role-off requests");
+  //     }
+  //     console.error(err);
+  //   }
+  // };
 
 
   // const handleBulkCreate = () => {

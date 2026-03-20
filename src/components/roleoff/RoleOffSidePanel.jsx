@@ -23,6 +23,7 @@ const baseForm = {
   replacementRequired: false,
   acknowledgeRisk: false,
   decisionNotes: "",
+  skipReason: "",
 };
 
 const RoleOffSidePanel = ({
@@ -64,6 +65,7 @@ const RoleOffSidePanel = ({
       replacementRequired: Boolean(record.replacementRequired),
       acknowledgeRisk: false,
       decisionNotes: record.rejectionReason || "",
+      skipReason: record.skipReason || "",
     });
     setError("");
   }, [record, open]);
@@ -90,10 +92,19 @@ const RoleOffSidePanel = ({
         setError("Reason and effective date are required.");
         return;
       }
+      if (
+        form.type === "Planned" &&
+        !form.replacementRequired &&
+        !form.skipReason?.trim()
+      ) {
+        setError("Skip reason is required for planned role-off.");
+        return;
+      }
       if (needsRiskAck && !form.acknowledgeRisk) {
         setError("High impact requests require acknowledgement.");
         return;
       }
+      console.log("Submitting form:", form);
       onSubmit?.(form);
       return;
     }
@@ -203,12 +214,10 @@ const RoleOffSidePanel = ({
                     className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
                   >
                     <option value="">Select reason</option>
-                    <option value="Project Completion">Project Completion</option>
-                    <option value="Client Ramp Down">Client Ramp Down</option>
-                    <option value="Performance Issue">Performance Issue</option>
-                    <option value="Budget Realignment">Budget Realignment</option>
-                    <option value="Critical Dependency">Critical Dependency</option>
-                    <option value="Emergency Transition">Emergency Transition</option>
+                    <option value="PROJECT_END">Project End</option>
+                    <option value="ATTRITION">Attrition</option>
+                    <option value="PERFORMANCE">Performance Issue</option>
+                    <option value="CLIENT_REQUEST">Client Request</option>
                   </select>
                 </div>
 
@@ -223,6 +232,26 @@ const RoleOffSidePanel = ({
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </label>
+
+                {/* 🔥 SHOW SKIP REASON WHEN REPLACEMENT IS NOT REQUIRED */}
+                {!form.replacementRequired && (
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                      Skip Reason
+                    </label>
+                    <textarea
+                      value={form.skipReason || ""}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          skipReason: event.target.value,
+                        }))
+                      }
+                      placeholder="Enter reason for not creating replacement"
+                      className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                )}
 
                 {needsRiskAck ? (
                   <label className="flex gap-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-900">
