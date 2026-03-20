@@ -95,7 +95,18 @@ const normalizeStatus = (status) => {
   return status;
 };
 
-const mapResourceToAllocation = (item) => {
+const normalizeImpact = (impact) => {
+  if (!impact) return "Low";
+
+  const upperImpact = String(impact).toUpperCase();
+  if (upperImpact === "LOW") return "Low";
+  if (upperImpact === "MEDIUM") return "Medium";
+  if (upperImpact === "HIGH") return "High";
+
+  return impact;
+};
+
+const mapResourceToAllocation = (item, index) => {
   const allocation = {
     // 🔥 CRITICAL FIXES
     id: item.id || item.allocationId,          // ✅ UUID (MANDATORY)
@@ -146,7 +157,10 @@ const mapResourceToAllocation = (item) => {
     backfillWindowDays: 30,
   };
 
-  return enrichAllocation(allocation);
+  return {
+    ...enrichAllocation(allocation),
+    impact: normalizeImpact(item.impact),
+  };
 };
 
 const titleMap = {

@@ -66,7 +66,7 @@ const RoleOffTable = ({
                 Role / Skill
               </th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
-                {/* Impact */} Status
+                Impact
               </th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "Allocation" : "Status"}
