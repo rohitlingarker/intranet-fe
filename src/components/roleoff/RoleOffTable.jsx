@@ -56,25 +56,25 @@ const RoleOffTable = ({
                   />
                 </th>
               ) : null}
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Resource
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Project
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Role / Skill
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
-                Impact
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                {/* Impact */} Status
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "Allocation" : "Status"}
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "End Date" : "Effective Date"}
               </th>
-              <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Actions
               </th>
             </tr>
@@ -148,7 +148,7 @@ const RoleOffTable = ({
                     {mode === "pm" ? row.endDate : row.effectiveDate}
                   </td>
                   <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-center gap-2">
                       {mode === "pm" ? (
                         <Button
                           variant="outline"

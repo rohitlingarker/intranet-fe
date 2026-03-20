@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCheck,
@@ -7,7 +7,9 @@ import {
   Users,
   UserRoundMinus,
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getResources } from "@/pages/resource_management/services/roleOffService";
 import KPISection from "./KPISection";
 import RoleOffTable from "./RoleOffTable";
 import BulkActionBar from "./BulkActionBar";
@@ -16,104 +18,6 @@ import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
 
 const TODAY = "2026-03-17";
-
-const seedAllocations = [
-  {
-    id: "AL-1001",
-    resource: "Ananya Rao",
-    project: "Mercury ERP Rollout",
-    client: "Asterix Manufacturing",
-    department: "Enterprise Delivery",
-    role: "Lead Frontend Engineer",
-    skill: "React / UI Architecture",
-    allocationPercent: 100,
-    startDate: "Jan 15, 2026",
-    startDateIso: "2026-01-15",
-    endDate: "Apr 30, 2026",
-    endDateIso: "2026-04-30",
-    status: "Active",
-    businessCritical: true,
-    keyPosition: true,
-    backupReady: false,
-    backfillWindowDays: 5,
-  },
-  {
-    id: "AL-1002",
-    resource: "Rahul Menon",
-    project: "Northwind Data Platform",
-    client: "Northwind Retail",
-    department: "Data Engineering",
-    role: "Data Engineer",
-    skill: "Databricks / SQL",
-    allocationPercent: 80,
-    startDate: "Feb 01, 2026",
-    startDateIso: "2026-02-01",
-    endDate: "Jun 15, 2026",
-    endDateIso: "2026-06-15",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 20,
-  },
-  {
-    id: "AL-1003",
-    resource: "Meera Iyer",
-    project: "Orion Support Transition",
-    client: "Orion Health",
-    department: "Managed Services",
-    role: "Support Analyst",
-    skill: "ITSM / Service Ops",
-    allocationPercent: 60,
-    startDate: "Jan 20, 2026",
-    startDateIso: "2026-01-20",
-    endDate: "Mar 28, 2026",
-    endDateIso: "2026-03-28",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 30,
-  },
-  {
-    id: "AL-1004",
-    resource: "Karan Verma",
-    project: "Summit Banking Portal",
-    client: "Summit Bank",
-    department: "Digital Delivery",
-    role: "QA Lead",
-    skill: "Automation / Release Quality",
-    allocationPercent: 90,
-    startDate: "Dec 01, 2025",
-    startDateIso: "2025-12-01",
-    endDate: "May 31, 2026",
-    endDateIso: "2026-05-31",
-    status: "Active",
-    businessCritical: true,
-    keyPosition: false,
-    backupReady: false,
-    backfillWindowDays: 10,
-  },
-  {
-    id: "AL-1005",
-    resource: "Priya Nair",
-    project: "Vertex Mobile Modernization",
-    client: "Vertex Logistics",
-    department: "Mobile Engineering",
-    role: "Android Engineer",
-    skill: "Kotlin / CI-CD",
-    allocationPercent: 70,
-    startDate: "Feb 18, 2026",
-    startDateIso: "2026-02-18",
-    endDate: "Jul 15, 2026",
-    endDateIso: "2026-07-15",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 18,
-  },
-];
 
 const deriveImpact = (allocation) => {
   if (
@@ -154,83 +58,61 @@ const enrichAllocation = (allocation) => ({
   impactSummary: buildImpactSummary(allocation),
 });
 
-const seedRoleOffRequests = seedAllocations.slice(0, 4).map((allocation, index) => {
-  const enriched = enrichAllocation(allocation);
+const formatDisplayDate = (dateIso) => {
+  if (!dateIso) return "-";
 
-  const preset = [
-    {
-      roleOffId: "RO-2401",
-      type: "Planned",
-      reason: "Project Completion",
-      status: "Pending Approval",
-      effectiveDate: "Mar 22, 2026",
-      effectiveDateIso: "2026-03-22",
-      replacementRequired: false,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 15, 2026",
-    },
-    {
-      roleOffId: "RO-2402",
-      type: "Emergency",
-      reason: "Critical Dependency",
-      status: "Pending Approval",
-      effectiveDate: "Mar 24, 2026",
-      effectiveDateIso: "2026-03-24",
-      replacementRequired: true,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 16, 2026",
-    },
-    {
-      roleOffId: "RO-2403",
-      type: "Planned",
-      reason: "Budget Realignment",
-      status: "Approved",
-      effectiveDate: "Mar 17, 2026",
-      effectiveDateIso: TODAY,
-      replacementRequired: true,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 11, 2026",
-      approvedDateIso: TODAY,
-    },
-    {
-      roleOffId: "RO-2404",
-      type: "Planned",
-      reason: "Client Ramp Down",
-      status: "Cancelled",
-      effectiveDate: "Mar 26, 2026",
-      effectiveDateIso: "2026-03-26",
-      replacementRequired: false,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 12, 2026",
-    },
-  ][index];
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) return dateIso;
 
-  return {
-    id: preset.roleOffId,
-    roleOffId: preset.roleOffId,
-    role_off_id: preset.roleOffId,
-    allocationId: enriched.id,
-    allocation_id: enriched.id,
-    resource: enriched.resource,
-    project: enriched.project,
-    client: enriched.client,
-    department: enriched.department,
-    role: enriched.role,
-    skill: enriched.skill,
-    impact: enriched.impact,
-    impactSummary: enriched.impactSummary,
-    allocationPercent: enriched.allocationPercent,
-    effectiveDate: preset.effectiveDate,
-    effectiveDateIso: preset.effectiveDateIso,
-    type: preset.type,
-    reason: preset.reason,
-    status: preset.status,
-    replacementRequired: preset.replacementRequired,
-    submittedBy: preset.submittedBy,
-    requestedOn: preset.requestedOn,
-    approvedDateIso: preset.approvedDateIso || "",
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const normalizeStatus = (status) => {
+  if (!status) return "Active";
+
+  const upperStatus = String(status).toUpperCase();
+  if (upperStatus === "ACTIVE") return "Active";
+  if (upperStatus === "PENDING_APPROVAL") return "Pending Approval";
+  if (upperStatus === "APPROVED") return "Approved";
+  if (upperStatus === "REJECTED") return "Rejected";
+  if (upperStatus === "CANCELLED") return "Cancelled";
+
+  return status;
+};
+
+const mapResourceToAllocation = (item, index) => {
+  const allocation = {
+    id: `${item.resourceId}-${item.demandName || item.projectName || index}`,
+    resourceId: item.resourceId,
+    resource: item.name || "-",
+    project: item.projectName || "-",
+    client: item.clientName || "-",
+    department: item.department || "-",
+    role: item.demandName || "-",
+    skill: [...(item.skills || []), ...(item.subSkills || [])].filter(Boolean).join(", ") || "-",
+    allocationPercent: Number(item.allocationPercentage || 0),
+    startDate: "",
+    startDateIso: "",
+    endDate: formatDisplayDate(item.endDate),
+    endDateIso: item.endDate || "",
+    status: normalizeStatus(item.status),
+    businessCritical: Number(item.allocationPercentage || 0) >= 90,
+    keyPosition: false,
+    backupReady: Number(item.allocationPercentage || 0) < 70,
+    backfillWindowDays: item.endDate
+      ? Math.max(
+        0,
+        Math.ceil((new Date(item.endDate).getTime() - new Date(TODAY).getTime()) / (1000 * 60 * 60 * 24)),
+      )
+      : 30,
   };
-});
+
+  return enrichAllocation(allocation);
+};
 
 const titleMap = {
   pm: {
@@ -246,13 +128,6 @@ const titleMap = {
     subtitle: "Delivery Manager approval queue for pending role-off decisions and high impact review handling.",
   },
 };
-
-const formatDisplayDate = (dateIso) =>
-  new Date(dateIso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 
 const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
   const activeAllocations = allocations.filter((item) => item.status === "Active");
@@ -353,9 +228,11 @@ const buildPmDemandStyleKpis = (allocations, roleOffRequests, selectedRows) => {
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
-const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
-  const [allocations] = useState(seedAllocations.map(enrichAllocation));
-  const [roleOffRequests, setRoleOffRequests] = useState(seedRoleOffRequests);
+const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
+  const params = useParams();
+  const projectId = projectIdProp || params.projectId;
+  const [allocations, setAllocations] = useState([]);
+  const [roleOffRequests, setRoleOffRequests] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
   const [filters, setFilters] = useState({
@@ -369,6 +246,39 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
     actionType: "create",
     record: null,
   });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadResources = async () => {
+      if (!projectId) {
+        setAllocations([]);
+        return;
+      }
+
+      try {
+        const response = await getResources(projectId);
+        if (!active) return;
+
+        const nextAllocations = Array.isArray(response?.data)
+          ? response.data.map(mapResourceToAllocation)
+          : [];
+
+        setAllocations(nextAllocations);
+      } catch (error) {
+        if (!active) return;
+
+        setAllocations([]);
+        toast.error("Failed to load role-off resources");
+      }
+    };
+
+    loadResources();
+
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
 
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
@@ -415,7 +325,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
       const matchesSearch = filters.search ? searchTarget.includes(filters.search.toLowerCase()) : true;
       const matchesStatus = filters.status ? row.status === filters.status : true;
       const matchesImpact = filters.impact ? row.impact === filters.impact : true;
-      const matchesReason = filters.reason ? row.reason === filters.reason : true;
+      const matchesReason =
+        filters.reason && row.reason ? row.reason === filters.reason : true;
       return matchesSearch && matchesStatus && matchesImpact && matchesReason;
     });
   }, [scopedAllocations, scopedRoleOffRequests, mode, filters]);
