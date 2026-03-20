@@ -57,6 +57,10 @@ export default function WebSocketProvider({ children }) {
           stomp.subscribe("/topic/leave-updated", (msg) =>
             emitEvent("leave-updated", msg.body)
           );
+
+          stomp.subscribe("/topic/update-on-leaveRequestStatus", (msg) =>{
+            emitEvent("update-on-leaveRequestStatus", msg.body)
+          })
         },
         (err) => {
           // 🛑 FIX 3: Do not crash React

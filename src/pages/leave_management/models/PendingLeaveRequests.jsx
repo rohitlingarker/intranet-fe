@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import PendingLeaveRequestsTable from "./PendingLeaveRequestsTable";
 import SkeletonTable from "./SkeletonTable";
@@ -8,6 +8,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/pagination";
 import NoPendingLeaves from "../../../components/icons/no_pending_leaves.svg";
+import { useWebSocket } from "../websockets/WebSocketProvider";
 
 const PendingLeaveRequests = ({ refreshKey, year }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
@@ -17,6 +18,8 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1); // Start from page 1
   const [refreshKeyInternal, setRefreshKeyInternal] = useState(0);
+  const { subscribe } = useWebSocket();
+  const refreshCooldown = useRef(false);
 
   const employeeId = useAuth()?.user?.user_id;
 
@@ -32,7 +35,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
     setLeaveTypes,
     setLeaveBalances,
     setError,
-    setLoading
+    setLoading,
   ) => {
     try {
       setLoading(true);
@@ -51,7 +54,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
               "Cache-Control": "no-store",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         ),
         axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -61,7 +64,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
           {
             withCredentials: true,
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         ),
       ]);
 
@@ -69,10 +72,10 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
         ? leaveReqRes.data.data
         : [];
       const onlyPending = allLeaves.filter(
-        (leave) => String(leave.status).toUpperCase() === "PENDING"
+        (leave) => String(leave.status).toUpperCase() === "PENDING",
       );
 
-      console.log(onlyPending)
+      console.log(onlyPending);
       setPendingLeaves(onlyPending);
       setLeaveTypes(leaveTypeRes.data || []);
       setLeaveBalances(balanceRes.data || {});
@@ -85,6 +88,34 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
   };
 
   useEffect(() => {
+    if (!subscribe) return;
+
+    const unSubscribe = subscribe("/topic/data-updated", () => {
+      handleRefresh();
+    });
+    return unSubscribe;
+  }, [subscribe]);
+
+  const handleRefresh = () => {
+    if (refreshCooldown.current) return;
+    refreshCooldown.current = true;
+
+    fetchData(
+      // ✅ call the actual local function
+      employeeId,
+      setPendingLeaves,
+      setLeaveTypes,
+      setLeaveBalances,
+      setError,
+      setLoading,
+    );
+
+    setTimeout(() => {
+      refreshCooldown.current = false;
+    }, 2000);
+  };
+
+  useEffect(() => {
     if (employeeId) {
       fetchData(
         employeeId,
@@ -92,7 +123,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
         setLeaveTypes,
         setLeaveBalances,
         setError,
-        setLoading
+        setLoading,
       );
     }
   }, [employeeId, refreshKey, refreshKeyInternal, year]);
@@ -105,7 +136,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
   const totalPages = Math.ceil(pendingLeaves.length / ITEMS_PER_PAGE);
   const paginatedLeaves = pendingLeaves.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    currentPage * ITEMS_PER_PAGE,
   );
 
   const handlePrevious = () => {
