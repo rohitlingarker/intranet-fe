@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState, useEffect } from "react";
 import {
   AlertTriangle,
   CheckCheck,
@@ -7,7 +7,9 @@ import {
   Users,
   UserRoundMinus,
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getResources } from "@/pages/resource_management/services/roleOffService";
 import KPISection from "./KPISection";
 import RoleOffTable from "./RoleOffTable";
 import BulkActionBar from "./BulkActionBar";
@@ -67,6 +69,61 @@ const enrichAllocation = (allocation) => ({
   impactSummary: buildImpactSummary(allocation),
 });
 
+const formatDisplayDate = (dateIso) => {
+  if (!dateIso) return "-";
+
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) return dateIso;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const normalizeStatus = (status) => {
+  if (!status) return "Active";
+
+  const upperStatus = String(status).toUpperCase();
+  if (upperStatus === "ACTIVE") return "Active";
+  if (upperStatus === "PENDING_APPROVAL") return "Pending Approval";
+  if (upperStatus === "APPROVED") return "Approved";
+  if (upperStatus === "REJECTED") return "Rejected";
+  if (upperStatus === "CANCELLED") return "Cancelled";
+
+  return status;
+};
+
+const mapResourceToAllocation = (item, index) => {
+  const allocation = {
+    id: `${item.resourceId}-${item.demandName || item.projectName || index}`,
+    resourceId: item.resourceId,
+    resource: item.name || "-",
+    project: item.projectName || "-",
+    client: item.clientName || "-",
+    department: item.department || "-",
+    role: item.demandName || "-",
+    skill: [...(item.skills || []), ...(item.subSkills || [])].filter(Boolean).join(", ") || "-",
+    allocationPercent: Number(item.allocationPercentage || 0),
+    startDate: "",
+    startDateIso: "",
+    endDate: formatDisplayDate(item.endDate),
+    endDateIso: item.endDate || "",
+    status: normalizeStatus(item.status),
+    businessCritical: Number(item.allocationPercentage || 0) >= 90,
+    keyPosition: false,
+    backupReady: Number(item.allocationPercentage || 0) < 70,
+    backfillWindowDays: item.endDate
+      ? Math.max(
+        0,
+        Math.ceil((new Date(item.endDate).getTime() - new Date(TODAY).getTime()) / (1000 * 60 * 60 * 24)),
+      )
+      : 30,
+  };
+
+  return enrichAllocation(allocation);
+};
 
 const titleMap = {
   pm: {
@@ -82,13 +139,6 @@ const titleMap = {
     subtitle: "Delivery Manager approval queue for pending role-off decisions and high impact review handling.",
   },
 };
-
-const formatDisplayDate = (dateIso) =>
-  new Date(dateIso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 
 const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
   const activeAllocations = allocations.filter((item) => item.status === "Active");
@@ -196,7 +246,9 @@ const extractArrayPayload = (payload) => {
   return [];
 };
 
-const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
+const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
+  const params = useParams();
+  const projectId = projectIdProp || params.projectId;
   const [allocations, setAllocations] = useState([]);
   const [roleOffRequests, setRoleOffRequests] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -212,6 +264,39 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
     actionType: "create",
     record: null,
   });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadResources = async () => {
+      if (!projectId) {
+        setAllocations([]);
+        return;
+      }
+
+      try {
+        const response = await getResources(projectId);
+        if (!active) return;
+
+        const nextAllocations = Array.isArray(response?.data)
+          ? response.data.map(mapResourceToAllocation)
+          : [];
+
+        setAllocations(nextAllocations);
+      } catch (error) {
+        if (!active) return;
+
+        setAllocations([]);
+        toast.error("Failed to load role-off resources");
+      }
+    };
+
+    loadResources();
+
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
 
   useEffect(() => {
     fetchRoleOffs();
@@ -263,7 +348,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
       const matchesSearch = filters.search ? searchTarget.includes(filters.search.toLowerCase()) : true;
       const matchesStatus = filters.status ? row.status === filters.status : true;
       const matchesImpact = filters.impact ? row.impact === filters.impact : true;
-      const matchesReason = filters.reason ? row.reason === filters.reason : true;
+      const matchesReason =
+        filters.reason && row.reason ? row.reason === filters.reason : true;
       return matchesSearch && matchesStatus && matchesImpact && matchesReason;
     });
   }, [scopedAllocations, scopedRoleOffRequests, mode, filters]);
