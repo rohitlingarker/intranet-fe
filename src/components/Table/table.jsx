@@ -34,12 +34,14 @@ const GenericTable = ({
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`hover:bg-blue-50 transition ${
-                  rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
-                }`}
-              >
+                <tr
+                  key={rowIndex}
+                  className={`transition ${
+                    row.rowClass
+                      ? `${row.rowClass} hover:!bg-green-100`
+                      : `${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50`
+                  }`}
+                >
                 {columns.map((col, colIndex) => (
                   // 
                   <td

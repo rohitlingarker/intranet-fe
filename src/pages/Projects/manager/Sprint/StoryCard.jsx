@@ -55,7 +55,7 @@ const StoryCard = ({
       </p>
       
      <p className="flex-0 text-sm text-gray-500 truncate group-hover:text-indigo-600">
-  <span className="font-medium">Epic:</span> {story.epic?.name || "None"}
+  <span className="font-medium">Epic:</span> {story.epicTitle|| story.epicName || "None"}
 </p>
       {/* Status */}
       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 shrink-0">

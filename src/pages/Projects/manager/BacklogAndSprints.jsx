@@ -25,11 +25,15 @@ import RightSidePanel from "./Sprint/RightSidePanel";
 import SprintDetailsPanel from "./Sprint/SprintDetailsPanel";
 import SprintPendingModal from "./Sprint/SprintPendingModal";
 import { ca } from "date-fns/locale";
+import { useLocation } from "react-router-dom";
 
 
 
 const BacklogAndSprints = ({ projectId, projectName }) => {
+  
+
   const navigate = useNavigate();
+
 
   const [stories, setStories] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -48,6 +52,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
   const [pendingData, setPendingData] = useState(null);
   const [showCompletedSprints, setShowCompletedSprints] = useState(false);
   const [expandedBacklogStories, setExpandedBacklogStories] = useState([]);
+  const [permissions, setPermissions] = useState(null);
   const toggleStoryExpand = (storyId) => {
     setExpandedBacklogStories((prev) =>
       prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
@@ -263,6 +268,19 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     }
   };
 
+  const fetchPermissions = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_PMS_BASE_URL}/api/projects/${projectId}/permissions`,
+        { headers }
+      );
+
+      setPermissions(res.data);
+    } catch (error) {
+      console.error("Failed to fetch permissions", error);
+    }
+  };
+
   const fetchTasks = async () => {
     try {
       const res = await axios.get(
@@ -385,6 +403,7 @@ const BacklogAndSprints = ({ projectId, projectName }) => {
     fetchTasks();
     fetchSprints();
     fetchEpics();
+    fetchPermissions();
   }, [projectId]);
 
   // =======================================
@@ -445,20 +464,25 @@ const BacklogDropWrapper = ({ children }) => {
               variant="outline"
               className="flex items-center gap-2"
               onClick={() =>
-                navigate(`/projects/${projectId}/issuetracker`, { state: { projectId } })
+                navigate(`/projects/${projectId}/issuetracker`, { state: { projectId,projectName } })
               }
             >
               <List size={18} /> Issue Tracker
             </Button>
 
-          {canManageProjects && (
-  <Button
-    className="flex items-center gap-2"
-    onClick={() => setShowSprintModal(true)}
-  >
-    <Plus size={18} /> Create Sprint
-  </Button>
-)}
+          <Button
+            className={`flex items-center gap-2 ${
+              !permissions?.canEdit ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={!permissions?.canEdit}
+            onClick={() => {
+              if (permissions?.canEdit) {
+                setShowSprintModal(true);
+              }
+            }}
+          >
+            <Plus size={18} /> Create Sprint
+          </Button>
 
 
             <Button
@@ -508,6 +532,7 @@ const BacklogDropWrapper = ({ children }) => {
                   epics={epics}
                   allStories={stories}
                   sprints={activeAndPlanningSprints}
+                  permissions={permissions}
                   onSelectParentStory={handleAssignTaskToStory}
                   onSelectEpic={handleAssignEpicToStory}
                   onDropStory={handleDropStory}
@@ -571,6 +596,7 @@ const BacklogDropWrapper = ({ children }) => {
                           epics={epics}
                           allStories={stories}
                           sprints={sprints}
+                          permissions={permissions}
                           onDropStory={handleDropStory}
                           onSelectParentStory={handleAssignTaskToStory}
                           onSelectEpic={handleAssignEpicToStory}

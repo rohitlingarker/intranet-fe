@@ -12,18 +12,7 @@ const ComplianceForm = ({ formData, setFormData }) => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fixed spread order: ...prev comes first so we don't overwrite it
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      skill: {
-        id: prev.skill?.id || null,
-      },
-      certificate: {
-        certificateId: prev.certificate?.certificateId || null,
-      },
-    }));
-  }, []);
+
 
   const fetchSkills = async () => {
     setLoading(true);

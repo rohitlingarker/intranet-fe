@@ -1,28 +1,24 @@
+
+
 "use client";
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-// Form components
-import FormInput from "../../../components/forms/FormInput";
-import FormSelect from "../../../components/forms/FormSelect";
-
-// Toastify
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import { toast } from "react-toastify";
+import { User, Briefcase, FileText, Plus, Trash2 } from "lucide-react";
+
 
 export default function CreateOffer() {
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
+  /* ================= STATE ================= */
+
+  const [activeStep, setActiveStep] = useState(1);
   const [countries, setCountries] = useState([]);
-  const [loadingCountries, setLoadingCountries] = useState(true);
-
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [ccOptions, setCcOptions] = useState([]);
-  const [loadingCC, setLoadingCC] = useState(false);
-
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -32,345 +28,372 @@ export default function CreateOffer() {
     contact_number: "",
     designation: "",
     employee_type: "",
-    package: "",
-    currency: "",
-    cc_emails: [],
+    cc_mails: [],
   });
 
-  const currencies = [
-    { label: "INR", value: "INR" },
-    { label: "USD", value: "USD" },
-    { label: "EUR", value: "EUR" },
-  ];
-  const employeeTypes = [
-    { label: "Full-Time", value: "Full-Time" },
-    { label: "Part-Time", value: "Part-Time" },
-    { label: "Contractor", value: "Contractor" },
-    { label: "Intern", value: "Intern" },
+  const [components, setComponents] = useState([
+    {
+      id: Date.now(),
+      name: "Basic",
+      type: "Fixed",
+      frequency: "Monthly",
+      amount: "",
+    },
+  ]);
+
+  /* ================= STEPS ================= */
+
+  const steps = [
+    {
+      id: 1,
+      title: "Basic Details",
+      desc: "Candidate personal & job information",
+      icon: <User size={18} />,
+    },
+    {
+      id: 2,
+      title: "Compensation",
+      desc: "Salary structure and CTC breakdown",
+      icon: <Briefcase size={18} />,
+    },
+    {
+      id: 3,
+      title: "Create Offer",
+      desc: "Preview and generate offer letter",
+      icon: <FileText size={18} />,
+    },
   ];
 
-  // Fetch countries
+  /* ================= LOAD DATA ================= */
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/country`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        const formatted = res.data 
-        .filter((c) => c.is_active === true)  
-        .map((c) => ({
-          label: `${c.country_name} (${c.calling_code})`,
-          value: c.calling_code,
-        }));
-
-        setCountries(formatted);
-      } catch (err) {
-        console.error("Country load failed:", err);
-      }
-      setLoadingCountries(false);
-    };
-
-    load();
-  }, []);
- /* ---------------- LOAD CC USERS ---------------- */
-
-  const fetchCCUsers = async () => {
-    setLoadingCC(true);
-
-    try {
+    const loadCountries = async () => {
       const res = await axios.get(
-        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/admin-users`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/country`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const formatted = res.data.map((u) => ({
-        value: u.mail,
-        label: `${u.name} (${u.mail})`,
-      }));
+      setCountries(
+        res.data
+          .filter((c) => c.is_active)
+          .map((c) => ({
+            label: `${c.country_name} (${c.calling_code})`,
+            value: c.calling_code,
+          }))
+      );
+    };
 
-      setCcOptions(formatted);
-    } catch (err) {
-      console.error("Failed to load CC users:", err);
-    }
+    const loadCC = async () => {
+      const res = await axios.get(
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offer-approval/admin-users`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    setLoadingCC(false);
-  };
+      setCcOptions(
+        res.data.map((u) => ({
+          value: u.mail,
+          label: `${u.name} (${u.mail})`,
+        }))
+      );
+    };
 
-  useEffect(() => {
-    fetchCCUsers();
+    loadCountries();
+    loadCC();
   }, []);
 
+  /* ================= HANDLERS ================= */
 
-  // Handle input
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleComponentChange = (id, field, value) => {
+    setComponents((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+    );
   };
 
-  // Cancel click → show confirmation overlay
-  const handleCancelClick = () => {
-    setShowCancelConfirm(true);
+  const addComponent = () => {
+    setComponents([
+      ...components,
+      {
+        id: Date.now(),
+        name: "",
+        type: "Fixed",
+        frequency: "Monthly",
+        amount: "",
+      },
+    ]);
   };
 
-  // Confirm cancel → clear fields
-  const confirmCancel = () => {
-    setFormData({
-      first_name: "",
-      last_name: "",
-      mail: "",
-      country_code: "",
-      contact_number: "",
-      designation: "",
-      employee_type: "",
-      package: "",
-      currency: "",
-      cc_emails: [],
-    });
-    setShowCancelConfirm(false);
+  const removeComponent = (id) => {
+    setComponents(components.filter((c) => c.id !== id));
   };
 
-  // Close confirmation → keep fields
-  const cancelConfirmation = () => {
-    setShowCancelConfirm(false);
-  };
-  const customSelectStyles = {
-  multiValue: (base) => ({
-    ...base,
-    backgroundColor: "rgb(207, 212, 231)",
-  }),
-};
+  const totalCTC = components.reduce(
+    (sum, c) => sum + Number(c.amount || 0),
+    0
+  );
 
+  /* ================= CREATE OFFER ================= */
 
-  // Submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleCreateOffer = async () => {
+    const payload = {
+      ...formData,
+      cc_mails: formData.cc_mails.map((c) => c.value) || [],
+      compensation_components: components.map((c)=>({
+        name:c.name,
+        type:c.type,
+        frequency:c.frequency,
+        amount:Number(c.amount)
+      })),
+      total_ctc: Number(totalCTC),
+    };
 
     const toastId = toast.loading("Creating offer...");
 
     try {
-      await axios.post(
+      const res = await axios.post(
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/create`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.update(toastId, {
-        render: "Offer Created Successfully!",
+        render: "Offer Created",
         type: "success",
         isLoading: false,
-        autoClose: 1500,
+        autoClose: 1200,
       });
+    //  // 🔥 OPEN PREVIEW IN NEW TAB
+    //   window.open(
+    //     `/employee-onboarding/offer-generated-preview/${res.data.offer_id}`,
+    //     "_blank"
+    //   );
+    navigate(`/employee-onboarding/offer-generated-preview/${res.data.offer_id}`);
+         
+    }catch(err){
 
-      setTimeout(() => navigate("/employee-onboarding"), 900);
-      navigate("/employee-onboarding");
-    } catch (err) {
+      
       toast.update(toastId, {
-        render: err.response?.data?.detail || "Something went wrong.",
+        render: err.response?.data?.detail || "Error",
         type: "error",
         isLoading: false,
-        autoClose: 2000,
       });
     }
   };
 
+  /* ================= UI ================= */
+
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6 relative">
-      {/* Heading */}
-      <h2 className="text-2xl font-semibold text-gray-900">Create Offer</h2>
-      <p className="text-gray-500 mt-1 mb-6">
-        Fill out the form to create a new offer letter.
-      </p>
+    <div className="min-h-screen bg-gray-100 flex">
 
-      {/* Form */}
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        {/* First + Last Name */}
-        <div className="grid grid-cols-2 gap-6">
-          <FormInput
-            label="First Name"
-            name="first_name"
-            value={formData.first_name}
-            onChange={handleChange}
-          />
-          <FormInput
-            label="Last Name"
-            name="last_name"
-            value={formData.last_name}
-            onChange={handleChange}
-          />
-        </div>
+      {/* ===== PROGRESS SIDEBAR ===== */}
+      <div className="w-80 bg-gradient-to-b from-blue-700 to-blue-900 text-white p-10">
 
-        {/* Email */}
-        <FormInput
-          label="Email"
-          name="mail"
-          type="email"
-          value={formData.mail}
-          onChange={handleChange}
-        />
+        <h2 className="text-xl font-semibold mb-10">
+          Offer Creation
+        </h2>
 
-        {/* Country + Phone */}
-        <div className="grid grid-cols-2 gap-6">
-                  <FormSelect
-            label="Country Code"
-            name="country_code"
-            value={formData.country_code}
-            onChange={handleChange}
-            options={
-              loadingCountries
-                ? [{ label: "Loading countries...", value: "" }]
-                : countries
-            }
-            disabled={loadingCountries}
-          />
+        <div className="relative">
+          <div className="absolute left-5 top-0 bottom-0 w-[2px] bg-blue-500/40" />
 
+          <div className="space-y-10">
+            {steps.map((step) => {
+              const active = activeStep === step.id;
+              const completed = activeStep > step.id;
 
-          <FormInput
-            label="Contact Number"
-            name="contact_number"
-            value={formData.contact_number}
-            onChange={handleChange}
-          />
-        </div>
+              return (
+                <div key={step.id} className="flex gap-4 items-start">
+                  <div
+                    className={`
+                      relative z-10 w-10 h-10 flex items-center justify-center rounded-full
+                      ${
+                        completed
+                          ? "bg-green-500"
+                          : active
+                          ? "bg-white text-blue-700"
+                          : "bg-blue-600"
+                      }
+                    `}
+                  >
+                    {step.icon}
+                  </div>
 
-        {/* Designation */}
-        <FormInput
-          label="Designation"
-          name="designation"
-          value={formData.designation}
-          onChange={handleChange}
-        />
-
-        {/* Employee Type */}
-        <FormSelect
-          label="Employee Type"
-          name="employee_type"
-          value={formData.employee_type}
-          onChange={handleChange}
-          options={employeeTypes}
-        />
-        
-
-        {/* Package */}
-        <FormInput
-          label="Package"
-          name="package"
-          value={formData.package}
-          onChange={handleChange}
-        />
-
-        {/* Currency */}
-        <FormSelect
-          label="Currency"
-          name="currency"
-          value={formData.currency}
-          onChange={handleChange}
-          options={currencies}
-        />
-
-         {/* ---------- CC SELECTOR ---------- */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            CC Recipients (Optional)
-          </label>
-
-          <Select
-            isMulti
-            isLoading={loadingCC}
-            options={ccOptions}
-            styles={customSelectStyles}
-            placeholder="Search and select CC recipients..."
-
-
-           value={ccOptions.filter((opt) =>
-  formData.cc_emails?.includes(opt.value)
-)}
-
-            onChange={(selected) => {
-              const emails = selected
-                ? selected.map((item) => item.value)
-                : [];
-
-              setFormData({
-                ...formData,
-                cc_emails: emails,
-              });
-            }}
-          />
-        </div>
-        {/* Buttons */}
-        <div className="flex justify-end gap-4 pt-4">
-          <button
-            type="button"
-            onClick={handleCancelClick}
-            className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-          >
-            Create Offer
-          </button>
-        </div>
-      </form>
-
-      {/* 🔒 Overlay Confirmation (INSIDE FORM CARD) */}
-      {showCancelConfirm && (
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Confirm Cancel
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to cancel? All entered details will be
-              cleared.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={cancelConfirmation}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-              >
-                No
-              </button>
-              <button
-                type="button"
-                onClick={confirmCancel}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all duration-100 ease-in-out
-        active:translate-y-[1px]
-        disabled:opacity-60 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2"
-              >
-                Yes, Clear
-              </button>
-            </div>
+                  <div>
+                    <div className={`font-medium ${active ? "text-white" : "text-blue-100"}`}>
+                      {step.title}
+                    </div>
+                    <div className="text-sm text-blue-200">
+                      {step.desc}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ===== CONTENT ===== */}
+      <div className="flex-1 p-10 space-y-6">
+
+        {/* STEP 1 */}
+        {activeStep === 1 && (
+          <>
+            <h3 className="text-2xl font-semibold">Candidate Info</h3>
+
+            <div className="grid grid-cols-2 gap-6">
+              <Input label="First Name" name="first_name" value={formData.first_name} onChange={handleChange}/>
+              <Input label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleChange}/>
+              <Input label="Last Name" name="last_name" value={formData.last_name} onChange={handleChange}/>
+            </div>
+
+            <Input label="Email" name="mail" value={formData.mail} onChange={handleChange}/>
+
+            <div className="grid grid-cols-2 gap-6">
+              <SelectInput label="Country Code" options={countries} onChange={(v)=>setFormData({...formData,country_code:v?.value})}/>
+              <Input label="Contact Number" name="contact_number" value={formData.contact_number} onChange={handleChange}/>
+            </div>
+
+            <Input label="Designation" name="designation" value={formData.designation} onChange={handleChange}/>
+
+            <SelectInput
+              label="Employee Type"
+              options={[
+                {label:"Full-Time",value:"Full-Time"},
+                {label:"Part-Time",value:"Part-Time"},
+                {label:"Contractor",value:"Contractor"},
+                {label:"Intern",value:"Intern"},
+              ]}
+              onChange={(v)=>setFormData({...formData,employee_type:v?.value})}
+            />
+
+            <SelectInput
+              label="CC Mails"
+              isMulti
+              options={ccOptions}
+              value={formData.cc_mails}
+              onChange={(v)=>setFormData({...formData,cc_mails:v||[]})}
+            />
+
+            <div className="flex justify-end">
+              <button onClick={()=>setActiveStep(2)} className="px-6 py-2 bg-blue-700 text-white rounded-lg">
+                Continue →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* STEP 2 */}
+        {activeStep === 2 && (
+          <>
+            <h3 className="text-2xl font-semibold">Compensation</h3>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              Annual CTC: ₹ {totalCTC.toLocaleString()}
+            </div>
+
+            {components.map((c)=>(
+              <div key={c.id} className="grid grid-cols-5 gap-4 items-end">
+                <Input label="Component" value={c.name} onChange={(e)=>handleComponentChange(c.id,"name",e.target.value)}/>
+                <Input label="Type" value={c.type} onChange={(e)=>handleComponentChange(c.id,"type",e.target.value)}/>
+                <Input label="Frequency" value={c.frequency} onChange={(e)=>handleComponentChange(c.id,"frequency",e.target.value)}/>
+                <Input type="number" label="Amount" value={c.amount} onChange={(e)=>handleComponentChange(c.id,"amount",e.target.value)}/>
+                <button onClick={()=>removeComponent(c.id)}><Trash2 size={18} className="text-red-500"/></button>
+              </div>
+            ))}
+
+            <button onClick={addComponent} className="flex items-center gap-2 text-blue-700">
+              <Plus size={16}/> Add Component
+            </button>
+
+            <div className="flex justify-between">
+              <button onClick={()=>setActiveStep(1)} className="px-6 py-2 bg-gray-200 rounded-lg">Back</button>
+              <button onClick={()=>setActiveStep(3)} className="px-6 py-2 bg-blue-700 text-white rounded-lg">Continue →</button>
+            </div>
+          </>
+        )}
+
+        {/* STEP 3 */}
+        {activeStep === 3 && (
+          <>
+            <h3 className="text-2xl font-semibold">Create Offer</h3>
+
+            {/* <div className="border rounded-lg p-6 text-sm space-y-2">
+              <p><b>Name:</b> {formData.first_name} {formData.middle_name} {formData.last_name}</p>
+              <p><b>Email:</b> {formData.mail}</p>
+              <p><b>Designation:</b> {formData.designation}</p>
+              <p><b>Employee Type:</b> {formData.employee_type}</p>
+              <p><b>Annual CTC:</b> ₹ {totalCTC.toLocaleString()}</p>
+            </div> */}
+            <div className="border rounded-lg p-6 text-sm space-y-4">
+
+  <p><b>Name:</b> {formData.first_name} {formData.middle_name} {formData.last_name}</p>
+  <p><b>Email:</b> {formData.mail}</p>
+  <p><b>Designation:</b> {formData.designation}</p>
+  <p><b>Employee Type:</b> {formData.employee_type}</p>
+
+  <p><b>Annual CTC:</b> ₹ {totalCTC.toLocaleString()}</p>
+
+  {/* Salary Breakdown Table */}
+
+  <div className="mt-4">
+    <p className="font-semibold mb-2">Salary Breakdown</p>
+
+    <table className="w-full border text-sm">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="border p-2">Component</th>
+          <th className="border p-2">Type</th>
+          <th className="border p-2">Frequency</th>
+          <th className="border p-2">Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {components.map((c) => (
+          <tr key={c.id}>
+            <td className="border p-2">{c.name}</td>
+            <td className="border p-2">{c.type}</td>
+            <td className="border p-2">{c.frequency}</td>
+            <td className="border p-2">₹ {Number(c.amount || 0).toLocaleString()}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+            <div className="flex justify-between">
+              <button onClick={()=>setActiveStep(2)} className="px-6 py-2 bg-gray-200 rounded-lg">Back</button>
+              <button onClick={handleCreateOffer} className="px-6 py-2 bg-green-600 text-white rounded-lg">
+                Create Offer & Preview
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* SMALL COMPONENTS */
+
+function Input({ label, ...props }) {
+  return (
+    <div>
+      <label className="text-sm block mb-1">{label}</label>
+      <input {...props} className="w-full border rounded-lg px-3 py-2"/>
+    </div>
+  );
+}
+
+function SelectInput({ label, ...props }) {
+  return (
+    <div>
+      <label className="text-sm block mb-1">{label}</label>
+      <Select {...props}/>
     </div>
   );
 }
