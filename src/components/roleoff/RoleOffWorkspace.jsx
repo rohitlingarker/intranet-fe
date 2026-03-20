@@ -84,9 +84,20 @@ const normalizeStatus = (status) => {
   return status;
 };
 
+const normalizeImpact = (impact) => {
+  if (!impact) return "Low";
+
+  const upperImpact = String(impact).toUpperCase();
+  if (upperImpact === "LOW") return "Low";
+  if (upperImpact === "MEDIUM") return "Medium";
+  if (upperImpact === "HIGH") return "High";
+
+  return impact;
+};
+
 const mapResourceToAllocation = (item, index) => {
   const allocation = {
-    id: `${item.resourceId}-${item.demandName || item.projectName || index}`,
+    id: item.allocationId || `${item.resourceId}-${item.demandName || item.projectName || index}`,
     resourceId: item.resourceId,
     resource: item.name || "-",
     project: item.projectName || "-",
@@ -111,7 +122,10 @@ const mapResourceToAllocation = (item, index) => {
       : 30,
   };
 
-  return enrichAllocation(allocation);
+  return {
+    ...enrichAllocation(allocation),
+    impact: normalizeImpact(item.impact),
+  };
 };
 
 const titleMap = {
