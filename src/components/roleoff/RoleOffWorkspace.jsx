@@ -235,7 +235,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Replacement Created",
         value: roleOffRequests.filter((item) => item.replacementRequired).length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
       },
     ];
@@ -257,7 +257,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
     {
       label: "Approved Today",
       value: roleOffRequests.filter((item) => item.approvedDateIso === TODAY).length,
-      icon: <CheckCheck className="h-5 w-5" />,
+      icon: <Check className="h-5 w-5" />,
       iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
     },
   ];
