@@ -97,3 +97,14 @@ export const getAllocations = async (projectId) => {
   );
   return response.data;
 };
+
+export const getRoleOffReasons = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/role-off/reasons`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

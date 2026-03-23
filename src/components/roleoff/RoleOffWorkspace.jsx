@@ -235,7 +235,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Replacement Created",
         value: roleOffRequests.filter((item) => item.replacementRequired).length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
       },
     ];
@@ -513,19 +513,24 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         roleOffReason: formState.reason,
         autoReplacementRequired: formState.replacementRequired,
         skipReason: formState.replacementRequired ? null : formState.skipReason,
+        confirmed: Boolean(formState.reviewConfirmed),
       };
 
-      await createRoleOff(payload);
-
+      const response = await createRoleOff(payload);
+      if (response?.requiresConfirmation && !formState.reviewConfirmed) {
+        return response;
+      }
       toast.success("Role-off request created");
 
       // await fetchRoleOffs(); // refresh
 
       setPanelState({ open: false, actionType: "create", record: null });
+      return response;
 
     } catch (err) {
       console.error(err);
       toast.error("Failed to create role-off");
+      throw err;
     }
   };
 
