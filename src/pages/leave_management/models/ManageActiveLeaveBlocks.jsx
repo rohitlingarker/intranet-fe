@@ -507,7 +507,8 @@ export default function ManageActiveLeaveBlocks({ employeeId }) {
 
   const fetchHolidays = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+      const year = new Date().getFullYear();
+      const res = await axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
         params: { state: "All", country: "India" },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
