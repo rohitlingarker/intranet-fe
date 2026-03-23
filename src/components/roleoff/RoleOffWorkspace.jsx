@@ -16,7 +16,7 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, rmApprove, rmReject, dlAction, getPendingRoleOffs, getPendingRoleOffsForDM }
+import { createRoleOff, rmApprove, rmReject, dlFulfill, dlReject, getPendingRoleOffs, getPendingRoleOffsForDM }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
@@ -539,6 +539,11 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       return;
     }
 
+    if (mode === "dm" && action === "view") {
+      openSidePanel(row, "view");
+      return;
+    }
+
     // 🔥 RM APPROVE
     if (mode === "rm" && action === "approve") {
       try {
@@ -568,7 +573,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 DM APPROVE (FULFILL)
     if (mode === "dm" && action === "approve") {
       try {
-        await dlAction(row.id, "FULFILLED", "Approved by DL");
+        await dlFulfill(row.id);
         toast.success("DL Approved");
         // await fetchRoleOffs();
       } catch (err) {
@@ -581,7 +586,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 DM REJECT
     if (mode === "dm" && action === "reject") {
       try {
-        await dlAction(row.id, "REJECTED", "Rejected by DL");
+        await dlReject(row.id, "Rejected by DL");
         toast.error("DL Rejected");
         // await fetchRoleOffs();
       } catch (err) {
@@ -599,12 +604,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       return;
     }
 
-    if (mode === "rm") {
-      openSidePanel(row, "view");
-      return;
-    }
-
-    openSidePanel(row, row.impact === "High" ? "approve" : "approve");
+    openSidePanel(row, "view");
   };
 
   const handlePanelSubmit = async (formState) => {
@@ -692,28 +692,40 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
   //   toast.success(`${requests.length} role-off requests created`);
   // };
 
-  const handleApproveRequest = (request) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id
-          ? { ...item, status: "Approved", approvedDateIso: TODAY }
-          : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "approve", record: null });
-    toast.success(`${request.resource} role-off approved`);
+  const handleApproveRequest = async (request) => {
+    try {
+      await dlFulfill(request.id);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id
+            ? { ...item, status: "Approved" }
+            : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.success(`${request.resource} role-off approved`);
+    } catch (err) {
+      console.error(err);
+      toast.error("DL approval failed");
+    }
   };
 
-  const handleRejectRequest = (request, reason) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id
-          ? { ...item, status: "Rejected", rejectionReason: reason }
-          : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "reject", record: null });
-    toast.error(`${request.resource} role-off rejected`);
+  const handleRejectRequest = async (request, reason) => {
+    try {
+      await dlReject(request.id, reason);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id
+            ? { ...item, status: "Rejected", rejectionReason: reason }
+            : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.error(`${request.resource} role-off rejected`);
+    } catch (err) {
+      console.error(err);
+      toast.error("DL rejection failed");
+    }
   };
 
   return (

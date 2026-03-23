@@ -87,13 +87,28 @@ export const rmReject = async (id, rejectionReason) => {
 
 
 // ✅ DL ACTION (FULFILL / REJECT)
-export const dlAction = async (id, action, comments) => {
+export const dlFulfill = async (id) => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/api/role-off/${id}/dl-action`,
+      `${BASE_URL}/api/role-off/${id}/dl-fulfill`,
       null,
       {
-        params: { action, comments }, // action = FULFILLED / REJECTED
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const dlReject = async (id, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/${id}/dl-reject`,
+      null,
+      {
+        params: { rejectionReason },
         headers: getAuthHeaders(),
       }
     );

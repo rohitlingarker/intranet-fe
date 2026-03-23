@@ -206,6 +206,31 @@ const RoleOffSidePanel = ({
     }
   };
 
+  const handleDmApproveClick = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onApprove?.(record, form.decisionNotes.trim());
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDmRejectClick = async () => {
+    if (!form.decisionNotes.trim()) {
+      setError("Rejection reason is required.");
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onReject?.(record, form.decisionNotes.trim());
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[120] flex justify-end bg-slate-900/20 backdrop-blur-[1px]">
       <button type="button" disabled={isSubmitting} className="flex-1 cursor-default" onClick={onClose} aria-label="Close panel" />
@@ -427,7 +452,7 @@ const RoleOffSidePanel = ({
               ) : null}
               <div>
                 <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
-                  Decision Notes
+                  Rejection Reason
                 </label>
                 <textarea
                   rows={5}
@@ -436,7 +461,7 @@ const RoleOffSidePanel = ({
                     setForm((prev) => ({ ...prev, decisionNotes: event.target.value }))
                   }
                   className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
-                  placeholder={actionType === "reject" ? "Provide rejection reason" : "Add review notes"}
+                  placeholder="Enter rejection reason if you want to reject this request"
                 />
               </div>
             </section>
@@ -451,7 +476,7 @@ const RoleOffSidePanel = ({
 
         <div className="border-t border-gray-200 px-5 py-4">
           <div className="flex flex-wrap items-center gap-2">
-            {!isRM ? (
+            {!isRM && !isDM ? (
               <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="h-10 border-gray-300 bg-white text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 Close
               </Button>
@@ -490,12 +515,25 @@ const RoleOffSidePanel = ({
               </>
             ) : null}
             {isDM ? (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting
-                  ? (actionType === "reject" ? "Rejecting..." : "Approving...")
-                  : (actionType === "reject" ? "Reject Request" : "Approve Request")}
-              </Button>
+              <>
+                <Button
+                  onClick={handleDmApproveClick}
+                  disabled={isSubmitting}
+                  className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Fulfill
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDmRejectClick}
+                  disabled={isSubmitting}
+                  className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Reject
+                </Button>
+              </>
             ) : null}
           </div>
         </div>
