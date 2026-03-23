@@ -1,119 +1,34 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CheckCheck,
+  Check,
   ClipboardCheck,
   Search,
   Users,
   UserRoundMinus,
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getResources } from "@/pages/resource_management/services/roleOffService";
 import KPISection from "./KPISection";
 import RoleOffTable from "./RoleOffTable";
 import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
+import { createRoleOff, rmApprove, rmReject, dlFulfill, dlReject, getPendingRoleOffs, getPendingRoleOffsForDM }
+  from "../../pages/resource_management/services/roleOffService";
 
-const TODAY = "2026-03-17";
+const mapStatus = (item) => {
+  if (item.roleOffStatus === "PENDING") return "Pending Approval";
+  if (item.roleOffStatus === "APPROVED") return "Approved";
+  if (item.roleOffStatus === "REJECTED") return "Rejected";
+  if (item.roleOffStatus === "FULFILLED") return "Fulfilled";
+  return "Pending Approval";
+};
 
-const seedAllocations = [
-  {
-    id: "AL-1001",
-    resource: "Ananya Rao",
-    project: "Mercury ERP Rollout",
-    client: "Asterix Manufacturing",
-    department: "Enterprise Delivery",
-    role: "Lead Frontend Engineer",
-    skill: "React / UI Architecture",
-    allocationPercent: 100,
-    startDate: "Jan 15, 2026",
-    startDateIso: "2026-01-15",
-    endDate: "Apr 30, 2026",
-    endDateIso: "2026-04-30",
-    status: "Active",
-    businessCritical: true,
-    keyPosition: true,
-    backupReady: false,
-    backfillWindowDays: 5,
-  },
-  {
-    id: "AL-1002",
-    resource: "Rahul Menon",
-    project: "Northwind Data Platform",
-    client: "Northwind Retail",
-    department: "Data Engineering",
-    role: "Data Engineer",
-    skill: "Databricks / SQL",
-    allocationPercent: 80,
-    startDate: "Feb 01, 2026",
-    startDateIso: "2026-02-01",
-    endDate: "Jun 15, 2026",
-    endDateIso: "2026-06-15",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 20,
-  },
-  {
-    id: "AL-1003",
-    resource: "Meera Iyer",
-    project: "Orion Support Transition",
-    client: "Orion Health",
-    department: "Managed Services",
-    role: "Support Analyst",
-    skill: "ITSM / Service Ops",
-    allocationPercent: 60,
-    startDate: "Jan 20, 2026",
-    startDateIso: "2026-01-20",
-    endDate: "Mar 28, 2026",
-    endDateIso: "2026-03-28",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 30,
-  },
-  {
-    id: "AL-1004",
-    resource: "Karan Verma",
-    project: "Summit Banking Portal",
-    client: "Summit Bank",
-    department: "Digital Delivery",
-    role: "QA Lead",
-    skill: "Automation / Release Quality",
-    allocationPercent: 90,
-    startDate: "Dec 01, 2025",
-    startDateIso: "2025-12-01",
-    endDate: "May 31, 2026",
-    endDateIso: "2026-05-31",
-    status: "Active",
-    businessCritical: true,
-    keyPosition: false,
-    backupReady: false,
-    backfillWindowDays: 10,
-  },
-  {
-    id: "AL-1005",
-    resource: "Priya Nair",
-    project: "Vertex Mobile Modernization",
-    client: "Vertex Logistics",
-    department: "Mobile Engineering",
-    role: "Android Engineer",
-    skill: "Kotlin / CI-CD",
-    allocationPercent: 70,
-    startDate: "Feb 18, 2026",
-    startDateIso: "2026-02-18",
-    endDate: "Jul 15, 2026",
-    endDateIso: "2026-07-15",
-    status: "Active",
-    businessCritical: false,
-    keyPosition: false,
-    backupReady: true,
-    backfillWindowDays: 18,
-  },
-];
+const TODAY = new Date().toISOString().slice(0, 10);
+
 
 const deriveImpact = (allocation) => {
   if (
@@ -154,82 +69,138 @@ const enrichAllocation = (allocation) => ({
   impactSummary: buildImpactSummary(allocation),
 });
 
-const seedRoleOffRequests = seedAllocations.slice(0, 4).map((allocation, index) => {
-  const enriched = enrichAllocation(allocation);
+const formatDisplayDate = (dateIso) => {
+  if (!dateIso) return "-";
 
-  const preset = [
-    {
-      roleOffId: "RO-2401",
-      type: "Planned",
-      reason: "Project Completion",
-      status: "Pending Approval",
-      effectiveDate: "Mar 22, 2026",
-      effectiveDateIso: "2026-03-22",
-      replacementRequired: false,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 15, 2026",
-    },
-    {
-      roleOffId: "RO-2402",
-      type: "Emergency",
-      reason: "Critical Dependency",
-      status: "Pending Approval",
-      effectiveDate: "Mar 24, 2026",
-      effectiveDateIso: "2026-03-24",
-      replacementRequired: true,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 16, 2026",
-    },
-    {
-      roleOffId: "RO-2403",
-      type: "Planned",
-      reason: "Budget Realignment",
-      status: "Approved",
-      effectiveDate: "Mar 17, 2026",
-      effectiveDateIso: TODAY,
-      replacementRequired: true,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 11, 2026",
-      approvedDateIso: TODAY,
-    },
-    {
-      roleOffId: "RO-2404",
-      type: "Planned",
-      reason: "Client Ramp Down",
-      status: "Cancelled",
-      effectiveDate: "Mar 26, 2026",
-      effectiveDateIso: "2026-03-26",
-      replacementRequired: false,
-      submittedBy: "PM Office",
-      requestedOn: "Mar 12, 2026",
-    },
-  ][index];
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) return dateIso;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const normalizeStatus = (status) => {
+  if (!status) return "Active";
+
+  const upperStatus = String(status).toUpperCase();
+  if (upperStatus === "ACTIVE") return "Active";
+  if (upperStatus === "PENDING_APPROVAL") return "Pending Approval";
+  if (upperStatus === "APPROVED") return "Approved";
+  if (upperStatus === "REJECTED") return "Rejected";
+  if (upperStatus === "CANCELLED") return "Cancelled";
+
+  return status;
+};
+
+const normalizeImpact = (impact) => {
+  if (!impact) return "Low";
+
+  const upperImpact = String(impact).toUpperCase();
+  if (upperImpact === "LOW") return "Low";
+  if (upperImpact === "MEDIUM") return "Medium";
+  if (upperImpact === "HIGH") return "High";
+
+  return impact;
+};
+
+const mapResourceToAllocation = (item, index) => {
+  const allocation = {
+    // 🔥 CRITICAL FIXES
+    id: item.id || item.allocationId,          // ✅ UUID (MANDATORY)
+    allocationId: item.id || item.allocationId, // ✅ backup
+    projectId: item.projectId,                // ✅ REQUIRED
+    resourceId: item.resourceId,              // ✅ REQUIRED
+
+    // ✅ UI FIELDS (keep flexible)
+    resource:
+      item.name ||
+      item.resourceName ||
+      item.resource?.name ||
+      "-",
+
+    project:
+      item.projectName ||
+      item.project?.name ||
+      "-",
+
+    client:
+      item.clientName ||
+      item.project?.client?.name ||
+      "-",
+
+    department: item.department || "-",
+
+    role:
+      item.demandName ||
+      item.roleName ||
+      item.role?.name ||
+      "-",
+
+    skill:
+      [...(item.skills || []), ...(item.subSkills || [])]
+        .filter(Boolean)
+        .join(", ") || "-",
+
+    allocationPercent: Number(item.allocationPercentage || 0),
+
+    endDate: formatDisplayDate(item.endDate),
+    endDateIso: item.endDate || "",
+
+    status: normalizeStatus(item.status),
+
+    businessCritical: Number(item.allocationPercentage || 0) >= 90,
+    keyPosition: false,
+    backupReady: Number(item.allocationPercentage || 0) < 70,
+    backfillWindowDays: 30,
+  };
 
   return {
-    id: preset.roleOffId,
-    roleOffId: preset.roleOffId,
-    role_off_id: preset.roleOffId,
-    allocationId: enriched.id,
-    allocation_id: enriched.id,
-    resource: enriched.resource,
-    project: enriched.project,
-    client: enriched.client,
-    department: enriched.department,
-    role: enriched.role,
-    skill: enriched.skill,
-    impact: enriched.impact,
-    impactSummary: enriched.impactSummary,
-    allocationPercent: enriched.allocationPercent,
-    effectiveDate: preset.effectiveDate,
-    effectiveDateIso: preset.effectiveDateIso,
-    type: preset.type,
-    reason: preset.reason,
-    status: preset.status,
-    replacementRequired: preset.replacementRequired,
-    submittedBy: preset.submittedBy,
-    requestedOn: preset.requestedOn,
-    approvedDateIso: preset.approvedDateIso || "",
+    ...enrichAllocation(allocation),
+    impact: normalizeImpact(item.impact),
   };
+};
+
+const mapPendingRoleOffToRequest = (item) => ({
+  id: item.roleOffId || item.id || item.allocationId,
+  roleOffId: item.roleOffId || item.id || item.allocationId,
+  allocationId: item.allocationId,
+  resourceId: item.resourceId,
+  resource:
+    item.name ||
+    item.resourceName ||
+    item.resource?.name ||
+    "-",
+  project:
+    item.projectName ||
+    item.project?.name ||
+    "-",
+  client:
+    item.clientName ||
+    item.project?.client?.name ||
+    "-",
+  department: item.department || "-",
+  role:
+    item.demandName ||
+    item.roleName ||
+    item.role?.name ||
+    "-",
+  skill:
+    [...(item.skills || []), ...(item.subSkills || [])]
+      .filter(Boolean)
+      .join(", ") || "-",
+  impact: normalizeImpact(item.impact),
+  impactSummary: `Pending role-off request for ${item.projectName || "the current project"} with ${Number(item.allocationPercentage || 0)}% allocation.`,
+  status: mapStatus(item),
+  allocationPercent: Number(item.allocationPercentage || 0),
+  effectiveDate: formatDisplayDate(item.effectiveDate),
+  effectiveDateIso: item.effectiveDate || "",
+  endDate: formatDisplayDate(item.endDate),
+  endDateIso: item.endDate || "",
+  replacementRequired: Boolean(item.demandName),
+  reason: item.roleOffReason || item.demandName || "",
 });
 
 const titleMap = {
@@ -246,13 +217,6 @@ const titleMap = {
     subtitle: "Delivery Manager approval queue for pending role-off decisions and high impact review handling.",
   },
 };
-
-const formatDisplayDate = (dateIso) =>
-  new Date(dateIso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 
 const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
   const activeAllocations = allocations.filter((item) => item.status === "Active");
@@ -282,7 +246,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Selected Count",
         value: selectedRows.length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-slate-100 bg-slate-100 text-slate-700",
       },
     ];
@@ -311,7 +275,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
       {
         label: "Replacement Created",
         value: roleOffRequests.filter((item) => item.replacementRequired).length,
-        icon: <CheckCheck className="h-5 w-5" />,
+        icon: <Check className="h-5 w-5" />,
         iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
       },
     ];
@@ -333,7 +297,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
     {
       label: "Approved Today",
       value: roleOffRequests.filter((item) => item.approvedDateIso === TODAY).length,
-      icon: <CheckCheck className="h-5 w-5" />,
+      icon: <Check className="h-5 w-5" />,
       iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
     },
   ];
@@ -353,9 +317,18 @@ const buildPmDemandStyleKpis = (allocations, roleOffRequests, selectedRows) => {
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
-const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
-  const [allocations] = useState(seedAllocations.map(enrichAllocation));
-  const [roleOffRequests, setRoleOffRequests] = useState(seedRoleOffRequests);
+const extractArrayPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+};
+
+const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
+  const params = useParams();
+  const projectId = projectIdProp || params.projectId;
+  const [allocations, setAllocations] = useState([]);
+  const [roleOffRequests, setRoleOffRequests] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
   const [filters, setFilters] = useState({
@@ -369,6 +342,84 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
     actionType: "create",
     record: null,
   });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadResources = async () => {
+      if (mode !== "pm") {
+        setAllocations([]);
+        return;
+      }
+
+      if (!projectId) {
+        setAllocations([]);
+        return;
+      }
+
+      try {
+        const response = await getResources(projectId);
+        if (!active) return;
+
+        const nextAllocations = Array.isArray(response?.data)
+          ? response.data.map(mapResourceToAllocation)
+          : [];
+
+        setAllocations(nextAllocations);
+      } catch (error) {
+        if (!active) return;
+
+        setAllocations([]);
+        toast.error("Failed to load role-off resources");
+      }
+    };
+
+    loadResources();
+
+    return () => {
+      active = false;
+    };
+  }, [mode, projectId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPendingRoleOffRequests = async () => {
+      if (mode !== "rm" && mode !== "dm") {
+        setRoleOffRequests([]);
+        return;
+      }
+
+      try {
+        const response = mode === "dm"
+          ? await getPendingRoleOffsForDM()
+          : await getPendingRoleOffs();
+        if (!active) return;
+
+        const data = extractArrayPayload(response);
+        setRoleOffRequests(data.map(mapPendingRoleOffToRequest));
+      } catch (error) {
+        if (!active) return;
+
+        setRoleOffRequests([]);
+        toast.error(
+          mode === "dm"
+            ? "Failed to load DM role-off requests"
+            : "Failed to load pending role-off requests",
+        );
+      }
+    };
+
+    loadPendingRoleOffRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [mode]);
+
+  // useEffect(() => {
+  //   fetchRoleOffs();
+  // }, []);
 
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
@@ -408,47 +459,19 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
         ? scopedAllocations.filter((item) => item.status === "Active")
         : mode === "rm"
           ? scopedRoleOffRequests
-          : scopedRoleOffRequests.filter((item) => item.status === "Pending Approval");
+          : scopedRoleOffRequests;
 
     return baseRows.filter((row) => {
       const searchTarget = [row.resource, row.project, row.role, row.client].join(" ").toLowerCase();
       const matchesSearch = filters.search ? searchTarget.includes(filters.search.toLowerCase()) : true;
       const matchesStatus = filters.status ? row.status === filters.status : true;
       const matchesImpact = filters.impact ? row.impact === filters.impact : true;
-      const matchesReason = filters.reason ? row.reason === filters.reason : true;
+      const matchesReason =
+        filters.reason && row.reason ? row.reason === filters.reason : true;
       return matchesSearch && matchesStatus && matchesImpact && matchesReason;
     });
   }, [scopedAllocations, scopedRoleOffRequests, mode, filters]);
 
-  const createRoleOffRequest = (allocation, formState) => {
-    const nextId = `RO-${Date.now().toString().slice(-6)}-${allocation.id.slice(-2)}`;
-
-    return {
-      id: nextId,
-      roleOffId: nextId,
-      role_off_id: nextId,
-      allocationId: allocation.id,
-      allocation_id: allocation.id,
-      resource: allocation.resource,
-      project: allocation.project,
-      client: allocation.client,
-      department: allocation.department,
-      role: allocation.role,
-      skill: allocation.skill,
-      impact: allocation.impact,
-      impactSummary: allocation.impactSummary,
-      allocationPercent: allocation.allocationPercent,
-      type: formState.type,
-      reason: formState.reason,
-      status: "Pending Approval",
-      effectiveDate: formatDisplayDate(formState.effectiveDate),
-      effectiveDateIso: formState.effectiveDate,
-      replacementRequired: formState.replacementRequired,
-      submittedBy: "Project Manager",
-      requestedOn: formatDisplayDate(TODAY),
-      approvedDateIso: "",
-    };
-  };
 
   const handleToggleRow = (id, checked) => {
     setSelectedRows((prev) => (checked ? [...prev, id] : prev.filter((item) => item !== id)));
@@ -466,48 +489,114 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
     });
   };
 
-  const handleCancelRequest = (request) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id ? { ...item, status: "Cancelled" } : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "view", record: null });
-    toast.info(`${request.resource} request cancelled`);
+  const handleRmApprove = async (request) => {
+    try {
+      await rmApprove(request.id);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id ? { ...item, status: "Approved" } : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.success("Approved by RM");
+      // await fetchRoleOffs();
+    } catch (err) {
+      console.error(err);
+      toast.error("RM approval failed");
+    }
   };
 
-  const handleTableAction = (action, row) => {
+  const handleRmReject = async (request, rejectionReason) => {
+    try {
+      await rmReject(request.id, rejectionReason);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id
+            ? { ...item, status: "Rejected", rejectionReason }
+            : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.error("Rejected by RM");
+      // await fetchRoleOffs();
+    } catch (err) {
+      console.error(err);
+      toast.error("RM rejection failed");
+    }
+  };
+
+  const handleTableAction = async (action, row) => {
+
+    // PM (NO CHANGE)
     if (mode === "pm" && action === "roleoff") {
       openSidePanel(row, "create");
       return;
     }
 
+    // RM VIEW
     if (mode === "rm" && action === "view") {
       openSidePanel(row, "view");
       return;
     }
 
-    if (mode === "rm" && action === "cancel") {
-      handleCancelRequest(row);
+    if (mode === "dm" && action === "view") {
+      openSidePanel(row, "view");
       return;
     }
 
+    // 🔥 RM APPROVE
+    if (mode === "rm" && action === "approve") {
+      try {
+        await rmApprove(row.id);
+        toast.success("Approved by RM");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("RM approval failed");
+      }
+      return;
+    }
+
+    // 🔥 RM REJECT
+    if (mode === "rm" && action === "reject") {
+      try {
+        await rmReject(row.id, "Rejected by RM");
+        toast.error("Rejected by RM");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("RM rejection failed");
+      }
+      return;
+    }
+
+    // 🔥 DM APPROVE (FULFILL)
     if (mode === "dm" && action === "approve") {
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === row.id
-            ? { ...item, status: "Approved", approvedDateIso: TODAY }
-            : item,
-        ),
-      );
-      toast.success(`${row.resource} role-off approved`);
+      try {
+        await dlFulfill(row.id);
+        toast.success("DL Approved");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("DL approval failed");
+      }
       return;
     }
 
-    if (mode === "dm" && (action === "review" || action === "reject")) {
-      openSidePanel(row, action === "reject" ? "reject" : "approve");
+    // 🔥 DM REJECT
+    if (mode === "dm" && action === "reject") {
+      try {
+        await dlReject(row.id, "Rejected by DL");
+        toast.error("DL Rejected");
+        // await fetchRoleOffs();
+      } catch (err) {
+        console.error(err);
+        toast.error("DL rejection failed");
+      }
+      return;
     }
   };
+
 
   const handleRowClick = (row) => {
     if (mode === "pm") {
@@ -515,86 +604,128 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
       return;
     }
 
-    if (mode === "rm") {
-      openSidePanel(row, "view");
-      return;
-    }
-
-    openSidePanel(row, row.impact === "High" ? "approve" : "approve");
+    openSidePanel(row, "view");
   };
 
-  const handlePanelSubmit = (formState) => {
-    const existingRequest = roleOffRequests.find(
-      (item) => item.allocationId === panelState.record?.id && item.status === "Pending Approval",
-    );
+  const handlePanelSubmit = async (formState) => {
+    try {
+      const allocation = panelState.record;
 
-    if (existingRequest) {
+      const payload = {
+        projectId: projectId,
+        resourceId: allocation.resourceId,
+        allocationId: allocation.id,
+        roleOffType: formState.type.toUpperCase(),
+        effectiveRoleOffDate: formState.effectiveDate,
+        roleOffReason: formState.reason,
+        autoReplacementRequired: formState.replacementRequired,
+        skipReason: formState.replacementRequired ? null : formState.skipReason,
+        confirmed: Boolean(formState.reviewConfirmed),
+      };
+
+      const response = await createRoleOff(payload);
+      if (response?.requiresConfirmation && !formState.reviewConfirmed) {
+        return response;
+      }
+      toast.success("Role-off request created");
+
+      // await fetchRoleOffs(); // refresh
+
+      setPanelState({ open: false, actionType: "create", record: null });
+      return response;
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create role-off");
+      throw err;
+    }
+  };
+
+  // const fetchRoleOffs = async () => {
+  //   try {
+  //     const response = await getAllRoleOffs();
+  //     const data = extractArrayPayload(response);
+
+  //     const mapped = data.map((item) => ({
+  //       id: item.id,
+  //       allocationId: item.allocation?.id,
+  //       resource: item.resource?.name,
+  //       project: item.project?.name,
+  //       role: item.role?.name || "N/A",
+  //       impact: "Medium",
+  //       status: mapStatus(item),
+  //       effectiveDate: item.effectiveRoleOffDate,
+  //       effectiveDateIso: item.effectiveRoleOffDate,
+  //       reason: item.roleOffReason,
+  //     }));
+
+  //     setRoleOffRequests(mapped);
+
+  //   } catch (err) {
+  //     setRoleOffRequests([]);
+  //     if (err.response?.status === 403) {
+  //       toast.error("You do not have access to view role-off requests");
+  //     } else {
+  //       toast.error("Failed to load role-off requests");
+  //     }
+  //     console.error(err);
+  //   }
+  // };
+
+
+  // const handleBulkCreate = () => {
+  //   if (selectedRows.length === 0) return;
+
+  //   const requests = scopedAllocations
+  //     .filter((item) => selectedRows.includes(item.id))
+  //     .map((allocation) =>
+  //       createRoleOffRequest(allocation, {
+  //         type: allocation.impact === "High" ? "Emergency" : "Planned",
+  //         reason: allocation.impact === "High" ? "Critical Dependency" : "Project Completion",
+  //         replacementRequired: allocation.impact !== "Low",
+  //         effectiveDate: TODAY,
+  //       }),
+  //     );
+
+  //   setRoleOffRequests((prev) => [...requests, ...prev]);
+  //   setSelectedRows([]);
+  //   toast.success(`${requests.length} role-off requests created`);
+  // };
+
+  const handleApproveRequest = async (request) => {
+    try {
+      await dlFulfill(request.id);
       setRoleOffRequests((prev) =>
         prev.map((item) =>
-          item.id === existingRequest.id
-            ? {
-              ...item,
-              type: formState.type,
-              reason: formState.reason,
-              effectiveDate: formatDisplayDate(formState.effectiveDate),
-              effectiveDateIso: formState.effectiveDate,
-              replacementRequired: formState.replacementRequired,
-            }
+          item.id === request.id
+            ? { ...item, status: "Approved" }
             : item,
         ),
       );
-      toast.success(`${panelState.record.resource} role-off request updated`);
-    } else {
-      const request = createRoleOffRequest(panelState.record, formState);
-      setRoleOffRequests((prev) => [request, ...prev]);
-      toast.success(`${request.resource} role-off request created`);
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.success(`${request.resource} role-off approved`);
+    } catch (err) {
+      console.error(err);
+      toast.error("DL approval failed");
     }
-
-    setPanelState({ open: false, actionType: "create", record: null });
-    setSelectedRows((prev) => prev.filter((id) => id !== panelState.record?.id));
   };
 
-  const handleBulkCreate = () => {
-    if (selectedRows.length === 0) return;
-
-    const requests = scopedAllocations
-      .filter((item) => selectedRows.includes(item.id))
-      .map((allocation) =>
-        createRoleOffRequest(allocation, {
-          type: allocation.impact === "High" ? "Emergency" : "Planned",
-          reason: allocation.impact === "High" ? "Critical Dependency" : "Project Completion",
-          replacementRequired: allocation.impact !== "Low",
-          effectiveDate: TODAY,
-        }),
+  const handleRejectRequest = async (request, reason) => {
+    try {
+      await dlReject(request.id, reason);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id
+            ? { ...item, status: "Rejected", rejectionReason: reason }
+            : item,
+        ),
       );
-
-    setRoleOffRequests((prev) => [...requests, ...prev]);
-    setSelectedRows([]);
-    toast.success(`${requests.length} role-off requests created`);
-  };
-
-  const handleApproveRequest = (request) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id
-          ? { ...item, status: "Approved", approvedDateIso: TODAY }
-          : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "approve", record: null });
-    toast.success(`${request.resource} role-off approved`);
-  };
-
-  const handleRejectRequest = (request, reason) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id
-          ? { ...item, status: "Rejected", rejectionReason: reason }
-          : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "reject", record: null });
-    toast.error(`${request.resource} role-off rejected`);
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.error(`${request.resource} role-off rejected`);
+    } catch (err) {
+      console.error(err);
+      toast.error("DL rejection failed");
+    }
   };
 
   return (
@@ -711,15 +842,6 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
             </div>
 
             <div className="p-4">
-              {mode === "pm" ? (
-                <div className="mb-4">
-                  <BulkActionBar
-                    count={selectedRows.length}
-                    onClear={() => setSelectedRows([])}
-                    onCreate={handleBulkCreate}
-                  />
-                </div>
-              ) : null}
 
               <RoleOffTable
                 mode={mode}
@@ -741,14 +863,17 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectName = "" }) => {
         mode={mode}
         record={panelState.record}
         actionType={panelState.actionType}
-        onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
-        onSubmit={handlePanelSubmit}
-        onApprove={handleApproveRequest}
-        onReject={handleRejectRequest}
-        onCancel={handleCancelRequest}
-      />
+      onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
+      onSubmit={handlePanelSubmit}
+      onRmApprove={handleRmApprove}
+      onRmReject={handleRmReject}
+      onApprove={handleApproveRequest}
+      onReject={handleRejectRequest}
+    />
     </div>
   );
 };
 
 export default RoleOffWorkspace;
+
+

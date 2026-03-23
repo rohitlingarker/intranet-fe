@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Ban, ArrowRightCircle, ShieldAlert } from "lucide-react";
+import { Eye, ArrowRightCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -56,25 +56,25 @@ const RoleOffTable = ({
                   />
                 </th>
               ) : null}
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Resource
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Project
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Role / Skill
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Impact
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "Allocation" : "Status"}
               </th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "End Date" : "Effective Date"}
               </th>
-              <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Actions
               </th>
             </tr>
@@ -148,7 +148,7 @@ const RoleOffTable = ({
                     {mode === "pm" ? row.endDate : row.effectiveDate}
                   </td>
                   <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-center gap-2">
                       {mode === "pm" ? (
                         <Button
                           variant="outline"
@@ -161,45 +161,25 @@ const RoleOffTable = ({
                       ) : null}
 
                       {mode === "rm" ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs"
-                            onClick={() => onAction("view", row)}
-                          >
-                            <Eye className="mr-1 h-3.5 w-3.5" />
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                            onClick={() => onAction("cancel", row)}
-                            disabled={row.status !== "Pending Approval"}
-                          >
-                            <Ban className="mr-1 h-3.5 w-3.5" />
-                            Cancel
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          className="h-8 border-gray-300 bg-white px-3 text-xs"
+                          onClick={() => onAction("view", row)}
+                        >
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          View
+                        </Button>
                       ) : null}
 
                       {mode === "dm" ? (
-                        <>
-                          <Button
-                            className="h-8 bg-[#081534] px-3 text-xs hover:bg-[#10214f]"
-                            onClick={() =>
-                              onAction(row.impact === "High" ? "review" : "approve", row)
-                            }
-                          >
-                            {row.impact === "High" ? "Review" : "Approve"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                            onClick={() => onAction("reject", row)}
-                          >
-                            Reject
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          className="h-8 border-gray-300 bg-white px-3 text-xs"
+                          onClick={() => onAction("view", row)}
+                        >
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          View
+                        </Button>
                       ) : null}
                     </div>
                   </td>

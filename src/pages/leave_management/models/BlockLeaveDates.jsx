@@ -283,7 +283,9 @@ export default function BlockLeaveDates({ employeeId }) {
 
     const fetchHolidays = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/api/holidays/by-location`, {
+        const year = new Date().getFullYear();
+        console.log("yeaer", year);
+        const res = await axios.get(`${BASE_URL}/api/holidays/by-location/${year}`, {
           params: { state: "All", country: "India" }, // Adjust params if needed
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
@@ -426,6 +428,7 @@ export default function BlockLeaveDates({ employeeId }) {
               { before: new Date() }, // disable past dates if you want
               ...holidays,
             ]}
+            year={new Date().getFullYear()}
           />
 
           {/* End Date Picker */}
@@ -443,6 +446,7 @@ export default function BlockLeaveDates({ employeeId }) {
               ...holidays,
             ]}
             align="right"
+            year={new Date().getFullYear()}
           />
         </div>
 
