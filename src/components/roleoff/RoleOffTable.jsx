@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Ban, ArrowRightCircle, ShieldAlert } from "lucide-react";
+import { Eye, ArrowRightCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -161,45 +161,25 @@ const RoleOffTable = ({
                       ) : null}
 
                       {mode === "rm" ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs"
-                            onClick={() => onAction("view", row)}
-                          >
-                            <Eye className="mr-1 h-3.5 w-3.5" />
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                            onClick={() => onAction("cancel", row)}
-                            disabled={row.status !== "Pending Approval"}
-                          >
-                            <Ban className="mr-1 h-3.5 w-3.5" />
-                            Cancel
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          className="h-8 border-gray-300 bg-white px-3 text-xs"
+                          onClick={() => onAction("view", row)}
+                        >
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          View
+                        </Button>
                       ) : null}
 
                       {mode === "dm" ? (
-                        <>
-                          <Button
-                            className="h-8 bg-[#081534] px-3 text-xs hover:bg-[#10214f]"
-                            onClick={() =>
-                              onAction("approve", row)
-                            }
-                          >
-                            {row.impact === "High" ? "Review" : "Approve"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                            onClick={() => onAction("reject", row)}
-                          >
-                            Reject
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          className="h-8 border-gray-300 bg-white px-3 text-xs"
+                          onClick={() => onAction("view", row)}
+                        >
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          View
+                        </Button>
                       ) : null}
                     </div>
                   </td>

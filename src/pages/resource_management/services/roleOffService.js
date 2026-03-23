@@ -54,13 +54,28 @@ export const createRoleOff = async (payload) => {
 
 
 // ✅ RM APPROVE / REJECT
-export const rmAction = async (id, approve, comments) => {
+export const rmApprove = async (id) => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/api/role-off/${id}/rm-action`,
+      `${BASE_URL}/api/role-off/${id}/rm-approve`,
       null,
       {
-        params: { approve, comments },
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const rmReject = async (id, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/${id}/rm-reject`,
+      null,
+      {
+        params: { rejectionReason },
         headers: getAuthHeaders(),
       }
     );
@@ -72,13 +87,28 @@ export const rmAction = async (id, approve, comments) => {
 
 
 // ✅ DL ACTION (FULFILL / REJECT)
-export const dlAction = async (id, action, comments) => {
+export const dlFulfill = async (id) => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/api/role-off/${id}/dl-action`,
+      `${BASE_URL}/api/role-off/${id}/dl-fulfill`,
       null,
       {
-        params: { action, comments }, // action = FULFILLED / REJECTED
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const dlReject = async (id, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/${id}/dl-reject`,
+      null,
+      {
+        params: { rejectionReason },
         headers: getAuthHeaders(),
       }
     );
@@ -97,6 +127,18 @@ export const getAllocations = async (projectId) => {
   );
   return response.data;
 };
+
+export const getRoleOffReasons = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/role-off/reasons`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const getPendingRoleOffs = async () => {
   try {
