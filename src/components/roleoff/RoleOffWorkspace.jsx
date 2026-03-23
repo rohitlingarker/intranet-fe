@@ -16,7 +16,7 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, rmAction, dlAction, getPendingRoleOffs }
+import { createRoleOff, rmAction, dlAction, getPendingRoleOffs, getPendingRoleOffsForDM }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
@@ -27,7 +27,7 @@ const mapStatus = (item) => {
   return "Pending Approval";
 };
 
-// const TODAY = "2026-03-17";
+const TODAY = new Date().toISOString().slice(0, 10);
 
 
 const deriveImpact = (allocation) => {
@@ -164,7 +164,8 @@ const mapResourceToAllocation = (item, index) => {
 };
 
 const mapPendingRoleOffToRequest = (item) => ({
-  id: item.id || item.allocationId,
+  id: item.roleOffId || item.id || item.allocationId,
+  roleOffId: item.roleOffId || item.id || item.allocationId,
   allocationId: item.allocationId,
   resourceId: item.resourceId,
   resource:
@@ -296,7 +297,7 @@ const buildKpis = (mode, allocations, roleOffRequests, selectedRows) => {
     {
       label: "Approved Today",
       value: roleOffRequests.filter((item) => item.approvedDateIso === TODAY).length,
-      icon: <CheckCheck className="h-5 w-5" />,
+      icon: <Check className="h-5 w-5" />,
       iconWrapperClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
     },
   ];
@@ -384,13 +385,15 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     let active = true;
 
     const loadPendingRoleOffRequests = async () => {
-      if (mode !== "rm") {
+      if (mode !== "rm" && mode !== "dm") {
         setRoleOffRequests([]);
         return;
       }
 
       try {
-        const response = await getPendingRoleOffs();
+        const response = mode === "dm"
+          ? await getPendingRoleOffsForDM()
+          : await getPendingRoleOffs();
         if (!active) return;
 
         const data = extractArrayPayload(response);
@@ -399,7 +402,11 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         if (!active) return;
 
         setRoleOffRequests([]);
-        toast.error("Failed to load pending role-off requests");
+        toast.error(
+          mode === "dm"
+            ? "Failed to load DM role-off requests"
+            : "Failed to load pending role-off requests",
+        );
       }
     };
 
@@ -452,7 +459,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         ? scopedAllocations.filter((item) => item.status === "Active")
         : mode === "rm"
           ? scopedRoleOffRequests
-          : scopedRoleOffRequests.filter((item) => item.status === "Pending Approval");
+          : scopedRoleOffRequests;
 
     return baseRows.filter((row) => {
       const searchTarget = [row.resource, row.project, row.role, row.client].join(" ").toLowerCase();
