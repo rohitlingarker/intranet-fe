@@ -54,13 +54,28 @@ export const createRoleOff = async (payload) => {
 
 
 // ✅ RM APPROVE / REJECT
-export const rmAction = async (id, approve, comments) => {
+export const rmApprove = async (id) => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/api/role-off/${id}/rm-action`,
+      `${BASE_URL}/api/role-off/${id}/rm-approve`,
       null,
       {
-        params: { approve, comments },
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const rmReject = async (id, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/${id}/rm-reject`,
+      null,
+      {
+        params: { rejectionReason },
         headers: getAuthHeaders(),
       }
     );

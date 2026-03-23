@@ -41,9 +41,10 @@ const RoleOffSidePanel = ({
   actionType,
   onClose,
   onSubmit,
+  onRmApprove,
+  onRmReject,
   onApprove,
   onReject,
-  onCancel,
 }) => {
   const [form, setForm] = useState(baseForm);
   const [error, setError] = useState("");
@@ -177,6 +178,31 @@ const RoleOffSidePanel = ({
       } finally {
         setIsSubmitting(false);
       }
+    }
+  };
+
+  const handleRmApproveClick = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onRmApprove?.(record);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRmRejectClick = async () => {
+    if (!form.decisionNotes.trim()) {
+      setError("Rejection reason is required.");
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onRmReject?.(record, form.decisionNotes.trim());
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -369,20 +395,23 @@ const RoleOffSidePanel = ({
                 <span className="text-sm text-gray-500">Status</span>
                 <span className="text-sm font-semibold text-[#081534]">{record.status}</span>
               </div>
-              <label className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700">
-                <span>Replacement planned</span>
-                <input
-                  type="checkbox"
-                  checked={form.replacementRequired}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, replacementRequired: event.target.checked }))
-                  }
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </label>
               <p className="text-sm text-gray-600">
-                RM can manage replacement planning and cancel pending requests. Approval remains with DM.
+                Review the role-off request details here, then approve or reject the request using the actions below.
               </p>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                  Rejection Reason
+                </label>
+                <textarea
+                  rows={4}
+                  value={form.decisionNotes}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, decisionNotes: event.target.value }))
+                  }
+                  className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  placeholder="Enter rejection reason if you want to reject this request"
+                />
+              </div>
             </section>
           ) : null}
 
@@ -422,9 +451,11 @@ const RoleOffSidePanel = ({
 
         <div className="border-t border-gray-200 px-5 py-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="h-10 border-gray-300 bg-white text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-              Close
-            </Button>
+            {!isRM ? (
+              <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="h-10 border-gray-300 bg-white text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                Close
+              </Button>
+            ) : null}
             {isPM ? (
               <Button onClick={handleSubmit} disabled={isSubmitting} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? (
@@ -437,14 +468,26 @@ const RoleOffSidePanel = ({
                   : (actionType === "update" ? "Update Request" : "Create Request")}
               </Button>
             ) : null}
-            {isRM && record.status === "Pending Approval" ? (
-              <Button
-                variant="outline"
-                onClick={() => onCancel?.(record)}
-                className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-              >
-                Cancel Request
-              </Button>
+            {isRM ? (
+              <>
+                <Button
+                  onClick={handleRmApproveClick}
+                  disabled={isSubmitting || record.status !== "Pending Approval"}
+                  className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleRmRejectClick}
+                  disabled={isSubmitting || record.status !== "Pending Approval"}
+                  className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Reject
+                </Button>
+              </>
             ) : null}
             {isDM ? (
               <Button onClick={handleSubmit} disabled={isSubmitting} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">

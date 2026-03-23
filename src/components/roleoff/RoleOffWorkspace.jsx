@@ -16,7 +16,7 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, rmAction, dlAction, getPendingRoleOffs }
+import { createRoleOff, rmApprove, rmReject, dlAction, getPendingRoleOffs }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
@@ -164,7 +164,8 @@ const mapResourceToAllocation = (item, index) => {
 };
 
 const mapPendingRoleOffToRequest = (item) => ({
-  id: item.id || item.allocationId,
+  id: item.roleOffId || item.id || item.allocationId,
+  roleOffId: item.roleOffId || item.id || item.allocationId,
   allocationId: item.allocationId,
   resourceId: item.resourceId,
   resource:
@@ -482,14 +483,40 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     });
   };
 
-  const handleCancelRequest = (request) => {
-    setRoleOffRequests((prev) =>
-      prev.map((item) =>
-        item.id === request.id ? { ...item, status: "Cancelled" } : item,
-      ),
-    );
-    setPanelState({ open: false, actionType: "view", record: null });
-    toast.info(`${request.resource} request cancelled`);
+  const handleRmApprove = async (request) => {
+    try {
+      await rmApprove(request.id);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id ? { ...item, status: "Approved" } : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.success("Approved by RM");
+      // await fetchRoleOffs();
+    } catch (err) {
+      console.error(err);
+      toast.error("RM approval failed");
+    }
+  };
+
+  const handleRmReject = async (request, rejectionReason) => {
+    try {
+      await rmReject(request.id, rejectionReason);
+      setRoleOffRequests((prev) =>
+        prev.map((item) =>
+          item.id === request.id
+            ? { ...item, status: "Rejected", rejectionReason }
+            : item,
+        ),
+      );
+      setPanelState({ open: false, actionType: "view", record: null });
+      toast.error("Rejected by RM");
+      // await fetchRoleOffs();
+    } catch (err) {
+      console.error(err);
+      toast.error("RM rejection failed");
+    }
   };
 
   const handleTableAction = async (action, row) => {
@@ -509,7 +536,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 RM APPROVE
     if (mode === "rm" && action === "approve") {
       try {
-        await rmAction(row.id, true, "Approved by RM");
+        await rmApprove(row.id);
         toast.success("Approved by RM");
         // await fetchRoleOffs();
       } catch (err) {
@@ -522,7 +549,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 RM REJECT
     if (mode === "rm" && action === "reject") {
       try {
-        await rmAction(row.id, false, "Rejected by RM");
+        await rmReject(row.id, "Rejected by RM");
         toast.error("Rejected by RM");
         // await fetchRoleOffs();
       } catch (err) {
@@ -818,12 +845,13 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         mode={mode}
         record={panelState.record}
         actionType={panelState.actionType}
-        onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
-        onSubmit={handlePanelSubmit}
-        onApprove={handleApproveRequest}
-        onReject={handleRejectRequest}
-        onCancel={handleCancelRequest}
-      />
+      onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
+      onSubmit={handlePanelSubmit}
+      onRmApprove={handleRmApprove}
+      onRmReject={handleRmReject}
+      onApprove={handleApproveRequest}
+      onReject={handleRejectRequest}
+    />
     </div>
   );
 };
