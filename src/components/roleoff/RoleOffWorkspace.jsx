@@ -16,7 +16,7 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, rmAction, dlAction, getAllocations }
+import { createRoleOff, rmAction, dlAction, getPendingRoleOffs, getPendingRoleOffsForDM }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
@@ -27,7 +27,7 @@ const mapStatus = (item) => {
   return "Pending Approval";
 };
 
-// const TODAY = "2026-03-17";
+const TODAY = new Date().toISOString().slice(0, 10);
 
 
 const deriveImpact = (allocation) => {
@@ -162,6 +162,46 @@ const mapResourceToAllocation = (item, index) => {
     impact: normalizeImpact(item.impact),
   };
 };
+
+const mapPendingRoleOffToRequest = (item) => ({
+  id: item.roleOffId || item.id || item.allocationId,
+  roleOffId: item.roleOffId || item.id || item.allocationId,
+  allocationId: item.allocationId,
+  resourceId: item.resourceId,
+  resource:
+    item.name ||
+    item.resourceName ||
+    item.resource?.name ||
+    "-",
+  project:
+    item.projectName ||
+    item.project?.name ||
+    "-",
+  client:
+    item.clientName ||
+    item.project?.client?.name ||
+    "-",
+  department: item.department || "-",
+  role:
+    item.demandName ||
+    item.roleName ||
+    item.role?.name ||
+    "-",
+  skill:
+    [...(item.skills || []), ...(item.subSkills || [])]
+      .filter(Boolean)
+      .join(", ") || "-",
+  impact: normalizeImpact(item.impact),
+  impactSummary: `Pending role-off request for ${item.projectName || "the current project"} with ${Number(item.allocationPercentage || 0)}% allocation.`,
+  status: mapStatus(item),
+  allocationPercent: Number(item.allocationPercentage || 0),
+  effectiveDate: formatDisplayDate(item.effectiveDate),
+  effectiveDateIso: item.effectiveDate || "",
+  endDate: formatDisplayDate(item.endDate),
+  endDateIso: item.endDate || "",
+  replacementRequired: Boolean(item.demandName),
+  reason: item.roleOffReason || item.demandName || "",
+});
 
 const titleMap = {
   pm: {
@@ -307,6 +347,11 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     let active = true;
 
     const loadResources = async () => {
+      if (mode !== "pm") {
+        setAllocations([]);
+        return;
+      }
+
       if (!projectId) {
         setAllocations([]);
         return;
@@ -334,7 +379,43 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     return () => {
       active = false;
     };
-  }, [projectId]);
+  }, [mode, projectId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPendingRoleOffRequests = async () => {
+      if (mode !== "rm" && mode !== "dm") {
+        setRoleOffRequests([]);
+        return;
+      }
+
+      try {
+        const response = mode === "dm"
+          ? await getPendingRoleOffsForDM()
+          : await getPendingRoleOffs();
+        if (!active) return;
+
+        const data = extractArrayPayload(response);
+        setRoleOffRequests(data.map(mapPendingRoleOffToRequest));
+      } catch (error) {
+        if (!active) return;
+
+        setRoleOffRequests([]);
+        toast.error(
+          mode === "dm"
+            ? "Failed to load DM role-off requests"
+            : "Failed to load pending role-off requests",
+        );
+      }
+    };
+
+    loadPendingRoleOffRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [mode]);
 
   // useEffect(() => {
   //   fetchRoleOffs();
@@ -378,7 +459,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         ? scopedAllocations.filter((item) => item.status === "Active")
         : mode === "rm"
           ? scopedRoleOffRequests
-          : scopedRoleOffRequests.filter((item) => item.status === "Pending Approval");
+          : scopedRoleOffRequests;
 
     return baseRows.filter((row) => {
       const searchTarget = [row.resource, row.project, row.role, row.client].join(" ").toLowerCase();
