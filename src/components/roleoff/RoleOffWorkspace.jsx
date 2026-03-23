@@ -16,7 +16,7 @@ import BulkActionBar from "./BulkActionBar";
 import RoleOffFilterPanel from "./RoleOffFilterPanel";
 import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
-import { createRoleOff, rmAction, dlAction, getAllocations }
+import { createRoleOff, rmAction, dlAction, getPendingRoleOffs }
   from "../../pages/resource_management/services/roleOffService";
 
 const mapStatus = (item) => {
@@ -163,6 +163,45 @@ const mapResourceToAllocation = (item, index) => {
   };
 };
 
+const mapPendingRoleOffToRequest = (item) => ({
+  id: item.id || item.allocationId,
+  allocationId: item.allocationId,
+  resourceId: item.resourceId,
+  resource:
+    item.name ||
+    item.resourceName ||
+    item.resource?.name ||
+    "-",
+  project:
+    item.projectName ||
+    item.project?.name ||
+    "-",
+  client:
+    item.clientName ||
+    item.project?.client?.name ||
+    "-",
+  department: item.department || "-",
+  role:
+    item.demandName ||
+    item.roleName ||
+    item.role?.name ||
+    "-",
+  skill:
+    [...(item.skills || []), ...(item.subSkills || [])]
+      .filter(Boolean)
+      .join(", ") || "-",
+  impact: normalizeImpact(item.impact),
+  impactSummary: `Pending role-off request for ${item.projectName || "the current project"} with ${Number(item.allocationPercentage || 0)}% allocation.`,
+  status: mapStatus(item),
+  allocationPercent: Number(item.allocationPercentage || 0),
+  effectiveDate: formatDisplayDate(item.effectiveDate),
+  effectiveDateIso: item.effectiveDate || "",
+  endDate: formatDisplayDate(item.endDate),
+  endDateIso: item.endDate || "",
+  replacementRequired: Boolean(item.demandName),
+  reason: item.roleOffReason || item.demandName || "",
+});
+
 const titleMap = {
   pm: {
     title: "Role-Off Management",
@@ -307,6 +346,11 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     let active = true;
 
     const loadResources = async () => {
+      if (mode !== "pm") {
+        setAllocations([]);
+        return;
+      }
+
       if (!projectId) {
         setAllocations([]);
         return;
@@ -334,7 +378,37 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     return () => {
       active = false;
     };
-  }, [projectId]);
+  }, [mode, projectId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPendingRoleOffRequests = async () => {
+      if (mode !== "rm") {
+        setRoleOffRequests([]);
+        return;
+      }
+
+      try {
+        const response = await getPendingRoleOffs();
+        if (!active) return;
+
+        const data = extractArrayPayload(response);
+        setRoleOffRequests(data.map(mapPendingRoleOffToRequest));
+      } catch (error) {
+        if (!active) return;
+
+        setRoleOffRequests([]);
+        toast.error("Failed to load pending role-off requests");
+      }
+    };
+
+    loadPendingRoleOffRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [mode]);
 
   // useEffect(() => {
   //   fetchRoleOffs();

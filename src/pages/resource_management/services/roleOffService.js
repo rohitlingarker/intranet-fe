@@ -108,3 +108,17 @@ export const getRoleOffReasons = async () => {
     throw error;
   }
 };
+
+
+export const getPendingRoleOffs = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/role-off/get-role-off-rm`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
