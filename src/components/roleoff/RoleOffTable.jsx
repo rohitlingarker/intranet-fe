@@ -1,14 +1,16 @@
 import React from "react";
-import { Eye, ArrowRightCircle, ShieldAlert } from "lucide-react";
+import { Eye, ArrowRightCircle, Pencil, ShieldAlert, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES = {
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  "Not Requested": "border-slate-200 bg-slate-100 text-slate-700",
   "Pending Approval": "border-amber-200 bg-amber-50 text-amber-700",
   Approved: "border-blue-200 bg-blue-50 text-blue-700",
   Rejected: "border-rose-200 bg-rose-50 text-rose-700",
+  Fulfilled: "border-emerald-200 bg-emerald-50 text-emerald-700",
   Cancelled: "border-slate-200 bg-slate-100 text-slate-700",
 };
 
@@ -24,8 +26,30 @@ const renderBadge = (label, map) => (
   </Badge>
 );
 
+const getPmExtraColumnConfig = (pmTab) => {
+  if (pmTab === "fulfilled") {
+    return {
+      header: "Effective Date",
+      renderCell: (row) => <span className="font-medium text-gray-800">{row.effectiveDate || "-"}</span>,
+    };
+  }
+
+  if (pmTab === "process") {
+    return {
+      header: "Role-Off Status",
+      renderCell: (row) => renderBadge(row.roleOffStatus || "Not Requested", STATUS_STYLES),
+    };
+  }
+
+  return {
+    header: "Skill",
+    renderCell: (row) => <span className="text-gray-700">{row.skill || "-"}</span>,
+  };
+};
+
 const RoleOffTable = ({
   mode,
+  pmTab = "active",
   rows,
   selectedRows = [],
   activeRowId,
@@ -34,8 +58,48 @@ const RoleOffTable = ({
   onAction,
   onRowClick,
 }) => {
+  const showPmCheckboxes = mode !== "pm" || pmTab === "active";
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
   const anySelected = rows.some((row) => selectedRows.includes(row.id));
+  const pmExtraColumn = getPmExtraColumnConfig(pmTab);
+  const canPmCancel = (row) =>
+    pmTab === "process" &&
+    (row.roleOffStatus === "Pending Approval" || row.roleOffStatus === "Approved");
+  const getPmAction = (row) => {
+    if (pmTab === "active") {
+      return {
+        key: "roleoff",
+        label: "Role-Off",
+        icon: ArrowRightCircle,
+      };
+    }
+
+    if (
+      row.roleOffStatus === "Approved" ||
+      row.roleOffStatus === "Fulfilled" ||
+      row.roleOffStatus === "Rejected"
+    ) {
+      return {
+        key: "view",
+        label: "View",
+        icon: Eye,
+      };
+    }
+
+    if (row.roleOffStatus && row.roleOffStatus !== "Not Requested") {
+      return {
+        key: "edit",
+        label: "Edit",
+        icon: Pencil,
+      };
+    }
+
+    return {
+      key: "roleoff",
+      label: "Role-Off",
+      icon: ArrowRightCircle,
+    };
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -43,7 +107,7 @@ const RoleOffTable = ({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {mode === "pm" ? (
+              {mode === "pm" && showPmCheckboxes ? (
                 <th className="w-12 px-4 py-3 text-left">
                   <input
                     type="checkbox"
@@ -60,10 +124,7 @@ const RoleOffTable = ({
                 Resource
               </th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
-                Project
-              </th>
-              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
-                Role / Skill
+                {mode === "pm" && pmTab === "active" ? "Role" : "Role / Skill"}
               </th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Impact
@@ -74,6 +135,11 @@ const RoleOffTable = ({
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 {mode === "pm" ? "End Date" : "Effective Date"}
               </th>
+              {mode === "pm" ? (
+                <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                  {pmExtraColumn.header}
+                </th>
+              ) : null}
               <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Actions
               </th>
@@ -83,7 +149,7 @@ const RoleOffTable = ({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={mode === "pm" ? 8 : 7}
+                  colSpan={mode === "pm" ? (showPmCheckboxes ? 8 : 7) : 7}
                   className="px-6 py-12 text-center text-sm text-gray-500"
                 >
                   No records match the current filters.
@@ -94,6 +160,8 @@ const RoleOffTable = ({
             {rows.map((row) => {
               const isHigh = row.impact === "High";
               const isSelected = selectedRows.includes(row.id);
+              const pmAction = mode === "pm" ? getPmAction(row) : null;
+              const PmActionIcon = pmAction?.icon;
 
               return (
                 <tr
@@ -107,7 +175,7 @@ const RoleOffTable = ({
                     "hover:bg-slate-50",
                   )}
                 >
-                  {mode === "pm" ? (
+                  {mode === "pm" && showPmCheckboxes ? (
                     <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -129,12 +197,10 @@ const RoleOffTable = ({
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="font-medium text-gray-800">{row.project}</p>
-                    <p className="text-xs text-gray-500">{row.client}</p>
-                  </td>
-                  <td className="px-4 py-4">
                     <p className="font-medium text-gray-800">{row.role}</p>
-                    <p className="text-xs text-gray-500">{row.skill}</p>
+                    {!(mode === "pm" && pmTab === "active") ? (
+                      <p className="text-xs text-gray-500">{row.skill}</p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4">{renderBadge(row.impact, IMPACT_STYLES)}</td>
                   <td className="px-4 py-4">
@@ -147,17 +213,34 @@ const RoleOffTable = ({
                   <td className="px-4 py-4 text-gray-700">
                     {mode === "pm" ? row.endDate : row.effectiveDate}
                   </td>
+                  {mode === "pm" ? (
+                    <td className="px-4 py-4">
+                      {pmExtraColumn.renderCell(row)}
+                    </td>
+                  ) : null}
                   <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
                     <div className="flex justify-center gap-2">
                       {mode === "pm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("roleoff", row)}
-                        >
-                          <ArrowRightCircle className="mr-1 h-3.5 w-3.5" />
-                          Role-Off
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction(pmAction.key, row)}
+                          >
+                            {PmActionIcon ? <PmActionIcon className="mr-1 h-3.5 w-3.5" /> : null}
+                            {pmAction.label}
+                          </Button>
+                          {canPmCancel(row) ? (
+                            <Button
+                              variant="outline"
+                              className="h-8 border-rose-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                              onClick={() => onAction("cancel", row)}
+                            >
+                              <XCircle className="mr-1 h-3.5 w-3.5" />
+                              Cancel
+                            </Button>
+                          ) : null}
+                        </>
                       ) : null}
 
                       {mode === "rm" ? (
