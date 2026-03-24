@@ -112,6 +112,7 @@ const mapResourceToAllocation = (item, index) => {
     allocationId: item.id || item.allocationId, // ✅ backup
     projectId: item.projectId,                // ✅ REQUIRED
     resourceId: item.resourceId,              // ✅ REQUIRED
+    deliveryRoleId: item.deliveryRoleId,      // ✅ REQUIRED FOR DEMAND
 
     // ✅ UI FIELDS (keep flexible)
     resource:
@@ -167,6 +168,7 @@ const mapPendingRoleOffToRequest = (item) => ({
   roleOffId: item.roleOffId || item.id || item.allocationId,
   allocationId: item.allocationId,
   resourceId: item.resourceId,
+  deliveryRoleId: item.deliveryRoleId,
   resource:
     item.name ||
     item.resourceName ||
@@ -620,6 +622,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         autoReplacementRequired: formState.replacementRequired,
         skipReason: formState.replacementRequired ? null : formState.skipReason,
         confirmed: Boolean(formState.reviewConfirmed),
+        deliveryRoleId: formState.replacementRequired ? allocation.deliveryRoleId : null,
       };
 
       const response = await createRoleOff(payload);
@@ -862,13 +865,13 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         mode={mode}
         record={panelState.record}
         actionType={panelState.actionType}
-      onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
-      onSubmit={handlePanelSubmit}
-      onRmApprove={handleRmApprove}
-      onRmReject={handleRmReject}
-      onApprove={handleApproveRequest}
-      onReject={handleRejectRequest}
-    />
+        onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
+        onSubmit={handlePanelSubmit}
+        onRmApprove={handleRmApprove}
+        onRmReject={handleRmReject}
+        onApprove={handleApproveRequest}
+        onReject={handleRejectRequest}
+      />
     </div>
   );
 };
