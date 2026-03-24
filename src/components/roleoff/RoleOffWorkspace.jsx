@@ -29,7 +29,6 @@ const mapStatus = (item) => {
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-
 const deriveImpact = (allocation) => {
   if (
     allocation.businessCritical ||
