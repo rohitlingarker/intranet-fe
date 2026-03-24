@@ -17,6 +17,9 @@ const formatReason = (str) => {
   return str.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
 
+const isPendingStatus = (status) =>
+  status === "Pending" || status === "Pending Approval";
+
 const impactStyles = {
   Low: "border-teal-200 bg-teal-50 text-teal-700",
   Medium: "border-amber-200 bg-amber-50 text-amber-700",
@@ -151,6 +154,9 @@ const RoleOffSidePanel = ({
           setError("");
           return;
         }
+      } catch (error) {
+        console.error("Error submitting role-off:", error);
+        setError("Failed to submit role-off request.");
       } finally {
         setIsSubmitting(false);
       }
@@ -406,7 +412,7 @@ const RoleOffSidePanel = ({
                         }
                         className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
                       />
-                      <span>Please review the role-off impact and confirm to proceed</span>
+                      <span>{reviewState.message || "Please review the role-off impact and confirm to proceed"}</span>
                     </label>
                   </section>
                 ) : null}
@@ -482,7 +488,7 @@ const RoleOffSidePanel = ({
               </Button>
             ) : null}
             {isPM ? (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
+              <Button onClick={handleSubmit} disabled={isSubmitting || (reviewState?.requiresConfirmation && !form.reviewConfirmed)} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -497,8 +503,8 @@ const RoleOffSidePanel = ({
               <>
                 <Button
                   onClick={handleRmApproveClick}
-                  disabled={isSubmitting || record.status !== "Pending Approval"}
-                  className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isPendingStatus(record.status)}
+                  className={`h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting || !isPendingStatus(record.status) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Approve
@@ -506,10 +512,10 @@ const RoleOffSidePanel = ({
                 <Button
                   variant="outline"
                   onClick={handleRmRejectClick}
-                  disabled={isSubmitting || record.status !== "Pending Approval"}
-                  className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isPendingStatus(record.status)}
+                  className={`h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting || !isPendingStatus(record.status) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {/* {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} */}
                   Reject
                 </Button>
               </>

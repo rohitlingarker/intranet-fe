@@ -3,9 +3,11 @@ import { Eye, ArrowRightCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import LoadingSpinner from "../LoadingSpinner";
 
 const STATUS_STYLES = {
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Pending: "border-amber-200 bg-amber-50 text-amber-700",
   "Pending Approval": "border-amber-200 bg-amber-50 text-amber-700",
   Approved: "border-blue-200 bg-blue-50 text-blue-700",
   Rejected: "border-rose-200 bg-rose-50 text-rose-700",
@@ -33,6 +35,7 @@ const RoleOffTable = ({
   onToggleAll,
   onAction,
   onRowClick,
+  loading,
 }) => {
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
   const anySelected = rows.some((row) => selectedRows.includes(row.id));
@@ -80,7 +83,18 @@ const RoleOffTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {rows.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={mode === "pm" ? 8 : 7}
+                  className="px-6 py-12 text-center"
+                >
+                  <div className="flex justify-center items-center">
+                    <LoadingSpinner text="Loading Requests..." />
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={mode === "pm" ? 8 : 7}
@@ -89,103 +103,103 @@ const RoleOffTable = ({
                   No records match the current filters.
                 </td>
               </tr>
-            ) : null}
+            ) : (
+              rows.map((row) => {
+                const isHigh = row.impact === "High";
+                const isSelected = selectedRows.includes(row.id);
 
-            {rows.map((row) => {
-              const isHigh = row.impact === "High";
-              const isSelected = selectedRows.includes(row.id);
-
-              return (
-                <tr
-                  key={row.id}
-                  onClick={() => onRowClick?.(row)}
-                  className={cn(
-                    "align-top cursor-pointer transition-colors",
-                    isHigh && "bg-rose-50/40",
-                    isSelected && "bg-blue-50/40",
-                    activeRowId === row.id && "bg-slate-100",
-                    "hover:bg-slate-50",
-                  )}
-                >
-                  {mode === "pm" ? (
-                    <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(event) => onToggleRow(row.id, event.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                  ) : null}
-                  <td className="px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      {isHigh ? (
-                        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-                      ) : null}
-                      <div>
-                        <p className="font-semibold text-[#081534]">{row.resource}</p>
-                        <p className="text-xs text-gray-500">{row.department}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="font-medium text-gray-800">{row.project}</p>
-                    <p className="text-xs text-gray-500">{row.client}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="font-medium text-gray-800">{row.role}</p>
-                    <p className="text-xs text-gray-500">{row.skill}</p>
-                  </td>
-                  <td className="px-4 py-4">{renderBadge(row.impact, IMPACT_STYLES)}</td>
-                  <td className="px-4 py-4">
-                    {mode === "pm" ? (
-                      <p className="font-medium text-gray-800">{row.allocationPercent}%</p>
-                    ) : (
-                      renderBadge(row.status, STATUS_STYLES)
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => onRowClick?.(row)}
+                    className={cn(
+                      "align-top cursor-pointer transition-colors",
+                      isHigh && "bg-rose-50/40",
+                      isSelected && "bg-blue-50/40",
+                      activeRowId === row.id && "bg-slate-100",
+                      "hover:bg-slate-50"
                     )}
-                  </td>
-                  <td className="px-4 py-4 text-gray-700">
-                    {mode === "pm" ? row.endDate : row.effectiveDate}
-                  </td>
-                  <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                    <div className="flex justify-center gap-2">
+                  >
+                    {mode === "pm" ? (
+                      <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(event) => onToggleRow(row.id, event.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                    ) : null}
+                    <td className="px-4 py-4">
+                      <div className="flex items-start gap-3">
+                        {isHigh ? (
+                          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                        ) : null}
+                        <div>
+                          <p className="font-semibold text-[#081534]">{row.resource}</p>
+                          <p className="text-xs text-gray-500">{row.department}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-gray-800">{row.project}</p>
+                      <p className="text-xs text-gray-500">{row.client}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-gray-800">{row.role}</p>
+                      <p className="text-xs text-gray-500">{row.skill}</p>
+                    </td>
+                    <td className="px-4 py-4">{renderBadge(row.impact, IMPACT_STYLES)}</td>
+                    <td className="px-4 py-4">
                       {mode === "pm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("roleoff", row)}
-                        >
-                          <ArrowRightCircle className="mr-1 h-3.5 w-3.5" />
-                          Role-Off
-                        </Button>
-                      ) : null}
+                        <p className="font-medium text-gray-800">{row.allocationPercent}%</p>
+                      ) : (
+                        renderBadge(row.status, STATUS_STYLES)
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-gray-700">
+                      {mode === "pm" ? row.endDate : row.effectiveDate}
+                    </td>
+                    <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
+                      <div className="flex justify-center gap-2">
+                        {mode === "pm" ? (
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction("roleoff", row)}
+                          >
+                            <ArrowRightCircle className="mr-1 h-3.5 w-3.5" />
+                            Role-Off
+                          </Button>
+                        ) : null}
 
-                      {mode === "rm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("view", row)}
-                        >
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          View
-                        </Button>
-                      ) : null}
+                        {mode === "rm" ? (
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction("view", row)}
+                          >
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                            View
+                          </Button>
+                        ) : null}
 
-                      {mode === "dm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("view", row)}
-                        >
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          View
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        {mode === "dm" ? (
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction("view", row)}
+                          >
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                            View
+                          </Button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
