@@ -115,8 +115,6 @@ useEffect(() => {
                   Description
                 </th>
 
-
-
                 <th className="px-6 py-3 text-center">
                   Action
                 </th>
