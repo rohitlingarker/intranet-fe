@@ -36,6 +36,21 @@ export const createRoleOff = async (payload) => {
   }
 };
 
+export const pmCancelRoleOff = async (id) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/${id}/pm-cancel`,
+      null,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 // ✅ GET ALL ROLE-OFFS
 // export const getAllRoleOffs = async () => {
