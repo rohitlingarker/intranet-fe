@@ -695,8 +695,8 @@ const Header = ({ offer, verificationStatus, navigate }) => (
         <div className="text-right hidden sm:block">
           <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Status</p>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mt-0.5 ${verificationStatus === "Verified"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-amber-100 text-amber-700"
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-amber-100 text-amber-700"
             }`}>
             {verificationStatus || "Pending Verification"}
           </span>
