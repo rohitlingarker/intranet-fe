@@ -40,6 +40,57 @@ export default function HrProfileView() {
   const [loadedFromStorage, setLoadedFromStorage] = useState(false);
 
   const getDocKey = (d, i) => d.document_uuid || d.file_path || `${i}`;
+  const getDocType = (tab) => {
+    switch (tab) {
+      case "overview": return "personal";
+      case "identity documents": return "identity";
+      default: return tab;
+    }
+  };
+
+  const verifyDocumentAPI = async ({
+    document_uuid = null,
+    doc_type,
+    status,
+    remarks = ""
+  }) => {
+    try {
+      await axios.post(
+        `${BASE_URL}/hr/verify-document`,
+        {
+          user_uuid,
+          document_uuid,
+          doc_type,
+          status,
+          remarks
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      console.error("Verification failed:", error);
+      showStatusToast(error.response?.data?.message || "Verification failed", "error");
+      return false;
+    }
+  };
+
+  const handleApproveDocument = async (d, i) => {
+    const key = getDocKey(d, i);
+    const success = await verifyDocumentAPI({
+      document_uuid: d.document_uuid || d.experience_uuid || null,
+      doc_type: getDocType(activeTab),
+      status: "Verified"
+    });
+
+    if (success) {
+      setDocStatus(s => ({ ...s, [key]: true }));
+      showStatusToast("Document verified", "success");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -76,9 +127,7 @@ export default function HrProfileView() {
           setDocStatus(allDocs);
           setActiveTab("overview");
 
-
         } else {
-
           // Submitted → reset UI
           setSectionStatus({
             overview: false,
@@ -89,21 +138,6 @@ export default function HrProfileView() {
 
           setDocStatus({});
           setActiveTab("overview");
-          // // remove old verification progress if status is Submitted
-          // localStorage.removeItem(`hr_verify_${user_uuid}`);
-
-          const saved = localStorage.getItem(`hr_verify_${user_uuid}`);
-
-          // restore progress if HR already started verification
-          if (saved) {
-
-            const parsed = JSON.parse(saved);
-            setSectionStatus(parsed.sectionStatus || {});
-            setDocStatus(parsed.docStatus || {});
-            setActiveTab(parsed.activeTab || "overview");
-
-          }
-
         }
         /* restore saved verification */
 
@@ -120,16 +154,6 @@ export default function HrProfileView() {
 
   }, [user_uuid]);
 
-  /* save verification state */
-
-  useEffect(() => {
-    if (!loadedFromStorage) return;
-
-    const data = { sectionStatus, docStatus, activeTab };
-
-    localStorage.setItem(`hr_verify_${user_uuid}`, JSON.stringify(data));
-
-  }, [sectionStatus, docStatus, activeTab]);
 
 
   /* open document */
@@ -161,20 +185,30 @@ export default function HrProfileView() {
     }
 
   }
-  const handleRejectDocument = () => {
+  const handleRejectDocument = async () => {
 
     if (!rejectRemarks.trim()) {
       showStatusToast("Please enter rejection remarks", "error");
       return;
     }
 
-    setDocStatus(s => ({
-      ...s,
-      [rejectDocKey]: {
-        status: false,
-        remarks: rejectRemarks
-      }
-    }));
+    const success = await verifyDocumentAPI({
+      document_uuid: rejectDocKey,
+      doc_type: getDocType(activeTab),
+      status: "Rejected",
+      remarks: rejectRemarks
+    });
+
+    if (success) {
+      setDocStatus(s => ({
+        ...s,
+        [rejectDocKey]: {
+          status: false,
+          remarks: rejectRemarks
+        }
+      }));
+      showStatusToast("Document rejected", "success");
+    }
 
     setRejectModal(false);
     setRejectRemarks("");
@@ -184,7 +218,7 @@ export default function HrProfileView() {
 
   /* verify section */
 
-  const verifySection = () => {
+  const verifySection = async () => {
 
     const currentDocs =
       activeTab === "education"
@@ -214,8 +248,15 @@ export default function HrProfileView() {
       return;
     }
 
+    if (activeTab === "overview") {
+      const types = ["personal", "address", "bank", "pf"];
+      for (const type of types) {
+        await verifyDocumentAPI({ doc_type: type, status: "Verified" });
+      }
+    }
+
     setSectionStatus(s => ({ ...s, [activeTab]: true }));
-    showStatusToast("Section verified", "success");
+    showStatusToast(`${activeTab} section verified`, "success");
 
   };
 
@@ -248,8 +289,6 @@ export default function HrProfileView() {
         { user_uuid, status: "Verified" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      localStorage.removeItem(`hr_verify_${user_uuid}`);
 
       setVerificationStatus("Verified");
       setSectionStatus({
@@ -467,7 +506,7 @@ export default function HrProfileView() {
               <DocCard
                 documents={edu.documents}
                 docStatus={docStatus}
-                setDocStatus={setDocStatus}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
@@ -495,7 +534,7 @@ export default function HrProfileView() {
 
               <DocCard documents={exp.documents}
                 docStatus={docStatus}
-                setDocStatus={setDocStatus}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
@@ -516,7 +555,7 @@ export default function HrProfileView() {
 
               <DocCard documents={doc.documents}
                 docStatus={docStatus}
-                setDocStatus={setDocStatus}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
@@ -710,7 +749,7 @@ const DocCard = ({
   documents = [],
   onView,
   docStatus,
-  setDocStatus,
+  onApprove,
   setRejectDocKey,
   setRejectModal,
   verificationStatus,
@@ -778,7 +817,7 @@ const DocCard = ({
               ) : (
                 <>
                   <button
-                    onClick={() => setDocStatus(s => ({ ...s, [key]: true }))}
+                    onClick={() => onApprove(d, i)}
                     className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                     title="Approve"
                   >
@@ -901,7 +940,9 @@ const groupExperience = (l = []) =>
       documents: []
     };
 
-    a[k].documents.push(...(e.documents || []));
+    a[k].documents.push(
+      ...(e.documents || []).map((d) => ({ ...d, experience_uuid: e.experience_uuid }))
+    );
 
     return a;
 
