@@ -19,7 +19,7 @@ import RoleOffSidePanel from "./RoleOffSidePanel";
 import RoleOffSummaryCard from "./RoleOffSummaryCard";
 import CancelRoleOffModal from "./CancelRoleOffModal";
 import { createRoleOff, pmCancelRoleOff, rmApprove, rmReject, dlFulfill, dlReject, getPendingRoleOffs, getPendingRoleOffsForDM }
-  from "../../pages/resource_management/services/roleOffService";
+  from "../services/roleOffService";
 
 const mapStatus = (item) => {
   if (item.roleOffStatus === "PENDING") return "Pending Approval";
