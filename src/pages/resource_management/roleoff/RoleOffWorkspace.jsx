@@ -26,7 +26,8 @@ const mapStatus = (item) => {
   if (item.roleOffStatus === "APPROVED") return "Approved";
   if (item.roleOffStatus === "REJECTED") return "Rejected";
   if (item.roleOffStatus === "FULFILLED") return "Fulfilled";
-  return "Not Requested";
+  if (item.roleOffStatus === null) return "Not Requested";
+  return normalizeStatus(item.status);
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -172,46 +173,51 @@ const mapResourceToAllocation = (item, index) => {
   };
 };
 
-const mapPendingRoleOffToRequest = (item) => ({
-  id: item.roleOffId || item.id || item.allocationId,
-  roleOffId: item.roleOffId || item.id || item.allocationId,
-  allocationId: item.allocationId,
-  resourceId: item.resourceId,
-  deliveryRoleId: item.deliveryRoleId,
+const mapPendingRoleOffToRequest = (item) => {
+  const fallbackId = item.roleOffId || item.id || item.allocationId || `${item.resourceId}-${item.projectName}-${item.endDate}`;
+
+  return {
+    id: fallbackId,
+    roleOffId: item.roleOffId || null,
+    allocationId: item.allocationId || fallbackId,
+    resourceId: item.resourceId,
+    deliveryRoleId: item.deliveryRoleId || null,
+    deliveryRoleId: item.deliveryRoleId,
   resource:
-    item.name ||
-    item.resourceName ||
-    item.resource?.name ||
-    "-",
-  project:
-    item.projectName ||
-    item.project?.name ||
-    "-",
-  client:
-    item.clientName ||
-    item.project?.client?.name ||
-    "-",
-  department: item.department || "-",
-  role:
-    item.demandName ||
-    item.roleName ||
-    item.role?.name ||
-    "-",
-  skill:
-    [...(item.skills || []), ...(item.subSkills || [])]
-      .filter(Boolean)
-      .join(", ") || "-",
-  impact: normalizeImpact(item.impact),
-  impactSummary: `Pending role-off request for ${item.projectName || "the current project"} with ${Number(item.allocationPercentage || 0)}% allocation.`,
-  status: mapStatus(item),
-  allocationPercent: Number(item.allocationPercentage || 0),
-  effectiveDate: formatDisplayDate(item.effectiveDate),
-  effectiveDateIso: item.effectiveDate || "",
-  endDate: formatDisplayDate(item.endDate),
-  endDateIso: item.endDate || "",
-  replacementRequired: Boolean(item.demandName),
-  reason: item.roleOffReason || item.demandName || "",
-});
+      item.name ||
+      item.resourceName ||
+      item.resource?.name ||
+      "-",
+    project:
+      item.projectName ||
+      item.project?.name ||
+      "-",
+    client:
+      item.clientName ||
+      item.project?.client?.name ||
+      "-",
+    department: item.department || "-",
+    role:
+      item.demandName ||
+      item.roleName ||
+      item.role?.name ||
+      "-",
+    skill:
+      [...(item.skills || []), ...(item.subSkills || [])]
+        .filter(Boolean)
+        .join(", ") || "-",
+    impact: normalizeImpact(item.impact),
+    impactSummary: `Allocation on ${item.projectName || "the current project"} is at ${Number(item.allocationPercentage || 0)}% with ${normalizeImpact(item.impact).toLowerCase()} impact.`,
+    status: mapStatus(item),
+    allocationPercent: Number(item.allocationPercentage || 0),
+    effectiveDate: formatDisplayDate(item.effectiveDate || item.endDate),
+    effectiveDateIso: item.effectiveDate || item.endDate || "",
+    endDate: formatDisplayDate(item.endDate),
+    endDateIso: item.endDate || "",
+    replacementRequired: Boolean(item.demandName),
+    reason: item.roleOffReason || item.demandName || "",
+  };
+};
 
 const titleMap = {
   pm: {
@@ -344,6 +350,7 @@ const extractArrayPayload = (payload) => {
 const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
   const params = useParams();
   const projectId = projectIdProp || params.projectId;
+  const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState([]);
   const [roleOffRequests, setRoleOffRequests] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -377,6 +384,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       return;
     }
 
+      setLoading(true);
     try {
       const response = await getResources(projectId);
       if (!isActiveRef()) return;
@@ -391,6 +399,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 
       setAllocations([]);
       toast.error("Failed to load role-off resources");
+      } finally {
+        if (active) setLoading(false);
     }
   }, [mode, projectId]);
 
@@ -411,7 +421,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         setRoleOffRequests([]);
         return;
       }
-
+      setLoading(true);
       try {
         const response = mode === "dm"
           ? await getPendingRoleOffsForDM()
@@ -419,7 +429,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         if (!active) return;
 
         const data = extractArrayPayload(response);
-        setRoleOffRequests(data.map(mapPendingRoleOffToRequest));
+        const mappedRequests = data.map(mapPendingRoleOffToRequest);
+        setRoleOffRequests(mappedRequests);
       } catch (error) {
         if (!active) return;
 
@@ -429,6 +440,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
             ? "Failed to load DM role-off requests"
             : "Failed to load pending role-off requests",
         );
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
@@ -438,10 +451,6 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       active = false;
     };
   }, [mode]);
-
-  // useEffect(() => {
-  //   fetchRoleOffs();
-  // }, []);
 
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
@@ -716,11 +725,9 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
           : "Role-off request created"
       );
 
-      // await fetchRoleOffs(); // refresh
-
+      loadResources();
       setPanelState({ open: false, actionType: "create", record: null });
       return response;
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to create role-off");
@@ -1018,6 +1025,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
               <RoleOffTable
                 mode={mode}
                 pmTab={pmActiveTab}
+                loading={loading}
                 rows={visibleRows}
                 selectedRows={selectedRows}
                 activeRowId={panelState.record?.id}
@@ -1037,13 +1045,13 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         pmTab={pmActiveTab}
         record={panelState.record}
         actionType={panelState.actionType}
-      onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
-      onSubmit={handlePanelSubmit}
-      onRmApprove={handleRmApprove}
-      onRmReject={handleRmReject}
-      onApprove={handleApproveRequest}
-      onReject={handleRejectRequest}
-      />
+        onClose={() => setPanelState({ open: false, actionType: "view", record: null })}
+        onSubmit={handlePanelSubmit}
+        onRmApprove={handleRmApprove}
+        onRmReject={handleRmReject}
+        onApprove={handleApproveRequest}
+        onReject={handleRejectRequest}
+        />
 
       <CancelRoleOffModal
         open={cancelModalState.open}

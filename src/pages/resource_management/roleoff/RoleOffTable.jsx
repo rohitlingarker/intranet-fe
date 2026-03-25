@@ -3,9 +3,11 @@ import { Eye, ArrowRightCircle, Pencil, ShieldAlert, XCircle } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import LoadingSpinner from "../LoadingSpinner";
 
 const STATUS_STYLES = {
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Pending: "border-amber-200 bg-amber-50 text-amber-700",
   "Not Requested": "border-slate-200 bg-slate-100 text-slate-700",
   "Pending Approval": "border-amber-200 bg-amber-50 text-amber-700",
   Approved: "border-blue-200 bg-blue-50 text-blue-700",
@@ -57,6 +59,7 @@ const RoleOffTable = ({
   onToggleAll,
   onAction,
   onRowClick,
+  loading,
 }) => {
   const showPmCheckboxes = mode !== "pm" || pmTab === "active";
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
@@ -146,7 +149,18 @@ const RoleOffTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {rows.length === 0 ? (
+{loading ? (
+              <tr>
+                <td
+                  colSpan={mode === "pm" ? 8 : 7}
+                  className="px-6 py-12 text-center"
+                >
+                  <div className="flex justify-center items-center">
+                    <LoadingSpinner text="Loading Requests..." />
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={mode === "pm" ? (showPmCheckboxes ? 8 : 7) : 7}
@@ -155,11 +169,10 @@ const RoleOffTable = ({
                   No records match the current filters.
                 </td>
               </tr>
-            ) : null}
-
-            {rows.map((row) => {:
-              const isHigh = row.impact === "High";
-              const isSelected = selectedRows.includes(row.id);
+            ) : (
+              rows.map((row) => {
+                const isHigh = row.impact === "High";
+                const isSelected = selectedRows.includes(row.id);
               const pmAction = mode === "pm" ? getPmAction(row) : null;
               const PmActionIcon = pmAction?.icon;
 
@@ -243,32 +256,33 @@ const RoleOffTable = ({
                         </>
                       ) : null}
 
-                      {mode === "rm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("view", row)}
-                        >
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          View
-                        </Button>
-                      ) : null}
+                        {mode === "rm" ? (
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction("view", row)}
+                          >
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                            View
+                          </Button>
+                        ) : null}
 
-                      {mode === "dm" ? (
-                        <Button
-                          variant="outline"
-                          className="h-8 border-gray-300 bg-white px-3 text-xs"
-                          onClick={() => onAction("view", row)}
-                        >
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          View
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        {mode === "dm" ? (
+                          <Button
+                            variant="outline"
+                            className="h-8 border-gray-300 bg-white px-3 text-xs"
+                            onClick={() => onAction("view", row)}
+                          >
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                            View
+                          </Button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
