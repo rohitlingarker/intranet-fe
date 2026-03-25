@@ -58,7 +58,7 @@ const RoleOffTable = ({
   onAction,
   onRowClick,
 }) => {
-  const showPmCheckboxes = mode !== "pm" || pmTab === "active";
+  const showSelectionCheckboxes = mode !== "pm" || pmTab === "active";
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
   const anySelected = rows.some((row) => selectedRows.includes(row.id));
   const pmExtraColumn = getPmExtraColumnConfig(pmTab);
@@ -107,7 +107,7 @@ const RoleOffTable = ({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {mode === "pm" && showPmCheckboxes ? (
+              {showSelectionCheckboxes ? (
                 <th className="w-12 px-4 py-3 text-left">
                   <input
                     type="checkbox"
@@ -116,7 +116,7 @@ const RoleOffTable = ({
                       if (node) node.indeterminate = !allSelected && anySelected;
                     }}
                     onChange={(event) => onToggleAll(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-0 focus:ring-offset-0"
                   />
                 </th>
               ) : null}
@@ -149,7 +149,7 @@ const RoleOffTable = ({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={mode === "pm" ? (showPmCheckboxes ? 8 : 7) : 7}
+                  colSpan={mode === "pm" ? (showSelectionCheckboxes ? 8 : 7) : 8}
                   className="px-6 py-12 text-center text-sm text-gray-500"
                 >
                   No records match the current filters.
@@ -175,13 +175,13 @@ const RoleOffTable = ({
                     "hover:bg-slate-50",
                   )}
                 >
-                  {mode === "pm" && showPmCheckboxes ? (
+                  {showSelectionCheckboxes ? (
                     <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(event) => onToggleRow(row.id, event.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-0 focus:ring-offset-0"
                       />
                     </td>
                   ) : null}

@@ -44,6 +44,22 @@ const baseForm = {
 
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
 
+const getFieldClassName = (hasError) => cn(
+  "mt-2 w-full rounded-md border bg-white text-sm outline-none",
+  hasError
+    ? "border-rose-400 focus:border-rose-500"
+    : "border-gray-300 focus:border-blue-500",
+);
+
+const getBannerErrorMessage = (errors) => {
+  const messages = Object.values(errors);
+  if (messages.length <= 1) {
+    return messages[0] || "";
+  }
+
+  return "Enter all required fields.";
+};
+
 const RoleOffSidePanel = ({
   open,
   mode,
@@ -62,6 +78,7 @@ const RoleOffSidePanel = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reasons, setReasons] = useState([]);
   const [reviewState, setReviewState] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -95,21 +112,27 @@ const RoleOffSidePanel = ({
       setForm(baseForm);
       setReviewState(null);
       setError("");
+      setFieldErrors({});
       return;
     }
 
+    const isExistingRequest = actionType === "update" || actionType === "view";
     setForm({
-      type: record.type || "Planned",
-      effectiveDate: record.effectiveDateIso || "",
-      reason: record.reason || "",
-      replacementRequired: Boolean(record.replacementRequired),
+      type: isExistingRequest ? (record.type || "Planned") : "Planned",
+      effectiveDate: isExistingRequest ? (record.effectiveDateIso || "") : "",
+      reason: isExistingRequest ? (record.reason || "") : "",
+      replacementRequired:
+        isExistingRequest
+          ? Boolean(record.replacementRequired)
+          : false,
       acknowledgeRisk: false,
       reviewConfirmed: false,
-      decisionNotes: record.rejectionReason || "",
-      skipReason: record.skipReason || "",
+      decisionNotes: isExistingRequest ? (record.rejectionReason || "") : "",
+      skipReason: isExistingRequest ? (record.skipReason || "") : "",
     });
     setReviewState(null);
     setError("");
+    setFieldErrors({});
   }, [record, open]);
 
   if (!open || !record) return null;
@@ -117,6 +140,10 @@ const RoleOffSidePanel = ({
   const isPM = mode === "pm";
   const isRM = mode === "rm";
   const isDM = mode === "dm";
+  const isBulkRecord = Boolean(record.isBulk);
+  const isBulkPmCreate = isPM && actionType === "bulk-create";
+  const isBulkPmEdit = isPM && actionType === "update" && Boolean(record.isBulkCreated);
+  const isBulkPmFlow = isBulkPmCreate || isBulkPmEdit;
   const isReadOnlyPm = isPM && actionType === "view";
   const showRejectedDetails =
     isPM &&
@@ -131,36 +158,58 @@ const RoleOffSidePanel = ({
     ? actionType === "view"
       ? "View Role-Off"
       : actionType === "update"
-        ? "Update Role-Off"
-        : "Create Role-Off"
+        ? (isBulkPmEdit ? "Update Bulk Role-Off" : "Update Role-Off")
+        : isBulkPmCreate
+          ? "Create Bulk Role-Off"
+          : "Create Role-Off"
     : isRM
-      ? "Request Operations"
+      ? (isBulkRecord ? "Bulk Request Operations" : "Request Operations")
       : actionType === "reject"
         ? "Reject Request"
-        : "Approval Review";
+        : (isBulkRecord ? "Bulk Approval Review" : "Approval Review");
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const handleSubmit = async () => {
     if (isPM) {
-      if (!form.reason || !form.effectiveDate) {
-        setError("Reason and effective date are required.");
-        return;
+      const nextFieldErrors = {};
+
+      if (!form.effectiveDate) {
+        nextFieldErrors.effectiveDate = "Effective date is required.";
+      }
+      if (!form.reason) {
+        nextFieldErrors.reason = "Reason is required.";
       }
       if (
+        !isBulkPmFlow &&
         form.type === "Planned" &&
         !form.replacementRequired &&
         !form.skipReason?.trim()
       ) {
-        setError("Skip reason is required for planned role-off.");
-        return;
+        nextFieldErrors.skipReason = "Skip reason is required for planned role-off.";
       }
-      if (needsRiskAck && !form.acknowledgeRisk) {
-        setError("High impact requests require acknowledgement.");
-        return;
+      if (!isBulkPmFlow && needsRiskAck && !form.acknowledgeRisk) {
+        nextFieldErrors.acknowledgeRisk = "High impact requests require acknowledgement.";
       }
       if (reviewState?.requiresConfirmation && !form.reviewConfirmed) {
-        setError("Please review the role-off impact and confirm to proceed.");
+        nextFieldErrors.reviewConfirmed = "Please review the role-off impact and confirm to proceed.";
+      }
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setFieldErrors(nextFieldErrors);
+        setError(getBannerErrorMessage(nextFieldErrors));
         return;
       }
+
+      setFieldErrors({});
       setIsSubmitting(true);
       try {
         const response = await onSubmit?.(form);
@@ -181,9 +230,12 @@ const RoleOffSidePanel = ({
 
     if (isDM && actionType === "reject") {
       if (!form.decisionNotes.trim()) {
-        setError("Rejection reason is required.");
+        const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
+        setFieldErrors(nextFieldErrors);
+        setError(getBannerErrorMessage(nextFieldErrors));
         return;
       }
+      setFieldErrors({});
       setIsSubmitting(true);
       try {
         await onReject?.(record, form.decisionNotes.trim());
@@ -205,6 +257,7 @@ const RoleOffSidePanel = ({
 
   const handleRmApproveClick = async () => {
     setError("");
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       await onRmApprove?.(record);
@@ -215,11 +268,14 @@ const RoleOffSidePanel = ({
 
   const handleRmRejectClick = async () => {
     if (!form.decisionNotes.trim()) {
-      setError("Rejection reason is required.");
+      const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
+      setFieldErrors(nextFieldErrors);
+      setError(getBannerErrorMessage(nextFieldErrors));
       return;
     }
 
     setError("");
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       await onRmReject?.(record, form.decisionNotes.trim());
@@ -230,6 +286,7 @@ const RoleOffSidePanel = ({
 
   const handleDmApproveClick = async () => {
     setError("");
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       await onApprove?.(record, form.decisionNotes.trim());
@@ -240,11 +297,14 @@ const RoleOffSidePanel = ({
 
   const handleDmRejectClick = async () => {
     if (!form.decisionNotes.trim()) {
-      setError("Rejection reason is required.");
+      const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
+      setFieldErrors(nextFieldErrors);
+      setError(getBannerErrorMessage(nextFieldErrors));
       return;
     }
 
     setError("");
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       await onReject?.(record, form.decisionNotes.trim());
@@ -313,9 +373,25 @@ const RoleOffSidePanel = ({
                 <span className="text-gray-500">Client</span>
                 <span className="font-medium text-gray-800">{record.client}</span>
               </div>
-              <p className="rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-600">
-                {record.impactSummary}
-              </p>
+              {isBulkRecord ? (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-gray-500">Selected Resources</span>
+                    <span className="font-medium text-gray-800">{record.selectedCount || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Resource List</span>
+                    <p className="mt-2 rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-600">
+                      {(record.resourceNames || []).join(", ") || "-"}
+                    </p>
+                  </div>
+                </>
+              ) : null}
+              {record.impactSummary ? (
+                <p className="rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-600">
+                  {record.impactSummary}
+                </p>
+              ) : null}
               {showRejectedDetails ? (
                 <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
                   <p className="font-semibold">Rejected By</p>
@@ -339,10 +415,10 @@ const RoleOffSidePanel = ({
                     Role-Off Type
                   </label>
                   <select
-                    value={form.type}
-                    onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))}
-                    disabled={isReadOnlyPm || isSubmitting}
-                    className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    value={isBulkPmFlow ? "Planned" : form.type}
+                    onChange={(event) => updateField("type", event.target.value)}
+                    disabled={isReadOnlyPm || isSubmitting || isBulkPmFlow}
+                    className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                   >
                     <option value="Planned">Planned</option>
                     <option value="Emergency">Emergency</option>
@@ -358,10 +434,13 @@ const RoleOffSidePanel = ({
                     min={getTodayDate()}
                     max={record.endDateIso || undefined}
                     value={form.effectiveDate}
-                    onChange={(event) => setForm((prev) => ({ ...prev, effectiveDate: event.target.value }))}
+                    onChange={(event) => updateField("effectiveDate", event.target.value)}
                     disabled={isReadOnlyPm || isSubmitting}
-                    className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    className={cn(getFieldClassName(fieldErrors.effectiveDate), "h-10 px-3")}
                   />
+                  {fieldErrors.effectiveDate ? (
+                    <p className="mt-1 text-xs text-rose-600">{fieldErrors.effectiveDate}</p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -370,9 +449,9 @@ const RoleOffSidePanel = ({
                   </label>
                   <select
                     value={form.reason}
-                    onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
+                    onChange={(event) => updateField("reason", event.target.value)}
                     disabled={isReadOnlyPm || isSubmitting}
-                    className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    className={cn(getFieldClassName(fieldErrors.reason), "h-10 px-3")}
                   >
                     <option value="">Select reason</option>
                     {reasons.map((r, idx) => {
@@ -385,23 +464,37 @@ const RoleOffSidePanel = ({
                       );
                     })}
                   </select>
+                  {fieldErrors.reason ? (
+                    <p className="mt-1 text-xs text-rose-600">{fieldErrors.reason}</p>
+                  ) : null}
                 </div>
 
-                <label className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700">
-                  <span>Replacement required</span>
-                  <input
-                    type="checkbox"
-                    checked={form.replacementRequired}
-                    disabled={isReadOnlyPm || isSubmitting}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, replacementRequired: event.target.checked }))
-                    }
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </label>
+                {!isBulkPmFlow ? (
+                  <label className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700">
+                    <span>Replacement required</span>
+                    <input
+                      type="checkbox"
+                      checked={form.replacementRequired}
+                      disabled={isReadOnlyPm || isSubmitting}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        updateField("replacementRequired", checked);
+                        if (checked) {
+                          setFieldErrors((prev) => {
+                            if (!prev.skipReason) return prev;
+                            const next = { ...prev };
+                            delete next.skipReason;
+                            return next;
+                          });
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </label>
+                ) : null}
 
                 {/* 🔥 SHOW SKIP REASON WHEN REPLACEMENT IS NOT REQUIRED */}
-                {!form.replacementRequired && (
+                {!isBulkPmFlow && !form.replacementRequired && (
                   <div>
                     <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                       Skip Reason
@@ -409,19 +502,19 @@ const RoleOffSidePanel = ({
                     <textarea
                       value={form.skipReason || ""}
                       onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          skipReason: event.target.value,
-                        }))
+                        updateField("skipReason", event.target.value)
                       }
                       disabled={isReadOnlyPm || isSubmitting}
                       placeholder="Enter reason for not creating replacement"
-                      className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      className={cn(getFieldClassName(fieldErrors.skipReason), "px-3 py-2")}
                     />
+                    {fieldErrors.skipReason ? (
+                      <p className="mt-1 text-xs text-rose-600">{fieldErrors.skipReason}</p>
+                    ) : null}
                   </div>
                 )}
 
-                {needsRiskAck ? (
+                {!isBulkPmFlow && needsRiskAck ? (
                   <label className="flex gap-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-900">
                     <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-700" />
                     <span className="flex-1">
@@ -434,10 +527,7 @@ const RoleOffSidePanel = ({
                           checked={form.acknowledgeRisk}
                           disabled={isReadOnlyPm || isSubmitting}
                           onChange={(event) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              acknowledgeRisk: event.target.checked,
-                            }))
+                            updateField("acknowledgeRisk", event.target.checked)
                           }
                           className="h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
                         />
@@ -445,6 +535,9 @@ const RoleOffSidePanel = ({
                       </span>
                     </span>
                   </label>
+                ) : null}
+                {fieldErrors.acknowledgeRisk ? (
+                  <p className="-mt-2 text-xs text-rose-600">{fieldErrors.acknowledgeRisk}</p>
                 ) : null}
 
                 {reviewState?.requiresConfirmation ? (
@@ -454,16 +547,16 @@ const RoleOffSidePanel = ({
                         type="checkbox"
                         checked={form.reviewConfirmed}
                         onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            reviewConfirmed: event.target.checked,
-                          }))
+                          updateField("reviewConfirmed", event.target.checked)
                         }
                         className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
                       />
                       <span>Please review the role-off impact and confirm to proceed</span>
                     </label>
                   </section>
+                ) : null}
+                {fieldErrors.reviewConfirmed ? (
+                  <p className="-mt-2 text-xs text-rose-600">{fieldErrors.reviewConfirmed}</p>
                 ) : null}
               </section>
             </>
@@ -505,11 +598,14 @@ const RoleOffSidePanel = ({
                   rows={4}
                   value={form.decisionNotes}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, decisionNotes: event.target.value }))
+                    updateField("decisionNotes", event.target.value)
                   }
-                  className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  className={cn(getFieldClassName(fieldErrors.decisionNotes), "px-3 py-2")}
                   placeholder="Enter rejection reason if you want to reject this request"
                 />
+                {fieldErrors.decisionNotes ? (
+                  <p className="mt-1 text-xs text-rose-600">{fieldErrors.decisionNotes}</p>
+                ) : null}
               </div>
             </section>
           ) : null}
@@ -532,11 +628,14 @@ const RoleOffSidePanel = ({
                   rows={5}
                   value={form.decisionNotes}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, decisionNotes: event.target.value }))
+                    updateField("decisionNotes", event.target.value)
                   }
-                  className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  className={cn(getFieldClassName(fieldErrors.decisionNotes), "px-3 py-2")}
                   placeholder="Enter rejection reason if you want to reject this request"
                 />
+                {fieldErrors.decisionNotes ? (
+                  <p className="mt-1 text-xs text-rose-600">{fieldErrors.decisionNotes}</p>
+                ) : null}
               </div>
             </section>
           ) : null}
@@ -563,8 +662,20 @@ const RoleOffSidePanel = ({
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                 )}
                 {isSubmitting
-                  ? (actionType === "update" ? "Updating..." : "Creating...")
-                  : (actionType === "update" ? "Update Request" : "Create Request")}
+                  ? (
+                    actionType === "bulk-create"
+                      ? "Creating Bulk Role-Off..."
+                      : actionType === "update"
+                        ? "Updating..."
+                        : "Creating..."
+                  )
+                  : (
+                    actionType === "bulk-create"
+                      ? "Create Bulk Role-Off"
+                      : actionType === "update"
+                        ? "Update Request"
+                        : "Create Request"
+                  )}
               </Button>
             ) : null}
             {isRM ? (

@@ -36,6 +36,21 @@ export const createRoleOff = async (payload) => {
   }
 };
 
+export const bulkPlannedRoleOff = async (payload) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/bulk-planned`,
+      payload,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const pmCancelRoleOff = async (id) => {
   try {
     const response = await axios.post(
@@ -100,6 +115,37 @@ export const rmReject = async (id, rejectionReason) => {
   }
 };
 
+export const bulkRmApprove = async (ids) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/bulk-rm-approve`,
+      ids,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const bulkRmReject = async (ids, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/bulk-rm-reject`,
+      ids,
+      {
+        params: { rejectionReason },
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 // ✅ DL ACTION (FULFILL / REJECT)
 export const dlFulfill = async (id) => {
@@ -122,6 +168,37 @@ export const dlReject = async (id, rejectionReason) => {
     const response = await axios.post(
       `${BASE_URL}/api/role-off/${id}/dl-reject`,
       null,
+      {
+        params: { rejectionReason },
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const bulkDlFulfill = async (ids) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/bulk-dl-fulfill`,
+      ids,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const bulkDlReject = async (ids, rejectionReason) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/role-off/bulk-dl-reject`,
+      ids,
       {
         params: { rejectionReason },
         headers: getAuthHeaders(),
