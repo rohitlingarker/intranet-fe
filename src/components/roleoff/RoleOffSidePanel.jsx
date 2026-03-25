@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRoleOffReasons } from "@/pages/resource_management/services/roleOffService";
+import { toast } from "react-toastify";
 
 const formatReason = (str) => {
   if (typeof str !== 'string') return str;
@@ -157,6 +158,7 @@ const RoleOffSidePanel = ({
       } catch (error) {
         console.error("Error submitting role-off:", error);
         setError("Failed to submit role-off request.");
+        toast.error(error.message || "Failed to submit role-off request.");
       } finally {
         setIsSubmitting(false);
       }
