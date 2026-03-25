@@ -8,7 +8,7 @@ import {
   Users,
   UserRoundMinus,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { getResources } from "@/pages/resource_management/services/roleOffService";
 import KPISection from "./KPISection";
@@ -349,6 +349,7 @@ const extractArrayPayload = (payload) => {
 
 const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, projectName = "" }) => {
   const params = useParams();
+  const navigate = useNavigate();
   const projectId = projectIdProp || params.projectId;
   const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState([]);
@@ -831,25 +832,38 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 
   return (
     <div className={embedded ? "bg-gray-50 p-0" : "min-h-screen bg-gray-50 p-6"}>
-      {!embedded ? (
-        mode !== "pm" ? (
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[#081534]">{pageCopy.title}</h1>
-            <p className="mt-1 text-sm text-gray-500">{pageCopy.subtitle}</p>
-          </div>
-        ) : null
-      ) : (
-        mode !== "pm" ? (
-          <div className="mb-6 rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm">
-            <h2 className="text-xl font-bold text-[#081534]">{pageCopy.title}</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {projectName
-                ? `${pageCopy.subtitle} Current project: ${projectName}.`
-                : pageCopy.subtitle}
-            </p>
-          </div>
-        ) : null
-      )}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex-1">
+          {!embedded ? (
+            mode !== "pm" ? (
+              <div>
+                <h1 className="text-2xl font-bold text-[#081534]">{pageCopy.title}</h1>
+                <p className="mt-1 text-sm text-gray-500">{pageCopy.subtitle}</p>
+              </div>
+            ) : null
+          ) : (
+            mode !== "pm" ? (
+              <div className="rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm">
+                <h2 className="text-xl font-bold text-[#081534]">{pageCopy.title}</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {projectName
+                    ? `${pageCopy.subtitle} Current project: ${projectName}.`
+                    : pageCopy.subtitle}
+                </p>
+              </div>
+            ) : null
+          )}
+        </div>
+        <div className="ml-4 shrink-0">
+          <button
+            onClick={() => navigate('/resource-management/roleoff/report')}
+            className="inline-flex items-center gap-2 rounded-md bg-[#081534] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#10214f]"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            Roleoff Report
+          </button>
+        </div>
+      </div>
 
       <div className="space-y-6">
         {mode === "pm" ? (
