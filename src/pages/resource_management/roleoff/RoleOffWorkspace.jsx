@@ -183,7 +183,7 @@ const mapPendingRoleOffToRequest = (item) => {
     resourceId: item.resourceId,
     deliveryRoleId: item.deliveryRoleId || null,
     deliveryRoleId: item.deliveryRoleId,
-  resource:
+    resource:
       item.name ||
       item.resourceName ||
       item.resource?.name ||
@@ -354,7 +354,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
   const [allocations, setAllocations] = useState([]);
   const [roleOffRequests, setRoleOffRequests] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
+  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(true);
   const [filters, setFilters] = useState({
     search: "",
     status: "",
@@ -384,7 +384,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       return;
     }
 
-      setLoading(true);
+    setLoading(true);
     try {
       const response = await getResources(projectId);
       if (!isActiveRef()) return;
@@ -399,8 +399,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 
       setAllocations([]);
       toast.error("Failed to load role-off resources");
-      } finally {
-        if (active) setLoading(false);
+    } finally {
+      if (isActiveRef()) setLoading(false);
     }
   }, [mode, projectId]);
 
@@ -413,44 +413,44 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     };
   }, [loadPmResources]);
 
+  const loadPendingRoleOffRequests = useCallback(async (isActiveRef = () => true) => {
+    if (mode !== "rm" && mode !== "dm") {
+      setRoleOffRequests([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = mode === "dm"
+        ? await getPendingRoleOffsForDM()
+        : await getPendingRoleOffs();
+      if (!isActiveRef()) return;
+
+      const data = extractArrayPayload(response);
+      const mappedRequests = data.map(mapPendingRoleOffToRequest);
+      setRoleOffRequests(mappedRequests);
+    } catch (error) {
+      if (!isActiveRef()) return;
+
+      setRoleOffRequests([]);
+      toast.error(
+        mode === "dm"
+          ? "Failed to load DM role-off requests"
+          : "Failed to load pending role-off requests",
+      );
+    } finally {
+      if (isActiveRef()) setLoading(false);
+    }
+  }, [mode]);
+
   useEffect(() => {
     let active = true;
 
-    const loadPendingRoleOffRequests = async () => {
-      if (mode !== "rm" && mode !== "dm") {
-        setRoleOffRequests([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const response = mode === "dm"
-          ? await getPendingRoleOffsForDM()
-          : await getPendingRoleOffs();
-        if (!active) return;
-
-        const data = extractArrayPayload(response);
-        const mappedRequests = data.map(mapPendingRoleOffToRequest);
-        setRoleOffRequests(mappedRequests);
-      } catch (error) {
-        if (!active) return;
-
-        setRoleOffRequests([]);
-        toast.error(
-          mode === "dm"
-            ? "Failed to load DM role-off requests"
-            : "Failed to load pending role-off requests",
-        );
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    loadPendingRoleOffRequests();
+    loadPendingRoleOffRequests(() => active);
 
     return () => {
       active = false;
     };
-  }, [mode]);
+  }, [loadPendingRoleOffRequests]);
 
   const pageCopy = titleMap[mode];
   const scopedAllocations = useMemo(() => {
@@ -505,18 +505,18 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     const baseRows =
       mode === "pm"
         ? scopedAllocations.filter((item) => {
-            if (item.status !== "Active") return false;
+          if (item.status !== "Active") return false;
 
-            if (pmActiveTab === "fulfilled") {
-              return item.roleOffStatus === "Fulfilled";
-            }
+          if (pmActiveTab === "fulfilled") {
+            return item.roleOffStatus === "Fulfilled";
+          }
 
-            if (pmActiveTab === "process") {
-              return item.roleOffStatus !== "Not Requested" && item.roleOffStatus !== "Fulfilled";
-            }
+          if (pmActiveTab === "process") {
+            return item.roleOffStatus !== "Not Requested" && item.roleOffStatus !== "Fulfilled";
+          }
 
-            return item.roleOffStatus === "Not Requested" || item.roleOffStatus === "Rejected";
-          })
+          return item.roleOffStatus === "Not Requested" || item.roleOffStatus === "Rejected";
+        })
         : mode === "rm"
           ? scopedRoleOffRequests
           : scopedRoleOffRequests;
@@ -580,7 +580,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       );
       setPanelState({ open: false, actionType: "view", record: null });
       toast.success("Approved by RM");
-      // await fetchRoleOffs();
+      loadPendingRoleOffRequests();
     } catch (err) {
       console.error(err);
       toast.error("RM approval failed");
@@ -589,20 +589,20 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 
   const handleRmReject = async (request, rejectionReason) => {
     try {
-      await rmReject(request.id, rejectionReason);
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === request.id
-            ? { ...item, status: "Rejected", rejectionReason }
-            : item,
-        ),
-      );
+      const res = await rmReject(request.id, rejectionReason);
+      // setRoleOffRequests((prev) =>
+      //   prev.map((item) =>
+      //     item.id === request.id
+      //       ? { ...item, status: "Rejected", rejectionReason }
+      //       : item,
+      //   ),
+      // );
       setPanelState({ open: false, actionType: "view", record: null });
-      toast.error("Rejected by RM");
-      // await fetchRoleOffs();
+      toast.success(res.message || "Request Rejected");
+      loadPendingRoleOffRequests();
     } catch (err) {
       console.error(err);
-      toast.error("RM rejection failed");
+      toast.error(err.response?.data?.message || "Request Rejection Failed");
     }
   };
 
@@ -649,12 +649,12 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 RM REJECT
     if (mode === "rm" && action === "reject") {
       try {
-        await rmReject(row.id, "Rejected by RM");
-        toast.error("Rejected by RM");
-        // await fetchRoleOffs();
+        const res = await rmReject(row.id, "Rejected by RM");
+        toast.success(res?.message || "Rejected by RM");
+        loadPendingRoleOffRequests();
       } catch (err) {
         console.error(err);
-        toast.error("RM rejection failed");
+        toast.error(err.response?.data?.message || "RM rejection failed");
       }
       return;
     }
@@ -662,12 +662,12 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 DM APPROVE (FULFILL)
     if (mode === "dm" && action === "approve") {
       try {
-        await dlFulfill(row.id);
-        toast.success("DL Approved");
-        // await fetchRoleOffs();
+        const res = await dlFulfill(row.id);
+        toast.success(res?.message || "DL Approved");
+        loadPendingRoleOffRequests();
       } catch (err) {
         console.error(err);
-        toast.error("DL approval failed");
+        toast.error(err.response?.data?.message || "DL approval failed");
       }
       return;
     }
@@ -675,12 +675,12 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
     // 🔥 DM REJECT
     if (mode === "dm" && action === "reject") {
       try {
-        await dlReject(row.id, "Rejected by DL");
-        toast.error("DL Rejected");
-        // await fetchRoleOffs();
+        const res = await dlReject(row.id, "Rejected by DL");
+        toast.success(res?.message || "DL Rejected");
+        loadPendingRoleOffRequests();
       } catch (err) {
         console.error(err);
-        toast.error("DL rejection failed");
+        toast.error(err.response?.data?.message || "DL rejection failed");
       }
       return;
     }
@@ -718,15 +718,13 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       if (response?.requiresConfirmation && !formState.reviewConfirmed) {
         return response;
       }
-      await loadPmResources();
       toast.success(
         panelState.actionType === "update"
           ? "Role-off request updated"
           : "Role-off request created"
       );
-
-      loadResources();
       setPanelState({ open: false, actionType: "create", record: null });
+      loadPmResources();
       return response;
     } catch (err) {
       console.error(err);
@@ -809,37 +807,25 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 
   const handleApproveRequest = async (request) => {
     try {
-      await dlFulfill(request.id);
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === request.id
-            ? { ...item, status: "Approved" }
-            : item,
-        ),
-      );
+      const res = await dlFulfill(request.id);
       setPanelState({ open: false, actionType: "view", record: null });
-      toast.success(`${request.resource} role-off approved`);
+      toast.success(res?.message || `${request.resource} role-off approved`);
+      loadPendingRoleOffRequests();
     } catch (err) {
       console.error(err);
-      toast.error("DL approval failed");
+      toast.error(err.response?.data?.message || "DL approval failed");
     }
   };
 
   const handleRejectRequest = async (request, reason) => {
     try {
-      await dlReject(request.id, reason);
-      setRoleOffRequests((prev) =>
-        prev.map((item) =>
-          item.id === request.id
-            ? { ...item, status: "Rejected", rejectionReason: reason }
-            : item,
-        ),
-      );
+      const res = await dlReject(request.id, reason);
       setPanelState({ open: false, actionType: "view", record: null });
-      toast.error(`${request.resource} role-off rejected`);
+      toast.success(res?.message || `${request.resource} role-off rejected`);
+      loadPendingRoleOffRequests();
     } catch (err) {
       console.error(err);
-      toast.error("DL rejection failed");
+      toast.error(err.response?.data?.message || "DL rejection failed");
     }
   };
 
@@ -896,27 +882,26 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
                 <div className="flex flex-1 justify-end">
                   <div className="flex w-full max-w-md items-center gap-1">
                     <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={filters.search}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, search: event.target.value }))
-                      }
-                      placeholder={mode === "pm" ? "Search resource, client or role" : "Search resource, project, client or role"}
-                      className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-3 text-sm outline-none transition-colors focus:border-blue-500"
-                    />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={filters.search}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, search: event.target.value }))
+                        }
+                        placeholder={mode === "pm" ? "Search resource, client or role" : "Search resource, project, client or role"}
+                        className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-3 text-sm outline-none transition-colors focus:border-blue-500"
+                      />
                     </div>
                     {mode !== "pm" ? (
                       <div className="relative shrink-0">
                         <button
                           type="button"
                           onClick={() => setFilterPanelCollapsed((prev) => !prev)}
-                          className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
-                            filterPanelCollapsed
-                              ? "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-[#081534]"
-                              : "border-[#081534] bg-[#081534] text-white hover:bg-[#10214f]"
-                          }`}
+                          className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${filterPanelCollapsed
+                            ? "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-[#081534]"
+                            : "border-[#081534] bg-[#081534] text-white hover:bg-[#10214f]"
+                            }`}
                         >
                           <Filter className="h-4 w-4" />
                           Filters
@@ -979,42 +964,38 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
               {mode === "pm" ? (
                 <div className="mt-2 pt-1">
                   <div className="flex items-end gap-8 overflow-x-auto px-1">
-                  {PM_QUEUE_TABS.map((tab) => {
-                    const isActive = pmActiveTab === tab.id;
-                    const count = pmTabCounts[tab.id] || 0;
+                    {PM_QUEUE_TABS.map((tab) => {
+                      const isActive = pmActiveTab === tab.id;
+                      const count = pmTabCounts[tab.id] || 0;
 
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => {
-                          setPmActiveTab(tab.id);
-                          setSelectedRows([]);
-                        }}
-                        className={`group relative inline-flex items-center gap-2 whitespace-nowrap px-1 pb-3 pt-2 text-left transition-colors ${
-                          isActive
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => {
+                            setPmActiveTab(tab.id);
+                            setSelectedRows([]);
+                          }}
+                          className={`group relative inline-flex items-center gap-2 whitespace-nowrap px-1 pb-3 pt-2 text-left transition-colors ${isActive
                             ? "text-[#263383]"
                             : "text-gray-600 hover:text-[#263383]"
-                        }`}
-                      >
-                        <span className={`text-[15px] font-semibold leading-tight ${
-                          isActive ? "text-[#263383]" : "text-gray-700"
-                        }`}>
-                          {tab.label}
-                        </span>
-                        <span className={`text-xs font-medium ${
-                          isActive ? "text-[#263383]" : "text-gray-400 group-hover:text-[#263383]"
-                        }`}>
-                          {count}
-                        </span>
-                        <span
-                          className={`absolute bottom-0 left-0 h-0.5 rounded-full bg-blue-600 transition-all ${
-                            isActive ? "w-full opacity-100" : "w-0 opacity-0"
-                          }`}
-                        />
-                      </button>
-                    );
-                  })}
+                            }`}
+                        >
+                          <span className={`text-[15px] font-semibold leading-tight ${isActive ? "text-[#263383]" : "text-gray-700"
+                            }`}>
+                            {tab.label}
+                          </span>
+                          <span className={`text-xs font-medium ${isActive ? "text-[#263383]" : "text-gray-400 group-hover:text-[#263383]"
+                            }`}>
+                            {count}
+                          </span>
+                          <span
+                            className={`absolute bottom-0 left-0 h-0.5 rounded-full bg-blue-600 transition-all ${isActive ? "w-full opacity-100" : "w-0 opacity-0"
+                              }`}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -1051,7 +1032,7 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
         onRmReject={handleRmReject}
         onApprove={handleApproveRequest}
         onReject={handleRejectRequest}
-        />
+      />
 
       <CancelRoleOffModal
         open={cancelModalState.open}
@@ -1068,5 +1049,3 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
 };
 
 export default RoleOffWorkspace;
-
-
