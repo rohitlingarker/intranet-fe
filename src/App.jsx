@@ -36,6 +36,7 @@ import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDet
 import PMRoleOffPage from "./pages/resource_management/pages/roleoff/pm.js";
 import RMRoleOffPage from "./pages/resource_management/pages/roleoff/rm.js";
 import DMRoleOffPage from "./pages/resource_management/pages/roleoff/dm.js";
+import RoleOffDashboard from "./pages/resource_management/pages/roleoff/RoleOffDashboard.jsx";
 
 // Timesheets
 
@@ -852,6 +853,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["DELIVERY-MANAGER"]}>
                 <DMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/report"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffDashboard />
               </ProtectedRoute>
             }
           />
