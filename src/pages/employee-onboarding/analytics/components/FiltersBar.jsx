@@ -1,18 +1,39 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function FiltersBar() {
+ export default function FiltersBar({
+  department,
+  setDepartment,
+  status,
+  setStatus,
+  locations,
+  setLocations,
+  locationOptions = [],
+  departments = []
+}){
   const filtersConfig = [
-    { key: "business", label: "Business Unit", options: ["All", "BU1", "BU2"] },
-    { key: "dept", label: "Department", options: ["All", "HR", "IT", "Finance"] },
-    { key: "location", label: "Location", options: ["All", "Hyderabad", "Chennai"] },
-    { key: "cost", label: "Cost Center", options: ["All", "CC101", "CC102"] },
-    { key: "legal", label: "Legal Entity", options: ["All", "India Pvt Ltd"] },
-    { key: "date", label: "Date Range", options: ["Today", "This Month", "This Year"] },
-    { key: "worker", label: "Worker Type", options: ["All", "Permanent", "Contract", "Intern"] },
-  ];
+  {
+    key: "dept",
+    label: "Department",
+    options: ["All", ...(departments || [])],
+  },
+   {
+      key: "location",
+      label: "All Locations",
+      options: ["All", ...(locationOptions || [])],
+    },
+  {
+    key: "date",
+    label: "Date Range",
+    options: ["Today", "This Month", "This Year"],
+  },
+  {
+    key: "worker",
+    label: "Worker Type",
+    options: ["All", "Permanent", "Contract"],
+  },
+];
 
   const [openKey, setOpenKey] = useState(null);
-  const [selected, setSelected] = useState({});
   const containerRef = useRef();
 
   // Close dropdown when clicking outside
@@ -30,11 +51,28 @@ export default function FiltersBar() {
     setOpenKey(openKey === key ? null : key);
   };
 
-  const selectOption = (key, value) => {
-    setSelected((prev) => ({ ...prev, [key]: value }));
+  const handleLocationSelect = (loc) => {
+    if (loc === "All") {
+      setLocations([]);
+      return;
+    }
+
+    if (locations.includes(loc)) {
+      setLocations(locations.filter((l) => l !== loc));
+    } else {
+      setLocations([...locations, loc]);
+    }
+  };
+  // 🔹 Single select for department & status
+  const handleSingleSelect = (key, value) => {
+    if (key === "department") {
+      setDepartment(value === "All" ? "" : value);
+    } else if (key === "status") {
+      setStatus(value === "All" ? "" : value);
+    }
+
     setOpenKey(null);
   };
-
   return (
     <div
       ref={containerRef}

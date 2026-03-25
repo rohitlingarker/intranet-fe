@@ -1,10 +1,9 @@
 export default function FiltersBar({
   department,
   setDepartment,
-  status,
-  setStatus,
-  location,
-  setLocation,
+  locations,
+  setLocations,
+  locationOptions,
 }) {
   return (
     <div style={{ display: "flex", gap: 12 }}>
@@ -19,25 +18,19 @@ export default function FiltersBar({
         <option>Human Resources</option>
       </select>
 
-      {/* Employment Status */}
-      <select
-        value={status}
-        onChange={(e) => setStatus(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="">All Status</option>
-        <option>Working</option>
-        <option>Probation</option>
-      </select>
 
       {/* Location */}
       <select
         value={location}
-        onChange={(e) => setLocation(e.target.value)}
+        onChange={
+          (e) => setLocations([e.target.value])
+        }  
         style={selectStyle}
       >
         <option value="">All Locations</option>
-        <option>Hyderabad Office</option>
+        {locationOptions.map((loc) => (
+          <option key={loc}>{loc}</option>
+        ))}
       </select>
     </div>
   );
