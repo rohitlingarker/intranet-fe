@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
-
 const STATUS_STYLES = {
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
   Pending: "border-amber-200 bg-amber-50 text-amber-700",
@@ -150,10 +149,10 @@ const RoleOffTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-{loading ? (
+            {loading ? (
               <tr>
                 <td
-                  colSpan={mode === "pm" ? 8 : 7}
+                  colSpan={mode === "pm" ? (showPmCheckboxes ? 8 : 7) : 7}
                   className="px-6 py-12 text-center"
                 >
                   <div className="flex justify-center items-center">
@@ -174,88 +173,88 @@ const RoleOffTable = ({
               rows.map((row) => {
                 const isHigh = row.impact === "High";
                 const isSelected = selectedRows.includes(row.id);
-              const pmAction = mode === "pm" ? getPmAction(row) : null;
-              const PmActionIcon = pmAction?.icon;
+                const pmAction = mode === "pm" ? getPmAction(row) : null;
+                const PmActionIcon = pmAction?.icon;
 
-              return (
-                <tr
-                  key={row.id}
-                  onClick={() => onRowClick?.(row)}
-                  className={cn(
-                    "align-top cursor-pointer transition-colors",
-                    isHigh && "bg-rose-50/40",
-                    isSelected && "bg-blue-50/40",
-                    activeRowId === row.id && "bg-slate-100",
-                    "hover:bg-slate-50",
-                  )}
-                >
-                  {mode === "pm" && showPmCheckboxes ? (
-                    <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(event) => onToggleRow(row.id, event.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                  ) : null}
-                  <td className="px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      {isHigh ? (
-                        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-                      ) : null}
-                      <div>
-                        <p className="font-semibold text-[#081534]">{row.resource}</p>
-                        <p className="text-xs text-gray-500">{row.department}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="font-medium text-gray-800">{row.role}</p>
-                    {!(mode === "pm" && pmTab === "active") ? (
-                      <p className="text-xs text-gray-500">{row.skill}</p>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-4">{renderBadge(row.impact, IMPACT_STYLES)}</td>
-                  <td className="px-4 py-4">
-                    {mode === "pm" ? (
-                      <p className="font-medium text-gray-800">{row.allocationPercent}%</p>
-                    ) : (
-                      renderBadge(row.status, STATUS_STYLES)
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => onRowClick?.(row)}
+                    className={cn(
+                      "align-top cursor-pointer transition-colors",
+                      isHigh && "bg-rose-50/40",
+                      isSelected && "bg-blue-50/40",
+                      activeRowId === row.id && "bg-slate-100",
+                      "hover:bg-slate-50",
                     )}
-                  </td>
-                  <td className="px-4 py-4 text-gray-700">
-                    {mode === "pm" ? row.endDate : row.effectiveDate}
-                  </td>
-                  {mode === "pm" ? (
+                  >
+                    {mode === "pm" && showPmCheckboxes ? (
+                      <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(event) => onToggleRow(row.id, event.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                    ) : null}
                     <td className="px-4 py-4">
-                      {pmExtraColumn.renderCell(row)}
+                      <div className="flex items-start gap-3">
+                        {isHigh ? (
+                          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                        ) : null}
+                        <div>
+                          <p className="font-semibold text-[#081534]">{row.resource}</p>
+                          <p className="text-xs text-gray-500">{row.department}</p>
+                        </div>
+                      </div>
                     </td>
-                  ) : null}
-                  <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
-                    <div className="flex justify-center gap-2">
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-gray-800">{row.role}</p>
+                      {!(mode === "pm" && pmTab === "active") ? (
+                        <p className="text-xs text-gray-500">{row.skill}</p>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-4">{renderBadge(row.impact, IMPACT_STYLES)}</td>
+                    <td className="px-4 py-4">
                       {mode === "pm" ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="h-8 border-gray-300 bg-white px-3 text-xs"
-                            onClick={() => onAction(pmAction.key, row)}
-                          >
-                            {PmActionIcon ? <PmActionIcon className="mr-1 h-3.5 w-3.5" /> : null}
-                            {pmAction.label}
-                          </Button>
-                          {canPmCancel(row) ? (
+                        <p className="font-medium text-gray-800">{row.allocationPercent}%</p>
+                      ) : (
+                        renderBadge(row.status, STATUS_STYLES)
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-gray-700">
+                      {mode === "pm" ? row.endDate : row.effectiveDate}
+                    </td>
+                    {mode === "pm" ? (
+                      <td className="px-4 py-4">
+                        {pmExtraColumn.renderCell(row)}
+                      </td>
+                    ) : null}
+                    <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
+                      <div className="flex justify-center gap-2">
+                        {mode === "pm" ? (
+                          <>
                             <Button
                               variant="outline"
-                              className="h-8 border-rose-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                              onClick={() => onAction("cancel", row)}
+                              className="h-8 border-gray-300 bg-white px-3 text-xs"
+                              onClick={() => onAction(pmAction.key, row)}
                             >
-                              <XCircle className="mr-1 h-3.5 w-3.5" />
-                              Cancel
+                              {PmActionIcon ? <PmActionIcon className="mr-1 h-3.5 w-3.5" /> : null}
+                              {pmAction.label}
                             </Button>
-                          ) : null}
-                        </>
-                      ) : null}
+                            {canPmCancel(row) ? (
+                              <Button
+                                variant="outline"
+                                className="h-8 border-rose-300 bg-white px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                                onClick={() => onAction("cancel", row)}
+                              >
+                                <XCircle className="mr-1 h-3.5 w-3.5" />
+                                Cancel
+                              </Button>
+                            ) : null}
+                          </>
+                        ) : null}
 
                         {mode === "rm" ? (
                           <Button
