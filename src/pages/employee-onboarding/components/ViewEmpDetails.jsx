@@ -79,6 +79,8 @@ const selectedApproverName =
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/offer/${user_uuid}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+ 
       setEmployee(res.data);
   
       setEditData({
@@ -553,7 +555,10 @@ className="border p-2 rounded"
 
         {/* --- DETAILS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DetailCard icon={<Mail />} label="Email" value={employee.mail} />
+          <DetailCard 
+          icon={<Mail />} 
+          label="Email" 
+          value={employee.mail} />
           <DetailCard
             icon={<Phone />}
             label="Contact"
@@ -566,8 +571,8 @@ className="border p-2 rounded"
           />
           <DetailCard
             icon={<Wallet />}
-            label="CTC"
-            value={`${employee.package} ${employee.currency}`}
+            label="Annual CTC"
+            value={employee.total_ctc ? `₹ ${employee.total_ctc}` : "—"}
           />
           <DetailCard
             icon={<UserCheck />}
@@ -578,12 +583,10 @@ className="border p-2 rounded"
           icon={<Mail />}
           label="CC Emails"
           value={
-            employee?.cc_emails
-              ? employee.cc_emails
-                  .split(",")
-                  .map(e => e.trim())
-                  .filter(Boolean)
-                  .join(", ")
+            employee?.cc_mails && employee.cc_mails.length>0
+              ? employee.cc_mails.join(", ")
+                 
+             
               : "—"
           }
           />

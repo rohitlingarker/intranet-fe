@@ -29,7 +29,7 @@ export default function EmployeeRow({ emp , index}) {
 
       <td>{emp.username}</td>
       <td>
-        <div className="font-semibold">{emp.department}</div>
+        <div className="font-semibold">{emp.department || ""}</div>
         <div className="text-gray-500 text-sm">{emp.location}</div>
       </td>
       <td>
