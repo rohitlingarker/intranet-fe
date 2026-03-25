@@ -148,6 +148,7 @@ export default function CreateOffer() {
       })),
       total_ctc: Number(totalCTC),
     };
+     
 
     const toastId = toast.loading("Creating offer...");
 
@@ -338,7 +339,7 @@ export default function CreateOffer() {
   {/* Salary Breakdown Table */}
 
   <div className="mt-4">
-    <p className="font-semibold mb-2">Salary Breakdown</p>
+    <p className="font-semibold mb-2">Salary Breakdown:</p>
 
     <table className="w-full border text-sm">
       <thead className="bg-gray-100">

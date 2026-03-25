@@ -1,5 +1,5 @@
 import React from "react";
-import RoleOffWorkspace from "@/components/roleoff/RoleOffWorkspace";
+import RoleOffWorkspace from "@/pages/resource_management/roleoff/RoleOffWorkspace";
 
 const PMRoleOffPage = () => {
   return React.createElement(RoleOffWorkspace, { mode: "pm" });

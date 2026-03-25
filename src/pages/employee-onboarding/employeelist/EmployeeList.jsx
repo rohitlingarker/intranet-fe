@@ -2,40 +2,149 @@ import { useState, useMemo, useEffect } from "react";
 import EmployeeTable from "./components/EmployeeTable";
 import SearchBar from "./components/SearchBar";
 import FiltersBar from "./components/FiltersBar";
-import { employeeMock } from "./api/employeelist";
+import {fetchEmployees } from "./api/employeelist";
 import Pagination from "../../../components/Pagination/pagination";
 
 export default function EmployeeListPage() {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
   const [status, setStatus] = useState("");
-  const [location, setLocation] = useState("");
+  const [locations, setLocations] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [deptMap, setDeptMap] = useState({});
+  const [designationMap, setDesignationMap] = useState({});
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
+
+
   /* 🔎 Filter + Search Logic */
-  const filteredData = useMemo(() => {
-    return employeeMock.filter((emp) => {
-      const matchSearch =
-        emp.name.toLowerCase().includes(search.toLowerCase()) ||
-        emp.email.toLowerCase().includes(search.toLowerCase()) ||
-        emp.id.includes(search) ||
-        emp.username.toLowerCase().includes(search.toLowerCase());
+  // const filteredData = useMemo(() => {
+  //   return (employees || []).filter((emp) => {
+  //     const matchSearch =
+  //       emp.name.toLowerCase().includes(search.toLowerCase()) ||
+  //       emp.email.toLowerCase().includes(search.toLowerCase()) ||
+  //       emp.id.includes(search) ||
+  //       emp.username.toLowerCase().includes(search.toLowerCase());
 
-      const matchDept = department ? emp.department === department : true;
-      const matchStatus = status ? emp.employmentStatus === status : true;
-      const matchLocation = location ? emp.location === location : true;
+  //     const matchDept = department ? emp.department.toLowerCase().includes(department.toLowerCase()) === department : true;
+  //     const matchStatus = status ? emp.emailStatus === status : true;
+  //     const matchLocation = location ? emp.location === location : true;
 
-      return matchSearch && matchDept && matchStatus && matchLocation;
+  //     return matchSearch && matchDept && matchStatus && matchLocation;
+  //   });
+  // }, [search, department, status, location]);
+const filteredData = useMemo(() => {
+  return (employees || []).filter((emp) => {
+    const matchSearch =
+      emp.name.toLowerCase().includes(search.toLowerCase()) ||
+      emp.email.toLowerCase().includes(search.toLowerCase()) ||
+      emp.id.includes(search) ||
+      emp.username.toLowerCase().includes(search.toLowerCase());
+
+    const matchDept = department
+      ? emp.department.toLowerCase().includes(department.toLowerCase())
+      : true;
+
+    const matchStatus = status
+      ? emp.emailStatus === status
+      : true;
+
+    const matchLocation = locations.length
+      ? locations.includes(emp.location)
+      : true;
+
+    return matchSearch && matchDept && matchStatus && matchLocation;
+  });
+}, [employees, search, department, status, locations]);
+const locationOptions = useMemo(() => {
+  const unique = new Set();
+
+  employees.forEach(emp => {
+    if (emp.location) {
+      unique.add(emp.location.trim());
+    }
+  });
+
+  return Array.from(unique);
+}, [employees]);
+const loadDepartments = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/departments/`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+
+  // 🔥 convert to map
+  const map = {};
+  data.forEach((d) => {
+    map[d.department_uuid] = d.department_name;
+  });
+
+  setDeptMap(map);
+};
+const loadDesignations = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/designations/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      console.error("Designation API failed:", res.status);
+      return; // 🚨 stop here
+    }
+
+    const data = await res.json();
+
+    const list = Array.isArray(data)
+      ? data
+      : data.data || data.results || [];
+
+    const map = {};
+    list.forEach((d) => {
+      map[d.designation_uuid] = d.designation_name;
     });
-  }, [search, department, status, location]);
+
+    setDesignationMap(map);
+  } catch (err) {
+    console.error("Designation error:", err);
+  }
+};
+  useEffect(() => {
+    const init = async () => {
+    await loadDepartments();
+    await loadDesignations();
+    };
+
+    init();
+  },[]);
+
+  useEffect(() => {
+  if (Object.keys(deptMap).length && Object.keys(designationMap).length) {
+    loadEmployees();
+  }
+}, [deptMap, designationMap]);
 
   /* Reset page when filters/search change */
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, department, status, location]);
+  }, [search, department, status, locations]);
 
   /* Pagination logic */
   const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
@@ -44,6 +153,57 @@ export default function EmployeeListPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  const loadEmployees = async () => {
+  const data = await fetchEmployees();
+
+  const formatted = data.map((emp) => ({
+    id: emp.employee_id,
+
+    name: `${emp.first_name} ${emp.last_name}`,
+    username: emp.work_email.split("@")[0],
+
+    department: deptMap[emp.department_uuid] || "N/A", 
+    location: emp.location,
+    workmode: emp.work_mode,
+
+    email: emp.work_email,
+    emailStatus:
+      emp.employment_status === "Active" ? "Active" : "Inactive",
+
+    designation: designationMap[emp.designation_uuid] || "N/A", 
+
+    manager: "-",
+
+    doj: formatDate(emp.joining_date),
+
+    employeeType: emp.employment_type,
+
+    experience: calculateExperience(emp.joining_date),
+
+    // TEMP (audit logs later)
+    loginStatus: "Registered",
+    loginDate: formatDate(emp.joining_date),
+  }));
+
+  setEmployees(formatted);
+};
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const calculateExperience = (joiningDate) => {
+  const years =
+    (new Date() - new Date(joiningDate)) / (1000 * 60 * 60 * 24 * 365);
+
+  if (years < 1) return "0-1 Years";
+  return `${Math.floor(years)} Years`;
+};
 
   return (
     <div style={{ padding: 20 }}>
@@ -64,10 +224,12 @@ export default function EmployeeListPage() {
           setDepartment={setDepartment}
           status={status}
           setStatus={setStatus}
-          location={location}
-          setLocation={setLocation}
+          locations={locations}
+          setLocations={setLocations}
+          locationOptions={locationOptions}
         />
       </div>
+
 
       {/* 📋 Table */}
       <div
@@ -101,5 +263,6 @@ export default function EmployeeListPage() {
         }
       />
     </div>
+    
   );
 }

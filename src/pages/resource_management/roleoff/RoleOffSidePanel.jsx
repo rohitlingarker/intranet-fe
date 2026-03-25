@@ -27,6 +27,14 @@ const impactStyles = {
   High: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
+const roleOffStatusStyles = {
+  "Not Requested": "border-slate-200 bg-slate-100 text-slate-700",
+  "Pending Approval": "border-amber-200 bg-amber-50 text-amber-700",
+  Approved: "border-blue-200 bg-blue-50 text-blue-700",
+  Rejected: "border-rose-200 bg-rose-50 text-rose-700",
+  Fulfilled: "border-emerald-200 bg-emerald-50 text-emerald-700",
+};
+
 const baseForm = {
   type: "Planned",
   effectiveDate: "",
@@ -38,9 +46,12 @@ const baseForm = {
   skipReason: "",
 };
 
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
 const RoleOffSidePanel = ({
   open,
   mode,
+  pmTab = "active",
   record,
   actionType,
   onClose,
@@ -110,11 +121,22 @@ const RoleOffSidePanel = ({
   const isPM = mode === "pm";
   const isRM = mode === "rm";
   const isDM = mode === "dm";
+  const isReadOnlyPm = isPM && actionType === "view";
+  const showRejectedDetails =
+    isPM &&
+    pmTab === "process" &&
+    (
+      String(record.roleOffStatus || "").trim() === "Rejected" ||
+      Boolean(record.rejectedBy) ||
+      Boolean(record.rejectionReason)
+    );
   const needsRiskAck = record.impact === "High" && isPM;
   const panelTitle = isPM
-    ? actionType === "update"
-      ? "Update Role-Off"
-      : "Create Role-Off"
+    ? actionType === "view"
+      ? "View Role-Off"
+      : actionType === "update"
+        ? "Update Role-Off"
+        : "Create Role-Off"
     : isRM
       ? "Request Operations"
       : actionType === "reject"
@@ -272,6 +294,19 @@ const RoleOffSidePanel = ({
               <h3 className="text-sm font-semibold text-[#081534]">Context</h3>
             </div>
             <div className="space-y-3 text-sm">
+              {isPM ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Role-Off Status</span>
+                  <Badge
+                    className={cn(
+                      "text-[11px] font-semibold",
+                      roleOffStatusStyles[record.roleOffStatus || "Not Requested"] || "border-slate-200 bg-slate-100 text-slate-700"
+                    )}
+                  >
+                    {record.roleOffStatus || "Not Requested"}
+                  </Badge>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-gray-500">Impact</span>
                 <Badge className={cn("text-[11px] font-semibold", impactStyles[record.impact])}>
@@ -289,10 +324,22 @@ const RoleOffSidePanel = ({
               <p className="rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-600">
                 {record.impactSummary}
               </p>
+              {showRejectedDetails ? (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                  <p className="font-semibold">Rejected By</p>
+                  <p className="mt-1">{record.rejectedBy || "-"}</p>
+                  {showRejectedDetails ? (
+                    <>
+                      <p className="mt-3 font-semibold">Rejection Reason</p>
+                      <p className="mt-1">{record.rejectionReason || "-"}</p>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </section>
 
-          {isPM ? (
+          {isPM && !isReadOnlyPm ? (
             <>
               <section className="space-y-4 rounded-lg border border-gray-200 p-4">
                 <div>
@@ -302,6 +349,7 @@ const RoleOffSidePanel = ({
                   <select
                     value={form.type}
                     onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))}
+                    disabled={isReadOnlyPm || isSubmitting}
                     className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
                   >
                     <option value="Planned">Planned</option>
@@ -315,8 +363,11 @@ const RoleOffSidePanel = ({
                   </label>
                   <input
                     type="date"
+                    min={getTodayDate()}
+                    max={record.endDateIso || undefined}
                     value={form.effectiveDate}
                     onChange={(event) => setForm((prev) => ({ ...prev, effectiveDate: event.target.value }))}
+                    disabled={isReadOnlyPm || isSubmitting}
                     className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
                   />
                 </div>
@@ -328,6 +379,7 @@ const RoleOffSidePanel = ({
                   <select
                     value={form.reason}
                     onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
+                    disabled={isReadOnlyPm || isSubmitting}
                     className="mt-2 h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
                   >
                     <option value="">Select reason</option>
@@ -348,6 +400,7 @@ const RoleOffSidePanel = ({
                   <input
                     type="checkbox"
                     checked={form.replacementRequired}
+                    disabled={isReadOnlyPm || isSubmitting}
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, replacementRequired: event.target.checked }))
                     }
@@ -369,6 +422,7 @@ const RoleOffSidePanel = ({
                           skipReason: event.target.value,
                         }))
                       }
+                      disabled={isReadOnlyPm || isSubmitting}
                       placeholder="Enter reason for not creating replacement"
                       className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
                     />
@@ -386,6 +440,7 @@ const RoleOffSidePanel = ({
                         <input
                           type="checkbox"
                           checked={form.acknowledgeRisk}
+                          disabled={isReadOnlyPm || isSubmitting}
                           onChange={(event) =>
                             setForm((prev) => ({
                               ...prev,
@@ -420,6 +475,25 @@ const RoleOffSidePanel = ({
                 ) : null}
               </section>
             </>
+          ) : null}
+
+          {isPM && isReadOnlyPm ? (
+            <section className="space-y-4 rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 gap-4 text-sm">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                    Role-Off Type
+                  </p>
+                  <p className="mt-1 font-medium text-gray-800">{form.type || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                    Effective Date
+                  </p>
+                  <p className="mt-1 font-medium text-gray-800">{record.effectiveDate || "-"}</p>
+                </div>
+              </div>
+            </section>
           ) : null}
 
           {isRM ? (
@@ -486,10 +560,10 @@ const RoleOffSidePanel = ({
           <div className="flex flex-wrap items-center gap-2">
             {!isRM && !isDM ? (
               <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="h-10 border-gray-300 bg-white text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                Close
+                {isReadOnlyPm ? "Back" : "Close"}
               </Button>
             ) : null}
-            {isPM ? (
+            {isPM && !isReadOnlyPm ? (
               <Button onClick={handleSubmit} disabled={isSubmitting || (reviewState?.requiresConfirmation && !form.reviewConfirmed)} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
