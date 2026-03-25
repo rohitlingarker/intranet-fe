@@ -3,7 +3,8 @@ import { Eye, ArrowRightCircle, Pencil, ShieldAlert, XCircle } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import LoadingSpinner from "../LoadingSpinner";
+import LoadingSpinner from "../../../components/LoadingSpinner";
+
 
 const STATUS_STYLES = {
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
