@@ -56,7 +56,7 @@ export default function EmployeeOnboardingDashboard() {
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) => {
       const fullName =
-        `${offer.first_name || ""} ${offer.last_name || ""}`.toLowerCase();
+        `${offer.first_name || ""} ${offer.middle_name || ""} ${offer.last_name || ""}`.toLowerCase();
       const Role = `${offer.designation || ""}`.toLowerCase();
 
       const matchesName =
