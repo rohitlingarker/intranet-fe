@@ -102,10 +102,6 @@ const EmployeeDirectory = () => {
             Manage and browse organizational talent.
           </p>
         </div>
- 
-        <button className="bg-indigo-800 hover:bg-indigo-800 text-white px-5 py-2 rounded-xl shadow-md transition">
-          + Add Employee
-        </button>
       </div>
  
       {/* Search + Filters */}
