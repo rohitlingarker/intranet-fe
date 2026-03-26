@@ -36,6 +36,8 @@ import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDet
 import PMRoleOffPage from "./pages/resource_management/pages/roleoff/pm.js";
 import RMRoleOffPage from "./pages/resource_management/pages/roleoff/rm.js";
 import DMRoleOffPage from "./pages/resource_management/pages/roleoff/dm.js";
+import BenchPage from "./pages/resource_management/bench/pages/BenchPage.jsx";
+import RoleOffDashboard from "./pages/resource_management/pages/roleoff/RoleOffDashboard.jsx";
 
 // Timesheets
 
@@ -473,6 +475,7 @@ const AppRoutes = () => {
             <Route path="employeedocuments" element={<EmployeeDocumentsPage />} />
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
+            <Route path="employeeProfile/:employee_uuid" element={<EmployeeProfileView />}></Route>
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
             <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
@@ -852,6 +855,22 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["DELIVERY-MANAGER"]}>
                 <DMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/bench"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <BenchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/report"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffDashboard />
               </ProtectedRoute>
             }
           />

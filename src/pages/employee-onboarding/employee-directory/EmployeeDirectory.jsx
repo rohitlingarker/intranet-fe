@@ -44,6 +44,7 @@ const EmployeeDirectory = () => {
  
         const mappedEmployees = (Array.isArray(empRes.data) ? empRes.data : (empRes.data.data || [])).map(emp => ({
           ...emp,
+          employee_uuid: emp.employee_uuid,
           name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim(),
           email: emp.work_email || emp.email || "N/A",
           contact: emp.contact_number || emp.contact || "N/A",

@@ -50,6 +50,7 @@ const selectedApproverName =
 
   const [editData, setEditData] = useState({
     first_name: "",
+    middle_name:"",
     last_name: "",
     mail: "",
     country_code: "",
@@ -315,6 +316,7 @@ const actionTaken =
 
     const payload = {
     first_name: editData.first_name,
+    middle_name:editData.middle_name,
     last_name: editData.last_name,
     mail: editData.mail,
     country_code: editData.country_code,
@@ -404,7 +406,13 @@ finally {
             </div>
             <div>
               <h1 className="text-2xl font-semibold text-blue-900">
-                {employee.first_name} {employee.last_name}
+                  {[
+                    employee.first_name,
+                    employee.middle_name,
+                    employee.last_name
+                  ]
+                    .filter((name) => name && name.trim() !== "")
+                    .join(" ")}
               </h1>
               <p className="flex items-center gap-2 text-gray-900">
                 <BadgeCheck size={16} />
@@ -450,7 +458,7 @@ finally {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            {Object.keys(editData)
 .filter(key => [
-'first_name','last_name','mail','country_code',
+'first_name','middle_name','last_name','mail','country_code',
 'contact_number','designation','employee_type',
 'package','currency','cc_emails'
 ].includes(key))
