@@ -157,7 +157,7 @@ const RoleOffTable = ({
               </tr>
             ) : null}
 
-            {rows.map((row) => {:
+            {rows.map((row) => {
               const isHigh = row.impact === "High";
               const isSelected = selectedRows.includes(row.id);
               const pmAction = mode === "pm" ? getPmAction(row) : null;
