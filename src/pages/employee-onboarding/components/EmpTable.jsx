@@ -179,8 +179,9 @@ export default function OffersTable({ offers = [], loading = false }) {
 
   const rows = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-
+    
     return offers.slice(startIndex, startIndex + PAGE_SIZE).map((offer) => {
+      
       const isStatusCreated =
         String(offer.status || "").trim().toUpperCase() === "CREATED";
 
@@ -214,11 +215,13 @@ export default function OffersTable({ offers = [], loading = false }) {
           ),
         }),
 
-        candidate_name:
-          `${offer.first_name || ""} ${offer.last_name || ""}`
-          .toLowerCase()
-          .replace(/\b\w/g, (c) => c.toUpperCase())
-          .trim() || "—",
+      candidate_name:
+      [offer.first_name, offer.middle_name, offer.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .trim() || "—",
 
         mail: offer.mail ? offer.mail.toLowerCase() : "—" ,
         contact: offer.contact_number || "—",
