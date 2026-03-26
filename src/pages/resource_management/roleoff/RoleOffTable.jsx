@@ -61,6 +61,7 @@ const RoleOffTable = ({
   onRowClick,
   loading,
 }) => {
+  const showPmCheckboxes = mode === "pm" && pmTab === "active";
   const showSelectionCheckboxes = mode !== "pm" || pmTab === "active";
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
   const anySelected = rows.some((row) => selectedRows.includes(row.id));

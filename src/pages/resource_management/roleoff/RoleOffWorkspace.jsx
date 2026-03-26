@@ -200,8 +200,7 @@ const mapResourceToAllocation = (item, index) => {
 
   return {
     ...allocation,
-    impact: deriveImpact(allocation),
-    impact: normalizeImpact(item.impact),
+    impact: item.impact ? normalizeImpact(item.impact) : deriveImpact(allocation),
   };
 };
 
@@ -214,7 +213,7 @@ const mapPendingRoleOffToRequest = (item) => {
     allocationId: item.allocationId || fallbackId,
     resourceId: item.resourceId,
     deliveryRoleId: item.deliveryRoleId || null,
-    deliveryRoleId: item.deliveryRoleId,
+    // deliveryRoleId: item.deliveryRoleId,
     resource:
       item.name ||
       item.resourceName ||
@@ -894,8 +893,8 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
           skipReason: isBulkStyleUpdate
             ? null
             : formState.replacementRequired
-            ? null
-            : formState.skipReason,
+              ? null
+              : formState.skipReason,
           confirmed: Boolean(formState.reviewConfirmed),
           deliveryRoleId: !isBulkStyleUpdate && formState.replacementRequired
             ? currentAllocation.deliveryRoleId
@@ -1019,10 +1018,10 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       await loadRoleOffRequests();
       setSelectedRows([]);
       setPanelState({ open: false, actionType: "view", record: null });
-      toast.success(res?.message || 
+      toast.success(res?.message ||
         request?.isBulk
-          ? `${request.records.length} role-off request(s) fulfilled`
-          : `${request.resource} role-off approved`,
+        ? `${request.records.length} role-off request(s) fulfilled`
+        : `${request.resource} role-off approved`,
       );
       loadPendingRoleOffRequests();
     } catch (err) {
@@ -1047,10 +1046,10 @@ const RoleOffWorkspace = ({ mode, embedded = false, projectId: projectIdProp, pr
       await loadRoleOffRequests();
       setSelectedRows([]);
       setPanelState({ open: false, actionType: "view", record: null });
-      toast.success(res?.message || 
+      toast.success(res?.message ||
         request?.isBulk
-          ? `${request.records.length} role-off request(s) rejected`
-          : `${request.resource} role-off rejected`,
+        ? `${request.records.length} role-off request(s) rejected`
+        : `${request.resource} role-off rejected`,
       );
       loadPendingRoleOffRequests();
     } catch (err) {
