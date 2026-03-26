@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
   setDepartment,
   status,
   setStatus,
-  locations,
+  locations = [],
   setLocations,
   locationOptions = [],
   departments = []
@@ -51,18 +51,21 @@ import { useState, useRef, useEffect } from "react";
     setOpenKey(openKey === key ? null : key);
   };
 
-  const handleLocationSelect = (loc) => {
-    if (loc === "All") {
-      setLocations([]);
-      return;
-    }
+ const handleLocationSelect = (loc) => {
+  const safeLocations = locations || [];
 
-    if (locations.includes(loc)) {
-      setLocations(locations.filter((l) => l !== loc));
-    } else {
-      setLocations([...locations, loc]);
-    }
-  };
+  if (loc === "All") {
+    setLocations([]);
+    setOpenKey(null);
+    return;
+  }
+
+  if (safeLocations.includes(loc)) {
+    setLocations(safeLocations.filter((l) => l !== loc));
+  } else {
+    setLocations([...safeLocations, loc]);
+  }
+};
   // 🔹 Single select for department & status
   const handleSingleSelect = (key, value) => {
     if (key === "department") {
@@ -102,7 +105,13 @@ import { useState, useRef, useEffect } from "react";
             }}
           >
             <span>
-              {selected[filter.key] || filter.label}
+               {filter.key === "dept"
+            ? department || filter.label
+            : filter.key === "location"
+            ? locations && locations.length > 0
+              ? locations.join(", ")
+              : filter.label
+            : filter.label}
             </span>
             <span style={{ fontSize: 12 }}>▾</span>
           </div>
@@ -127,7 +136,13 @@ import { useState, useRef, useEffect } from "react";
               {filter.options.map((opt, i) => (
                 <div
                   key={i}
-                  onClick={() => selectOption(filter.key, opt)}
+                  onClick={() => {
+                  if (filter.key === "location") {
+                    handleLocationSelect(opt);
+                  } else if (filter.key === "dept") {
+                    handleSingleSelect("department", opt);
+                  }
+                }}
                   style={{
                     padding: "8px 12px",
                     cursor: "pointer",

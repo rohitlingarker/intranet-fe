@@ -28,6 +28,34 @@ export default function EmployeeDocumentsPage() {
 
   const [loadingDoc, setLoadingDoc] = useState(null);
 
+  const getEducationDocName = (doc) => {
+  // ✅ If backend already sends correct name, use it
+  if (doc.document_name && doc.document_name !== "Education Document") {
+    return doc.document_name;
+  }
+
+  // 🔥 If you start sending education_document_uuid from backend
+  const mapByUUID = {
+    "ED1": "10th Marksheet",
+    "ED2": "12th Marksheet",
+    "ED3": "Degree Certificate",
+    "ED4": "Provisional Certificate"
+  };
+
+  if (doc.education_document_uuid && mapByUUID[doc.education_document_uuid]) {
+    return mapByUUID[doc.education_document_uuid];
+  }
+
+  // 🛠️ fallback using file name
+  const path = doc.file_path.toLowerCase();
+
+  if (path.includes("10")) return "10th Marksheet";
+  if (path.includes("12")) return "12th Marksheet";
+  if (path.includes("provisional")) return "Provisional Certificate";
+  if (path.includes("degree")) return "Degree Certificate";
+
+  return "Education Document";
+};
   /* ================= FETCH API DATA ================= */
   React.useEffect(() => {
     const fetchDocuments = async () => {
@@ -68,7 +96,10 @@ export default function EmployeeDocumentsPage() {
 
             return {
               id: `${emp.emp_id}-${index}`,
-              docName: doc.document_name,
+              docName:
+                category === "Education"
+                  ? getEducationDocName(doc)
+                  : doc.document_name,
               fileUrl: doc.file_path,
               category: category,
               type: type,
