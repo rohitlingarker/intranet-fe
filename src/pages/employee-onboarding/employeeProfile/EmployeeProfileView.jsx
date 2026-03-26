@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Mail,
   Phone,
@@ -17,31 +17,60 @@ import {
   FileText,
 } from "lucide-react";
 
+import { useParams } from "react-router-dom";
+
 import ProfilePage from "./ProfilePage";
 import JobPage from "./JobPage";
 import DocumentsPage from "./DocumentsPage";  
 
 
 export default function EmployeeProfileView() {
+  const {employee_uuid} = useParams();
+
   const [activeTab, setActiveTab] = useState("about");
   const [profileImg, setProfileImg] = useState(null);
   const profileRef = useRef(null);
+  const [employee, setEmployee] = useState(null);
+  const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+   // ✅ FETCH API
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        console.log("UUID:", employee_uuid);
 
-  const employee = {
-    name: "Busam Lokeswari",
-    designation: "Graduate Software Engineer",
-    email: "lokeswari.busam@gmailpavestechnologies.com",
-    phone: "+91 9876543213",
-    office: "Hyderabad Office",
-    empId: "PAVS001",
-    department: "Engineering",
-    reportingManager: "Rama Gopal Varma",
-    joiningDate: "01 Jan 2024",
-    employmentType: "Full-Time",
-  };
+        const token = localStorage.getItem("token");
+        console.log("TOKEN:", token);
 
+        const res = await fetch(
+          `${BASE_URL}/permanent-employee/core-employee-details/${employee_uuid}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-  const [about, setAbout] = useState({
+        console.log("STATUS:", res.status);
+
+        // 🚨 IMPORTANT CHECK
+        if (!res.ok) {
+          throw new Error("Failed to fetch employee");
+        }
+
+        const data = await res.json();
+        console.log("DATA:", data);
+
+        setEmployee(data);
+      } catch (err) {
+        console.error("Error fetching employee:", err);
+        setEmployee({}); // prevent infinite loading
+      }
+    };
+
+    if (employee_uuid) fetchEmployee();
+  }, [employee_uuid, BASE_URL]);
+
+    const [about, setAbout] = useState({
     summary: "",
     loveJob: "",
     hobbies: "",
@@ -57,6 +86,24 @@ export default function EmployeeProfileView() {
 
   const [editingField, setEditingField] = useState(null);
   const editorRef = useRef(null);
+
+  // ✅ LOADING STATE
+  if (!employee) {
+    return <div className="p-10 text-center">Loading employee data...</div>;
+  }
+
+  const mappedEmployee = {
+    name: `${employee.first_name || ""} ${employee.last_name || ""}` .toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim(),
+    designation: employee.designation_uuid,
+    email: employee.work_email,
+    phone: employee.contact_number,
+    office: employee.location,
+    empId: employee.employee_id,
+    department: employee.department_uuid,
+    reportingManager: employee.reporting_manager_uuid || "N/A",
+    joiningDate: employee.joining_date,
+    employmentType: employee.employment_type,
+  };
 
   const handleProfileChange = (file) => {
     if (file) setProfileImg(URL.createObjectURL(file));
@@ -143,7 +190,7 @@ export default function EmployeeProfileView() {
                 <img src={profileImg} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-4xl font-semibold text-white">
-                  {employee.name.charAt(0)}
+                  {mappedEmployee.name.charAt(0)}
                 </div>
               )}
 
@@ -164,18 +211,18 @@ export default function EmployeeProfileView() {
             />
 
             <h2 className="mt-4 text-xl font-semibold text-indigo-900 break-words">
-              {employee.name}
+              {mappedEmployee.name}
             </h2>
             <p className="text-indigo-600 text-sm break-words">
-              {employee.designation}
+              {mappedEmployee.designation}
             </p>
           </div>
 
           <div className="bg-white/80 backdrop-blur rounded-2xl shadow-md p-5 text-sm space-y-3 border border-indigo-100">
-            <Info icon={<Mail size={14} />} text={employee.email} />
-            <Info icon={<Phone size={14} />} text={employee.phone} />
-            <Info icon={<Building2 size={14} />} text={employee.office} />
-            <Info icon={<User size={14} />} text={`ID: ${employee.empId}`} />
+            <Info icon={<Mail size={14} />} text={mappedEmployee.email} />
+            <Info icon={<Phone size={14} />} text={mappedEmployee.phone} />
+            <Info icon={<Building2 size={14} />} text={mappedEmployee.office} />
+            <Info icon={<User size={14} />} text={`ID: ${mappedEmployee.empId}`} />
           </div>
 
           {/* Department Section */}
@@ -185,7 +232,7 @@ export default function EmployeeProfileView() {
                 Department
               </p>
               <p className="font-semibold text-indigo-900 break-words">
-                {employee.department}
+                {mappedEmployee.department}
               </p>
             </div>
 
@@ -194,7 +241,7 @@ export default function EmployeeProfileView() {
                 Reporting Manager
               </p>
               <p className="font-semibold text-indigo-900 break-words">
-                {employee.reportingManager}
+                {mappedEmployee.reportingManager}
               </p>
             </div>
           </div>
@@ -237,7 +284,7 @@ export default function EmployeeProfileView() {
             <JobPage />
           )}
           {activeTab === "documents" && (
-            <DocumentsPage employee={employee}/>
+            <DocumentsPage employee={mappedEmployee}/>
            )}
 
         </div>
