@@ -475,6 +475,7 @@ const AppRoutes = () => {
             <Route path="employeedocuments" element={<EmployeeDocumentsPage />} />
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
+            <Route path="employeeProfile/:employee_uuid" element={<EmployeeProfileView />}></Route>
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
             <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
