@@ -1,12 +1,9 @@
 import React from "react";
-import { RotateCcw, X } from "lucide-react";
-
-const labelClassName = "text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500";
-const selectClassName = "mt-1.5 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500";
+import { X, Filter } from "lucide-react";
 
 const BenchFilters = ({
   open,
-  draftFilters,
+  filters,
   filterOptions,
   onChange,
   onReset,
@@ -15,27 +12,28 @@ const BenchFilters = ({
 }) => {
   if (!open) return null;
 
+  const labelClassName = "text-[10px] font-black text-slate-400 uppercase tracking-tighter ml-0.5 mb-1.5 block";
+  const selectClassName = "w-full text-[11px] font-semibold border-slate-200 rounded-lg h-9 bg-slate-50/50 focus:ring-indigo-600 shadow-sm transition-all outline-none";
+
   return (
-    <div className="w-[420px] rounded-lg border border-gray-200 bg-white shadow-xl">
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-        <div>
-          <p className="text-sm font-bold text-[#081534]">Filters</p>
-          <p className="text-xs text-gray-500">Refine the visible bench supply</p>
+    <div className="flex flex-col w-full bg-white rounded-xl overflow-hidden font-sans">
+      {/* Header */}
+      <div className="shrink-0 px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-indigo-500" />
+          <h3 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest leading-none mt-0.5">Bench Inventory Filters</h3>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-        >
+        <button onClick={onClose} className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="space-y-4 p-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelClassName}>Category</label>
-            <select value={draftFilters.category} onChange={(event) => onChange("category", event.target.value)} className={selectClassName}>
+      {/* Body */}
+      <div className="p-5 space-y-4 overflow-y-auto flex-1 max-h-[60vh] custom-scrollbar pb-8">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className={labelClassName}>Category Type</label>
+            <select value={filters.category} onChange={(event) => onChange("category", event.target.value)} className={selectClassName}>
               <option value="">All Categories</option>
               {filterOptions.categories.map((item) => (
                 <option key={item} value={item}>{item}</option>
@@ -43,9 +41,21 @@ const BenchFilters = ({
             </select>
           </div>
 
-          <div>
-            <label className={labelClassName}>Availability %</label>
-            <select value={draftFilters.availability} onChange={(event) => onChange("availability", event.target.value)} className={selectClassName}>
+          <div className="space-y-1">
+            <label className={labelClassName}>Geography</label>
+            <select value={filters.location} onChange={(event) => onChange("location", event.target.value)} className={selectClassName}>
+              <option value="">All Locations</option>
+              {filterOptions.locations.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className={labelClassName}>Availability Band</label>
+            <select value={filters.availability} onChange={(event) => onChange("availability", event.target.value)} className={selectClassName}>
               <option value="">All Ranges</option>
               <option value="0-25">0-25%</option>
               <option value="26-50">26-50%</option>
@@ -54,19 +64,9 @@ const BenchFilters = ({
             </select>
           </div>
 
-          <div>
-            <label className={labelClassName}>Location</label>
-            <select value={draftFilters.location} onChange={(event) => onChange("location", event.target.value)} className={selectClassName}>
-              <option value="">All Locations</option>
-              {filterOptions.locations.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClassName}>Experience</label>
-            <select value={draftFilters.experience} onChange={(event) => onChange("experience", event.target.value)} className={selectClassName}>
+          <div className="space-y-1">
+            <label className={labelClassName}>Seniority Level</label>
+            <select value={filters.experience} onChange={(event) => onChange("experience", event.target.value)} className={selectClassName}>
               <option value="">All Bands</option>
               <option value="0-3">0-3 Years</option>
               <option value="4-7">4-7 Years</option>
@@ -74,10 +74,12 @@ const BenchFilters = ({
               <option value="13+">13+ Years</option>
             </select>
           </div>
+        </div>
 
-          <div>
-            <label className={labelClassName}>Aging</label>
-            <select value={draftFilters.aging} onChange={(event) => onChange("aging", event.target.value)} className={selectClassName}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className={labelClassName}>Bench Aging</label>
+            <select value={filters.aging} onChange={(event) => onChange("aging", event.target.value)} className={selectClassName}>
               <option value="">All Ranges</option>
               <option value="0-15">0-15 days</option>
               <option value="16-30">16-30 days</option>
@@ -85,9 +87,9 @@ const BenchFilters = ({
             </select>
           </div>
 
-          <div>
-            <label className={labelClassName}>Cost / Day</label>
-            <select value={draftFilters.cost} onChange={(event) => onChange("cost", event.target.value)} className={selectClassName}>
+          <div className="space-y-1">
+            <label className={labelClassName}>Cost Exposure</label>
+            <select value={filters.cost} onChange={(event) => onChange("cost", event.target.value)} className={selectClassName}>
               <option value="">All Ranges</option>
               <option value="0-1500">0-1500</option>
               <option value="1501-3000">1501-3000</option>
@@ -96,19 +98,34 @@ const BenchFilters = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
+        <div className="pt-2 border-t border-slate-100">
+          <p className="text-[10px] font-medium text-slate-400 italic leading-relaxed">
+            Adjust recruitment criteria to isolate specific bench availability gaps.
+          </p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+        <button 
+          type="button"
+          onClick={onReset}
+          className="flex-1 bg-white text-slate-600 border border-slate-200 py-2 rounded-lg text-[11px] font-bold hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all active:scale-[0.98] shadow-sm"
+        >
+          Reset All
+        </button>
+        <div className="flex-[2] flex items-center gap-3">
+          <button 
             type="button"
-            onClick={onReset}
-            className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 transition-colors hover:border-gray-400"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors outline-none"
           >
-            <RotateCcw className="h-4 w-4" />
-            Reset Filters
+            Cancel
           </button>
-          <button
+          <button 
             type="button"
             onClick={onApply}
-            className="h-9 flex-1 rounded-md bg-[#081534] px-3 text-sm font-medium text-white transition-colors hover:bg-[#10214f]"
+            className="flex-[1.5] bg-indigo-600 text-white py-2 rounded-lg text-[11px] font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
           >
             Apply Filters
           </button>
