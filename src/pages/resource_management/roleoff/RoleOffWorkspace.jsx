@@ -182,7 +182,7 @@ const mapPendingRoleOffToRequest = (item) => {
     allocationId: item.allocationId || fallbackId,
     resourceId: item.resourceId,
     deliveryRoleId: item.deliveryRoleId || null,
-    deliveryRoleId: item.deliveryRoleId,
+    // deliveryRoleId: item.deliveryRoleId,
     resource:
       item.name ||
       item.resourceName ||
