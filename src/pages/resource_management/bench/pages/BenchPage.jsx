@@ -22,7 +22,8 @@ import {
   toCsv,
   updateCategory,
 } from "../models/benchModel";
-import { getBenchResources } from "../services/benchService";
+import { getBenchResources, getPoolResources, getBenchKPIs } from "../services/benchService";
+import { toast } from "react-hot-toast";
 
 const getStoredState = () => {
   if (typeof window === "undefined") return null;
@@ -50,6 +51,7 @@ const BenchPage = () => {
   const navigate = useNavigate();
   const stored = getStoredState();
   const [resources, setResources] = useState([]);
+  const [kpis, setKpis] = useState(null);
   const [search, setSearch] = useState(stored?.search || "");
   const [activeTab, setActiveTab] = useState(stored?.activeTab || "bench");
   const [filters, setFilters] = useState(stored?.filters || FILTER_DEFAULTS);
@@ -119,9 +121,26 @@ const BenchPage = () => {
     let active = true;
 
     const load = async () => {
-      const response = await getBenchResources();
-      if (!active) return;
-      setResources(sanitizeResources(response?.data || []));
+      try {
+        const [benchRes, poolRes, kpiRes] = await Promise.all([
+          getBenchResources(),
+          getPoolResources(),
+          getBenchKPIs()
+        ]);
+        
+        if (!active) return;
+        
+        // Unpack and tag resources
+        const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
+        const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
+        setResources(sanitizeResources([...benchList, ...poolList]));
+
+        // Set live KPI data
+        setKpis(kpiRes?.data || kpiRes || null);
+      } catch (error) {
+        console.error("Resource Supply Data Load Error", error);
+        toast.error("Failed to load bench or pool data");
+      }
     };
 
     load();
@@ -151,7 +170,35 @@ const BenchPage = () => {
     () => resources.find((item) => item.id === selectedResourceId) || null,
     [resources, selectedResourceId],
   );
-  const metrics = useMemo(() => getBenchMetrics(resources), [resources]);
+  const metrics = useMemo(() => {
+    // If backend provided KPIs, use them preferentially
+    if (kpis) {
+      return [
+        {
+          label: "Bench Resources",
+          value: kpis.totalBenchResources ?? kpis.benchCount ?? kpis.benchResources ?? 0,
+          iconClassName: "border-blue-100 bg-blue-50 text-blue-700",
+        },
+        {
+          label: "Ready Now",
+          value: kpis.totalReadyNowResources ?? kpis.readyNowCount ?? kpis.readyNow ?? 0,
+          iconClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
+        },
+        {
+          label: "Internal Pool",
+          value: kpis.totalPoolResources ?? kpis.internalPoolCount ?? kpis.internalPool ?? 0,
+          iconClassName: "border-indigo-100 bg-indigo-50 text-indigo-700",
+        },
+        {
+          label: "Cost / Risk Watch",
+          value: kpis.totalRiskWatch ?? kpis.costRiskCount ?? kpis.highRisk ?? 0,
+          iconClassName: "border-rose-100 bg-rose-50 text-rose-700",
+        },
+      ];
+    }
+    // Fallback to client-side derived metrics if API data is pending
+    return getBenchMetrics(resources);
+  }, [resources, kpis]);
   const filterOptions = useMemo(
     () => ({
       categories: CATEGORY_OPTIONS,
@@ -402,7 +449,7 @@ const BenchPage = () => {
 
         <div className="p-4">
           <BenchTable
-            rows={visibleRows}
+            rows={visibleRows} 
             selectedRows={selectedRows}
             activeRowId={selectedResourceId}
             emptyState={emptyState}

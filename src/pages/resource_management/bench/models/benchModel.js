@@ -45,13 +45,32 @@ export const isSkillStale = (lastUsed) => {
 };
 
 export const buildSkillSummary = (resource) => {
-  if (!Array.isArray(resource.skills) || resource.skills.length === 0) return [];
+  // Handle backend structure where skillGroups is [{ "Deep Learning": "Expert" }]
+  let skills = [];
+  if (Array.isArray(resource.skillGroups)) {
+    skills = resource.skillGroups.flatMap(group => Object.keys(group));
+  } else if (Array.isArray(resource.skills)) {
+    skills = resource.skills;
+  }
 
-  return resource.skills.slice(0, 3).map((skill) => ({
-    name: skill,
-    proficiency: resource.proficiency?.[skill] || "Beginner",
-    stale: isSkillStale(resource.skillLastUsed?.[skill]),
-  }));
+  if (skills.length === 0) return [];
+
+  return skills.slice(0, 3).map((skill) => {
+    // Attempt to find proficiency in skillGroups or fallback to resource.proficiency
+    let proficiency = "Beginner";
+    if (Array.isArray(resource.skillGroups)) {
+      const group = resource.skillGroups.find(g => g[skill]);
+      if (group) proficiency = group[skill];
+    } else {
+      proficiency = resource.proficiency?.[skill] || "Beginner";
+    }
+
+    return {
+      name: skill,
+      proficiency,
+      stale: isSkillStale(resource.skillLastUsed?.[skill]),
+    };
+  });
 };
 
 export const deriveCategory = (resource) => {
@@ -70,35 +89,82 @@ export const deriveCategory = (resource) => {
 };
 
 export const isBenchEligible = (resource) => {
-  if (Number(resource.allocation || 0) !== 0) return false;
-  if (String(resource.status || "").toLowerCase() === "inactive") return false;
-  if (resource.noticePeriod) return false;
-  if (EXCLUDE_SHADOW_FROM_BENCH && resource.shadow) return false;
-  if (resource.poolType) return false;
-  return true;
+  if (!resource) return false;
+  // Trust the source indicator first
+  if (resource._source === "bench") return true; 
+  
+  // Fallback: If not explicit pool, and allocation is 0, consider bench
+  const hasAllocation = Number(resource.allocation || resource.allocationPercentage || 0) > 0;
+  return !resource.poolType && !hasAllocation;
 };
 
 export const isPoolResource = (resource) => {
-  if (!resource.poolType) return false;
-  if (String(resource.status || "").toLowerCase() === "inactive") return false;
-  return Number(resource.allocation || 0) === 0;
+  if (!resource) return false;
+  if (resource._source === "pool") return true;
+  return Boolean(resource.poolType);
 };
 
 export const normalizeBenchResource = (resource) => {
-  const agingDays = calculateAgingDays(resource.lastAllocationDate);
-  const category = CATEGORY_OPTIONS.includes(resource.category)
-    ? resource.category
-    : deriveCategory(resource);
-  const topSkills = buildSkillSummary(resource);
+  // Resolve naming using the provided backend schema: employeeId, resourceName, designation
+  const name = resource.resourceName || resource.name || "No detail found";
+  const role = resource.designation || resource.roleName || resource.role || "No detail found";
+  const location = resource.locationName || resource.baseLocation || resource.location || "No detail found";
+  const availability = Number.isFinite(Number(resource.availability)) 
+    ? Number(resource.availability) 
+    : (Number.isFinite(Number(resource.availabilityPercentage)) ? Number(resource.availabilityPercentage) : 0);
+  
+  const agingDays = Number.isFinite(Number(resource.aging)) 
+    ? Number(resource.aging) 
+    : calculateAgingDays(resource.lastAllocationDate || resource.releasedOn);
+
+  // Extract skills and proficiency map for consistent UI access
+  let skills = [];
+  let proficiencyMap = {};
+  
+  if (Array.isArray(resource.skillGroups)) {
+    resource.skillGroups.forEach(group => {
+      Object.entries(group).forEach(([skill, level]) => {
+        skills.push(skill);
+        proficiencyMap[skill] = level;
+      });
+    });
+  } else if (Array.isArray(resource.skills)) {
+    skills = resource.skills;
+    proficiencyMap = resource.proficiency || {};
+  }
+
+  // Use subState or derive from metrics
+  const rawCategory = resource.subState || resource.subStateName || resource.category;
+  // Normalize category to Title Case for matching CATEGORY_OPTIONS if needed
+  const normalizedCategory = typeof rawCategory === 'string'
+    ? rawCategory.charAt(0).toUpperCase() + rawCategory.slice(1).toLowerCase()
+    : rawCategory;
+
+  const category = (CATEGORY_OPTIONS.includes(normalizedCategory) || CATEGORY_OPTIONS.includes(rawCategory))
+    ? (CATEGORY_OPTIONS.includes(normalizedCategory) ? normalizedCategory : rawCategory)
+    : (rawCategory || deriveCategory({ ...resource, availability, skills, proficiency: proficiencyMap }));
+
+  const topSkills = skills.slice(0, 3).map((skill) => ({
+    name: skill,
+    proficiency: proficiencyMap[skill] || "No detail found",
+    stale: isSkillStale(resource.skillLastUsed?.[skill]),
+  }));
+
   const costPerDay = Number.isFinite(Number(resource.costPerDay))
     ? Number(resource.costPerDay)
     : null;
 
   return {
     ...resource,
+    name,
+    role,
+    location,
+    availability,
     category,
     agingDays,
     topSkills,
+    skills,
+    proficiency: proficiencyMap,
     missingSkills: Array.isArray(resource.missingSkills) ? resource.missingSkills : [],
     warnings: {
       missingSkills: topSkills.length === 0,
@@ -113,26 +179,64 @@ export const normalizeBenchResource = (resource) => {
 
 export const sanitizeResources = (resources) => {
   const seen = new Set();
-  return resources.reduce((acc, item) => {
-    if (!item?.id || seen.has(item.id)) return acc;
-    seen.add(item.id);
-    acc.push(normalizeBenchResource(item));
+  return (Array.isArray(resources) ? resources : []).reduce((acc, item) => {
+    if (!item) return acc;
+    
+    // Resilient ID resolution: employeeId, uuid, or generated
+    const rawId = item.employeeId || item.resourceUuid || item.uuid || item.employee_uuid || item.id;
+    if (!rawId && !item.resourceName) return acc; // Skip truly empty records
+    
+    const resolvedId = String(rawId || Math.random().toString(36).substr(2, 9));
+    
+    if (seen.has(resolvedId)) return acc;
+    seen.add(resolvedId);
+    
+    acc.push(normalizeBenchResource({ ...item, id: resolvedId }));
     return acc;
   }, []);
 };
 
 export const filterResources = (resources, search, filters, activeTab) => {
+  if (!Array.isArray(resources)) return [];
+  
   const query = String(search || "").trim().toLowerCase();
+  
   return resources.filter((resource) => {
-    const visible = activeTab === "bench" ? isBenchEligible(resource) : isPoolResource(resource);
-    if (!visible) return false;
+    if (!resource) return false;
 
-    const searchTarget = [resource.name, resource.role, resource.location, ...(resource.skills || [])]
-      .join(" ")
-      .toLowerCase();
-    if (query && !searchTarget.includes(query)) return false;
-    if (filters.category && resource.category !== filters.category) return false;
-    if (filters.location && resource.location !== filters.location) return false;
+    // 1. Tab Visibility Check
+    const isVisible = activeTab === "bench" ? isBenchEligible(resource) : isPoolResource(resource);
+    if (!isVisible) return false;
+
+    // 2. Search Matching
+    if (query) {
+      const searchTarget = [
+        resource.name, 
+        resource.resourceName,
+        resource.role, 
+        resource.designation,
+        resource.location,
+        ...(resource.skills || [])
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      
+      if (!searchTarget.includes(query)) return false;
+    }
+
+    // 3. Category Filter
+    if (filters.category) {
+      const cat = String(resource.category || "").toLowerCase();
+      const sub = String(resource.subState || "").toLowerCase();
+      const filt = String(filters.category).toLowerCase();
+      if (cat !== filt && sub !== filt) return false;
+    }
+
+    // 4. Location Filter
+    if (filters.location && String(resource.location || "").toLowerCase() !== String(filters.location).toLowerCase()) {
+      return false;
+    }
 
     if (filters.availability) {
       const availability = Number(resource.availability || 0);
