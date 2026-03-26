@@ -34,12 +34,24 @@ export default function CreateOffer() {
   const [components, setComponents] = useState([
     {
       id: Date.now(),
-      name: "Basic",
-      type: "Fixed",
-      frequency: "Monthly",
+      name: "",
+      type: "",
+      frequency: "",
       amount: "",
     },
   ]);
+
+  const typeOptions = [
+  { label: "Fixed", value: "Fixed" },
+  { label: "Variable", value: "Variable" },
+  { label: "Bonus", value: "Bonus" },
+];
+
+const frequencyOptions = [
+  { label: "Monthly", value: "Monthly" },
+  { label: "Quarterly", value: "Quarterly" },
+  { label: "Yearly", value: "Yearly" },
+];
 
   /* ================= STEPS ================= */
 
@@ -118,8 +130,8 @@ export default function CreateOffer() {
       {
         id: Date.now(),
         name: "",
-        type: "Fixed",
-        frequency: "Monthly",
+        type: "",
+        frequency: "",
         amount: "",
       },
     ]);
@@ -297,8 +309,19 @@ export default function CreateOffer() {
             {components.map((c)=>(
               <div key={c.id} className="grid grid-cols-5 gap-4 items-end">
                 <Input label="Component" value={c.name} onChange={(e)=>handleComponentChange(c.id,"name",e.target.value)}/>
-                <Input label="Type" value={c.type} onChange={(e)=>handleComponentChange(c.id,"type",e.target.value)}/>
-                <Input label="Frequency" value={c.frequency} onChange={(e)=>handleComponentChange(c.id,"frequency",e.target.value)}/>
+                <SelectInput
+                    label="Type"
+                    options={typeOptions}
+                    value={typeOptions.find(opt => opt.value === c.type)}
+                    onChange={(v)=>handleComponentChange(c.id,"type",v?.value)}
+                  />
+
+                  <SelectInput
+                    label="Frequency"
+                    options={frequencyOptions}
+                    value={frequencyOptions.find(opt => opt.value === c.frequency)}
+                    onChange={(v)=>handleComponentChange(c.id,"frequency",v?.value)}
+                  />
                 <Input type="number" label="Amount" value={c.amount} onChange={(e)=>handleComponentChange(c.id,"amount",e.target.value)}/>
                 <button onClick={()=>removeComponent(c.id)}><Trash2 size={18} className="text-red-500"/></button>
               </div>

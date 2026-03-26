@@ -257,3 +257,28 @@ export const getPendingRoleOffsForDM = async () => {
     throw error;
   }
 };
+
+// ✅ ROLE-OFF REPORTING & EXPORT
+export const getFilteredRoleOffs = async (payload) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/reports/role-off/filtered`, payload, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const exportRoleOffsCsv = async (payload) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/reports/role-off/export/csv`, payload, {
+      headers: getAuthHeaders(),
+      responseType: 'blob', // Important: expect binary data
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,11 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRoleOffReasons } from "@/pages/resource_management/services/roleOffService";
+import { toast } from "react-toastify";
 
 const formatReason = (str) => {
   if (typeof str !== 'string') return str;
   return str.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 };
+
+const isPendingStatus = (status) =>
+  status === "Pending" || status === "Pending Approval";
 
 const impactStyles = {
   Low: "border-teal-200 bg-teal-50 text-teal-700",
@@ -75,7 +79,10 @@ const RoleOffSidePanel = ({
 }) => {
   const [form, setForm] = useState(baseForm);
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRejectError, setShowRejectError] = useState(false);
+  const rejectReasonRef = useRef(null);
+  const [submittingAction, setSubmittingAction] = useState(null);
+  const isSubmitting = !!submittingAction;
   const [reasons, setReasons] = useState([]);
   const [reviewState, setReviewState] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -132,6 +139,7 @@ const RoleOffSidePanel = ({
     });
     setReviewState(null);
     setError("");
+    setShowRejectError(false);
     setFieldErrors({});
   }, [record, open]);
 
@@ -210,10 +218,10 @@ const RoleOffSidePanel = ({
       }
 
       setFieldErrors({});
-      setIsSubmitting(true);
+      setSubmittingAction("submit");
       try {
         const response = await onSubmit?.(form);
-        if (response?.requiresConfirmation) {
+        if (response?.requiresConfirmation && !form.reviewConfirmed) {
           setReviewState(response);
           setForm((prev) => ({
             ...prev,
@@ -222,35 +230,41 @@ const RoleOffSidePanel = ({
           setError("");
           return;
         }
+        onClose?.();
+      } catch (error) {
+        console.error("Error submitting role-off:", error);
+        setError("Failed to submit role-off request.");
+        toast.error(error.message || "Failed to submit role-off request.");
       } finally {
-        setIsSubmitting(false);
+        setSubmittingAction(null);
       }
       return;
     }
 
     if (isDM && actionType === "reject") {
       if (!form.decisionNotes.trim()) {
-        const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
-        setFieldErrors(nextFieldErrors);
-        setError(getBannerErrorMessage(nextFieldErrors));
+        setShowRejectError(true);
+        rejectReasonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
       setFieldErrors({});
-      setIsSubmitting(true);
+      setSubmittingAction("reject");
       try {
         await onReject?.(record, form.decisionNotes.trim());
+        onClose?.();
       } finally {
-        setIsSubmitting(false);
+        setSubmittingAction(null);
       }
       return;
     }
 
     if (isDM && actionType !== "reject") {
-      setIsSubmitting(true);
+      setSubmittingAction("approve");
       try {
         await onApprove?.(record, form.decisionNotes.trim());
+        onClose?.();
       } finally {
-        setIsSubmitting(false);
+        setSubmittingAction(null);
       }
     }
   };
@@ -258,58 +272,62 @@ const RoleOffSidePanel = ({
   const handleRmApproveClick = async () => {
     setError("");
     setFieldErrors({});
-    setIsSubmitting(true);
+    setSubmittingAction("approve");
     try {
       await onRmApprove?.(record);
+      onClose?.();
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
   const handleRmRejectClick = async () => {
     if (!form.decisionNotes.trim()) {
-      const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
-      setFieldErrors(nextFieldErrors);
-      setError(getBannerErrorMessage(nextFieldErrors));
+      setShowRejectError(true);
+      rejectReasonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     setError("");
     setFieldErrors({});
-    setIsSubmitting(true);
+    setShowRejectError(false);
+    setSubmittingAction("reject");
     try {
       await onRmReject?.(record, form.decisionNotes.trim());
+      onClose?.();
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
   const handleDmApproveClick = async () => {
     setError("");
     setFieldErrors({});
-    setIsSubmitting(true);
+    setSubmittingAction("approve");
     try {
       await onApprove?.(record, form.decisionNotes.trim());
+      onClose?.();
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
   const handleDmRejectClick = async () => {
     if (!form.decisionNotes.trim()) {
-      const nextFieldErrors = { decisionNotes: "Rejection reason is required." };
-      setFieldErrors(nextFieldErrors);
-      setError(getBannerErrorMessage(nextFieldErrors));
+      setShowRejectError(true);
+      rejectReasonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     setError("");
     setFieldErrors({});
-    setIsSubmitting(true);
+    setShowRejectError(false);
+    setSubmittingAction("reject");
     try {
       await onReject?.(record, form.decisionNotes.trim());
+      onClose?.();
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   };
 
@@ -551,7 +569,7 @@ const RoleOffSidePanel = ({
                         }
                         className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
                       />
-                      <span>Please review the role-off impact and confirm to proceed</span>
+                      <span>{reviewState.message || "Please review the role-off impact and confirm to proceed"}</span>
                     </label>
                   </section>
                 ) : null}
@@ -584,25 +602,34 @@ const RoleOffSidePanel = ({
           {isRM ? (
             <section className="space-y-4 rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-gray-500">Status</span>
+                <span className="text-sm text-gray-500 font-semibold">Status</span>
                 <span className="text-sm font-semibold text-[#081534]">{record.status}</span>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 italic">
                 Review the role-off request details here, then approve or reject the request using the actions below.
               </p>
-              <div>
+              <div ref={rejectReasonRef}>
                 <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                   Rejection Reason
                 </label>
                 <textarea
                   rows={4}
                   value={form.decisionNotes}
-                  onChange={(event) =>
-                    updateField("decisionNotes", event.target.value)
-                  }
-                  className={cn(getFieldClassName(fieldErrors.decisionNotes), "px-3 py-2")}
+                  onChange={(event) => {
+                    setForm((prev) => ({ ...prev, decisionNotes: event.target.value }));
+                    if (showRejectError) setShowRejectError(false);
+                  }}
+                  className={cn(
+                    "mt-2 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition-colors",
+                    showRejectError ? "border-rose-500 ring-1 ring-rose-500" : "border-gray-300 focus:border-blue-500"
+                  )}
                   placeholder="Enter rejection reason if you want to reject this request"
                 />
+                {showRejectError && (
+                  <p className="mt-1 text-xs text-rose-500">
+                    * This field is mandatory for rejection.
+                  </p>
+                )}
                 {fieldErrors.decisionNotes ? (
                   <p className="mt-1 text-xs text-rose-600">{fieldErrors.decisionNotes}</p>
                 ) : null}
@@ -620,19 +647,28 @@ const RoleOffSidePanel = ({
                   </div>
                 </div>
               ) : null}
-              <div>
+              <div ref={rejectReasonRef}>
                 <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
                   Rejection Reason
                 </label>
                 <textarea
                   rows={5}
                   value={form.decisionNotes}
-                  onChange={(event) =>
-                    updateField("decisionNotes", event.target.value)
-                  }
-                  className={cn(getFieldClassName(fieldErrors.decisionNotes), "px-3 py-2")}
+                  onChange={(event) => {
+                    setForm((prev) => ({ ...prev, decisionNotes: event.target.value }));
+                    if (showRejectError) setShowRejectError(false);
+                  }}
+                  className={cn(
+                    "mt-2 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition-colors",
+                    showRejectError ? "border-rose-500 ring-1 ring-rose-500" : "border-gray-300 focus:border-blue-500"
+                  )}
                   placeholder="Enter rejection reason if you want to reject this request"
                 />
+                {showRejectError && (
+                  <p className="mt-1 text-xs text-rose-500">
+                    * This field is mandatory for rejection.
+                  </p>
+                )}
                 {fieldErrors.decisionNotes ? (
                   <p className="mt-1 text-xs text-rose-600">{fieldErrors.decisionNotes}</p>
                 ) : null}
@@ -655,13 +691,13 @@ const RoleOffSidePanel = ({
               </Button>
             ) : null}
             {isPM && !isReadOnlyPm ? (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
-                {isSubmitting ? (
+              <Button onClick={handleSubmit} disabled={isSubmitting || (reviewState?.requiresConfirmation && !form.reviewConfirmed)} className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed">
+                {submittingAction === "submit" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                 )}
-                {isSubmitting
+                {submittingAction === "submit"
                   ? (
                     actionType === "bulk-create"
                       ? "Creating Bulk Role-Off..."
@@ -682,19 +718,19 @@ const RoleOffSidePanel = ({
               <>
                 <Button
                   onClick={handleRmApproveClick}
-                  disabled={isSubmitting || record.status !== "Pending Approval"}
-                  className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isPendingStatus(record.status)}
+                  className={`h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting || !isPendingStatus(record.status) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {submittingAction === "approve" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Approve
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleRmRejectClick}
-                  disabled={isSubmitting || record.status !== "Pending Approval"}
-                  className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || !isPendingStatus(record.status)}
+                  className={`h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting || !isPendingStatus(record.status) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {submittingAction === "reject" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Reject
                 </Button>
               </>
@@ -706,7 +742,7 @@ const RoleOffSidePanel = ({
                   disabled={isSubmitting}
                   className="h-10 bg-[#081534] text-sm hover:bg-[#10214f] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {submittingAction === "approve" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Fulfill
                 </Button>
                 <Button
@@ -715,7 +751,7 @@ const RoleOffSidePanel = ({
                   disabled={isSubmitting}
                   className="h-10 border-rose-300 bg-white text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {submittingAction === "reject" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Reject
                 </Button>
               </>
