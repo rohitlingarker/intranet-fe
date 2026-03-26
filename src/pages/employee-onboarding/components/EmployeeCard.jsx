@@ -100,7 +100,7 @@ const EmployeeCard = ({ employee, index }) => {
       {/* Actions */}
       <div className="mt-5 flex items-center gap-3">
         <button className="flex-1 bg-blue-800 hover:bg-blue-900 text-white py-2 rounded-lg font-medium transition"
-        onClick={() => navigation(`/employee-onboarding/employeeProfile`)}>
+        onClick={() => navigation(`/employee-onboarding/employeeProfile/${employee.employee_uuid}`)}>
           View Profile
         </button>
 
