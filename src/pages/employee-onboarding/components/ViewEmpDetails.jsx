@@ -50,6 +50,7 @@ const selectedApproverName =
 
   const [editData, setEditData] = useState({
     first_name: "",
+    middle_name:"",
     last_name: "",
     mail: "",
     country_code: "",
@@ -79,6 +80,8 @@ const selectedApproverName =
         `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/offerletters/offer/${user_uuid}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+ 
       setEmployee(res.data);
   
       setEditData({
@@ -313,6 +316,7 @@ const actionTaken =
 
     const payload = {
     first_name: editData.first_name,
+    middle_name:editData.middle_name,
     last_name: editData.last_name,
     mail: editData.mail,
     country_code: editData.country_code,
@@ -402,7 +406,13 @@ finally {
             </div>
             <div>
               <h1 className="text-2xl font-semibold text-blue-900">
-                {employee.first_name} {employee.last_name}
+                  {[
+                    employee.first_name,
+                    employee.middle_name,
+                    employee.last_name
+                  ]
+                    .filter((name) => name && name.trim() !== "")
+                    .join(" ")}
               </h1>
               <p className="flex items-center gap-2 text-gray-900">
                 <BadgeCheck size={16} />
@@ -448,7 +458,7 @@ finally {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            {Object.keys(editData)
 .filter(key => [
-'first_name','last_name','mail','country_code',
+'first_name','middle_name','last_name','mail','country_code',
 'contact_number','designation','employee_type',
 'package','currency','cc_emails'
 ].includes(key))
@@ -553,7 +563,10 @@ className="border p-2 rounded"
 
         {/* --- DETAILS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DetailCard icon={<Mail />} label="Email" value={employee.mail} />
+          <DetailCard 
+          icon={<Mail />} 
+          label="Email" 
+          value={employee.mail} />
           <DetailCard
             icon={<Phone />}
             label="Contact"
@@ -566,8 +579,8 @@ className="border p-2 rounded"
           />
           <DetailCard
             icon={<Wallet />}
-            label="CTC"
-            value={`${employee.package} ${employee.currency}`}
+            label="Annual CTC"
+            value={employee.total_ctc ? `₹ ${employee.total_ctc}` : "—"}
           />
           <DetailCard
             icon={<UserCheck />}
@@ -578,12 +591,10 @@ className="border p-2 rounded"
           icon={<Mail />}
           label="CC Emails"
           value={
-            employee?.cc_emails
-              ? employee.cc_emails
-                  .split(",")
-                  .map(e => e.trim())
-                  .filter(Boolean)
-                  .join(", ")
+            employee?.cc_mails && employee.cc_mails.length>0
+              ? employee.cc_mails.join(", ")
+                 
+             
               : "—"
           }
           />

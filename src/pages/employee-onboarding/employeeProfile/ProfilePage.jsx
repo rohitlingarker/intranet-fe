@@ -125,8 +125,8 @@ export default function ProfilePage({ activeTab }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Addresses" onEdit={() => setEditSection("address")}>
-          <Row label="Current Address" value={`${addressData.current.line1}, ${addressData.current.city}`} />
-          <Row label="Permanent Address" value={`${addressData.permanent.line1}, ${addressData.permanent.city}`} />
+          <Row label="Current Address" value={[addressData.current.line1, addressData.current.city].filter(Boolean).join(", ")} />
+          <Row label="Permanent Address" value={[addressData.permanent.line1, addressData.permanent.city].filter(Boolean).join(", ")} />
         </Section>
 
         <Section title="Relations" onEdit={() => setEditSection("relations")}>
@@ -207,7 +207,7 @@ const Row = ({ label, value }) => (
   </div>
 );
 
-const Input = ({ label, name, value, onChange, type = "text" }) => (
+const Input = ({ label, name, value, onChange, type = "text", disabled = false }) => (
   <div>
     <label className="block text-gray-600 mb-2">{label}</label>
     <input
@@ -215,21 +215,56 @@ const Input = ({ label, name, value, onChange, type = "text" }) => (
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full border rounded px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+      disabled={disabled}
+      className={`w-full border rounded px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
     />
   </div>
 );
 
+const AddressInput = ({ label, name, value, onChange, type = "text", disabled = false }) => (
+  <div>
+    <label className="block text-gray-400 mb-1 uppercase text-xs tracking-wider">{label}</label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none ${disabled ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+    />
+  </div>
+);
+
+const Select = ({ label, name, value, onChange, options, disabled = false }) => (
+  <div>
+    <label className="block text-gray-400 mb-1 uppercase text-xs tracking-wider">{label}</label>
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white ${disabled ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+    >
+      <option value="" disabled>Select {label}</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+  </div>
+);
+
 const ModalWrapper = ({ title, onClose, children }) => (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
-      <div className="flex justify-between items-center px-8 py-5 border-b">
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+      <div className="flex justify-between items-center px-8 py-5 border-b shrink-0">
         <h3 className="text-xl font-medium">{title}</h3>
         <button onClick={onClose}><X size={22} /></button>
       </div>
-      <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">{children}</div>
-      <div className="flex justify-end gap-4 px-8 py-6 border-t bg-gray-50">
-        <button onClick={onClose} className="px-6 py-2 border rounded text-sm">Cancel</button>
+      <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm overflow-y-auto">
+        {children}
+      </div>
+      <div className="flex justify-end gap-4 px-8 py-6 border-t bg-gray-50 shrink-0">
+        <button onClick={onClose} className="px-6 py-2 border rounded text-sm bg-white">Cancel</button>
         <button onClick={onClose} className="px-6 py-2 bg-indigo-600 text-white rounded text-sm">Update</button>
       </div>
     </div>
@@ -259,12 +294,75 @@ const ContactModal = ({ data, setData, onClose }) => (
   </ModalWrapper>
 );
 
-const AddressModal = ({ data, setData, onClose }) => (
-  <ModalWrapper title="Addresses" onClose={onClose}>
-    <Input label="Current Address Line 1" name="line1" value={data.current.line1} onChange={(e)=>setData({...data,current:{...data.current,line1:e.target.value}})}/>
-    <Input label="Permanent Address Line 1" name="line1" value={data.permanent.line1} onChange={(e)=>setData({...data,permanent:{...data.permanent,line1:e.target.value}})}/>
-  </ModalWrapper>
-);
+const AddressModal = ({ data, setData, onClose }) => {
+  const updateCurrent = (field, value) => {
+    setData((prev) => {
+      const nextData = { ...prev, current: { ...prev.current, [field]: value } };
+      if (nextData.sameAsCurrent) {
+        nextData.permanent = { ...nextData.permanent, [field]: value };
+      }
+      return nextData;
+    });
+  };
+
+  const updatePermanent = (field, value) => {
+    setData((prev) => ({ ...prev, permanent: { ...prev.permanent, [field]: value } }));
+  };
+
+  const toggleSameAsCurrent = (e) => {
+    const checked = e.target.checked;
+    setData((prev) => ({
+      ...prev,
+      sameAsCurrent: checked,
+      permanent: checked 
+      ? { ...prev.current }
+       : {
+          country: "India",
+          line1: "",
+          line2: "",
+          city: "",
+          state: "",
+          pincode: "",
+        },
+    }));
+  };
+
+  const countries = ["India", "USA", "UK", "Australia", "Canada"];
+  const states = ["Andhra Pradesh", "Karnataka", "Maharashtra", "Tamil Nadu", "Telangana"];
+
+  return (
+    <ModalWrapper title="Addresses" onClose={onClose}>
+      <div className="flex flex-col">
+        <div className="text-gray-500 mb-6 uppercase text-sm tracking-widest font-medium">CURRENT ADDRESS</div>
+        <div className="space-y-4">
+          <Select label="Country" value={data.current.country} onChange={(e) => updateCurrent('country', e.target.value)} options={countries} />
+          <AddressInput label="Address Line 1" value={data.current.line1} onChange={(e) => updateCurrent('line1', e.target.value)} />
+          <AddressInput label="Address Line 2" value={data.current.line2} onChange={(e) => updateCurrent('line2', e.target.value)} />
+          <AddressInput label="City" value={data.current.city} onChange={(e) => updateCurrent('city', e.target.value)} />
+          <Select label="State" value={data.current.state} onChange={(e) => updateCurrent('state', e.target.value)} options={states} />
+          <AddressInput label="Pincode" value={data.current.pincode} onChange={(e) => updateCurrent('pincode', e.target.value)} />
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="text-gray-500 mb-6 uppercase text-sm tracking-widest font-medium">PERMANENT ADDRESS</div>
+        <div className="space-y-4 flex-grow">
+          <Select label="Country" value={data.permanent.country} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('country', e.target.value)} options={countries} />
+          <AddressInput label="Address Line 1" value={data.permanent.line1} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('line1', e.target.value)} />
+          <AddressInput label="Address Line 2" value={data.permanent.line2} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('line2', e.target.value)} />
+          <AddressInput label="City" value={data.permanent.city} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('city', e.target.value)} />
+          <Select label="State" value={data.permanent.state} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('state', e.target.value)} options={states} />
+          <AddressInput label="Pincode" value={data.permanent.pincode} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('pincode', e.target.value)} />
+          
+          <label className="flex items-center gap-2 mt-6 cursor-pointer text-gray-700">
+            <input type="checkbox" checked={data.sameAsCurrent} onChange={toggleSameAsCurrent} className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+            <span className="text-sm">Same as Current Address</span>
+          </label>
+        </div>
+      </div>
+    </ModalWrapper>
+  );
+};
 
 const RelationsModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Relations" onClose={onClose}>

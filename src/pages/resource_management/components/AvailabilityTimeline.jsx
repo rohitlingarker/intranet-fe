@@ -136,6 +136,11 @@ function groupByRole(resources) {
   return map;
 }
 
+function getResourceMeta(resource) {
+  const parts = [resource.location, resource.role].filter(Boolean);
+  return parts.length > 0 ? parts.join(" | ") : "N/A";
+}
+
 // ----- Sub-components -----
 
 const TimelineHeader = memo(function TimelineHeader({
@@ -885,7 +890,7 @@ export function AvailabilityTimeline({
                             )}
                           </div>
                           <p className="text-[8px] sm:text-[10px] text-muted-foreground truncate">
-                            {resource.role}
+                            {getResourceMeta(resource)}
                           </p>
                         </div>
                       </button>

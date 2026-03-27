@@ -54,19 +54,9 @@ const allocationModificationApi = {
     return response.data;
   },
 
-  approveModification: async (id) => {
+  submitRmDecision: async (id, payload) => {
     const response = await axios.put(
-      `${BASE_URL}/api/allocation-modifications/${id}/rm/approve`,
-      null,
-      getAuthHeader()
-    );
-
-    return response.data;
-  },
-
-  rejectModification: async (id, payload) => {
-    const response = await axios.put(
-      `${BASE_URL}/api/allocation-modifications/${id}/rm/reject`,
+      `${BASE_URL}/api/allocation-modifications/${id}/rm/decision`,
       payload,
       getAuthHeader()
     );
