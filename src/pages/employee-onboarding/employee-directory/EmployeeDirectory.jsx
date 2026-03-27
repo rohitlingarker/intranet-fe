@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// import React, { useState, useEffect } from "react";
 import EmployeeCard from "../components/EmployeeCard";
 import { Search, Loader2 } from "lucide-react";
 import axios from "axios";
