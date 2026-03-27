@@ -436,6 +436,7 @@ export default function RequestLeaveModal({
       startDate,
       endDate: endDate || startDate,
       daysRequested,
+      year,
       reason,
       // isHalfDay: showCustomHalfDay,
       startSession: halfDayConfig.start,
