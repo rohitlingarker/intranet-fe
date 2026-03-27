@@ -8,9 +8,6 @@ const EmployeeDirectory = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
   const [departmentsList, setDepartmentsList] = useState([]);
@@ -161,7 +158,6 @@ const EmployeeDirectory = () => {
             <EmployeeCard key={index} employee={emp} index={index}/>
           ))
         ) : (
-          <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
           <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
         )}
       </div>

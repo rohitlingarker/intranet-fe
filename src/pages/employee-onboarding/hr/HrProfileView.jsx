@@ -507,7 +507,6 @@ export default function HrProfileView() {
                 documents={edu.documents}
                 docStatus={docStatus}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
-                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
@@ -536,7 +535,6 @@ export default function HrProfileView() {
               <DocCard documents={exp.documents}
                 docStatus={docStatus}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
-                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
@@ -557,7 +555,6 @@ export default function HrProfileView() {
  
               <DocCard documents={doc.documents}
                 docStatus={docStatus}
-                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
@@ -603,7 +600,7 @@ export default function HrProfileView() {
                   disabled={verificationStatus === "Verified"}
                   className="px-10 py-3 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 shadow-lg shadow-gray-300 disabled:opacity-30 transition-all transform active:scale-95"
                 >
-                  Complete Review
+                  Final Verification
                 </button>
               )}
             </div>
@@ -821,7 +818,6 @@ const DocCard = ({
               ) : (
                 <>
                   <button
-                    onClick={() => onApprove(d, i)}
                     onClick={() => onApprove(d, i)}
                     className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                     title="Approve"
