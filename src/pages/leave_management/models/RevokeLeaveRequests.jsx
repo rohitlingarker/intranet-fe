@@ -31,12 +31,17 @@ const RevokeLeaveRequests = ({ revokeRequests, onActionSuccess }) => {
     }
   };
 
-  const handleApprove = async (leaveId, employeeId) => {
+  const handleApprove = async (leaveId, employeeId, year) => {
     setLoading(true);
     try {
       const res = await axios.post(
         `${BASE_URL}/api/leave-revoke/approve/${leaveId}`,
-        {},
+        {
+          payload:{
+            employeeId: employeeId,
+            year: year
+          }
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -57,12 +62,17 @@ const RevokeLeaveRequests = ({ revokeRequests, onActionSuccess }) => {
     }
   };
 
-  const handleReject = async (leaveId) => {
+  const handleReject = async (leaveId, employeeId, year) => {
     try {
       setLoading(true);
       const res = await axios.post(
         `${BASE_URL}/api/leave-revoke/reject/${leaveId}`,
-        {},
+        {
+          payload: {
+            employeeId: employeeId,
+            year: year
+          }
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -132,7 +142,7 @@ const RevokeLeaveRequests = ({ revokeRequests, onActionSuccess }) => {
                   <td className="p-3">{req.reason}</td>
                   <td className="p-3 flex justify-center gap-2">
                     <button
-                      onClick={() => handleApprove(req.revokeId, req.employeeId)}
+                      onClick={() => handleApprove(req.revokeId, req.employeeId, req.year)}
                       className="p-1 pr-2 text-green-600 hover:text-green-800 transition-colors"
                       title="Approve"
                       disabled={loading}
@@ -140,7 +150,7 @@ const RevokeLeaveRequests = ({ revokeRequests, onActionSuccess }) => {
                       <Check className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleReject(req.revokeId)}
+                      onClick={() => handleReject(req.revokeId, req.employeeId, req.year)}
                       className="p-1 pl-4 text-red-600 hover:text-red-800 transition-colors"
                       title="Reject"
                       disabled={loading}
