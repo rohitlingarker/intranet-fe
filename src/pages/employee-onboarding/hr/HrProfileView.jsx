@@ -750,7 +750,7 @@ const DocCard = ({
   onView,
   docStatus,
   onApprove,
-  onApprove,
+  // onApprove,
   setRejectDocKey,
   setRejectModal,
   verificationStatus,
