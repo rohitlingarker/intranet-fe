@@ -1,9 +1,9 @@
 import React from "react";
-import { Layers3 } from "lucide-react";
+import { Layers3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const BulkActionBar = ({ count, onClear, onCreate }) => {
-  if (!count) return null;
+const BulkActionBar = ({ count, title, description, actions = [], onClear }) => {
+  if (count < 2) return null;
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 md:flex-row md:items-center md:justify-between">
@@ -13,10 +13,10 @@ const BulkActionBar = ({ count, onClear, onCreate }) => {
         </div>
         <div>
           <p className="text-sm font-semibold text-[#081534]">
-            {count} role-off requests will be created
+            {title || `${count} items selected`}
           </p>
           <p className="text-xs text-gray-600">
-            Each selected allocation will generate a separate request.
+            {description || "Apply a bulk action to the current selection."}
           </p>
         </div>
       </div>
@@ -28,9 +28,18 @@ const BulkActionBar = ({ count, onClear, onCreate }) => {
         >
           Clear Selection
         </Button>
-        <Button onClick={onCreate} className="h-9 bg-[#081534] text-xs hover:bg-[#10214f]">
-          Create Bulk Role-Off
-        </Button>
+        {actions.map((action) => (
+          <Button
+            key={action.label}
+            onClick={action.onClick}
+            variant={action.variant || "default"}
+            disabled={action.disabled}
+            className={action.className || "h-9 bg-[#081534] text-xs hover:bg-[#10214f]"}
+          >
+            {action.loading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+            {action.label}
+          </Button>
+        ))}
       </div>
     </div>
   );

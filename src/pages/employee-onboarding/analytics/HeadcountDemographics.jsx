@@ -1,13 +1,137 @@
+import  { useState, useEffect } from "react";
 import FiltersBar from "./components/FiltersBar";
 import SectionTabs from "./components/SectionTabs";
 import ChartCard from "./components/ChartCard";
 import CardContainer from "./components/CardContainer";
-import { demographicsMock, employmentDeptData,workerDeptData,
-  genderDeptData,  } from "./mockDemograpics";
+import { fetchDashboardAnalytics  } from "./analyticsapi";
 import BarChartCard from "./components/BarChartCard";
 import DeptBarChartCard from "./components/DeptBarChartCard";
 
+
 export default function HeadcountDemographicsPage() {
+
+  const [analytics, setAnalytics] = useState(null);
+  const [filters, setFilters] = useState({});
+const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    loadAnalytics();
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/masters/departments/`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+
+  setDepartments(data.map(d => d.department_name));
+};
+
+//  const loadAnalytics = async () => {
+//   const data = await fetchDashboardAnalytics();
+
+//   console.log("API DATA:", data); // 👈 DEBUG
+
+//   if (data) {
+//     const demographicsData = data.demographics || data; // 🔥 KEY FIX
+
+//     const genderWithColor = (demographicsData.gender || []).map(item => ({
+//       ...item,
+//       color: item.label === "Female" ? "#b57bb5" : "#5b8def"
+//     }));
+
+//     const nationalityWithColor = (demographicsData.nationality || []).map(item => ({
+//       ...item,
+//       color: item.label === "India" ? "#5b8def" : "#d97b7b"
+//     }));
+
+//     setAnalytics({
+//       demographics: {
+//         ...demographicsData,
+//         gender: genderWithColor,
+//         nationality: nationalityWithColor
+//       },
+//       workerDept: data.workerDept || [],
+//       genderDept: data.genderDept || [],
+//       employmentDept: data.employmentDept || []
+//     });
+//   }
+// };
+const loadAnalytics = async () => {
+  const data = await fetchDashboardAnalytics();
+
+  if (data) {
+    let demographicsData = data.demographics || data;
+
+    let workerDeptData = data.workerDept || [];
+    let genderDeptData = data.genderDept || [];
+    let employmentDeptData = data.employmentDept || [];
+
+    // 🔥 APPLY DEPARTMENT FILTER
+    if (filters.dept && filters.dept !== "All") {
+      workerDeptData = workerDeptData.filter(
+        (d) => d.dept === filters.dept
+      );
+
+      genderDeptData = genderDeptData.filter(
+        (d) => d.dept === filters.dept
+      );
+
+      employmentDeptData = employmentDeptData.filter(
+        (d) => d.dept === filters.dept
+      );
+
+      // 🔥 update total dynamically
+      const totalFromDept = workerDeptData.reduce(
+        (sum, d) => sum + (d.permanent || 0) + (d.contingent || 0),
+        0
+      );
+
+      demographicsData = {
+        ...demographicsData,
+        total: totalFromDept,
+      };
+    }
+
+    // 🎨 COLORS
+    const genderWithColor = (demographicsData.gender || []).map((item) => ({
+      ...item,
+      color: item.label === "Female" ? "#b57bb5" : "#5b8def",
+    }));
+
+    const nationalityWithColor = (demographicsData.nationality || []).map((item) => ({
+      ...item,
+      color: item.label === "India" ? "#5b8def" : "#d97b7b",
+    }));
+
+    setAnalytics({
+      demographics: {
+        ...demographicsData,
+        gender: genderWithColor,
+        nationality: nationalityWithColor,
+      },
+      workerDept: workerDeptData,
+      genderDept: genderDeptData,
+      employmentDept: employmentDeptData,
+    });
+  }
+};
+  if (!analytics) {
+    return <div style={{ padding: 20 }}>Loading analytics...</div>;
+  }
+
+
+  const { demographics, workerDept, genderDept, employmentDept } = analytics;
+
   return (
     <div
       style={{
@@ -23,31 +147,38 @@ export default function HeadcountDemographicsPage() {
         Headcount Distribution by Demographics
       </h2>
 
-      <FiltersBar />
+      <FiltersBar
+        filters={filters}
+        setFilters={setFilters}
+        departments={departments} />
 
       <CardContainer>
         <ChartCard
           title="Gender"
-          data={demographicsMock.gender}
-          total={demographicsMock.total}
+          data={demographics?.gender || []}
+          total={demographics?.total || 0}
+          colors={["#b57bb5", "#5b8def"]}
         />
 
         <ChartCard
           title="Employment Type"
-          data={demographicsMock.employmentType}
-          total={demographicsMock.total}
+          data={demographics?.employmentType || []}
+          total={demographics?.total || 0}
+          colors={["#c06dbf", "#5b8def"]}
         />
 
         <ChartCard
           title="Worker Type"
-          data={demographicsMock.workerType}
-          total={demographicsMock.total}
+          data={demographics?.workerType || []}
+          total={demographics?.total || 0}
+          colors={["#7b6ed6", "#5b8def"]}
         />
 
         <ChartCard
           title="Nationality"
-          data={demographicsMock.nationality}
-          total={demographicsMock.total}
+          data={demographics?.nationality || []}
+          total={demographics?.total || 0}
+          colors={["#d97b7b", "#5b8def"]}
         />
         </CardContainer>
 
@@ -55,7 +186,7 @@ export default function HeadcountDemographicsPage() {
         <CardContainer>
         <BarChartCard
           title="Age of Employees (in Years)"
-          data={demographicsMock.ageGroups}
+          data={demographics?.ageGroups || []}
           xKey="group"
           bars={[
             { key: "female", color: "#5b8def" },
@@ -64,14 +195,14 @@ export default function HeadcountDemographicsPage() {
         />
         <BarChartCard
           title="Years in Organisation"
-          data={demographicsMock.experience}
+          data={demographics?.experience || []}
           xKey="range"
           bars={[{ key: "value", color: "#e3b52e" }]}
         />
       </CardContainer>
       <DeptBarChartCard
   title="Headcount by Worker Type Across Department"
-  data={workerDeptData}
+  data={workerDept || [] }
   xKey="dept"
   bars={[
     { key: "contingent", color: "#7b6ed6" },
@@ -81,7 +212,7 @@ export default function HeadcountDemographicsPage() {
 
 <DeptBarChartCard
   title="Headcount by Gender Across Department"
-  data={genderDeptData}
+  data={genderDept || []}
   xKey="dept"
   bars={[
     { key: "female", color: "#5b8def" },
@@ -91,7 +222,7 @@ export default function HeadcountDemographicsPage() {
 
 <DeptBarChartCard
   title="Headcount by Employment Type Across Department"
-  data={employmentDeptData}
+  data={employmentDept || []}
   xKey="dept"
   bars={[
     { key: "full", color: "#59b3b8" },

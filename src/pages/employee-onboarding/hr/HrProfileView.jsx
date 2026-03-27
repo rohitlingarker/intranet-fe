@@ -1,35 +1,35 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { showStatusToast } from "../../../components/toastfy/toast.jsx";
 import { ArrowLeft, User, MapPin, Check, X, Building, Wallet } from "lucide-react";
 import { set } from "date-fns";
-
+ 
 export default function HrProfileView() {
-
+ 
   const { user_uuid } = useParams();
   const navigate = useNavigate();
-
+ 
   const token = localStorage.getItem("token");
   const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
-
+ 
   const tabs = ["overview", "education", "experience", "identity documents"];
-
+ 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [loadingDoc, setLoadingDoc] = useState(null);
-
+ 
   const [sectionStatus, setSectionStatus] = useState({
     overview: false,
     education: false,
     experience: false,
     "identity documents": false
   });
-
+ 
   const [docStatus, setDocStatus] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -38,7 +38,7 @@ export default function HrProfileView() {
   const [rejectDocKey, setRejectDocKey] = useState(null);
   const [rejectRemarks, setRejectRemarks] = useState("");
   const [loadedFromStorage, setLoadedFromStorage] = useState(false);
-
+ 
   const getDocKey = (d, i) => d.document_uuid || d.file_path || `${i}`;
   const getDocType = (tab) => {
     switch (tab) {
@@ -94,28 +94,28 @@ export default function HrProfileView() {
 
   useEffect(() => {
     (async () => {
-
+ 
       try {
-
+ 
         const res = await axios.get(`${BASE_URL}/hr/hr/${user_uuid}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
+ 
         setProfile(res.data);
         const status = res.data.offer?.offer_status;
         setVerificationStatus(status);
-
+ 
         if (status === "Verified") {
-
+ 
           setSectionStatus({
             overview: true,
             education: true,
             experience: true,
             "identity documents": true
           });
-
+ 
           const allDocs = {};
-
+ 
           [
             ...(res.data.education_documents || []),
             ...(res.data.identity_documents || []),
@@ -123,7 +123,7 @@ export default function HrProfileView() {
           ].forEach((d, i) => {
             allDocs[getDocKey(d, i)] = true;
           });
-
+ 
           setDocStatus(allDocs);
           setActiveTab("overview");
 
@@ -135,55 +135,55 @@ export default function HrProfileView() {
             experience: false,
             "identity documents": false
           });
-
+ 
           setDocStatus({});
           setActiveTab("overview");
         }
         /* restore saved verification */
-
-
+ 
+ 
         setLoadedFromStorage(true);
-
+ 
       } catch {
         showStatusToast("Failed to load profile", "error");
       } finally {
         setLoading(false);
       }
-
+ 
     })();
-
+ 
   }, [user_uuid]);
 
 
 
   /* open document */
   async function openFileInNewTab(url, key) {
-
+ 
     if (!url) return;
-
+ 
     setLoadingDoc(key);
-
+ 
     try {
-
+ 
       const res = await axios.get(`${BASE_URL}/hr/view_documents`, {
         params: { file_path: encodeURIComponent(url) },
         headers: { Authorization: `Bearer ${token}` }
       });
-
+ 
       const fileUrl = res.data.replace(/^"+|"+$/g, "");
-
+ 
       window.open(fileUrl, "_blank");
-
+ 
     } catch {
-
+ 
       showStatusToast("Failed to open document", "error");
-
+ 
     } finally {
-
+ 
       setLoadingDoc(null);
-
+ 
     }
-
+ 
   }
   const handleRejectDocument = async () => {
 
@@ -213,9 +213,9 @@ export default function HrProfileView() {
     setRejectModal(false);
     setRejectRemarks("");
     setRejectDocKey(null);
-
+ 
   };
-
+ 
   /* verify section */
 
   const verifySection = async () => {
@@ -228,21 +228,21 @@ export default function HrProfileView() {
           : activeTab === "identity documents"
             ? profile.identity_documents || []
             : [];
-
+ 
     const allDocsDone =
       currentDocs.length === 0 ||
       currentDocs.every((d, i) => {
-
+ 
         const doc = docStatus[getDocKey(d, i)];
-
+ 
         if (typeof doc === "object") {
           return doc.status === true;
         }
-
+ 
         return doc === true;
-
+ 
       });
-
+ 
     if (!allDocsDone) {
       showStatusToast("Please verify all documents first", "error");
       return;
@@ -259,9 +259,9 @@ export default function HrProfileView() {
     showStatusToast(`${activeTab} section verified`, "success");
 
   };
-
+ 
   /* final verify */
-
+ 
   const allSectionsVerified = Object.values(sectionStatus).every(Boolean);
   const allDocsVerified =
     Object.values(docStatus).length > 0 &&
@@ -271,20 +271,20 @@ export default function HrProfileView() {
       }
       return d === true;
     });
-
+ 
   const finalVerifyProfile = async () => {
-
+ 
     if (!allSectionsVerified || !allDocsVerified) {
-
+ 
       showStatusToast("Verify all sections & documents first", "error");
       return;
-
+ 
     }
-
+ 
     try {
-
+ 
       setFinalLoading(true);
-
+ 
       await axios.post(`${BASE_URL}/hr/verify-profile`,
         { user_uuid, status: "Verified" },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -298,7 +298,7 @@ export default function HrProfileView() {
         "identity documents": true
       });
       const allDocs = {};
-
+ 
       [
         ...(profile.education_documents || []),
         ...(profile.identity_documents || []),
@@ -306,29 +306,29 @@ export default function HrProfileView() {
       ].forEach((d, i) => {
         allDocs[getDocKey(d, i)] = true;
       });
-
+ 
       setDocStatus(allDocs);
       setShowConfirm(false);
       setShowSuccess(true);
-
+ 
       showStatusToast("Profile verified successfully", "success");
-
+ 
     } catch {
-
+ 
       showStatusToast("Final verification failed", "error");
-
+ 
     } finally {
-
+ 
       setFinalLoading(false);
-
+ 
     }
-
+ 
   };
-
+ 
   if (loading) return <CenteredMsg text="Loading profile..." />;
   if (!profile || !profile.offer)
     return <CenteredMsg text="Profile not found" error />;
-
+ 
   const {
     offer,
     personal_details,
@@ -339,17 +339,17 @@ export default function HrProfileView() {
     bank_details,
     pf_details
   } = profile;
-
+ 
   const groupedEducation = groupEducation(education_documents);
   const groupedExperience = groupExperience(experience);
   const groupedIdentity = groupIdentity(identity_documents);
-
+ 
   return (
-
+ 
     <div className="min-h-screen bg-[#f4f6fb]">
-
+ 
       <Header offer={offer} verificationStatus={verificationStatus} navigate={navigate} />
-
+ 
       {/* progress tracker */}
       <div className="max-w-6xl mx-auto mt-8 px-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -368,7 +368,7 @@ export default function HrProfileView() {
                 />
               </div>
             </div>
-
+ 
             <div className="flex flex-wrap gap-4 items-center">
               {tabs.map(t => (
                 <div key={t} className="flex items-center gap-2 group">
@@ -386,7 +386,7 @@ export default function HrProfileView() {
           </div>
         </div>
       </div>
-
+ 
       {/* navigation tabs */}
       <div className="max-w-6xl mx-auto px-6 mt-8">
         <div className="flex gap-8 border-b border-gray-200 overflow-x-auto no-scrollbar">
@@ -405,11 +405,11 @@ export default function HrProfileView() {
           ))}
         </div>
       </div>
-
+ 
       {/* content */}
-
+ 
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-
+ 
         {activeTab === "overview" && (
           <Section title="Personal & Contact Details" verified={sectionStatus.overview}>
             <div className="grid lg:grid-cols-2 gap-8">
@@ -428,7 +428,7 @@ export default function HrProfileView() {
                     <Info label="Current Residence" value={personal_details?.residence} />
                   </div>
                 </ColorCard>
-
+ 
                 <ColorCard title="Emergency Contact" icon={<User size={18} />}>
                   <div className="flex flex-col">
                     <Info label="Contact Name" value={personal_details?.emergency_contact_name} />
@@ -436,7 +436,7 @@ export default function HrProfileView() {
                     <Info label="Relationship" value={personal_details?.emergency_contact_relation} />
                   </div>
                 </ColorCard>
-
+ 
                 <ColorCard title="Bank Details" icon={<Building size={18} />}>
                   <div className="flex flex-col">
                     <Info label="Account Holder" value={bank_details?.account_holder_name} />
@@ -448,7 +448,7 @@ export default function HrProfileView() {
                   </div>
                 </ColorCard>
               </div>
-
+ 
               <div className="space-y-8">
                 <ColorCard title="Address Details" icon={<MapPin size={18} />}>
                   <div className="space-y-6">
@@ -472,7 +472,7 @@ export default function HrProfileView() {
                     ))}
                   </div>
                 </ColorCard>
-
+ 
                 <ColorCard title="PF Details" icon={<Wallet size={18} />}>
                   <div className="flex flex-col">
                     <Info label="PF Member" value={pf_details?.pf_member !== undefined ? (pf_details?.pf_member ? "Yes" : "No") : ""} />
@@ -483,10 +483,10 @@ export default function HrProfileView() {
             </div>
           </Section>
         )}
-
+ 
         {activeTab === "education" &&
           Object.values(groupedEducation).map((edu, i) => (
-
+ 
             <Section key={i} title={edu.title} verified={sectionStatus.education}>
               <div>
                 <p><b>Degree:</b> {edu.degree_name}</p>
@@ -497,15 +497,16 @@ export default function HrProfileView() {
                 <p><b>Start Year:</b> {edu.start_year}</p>
                 <p><b>Year of Passing:</b> {edu.year}</p>
                 <p><b>Percentage / CGPA:</b> {edu.percentage_cgpa}</p>
-
+ 
                 {edu.delay_reason && (
                   <p><b>Delay Reason:</b> {edu.delay_reason}</p>
                 )}
               </div>
-
+ 
               <DocCard
                 documents={edu.documents}
                 docStatus={docStatus}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
@@ -513,16 +514,16 @@ export default function HrProfileView() {
                 verificationStatus={verificationStatus}
                 loadingDoc={loadingDoc}
               />
-
+ 
             </Section>
-
+ 
           ))}
-
+ 
         {activeTab === "experience" &&
           Object.values(groupedExperience).map((exp, i) => (
-
+ 
             <Section key={i} title={exp.title} verified={sectionStatus.experience}>
-
+ 
               <div className="text-sm text-gray-600 mb-3">
                 <p><b>Company:</b> {exp.company_name}</p>
                 <p><b>Role:</b> {exp.role_title}</p>
@@ -531,30 +532,32 @@ export default function HrProfileView() {
                 <p><b>End:</b> {exp.end_date || "Current"}</p>
                 <p><b>Notice period day:</b> {exp.notice_period_days}days</p>
               </div>
-
+ 
               <DocCard documents={exp.documents}
                 docStatus={docStatus}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
                 setRejectModal={setRejectModal}
                 verificationStatus={verificationStatus}
                 loadingDoc={loadingDoc}
               />
-
+ 
             </Section>
-
+ 
           ))}
-
+ 
         {activeTab === "identity documents" &&
           Object.values(groupedIdentity).map((doc, i) => (
-
+ 
             <Section key={i} title={doc.title} verified={sectionStatus["identity documents"]}>
-
-
-
+ 
+ 
+ 
               <DocCard documents={doc.documents}
                 docStatus={docStatus}
+                onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onApprove={(d, idx) => handleApproveDocument(d, idx)}
                 onView={openFileInNewTab}
                 setRejectDocKey={setRejectDocKey}
@@ -563,9 +566,9 @@ export default function HrProfileView() {
                 loadingDoc={loadingDoc}
               />
             </Section>
-
+ 
           ))}
-
+ 
         {/* bottom navigation */}
         <div className="max-w-6xl mx-auto px-6 pb-20 mt-10">
           <div className="flex items-center justify-between p-6 bg-white rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50">
@@ -576,7 +579,7 @@ export default function HrProfileView() {
             >
               <ArrowLeft size={16} /> Previous
             </button>
-
+ 
             <div className="flex items-center gap-4">
               {!sectionStatus[activeTab] && verificationStatus !== "Verified" && (
                 <button
@@ -586,7 +589,7 @@ export default function HrProfileView() {
                   <Check size={18} strokeWidth={3} /> Verify {activeTab === "identity documents" ? "Documents" : activeTab}
                 </button>
               )}
-
+ 
               {activeTab !== "identity documents" ? (
                 <button
                   onClick={() => setActiveTab(tabs[tabs.indexOf(activeTab) + 1])}
@@ -604,15 +607,15 @@ export default function HrProfileView() {
                 </button>
               )}
             </div>
-
+ 
             <div className="w-[120px] hidden md:block" />
           </div>
         </div>
-
+ 
       </div>
-
-
-
+ 
+ 
+ 
       {/* confirm modal */}
       {showConfirm && (
         <Modal>
@@ -641,7 +644,7 @@ export default function HrProfileView() {
           </div>
         </Modal>
       )}
-
+ 
       {showSuccess && (
         <Modal>
           <div className="flex flex-col items-center gap-6">
@@ -661,7 +664,7 @@ export default function HrProfileView() {
           </div>
         </Modal>
       )}
-
+ 
       {rejectModal && (
         <Modal>
           <div className="flex flex-col gap-5">
@@ -669,14 +672,14 @@ export default function HrProfileView() {
               <h2 className="text-xl font-bold text-gray-900">Reject Document</h2>
               <p className="text-sm text-gray-500 mt-1">Please provide a clear reason for rejecting this document.</p>
             </div>
-
+ 
             <textarea
               value={rejectRemarks}
               onChange={(e) => setRejectRemarks(e.target.value)}
               placeholder="e.g., Document is blurry, Expired identity proof..."
               className="border border-gray-200 rounded-xl w-full p-4 mt-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none min-h-[120px]"
             />
-
+ 
             <div className="flex gap-3">
               <button
                 onClick={() => setRejectModal(false)}
@@ -694,15 +697,15 @@ export default function HrProfileView() {
           </div>
         </Modal>
       )}
-
+ 
     </div>
-
+ 
   );
-
+ 
 }
-
+ 
 /* components */
-
+ 
 const Header = ({ offer, verificationStatus, navigate }) => (
   <header className="bg-white border-b sticky top-0 z-30">
     <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
@@ -724,12 +727,12 @@ const Header = ({ offer, verificationStatus, navigate }) => (
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{offer.designation}</span>
-
-
+ 
+ 
           </div>
         </div>
       </div>
-
+ 
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
           <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Status</p>
@@ -744,11 +747,12 @@ const Header = ({ offer, verificationStatus, navigate }) => (
     </div>
   </header>
 );
-
+ 
 const DocCard = ({
   documents = [],
   onView,
   docStatus,
+  onApprove,
   onApprove,
   setRejectDocKey,
   setRejectModal,
@@ -761,7 +765,7 @@ const DocCard = ({
       const statusData = docStatus[key];
       const isVerified = typeof statusData === "object" ? statusData.status === true : statusData === true;
       const remarks = typeof statusData === "object" ? statusData.remarks : null;
-
+ 
       return (
         <div key={key} className="group border border-gray-100 rounded-xl p-5 flex flex-col sm:flex-row justify-between sm:items-center bg-white transition-all hover:border-indigo-100 hover:shadow-sm">
           <div className="flex gap-4 items-center">
@@ -797,7 +801,7 @@ const DocCard = ({
               )}
             </div>
           </div>
-
+ 
           <div className="flex items-center gap-4 mt-4 sm:mt-0 justify-end border-t sm:border-t-0 pt-3 sm:pt-0">
             <button
               onClick={() => onView(d.file_path, key)}
@@ -807,7 +811,7 @@ const DocCard = ({
             >
               {loadingDoc === key ? "Opening..." : "View Document"}
             </button>
-
+ 
             <div className="flex items-center gap-2 border-l border-gray-100 pl-4 ml-2">
               {verificationStatus === "Verified" || isVerified ? (
                 <div className="flex items-center gap-1.5 text-emerald-600">
@@ -817,6 +821,7 @@ const DocCard = ({
               ) : (
                 <>
                   <button
+                    onClick={() => onApprove(d, i)}
                     onClick={() => onApprove(d, i)}
                     className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                     title="Approve"
@@ -842,7 +847,7 @@ const DocCard = ({
     })}
   </div>
 );
-
+ 
 const Modal = ({ children }) => (
   <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
     <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-100 relative overflow-hidden">
@@ -851,7 +856,7 @@ const Modal = ({ children }) => (
     </div>
   </div>
 );
-
+ 
 const Section = ({ title, children, verified }) => (
   <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4 transition-all hover:shadow-md">
     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
@@ -865,7 +870,7 @@ const Section = ({ title, children, verified }) => (
     <div className="animate-fadeIn">{children}</div>
   </div>
 );
-
+ 
 const ColorCard = ({ title, icon, children }) => (
   <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 shadow-sm transition-all hover:bg-white hover:shadow-md">
     <div className="flex items-center gap-2 mb-3">
@@ -877,7 +882,7 @@ const ColorCard = ({ title, icon, children }) => (
     <div>{children}</div>
   </div>
 );
-
+ 
 const Info = ({ label, value }) => (
   <div className="flex items-center gap-4 py-1 border-b border-gray-50/50 last:border-0 group/info transition-all duration-200">
     <div className="w-1/3 min-w-[140px] shrink-0">
@@ -891,19 +896,19 @@ const Info = ({ label, value }) => (
     </div>
   </div>
 );
-
+ 
 const CenteredMsg = ({ text, error }) => (
   <div className={`p-20 text-center ${error ? "text-red-600" : ""}`}>
     {text}
   </div>
 );
-
+ 
 /* grouping */
 const groupEducation = (l = []) =>
   l.reduce((a, e) => {
-
+ 
     const k = `${e.education_level} - ${e.specialization}`;
-
+ 
     a[k] ||= {
       title: k,
       degree_name: e.degree_name,
@@ -917,18 +922,18 @@ const groupEducation = (l = []) =>
       delay_reason: e.delay_reason,
       documents: []
     };
-
+ 
     a[k].documents.push(e);
-
+ 
     return a;
-
+ 
   }, {});
-
+ 
 const groupExperience = (l = []) =>
   l.reduce((a, e) => {
-
+ 
     const k = `${e.company_name} - ${e.role_title}`;
-
+ 
     a[k] ||= {
       title: k,
       company_name: e.company_name,
@@ -945,16 +950,17 @@ const groupExperience = (l = []) =>
     );
 
     return a;
-
+ 
   }, {});
-
+ 
 const groupIdentity = (l = []) =>
   l.reduce((a, d) => {
-
+ 
     a[d.identity_type] ||= { title: d.identity_type, documents: [] };
-
+ 
     a[d.identity_type].documents.push(d);
-
+ 
     return a;
-
+ 
   }, {});
+ 

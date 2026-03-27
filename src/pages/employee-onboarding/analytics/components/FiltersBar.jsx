@@ -1,18 +1,39 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function FiltersBar() {
+ export default function FiltersBar({
+  department,
+  setDepartment,
+  status,
+  setStatus,
+  locations = [],
+  setLocations,
+  locationOptions = [],
+  departments = []
+}){
   const filtersConfig = [
-    { key: "business", label: "Business Unit", options: ["All", "BU1", "BU2"] },
-    { key: "dept", label: "Department", options: ["All", "HR", "IT", "Finance"] },
-    { key: "location", label: "Location", options: ["All", "Hyderabad", "Chennai"] },
-    { key: "cost", label: "Cost Center", options: ["All", "CC101", "CC102"] },
-    { key: "legal", label: "Legal Entity", options: ["All", "India Pvt Ltd"] },
-    { key: "date", label: "Date Range", options: ["Today", "This Month", "This Year"] },
-    { key: "worker", label: "Worker Type", options: ["All", "Permanent", "Contract", "Intern"] },
-  ];
+  {
+    key: "dept",
+    label: "Department",
+    options: ["All", ...(departments || [])],
+  },
+   {
+      key: "location",
+      label: "All Locations",
+      options: ["All", ...(locationOptions || [])],
+    },
+  {
+    key: "date",
+    label: "Date Range",
+    options: ["Today", "This Month", "This Year"],
+  },
+  {
+    key: "worker",
+    label: "Worker Type",
+    options: ["All", "Permanent", "Contract"],
+  },
+];
 
   const [openKey, setOpenKey] = useState(null);
-  const [selected, setSelected] = useState({});
   const containerRef = useRef();
 
   // Close dropdown when clicking outside
@@ -30,11 +51,31 @@ export default function FiltersBar() {
     setOpenKey(openKey === key ? null : key);
   };
 
-  const selectOption = (key, value) => {
-    setSelected((prev) => ({ ...prev, [key]: value }));
+ const handleLocationSelect = (loc) => {
+  const safeLocations = locations || [];
+
+  if (loc === "All") {
+    setLocations([]);
+    setOpenKey(null);
+    return;
+  }
+
+  if (safeLocations.includes(loc)) {
+    setLocations(safeLocations.filter((l) => l !== loc));
+  } else {
+    setLocations([...safeLocations, loc]);
+  }
+};
+  // 🔹 Single select for department & status
+  const handleSingleSelect = (key, value) => {
+    if (key === "department") {
+      setDepartment(value === "All" ? "" : value);
+    } else if (key === "status") {
+      setStatus(value === "All" ? "" : value);
+    }
+
     setOpenKey(null);
   };
-
   return (
     <div
       ref={containerRef}
@@ -64,7 +105,13 @@ export default function FiltersBar() {
             }}
           >
             <span>
-              {selected[filter.key] || filter.label}
+               {filter.key === "dept"
+            ? department || filter.label
+            : filter.key === "location"
+            ? locations && locations.length > 0
+              ? locations.join(", ")
+              : filter.label
+            : filter.label}
             </span>
             <span style={{ fontSize: 12 }}>▾</span>
           </div>
@@ -89,7 +136,13 @@ export default function FiltersBar() {
               {filter.options.map((opt, i) => (
                 <div
                   key={i}
-                  onClick={() => selectOption(filter.key, opt)}
+                  onClick={() => {
+                  if (filter.key === "location") {
+                    handleLocationSelect(opt);
+                  } else if (filter.key === "dept") {
+                    handleSingleSelect("department", opt);
+                  }
+                }}
                   style={{
                     padding: "8px 12px",
                     cursor: "pointer",

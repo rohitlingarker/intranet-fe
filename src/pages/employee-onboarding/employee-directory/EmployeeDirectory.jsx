@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import EmployeeCard from "../components/EmployeeCard";
 import { Search, Loader2 } from "lucide-react";
 import axios from "axios";
 
 const EmployeeDirectory = () => {
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,18 +84,18 @@ const EmployeeDirectory = () => {
     const matchesSearch =
       emp.name.toLowerCase().includes(search.toLowerCase()) ||
       emp.role.toLowerCase().includes(search.toLowerCase());
-
+ 
     const matchesDepartment =
       department === "All" || emp.department === department;
-
+ 
     return matchesSearch && matchesDepartment;
   });
 
 
   return (
-    
+   
     <div className="p-0.5 overflow-x-hidden">
-
+ 
       {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <div>
@@ -102,15 +106,11 @@ const EmployeeDirectory = () => {
             Manage and browse organizational talent.
           </p>
         </div>
-
-        <button className="bg-indigo-800 hover:bg-indigo-800 text-white px-5 py-2 rounded-xl shadow-md transition">
-          + Add Employee
-        </button>
       </div>
-
+ 
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
-
+ 
         {/* Search Bar */}
         <div className="relative flex-1 min-w-[150px]">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -138,7 +138,7 @@ const EmployeeDirectory = () => {
           </select>
         </div>
       </div>
-
+ 
       {/* Employee Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-2">
         {loading ? (
@@ -162,11 +162,14 @@ const EmployeeDirectory = () => {
           ))
         ) : (
           <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
+          <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
         )}
       </div>
     </div>
   );
  
 };
-
+ 
 export default EmployeeDirectory;
+ 
+ 

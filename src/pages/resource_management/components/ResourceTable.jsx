@@ -5,6 +5,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+function getResourceMeta(resource) {
+  const parts = [resource.location, resource.role].filter(Boolean)
+  return parts.length > 0 ? parts.join(" | ") : "N/A"
+}
+
 function StatusBadge({ status }) {
   const config = {
     available: { label: "Available", className: "bg-status-available/15 text-status-available border-status-available/30" },
@@ -52,8 +57,6 @@ export function ResourceTable({ resources, onResourceClick }) {
     switch (sortKey) {
       case "name":
         return a.name.localeCompare(b.name) * dir
-      case "role":
-        return a.role.localeCompare(b.role) * dir
       case "currentAllocation":
         return (a.currentAllocation - b.currentAllocation) * dir
       case "availableFrom":
@@ -96,9 +99,6 @@ export function ResourceTable({ resources, onResourceClick }) {
                 <SortHeader label="Resource" sortKeyName="name" />
               </th>
               <th className="text-left px-4 py-2">
-                <SortHeader label="Role" sortKeyName="role" />
-              </th>
-              <th className="text-left px-4 py-2">
                 <span className="text-xs font-sans font-semibold text-muted-foreground tracking-wider whitespace-nowrap">Skills</span>
               </th>
               <th className="text-left px-4 py-2">
@@ -138,14 +138,9 @@ export function ResourceTable({ resources, onResourceClick }) {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground hidden sm:block">{resource.location}</p>
+                      <p className="text-xs text-muted-foreground hidden sm:block">{getResourceMeta(resource)}</p>
                     </div>
                   </div>
-                </td>
-                <td className="px-4 py-3 max-w-[180px]">
-                  <span className="text-xs text-card-foreground truncate block font-medium" title={resource.role}>
-                    {resource.role}
-                  </span>
                 </td>
                 <td className="px-4 py-3 max-w-[200px]">
                   <div className="flex flex-wrap items-center gap-1.5 overflow-hidden whitespace-nowrap">
@@ -177,7 +172,7 @@ export function ResourceTable({ resources, onResourceClick }) {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   No resources match the current filters.
                 </td>
               </tr>
