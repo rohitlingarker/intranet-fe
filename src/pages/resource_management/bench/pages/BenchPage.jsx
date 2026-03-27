@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Download, Filter, Layers, Search, Users } from "lucide-react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { Download, Filter, Layers, Search, Users, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import BenchKPI from "../components/BenchKPI";
 import BenchFilters from "../components/BenchFilters";
 import BenchTable from "../components/BenchTable";
 import BenchDrawer from "../components/BenchDrawer";
 import AllocateModal from "../components/AllocateModal";
 import MoveToPoolModal from "../components/MoveToPoolModal";
+import { createPortal } from "react-dom";
 import {
   BENCH_STORAGE_KEY,
   BENCH_TABS,
@@ -20,7 +22,8 @@ import {
   toCsv,
   updateCategory,
 } from "../models/benchModel";
-import { getBenchResources } from "../services/benchService";
+import { getBenchResources, getPoolResources, getBenchKPIs } from "../services/benchService";
+import { toast } from "react-hot-toast";
 
 const getStoredState = () => {
   if (typeof window === "undefined") return null;
@@ -45,13 +48,17 @@ const downloadCsv = (filename, content) => {
 };
 
 const BenchPage = () => {
+  const navigate = useNavigate();
   const stored = getStoredState();
   const [resources, setResources] = useState([]);
+  const [kpis, setKpis] = useState(null);
   const [search, setSearch] = useState(stored?.search || "");
   const [activeTab, setActiveTab] = useState(stored?.activeTab || "bench");
   const [filters, setFilters] = useState(stored?.filters || FILTER_DEFAULTS);
   const [draftFilters, setDraftFilters] = useState(stored?.filters || FILTER_DEFAULTS);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState(null);
+  const filterButtonRef = useRef(null);
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectedResourceId, setSelectedResourceId] = useState(stored?.selectedResourceId || null);
   const [drawerOpen, setDrawerOpen] = useState(Boolean(stored?.selectedResourceId));
@@ -59,13 +66,81 @@ const BenchPage = () => {
   const [moveToPoolTargets, setMoveToPoolTargets] = useState([]);
   const [bulkCategory, setBulkCategory] = useState(CATEGORY_OPTIONS[0]);
 
+  const updatePosition = () => {
+    if (filterButtonRef.current) {
+      const rect = filterButtonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const popupHeight = 450;
+      const popupWidth = 400;
+
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      let align = 'down';
+      if (spaceBelow < popupHeight && spaceAbove > spaceBelow) {
+        align = 'up';
+      }
+
+      setDropdownPos({
+        top: align === 'up' ? 'auto' : (rect.bottom + 8),
+        bottom: align === 'up' ? (viewportHeight - rect.top + 8) : 'auto',
+        right: viewportWidth - rect.right,
+        align,
+        maxHeight: Math.min(viewportHeight * 0.85, align === 'up' ? spaceAbove - 24 : spaceBelow - 24)
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (filterPanelOpen) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+
+      const handleClickOutside = (event) => {
+        if (filterButtonRef.current && !filterButtonRef.current.contains(event.target)) {
+          const portal = document.getElementById('bench-filter-portal');
+          if (portal && !portal.contains(event.target)) {
+            setFilterPanelOpen(false);
+          }
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [filterPanelOpen]);
+
+  const toggleFilters = () => setFilterPanelOpen(!filterPanelOpen);
+
   useEffect(() => {
     let active = true;
 
     const load = async () => {
-      const response = await getBenchResources();
-      if (!active) return;
-      setResources(sanitizeResources(response?.data || []));
+      try {
+        const [benchRes, poolRes, kpiRes] = await Promise.all([
+          getBenchResources(),
+          getPoolResources(),
+          getBenchKPIs()
+        ]);
+        
+        if (!active) return;
+        
+        // Unpack and tag resources
+        const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
+        const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
+        setResources(sanitizeResources([...benchList, ...poolList]));
+
+        // Set live KPI data
+        setKpis(kpiRes?.data || kpiRes || null);
+      } catch (error) {
+        console.error("Resource Supply Data Load Error", error);
+        toast.error("Failed to load bench or pool data");
+      }
     };
 
     load();
@@ -95,7 +170,35 @@ const BenchPage = () => {
     () => resources.find((item) => item.id === selectedResourceId) || null,
     [resources, selectedResourceId],
   );
-  const metrics = useMemo(() => getBenchMetrics(resources), [resources]);
+  const metrics = useMemo(() => {
+    // If backend provided KPIs, use them preferentially
+    if (kpis) {
+      return [
+        {
+          label: "Bench Resources",
+          value: kpis.totalBenchResources ?? kpis.benchCount ?? kpis.benchResources ?? 0,
+          iconClassName: "border-blue-100 bg-blue-50 text-blue-700",
+        },
+        {
+          label: "Ready Now",
+          value: kpis.totalReadyNowResources ?? kpis.readyNowCount ?? kpis.readyNow ?? 0,
+          iconClassName: "border-emerald-100 bg-emerald-50 text-emerald-700",
+        },
+        {
+          label: "Internal Pool",
+          value: kpis.totalPoolResources ?? kpis.internalPoolCount ?? kpis.internalPool ?? 0,
+          iconClassName: "border-indigo-100 bg-indigo-50 text-indigo-700",
+        },
+        {
+          label: "Cost / Risk Watch",
+          value: kpis.totalRiskWatch ?? kpis.costRiskCount ?? kpis.highRisk ?? 0,
+          iconClassName: "border-rose-100 bg-rose-50 text-rose-700",
+        },
+      ];
+    }
+    // Fallback to client-side derived metrics if API data is pending
+    return getBenchMetrics(resources);
+  }, [resources, kpis]);
   const filterOptions = useMemo(
     () => ({
       categories: CATEGORY_OPTIONS,
@@ -210,20 +313,41 @@ const BenchPage = () => {
     : "No results match the current search and filters.";
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#081534]">Bench Management</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Auto-detected bench supply, internal pool movement, and simulated allocation control in one workspace.
-        </p>
+    <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/resource-management/roleoff')}
+            className="p-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-all shadow-sm shrink-0"
+            title="Back to Role-Off Operations"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-none">Bench Management Workspace</h1>
+            <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">
+              Strategic tracking of available resource supply and internal pool movements
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-[12px] font-bold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+          >
+            <Download className="h-3.5 w-3.5" />
+            EXPORT ANALYTICS
+          </button>
+        </div>
       </div>
 
       <BenchKPI items={metrics} />
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-4 py-4">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 bg-white px-5 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-8 overflow-x-auto px-1">
+            <div className="flex items-center gap-6 overflow-x-auto px-1">
               {BENCH_TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
                 const Icon = tab.id === "bench" ? Users : Layers;
@@ -236,71 +360,78 @@ const BenchPage = () => {
                       setActiveTab(tab.id);
                       setSelectedRows([]);
                     }}
-                    className={`group relative inline-flex items-center gap-2 whitespace-nowrap px-1 pb-3 pt-2 text-left transition-colors ${
-                      isActive ? "text-[#263383]" : "text-gray-600 hover:text-[#263383]"
+                    className={`group relative inline-flex items-center gap-2 whitespace-nowrap px-1 pb-4 pt-2 text-left transition-all ${
+                      isActive ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span className={`text-[15px] font-semibold leading-tight ${isActive ? "text-[#263383]" : "text-gray-700"}`}>
+                    <Icon className={`h-4 w-4 transition-colors ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-indigo-500"}`} />
+                    <span className={`text-[12px] font-bold tracking-tight lowercase ${isActive ? "text-slate-900" : "text-slate-500"}`}>
                       {tab.label}
                     </span>
-                    <span className={`text-xs font-medium ${isActive ? "text-[#263383]" : "text-gray-400 group-hover:text-[#263383]"}`}>
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-all ${isActive ? "bg-indigo-50 text-indigo-600" : "bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500"}`}>
                       {tabCounts[tab.id] || 0}
                     </span>
-                    <span className={`absolute bottom-0 left-0 h-0.5 rounded-full bg-blue-600 transition-all ${isActive ? "w-full opacity-100" : "w-0 opacity-0"}`} />
+                    {isActive && (
+                      <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-full bg-indigo-600 shadow-[0_1px_4px_rgba(79,70,229,0.3)]" />
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex w-full max-w-2xl items-center justify-end gap-1">
-              <div className="relative w-full max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <div className="flex flex-1 items-center justify-end gap-2">
+              <div className="relative w-full max-w-sm">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search name, role, skill or location"
-                  className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-3 text-sm outline-none transition-colors focus:border-blue-500"
+                  placeholder="Search name, role, skill or location..."
+                  className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/30 pl-9 pr-4 text-[13px] font-medium text-slate-600 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 shadow-inner"
                 />
               </div>
 
               <div className="relative shrink-0">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setFilterPanelOpen((prev) => !prev)}
-                    className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
-                      filterPanelOpen
-                        ? "border-[#081534] bg-[#081534] text-white hover:bg-[#10214f]"
-                        : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-[#081534]"
+                <button
+                  ref={filterButtonRef}
+                  type="button"
+                  onClick={toggleFilters}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all shadow-sm ${
+                    filterPanelOpen
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-600/10"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <Filter className={`h-3.5 w-3.5 ${filterPanelOpen ? 'fill-current' : ''}`} />
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Filters</span>
+                  {Object.values(filters).filter(v => v !== "" && v !== "ALL").length > 0 && (
+                    <span className={`ml-1 px-1.5 rounded-sm text-[10px] font-bold ${filterPanelOpen ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-600'}`}>
+                      {Object.values(filters).filter(v => v !== "" && v !== "ALL").length}
+                    </span>
+                  )}
+                </button>
+ 
+                {filterPanelOpen && dropdownPos && createPortal(
+                  <div 
+                    id="bench-filter-portal"
+                    className={`fixed bg-white border border-slate-200 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[100] w-[calc(100vw-3rem)] sm:w-[400px] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+                      dropdownPos.align === 'up' ? "origin-bottom-right" : "origin-top-right"
                     }`}
+                    style={{
+                      top: dropdownPos.top === 'auto' ? 'auto' : `${dropdownPos.top}px`,
+                      bottom: dropdownPos.bottom === 'auto' ? 'auto' : `${dropdownPos.bottom}px`,
+                      right: `${dropdownPos.right}px`,
+                      maxHeight: `${dropdownPos.maxHeight}px`,
+                    }}
                   >
-                    <Filter className="h-4 w-4" />
-                    Filters
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleExport}
-                    className="inline-flex h-10 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:text-[#081534]"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export CSV
-                  </button>
-                </div>
-
-                {filterPanelOpen ? (
-                  <div className="absolute right-0 top-12 z-20">
                     <BenchFilters
                       open={filterPanelOpen}
-                      draftFilters={draftFilters}
+                      filters={draftFilters}
                       filterOptions={filterOptions}
                       onChange={(key, value) => setDraftFilters((prev) => ({ ...prev, [key]: value }))}
                       onReset={() => {
                         setDraftFilters(FILTER_DEFAULTS);
                         setFilters(FILTER_DEFAULTS);
-                        setFilterPanelOpen(false);
                       }}
                       onApply={() => {
                         setFilters(draftFilters);
@@ -308,66 +439,17 @@ const BenchPage = () => {
                       }}
                       onClose={() => setFilterPanelOpen(false)}
                     />
-                  </div>
-                ) : null}
+                  </div>,
+                  document.body
+                )}
               </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[#081534]">Bench Queue</p>
-              <p className="text-xs text-slate-500">
-                {activeTab === "bench"
-                  ? "Visible records are unallocated and eligible for immediate bench operations."
-                  : "Internal pool records remain outside the available bench supply until allocated back to delivery."}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={bulkCategory}
-                onChange={(event) => setBulkCategory(event.target.value)}
-                className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
-              >
-                {CATEGORY_OPTIONS.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={selectedItems.length === 0}
-                onClick={() => setResourceCategory(selectedRows, bulkCategory)}
-                className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Layers className="h-4 w-4" />
-                Change Category
-              </button>
-              <button
-                type="button"
-                disabled={selectedItems.length === 0}
-                onClick={() => handleAllocate(selectedItems)}
-                className="h-9 rounded-md bg-[#081534] px-3 text-sm font-medium text-white transition-colors hover:bg-[#10214f] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Allocate
-              </button>
-              {activeTab === "bench" ? (
-                <button
-                  type="button"
-                  disabled={selectedItems.length === 0}
-                  onClick={() => handleMoveToPool(selectedItems)}
-                  className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Move To Pool
-                </button>
-              ) : null}
             </div>
           </div>
         </div>
 
         <div className="p-4">
           <BenchTable
-            rows={visibleRows}
+            rows={visibleRows} 
             selectedRows={selectedRows}
             activeRowId={selectedResourceId}
             emptyState={emptyState}

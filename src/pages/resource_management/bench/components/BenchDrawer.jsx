@@ -16,8 +16,8 @@ const BenchDrawer = ({ open, resource, onClose, onAllocate, onMoveToPool }) => {
       <div className="flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <p className="text-xl font-bold text-[#081534]">{resource.name}</p>
-            <p className="mt-1 text-sm text-slate-500">{resource.role}</p>
+            <p className="text-xl font-bold text-[#081534]">{resource.name || "No detail found"}</p>
+            <p className="mt-1 text-sm text-slate-500">{resource.role || "No detail found"}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800">
             <X className="h-5 w-5" />
@@ -133,7 +133,6 @@ const BenchDrawer = ({ open, resource, onClose, onAllocate, onMoveToPool }) => {
             </div>
           </div>
         </div>
-
         <div className="border-t border-gray-200 bg-white px-5 py-4">
           <div className="flex gap-2">
             <button type="button" onClick={() => onAllocate(resource)} className="h-10 flex-1 rounded-md bg-[#081534] px-4 text-sm font-medium text-white transition-colors hover:bg-[#10214f]">

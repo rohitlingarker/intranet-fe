@@ -237,7 +237,7 @@
 //     }
 //     setIsCancelling(true);
 //     try {
-//       const res = await axios.post(`${BASE_URL}/api/leave-revoke/revoke`, 
+//       const res = await axios.post(`${BASE_URL}/api/leave-revoke/revoke`,
 //         {
 //           leaveRequestId: selectedLeaveId,
 //           reason: reason
@@ -447,9 +447,9 @@
 //                   </td>
 //                   <td className="p-3">
 //                     {leave.status === "APPROVED" && (
-//                       <button 
-//                         type="button" 
-//                         title="Cancel Approved Leave" 
+//                       <button
+//                         type="button"
+//                         title="Cancel Approved Leave"
 //                         onClick={() => handleModalOpen(leave.leaveId)}
 //                       >
 //                         <XCircle className="text-orange-500 text-sm hover:text-orange-800" />
@@ -460,7 +460,7 @@
 //               ))}
 //             </tbody>
 //           </table>
-//           {totalPages > 1 && ( 
+//           {totalPages > 1 && (
 //             <div className="mb-4">
 //               <Pagination
 //                 currentPage={currentPage}
@@ -494,6 +494,459 @@
 
 // export default LeaveHistory;
 
+// import React, { useEffect, useState } from "react";
+// import axios from "axios";
+// import Pagination from "../../../components/Pagination/pagination";
+// import { Fonts } from "../../../components/Fonts/Fonts";
+// import { toast } from "react-toastify";
+// import LoadingSpinner from "../../../components/LoadingSpinner";
+// import { XCircle } from "lucide-react";
+// import CancellationModal from "./CancellationModal";
+
+// const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+// const LeaveHistory = ({ employeeId, refreshKey }) => {
+//   const [leaves, setLeaves] = useState([]);
+//   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
+//   const [leaveTypes, setLeaveTypes] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+
+//   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+//   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [filterLeaveType, setFilterLeaveType] = useState("All");
+//   const [filterStatus, setFilterStatus] = useState("All");
+
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const itemsPerPage = 8;
+
+//   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+//   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+//   const [isCancelling, setIsCancelling] = useState(false);
+
+//   const currentYear = new Date().getFullYear();
+//   const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
+
+//   /* ---------------- FETCH LEAVE DATA ---------------- */
+
+//   useEffect(() => {
+//     setLoading(true);
+
+//     Promise.all([
+//       axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}/${selectedYear}`, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//         withCredentials: true,
+//       }),
+//       axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//         withCredentials: true,
+//       }),
+//     ])
+//       .then(([leaveResp, typesResp]) => {
+//         const leaveData = leaveResp.data?.data || [];
+
+//         setLeaves(Array.isArray(leaveData) ? leaveData : []);
+//         const regularLeaves = typesResp.data?.regular || [];
+//         const genderLeaves = typesResp.data?.genderBasedLeaves || [];
+//         const mergedLeaves = [...regularLeaves, ...genderLeaves];
+//         setLeaveTypeOptions(mergedLeaves || []);
+//         setLoading(false);
+//       })
+//       .catch(() => {
+//         toast.error("Failed to fetch leave history.");
+//         setLoading(false);
+//       });
+//   }, [employeeId, refreshKey, selectedYear]);
+
+//   /* ---------------- FETCH LEAVE TYPES ---------------- */
+
+//   useEffect(() => {
+//     const fetchLeaveTypes = async () => {
+//       try {
+//         const res = await axios.get(`${BASE_URL}/api/leave/types`, {
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("token")}`,
+//           },
+//         });
+
+//         setLeaveTypes(res.data || []);
+//       } catch {
+//         toast.error("Failed to load leave type details.");
+//       }
+//     };
+
+//     fetchLeaveTypes();
+//   }, []);
+
+//   /* ---------------- STATUS OPTIONS ---------------- */
+
+//   const statusOptions = Array.from(
+//     new Set(
+//       leaves
+//         .filter((l) => l.status?.toUpperCase() !== "PENDING")
+//         .map((l) => l.status)
+//         .filter(Boolean)
+//     )
+//   );
+
+//   /* ---------------- LEAVE LABEL HELPER ---------------- */
+
+//   const getLeaveLabel = (leaveName) => {
+//     if (!leaveName) return "-";
+//     console.log("leave name in getLeaveLabel", leaveName)
+//     const match = leaveTypes.find((lt) => lt.name === leaveName);
+//     return match ? match.label : leaveName.replace(/^L-/, "");
+//   };
+
+//   /* ---------------- REASON CELL ---------------- */
+
+//   const LeaveReasonCell = ({ reason }) => {
+//     const [expanded, setExpanded] = useState(false);
+//     const MAX_LENGTH = 50;
+
+//     if (!reason) return <span>-</span>;
+
+//     const isLong = reason.length > MAX_LENGTH;
+
+//     const displayText = expanded
+//       ? reason
+//       : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
+
+//     return (
+//       <div className="flex flex-col">
+//         <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
+
+//         {isLong && (
+//           <button
+//             onClick={() => setExpanded(!expanded)}
+//             className="text-blue-600 text-xs hover:underline"
+//           >
+//             {expanded ? "View Less" : "View More"}
+//           </button>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   /* ---------------- FILTERING ---------------- */
+
+//   const filteredLeaves = leaves
+//     .filter((leave) => leave.status?.toUpperCase() !== "PENDING")
+//     .filter((leave) => {
+//       const leaveType = (leave.leaveName || "").toLowerCase();
+//       const empName = (
+//         leave.employee?.fullName ||
+//         leave.employeeFullName ||
+//         ""
+//       ).toLowerCase();
+
+//       const reason = (leave.reason || "").toLowerCase();
+//       const status = (leave.status || "").toLowerCase();
+//       const search = searchTerm.toLowerCase();
+
+//       const searchMatch =
+//         search === "" ||
+//         leaveType.includes(search) ||
+//         empName.includes(search) ||
+//         reason.includes(search) ||
+//         status.includes(search);
+
+//       const typeMatch =
+//         filterLeaveType === "All" || leave.leaveName === filterLeaveType;
+
+//       const statusMatch =
+//         filterStatus === "All" || leave.status === filterStatus;
+
+//       const leaveYear = leave.startDate
+//         ? new Date(leave.startDate).getFullYear()
+//         : null;
+
+//       const yearMatch =
+//         selectedYear === "" || leaveYear === Number(selectedYear);
+
+//       const leaveMonth = leave.startDate
+//         ? new Date(leave.startDate).getMonth() + 1
+//         : null;
+
+//       const monthMatch =
+//         selectedMonth === "" || leaveMonth === Number(selectedMonth);
+
+//       return searchMatch && typeMatch && statusMatch && yearMatch && monthMatch;
+//     });
+
+//   /* ---------------- PAGINATION ---------------- */
+
+//   const totalPages = Math.ceil(filteredLeaves.length / itemsPerPage);
+
+//   const paginatedRequests = filteredLeaves.slice(
+//     (currentPage - 1) * itemsPerPage,
+//     currentPage * itemsPerPage
+//   );
+
+//   /* ---------------- MODAL HANDLERS ---------------- */
+
+//   const handleModalOpen = (leaveId) => {
+//     setSelectedLeaveId(leaveId);
+//     setIsCancelModalOpen(true);
+//   };
+
+//   const handleModalClose = () => {
+//     setSelectedLeaveId(null);
+//     setIsCancelModalOpen(false);
+//     setIsCancelling(false);
+//   };
+
+//   const handleConfirmCancellation = async (reason) => {
+//     if (!reason) {
+//       toast.error("Reason is required");
+//       return;
+//     }
+
+//     setIsCancelling(true);
+
+//     try {
+//       const res = await axios.post(
+//         `${BASE_URL}/api/leave-revoke/revoke`,
+//         {
+//           leaveRequestId: selectedLeaveId,
+//           reason: reason,
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("token")}`,
+//           },
+//         }
+//       );
+
+//       toast.success(res?.data?.message || "Leave revoked successfully");
+
+//       handleModalClose();
+//     } catch (err) {
+//       toast.error(
+//         err?.response?.data?.message || "Failed to revoke leave request"
+//       );
+//     } finally {
+//       setIsCancelling(false);
+//     }
+//   };
+
+//   /* ---------------- LOADING ---------------- */
+
+//   if (loading) {
+//     return (
+//       <div className="text-center py-10 text-gray-600">
+//         <LoadingSpinner text="Loading leave history..." />
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="text-center py-10 text-red-500 font-semibold">
+//         {error}
+//       </div>
+//     );
+//   }
+
+//   /* ---------------- UI ---------------- */
+
+//   return (
+//     <div className="w-6xl mx-auto px-6 py-8 bg-white rounded-lg shadow-md">
+
+//       {/* FILTERS */}
+
+//       <div className="flex flex-wrap gap-3 mb-5">
+
+//         <input
+//           type="text"
+//           placeholder="Search..."
+//           className="border px-3 py-2 rounded-lg text-sm"
+//           value={searchTerm}
+//           onChange={(e) => setSearchTerm(e.target.value)}
+//         />
+
+//         <select
+//           value={filterLeaveType}
+//           onChange={(e) => setFilterLeaveType(e.target.value)}
+//           className="border px-4 w-[160px] py-2 rounded-lg text-sm"
+//         >
+//           <option value="All">All Leave Types</option>
+
+//           {leaveTypeOptions.map((type) => (
+//             <option key={type.leaveTypeId} value={type.leaveName}>
+//               {getLeaveLabel(type.leaveName)}
+//             </option>
+//           ))}
+//         </select>
+
+//         <select
+//           value={filterStatus}
+//           onChange={(e) => setFilterStatus(e.target.value)}
+//           className="border px-3 w-[120px] py-2 rounded-lg text-sm"
+//         >
+//           <option value="All">All Status</option>
+
+//           {statusOptions.map((status) => (
+//             <option key={status}>{status}</option>
+//           ))}
+//         </select>
+
+//         <select
+//           value={selectedYear}
+//           onChange={(e) => setSelectedYear(e.target.value)}
+//           className="border px-3 w-[100px] py-2 rounded-lg text-sm"
+//         >
+//           <option value="">All Years</option>
+
+//           {years.map((year) => (
+//             <option key={year}>{year}</option>
+//           ))}
+//         </select>
+
+//       </div>
+
+//       {/* TABLE */}
+
+//       {filteredLeaves.length > 0 ? (
+//         <div className="overflow-x-auto border rounded-lg">
+
+//           <table className="w-full text-sm">
+
+//             <thead className="bg-blue-900 text-white">
+
+//               <tr>
+//                 <th className="p-3">Leave Type</th>
+//                 <th className="p-3">Requested By</th>
+//                 <th className="p-3">From</th>
+//                 <th className="p-3">To</th>
+//                 <th className="p-3">Days</th>
+//                 <th className="p-3">Status</th>
+//                 <th className="p-3">Reason</th>
+//                 <th className="p-3">Comment</th>
+//                 <th className="p-3">Approved By</th>
+//                 <th className="p-3">Action</th>
+//               </tr>
+
+//             </thead>
+
+//             <tbody>
+
+//               {paginatedRequests.map((leave, index) => (
+
+//                 <tr key={leave.leaveId || index} className="text-center border-b">
+
+//                   <td className="p-3">
+//                     {getLeaveLabel(
+//                       leave.leaveType?.leaveName || leave.leaveName
+//                     )}
+//                   </td>
+
+//                   <td className="p-3">
+//                     {leave.employee?.fullName ||
+//                       leave.employeeFullName ||
+//                       "-"}
+//                   </td>
+
+//                   <td className="p-3">
+//                     {leave.startDate
+//                       ? new Date(leave.startDate).toLocaleDateString()
+//                       : "-"}
+//                   </td>
+
+//                   <td className="p-3">
+//                     {leave.endDate
+//                       ? new Date(leave.endDate).toLocaleDateString()
+//                       : "-"}
+//                   </td>
+
+//                   <td className="p-3">{leave.daysRequested}</td>
+
+//                   <td className="p-3">
+//                     <span
+//                       className={`px-2 py-1 text-white rounded-full text-xs ${
+//                         leave.status === "APPROVED"
+//                           ? "bg-green-500"
+//                           : leave.status === "REJECTED"
+//                           ? "bg-red-500"
+//                           : "bg-gray-500"
+//                       }`}
+//                     >
+//                       {leave.status}
+//                     </span>
+//                   </td>
+
+//                   <td className="p-3">
+//                     <LeaveReasonCell reason={leave.reason} />
+//                   </td>
+
+//                   <td className="p-3">{leave.managerComment || "-"}</td>
+
+//                   <td className="p-3">
+//                     {leave.approvedBy || "-"}
+//                   </td>
+
+//                   <td className="p-3">
+
+//                     {leave.status === "APPROVED" && (
+//                       <button
+//                         onClick={() => handleModalOpen(leave.leaveId)}
+//                       >
+//                         <XCircle className="text-orange-500 hover:text-orange-700" />
+//                       </button>
+//                     )}
+
+//                   </td>
+
+//                 </tr>
+
+//               ))}
+
+//             </tbody>
+
+//           </table>
+
+//         </div>
+//       ) : (
+//         <div className="flex justify-center items-center h-40">
+//           <p className={Fonts.caption}>No leave history found</p>
+//         </div>
+//       )}
+
+//       {/* PAGINATION */}
+
+//       {totalPages > 1 && (
+//         <Pagination
+//           currentPage={currentPage}
+//           totalPages={totalPages}
+//           onPrevious={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+//           onNext={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+//         />
+//       )}
+
+//       {/* MODAL */}
+
+//       <CancellationModal
+//         title="Confirm Cancellation"
+//         subtitle="Are you sure you want to cancel this leave?"
+//         isOpen={isCancelModalOpen}
+//         onCancel={handleModalClose}
+//         onConfirm={handleConfirmCancellation}
+//         isLoading={isCancelling}
+//         confirmText="Confirm"
+//         isRevoke={true}
+//       />
+
+//     </div>
+//   );
+// };
+
+// export default LeaveHistory;
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -506,7 +959,7 @@ import CancellationModal from "./CancellationModal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const LeaveHistory = ({ employeeId, refreshKey }) => {
+const LeaveHistory = ({ employeeId, refreshKey, setRefreshKey }) => {
   const [leaves, setLeaves] = useState([]);
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -514,7 +967,7 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
   const [error, setError] = useState(null);
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLeaveType, setFilterLeaveType] = useState("All");
@@ -533,37 +986,45 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
   /* ---------------- FETCH LEAVE DATA ---------------- */
 
   useEffect(() => {
-    setLoading(true);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
 
-    Promise.all([
-      axios.get(`${BASE_URL}/api/leave-requests/employee/${employeeId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        withCredentials: true,
-      }),
-      axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        withCredentials: true,
-      }),
-    ])
-      .then(([leaveResp, typesResp]) => {
+      try {
+        const [leaveResp, typesResp] = await Promise.all([
+          axios.get(
+            `${BASE_URL}/api/leave-requests/employee/${employeeId}/${selectedYear}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+              withCredentials: true,
+            },
+          ),
+          axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            withCredentials: true,
+          }),
+        ]);
+
         const leaveData = leaveResp.data?.data || [];
-
         setLeaves(Array.isArray(leaveData) ? leaveData : []);
+
         const regularLeaves = typesResp.data?.regular || [];
         const genderLeaves = typesResp.data?.genderBasedLeaves || [];
-        const mergedLeaves = [...regularLeaves, ...genderLeaves];
-        setLeaveTypeOptions(mergedLeaves || []);
-        setLoading(false);
-      })
-      .catch(() => {
+        setLeaveTypeOptions([...regularLeaves, ...genderLeaves]);
+      } catch (err) {
+        setError("Failed to fetch leave history.");
         toast.error("Failed to fetch leave history.");
+      } finally {
         setLoading(false);
-      });
-  }, [employeeId, refreshKey]);
+      }
+    };
+
+    if (employeeId) fetchData();
+  }, [employeeId, refreshKey, selectedYear]);
 
   /* ---------------- FETCH LEAVE TYPES ---------------- */
 
@@ -578,12 +1039,18 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
 
         setLeaveTypes(res.data || []);
       } catch {
-        toast.error("Failed to load leave type details.");
+        toast.error("Failed to load leave types.");
       }
     };
 
     fetchLeaveTypes();
   }, []);
+
+  /* ---------------- RESET PAGE ON FILTER CHANGE ---------------- */
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterLeaveType, filterStatus, selectedYear, selectedMonth]);
 
   /* ---------------- STATUS OPTIONS ---------------- */
 
@@ -592,47 +1059,16 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
       leaves
         .filter((l) => l.status?.toUpperCase() !== "PENDING")
         .map((l) => l.status)
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   );
 
-  /* ---------------- LEAVE LABEL HELPER ---------------- */
+  /* ---------------- LABEL HELPER ---------------- */
 
   const getLeaveLabel = (leaveName) => {
     if (!leaveName) return "-";
-    console.log("leave name in getLeaveLabel", leaveName)
     const match = leaveTypes.find((lt) => lt.name === leaveName);
     return match ? match.label : leaveName.replace(/^L-/, "");
-  };
-
-  /* ---------------- REASON CELL ---------------- */
-
-  const LeaveReasonCell = ({ reason }) => {
-    const [expanded, setExpanded] = useState(false);
-    const MAX_LENGTH = 50;
-
-    if (!reason) return <span>-</span>;
-
-    const isLong = reason.length > MAX_LENGTH;
-
-    const displayText = expanded
-      ? reason
-      : reason.substring(0, MAX_LENGTH) + (isLong ? "..." : "");
-
-    return (
-      <div className="flex flex-col">
-        <span className="text-gray-700 whitespace-pre-wrap">{displayText}</span>
-
-        {isLong && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-blue-600 text-xs hover:underline"
-          >
-            {expanded ? "View Less" : "View More"}
-          </button>
-        )}
-      </div>
-    );
   };
 
   /* ---------------- FILTERING ---------------- */
@@ -646,13 +1082,12 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         leave.employeeFullName ||
         ""
       ).toLowerCase();
-
       const reason = (leave.reason || "").toLowerCase();
       const status = (leave.status || "").toLowerCase();
       const search = searchTerm.toLowerCase();
 
       const searchMatch =
-        search === "" ||
+        !search ||
         leaveType.includes(search) ||
         empName.includes(search) ||
         reason.includes(search) ||
@@ -668,15 +1103,13 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         ? new Date(leave.startDate).getFullYear()
         : null;
 
-      const yearMatch =
-        selectedYear === "" || leaveYear === Number(selectedYear);
+      const yearMatch = !selectedYear || leaveYear === Number(selectedYear);
 
       const leaveMonth = leave.startDate
         ? new Date(leave.startDate).getMonth() + 1
         : null;
 
-      const monthMatch =
-        selectedMonth === "" || leaveMonth === Number(selectedMonth);
+      const monthMatch = !selectedMonth || leaveMonth === Number(selectedMonth);
 
       return searchMatch && typeMatch && statusMatch && yearMatch && monthMatch;
     });
@@ -687,7 +1120,7 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
 
   const paginatedRequests = filteredLeaves.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   /* ---------------- MODAL HANDLERS ---------------- */
@@ -716,28 +1149,31 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         `${BASE_URL}/api/leave-revoke/revoke`,
         {
           leaveRequestId: selectedLeaveId,
-          reason: reason,
+          reason,
         },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       toast.success(res?.data?.message || "Leave revoked successfully");
 
       handleModalClose();
+
+      // 🔥 IMPORTANT: trigger refresh
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || "Failed to revoke leave request"
+        err?.response?.data?.message || "Failed to revoke leave request",
       );
     } finally {
       setIsCancelling(false);
     }
   };
 
-  /* ---------------- LOADING ---------------- */
+  /* ---------------- UI STATES ---------------- */
 
   if (loading) {
     return (
@@ -759,11 +1195,8 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
 
   return (
     <div className="w-6xl mx-auto px-6 py-8 bg-white rounded-lg shadow-md">
-
       {/* FILTERS */}
-
       <div className="flex flex-wrap gap-3 mb-5">
-
         <input
           type="text"
           placeholder="Search..."
@@ -778,7 +1211,6 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
           className="border px-4 w-[160px] py-2 rounded-lg text-sm"
         >
           <option value="All">All Leave Types</option>
-
           {leaveTypeOptions.map((type) => (
             <option key={type.leaveTypeId} value={type.leaveName}>
               {getLeaveLabel(type.leaveName)}
@@ -792,7 +1224,6 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
           className="border px-3 w-[120px] py-2 rounded-lg text-sm"
         >
           <option value="All">All Status</option>
-
           {statusOptions.map((status) => (
             <option key={status}>{status}</option>
           ))}
@@ -804,23 +1235,43 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
           className="border px-3 w-[100px] py-2 rounded-lg text-sm"
         >
           <option value="">All Years</option>
-
           {years.map((year) => (
             <option key={year}>{year}</option>
           ))}
         </select>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="border px-3 w-[140px] py-2 rounded-lg text-sm"
+        >
+          <option value="">All Months</option>
 
+          {[
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ].map((month, index) => (
+            <option key={index + 1} value={index + 1}>
+              {month}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* TABLE */}
-
       {filteredLeaves.length > 0 ? (
         <div className="overflow-x-auto border rounded-lg">
-
           <table className="w-full text-sm">
-
             <thead className="bg-blue-900 text-white">
-
               <tr>
                 <th className="p-3">Leave Type</th>
                 <th className="p-3">Requested By</th>
@@ -833,25 +1284,22 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
                 <th className="p-3">Approved By</th>
                 <th className="p-3">Action</th>
               </tr>
-
             </thead>
 
             <tbody>
-
               {paginatedRequests.map((leave, index) => (
-
-                <tr key={leave.leaveId || index} className="text-center border-b">
-
+                <tr
+                  key={leave.leaveId || index}
+                  className="text-center border-b"
+                >
                   <td className="p-3">
                     {getLeaveLabel(
-                      leave.leaveType?.leaveName || leave.leaveName
+                      leave.leaveType?.leaveName || leave.leaveName,
                     )}
                   </td>
 
                   <td className="p-3">
-                    {leave.employee?.fullName ||
-                      leave.employeeFullName ||
-                      "-"}
+                    {leave.employee?.fullName || leave.employeeFullName || "-"}
                   </td>
 
                   <td className="p-3">
@@ -874,44 +1322,31 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
                         leave.status === "APPROVED"
                           ? "bg-green-500"
                           : leave.status === "REJECTED"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
+                            ? "bg-red-500"
+                            : "bg-gray-500"
                       }`}
                     >
                       {leave.status}
                     </span>
                   </td>
 
-                  <td className="p-3">
-                    <LeaveReasonCell reason={leave.reason} />
-                  </td>
+                  <td className="p-3">{leave.reason || "-"}</td>
 
                   <td className="p-3">{leave.managerComment || "-"}</td>
 
-                  <td className="p-3">
-                    {leave.approvedBy || "-"}
-                  </td>
+                  <td className="p-3">{leave.approvedBy?.fullName || "-"}</td>
 
                   <td className="p-3">
-
                     {leave.status === "APPROVED" && (
-                      <button
-                        onClick={() => handleModalOpen(leave.leaveId)}
-                      >
+                      <button onClick={() => handleModalOpen(leave.leaveId)}>
                         <XCircle className="text-orange-500 hover:text-orange-700" />
                       </button>
                     )}
-
                   </td>
-
                 </tr>
-
               ))}
-
             </tbody>
-
           </table>
-
         </div>
       ) : (
         <div className="flex justify-center items-center h-40">
@@ -920,7 +1355,6 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
       )}
 
       {/* PAGINATION */}
-
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
@@ -931,7 +1365,6 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
       )}
 
       {/* MODAL */}
-
       <CancellationModal
         title="Confirm Cancellation"
         subtitle="Are you sure you want to cancel this leave?"
@@ -942,7 +1375,6 @@ const LeaveHistory = ({ employeeId, refreshKey }) => {
         confirmText="Confirm"
         isRevoke={true}
       />
-
     </div>
   );
 };

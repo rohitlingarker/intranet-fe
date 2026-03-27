@@ -25,7 +25,6 @@ const BenchKPI = ({ items = [] }) => {
             <div className="min-w-0">
               <p className="mb-0.5 text-xs font-medium tracking-tight text-slate-500">{item.label}</p>
               <p className="text-2xl font-bold tracking-tight text-slate-900">{item.value}</p>
-              {item.helper ? <p className="mt-1 text-xs text-slate-500">{item.helper}</p> : null}
             </div>
           </div>
         );
