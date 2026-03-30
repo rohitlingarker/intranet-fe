@@ -58,8 +58,36 @@ export default function EmployeeProfileView() {
         }
 
         const data = await res.json();
-        console.log("DATA:", data);
+        
+        let deptName = data.department_uuid;
+        let desigName = data.designation_uuid;
 
+        // Resolve Department
+        if (data.department_uuid) {
+          try {
+            const deptRes = await fetch(`${BASE_URL}/masters/departments/${data.department_uuid}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (deptRes.ok) {
+              const deptData = await deptRes.json();
+              deptName = deptData.department_name || deptName;
+            }
+          } catch(e) { console.error("Failed to fetch department", e); }
+        }
+
+        // Resolve Designation
+        if (data.designation_uuid) {
+          try {
+            const desigRes = await fetch(`${BASE_URL}/masters/designations/${data.designation_uuid}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (desigRes.ok) {
+              const desigData = await desigRes.json();
+              desigName = desigData.designation_name || desigData.name || desigName;
+            }
+          } catch(e) { console.error("Failed to fetch designation", e); }
+        }
+
+        data.resolved_department_name = deptName;
+        data.resolved_designation_name = desigName;
+
+        console.log("DATA:", data);
         setEmployee(data);
       } catch (err) {
         console.error("Error fetching employee:", err);
@@ -94,12 +122,12 @@ export default function EmployeeProfileView() {
 
   const mappedEmployee = {
     name: `${employee.first_name || ""} ${employee.last_name || ""}` .toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim(),
-    designation: employee.designation_uuid,
+    designation: employee.resolved_designation_name || employee.designation_uuid,
     email: employee.work_email,
     phone: employee.contact_number,
     office: employee.location,
     empId: employee.employee_id,
-    department: employee.department_uuid,
+    department: employee.resolved_department_name || employee.department_uuid,
     reportingManager: employee.reporting_manager_uuid || "N/A",
     joiningDate: employee.joining_date,
     employmentType: employee.employment_type,
@@ -278,7 +306,8 @@ export default function EmployeeProfileView() {
           )}
 
           {activeTab === "profile" && (
-            <ProfilePage activeTab={activeTab} />
+            <ProfilePage activeTab={activeTab} 
+            user_uuid={employee.user_uuid}/>
           )}
           {activeTab === "job" && (
             <JobPage />

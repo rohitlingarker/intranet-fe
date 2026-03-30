@@ -6,6 +6,7 @@ import BenchFilters from "../components/BenchFilters";
 import BenchTable from "../components/BenchTable";
 import BenchDrawer from "../components/BenchDrawer";
 import AllocateModal from "../components/AllocateModal";
+import QuickAllocateModal from "../components/QuickAllocateModal";
 import MoveToPoolModal from "../components/MoveToPoolModal";
 import { createPortal } from "react-dom";
 import {
@@ -63,6 +64,7 @@ const BenchPage = () => {
   const [selectedResourceId, setSelectedResourceId] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [allocateTargets, setAllocateTargets] = useState([]);
+  const [quickAllocateTarget, setQuickAllocateTarget] = useState(null);
   const [moveToPoolTargets, setMoveToPoolTargets] = useState([]);
   const [bulkCategory, setBulkCategory] = useState(CATEGORY_OPTIONS[0]);
 
@@ -239,11 +241,20 @@ const BenchPage = () => {
   };
 
   const handleAllocate = (targets) => {
-    setAllocateTargets(Array.isArray(targets) ? targets : [targets]);
+    const list = Array.isArray(targets) ? targets : [targets];
+    if (list.length === 1) {
+      setQuickAllocateTarget(list[0]);
+    } else {
+      setAllocateTargets(list);
+    }
   };
 
   const handleMoveToPool = (targets) => {
     setMoveToPoolTargets(Array.isArray(targets) ? targets : [targets]);
+  };
+
+  const handleQuickAllocate = (resource) => {
+    setQuickAllocateTarget(resource);
   };
 
   const applyAllocation = ({ project, allocation, startDate }) => {
@@ -455,6 +466,7 @@ const BenchPage = () => {
             onToggleAll={handleToggleAll}
             onToggleRow={handleToggleRow}
             onView={handleView}
+            onQuickAllocate={handleQuickAllocate}
             onCategoryChange={(id, category) => setResourceCategory([id], category)}
             onRefresh={() => fetchData(true)}
           />
@@ -474,6 +486,13 @@ const BenchPage = () => {
         resources={allocateTargets}
         onClose={() => setAllocateTargets([])}
         onSubmit={applyAllocation}
+      />
+
+      <QuickAllocateModal
+        open={Boolean(quickAllocateTarget)}
+        resource={quickAllocateTarget}
+        onClose={() => setQuickAllocateTarget(null)}
+        onRefresh={loadData}
       />
 
       <MoveToPoolModal

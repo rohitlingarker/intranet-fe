@@ -45,6 +45,7 @@ const BenchTable = ({
   onToggleAll,
   onToggleRow,
   onView,
+  onQuickAllocate,
   onCategoryChange,
   onRefresh,
 }) => {
