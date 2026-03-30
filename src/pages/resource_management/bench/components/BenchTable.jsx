@@ -95,11 +95,10 @@ const BenchTable = ({
                         row.topSkills.map((skill) => (
                           <span
                             key={`${row.id}-${skill.name}`}
-                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                              skill.stale
-                                ? "bg-amber-50 text-amber-700 border-amber-100"
-                                : "bg-slate-50 text-slate-600 border-slate-100"
-                            }`}
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${skill.stale
+                              ? "bg-amber-50 text-amber-700 border-amber-100"
+                              : "bg-slate-50 text-slate-600 border-slate-100"
+                              }`}
                           >
                             {skill.name}
                           </span>
@@ -122,13 +121,13 @@ const BenchTable = ({
                   </td>
                   <td className="px-4 py-4 align-middle text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className={`text-[13px] font-bold ${row.availability < 50 ? 'text-rose-600' : 'text-slate-900'}`}>
-                        {row.availability}%
+                      <span className={`text-[13px] font-bold ${row.allocation < 50 ? 'text-rose-600' : 'text-slate-900'}`}>
+                        {row.allocation}%
                       </span>
                       <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${row.availability >= 75 ? 'bg-emerald-500' : row.availability >= 25 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                          style={{ width: `${row.availability}%` }}
+                        <div
+                          className={`h-full ${row.allocation >= 75 ? 'bg-emerald-500' : row.allocation >= 25 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                          style={{ width: `${row.allocation}%` }}
                         />
                       </div>
                     </div>
@@ -141,13 +140,13 @@ const BenchTable = ({
                       <span className={`text-[12px] font-bold ${row.warnings.highCost ? "text-rose-700" : "text-slate-900"}`}>
                         {row.costPerDay === null ? "—" : `₹${row.costPerDay.toLocaleString()}`}
                       </span>
-                      {row.warnings.missingCost ? (
+                      {/* {row.warnings.missingCost ? (
                         <span className="text-[9px] font-bold text-amber-600 uppercase">Cost Missing</span>
                       ) : (
                         <span className="text-[10px] font-medium text-slate-400">
                           Exp: {row.costExposure === null ? "-" : row.costExposure.toLocaleString()}
                         </span>
-                      )}
+                      )} */}
                     </div>
                   </td>
                   <td className="px-5 py-4 align-middle text-center" onClick={(event) => event.stopPropagation()}>

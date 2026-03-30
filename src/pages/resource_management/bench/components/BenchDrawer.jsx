@@ -28,7 +28,7 @@ const BenchDrawer = ({ open, resource, onClose, onAllocate, onMoveToPool }) => {
           <div className="grid grid-cols-2 gap-3">
             <div className={statCardClassName}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Availability</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{resource.availability}%</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{resource.allocation}%</p>
             </div>
             <div className={statCardClassName}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">Category</p>
