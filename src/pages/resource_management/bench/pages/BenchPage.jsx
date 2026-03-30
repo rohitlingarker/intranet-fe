@@ -60,8 +60,8 @@ const BenchPage = () => {
   const [dropdownPos, setDropdownPos] = useState(null);
   const filterButtonRef = useRef(null);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [selectedResourceId, setSelectedResourceId] = useState(stored?.selectedResourceId || null);
-  const [drawerOpen, setDrawerOpen] = useState(Boolean(stored?.selectedResourceId));
+  const [selectedResourceId, setSelectedResourceId] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [allocateTargets, setAllocateTargets] = useState([]);
   const [moveToPoolTargets, setMoveToPoolTargets] = useState([]);
   const [bulkCategory, setBulkCategory] = useState(CATEGORY_OPTIONS[0]);
@@ -117,33 +117,33 @@ const BenchPage = () => {
 
   const toggleFilters = () => setFilterPanelOpen(!filterPanelOpen);
 
+  const fetchData = async (isActive = true) => {
+    try {
+      const [benchRes, poolRes, kpiRes] = await Promise.all([
+        getBenchResources(),
+        getPoolResources(),
+        getBenchKPIs()
+      ]);
+      
+      if (!isActive) return;
+      
+      // Unpack and tag resources
+      const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
+      const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
+      setResources(sanitizeResources([...benchList, ...poolList]));
+
+      // Set live KPI data
+      setKpis(kpiRes?.data || kpiRes || null);
+    } catch (error) {
+      if (!isActive) return;
+      console.error("Resource Supply Data Load Error", error);
+      toast.error("Failed to load bench or pool data");
+    }
+  };
+
   useEffect(() => {
     let active = true;
-
-    const load = async () => {
-      try {
-        const [benchRes, poolRes, kpiRes] = await Promise.all([
-          getBenchResources(),
-          getPoolResources(),
-          getBenchKPIs()
-        ]);
-        
-        if (!active) return;
-        
-        // Unpack and tag resources
-        const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
-        const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
-        setResources(sanitizeResources([...benchList, ...poolList]));
-
-        // Set live KPI data
-        setKpis(kpiRes?.data || kpiRes || null);
-      } catch (error) {
-        console.error("Resource Supply Data Load Error", error);
-        toast.error("Failed to load bench or pool data");
-      }
-    };
-
-    load();
+    fetchData(active);
     return () => {
       active = false;
     };
@@ -157,10 +157,9 @@ const BenchPage = () => {
         search,
         activeTab,
         filters,
-        selectedResourceId,
       }),
     );
-  }, [search, activeTab, filters, selectedResourceId]);
+  }, [search, activeTab, filters]);
 
   const visibleRows = useMemo(
     () => filterResources(resources, search, filters, activeTab),
@@ -457,6 +456,7 @@ const BenchPage = () => {
             onToggleRow={handleToggleRow}
             onView={handleView}
             onCategoryChange={(id, category) => setResourceCategory([id], category)}
+            onRefresh={() => fetchData(true)}
           />
         </div>
       </div>

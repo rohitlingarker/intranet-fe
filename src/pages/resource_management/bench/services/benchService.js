@@ -74,3 +74,15 @@ export const getBenchKPIs = async () => {
     throw error;
   }
 };
+
+export const updateStatusResource = async (payload) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/api/bench/update-resource-state`, payload, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update resource status", error);
+    throw error;
+  }
+};
