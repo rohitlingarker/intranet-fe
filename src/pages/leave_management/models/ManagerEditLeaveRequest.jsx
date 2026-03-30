@@ -951,6 +951,7 @@ export default function ManagerEditLeaveRequest({
       managerComment,
       startSession: halfDayConfig.start,
       endSession: isMultiDay ? halfDayConfig.end : "none",
+      year
     };
 
     onSave(requestDetails.leaveId, updatedData);

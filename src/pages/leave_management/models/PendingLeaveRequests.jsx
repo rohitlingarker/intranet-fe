@@ -60,7 +60,7 @@ const PendingLeaveRequests = ({ refreshKey, year }) => {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(
-          `${BASE_URL}/api/leave-balance/employee/${employeeId}/${year}`,
+          `${BASE_URL}/api/leave-balance/employee/drop/${employeeId}/${year}`,
           {
             withCredentials: true,
             headers: { Authorization: `Bearer ${token}` },

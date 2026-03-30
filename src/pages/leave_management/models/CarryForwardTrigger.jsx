@@ -2,14 +2,54 @@ import React, { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const CarryForwardTrigger = ({ isOpen, onClose, onSuccess }) => {
   const [year, setYear] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-  if (!isOpen) return null; // ✅ control visibility
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const queryClient = useQueryClient();
+
+  if (!isOpen) return null;
+
+  // 🔥 Mutation Function
+  const mutation = useMutation({
+    mutationFn: async (year) => {
+      const response = await axios.post(
+        `${BASE_URL}/api/leave-balance/process-carry-forwards/${year}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      return response.data;
+    },
+
+    // ✅ On Success → update UI + invalidate cache
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+
+      // 🔥 VERY IMPORTANT: refresh cached data
+      queryClient.invalidateQueries(["leaveBalance"]);
+      queryClient.invalidateQueries(["leaveRequests"]);
+      queryClient.invalidateQueries(["dashboardStats"]);
+
+      setIsModalOpen(false);
+      onClose();
+      onSuccess();
+    },
+
+    onError: () => {
+      toast.error("Failed to process carry forward");
+    },
+  });
 
   const handleConfirmClick = () => {
     if (!year) {
@@ -23,28 +63,8 @@ const CarryForwardTrigger = ({ isOpen, onClose, onSuccess }) => {
     setIsModalOpen(false);
   };
 
-  const handleConfirm = async () => {
-    try {
-      setIsLoading(true);
-
-      await axios.post(
-        `${BASE_URL}/api/leave-balance/process-carry-forwards/${year}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
-
-      toast.success("Carry forward processed successfully");
-
-      setIsModalOpen(false);
-      onClose(); // ✅ close parent modal
-      onSuccess(); // ✅ notify parent
-    } catch (error) {
-      toast.error("Failed to process carry forward");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleConfirm = () => {
+    mutation.mutate(year); // 🔥 trigger mutation
   };
 
   return (
@@ -52,7 +72,6 @@ const CarryForwardTrigger = ({ isOpen, onClose, onSuccess }) => {
       <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
         <h2 className="text-lg font-semibold mb-3">Process Carry Forward</h2>
 
-        {/* Year Input */}
         <input
           type="number"
           placeholder="Enter Year (e.g. 2025)"
@@ -61,7 +80,6 @@ const CarryForwardTrigger = ({ isOpen, onClose, onSuccess }) => {
           className="w-full border px-3 py-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
-        {/* Buttons */}
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">
             Close
@@ -75,14 +93,13 @@ const CarryForwardTrigger = ({ isOpen, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Confirmation Modal */}
         <ConfirmationModal
           isOpen={isModalOpen}
           title="Confirm Carry Forward"
           message={`Are you sure you want to process carry forward for year ${year}?`}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
-          isLoading={isLoading}
+          isLoading={mutation.isPending} // ✅ from react query
           confirmText="Process"
         />
       </div>

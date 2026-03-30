@@ -362,6 +362,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
     leaveId,
     commentParam,
     resourceId,
+    year
   }) => {
     const comment = commentParam ?? (comments[leaveId] || "");
 
@@ -382,6 +383,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
           managerId,
           leaveId,
           comment,
+          year
         },
         {
           headers: {
@@ -948,6 +950,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                   action: "approve",
                                   leaveId: request.leaveId,
                                   resourceId: request.employeeId,
+                                  year: request.year
                                 })
                               }
                               aria-label="Approve Request"
@@ -975,6 +978,8 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                                 setConfirmation({
                                   action: "reject",
                                   leaveId: request.leaveId,
+                                  resourceId: request.employeeId,
+                                  year: request.year
                                 })
                               }
                               aria-label="Reject Request"
@@ -1138,6 +1143,7 @@ const HandleLeaveRequestAndApprovals = forwardRef(({ employeeId }, ref) => {
                         action: confirmation.action,
                         leaveId: confirmation.leaveId,
                         resourceId: confirmation.resourceId,
+                        year: confirmation.year,
                       })
                     }
                     disabled={loading}

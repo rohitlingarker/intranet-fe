@@ -164,7 +164,7 @@ const HRManageTools = ({ employeeId }) => {
           Add Holidays
         </button>
         <button
-          onClick={() => {}}
+          onClick={() => navigate(`/edit-holidays`)}
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
         >
           Edit Holidays
