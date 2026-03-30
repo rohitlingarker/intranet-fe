@@ -24,6 +24,7 @@ const BenchTable = ({
   onToggleAll,
   onToggleRow,
   onView,
+  onQuickAllocate,
   onCategoryChange,
 }) => {
   const allSelected = rows.length > 0 && rows.every((row) => selectedRows.includes(row.id));
@@ -154,10 +155,9 @@ const BenchTable = ({
                     <button
                       type="button"
                       onClick={() => onView(row)}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 shadow-sm"
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-[11px] font-black tracking-widest text-slate-500 transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 shadow-sm uppercase"
                     >
-                      <Eye className="mr-1.5 h-3.5 w-3.5" />
-                      VIEW
+                      VIEW DETAILS
                     </button>
                   </td>
                 </tr>

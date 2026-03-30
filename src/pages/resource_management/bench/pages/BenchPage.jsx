@@ -6,6 +6,7 @@ import BenchFilters from "../components/BenchFilters";
 import BenchTable from "../components/BenchTable";
 import BenchDrawer from "../components/BenchDrawer";
 import AllocateModal from "../components/AllocateModal";
+import QuickAllocateModal from "../components/QuickAllocateModal";
 import MoveToPoolModal from "../components/MoveToPoolModal";
 import { createPortal } from "react-dom";
 import {
@@ -63,6 +64,7 @@ const BenchPage = () => {
   const [selectedResourceId, setSelectedResourceId] = useState(stored?.selectedResourceId || null);
   const [drawerOpen, setDrawerOpen] = useState(Boolean(stored?.selectedResourceId));
   const [allocateTargets, setAllocateTargets] = useState([]);
+  const [quickAllocateTarget, setQuickAllocateTarget] = useState(null);
   const [moveToPoolTargets, setMoveToPoolTargets] = useState([]);
   const [bulkCategory, setBulkCategory] = useState(CATEGORY_OPTIONS[0]);
 
@@ -117,36 +119,29 @@ const BenchPage = () => {
 
   const toggleFilters = () => setFilterPanelOpen(!filterPanelOpen);
 
+  const loadData = async () => {
+    try {
+      const [benchRes, poolRes, kpiRes] = await Promise.all([
+        getBenchResources(),
+        getPoolResources(),
+        getBenchKPIs()
+      ]);
+      
+      // Unpack and tag resources
+      const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
+      const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
+      setResources(sanitizeResources([...benchList, ...poolList]));
+
+      // Set live KPI data
+      setKpis(kpiRes?.data || kpiRes || null);
+    } catch (error) {
+      console.error("Resource Supply Data Load Error", error);
+      toast.error("Failed to load bench or pool data");
+    }
+  };
+
   useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      try {
-        const [benchRes, poolRes, kpiRes] = await Promise.all([
-          getBenchResources(),
-          getPoolResources(),
-          getBenchKPIs()
-        ]);
-        
-        if (!active) return;
-        
-        // Unpack and tag resources
-        const benchList = (benchRes?.data || (Array.isArray(benchRes) ? benchRes : [])).map(r => ({ ...r, _source: 'bench' }));
-        const poolList = (poolRes?.data || (Array.isArray(poolRes) ? poolRes : [])).map(r => ({ ...r, _source: 'pool' }));
-        setResources(sanitizeResources([...benchList, ...poolList]));
-
-        // Set live KPI data
-        setKpis(kpiRes?.data || kpiRes || null);
-      } catch (error) {
-        console.error("Resource Supply Data Load Error", error);
-        toast.error("Failed to load bench or pool data");
-      }
-    };
-
-    load();
-    return () => {
-      active = false;
-    };
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -240,11 +235,20 @@ const BenchPage = () => {
   };
 
   const handleAllocate = (targets) => {
-    setAllocateTargets(Array.isArray(targets) ? targets : [targets]);
+    const list = Array.isArray(targets) ? targets : [targets];
+    if (list.length === 1) {
+      setQuickAllocateTarget(list[0]);
+    } else {
+      setAllocateTargets(list);
+    }
   };
 
   const handleMoveToPool = (targets) => {
     setMoveToPoolTargets(Array.isArray(targets) ? targets : [targets]);
+  };
+
+  const handleQuickAllocate = (resource) => {
+    setQuickAllocateTarget(resource);
   };
 
   const applyAllocation = ({ project, allocation, startDate }) => {
@@ -456,6 +460,7 @@ const BenchPage = () => {
             onToggleAll={handleToggleAll}
             onToggleRow={handleToggleRow}
             onView={handleView}
+            onQuickAllocate={handleQuickAllocate}
             onCategoryChange={(id, category) => setResourceCategory([id], category)}
           />
         </div>
@@ -474,6 +479,13 @@ const BenchPage = () => {
         resources={allocateTargets}
         onClose={() => setAllocateTargets([])}
         onSubmit={applyAllocation}
+      />
+
+      <QuickAllocateModal
+        open={Boolean(quickAllocateTarget)}
+        resource={quickAllocateTarget}
+        onClose={() => setQuickAllocateTarget(null)}
+        onRefresh={loadData}
       />
 
       <MoveToPoolModal
