@@ -153,6 +153,46 @@ export default function ProfilePage({ activeTab, user_uuid }) {
             data.personal_details?.emergency_contact_phone || "",
         });
 
+        /* RELATIONS */
+        const personal = data?.personal_details || {};
+
+        const emergencyName = personal.emergency_contact_name || "Akka";
+        const emergencyPhone = personal.emergency_contact_phone || "8765678987";
+        const relationType = personal.emergency_contact_relation || "Sister";
+
+        setRelationData(personal);
+
+        let relationGender = "Not Specified";
+
+        if (["Father", "Brother", "Son", "Husband"].includes(relationType)) {
+          relationGender = "Male";
+        } else if (
+          ["Mother", "Sister", "Daughter", "Wife"].includes(relationType)
+        ) {
+          relationGender = "Female";
+        }
+
+        console.log("RELATION DEBUG:", {
+          personal,
+          emergencyName,
+          emergencyPhone,
+          relationType,
+        });
+
+        if (emergencyName) {
+          setRelationData([
+            {
+              id: 1,
+              relation: relationType || "Relation",
+              first_name: emergencyName,
+              mobile: emergencyPhone || "-",
+              gender: relationGender,
+            },
+          ]);
+        } else {
+          setRelationData([]);
+        }
+
         /* ADDRESS */
         const current = data.addresses?.find(a => a.address_type === "current");
         const permanent = data.addresses?.find(a => a.address_type === "permanent");
@@ -179,18 +219,18 @@ export default function ProfilePage({ activeTab, user_uuid }) {
         /* EDUCATION LOGIC */
         const eduDocs = data.education_documents || [];
         let edu = null;
-        
+
         const primaryEduUuid = localStorage.getItem("primary_education_uuid");
         if (primaryEduUuid && eduDocs.length > 0) {
-           edu = eduDocs.find(d => d.education_document_uuid === primaryEduUuid);
+          edu = eduDocs.find(d => d.education_document_uuid === primaryEduUuid);
         }
         if (!edu && eduDocs.length > 0) {
-           const sortedEdu = [...eduDocs].sort((a, b) => {
-               const yearA = parseInt(a.year_of_passing, 10) || 0;
-               const yearB = parseInt(b.year_of_passing, 10) || 0;
-               return yearB - yearA;
-           });
-           edu = sortedEdu[0];
+          const sortedEdu = [...eduDocs].sort((a, b) => {
+            const yearA = parseInt(a.year_of_passing, 10) || 0;
+            const yearB = parseInt(b.year_of_passing, 10) || 0;
+            return yearB - yearA;
+          });
+          edu = sortedEdu[0];
         }
 
         setEducationData({
@@ -206,15 +246,15 @@ export default function ProfilePage({ activeTab, user_uuid }) {
 
         const primaryExpUuid = localStorage.getItem("primary_experience_uuid");
         if (primaryExpUuid && expDocs.length > 0) {
-           exp = expDocs.find(d => d.experience_uuid === primaryExpUuid);
+          exp = expDocs.find(d => d.experience_uuid === primaryExpUuid);
         }
         if (!exp && expDocs.length > 0) {
-           const sortedExp = [...expDocs].sort((a, b) => {
-               const dateA = new Date(a.end_date || a.start_date || 0).getTime();
-               const dateB = new Date(b.end_date || b.start_date || 0).getTime();
-               return dateB - dateA;
-           });
-           exp = sortedExp[0];
+          const sortedExp = [...expDocs].sort((a, b) => {
+            const dateA = new Date(a.end_date || a.start_date || 0).getTime();
+            const dateB = new Date(b.end_date || b.start_date || 0).getTime();
+            return dateB - dateA;
+          });
+          exp = sortedExp[0];
         }
 
         setExperienceData({
@@ -294,7 +334,7 @@ export default function ProfilePage({ activeTab, user_uuid }) {
                 <span className="text-sm text-gray-400">No address added</span>
               )}
             </div>
-            
+
             {/* PERMANENT ADDRESS */}
             <div className="flex flex-col">
               <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Permanent Address</span>
@@ -319,7 +359,8 @@ export default function ProfilePage({ activeTab, user_uuid }) {
               {relationData.map((rel, idx) => (
                 <div key={rel.id || idx} className="flex flex-col">
                   <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">{rel.relation || "Relation"}</span>
-                  <span className="text-[14px] text-gray-800">{(rel.first_name || rel.last_name) ? `${rel.first_name || ""} ${rel.last_name || ""}`.trim() : "-"}</span>
+                  {/* <span className="text-[14px] text-gray-800">{(rel.first_name || rel.last_name) ? `${rel.first_name || ""} ${rel.last_name || ""}`.trim() : "-"}</span> */}
+                  <span className="text-[14px] text-gray-800">{rel.first_name || "-"}</span>
                   <span className="text-[14px] text-gray-800 mt-0.5"><span className="font-medium text-gray-900">Mobile:</span> {rel.mobile || "-"}</span>
                   <span className="text-[14px] text-gray-800 mt-0.5"><span className="font-medium text-gray-900">Gender:</span> {rel.gender || "-"}</span>
                 </div>
@@ -464,8 +505,8 @@ const Select = ({ label, name, value, onChange, options, disabled = false, requi
 
 const ModalWrapper = ({ title, onClose, children, contentClassName = "px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7 overflow-y-auto bg-gray-50/50" }) => (
   <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-    <form 
-      onSubmit={(e) => { e.preventDefault(); onClose(); }} 
+    <form
+      onSubmit={(e) => { e.preventDefault(); onClose(); }}
       className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-100"
     >
       <div className="flex justify-between items-center px-8 py-5 border-b border-gray-100 bg-white shrink-0">
@@ -571,7 +612,7 @@ const AddressModal = ({ data, setData, onClose }) => {
           <AddressInput required={!data.sameAsCurrent} label="City" value={data.permanent.city} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('city', e.target.value)} />
           <Select required={!data.sameAsCurrent} label="State" value={data.permanent.state} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('state', e.target.value)} options={states} />
           <AddressInput required={!data.sameAsCurrent} label="Pincode" value={data.permanent.pincode} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('pincode', e.target.value)} />
-          
+
           <label className="flex items-center gap-2 mt-5 p-3 bg-gray-50 rounded-lg cursor-pointer text-gray-700 transition-colors hover:bg-gray-100 border border-gray-200">
             <input type="checkbox" checked={data.sameAsCurrent} onChange={toggleSameAsCurrent} className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
             <span className="text-sm font-medium">Same as Current Address</span>
@@ -629,23 +670,22 @@ const RelationsModal = ({ data, setData, onClose }) => {
           {/* LEFT SIDEBAR: List of relations */}
           <div className="w-full md:w-1/3 border-r border-gray-100 p-6 overflow-y-auto space-y-4 bg-gray-50/20">
             {relations.map((rel, idx) => (
-              <div 
-                key={rel.id} 
+              <div
+                key={rel.id}
                 onClick={() => setSelectedIndex(idx)}
-                className={`p-5 rounded-md border relative cursor-pointer transition-all ${
-                  selectedIndex === idx 
-                    ? "bg-[#f8f6fb] border-indigo-100 shadow-sm" 
-                    : "bg-white border-gray-100 hover:border-gray-200"
-                }`}
+                className={`p-5 rounded-md border relative cursor-pointer transition-all ${selectedIndex === idx
+                  ? "bg-[#f8f6fb] border-indigo-100 shadow-sm"
+                  : "bg-white border-gray-100 hover:border-gray-200"
+                  }`}
               >
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">{rel.relation || "NEW RELATION"}</div>
                 <div className="text-[15px] font-medium text-gray-800 mt-2 leading-tight">
                   {rel.first_name || rel.last_name ? `${rel.first_name} ${rel.last_name}` : ""}
                 </div>
                 <div className="text-[13px] text-gray-500 mt-1">[{rel.profession || "Profession"}]</div>
-                
-                <button 
-                  type="button" 
+
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); handleDelete(idx); }}
                   className="absolute bottom-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
                 >
@@ -654,8 +694,8 @@ const RelationsModal = ({ data, setData, onClose }) => {
               </div>
             ))}
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleAdd}
               className="text-indigo-600 text-sm font-medium hover:underline mt-2 inline-block px-1 tracking-wide"
             >
@@ -669,13 +709,13 @@ const RelationsModal = ({ data, setData, onClose }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <Select label="Relation" value={currentRel.relation} onChange={(e) => updateCurrent('relation', e.target.value)} options={["Father", "Mother", "Spouse", "Brother", "Sister", "Son", "Daughter", "Other"]} required />
                 <Select label="Gender" value={currentRel.gender} onChange={(e) => updateCurrent('gender', e.target.value)} options={["Male", "Female", "Other"]} required />
-                
+
                 <Input label="First Name" value={currentRel.first_name} onChange={(e) => updateCurrent('first_name', e.target.value)} required />
                 <Input label="Last Name" value={currentRel.last_name} onChange={(e) => updateCurrent('last_name', e.target.value)} required />
-                
+
                 <Input label="Email" type="email" value={currentRel.email} onChange={(e) => updateCurrent('email', e.target.value)} />
                 <Input label="Mobile" value={currentRel.mobile} onChange={(e) => updateCurrent('mobile', e.target.value)} required />
-                
+
                 <Input label="Profession" value={currentRel.profession} onChange={(e) => updateCurrent('profession', e.target.value)} />
                 <Input label="Date of Birth" type="date" value={currentRel.dob} onChange={(e) => updateCurrent('dob', e.target.value)} />
               </div>
