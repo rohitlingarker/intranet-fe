@@ -19,7 +19,7 @@ const EmployeeDirectory = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch employees, departments, and designations in parallel
         const [empRes, deptRes, desigRes] = await Promise.all([
           axios.get(`${BASE_URL}/permanent-employee/core-employee-details/`, {
@@ -35,7 +35,7 @@ const EmployeeDirectory = () => {
 
         const depts = Array.isArray(deptRes.data) ? deptRes.data : (deptRes.data.data || []);
         const desigs = Array.isArray(desigRes.data) ? desigRes.data : (desigRes.data.data || []);
-        
+
         setDepartmentsList(depts);
         setDesignationsList(desigs);
 
@@ -80,18 +80,18 @@ const EmployeeDirectory = () => {
     const matchesSearch =
       emp.name.toLowerCase().includes(search.toLowerCase()) ||
       emp.role.toLowerCase().includes(search.toLowerCase());
- 
+
     const matchesDepartment =
       department === "All" || emp.department === department;
- 
+
     return matchesSearch && matchesDepartment;
   });
 
 
   return (
-   
+
     <div className="p-0.5 overflow-x-hidden">
- 
+
       {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <div>
@@ -103,10 +103,10 @@ const EmployeeDirectory = () => {
           </p>
         </div>
       </div>
- 
+
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
- 
+
         {/* Search Bar */}
         <div className="relative flex-1 min-w-[150px]">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -134,7 +134,7 @@ const EmployeeDirectory = () => {
           </select>
         </div>
       </div>
- 
+
       {/* Employee Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-2">
         {loading ? (
@@ -145,8 +145,8 @@ const EmployeeDirectory = () => {
         ) : error ? (
           <div className="col-span-full text-center py-20">
             <p className="text-red-500 font-medium">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="mt-4 text-indigo-600 hover:underline font-medium"
             >
               Try Again
@@ -154,7 +154,7 @@ const EmployeeDirectory = () => {
           </div>
         ) : filteredEmployees.length > 0 ? (
           filteredEmployees.map((emp, index) => (
-            <EmployeeCard key={index} employee={emp} index={index}/>
+            <EmployeeCard key={index} employee={emp} index={index} />
           ))
         ) : (
           <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
@@ -162,9 +162,8 @@ const EmployeeDirectory = () => {
       </div>
     </div>
   );
- 
+
 };
- 
+
 export default EmployeeDirectory;
- 
- 
+

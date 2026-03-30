@@ -67,7 +67,7 @@ const BenchDrawer = ({ open, resource, onClose, onAllocate, onMoveToPool }) => {
           <div className="grid grid-cols-2 gap-3">
             <div className={statCardClassName}>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Availability</p>
-              <p className="mt-2 text-lg font-black text-slate-900">{resource.availability}%</p>
+              <p className="mt-2 text-lg font-black text-slate-900">{resource.allocation}%</p>
             </div>
             <div className={statCardClassName}>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Aging</p>
