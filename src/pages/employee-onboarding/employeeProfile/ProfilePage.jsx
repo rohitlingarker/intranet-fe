@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Pencil, X, Trash2 } from "lucide-react";
 
-export default function ProfilePage({ activeTab, user_uuid }) {
+export default function ProfilePage({ activeTab, user_uuid, coreData = {}, hrData = {} }) {
   const { employee_uuid } = useParams();
 
   if (activeTab !== "profile") return null;
@@ -14,56 +14,16 @@ export default function ProfilePage({ activeTab, user_uuid }) {
   /* ---------------- PRIMARY STATE ---------------- */
 
   const [primaryData, setPrimaryData] = useState(null);
-  // {
-  //   first_name: "Lokeswari",
-  //   middle_name: "",
-  //   last_name: "Busam",
-  //   display_name: "Busam Lokeswari",
-  //   gender: "Female",
-  //   dob: "2002-12-16",
-  //   marital_status: "Single",
-  //   blood_group: "AB+",
-  //   physically_handicapped: "No",
-  //   nationality: "India",
-  // });
 
   const [loading, setLoading] = useState(true);
 
   /* ---------------- CONTACT STATE ---------------- */
 
   const [contactData, setContactData] = useState(null);
-  // {
-  //   work_email: "lokeswari.busam@pavestechnologies.com",
-  //   personal_email: "lokeswari.busam@gmail.com",
-  //   country_code: "+91",
-  //   mobile_number: "9876543213",
-  //   emergency_number: "9876543210",
-  //   work_number: "",
-  //   residence_number: "",
-  // });
 
   /* ---------------- ADDRESS STATE ---------------- */
 
   const [addressData, setAddressData] = useState(null);
-  // {
-  //   current: {
-  //     country: "India",
-  //     line1: "",
-  //     line2: "",
-  //     city: "",
-  //     state: "",
-  //     pincode: "",
-  //   },
-  //   permanent: {
-  //     country: "India",
-  //     line1: "",
-  //     line2: "",
-  //     city: "",
-  //     state: "",
-  //     pincode: "",
-  //   },
-  //   sameAsCurrent: false,
-  // });
 
   /* ---------------- RELATIONS STATE ---------------- */
 
@@ -71,20 +31,11 @@ export default function ProfilePage({ activeTab, user_uuid }) {
 
   /* ---------------- EDUCATION STATE ---------------- */
 
-  const [educationData, setEducationData] = useState({
-    degree: "B.Tech",
-    specialization: "Computer Science and Engineering",
-    institution: "Padmavati College of Engineering",
-    year: "2024",
-  });
+  const [educationData, setEducationData] = useState([]);
 
   /* ---------------- EXPERIENCE STATE ---------------- */
 
-  const [experienceData, setExperienceData] = useState({
-    company: "ABC Technologies",
-    role: "Intern",
-    duration: "Feb 2023 - May 2023",
-  });
+  const [experienceData, setExperienceData] = useState([]);
 
   /* ---------------- IDENTITY STATE ---------------- */
 
@@ -101,191 +52,121 @@ export default function ProfilePage({ activeTab, user_uuid }) {
   });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+    // Use pre-fetched data from parent — no API calls needed
+    const data = hrData || {};
 
-        let coreData = {};
-        if (employee_uuid) {
-          const coreRes = await fetch(
-            `${BASE_URL}/permanent-employee/core-employee-details/${employee_uuid}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (coreRes.ok) {
-            coreData = await coreRes.json();
-          }
-        }
+    /* PRIMARY */
+    setPrimaryData({
+      first_name: coreData.first_name || data.offer?.first_name || "",
+      last_name: coreData.last_name || data.offer?.last_name || "",
+      gender: coreData.gender || data.personal_details?.gender || "",
+      dob: coreData.date_of_birth || data.personal_details?.date_of_birth || "",
+      marital_status: coreData.marital_status || data.personal_details?.marital_status || "",
+      blood_group: coreData.blood_group || data.personal_details?.blood_group || "",
+      nationality: data.personal_details?.nationality || "",
+    });
 
-        const targetUserUuid = coreData.user_uuid || user_uuid;
-        let data = {};
-        if (targetUserUuid) {
-          const hrRes = await fetch(
-            `${BASE_URL}/hr/hr/${targetUserUuid}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (hrRes.ok) {
-            data = await hrRes.json();
-          }
-        }
+    /* CONTACT */
+    setContactData({
+      work_email: coreData.work_email || "",
+      personal_email: data.offer?.email || "",
+      country_code: "+91",
+      mobile_number: coreData.contact_number || data.offer?.contact_number || "",
+      emergency_number:
+        data.personal_details?.emergency_contact_phone || "",
+    });
 
-        console.log("CORE DATA:", coreData);
-        console.log("PROFILE DATA:", data);
+    /* RELATIONS */
+    const personal = data?.personal_details || {};
 
-        /* PRIMARY */
-        setPrimaryData({
-          first_name: coreData.first_name || data.offer?.first_name || "",
-          last_name: coreData.last_name || data.offer?.last_name || "",
-          gender: coreData.gender || data.personal_details?.gender || "",
-          dob: coreData.date_of_birth || data.personal_details?.date_of_birth || "",
-          marital_status: coreData.marital_status || data.personal_details?.marital_status || "",
-          blood_group: coreData.blood_group || data.personal_details?.blood_group || "",
-          nationality: data.personal_details?.nationality || "",
-        });
+    const emergencyName = personal.emergency_contact_name || "Akka";
+    const emergencyPhone = personal.emergency_contact_phone || "8765678987";
+    const relationType = personal.emergency_contact_relation || "Sister";
 
-        /* CONTACT */
-        setContactData({
-          work_email: coreData.work_email || "",
-          personal_email: data.offer?.email || "",
-          country_code: "+91",
-          mobile_number: coreData.contact_number || data.offer?.contact_number || "",
-          emergency_number:
-            data.personal_details?.emergency_contact_phone || "",
-        });
+    let relationGender = "Not Specified";
 
-        /* RELATIONS */
-        const personal = data?.personal_details || {};
+    if (["Father", "Brother", "Son", "Husband"].includes(relationType)) {
+      relationGender = "Male";
+    } else if (
+      ["Mother", "Sister", "Daughter", "Wife"].includes(relationType)
+    ) {
+      relationGender = "Female";
+    }
 
-        const emergencyName = personal.emergency_contact_name || "Akka";
-        const emergencyPhone = personal.emergency_contact_phone || "8765678987";
-        const relationType = personal.emergency_contact_relation || "Sister";
+    if (emergencyName) {
+      setRelationData([
+        {
+          id: 1,
+          relation: relationType || "Relation",
+          first_name: emergencyName,
+          mobile: emergencyPhone || "-",
+          gender: relationGender,
+        },
+      ]);
+    } else {
+      setRelationData([]);
+    }
 
-        setRelationData(personal);
+    /* ADDRESS */
+    const current = data.addresses?.find(a => a.address_type === "current");
+    const permanent = data.addresses?.find(a => a.address_type === "permanent");
 
-        let relationGender = "Not Specified";
+    setAddressData({
+      current: {
+        country: current?.country || "",
+        line1: current?.address_line1 || "",
+        line2: current?.address_line2 || "",
+        city: current?.city || "",
+        state: current?.state_or_region || "",
+        pincode: current?.postal_code || "",
+      },
+      permanent: {
+        country: permanent?.country || "",
+        line1: permanent?.address_line1 || "",
+        line2: permanent?.address_line2 || "",
+        city: permanent?.city || "",
+        state: permanent?.state_or_region || "",
+        pincode: permanent?.postal_code || "",
+      },
+    });
 
-        if (["Father", "Brother", "Son", "Husband"].includes(relationType)) {
-          relationGender = "Male";
-        } else if (
-          ["Mother", "Sister", "Daughter", "Wife"].includes(relationType)
-        ) {
-          relationGender = "Female";
-        }
+    /* EDUCATION - show ALL records */
+    const eduDocs = data.education_documents || [];
+    const allEdu = eduDocs.map((doc, idx) => ({
+      id: doc.education_document_uuid || `edu-${idx}`,
+      degree: doc.degree_name || doc.education_level || "N/A",
+      specialization: doc.specialization || "",
+      institution: doc.institution_name || "",
+      year: doc.year_of_passing || "",
+    }));
+    setEducationData(allEdu);
 
-        console.log("RELATION DEBUG:", {
-          personal,
-          emergencyName,
-          emergencyPhone,
-          relationType,
-        });
+    /* EXPERIENCE - show ALL records */
+    const expDocs = data.experience || [];
+    const allExp = expDocs.map((doc, idx) => ({
+      id: doc.experience_uuid || `exp-${idx}`,
+      company: doc.company_name || "",
+      role: doc.role_title || "",
+      duration: `${doc.start_date || ""} - ${doc.end_date || "Present"}`,
+    }));
+    setExperienceData(allExp);
 
-        if (emergencyName) {
-          setRelationData([
-            {
-              id: 1,
-              relation: relationType || "Relation",
-              first_name: emergencyName,
-              mobile: emergencyPhone || "-",
-              gender: relationGender,
-            },
-          ]);
-        } else {
-          setRelationData([]);
-        }
+    /* IDENTITY */
+    const aadhaar = data.identity_documents?.find(d =>
+      d.identity_type?.toLowerCase().includes("aadhaar")
+    );
 
-        /* ADDRESS */
-        const current = data.addresses?.find(a => a.address_type === "current");
-        const permanent = data.addresses?.find(a => a.address_type === "permanent");
+    const pan = data.identity_documents?.find(d =>
+      d.identity_type?.toLowerCase().includes("pan")
+    );
 
-        setAddressData({
-          current: {
-            country: current?.country || "",
-            line1: current?.address_line1 || "",
-            line2: current?.address_line2 || "",
-            city: current?.city || "",
-            state: current?.state_or_region || "",
-            pincode: current?.postal_code || "",
-          },
-          permanent: {
-            country: permanent?.country || "",
-            line1: permanent?.address_line1 || "",
-            line2: permanent?.address_line2 || "",
-            city: permanent?.city || "",
-            state: permanent?.state_or_region || "",
-            pincode: permanent?.postal_code || "",
-          },
-        });
+    setIdentityData({
+      aadhaar: aadhaar?.identity_file_number || "",
+      pan: pan?.identity_file_number || "",
+    });
 
-        /* EDUCATION LOGIC */
-        const eduDocs = data.education_documents || [];
-        let edu = null;
-
-        const primaryEduUuid = localStorage.getItem("primary_education_uuid");
-        if (primaryEduUuid && eduDocs.length > 0) {
-          edu = eduDocs.find(d => d.education_document_uuid === primaryEduUuid);
-        }
-        if (!edu && eduDocs.length > 0) {
-          const sortedEdu = [...eduDocs].sort((a, b) => {
-            const yearA = parseInt(a.year_of_passing, 10) || 0;
-            const yearB = parseInt(b.year_of_passing, 10) || 0;
-            return yearB - yearA;
-          });
-          edu = sortedEdu[0];
-        }
-
-        setEducationData({
-          degree: edu?.degree_name || edu?.education_level || "N/A",
-          specialization: edu?.specialization || "",
-          institution: edu?.institution_name || "",
-          year: edu?.year_of_passing || "",
-        });
-
-        /* EXPERIENCE LOGIC */
-        const expDocs = data.experience || [];
-        let exp = null;
-
-        const primaryExpUuid = localStorage.getItem("primary_experience_uuid");
-        if (primaryExpUuid && expDocs.length > 0) {
-          exp = expDocs.find(d => d.experience_uuid === primaryExpUuid);
-        }
-        if (!exp && expDocs.length > 0) {
-          const sortedExp = [...expDocs].sort((a, b) => {
-            const dateA = new Date(a.end_date || a.start_date || 0).getTime();
-            const dateB = new Date(b.end_date || b.start_date || 0).getTime();
-            return dateB - dateA;
-          });
-          exp = sortedExp[0];
-        }
-
-        setExperienceData({
-          company: exp?.company_name || "",
-          role: exp?.role_title || "",
-          duration: exp ? `${exp?.start_date || ""} - ${exp?.end_date || "Present"}` : "",
-        });
-
-        /* IDENTITY */
-        const aadhaar = data.identity_documents?.find(d =>
-          d.identity_type?.toLowerCase().includes("aadhaar")
-        );
-
-        const pan = data.identity_documents?.find(d =>
-          d.identity_type?.toLowerCase().includes("pan")
-        );
-
-        setIdentityData({
-          aadhaar: aadhaar?.identity_file_number || "",
-          pan: pan?.identity_file_number || "",
-        });
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-        setLoading(false);
-      }
-    };
-
-    if (employee_uuid || user_uuid) fetchProfile();
-  }, [employee_uuid, user_uuid]);
+    setLoading(false);
+  }, [coreData, hrData]);
 
   if (loading) return <div>Loading profile...</div>;
 
@@ -377,17 +258,36 @@ export default function ProfilePage({ activeTab, user_uuid }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Education" onEdit={() => setEditSection("education")}>
-          <Row label="Degree" value={educationData?.degree || ""} />
-          <Row label="Specialization" value={educationData?.specialization || ""} />
-          <Row label="Institution/College" value={educationData?.institution || ""} />
-          <Row label="Year" value={educationData?.year || ""} />
-
+          {educationData.length > 0 ? (
+            <div className="space-y-4">
+              {educationData.map((edu, idx) => (
+                <div key={edu.id || idx} className={idx > 0 ? "pt-4 border-t border-gray-100" : ""}>
+                  <Row label="Degree" value={edu.degree || ""} />
+                  <Row label="Specialization" value={edu.specialization || ""} />
+                  <Row label="Institution/College" value={edu.institution || ""} />
+                  <Row label="Year" value={edu.year || ""} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-sm">No education records added</div>
+          )}
         </Section>
 
         <Section title="Experience" onEdit={() => setEditSection("experience")}>
-          <Row label="Company" value={experienceData?.company || ""} />
-          <Row label="Role" value={experienceData?.role || ""} />
-          <Row label="Duration" value={experienceData?.duration || ""} />
+          {experienceData.length > 0 ? (
+            <div className="space-y-4">
+              {experienceData.map((exp, idx) => (
+                <div key={exp.id || idx} className={idx > 0 ? "pt-4 border-t border-gray-100" : ""}>
+                  <Row label="Company" value={exp.company || ""} />
+                  <Row label="Role" value={exp.role || ""} />
+                  <Row label="Duration" value={exp.duration || ""} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-sm">No experience records added</div>
+          )}
         </Section>
 
       </div>
@@ -436,9 +336,9 @@ const Section = ({ title, children, onEdit }) => (
 );
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between gap-4 text-sm min-w-0">
+  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 text-sm min-w-0">
     <span className="text-gray-500 shrink-0">{label}</span>
-    <span className="text-gray-900 font-medium text-right break-words min-w-0">
+    <span className="text-gray-900 font-medium sm:text-right break-words min-w-0">
       {value}
     </span>
   </div>
