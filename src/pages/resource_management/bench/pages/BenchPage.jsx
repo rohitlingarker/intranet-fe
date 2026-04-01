@@ -8,6 +8,7 @@ import BenchDrawer from "../components/BenchDrawer";
 import AllocateModal from "../components/AllocateModal";
 import QuickAllocateModal from "../components/QuickAllocateModal";
 import MoveToPoolModal from "../components/MoveToPoolModal";
+import { getBenchMatches } from "../services/benchService";
 import { createPortal } from "react-dom";
 import {
   BENCH_STORAGE_KEY,
@@ -49,7 +50,7 @@ const downloadCsv = (filename, content) => {
 };
 
 const BenchPage = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const stored = getStoredState();
   const [resources, setResources] = useState([]);
   const [kpis, setKpis] = useState(null);
@@ -67,6 +68,9 @@ const BenchPage = () => {
   const [quickAllocateTarget, setQuickAllocateTarget] = useState(null);
   const [moveToPoolTargets, setMoveToPoolTargets] = useState([]);
   const [bulkCategory, setBulkCategory] = useState(CATEGORY_OPTIONS[0]);
+  const [liveMatches, setLiveMatches] = useState([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const updatePosition = () => {
     if (filterButtonRef.current) {
@@ -117,9 +121,28 @@ const BenchPage = () => {
     }
   }, [filterPanelOpen]);
 
+  const fetchLiveMatches = async () => {
+    setLoadingMatches(true);
+    try {
+      const res = await getBenchMatches();
+      // const rawData = Array.isArray(res) ? res : res?.data || [];
+      setLiveMatches(res.data);
+    } catch (error) {
+      console.error("Match fetch error", error);
+      setLiveMatches([]);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveMatches();
+  }, []);
+
   const toggleFilters = () => setFilterPanelOpen(!filterPanelOpen);
 
   const fetchData = async (isActive = true) => {
+    setLoading(true);
     try {
       const [benchRes, poolRes, kpiRes] = await Promise.all([
         getBenchResources(),
@@ -140,6 +163,8 @@ const BenchPage = () => {
       if (!isActive) return;
       console.error("Resource Supply Data Load Error", error);
       toast.error("Failed to load bench or pool data");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -466,6 +491,7 @@ const BenchPage = () => {
             onQuickAllocate={handleQuickAllocate}
             onCategoryChange={(id, category) => setResourceCategory([id], category)}
             onRefresh={() => fetchData(true)}
+            loading={loading}
           />
         </div>
       </div>
@@ -476,6 +502,8 @@ const BenchPage = () => {
         onClose={() => setDrawerOpen(false)}
         onAllocate={(resource) => handleAllocate(resource)}
         onMoveToPool={(resource) => handleMoveToPool(resource)}
+        liveMatches={liveMatches}
+        loadingMatches={loadingMatches}
       />
 
       <AllocateModal
