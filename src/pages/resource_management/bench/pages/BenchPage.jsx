@@ -326,13 +326,13 @@ const BenchPage = () => {
     <div className="min-h-screen bg-slate-50/50 p-6 font-sans">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button
+          {/* <button
             onClick={() => navigate('/resource-management/roleoff')}
             className="p-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-all shadow-sm shrink-0"
             title="Back to Role-Off Operations"
           >
             <ArrowLeft size={18} />
-          </button>
+          </button> */}
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-none">Bench Management Workspace</h1>
             <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">
@@ -406,8 +406,8 @@ const BenchPage = () => {
                   type="button"
                   onClick={toggleFilters}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all shadow-sm ${filterPanelOpen
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-600/10"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-600/10"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                 >
                   <Filter className={`h-3.5 w-3.5 ${filterPanelOpen ? 'fill-current' : ''}`} />
