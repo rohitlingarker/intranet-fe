@@ -13,9 +13,15 @@ import {
   IndianRupee,
   BadgeCheck,
   UserCheck,
+  Eye,
   MoreVertical,
 } from "lucide-react";
 import { set } from "date-fns";
+import {
+  formatOfferStatusLabel,
+  getOfferDisplayStatus,
+  getOfferWithJoiningStatus,
+} from "../components/offerStatus";
 
 /* ================= MAIN COMPONENT ================= */
 
@@ -47,7 +53,7 @@ export default function AdminOfferView() {
     const res = await axios.get(`${BASE}/offerletters/offer/${user_uuid}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    setOffer(res.data);
+    setOffer(getOfferWithJoiningStatus(res.data));
   };
   console.log("OFFER:", offer);
 
@@ -153,6 +159,34 @@ export default function AdminOfferView() {
       setActing(false);
     }
   };
+
+  /* ---------------- PREVIEW OFFER ---------------- */
+const handlePreviewOffer = async () => {
+
+  try {
+
+    const res = await axios.get(
+      `${BASE}/offerletters/${user_uuid}/generate-preview`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      }
+    );
+
+    const file = new Blob([res.data], { type: "application/pdf" });
+
+    const fileURL = URL.createObjectURL(file);
+
+    window.open(fileURL, "_blank");
+
+  } catch (error) {
+
+    toast.error("Failed to open offer preview");
+
+  }
+
+};
+
  
 /* ---------------- DELETE APPROVAL REQUEST ---------------- */
 const deleteApprovalRequest = async () => {
@@ -198,6 +232,9 @@ const deleteApprovalRequest = async () => {
         Offer not found
       </div>
     );
+  const displayStatus = formatOfferStatusLabel(
+    getOfferDisplayStatus(offer, [])
+  );
 
   /* ================= UI ================= */
 
@@ -254,7 +291,7 @@ const deleteApprovalRequest = async () => {
               <BadgeCheck size={16} className="text-green-600" />
               Offer Status:
               <span className="font-medium text-gray-900">
-                {offer.status}
+                {displayStatus}
               </span>
             </p>
 
@@ -307,8 +344,16 @@ const deleteApprovalRequest = async () => {
         </div>
 
         {/* ACTION BUTTONS */}
-        {approval && (
+        {/* {approval && (
           <div className="flex gap-4 mt-10">
+            <ActionButton
+              label="View Offer"
+              color="grey"
+              icon={Eye}
+              onClick={handlePreviewOffer}
+              disabled={false}
+              
+            />
             <ActionButton
               label="Approve"
               color="green"
@@ -341,7 +386,54 @@ const deleteApprovalRequest = async () => {
             onClick={() => setDeleteModal(true)}
               />
           </div>
-        )}
+
+        )} */}
+        {approval && (
+  <div className="flex gap-4 mt-10">
+
+    <ActionButton
+      label="Preview Offer"
+      color="blue" 
+      onClick={handlePreviewOffer}
+      disabled={false}
+    />
+
+    <ActionButton
+      label="Approve"
+      color="green"
+      disabled={!buttonsEnabled || acting}
+      onClick={() => submitAction("APPROVED")}
+    />
+
+    <ActionButton
+      label="Reject"
+      color="red"
+      disabled={!buttonsEnabled || acting}
+      onClick={() => {
+        setRejectModal(true);
+        setRejectComment("");
+      }}
+    />
+
+    <ActionButton
+      label="On Hold"
+      color="gray"
+      disabled={!buttonsEnabled || acting}
+      onClick={() => {
+        setHoldModal(true);
+        setHoldComment("");
+      }}
+    />
+
+    <ActionButton
+      label="Delete Approval"
+      color="red"
+      disabled={acting}
+      onClick={() => setDeleteModal(true)}
+    />
+
+  </div>
+)}
 
         {error && (
           <p className="text-red-600 mt-4 font-medium">{error}</p>
@@ -481,8 +573,9 @@ function ApprovalBadge({ status, approver,comments }) {
   // );
 }
 
-function ActionButton({ label, color, onClick, disabled }) {
+function ActionButton({ label, color, onClick, disabled ,icon: Icon}) {
   const colors = {
+    blue: "bg-blue-700 hover:bg-blue-800",
     green: "bg-green-700 hover:bg-green-800",
     red: "bg-red-700 hover:bg-red-800",
     gray: "bg-gray-600 hover:bg-gray-800",
@@ -494,6 +587,7 @@ function ActionButton({ label, color, onClick, disabled }) {
       onClick={onClick}
       className={`px-6 py-2 text-white rounded-lg transition disabled:opacity-60 ${colors[color]}`}
     >
+      {Icon && <Icon size={16}/>}
       {label}
     </button>
   );

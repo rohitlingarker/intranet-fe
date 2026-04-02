@@ -190,12 +190,12 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const wb = XLSX.read(evt.target.result, { type: "array" });
+        const wb = XLSX.read(evt.target.result, { type: "array", cellDates: true });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet);
         const parsed = rows.map((row, idx) => ({
           id: Date.now() + idx,
-          date: row.holiday_date,
+          date: row.holiday_date.toISOString().split("T")[0],
           description: row.holiday_name,
           type: row.type || "NATIONAL",
           country: row.country || "India",
@@ -203,6 +203,7 @@ export default function AddHolidaysModal({ isOpen, onClose, onSuccess }) {
           year: new Date(row.holiday_date).getFullYear(),
         }));
         setHolidays((p) => [...p, ...parsed]);
+        console.log("holidays", parsed);
         toast.success(`${parsed.length} holidays imported.`);
       } catch {
         toast.error("Failed to parse Excel.");

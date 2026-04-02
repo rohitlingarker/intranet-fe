@@ -9,6 +9,8 @@ import { toast } from "react-toastify";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import EffectiveDeactivationDate from "./models/EffectiveDeactivationDate";
 import { motion, AnimatePresence } from "framer-motion";
+import { set } from "date-fns";
+import CarryForwardTrigger from "./models/CarryForwardTrigger";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -27,13 +29,14 @@ const HRManageTools = ({ employeeId }) => {
   const [effectiveDeactivationDate, setEffectiveDeactivationDate] =
     useState("");
   const [isEffectiveModalOpen, setIsEffectiveModalOpen] = useState(false);
+  const [isCarryModalOpen, setIsCarryModalOpen] = useState(false);
   const navigate = useNavigate();
 
   // const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchLeaveTypes();
-    fetchGenderBasedLeaveTypes();
+    // fetchGenderBasedLeaveTypes();
   }, []);
 
   const fetchLeaveTypes = async () => {
@@ -42,7 +45,13 @@ const HRManageTools = ({ employeeId }) => {
       const res = await axios.get(`${BASE_URL}/api/leave/get-all-leave-types`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      setLeaveTypes(res.data);
+      const regular = res.data?.regular || [];
+      const genderBased = res.data?.genderBasedLeaves || [];
+      // const genderBased = res.data?.genderBasedLeaves || [];
+      // const allLeaveTypes = [...regular, ...genderBased];
+      // console.log("allLeaveTypes", regular);
+      setLeaveTypes(regular);
+      setGenderBasedLeaveTypes(genderBased);
     } catch (err) {
       console.error("Failed to fetch leave types", err);
       toast.error("Failed to load leave types");
@@ -51,27 +60,27 @@ const HRManageTools = ({ employeeId }) => {
     }
   };
 
-  const fetchGenderBasedLeaveTypes = async () => {
-    try {
-      const res = await axios.get(
-        `${BASE_URL}/api/gender-base-leave/all-leave-types`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      if(res.data?.data === null){
-        setGenderBasedLeaveTypes([]);
-      }
-      else{
-        setGenderBasedLeaveTypes(res.data?.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch leave types", err);
-      toast.error(
-        err.response?.data?.message || "Failed to load gender based leave types"
-      );
-    }
-  };
+  // const fetchGenderBasedLeaveTypes = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${BASE_URL}/api/gender-base-leave/all-leave-types`,
+  //       {
+  //         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  //       }
+  //     );
+  //     if(res.data?.data === null){
+  //       setGenderBasedLeaveTypes([]);
+  //     }
+  //     else{
+  //       setGenderBasedLeaveTypes(res.data?.data);
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to fetch leave types", err);
+  //     toast.error(
+  //       err.response?.data?.message || "Failed to load gender based leave types"
+  //     );
+  //   }
+  // };
 
   const handleConfirm = (leaveTypeId) => {
     setSelectedLeaveTypeIdToDelete(leaveTypeId);
@@ -82,7 +91,7 @@ const HRManageTools = ({ employeeId }) => {
     setIsDeleting(true);
     await handleDeleteLeaveType(
       selectedLeaveTypeIdToDelete,
-      effectiveDeactivationDate
+      effectiveDeactivationDate,
     );
     setIsDeleting(false);
     setIsEffectiveModalOpen(false);
@@ -101,15 +110,15 @@ const HRManageTools = ({ employeeId }) => {
           data: {
             deactivationEffectiveDate: effectiveDeactivationDate,
           },
-        }
+        },
       );
       toast.success(res.data?.message || "Leave type deleted successfully");
       setLeaveTypes((prev) =>
-        prev.filter((lt) => lt.leaveTypeId !== leaveTypeId)
+        prev.filter((lt) => lt.leaveTypeId !== leaveTypeId),
       );
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to delete leave type"
+        error.response?.data?.message || "Failed to delete leave type",
       );
     }
   };
@@ -165,12 +174,18 @@ const HRManageTools = ({ employeeId }) => {
             window.open(
               "https://celebrated-renewal-07a16fae8e.strapiapp.com",
               "_blank",
-              "noopener noreferrer"
+              "noopener noreferrer",
             )
           }
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
           Leave Policies
+        </button>
+        <button
+          onClick={() => setIsCarryModalOpen(true)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          Process Carry Forward
         </button>
       </div>
       {isLoading ? (
@@ -193,8 +208,8 @@ const HRManageTools = ({ employeeId }) => {
                         i === 0
                           ? "sticky left-0 z-20"
                           : i === 1
-                          ? "sticky left-[200px] z-20"
-                          : ""
+                            ? "sticky left-[200px] z-20"
+                            : ""
                       }`}
                     >
                       {header}
@@ -225,8 +240,8 @@ const HRManageTools = ({ employeeId }) => {
                             i === 0
                               ? "sticky left-0 z-10"
                               : i === 1
-                              ? "sticky left-[200px] z-10"
-                              : ""
+                                ? "sticky left-[200px] z-10"
+                                : ""
                           }`}
                         >
                           {String(lt[key])}
@@ -273,8 +288,8 @@ const HRManageTools = ({ employeeId }) => {
                         i === 0
                           ? "sticky left-0 z-20"
                           : i === 1
-                          ? "sticky left-[200px] z-20"
-                          : ""
+                            ? "sticky left-[200px] z-20"
+                            : ""
                       }`}
                     >
                       {header}
@@ -305,8 +320,8 @@ const HRManageTools = ({ employeeId }) => {
                             i === 0
                               ? "sticky left-0 z-10"
                               : i === 1
-                              ? "sticky left-[200px] z-10"
-                              : ""
+                                ? "sticky left-[200px] z-10"
+                                : ""
                           }`}
                         >
                           {String(lt[key])}
@@ -354,7 +369,7 @@ const HRManageTools = ({ employeeId }) => {
         editData={editLeaveType}
         onSuccess={() => {
           fetchLeaveTypes();
-          fetchGenderBasedLeaveTypes();
+          // fetchGenderBasedLeaveTypes();
           setEditLeaveType(null);
           setIsAddLeaveTypeModalOpen(false);
         }}
@@ -375,6 +390,15 @@ const HRManageTools = ({ employeeId }) => {
         onSuccess={() => {
           setIsAddHolidaysModalOpen(false);
           // Optional: refetch holiday list if it's displayed on this page
+        }}
+      />
+
+      <CarryForwardTrigger
+        isOpen={isCarryModalOpen}
+        onClose={() => setIsCarryModalOpen(false)}
+        onSuccess={() => {
+          setIsCarryModalOpen(false);
+          // 🔥 refresh data / call API / refetch
         }}
       />
     </div>

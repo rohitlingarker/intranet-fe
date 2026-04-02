@@ -11,8 +11,8 @@ export default function OnboardingNavBar() {
   /* ================= HIDE NAVBAR FOR THESE ROUTES ================= */
 
   const hideNavbarRoutes = [
-    "/employee-onboarding/employee-credentials",
-    "/employee-onboarding/core-employee",
+    "/employee-onboarding/employee-credentials"
+    // "/employee-onboarding/core-employee",
   ];
 
   const shouldHideNavbar = hideNavbarRoutes.some((route) =>
@@ -58,7 +58,10 @@ const parentNav = [
   },
   {
     label: "Employee Verification",
-    match: ["/employee-onboarding/hr/"],
+    match: [
+      "/employee-onboarding/hr/",
+      "/employee-onboarding/core-employee",
+    ],
     redirect: "/employee-onboarding/hr",
   },
   {
@@ -70,6 +73,13 @@ const parentNav = [
     ],
     redirect: "/employee-onboarding/employeedocuments",
   },
+  {
+    label: "Weekly Workforce Summary",
+    match: [
+      "/employee-onboarding/weekly-joining-report-dashboard"
+    ],
+    redirect: "/employee-onboarding/weekly-joining-report-dashboard",
+  }
 ];
 
   /* ================= MAIN TASK NAV ================= */
@@ -115,7 +125,13 @@ const parentNav = [
 
   const hrverificationNav = [
     { label: "HR Verification", path: "/employee-onboarding/hr" },
+    { label: "Core Employee", path: "/employee-onboarding/core-employee" },
   ];
+
+  const weeklyJoiningDashboardNav = [
+    { label: "Weekly Joining Dashboard", path: "/employee-onboarding/weekly-joining-report-dashboard" },
+  ];
+
 
   /* ================= SELECT NAV TO RENDER ================= */
 
@@ -145,10 +161,17 @@ const parentNav = [
     navToRender = taskNav;
   }
   else if (
-    location.pathname.startsWith("/employee-onboarding/hr") 
+    location.pathname.startsWith("/employee-onboarding/hr") ||
+    location.pathname.startsWith("/employee-onboarding/core-employee")
   ) {
     navToRender = hrverificationNav;
-  } else {
+  } 
+  else if (
+    location.pathname.startsWith("/employee-onboarding/weekly-joining-report-dashboard")
+  ) {
+    navToRender = weeklyJoiningDashboardNav;
+  }
+  else {
     navToRender = taskNav;
   }
 

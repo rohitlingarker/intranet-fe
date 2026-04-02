@@ -12,7 +12,6 @@ import ProjectFinancialsInline from "../../components/FinancialModal";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import { CheckSquare, Square } from "lucide-react";
 import AddDeliverableRoleModal from "../../models/AddDeliverableRoleModal";
-import { cn } from "@/lib/utils";
 import Pagination from "../../../../components/Pagination/pagination";
 import { useAuth } from "@/contexts/AuthContext";
 

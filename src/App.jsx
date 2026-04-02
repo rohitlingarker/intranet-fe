@@ -33,6 +33,11 @@ import WorkforceAvailability from "./pages/resource_management/pages/workforce/W
 import ResourceIntelligenceCenter from "./pages/resource_management/components/resource-intelligence/ResourceIntelligenceCenter.jsx";
 import DemandWorkspacePage from "./pages/resource_management/demand/pages/DemandWorkspacePage.jsx";
 import DemandDetailPage from "./pages/resource_management/demand/pages/DemandDetailPage.jsx";
+import PMRoleOffPage from "./pages/resource_management/pages/roleoff/pm.js";
+import RMRoleOffPage from "./pages/resource_management/pages/roleoff/rm.js";
+import DMRoleOffPage from "./pages/resource_management/pages/roleoff/dm.js";
+import BenchPage from "./pages/resource_management/bench/pages/BenchPage.jsx";
+import RoleOffDashboard from "./pages/resource_management/pages/roleoff/RoleOffDashboard.jsx";
 
 // Timesheets
 
@@ -107,10 +112,14 @@ import OnboardingSummary from "./pages/employee-onboarding/summary-page/Onboardi
 import DepartmentsMappingDashboard from "./pages/employee-onboarding/hr-configuration/departments/DepartmentsMappingDashboard.jsx";
 import DepartmentsList from "./pages/employee-onboarding/hr-configuration/departments/departmentsList/DepartmentsList.jsx";
 import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
+import WeeklyJoiningDashboard from "./pages/employee-onboarding/weekly-joining-report-dashboard/WeeklyJoiningDashboard.jsx";
 
 
 import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
 
+import OfferPreview from "./pages/employee-onboarding/offer-preview/OfferPreview.jsx";
+import FinalOfferPreview from "./pages/employee-onboarding/final-offer-preview/FinalOfferPreview.jsx";
+import OfferGeneratedPreview from "./pages/employee-onboarding/offer-generated-preview/OfferGeneratedPreview.jsx";
 // ✅ User Management
 import CreateUser from "./pages/UserManagement/admin/userManagement/CreateUser";
 import EditUser from "./pages/UserManagement/admin/userManagement/EditUser";
@@ -239,6 +248,20 @@ const ProjectManager = () => {
       /> */}
     </div>
   );
+};
+
+const RoleOffEntry = () => {
+  const { user } = useAuth();
+
+  if (user?.roles?.includes("DELIVERY-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/dm" replace />;
+  }
+
+  if (user?.roles?.includes("RESOURCE-MANAGER")) {
+    return <Navigate to="/resource-management/roleoff/rm" replace />;
+  }
+
+  return <Navigate to="/resource-management/roleoff/pm" replace />;
 };
 
 // ✅ Application Routes
@@ -453,6 +476,7 @@ const AppRoutes = () => {
             <Route path="employeedocuments" element={<EmployeeDocumentsPage />} />
             <Route path="employee-credentials" element={<EmployeeCredentials />} />
             <Route path="employeeProfile" element={<EmployeeProfileView />} />
+            <Route path="employeeProfile/:employee_uuid" element={<EmployeeProfileView />}></Route>
             <Route path="core-employee" element={<CoreEmployeeDetails />} />
             <Route path="employee-onboarding/core-employee/create/:userUuid" element={<CoreEmployeeDetails />} />
 
@@ -460,13 +484,16 @@ const AppRoutes = () => {
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
 
+            <Route path="weekly-joining-report-dashboard" element={< WeeklyJoiningDashboard/>} />
+
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
-            <Route path="hr/backgroundcheck" element={<BackgroundCheckPage />} />
+            <Route path ="offer-preview/:offerId" element ={<OfferPreview/>} />
+            <Route path ="final-offer-preview/:offerId" element={<FinalOfferPreview/>} />
+            <Route path ="offer-generated-preview/:offerId" element={<OfferGeneratedPreview/>} />
 
 
 
           </Route>
-
           {/* User Management */}
           <Route path="/user-management/users" element={<UsersTable />} />
           <Route
@@ -799,6 +826,54 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={["RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
                 <DemandDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffEntry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/pm"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER"]}>
+                <PMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/rm"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <RMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/dm"
+            element={
+              <ProtectedRoute allowedRoles={["DELIVERY-MANAGER"]}>
+                <DMRoleOffPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/bench"
+            element={
+              <ProtectedRoute allowedRoles={["RESOURCE-MANAGER"]}>
+                <BenchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resource-management/roleoff/report"
+            element={
+              <ProtectedRoute allowedRoles={["PROJECT-MANAGER", "RESOURCE-MANAGER", "DELIVERY-MANAGER"]}>
+                <RoleOffDashboard />
               </ProtectedRoute>
             }
           />

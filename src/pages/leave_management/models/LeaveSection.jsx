@@ -67,17 +67,17 @@ export default function LeaveSection({ employeeId, leaveId }) {
           <YearDropdown value={currentYear} onChange={setCurrentYear} />
         </div>
       </div>
-
-      <div className="mt-4 relative min-h-[400px]">
+      {/* Remove min-h and relative, just let content flow */}
+      <div className="mt-4">
         <AnimatePresence mode="wait">
           {activeTab === "dashboard" && (
             <motion.div
               key="dashboard"
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-              className="absolute w-full"
+              exit={{ opacity: 0, x: 16 }}
+              transition={{ duration: 0.25 }}
+              // ✅ No absolute — takes full flow width naturally
             >
               <LeaveDashboard employeeId={employeeId} year={currentYear} />
             </motion.div>
@@ -86,11 +86,10 @@ export default function LeaveSection({ employeeId, leaveId }) {
           {activeTab === "projectMembers" && (
             <motion.div
               key="projectMembers"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="absolute w-full"
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.25 }}
             >
               <ProjectMembersOnLeave
                 employeeId={employeeId}

@@ -1,294 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import EmployeeCard from "../components/EmployeeCard";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
+import axios from "axios";
 
 const EmployeeDirectory = () => {
-  const employees = [
-  {
-    name: "Alwala Swarna Raj",
-    contact: "9876543210",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "swarnaraj.alwala@pavestechnologies.com",
-    initials: "BA",
-    gender: "Male",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-      employeeId: "PAVS001",
-  },
-  {
-    name: "Bhukya Ajay Kumar",
-    contact: "9876543211",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "ajay.bhukya@pavestechnologies.com",
-    initials: "BA",
-    gender: "Male",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001",     
-  },
-  {
-    name: "Bolli Aditya Teja",
-    contact: "9876543212",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "aditya.bolli@pavestechnologies.com",
-    initials: "BL",
-    gender: "Male",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-      employeeId: "PAVS001",
-  },
-  {
-    name: "Busam Lokeswari",
-    contact: "9876543213",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "lokeswari.busam@pavestechnologies.com",
-    initials: "DR",
-    gender: "Female", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001",
-  },
-  {
-    name: "Dama Rangaswamy",
-    contact: "9876543214",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "rangaswamy.dama@pavestechnologies.com",
-    initials: "GT",
-    gender: "Male",  
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001",
-  },
-  {
-    name: "Gajula Thejas",
-    contact: "9876543215",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "thejas.gajula@pavestechnologies.com",
-    initials: "GV",
-    gender: "Male",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",  
-     employeeId: "PAVS001",
-  },
-  {
-    name: "Gali Venkatesh",
-    contact: "9876543216",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "venkatesh.gali@pavestechnologies.com",
-    initials: "KA",
-    gender: "Male",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-      employeeId: "PAVS001", 
-  },
-  {
-    name: "Korada Ajay Kumar",
-    contact: "9876543217",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "ajay.korada@pavestechnologies.com",
-    initials: "NK",
-    gender: "Male", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-      employeeId: "PAVS001",
-  },
-  {
-    name: "Niharika Kandukoori",
-    contact: "9876543218",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "niharika.kandukoori@pavestechnologies.com",
-    initials: "NR",
-    gender: "Female",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-      employeeId: "PAVS001",
-  },
-  {
-    name: "Nuthula Ruchitha",
-    contact: "9876543219",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "ruchitha.nuthula@pavestechnologies.com",
-    initials: "PJ",
-    gender: "Female",
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-    employeeId: "PAVS001", 
-  },
-  {
-    name: "Pannala Jagadish",
-    contact: "9876543220",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "jagadish.pannala@pavestechnologies.com",
-    initials: "PS",
-    gender: "Male",  
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Patan Sumiya",
-    contact: "9876543221",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "patan.sumiya@pavestechnologies.com",
-    initials: "PS",
-    gender: "Female", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Perka Sathwik",
-    contact: "9876543222",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "sathwik.perka@pavestechnologies.com",
-    initials: "PM",
-    gender: "Male", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Pothamsetti Mounika",
-    contact: "9876543223",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "mounika.pothamsetti@pavestechnologies.com",
-    initials: "RL",
-    gender: "Female", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Rohit Lingarker",
-    contact: "9876543224",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "rohit.lingarker@pavestechnologies.com",
-    initials: "SM",
-    gender: "Male", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma", 
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Saladi Mohan Dharma Teja",
-    contact: "9876543225",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "mohan.saladi@pavestechnologies.com",
-    initials: "SC",
-    gender: "Male",  
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Sri Charan Reddy Chilkuri",
-    contact: "9876543226",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "sricharan.chilkuri@pavestechnologies.com",
-    initials: "VB",
-    gender: "Male", 
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001",  
-  },
-  {
-    name: "Vijayadurga Balada",
-    contact: "9876543227",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "vijayadurga.balada@pavestechnologies.com",
-    initials: "WS",
-    gender: "Female",
-    employeeType: "Full-Time",
-    dateOfJoining: "2024-01-15",
-    reportingManager: "Ram Gopal Varma", 
-    employeeId: "PAVS001" 
-  },
-  {
-    name: "Wazid Shaik",
-    contact: "9876543228",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "wazid.shaik@pavestechnologies.com",
-    initials: "YS",
-    gender: "Male",  
-    employeeType: "Full-Time",
-     dateOfJoining: "2024-01-15",
-     reportingManager: "Ram Gopal Varma",
-     employeeId: "PAVS001", 
-  },
-  {
-    name: "Yanala Sindhu",
-    contact: "9876543229",
-    role: "Graduate Software Engineer",
-    department: "Engineering",
-    location: "Hyderabad Office",
-    email: "sindhu.yanala@pavestechnologies.com",
-    initials: "YS",
-    gender: "Female", 
-    employeeType: "Full-Time",
-    dateOfJoining: "2024-01-15",
-    reportingManager: "Ram Gopal Varma", 
-    employeeId: "PAVS001", 
-  },
-
-  ];
-
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("All");
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [designationsList, setDesignationsList] = useState([]);
+
+  const token = localStorage.getItem("token");
+  const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch employees, departments, and designations in parallel
+        const [empRes, deptRes, desigRes] = await Promise.all([
+          axios.get(`${BASE_URL}/permanent-employee/core-employee-details/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${BASE_URL}/masters/departments/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${BASE_URL}/masters/designations/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        const depts = Array.isArray(deptRes.data) ? deptRes.data : (deptRes.data.data || []);
+        const desigs = Array.isArray(desigRes.data) ? desigRes.data : (desigRes.data.data || []);
+
+        setDepartmentsList(depts);
+        setDesignationsList(desigs);
+
+        const deptMap = Object.fromEntries(depts.map(d => [d.department_uuid, d.department_name]));
+        const desigMap = Object.fromEntries(desigs.map(d => [d.designation_uuid, d.designation_name]));
+
+        const mappedEmployees = (Array.isArray(empRes.data) ? empRes.data : (empRes.data.data || [])).map(emp => ({
+          ...emp,
+          name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim(),
+          email: emp.work_email || emp.email || "N/A",
+          contact: emp.contact_number || emp.contact || "N/A",
+          role: desigMap[emp.designation_uuid] || emp.role || "N/A",
+          department: deptMap[emp.department_uuid] || emp.department || "N/A",
+          location: emp.location || "Hyderabad Office",
+          initials: ((emp.first_name?.[0] || "") + (emp.last_name?.[0] || "")).toUpperCase(),
+          // Additional fields for Profile Modal
+          employeeId: emp.employee_id || "N/A",
+          gender: emp.gender || "N/A",
+          employeeType: emp.employment_status || "Full-Time",
+          dateOfJoining: emp.joining_date || "N/A",
+          reportingManager: emp.reporting_manager || "N/A"
+        }));
+
+        setEmployees(mappedEmployees);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching employee directory data:", err);
+        setError("Failed to load employee directory. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [BASE_URL, token]);
+
+  // Departments for the filter chips
+  const departments = ["All", ...departmentsList.map(d => d.department_name)];
 
   // Filter Logic
   const filteredEmployees = employees.filter((emp) => {
@@ -302,10 +88,9 @@ const EmployeeDirectory = () => {
     return matchesSearch && matchesDepartment;
   });
 
-  const departments = ["All", "Engineering", "HR"];
 
   return (
-    
+
     <div className="p-0.5 overflow-x-hidden">
 
       {/* Header */}
@@ -318,10 +103,6 @@ const EmployeeDirectory = () => {
             Manage and browse organizational talent.
           </p>
         </div>
-
-        <button className="bg-indigo-800 hover:bg-indigo-800 text-white px-5 py-2 rounded-xl shadow-md transition">
-          + Add Employee
-        </button>
       </div>
 
       {/* Search + Filters */}
@@ -339,37 +120,51 @@ const EmployeeDirectory = () => {
           />
         </div>
 
-        {/* Department Chips */}
-        <div className="flex gap-4 justify-center">
-          {departments.map((dept) => (
-            <button
-              key={dept}
-              onClick={() => setDepartment(dept)}
-              className={`px-2 py-2 rounded-full text-sm font-medium transition ${
-                department === dept
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {dept}
-            </button>
-          ))}
+        {/* Department Filter Dropdown */}
+        <div className="min-w-[150px]">
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-700 font-medium cursor-pointer shadow-sm hover:border-gray-400 transition"
+          >
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept === "All" ? "All Departments" : dept}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Employee Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3  gap-6 p-2 ">
-        {filteredEmployees.length > 0 ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-2">
+        {loading ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <p className="text-gray-500 font-medium">Loading employees...</p>
+          </div>
+        ) : error ? (
+          <div className="col-span-full text-center py-20">
+            <p className="text-red-500 font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 text-indigo-600 hover:underline font-medium"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : filteredEmployees.length > 0 ? (
           filteredEmployees.map((emp, index) => (
-            <EmployeeCard key={index} employee={emp} index={index}/>
+            <EmployeeCard key={index} employee={emp} index={index} />
           ))
         ) : (
-          <p className="text-gray-500">No employees found.</p>
+          <p className="text-gray-500 col-span-full text-center py-20">No employees found.</p>
         )}
       </div>
     </div>
   );
- 
+
 };
 
 export default EmployeeDirectory;
+

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Users, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
 import Table from "../../../components/Table/table";
 import Pagination from "../../../components/Pagination/pagination";
 import StatusBadge from "../../../components/status/statusbadge";
-import EmployeeCreateModal from "./components/EmployeeCreateModal";
+import EmployeeCreateModal from "../components/employee-create-modal/EmployeeCreateModal";
 import ExcelPreviewModal from "./components/ExcelPreviewModal";
 import * as XLSX from "xlsx";
+import { showStatusToast } from "../../../components/toastfy/toast";
 
 const PAGE_SIZE = 5;
 
@@ -64,10 +64,6 @@ function ActionMenu({ onEdit, onDelete }) {
 }
 
 export default function EmployeeOnboardingPage() {
-
-  const navigate = useNavigate();
-  const location = useLocation();
-
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -89,6 +85,8 @@ export default function EmployeeOnboardingPage() {
   const [showPreview, setShowPreview] = useState(false);
 
   const [exportLoading, setExportLoading] = useState(false);
+
+  const [exportedEmails, setExportedEmails] = useState([]);
 
   
 
@@ -191,16 +189,6 @@ const fetchDesignations = async () => {
     );
 
 
-  /* ============================
-     RECEIVE UUID FROM HR PAGE
-  ============================ */
-
-  useEffect(() => {
-    if (location.state?.userUuid) {
-      setSelectedUserUuid(location.state.userUuid);
-    }
-  }, [location.state]);
-
   const handleCloseModal = () => {
     setIsCreateOpen(false);
     setSelectedUserUuid(null);
@@ -258,22 +246,41 @@ const fetchDesignations = async () => {
   }, [employees, searchTerm, statusFilter, departmentFilter,]);
 
 const handleExportPreview = async () => {
-
   setExportLoading(true);
 
   try {
 
-    const excelData = filteredEmployees.map(emp => ({
-      "Employee ID": emp.employee_id,
-      "Name": `${emp.first_name} ${emp.last_name}`,
-      "Email": emp.work_email,
-      "Contact": emp.contact_number,
-      "Department": departmentMap[emp.department_uuid],
-      "Designation": designationMap[emp.designation_uuid],
-      "Joining Date": emp.joining_date,
-      "Status": emp.employment_status
-    }));
+    // const excelData = filteredEmployees.map(emp => ({
+    //   "Employee ID": emp.employee_id,
+    //   "Name": `${emp.first_name} ${emp.last_name}`,
+    //   "Email": emp.work_email,
+    //   "Contact": emp.contact_number,
+    //   "Department": departmentMap[emp.department_uuid],
+    //   "Designation": designationMap[emp.designation_uuid],
+    //   "Joining Date": emp.joining_date,
+    //   "Status": emp.employment_status
+    // }));
 
+  const newEmployees = filteredEmployees.filter(
+  emp => !exportedEmails.includes(emp.work_email?.toLowerCase())
+); 
+
+if (newEmployees.length === 0) {
+  showStatusToast("No new employees to export", "info");
+  setExportLoading(false);
+  return;
+}
+
+const excelData = newEmployees.map(emp => ({
+  "Employee ID": emp.employee_id,
+  "Name": `${emp.first_name} ${emp.last_name}`,
+  "Email": emp.work_email,
+  "Contact": emp.contact_number,
+  "Department": departmentMap[emp.department_uuid],
+  "Designation": designationMap[emp.designation_uuid],
+  "Joining Date": emp.joining_date,
+  "Status": emp.employment_status
+}));
     setExcelPreview(excelData);
     setShowPreview(true);
 
@@ -297,6 +304,11 @@ const downloadExcel = () => {
   worksheet["!cols"] = cols;
 
   XLSX.writeFile(workbook, "Employee_Report.xlsx");
+
+  const newEmails = excelPreview.map(emp => emp.Email.toLowerCase());
+  setExportedEmails(prev => [
+  ...new Set([...prev, ...newEmails])
+]);
 
   setShowPreview(false);
 };
@@ -374,7 +386,7 @@ const downloadExcel = () => {
         ),
       }));
 
-  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap, navigate]);
+  }, [employees, currentPage, filteredEmployees, departments, designations, designationMap]);
 
   return (
     <div className="p-6 space-y-6">
@@ -411,13 +423,6 @@ const downloadExcel = () => {
           "Export Excel"
         )}
       </button>
-
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm"
-        >
-          + Create Employee
-        </button>
 
       </div>
 

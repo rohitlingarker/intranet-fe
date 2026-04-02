@@ -35,10 +35,12 @@ const resourceManagementSubmenu = [
   { label: "Resource Project Management", to: "/resource-management/projects" },
   { label: "Workforce Availability", to: "/resource-management/workforce-availability" },
   { label: "Demand Management", to: "/resource-management/demand" },
+  { label: "Role-Off Management", to: "/resource-management/roleoff" },
+  { label: "Bench Management", to: "/resource-management/bench" },
 ];
 
 const deliveryManagerResourceManagementSubmenu = resourceManagementSubmenu.filter(
-  (item) => item.label === "Demand Management"
+  (item) => item.label === "Demand Management" || item.label === "Role-Off Management"
 );
 
 const employeeOnboardingSubmenu = [

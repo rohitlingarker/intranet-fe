@@ -25,7 +25,8 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
         allocationStartDate: toDateInputValue(demand?.demandStartDate),
         allocationEndDate: toDateInputValue(demand?.demandEndDate),
         allocationPercentage: demand?.allocationPercentage || 100,
-        allocationStatus: 'ACTIVE'
+        allocationStatus: 'ACTIVE',
+        skipValidation: false
     });
 
     const [errors, setErrors] = useState({});
@@ -82,7 +83,8 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                 demandId: demand?.demandId || demand?.id || '',
                 allocationStartDate: toDateInputValue(demand?.demandStartDate),
                 allocationEndDate: toDateInputValue(demand?.demandEndDate),
-                resourceId: []
+                resourceId: [],
+                skipValidation: false
             }));
             setErrors({});
             setSearchQuery("");
@@ -112,8 +114,14 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
             }
         }
 
-        if (formData.allocationPercentage <= 0 || formData.allocationPercentage > 100) {
-            newErrors.allocationPercentage = 'Percentage must be between 1 and 100';
+        if (!formData.skipValidation) {
+            if (formData.allocationPercentage <= 0 || formData.allocationPercentage > 100) {
+                newErrors.allocationPercentage = 'Percentage must be between 1 and 100';
+            }
+        } else {
+            if (!formData.allocationPercentage || formData.allocationPercentage <= 0) {
+                newErrors.allocationPercentage = 'Percentage must be greater than 0';
+            }
         }
 
         if (!formData.allocationStatus) newErrors.allocationStatus = 'Allocation status is required';
@@ -346,18 +354,29 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation %
+                                <Percent className="h-3 w-3 text-indigo-500" /> Allocation
+                                {formData.skipValidation && (
+                                    <span className="ml-auto text-[8px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                        Flexible
+                                    </span>
+                                )}
                             </label>
                             <div className="relative">
                                 <Input
-                                    readOnly
-                                    disabled
+                                    readOnly={!formData.skipValidation}
+                                    disabled={!formData.skipValidation}
                                     type="number"
                                     min="1"
-                                    max="100"
+                                    {...(!formData.skipValidation ? { max: '100' } : {})}
                                     value={formData.allocationPercentage}
                                     onChange={(e) => setFormData({ ...formData, allocationPercentage: parseInt(e.target.value) || 0 })}
-                                    className={cn("h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs bg-slate-100 opacity-70 cursor-not-allowed select-none", errors.allocationPercentage && "border-rose-500")}
+                                    className={cn(
+                                        "h-10 rounded-xl border-slate-200 font-bold text-slate-900 pr-8 text-xs transition-all",
+                                        formData.skipValidation
+                                            ? "bg-white cursor-text border-amber-300 focus-visible:ring-amber-400"
+                                            : "bg-slate-100 opacity-70 cursor-not-allowed select-none",
+                                        errors.allocationPercentage && "border-rose-500"
+                                    )}
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400">%</span>
                             </div>
@@ -388,6 +407,43 @@ const AllocationModal = ({ isOpen, onClose, demand, onSuccess }) => {
                                 </span>
                             </div>
                             {errors.allocationStatus && <p className="text-[9px] font-bold text-rose-500 mt-1">{errors.allocationStatus}</p>}
+                        </div>
+                    </div>
+
+                    {/* Skip Validation Toggle */}
+                    <div className="flex items-center gap-3 pt-1 pb-1">
+                        <button
+                            type="button"
+                            id="skip-validation-toggle"
+                            role="checkbox"
+                            aria-checked={formData.skipValidation}
+                            onClick={() => setFormData(prev => ({
+                                ...prev,
+                                skipValidation: !prev.skipValidation,
+                                // Reset percentage to 100 when unchecking
+                                allocationPercentage: !prev.skipValidation ? prev.allocationPercentage : 100
+                            }))}
+                            className={cn(
+                                "relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1",
+                                formData.skipValidation
+                                    ? "bg-amber-500 border-amber-500 focus:ring-amber-400"
+                                    : "bg-slate-200 border-slate-200 focus:ring-slate-400"
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    "inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                                    formData.skipValidation ? "translate-x-4" : "translate-x-0.5"
+                                )}
+                            />
+                        </button>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Skip Validation</span>
+                            <span className="text-[9px] font-medium text-slate-400">
+                                {formData.skipValidation
+                                    ? "Validation bypassed — enter any allocation percentage"
+                                    : "Enable to override capacity limits and enter a custom percentage"}
+                            </span>
                         </div>
                     </div>
                 </form>

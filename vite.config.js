@@ -44,7 +44,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   process.env = { ...process.env, ...env };
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        include: /\.(jsx|js)$/,
+      }),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(process.cwd(), "./src"),
