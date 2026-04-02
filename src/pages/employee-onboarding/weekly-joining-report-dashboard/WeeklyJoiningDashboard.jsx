@@ -2,12 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronDown, CheckCircle, Users, Clock, Info } from "lucide-react";
 import StatusBadge from "../../../components/status/statusbadge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-const FILTER_OPTIONS = [
-  "This Week",
-  "Previous Week",
-  "This Month",
-  "Previous Month",
-];
+
 
 const STATUS = {
   JOINING: "JOINING",
@@ -288,6 +283,16 @@ export default function WeeklyDashboard() {
   const filterRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [apiData, setApiData] = useState(null);
+  const [dateRange, setDateRange] = useState({
+  start: new Date(),
+  end: new Date(),
+});
+const formatDateSafe = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
+};
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -305,15 +310,8 @@ export default function WeeklyDashboard() {
     try {
       setLoading(true);
 
-      const rangeMap = {
-        "This Week": "THIS_WEEK",
-        "Previous Week": "PREVIOUS_WEEK",
-        "This Month": "THIS_MONTH",
-        "Previous Month": "PREVIOUS_MONTH",
-      };
-
       const response = await fetch(
-        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/weekly-joining-report/dashboard/?range=${rangeMap[filter]}`,
+        `${import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL}/weekly-joining-report/dashboard/?start_date=${formatDateSafe(dateRange.start)}&end_date=${formatDateSafe(dateRange.end)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -331,7 +329,7 @@ export default function WeeklyDashboard() {
   };
 
   fetchDashboard();
-}, [filter]);
+}, [dateRange]);
 
 
   const selectedCandidates = apiData?.joinedCandidates || [];
@@ -387,24 +385,54 @@ const activities = apiData?.activities?.map((item, index) => ({
       className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm hover:shadow-md transition"
     >
       <Calendar size={16} />
-      {filter}
+      {dateRange.start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {dateRange.end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
       <ChevronDown size={16} />
     </button>
 
     {showFilterDropdown && (
-      <div className="absolute right-0 mt-2 w-44 rounded-xl border bg-white shadow-lg z-10">
-        {FILTER_OPTIONS.map((option) => (
-          <div
-            key={option}
-            onClick={() => {
-              setFilter(option);
-              setShowFilterDropdown(false);
-            }}
-            className="px-4 py-2 text-sm hover:bg-slate-100 cursor-pointer"
-          >
-            {option}
+      <div className="absolute right-0 mt-2 w-[320px] rounded-xl border border-slate-200 bg-white shadow-xl z-20 p-4">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          Select Date Range
+        </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-[10px] text-slate-400 font-medium">Start Date</label>
+            <input
+              type="date"
+              value={formatDateSafe(dateRange.start)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value) {
+                  setDateRange(prev => ({
+                    ...prev,
+                    start: new Date(value)
+                  }));
+                }
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            />
           </div>
-        ))}
+
+          <div className="mt-5 text-slate-300 font-medium">-</div>
+
+          <div className="flex flex-col gap-1 w-full">
+            <label className="text-[10px] text-slate-400 font-medium">End Date</label>
+            <input
+              type="date"
+              value={formatDateSafe(dateRange.end)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value) {
+                  setDateRange(prev => ({
+                    ...prev,
+                    start: new Date(value)
+                  }));
+                }
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+          </div>
+        </div>
       </div>
     )}
   </div>
