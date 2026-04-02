@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Pencil, X, Trash2 } from "lucide-react";
+import { showStatusToast } from "../../../components/toastfy/toast";
 
-export default function ProfilePage({ activeTab, user_uuid }) {
+export default function ProfilePage({ activeTab, user_uuid, coreData = {}, hrData = {} }) {
   const { employee_uuid } = useParams();
 
   if (activeTab !== "profile") return null;
@@ -14,56 +15,16 @@ export default function ProfilePage({ activeTab, user_uuid }) {
   /* ---------------- PRIMARY STATE ---------------- */
 
   const [primaryData, setPrimaryData] = useState(null);
-  // {
-  //   first_name: "Lokeswari",
-  //   middle_name: "",
-  //   last_name: "Busam",
-  //   display_name: "Busam Lokeswari",
-  //   gender: "Female",
-  //   dob: "2002-12-16",
-  //   marital_status: "Single",
-  //   blood_group: "AB+",
-  //   physically_handicapped: "No",
-  //   nationality: "India",
-  // });
 
   const [loading, setLoading] = useState(true);
 
   /* ---------------- CONTACT STATE ---------------- */
 
   const [contactData, setContactData] = useState(null);
-  // {
-  //   work_email: "lokeswari.busam@pavestechnologies.com",
-  //   personal_email: "lokeswari.busam@gmail.com",
-  //   country_code: "+91",
-  //   mobile_number: "9876543213",
-  //   emergency_number: "9876543210",
-  //   work_number: "",
-  //   residence_number: "",
-  // });
 
   /* ---------------- ADDRESS STATE ---------------- */
 
   const [addressData, setAddressData] = useState(null);
-  // {
-  //   current: {
-  //     country: "India",
-  //     line1: "",
-  //     line2: "",
-  //     city: "",
-  //     state: "",
-  //     pincode: "",
-  //   },
-  //   permanent: {
-  //     country: "India",
-  //     line1: "",
-  //     line2: "",
-  //     city: "",
-  //     state: "",
-  //     pincode: "",
-  //   },
-  //   sameAsCurrent: false,
-  // });
 
   /* ---------------- RELATIONS STATE ---------------- */
 
@@ -71,20 +32,11 @@ export default function ProfilePage({ activeTab, user_uuid }) {
 
   /* ---------------- EDUCATION STATE ---------------- */
 
-  const [educationData, setEducationData] = useState({
-    degree: "B.Tech",
-    specialization: "Computer Science and Engineering",
-    institution: "Padmavati College of Engineering",
-    year: "2024",
-  });
+  const [educationData, setEducationData] = useState([]);
 
   /* ---------------- EXPERIENCE STATE ---------------- */
 
-  const [experienceData, setExperienceData] = useState({
-    company: "ABC Technologies",
-    role: "Intern",
-    duration: "Feb 2023 - May 2023",
-  });
+  const [experienceData, setExperienceData] = useState([]);
 
   /* ---------------- IDENTITY STATE ---------------- */
 
@@ -101,191 +53,127 @@ export default function ProfilePage({ activeTab, user_uuid }) {
   });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+    // Use pre-fetched data from parent — no API calls needed
+    const data = hrData || {};
 
-        let coreData = {};
-        if (employee_uuid) {
-          const coreRes = await fetch(
-            `${BASE_URL}/permanent-employee/core-employee-details/${employee_uuid}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (coreRes.ok) {
-            coreData = await coreRes.json();
-          }
-        }
+    /* PRIMARY */
+    setPrimaryData({
+      first_name: coreData.first_name || data.offer?.first_name || "",
+      last_name: coreData.last_name || data.offer?.last_name || "",
+      gender: coreData.gender || data.personal_details?.gender || "",
+      dob: coreData.date_of_birth || data.personal_details?.date_of_birth || "",
+      marital_status: coreData.marital_status || data.personal_details?.marital_status || "",
+      blood_group: coreData.blood_group || data.personal_details?.blood_group || "",
+      nationality: data.personal_details?.nationality || "",
+    });
 
-        const targetUserUuid = coreData.user_uuid || user_uuid;
-        let data = {};
-        if (targetUserUuid) {
-          const hrRes = await fetch(
-            `${BASE_URL}/hr/hr/${targetUserUuid}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (hrRes.ok) {
-            data = await hrRes.json();
-          }
-        }
+    /* CONTACT */
+    setContactData({
+      work_email: coreData.work_email || "",
+      personal_email: data.offer?.email || "",
+      country_code: "+91",
+      mobile_number: coreData.contact_number || data.offer?.contact_number || "",
+      emergency_number:
+        data.personal_details?.emergency_contact_phone || "",
+    });
 
-        console.log("CORE DATA:", coreData);
-        console.log("PROFILE DATA:", data);
+    /* RELATIONS */
+    const personal = data?.personal_details || {};
 
-        /* PRIMARY */
-        setPrimaryData({
-          first_name: coreData.first_name || data.offer?.first_name || "",
-          last_name: coreData.last_name || data.offer?.last_name || "",
-          gender: coreData.gender || data.personal_details?.gender || "",
-          dob: coreData.date_of_birth || data.personal_details?.date_of_birth || "",
-          marital_status: coreData.marital_status || data.personal_details?.marital_status || "",
-          blood_group: coreData.blood_group || data.personal_details?.blood_group || "",
-          nationality: data.personal_details?.nationality || "",
-        });
+    const emergencyName = personal.emergency_contact_name || "Akka";
+    const emergencyPhone = personal.emergency_contact_phone || "8765678987";
+    const relationType = personal.emergency_contact_relation || "Sister";
 
-        /* CONTACT */
-        setContactData({
-          work_email: coreData.work_email || "",
-          personal_email: data.offer?.email || "",
-          country_code: "+91",
-          mobile_number: coreData.contact_number || data.offer?.contact_number || "",
-          emergency_number:
-            data.personal_details?.emergency_contact_phone || "",
-        });
+    let relationGender = "Not Specified";
 
-        /* RELATIONS */
-        const personal = data?.personal_details || {};
+    if (["Father", "Brother", "Son", "Husband"].includes(relationType)) {
+      relationGender = "Male";
+    } else if (
+      ["Mother", "Sister", "Daughter", "Wife"].includes(relationType)
+    ) {
+      relationGender = "Female";
+    }
 
-        const emergencyName = personal.emergency_contact_name || "Akka";
-        const emergencyPhone = personal.emergency_contact_phone || "8765678987";
-        const relationType = personal.emergency_contact_relation || "Sister";
+    if (emergencyName) {
+      setRelationData([
+        {
+          id: 1,
+          relation: relationType || "Relation",
+          first_name: emergencyName,
+          mobile: emergencyPhone || "-",
+          gender: relationGender,
+        },
+      ]);
+    } else {
+      setRelationData([]);
+    }
 
-        setRelationData(personal);
+    /* ADDRESS */
+    const current = data.addresses?.find(a => a.address_type === "current");
+    const permanent = data.addresses?.find(a => a.address_type === "permanent");
 
-        let relationGender = "Not Specified";
+    setAddressData({
+      current: {
+        address_uuid: current?.address_uuid || "",
+        country: current?.country || "",
+        country_uuid: current?.country_uuid || "",
+        line1: current?.address_line1 || "",
+        line2: current?.address_line2 || "",
+        city: current?.city || "",
+        district_or_ward: current?.district_or_ward || "",
+        state: current?.state_or_region || "",
+        pincode: current?.postal_code || "",
+      },
+      permanent: {
+        address_uuid: permanent?.address_uuid || "",
+        country: permanent?.country || "",
+        country_uuid: permanent?.country_uuid || "",
+        line1: permanent?.address_line1 || "",
+        line2: permanent?.address_line2 || "",
+        city: permanent?.city || "",
+        district_or_ward: permanent?.district_or_ward || "",
+        state: permanent?.state_or_region || "",
+        pincode: permanent?.postal_code || "",
+      },
+    });
 
-        if (["Father", "Brother", "Son", "Husband"].includes(relationType)) {
-          relationGender = "Male";
-        } else if (
-          ["Mother", "Sister", "Daughter", "Wife"].includes(relationType)
-        ) {
-          relationGender = "Female";
-        }
+    /* EDUCATION - show ALL records */
+    const eduDocs = data.education_documents || [];
+    const allEdu = eduDocs.map((doc, idx) => ({
+      id: doc.education_document_uuid || `edu-${idx}`,
+      degree: doc.degree_name || doc.education_level || "N/A",
+      specialization: doc.specialization || "",
+      institution: doc.institution_name || "",
+      year: doc.year_of_passing || "",
+    }));
+    setEducationData(allEdu);
 
-        console.log("RELATION DEBUG:", {
-          personal,
-          emergencyName,
-          emergencyPhone,
-          relationType,
-        });
+    /* EXPERIENCE - show ALL records */
+    const expDocs = data.experience || [];
+    const allExp = expDocs.map((doc, idx) => ({
+      id: doc.experience_uuid || `exp-${idx}`,
+      company: doc.company_name || "",
+      role: doc.role_title || "",
+      duration: `${doc.start_date || ""} - ${doc.end_date || "Present"}`,
+    }));
+    setExperienceData(allExp);
 
-        if (emergencyName) {
-          setRelationData([
-            {
-              id: 1,
-              relation: relationType || "Relation",
-              first_name: emergencyName,
-              mobile: emergencyPhone || "-",
-              gender: relationGender,
-            },
-          ]);
-        } else {
-          setRelationData([]);
-        }
+    /* IDENTITY */
+    const aadhaar = data.identity_documents?.find(d =>
+      d.identity_type?.toLowerCase().includes("aadhaar")
+    );
 
-        /* ADDRESS */
-        const current = data.addresses?.find(a => a.address_type === "current");
-        const permanent = data.addresses?.find(a => a.address_type === "permanent");
+    const pan = data.identity_documents?.find(d =>
+      d.identity_type?.toLowerCase().includes("pan")
+    );
 
-        setAddressData({
-          current: {
-            country: current?.country || "",
-            line1: current?.address_line1 || "",
-            line2: current?.address_line2 || "",
-            city: current?.city || "",
-            state: current?.state_or_region || "",
-            pincode: current?.postal_code || "",
-          },
-          permanent: {
-            country: permanent?.country || "",
-            line1: permanent?.address_line1 || "",
-            line2: permanent?.address_line2 || "",
-            city: permanent?.city || "",
-            state: permanent?.state_or_region || "",
-            pincode: permanent?.postal_code || "",
-          },
-        });
+    setIdentityData({
+      aadhaar: aadhaar?.identity_file_number || "",
+      pan: pan?.identity_file_number || "",
+    });
 
-        /* EDUCATION LOGIC */
-        const eduDocs = data.education_documents || [];
-        let edu = null;
-
-        const primaryEduUuid = localStorage.getItem("primary_education_uuid");
-        if (primaryEduUuid && eduDocs.length > 0) {
-          edu = eduDocs.find(d => d.education_document_uuid === primaryEduUuid);
-        }
-        if (!edu && eduDocs.length > 0) {
-          const sortedEdu = [...eduDocs].sort((a, b) => {
-            const yearA = parseInt(a.year_of_passing, 10) || 0;
-            const yearB = parseInt(b.year_of_passing, 10) || 0;
-            return yearB - yearA;
-          });
-          edu = sortedEdu[0];
-        }
-
-        setEducationData({
-          degree: edu?.degree_name || edu?.education_level || "N/A",
-          specialization: edu?.specialization || "",
-          institution: edu?.institution_name || "",
-          year: edu?.year_of_passing || "",
-        });
-
-        /* EXPERIENCE LOGIC */
-        const expDocs = data.experience || [];
-        let exp = null;
-
-        const primaryExpUuid = localStorage.getItem("primary_experience_uuid");
-        if (primaryExpUuid && expDocs.length > 0) {
-          exp = expDocs.find(d => d.experience_uuid === primaryExpUuid);
-        }
-        if (!exp && expDocs.length > 0) {
-          const sortedExp = [...expDocs].sort((a, b) => {
-            const dateA = new Date(a.end_date || a.start_date || 0).getTime();
-            const dateB = new Date(b.end_date || b.start_date || 0).getTime();
-            return dateB - dateA;
-          });
-          exp = sortedExp[0];
-        }
-
-        setExperienceData({
-          company: exp?.company_name || "",
-          role: exp?.role_title || "",
-          duration: exp ? `${exp?.start_date || ""} - ${exp?.end_date || "Present"}` : "",
-        });
-
-        /* IDENTITY */
-        const aadhaar = data.identity_documents?.find(d =>
-          d.identity_type?.toLowerCase().includes("aadhaar")
-        );
-
-        const pan = data.identity_documents?.find(d =>
-          d.identity_type?.toLowerCase().includes("pan")
-        );
-
-        setIdentityData({
-          aadhaar: aadhaar?.identity_file_number || "",
-          pan: pan?.identity_file_number || "",
-        });
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching profile:", err);
-        setLoading(false);
-      }
-    };
-
-    if (employee_uuid || user_uuid) fetchProfile();
-  }, [employee_uuid, user_uuid]);
+    setLoading(false);
+  }, [coreData, hrData]);
 
   if (loading) return <div>Loading profile...</div>;
 
@@ -377,17 +265,36 @@ export default function ProfilePage({ activeTab, user_uuid }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
 
         <Section title="Education" onEdit={() => setEditSection("education")}>
-          <Row label="Degree" value={educationData?.degree || ""} />
-          <Row label="Specialization" value={educationData?.specialization || ""} />
-          <Row label="Institution/College" value={educationData?.institution || ""} />
-          <Row label="Year" value={educationData?.year || ""} />
-
+          {educationData.length > 0 ? (
+            <div className="space-y-4">
+              {educationData.map((edu, idx) => (
+                <div key={edu.id || idx} className={idx > 0 ? "pt-4 border-t border-gray-100" : ""}>
+                  <Row label="Degree" value={edu.degree || ""} />
+                  <Row label="Specialization" value={edu.specialization || ""} />
+                  <Row label="Institution/College" value={edu.institution || ""} />
+                  <Row label="Year" value={edu.year || ""} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-sm">No education records added</div>
+          )}
         </Section>
 
         <Section title="Experience" onEdit={() => setEditSection("experience")}>
-          <Row label="Company" value={experienceData?.company || ""} />
-          <Row label="Role" value={experienceData?.role || ""} />
-          <Row label="Duration" value={experienceData?.duration || ""} />
+          {experienceData.length > 0 ? (
+            <div className="space-y-4">
+              {experienceData.map((exp, idx) => (
+                <div key={exp.id || idx} className={idx > 0 ? "pt-4 border-t border-gray-100" : ""}>
+                  <Row label="Company" value={exp.company || ""} />
+                  <Row label="Role" value={exp.role || ""} />
+                  <Row label="Duration" value={exp.duration || ""} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 text-sm">No experience records added</div>
+          )}
         </Section>
 
       </div>
@@ -408,9 +315,9 @@ export default function ProfilePage({ activeTab, user_uuid }) {
       </div>
 
       {/* MODALS */}
-      {editSection === "primary" && <PrimaryModal data={primaryData} setData={setPrimaryData} onClose={() => setEditSection(null)} />}
+      {editSection === "primary" && <PrimaryModal data={primaryData} setData={setPrimaryData} onClose={() => setEditSection(null)} personalUuid={hrData?.personal_details?.personal_uuid || hrData?.personal_details?.user_uuid} hrData={hrData} />}
       {editSection === "contact" && <ContactModal data={contactData} setData={setContactData} onClose={() => setEditSection(null)} />}
-      {editSection === "address" && <AddressModal data={addressData} setData={setAddressData} onClose={() => setEditSection(null)} />}
+      {editSection === "address" && <AddressModal data={addressData} setData={setAddressData} user_uuid={user_uuid} onClose={() => setEditSection(null)} />}
       {editSection === "relations" && <RelationsModal data={relationData} setData={setRelationData} onClose={() => setEditSection(null)} />}
       {editSection === "education" && <EducationModal data={educationData} setData={setEducationData} onClose={() => setEditSection(null)} />}
       {editSection === "experience" && <ExperienceModal data={experienceData} setData={setExperienceData} onClose={() => setEditSection(null)} />}
@@ -436,9 +343,9 @@ const Section = ({ title, children, onEdit }) => (
 );
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between gap-4 text-sm min-w-0">
+  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 text-sm min-w-0">
     <span className="text-gray-500 shrink-0">{label}</span>
-    <span className="text-gray-900 font-medium text-right break-words min-w-0">
+    <span className="text-gray-900 font-medium sm:text-right break-words min-w-0">
       {value}
     </span>
   </div>
@@ -532,17 +439,103 @@ const ModalWrapper = ({ title, onClose, children, contentClassName = "px-8 py-8 
 
 /* ---------------- INDIVIDUAL MODALS ---------------- */
 
-const PrimaryModal = ({ data, setData, onClose }) => (
-  <ModalWrapper title="Primary Details" onClose={onClose}>
-    <Input required label="First Name" name="first_name" value={data.first_name} onChange={(e) => setData({ ...data, first_name: e.target.value })} />
-    <Input required label="Last Name" name="last_name" value={data.last_name} onChange={(e) => setData({ ...data, last_name: e.target.value })} />
-    <Input required label="Gender" name="gender" value={data.gender} onChange={(e) => setData({ ...data, gender: e.target.value })} />
-    <Input required label="Date of Birth" type="date" name="dob" value={data.dob} onChange={(e) => setData({ ...data, dob: e.target.value })} />
-    <Input label="Blood Group" name="blood_group" value={data.blood_group} onChange={(e) => setData({ ...data, blood_group: e.target.value })} />
-    <Input label="Marital Status" name="marital_status" value={data.marital_status} onChange={(e) => setData({ ...data, marital_status: e.target.value })} />
-    <Input label="Nationality" name="nationality" value={data.nationality} onChange={(e) => setData({ ...data, nationality: e.target.value })} />
-  </ModalWrapper>
-);
+const PrimaryModal = ({ data, setData, onClose, personalUuid, hrData }) => {
+  const [localData, setLocalData] = useState({ ...data });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    if (!personalUuid) {
+      showStatusToast("Unable to save: employee personal details not found", "error");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+      const token = localStorage.getItem("token");
+      const personal = hrData?.personal_details || {};
+
+      const payload = {
+        date_of_birth: localData.dob || "",
+        gender: localData.gender || "",
+        marital_status: localData.marital_status || "",
+        blood_group: localData.blood_group || "",
+        nationality_country_uuid: personal.nationality_country_uuid || "",
+        residence_country_uuid: personal.residence_country_uuid || "",
+        emergency_contact_name: personal.emergency_contact_name || "",
+        emergency_contact_phone: personal.emergency_contact_phone || "",
+        emergency_contact_relation_uuid: personal.emergency_contact_relation_uuid || "",
+      };
+
+      const res = await fetch(
+        `${BASE_URL}/employee-details/${personalUuid}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to update employee details");
+      }
+
+      setData(localData);
+      showStatusToast("Employee details updated successfully", "success");
+      onClose();
+    } catch (err) {
+      console.error("Update failed:", err);
+      showStatusToast(err.message || "Failed to update employee details", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <form
+        onSubmit={handleSave}
+        className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-100"
+      >
+        <div className="flex justify-between items-center px-8 py-5 border-b border-gray-100 bg-white shrink-0">
+          <h3 className="text-lg font-bold text-gray-900">Primary Details</h3>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-colors focus:outline-none">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7 overflow-y-auto bg-gray-50/50">
+          <Input required label="First Name" name="first_name" value={localData.first_name} onChange={(e) => setLocalData({ ...localData, first_name: e.target.value })} />
+          <Input required label="Last Name" name="last_name" value={localData.last_name} onChange={(e) => setLocalData({ ...localData, last_name: e.target.value })} />
+          <Select label="Gender" name="gender" value={localData.gender} onChange={(e) => setLocalData({ ...localData, gender: e.target.value })} options={["Male", "Female", "Other"]} required />
+          <Input required label="Date of Birth" type="date" name="dob" value={localData.dob} onChange={(e) => setLocalData({ ...localData, dob: e.target.value })} />
+          <Select label="Blood Group" name="blood_group" value={localData.blood_group} onChange={(e) => setLocalData({ ...localData, blood_group: e.target.value })} options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]} />
+          <Select label="Marital Status" name="marital_status" value={localData.marital_status} onChange={(e) => setLocalData({ ...localData, marital_status: e.target.value })} options={["Single", "Married", "Divorced", "Widowed"]} />
+          <Input label="Nationality" name="nationality" value={localData.nationality} onChange={(e) => setLocalData({ ...localData, nationality: e.target.value })} />
+        </div>
+        <div className="flex justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-white shrink-0">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className={`px-6 py-2.5 text-sm font-medium text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all focus:ring-offset-1 ${
+              saving ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 const ContactModal = ({ data, setData, onClose }) => (
   <ModalWrapper title="Contact Details" onClose={onClose}>
@@ -553,9 +546,12 @@ const ContactModal = ({ data, setData, onClose }) => (
   </ModalWrapper>
 );
 
-const AddressModal = ({ data, setData, onClose }) => {
+const AddressModal = ({ data, setData, user_uuid, onClose }) => {
+  const [localData, setLocalData] = useState({ ...data });
+  const [saving, setSaving] = useState(false);
+
   const updateCurrent = (field, value) => {
-    setData((prev) => {
+    setLocalData((prev) => {
       const nextData = { ...prev, current: { ...prev.current, [field]: value } };
       if (nextData.sameAsCurrent) {
         nextData.permanent = { ...nextData.permanent, [field]: value };
@@ -565,61 +561,147 @@ const AddressModal = ({ data, setData, onClose }) => {
   };
 
   const updatePermanent = (field, value) => {
-    setData((prev) => ({ ...prev, permanent: { ...prev.permanent, [field]: value } }));
+    setLocalData((prev) => ({ ...prev, permanent: { ...prev.permanent, [field]: value } }));
   };
 
   const toggleSameAsCurrent = (e) => {
     const checked = e.target.checked;
-    setData((prev) => ({
+    setLocalData((prev) => ({
       ...prev,
       sameAsCurrent: checked,
       permanent: checked
         ? { ...prev.current }
         : {
+          ...prev.permanent,
           country: "India",
           line1: "",
           line2: "",
           city: "",
+          district_or_ward: "",
           state: "",
           pincode: "",
         },
     }));
   };
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const BASE_URL = import.meta.env.VITE_EMPLOYEE_ONBOARDING_URL;
+      const token = localStorage.getItem("token");
+
+      const updateAddress = async (addr, type) => {
+        if (!addr.address_uuid) return;
+
+        const payload = {
+          user_uuid: user_uuid,
+          address_type: type,
+          address_line1: addr.line1,
+          address_line2: addr.line2,
+          city: addr.city,
+          district_or_ward: addr.district_or_ward,
+          state_or_region: addr.state,
+          postal_code: addr.pincode,
+          country_uuid: addr.country_uuid || "019c28d0-d0be-6edc-7adc-2d2e61d5524a", // Fallback to India if missing
+        };
+
+        const res = await fetch(`${BASE_URL}/employee-details/address/${addr.address_uuid}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Failed to update ${type} address`);
+        }
+      };
+
+      // Update both addresses in parallel if IDs exist
+      await Promise.all([
+        updateAddress(localData.current, "current"),
+        updateAddress(localData.permanent, "permanent"),
+      ]);
+
+      setData(localData);
+      showStatusToast("Address updated successfully", "success");
+      onClose();
+    } catch (err) {
+      console.error("Address update failed:", err);
+      showStatusToast(err.message || "Failed to update address", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const countries = ["India", "USA", "UK", "Australia", "Canada"];
   const states = ["Andhra Pradesh", "Karnataka", "Maharashtra", "Tamil Nadu", "Telangana"];
 
   return (
-    <ModalWrapper title="Addresses" onClose={onClose}>
-      <div className="flex flex-col bg-white p-6 rounded-xl border border-gray-100 shadow-sm col-span-1 md:col-span-1">
-        <div className="text-gray-900 mb-5 text-sm font-bold border-b border-gray-100 pb-3">CURRENT ADDRESS</div>
-        <div className="space-y-4">
-          <Select required label="Country" value={data.current.country} onChange={(e) => updateCurrent('country', e.target.value)} options={countries} />
-          <AddressInput required label="Address Line 1" value={data.current.line1} onChange={(e) => updateCurrent('line1', e.target.value)} />
-          <AddressInput label="Address Line 2" value={data.current.line2} onChange={(e) => updateCurrent('line2', e.target.value)} />
-          <AddressInput required label="City" value={data.current.city} onChange={(e) => updateCurrent('city', e.target.value)} />
-          <Select required label="State" value={data.current.state} onChange={(e) => updateCurrent('state', e.target.value)} options={states} />
-          <AddressInput required label="Pincode" value={data.current.pincode} onChange={(e) => updateCurrent('pincode', e.target.value)} />
+    <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <form
+        onSubmit={handleSave}
+        className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-100"
+      >
+        <div className="flex justify-between items-center px-8 py-5 border-b border-gray-100 bg-white shrink-0">
+          <h3 className="text-lg font-bold text-gray-900">Addresses</h3>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-colors focus:outline-none">
+            <X size={20} />
+          </button>
         </div>
-      </div>
+        <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7 overflow-y-auto bg-gray-50/50">
+          <div className="flex flex-col bg-white p-6 rounded-xl border border-gray-100 shadow-sm col-span-1 md:col-span-1">
+            <div className="text-gray-900 mb-5 text-sm font-bold border-b border-gray-100 pb-3 uppercase tracking-wider">CURRENT ADDRESS</div>
+            <div className="space-y-4">
+              <Select required label="Country" value={localData.current.country} onChange={(e) => updateCurrent('country', e.target.value)} options={countries} />
+              <AddressInput required label="Address Line 1" value={localData.current.line1} onChange={(e) => updateCurrent('line1', e.target.value)} />
+              <AddressInput label="Address Line 2" value={localData.current.line2} onChange={(e) => updateCurrent('line2', e.target.value)} />
+              <AddressInput required label="City" value={localData.current.city} onChange={(e) => updateCurrent('city', e.target.value)} />
+              <AddressInput required label="District/Ward" value={localData.current.district_or_ward} onChange={(e) => updateCurrent('district_or_ward', e.target.value)} />
+              <Select required label="State" value={localData.current.state} onChange={(e) => updateCurrent('state', e.target.value)} options={states} />
+              <AddressInput required label="Pincode" value={localData.current.pincode} onChange={(e) => updateCurrent('pincode', e.target.value)} />
+            </div>
+          </div>
 
-      <div className="flex flex-col bg-white p-6 rounded-xl border border-gray-100 shadow-sm col-span-1 md:col-span-1 relative">
-        <div className="text-gray-900 mb-5 text-sm font-bold border-b border-gray-100 pb-3">PERMANENT ADDRESS</div>
-        <div className="space-y-4 flex-grow">
-          <Select required={!data.sameAsCurrent} label="Country" value={data.permanent.country} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('country', e.target.value)} options={countries} />
-          <AddressInput required={!data.sameAsCurrent} label="Address Line 1" value={data.permanent.line1} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('line1', e.target.value)} />
-          <AddressInput label="Address Line 2" value={data.permanent.line2} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('line2', e.target.value)} />
-          <AddressInput required={!data.sameAsCurrent} label="City" value={data.permanent.city} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('city', e.target.value)} />
-          <Select required={!data.sameAsCurrent} label="State" value={data.permanent.state} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('state', e.target.value)} options={states} />
-          <AddressInput required={!data.sameAsCurrent} label="Pincode" value={data.permanent.pincode} disabled={data.sameAsCurrent} onChange={(e) => updatePermanent('pincode', e.target.value)} />
+          <div className="flex flex-col bg-white p-6 rounded-xl border border-gray-100 shadow-sm col-span-1 md:col-span-1 relative">
+            <div className="text-gray-900 mb-5 text-sm font-bold border-b border-gray-100 pb-3 uppercase tracking-wider">PERMANENT ADDRESS</div>
+            <div className="space-y-4 flex-grow">
+              <Select required={!localData.sameAsCurrent} label="Country" value={localData.permanent.country} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('country', e.target.value)} options={countries} />
+              <AddressInput required={!localData.sameAsCurrent} label="Address Line 1" value={localData.permanent.line1} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('line1', e.target.value)} />
+              <AddressInput label="Address Line 2" value={localData.permanent.line2} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('line2', e.target.value)} />
+              <AddressInput required={!localData.sameAsCurrent} label="City" value={localData.permanent.city} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('city', e.target.value)} />
+              <AddressInput required={!localData.sameAsCurrent} label="District/Ward" value={localData.permanent.district_or_ward} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('district_or_ward', e.target.value)} />
+              <Select required={!localData.sameAsCurrent} label="State" value={localData.permanent.state} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('state', e.target.value)} options={states} />
+              <AddressInput required={!localData.sameAsCurrent} label="Pincode" value={localData.permanent.pincode} disabled={localData.sameAsCurrent} onChange={(e) => updatePermanent('pincode', e.target.value)} />
 
-          <label className="flex items-center gap-2 mt-5 p-3 bg-gray-50 rounded-lg cursor-pointer text-gray-700 transition-colors hover:bg-gray-100 border border-gray-200">
-            <input type="checkbox" checked={data.sameAsCurrent} onChange={toggleSameAsCurrent} className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
-            <span className="text-sm font-medium">Same as Current Address</span>
-          </label>
+              <label className="flex items-center gap-2 mt-5 p-3 bg-gray-50 rounded-lg cursor-pointer text-gray-700 transition-colors hover:bg-gray-100 border border-gray-200">
+                <input type="checkbox" checked={localData.sameAsCurrent} onChange={toggleSameAsCurrent} className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                <span className="text-sm font-medium">Same as Current Address</span>
+              </label>
+            </div>
+          </div>
         </div>
-      </div>
-    </ModalWrapper>
+        <div className="flex justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-white shrink-0">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className={`px-6 py-2.5 text-sm font-medium text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all focus:ring-offset-1 ${
+              saving ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
