@@ -112,6 +112,7 @@ import OnboardingSummary from "./pages/employee-onboarding/summary-page/Onboardi
 import DepartmentsMappingDashboard from "./pages/employee-onboarding/hr-configuration/departments/DepartmentsMappingDashboard.jsx";
 import DepartmentsList from "./pages/employee-onboarding/hr-configuration/departments/departmentsList/DepartmentsList.jsx";
 import DesignationsList from "./pages/employee-onboarding/hr-configuration/departments/designationsList/DesignationsList.jsx";
+import WeeklyJoiningDashboard from "./pages/employee-onboarding/weekly-joining-report-dashboard/WeeklyJoiningDashboard.jsx";
 
 
 import EmployeeDocuments from "./pages/employee-onboarding/employeedocuments/EmployeeDocuments.jsx";
@@ -482,6 +483,8 @@ const AppRoutes = () => {
             <Route path="summary-page" element={<SummaryPage />} />
             <Route path="onboarding-summary" element={<OnboardingSummary />} />
             <Route path="analytics" element={<HeadcountDemographicsPage />} />
+
+            <Route path="weekly-joining-report-dashboard" element={< WeeklyJoiningDashboard/>} />
 
             <Route path="offer/:user_uuid" element={<ViewEmpDetails />} />
             <Route path ="offer-preview/:offerId" element ={<OfferPreview/>} />
